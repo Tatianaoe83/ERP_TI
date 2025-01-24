@@ -30,12 +30,12 @@
                     </a>
                 </li>
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/puestos">
                     <i class="fas fa-circle-notch"></i><span>Puestos</span>
                     </a>
                 </li>
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/empleados">
                         <i class="fas fa-circle-notch"></i></i><span>Empleados</span>
                     </a>
                 </li>
