@@ -1,0 +1,80 @@
+<?php
+
+namespace App\Models;
+
+use Eloquent as Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+
+/**
+ * Class Puestos
+ * @package App\Models
+ * @version January 24, 2025, 7:37 pm UTC
+ *
+ * @property \App\Models\Departamento $departamentoid
+ * @property \Illuminate\Database\Eloquent\Collection $obras
+ * @property string $NombrePuesto
+ * @property integer $DepartamentoID
+ */
+class Puestos extends Model
+{
+    use SoftDeletes;
+
+
+    public $table = 'Puestos';
+    
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
+
+
+    protected $dates = ['deleted_at'];
+
+
+    protected $primaryKey = 'PuestoID';
+    protected $keyType = 'int'; 
+
+    public $fillable = [
+        'NombrePuesto',
+        'DepartamentoID'
+    ];
+
+    /**
+     * The attributes that should be casted to native types.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'PuestoID' => 'integer',
+        'NombrePuesto' => 'string',
+        'DepartamentoID' => 'integer'
+    ];
+
+    /**
+     * Validation rules
+     *
+     * @var array
+     */
+    public static $rules = [
+        'NombrePuesto' => 'nullable|string|max:75',
+        'DepartamentoID' => 'nullable|integer',
+        'created_at' => 'required',
+        'updated_at' => 'required',
+        'deleted_at' => 'nullable'
+    ];
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+    public function departamentoid()
+    {
+        return $this->belongsTo(\App\Models\Departamento::class, 'DepartamentoID');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     **/
+    public function obras()
+    {
+        return $this->belongsToMany(\App\Models\Obra::class, 'Empleados');
+    }
+}

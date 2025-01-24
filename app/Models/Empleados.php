@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Models;
+
+use Eloquent as Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+
+/**
+ * Class Empleados
+ * @package App\Models
+ * @version January 24, 2025, 9:39 pm UTC
+ *
+ * @property \App\Models\Obra $obraid
+ * @property \App\Models\Puesto $puestoid
+ * @property string $NombreEmpleado
+ * @property integer $PuestoID
+ * @property integer $ObraID
+ * @property string $NumTelefono
+ * @property string $Correo
+ * @property boolean $Estado
+ */
+class Empleados extends Model
+{
+    use SoftDeletes;
+
+
+    public $table = 'Empleados';
+    
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
+
+
+    protected $dates = ['deleted_at'];
+
+
+    protected $primaryKey = 'EmpleadoID';
+    protected $keyType = 'int'; 
+
+    public $fillable = [
+        'NombreEmpleado',
+        'PuestoID',
+        'ObraID',
+        'NumTelefono',
+        'Correo',
+        'Estado'
+    ];
+
+    /**
+     * The attributes that should be casted to native types.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'EmpleadoID' => 'integer',
+        'NombreEmpleado' => 'string',
+        'PuestoID' => 'integer',
+        'ObraID' => 'integer',
+        'NumTelefono' => 'string',
+        'Correo' => 'string',
+        'Estado' => 'boolean'
+    ];
+
+    /**
+     * Validation rules
+     *
+     * @var array
+     */
+    public static $rules = [
+        'NombreEmpleado' => 'required|string|max:100',
+        'PuestoID' => 'required|integer',
+        'ObraID' => 'required|integer',
+        'NumTelefono' => 'required|string|max:50',
+        'Correo' => 'required|string|max:150',
+        'Estado' => 'required|boolean',
+        'created_at' => 'required',
+        'updated_at' => 'required',
+        'deleted_at' => 'nullable'
+    ];
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+    public function obraid()
+    {
+        return $this->belongsTo(\App\Models\Obra::class, 'ObraID');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+    public function puestoid()
+    {
+        return $this->belongsTo(\App\Models\Puesto::class, 'PuestoID');
+    }
+}

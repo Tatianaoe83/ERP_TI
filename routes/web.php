@@ -39,6 +39,8 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('gerencias', App\Http\Controllers\GerenciaController::class);
     Route::resource('obras', App\Http\Controllers\ObrasController::class);
     Route::resource('departamentos', App\Http\Controllers\DepartamentosController::class);
+    Route::resource('puestos', App\Http\Controllers\PuestosController::class);
+    Route::resource('empleados', App\Http\Controllers\EmpleadosController::class);
     
 });
 
