@@ -1,0 +1,216 @@
+<?php
+
+namespace App\DataTables;
+
+use App\Models\LineasTelefonicas;
+use Yajra\DataTables\Services\DataTable;
+use Yajra\DataTables\EloquentDataTable;
+use Yajra\DataTables\Html\Button;
+use Yajra\DataTables\Html\Column;
+
+class LineasTelefonicasDataTable extends DataTable
+{
+    /**
+     * Build DataTable class.
+     *
+     * @param mixed $query Results from query() method.
+     * @return \Yajra\DataTables\DataTableAbstract
+     */
+    public function dataTable($query)
+    {
+        $dataTable = new EloquentDataTable($query);
+
+        
+        return $dataTable
+        ->addColumn('action', function($row){
+            return view('lineas_telefonicas.datatables_actions', ['id' => $row->LineaID])->render();
+        })
+        ->rawColumns(['action'])
+        ->setRowId('LineaID');
+
+        
+    }
+
+    /**
+     * Get query source of dataTable.
+     *
+     * @param \App\Models\LineasTelefonicas $model
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function query(LineasTelefonicas $model)
+    {
+  
+        return $model->newQuery()->select([
+            'LineaID',
+           'NumTelefonico',
+            'PlanID',
+            'CuentaPadre',
+            'CuentaHija',
+            'TipoLinea',
+            'ObraID',
+            'FechaFianza',
+            'CostoFianza',
+            'Activo',
+            'Disponible',
+            'MontoRenovacionFianza'
+        ]);
+
+    }
+
+    /**
+     * Optional method if you want to use html builder.
+     *
+     * @return \Yajra\DataTables\Html\Builder
+     */
+    public function html()
+    {
+        return $this->builder()
+        ->setTableId('lineas-telefonicas-table')
+        ->columns($this->getColumns())
+        ->minifiedAjax()
+        ->dom('Bfrtip')
+        ->orderBy(1, 'asc')
+        ->buttons([
+            [
+                'extend' => 'collection',
+                'className' => 'btn btn-primary',
+                'text' => '<i class="fa fa-plus"></i> Crear',
+                'action' => "function() {
+                    window.location = '" . route('lineasTelefonicas.create') . "';
+                }"
+            ],
+         
+            [
+                'extend' => 'excel',
+                'className' => 'btn btn-success',
+                'text' => '<i class="fa fa-file-excel"></i> Excel'
+            ],
+            [
+                'extend' => 'pdf',
+                'className' => 'btn btn-danger',
+                'text' => '<i class="fa fa-file-pdf"></i> PDF'
+            ],
+           
+            [
+                'className' => 'btn btn-default',
+                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                'action' => 'function() { 
+                    window.LaravelDataTables["lineas-telefonicas-table"].ajax.reload();
+                }'
+            ],
+        ])
+        ->parameters([
+            'processing' => true,
+            'serverSide' => true,
+            'responsive' => true,
+            'pageLength' => 10,
+            'searching' => true,
+            'language' => [
+                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+            ],
+            'drawCallback' => 'function() {
+                $("[data-toggle=tooltip]").tooltip();
+            }',
+            'initComplete' => "function() {
+                this.api().columns().every(function () {
+                    var column = this;
+                    var input = document.createElement(\"input\");
+                    $(input).appendTo($(column.footer()).empty())
+                    .on('change', function () {
+                        column.search($(this).val(), false, false, true).draw();
+                    });
+                });
+            }",
+        ]);
+
+
+    
+    }
+
+    /**
+     * Get columns.
+     *
+     * @return array
+     */
+    protected function getColumns()
+    {
+        return [
+            'LineaID' => [
+                'title' => 'ID',
+                'data' => 'LineaID',
+                'name' => 'LineaID',
+            ],
+            'NumTelefonico' => [
+                'title' => 'Num Telefonico',
+                'data' => 'NumTelefonico',
+                'name' => 'NumTelefonico',
+            ],
+            'PlanID' => [
+                'title' => 'Plan',
+                'data' => 'PlanID',
+                'name' => 'PlanID',
+            ],
+            'CuentaPadre' => [
+                    'title' => 'Cuenta Padre',
+                    'data' => 'CuentaPadre',
+                    'name' => 'CuentaPadre',
+                ],
+            'CuentaHija' => [
+                    'title' => 'Cuenta Hija',
+                    'data' => 'CuentaHija',
+                    'name' => 'CuentaHija',
+                ],
+            'TipoLinea' => [
+                'title' => 'Tipo Linea',
+                'data' => 'TipoLinea',
+                'name' => 'TipoLinea',
+            ],
+            'ObraID' => [
+                'title' => 'Obra',
+                'data' => 'ObraID',
+                'name' => 'ObraID',
+            ],
+            'FechaFianza' => [
+                'title' => 'Fecha Fianza',
+                'data' => 'FechaFianza',
+                'name' => 'FechaFianza',
+            ],
+            'CostoFianza' => [
+                'title' => 'Costo Fianza',
+                'data' => 'CostoFianza',
+                'name' => 'CostoFianza',
+            ],
+            'Activo' => [
+                'title' => 'Activo',
+                'data' => 'Activo',
+                'name' => 'Activo',
+            ],
+            'Disponible' => [
+                'title' => 'Disponible',
+                'data' => 'Disponible',
+                'name' => 'Disponible',
+            ],
+            'MontoRenovacionFianza' => [
+                'title' => 'Monto Renovacion Fianza',
+                'data' => 'MontoRenovacionFianza',
+                'name' => 'MontoRenovacionFianza',
+            ],
+        
+            Column::computed('action')
+            ->exportable(false)
+            ->printable(false)
+            ->width(60)
+            ->addClass('text-center')
+        ];
+    }
+
+    /**
+     * Get filename for export.
+     *
+     * @return string
+     */
+    protected function filename()
+    {
+        return 'lineas_telefonicas_datatable_' . time();
+    }
+}

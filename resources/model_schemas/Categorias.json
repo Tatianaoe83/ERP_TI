@@ -1,0 +1,50 @@
+[
+    {
+        "name": "ID",
+        "dbType": "integer,true",
+        "htmlType": null,
+        "validations": null,
+        "searchable": false,
+        "fillable": false,
+        "primary": true,
+        "inForm": false,
+        "inIndex": false,
+        "inView": false
+    },
+    {
+        "name": "TipoID",
+        "dbType": "integer,false",
+        "htmlType": null,
+        "validations": "required|integer|integer",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "name": "Categoria",
+        "dbType": "string,75",
+        "htmlType": "text",
+        "validations": "required|string|max:75|string|max:75",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "type": "relation",
+        "relation": "mt1,TiposDeCategoria,TipoID"
+    },
+    {
+        "type": "relation",
+        "relation": "1tm,Equipo,CategoriaID"
+    },
+    {
+        "type": "relation",
+        "relation": "1tm,Insumo,CategoriaID"
+    }
+]

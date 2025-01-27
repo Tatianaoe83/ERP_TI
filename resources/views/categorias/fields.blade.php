@@ -1,0 +1,11 @@
+<!-- Tipoid Field -->
+<div class="form-group col-sm-6">
+    {!! Form::label('TipoID', 'Tipo:') !!}
+    {!! Form::number('TipoID', null, ['class' => 'form-control']) !!}
+</div>
+
+<!-- Categoria Field -->
+<div class="form-group col-sm-6">
+    {!! Form::label('Categoria', 'Categoria:') !!}
+    {!! Form::text('Categoria', null, ['class' => 'form-control','maxlength' => 75,'maxlength' => 75]) !!}
+</div>

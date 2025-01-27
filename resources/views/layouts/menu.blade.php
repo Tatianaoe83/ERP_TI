@@ -50,24 +50,29 @@
             <ul class="dropdown-menu">
                 
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/lineasTelefonicas">
                         <i class="fas fa-circle-notch"></i></i><span>Líneas</span>
                     </a>
                 </li>
                 
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/equipos">
                         <i class="fas fa-circle-notch"></i><span>Equipos</span>
                     </a>
                 </li>
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/insumos">
                         <i class="fas fa-circle-notch"></i><span>Insumos</span>
                     </a>
                 </li>
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/categorias">
                         <i class="fas fa-circle-notch"></i><span>Categorías</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="nav-link" href="/planes">
+                        <i class="fas fa-circle-notch"></i><span>Planes</span>
                     </a>
                 </li>
                 
