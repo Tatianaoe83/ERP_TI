@@ -38,14 +38,15 @@ class GerenciaDataTable extends DataTable
      */
     public function query(Gerencia $model)
     {
-
-        return $model->newQuery()->select([
-            'GerenciaID',
-            'NombreGerencia',
-            'UnidadNegocioID',
-            'NombreGerente'
-        ]);
-
+        return $model->newQuery()
+            ->join('UnidadesDeNegocio', 'Gerencia.UnidadNegocioID', '=', 'UnidadesDeNegocio.UnidadNegocioID')
+            ->select([
+                'Gerencia.GerenciaID',
+                'Gerencia.NombreGerencia',
+                'Gerencia.UnidadNegocioID',
+                'Gerencia.NombreGerente',
+                'UnidadesDeNegocio.NombreEmpresa as nombre_empresa'
+            ]);
     }
 
     /**
@@ -139,8 +140,8 @@ class GerenciaDataTable extends DataTable
             ],
             'UnidadNegocioID' => [
                 'title' => 'Unidad Negocio',
-                'data' => 'UnidadNegocioID',
-                'name' => 'UnidadNegocioID',
+                'data' => 'nombre_empresa',
+                'name' => 'UnidadesDeNegocio.NombreEmpresa',
             ],
             'NombreGerente' => [
                 'title' => 'Nombre Gerente',

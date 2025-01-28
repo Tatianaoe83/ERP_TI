@@ -35,12 +35,14 @@ class ObrasController extends AppBaseController
     {
         
         if (request()->ajax()) {
-            $unidades = Obras::select([
-                'ObraID',
-                'NombreObra',
-                'Direccion',
-                'EncargadoDeObra',
-                'UnidadNegocioID'
+            $unidades = Obras::join('UnidadesDeNegocio', 'Obras.UnidadNegocioID', '=', 'UnidadesDeNegocio.UnidadNegocioID')
+            ->select([
+                'Obras.ObraID',
+                'Obras.NombreObra',
+                'Obras.Direccion',
+                'Obras.EncargadoDeObra',
+                'UnidadesDeNegocio.NombreEmpresa as nombre_empresa'
+            
             ]);
             
             return DataTables::of($unidades)

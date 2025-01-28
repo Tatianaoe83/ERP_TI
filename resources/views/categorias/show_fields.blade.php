@@ -1,7 +1,7 @@
 <!-- Tipoid Field -->
 <div class="col-sm-12">
     {!! Form::label('TipoID', 'Tipo:') !!}
-    <p>{{ $categorias->TipoID }}</p>
+    <p>{{ $categorias->tipoid->Categoria }}</p>
 </div>
 
 <!-- Categoria Field -->

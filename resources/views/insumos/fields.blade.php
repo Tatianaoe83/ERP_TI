@@ -7,7 +7,10 @@
 <!-- Categoriaid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('CategoriaID', 'Categoria:') !!}
-    {!! Form::number('CategoriaID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('CategoriaID',App\Models\Categorias::all()->
+        pluck('Categoria','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
 </div>
 
 <!-- Costomensual Field -->

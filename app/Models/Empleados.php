@@ -83,7 +83,7 @@ class Empleados extends Model
      **/
     public function obraid()
     {
-        return $this->belongsTo(\App\Models\Obra::class, 'ObraID');
+        return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
 
     /**
@@ -91,6 +91,6 @@ class Empleados extends Model
      **/
     public function puestoid()
     {
-        return $this->belongsTo(\App\Models\Puesto::class, 'PuestoID');
+        return $this->belongsTo(\App\Models\Puestos::class, 'PuestoID');
     }
 }

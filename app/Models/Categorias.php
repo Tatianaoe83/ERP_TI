@@ -64,7 +64,7 @@ class Categorias extends Model
      **/
     public function tipoid()
     {
-        return $this->belongsTo(\App\Models\TiposDeCategoria::class, 'TipoID');
+        return $this->belongsTo(\App\Models\TiposDeCategorias::class, 'TipoID');
     }
 
     /**

@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-12">
-                    <h1>Edit Insumos</h1>
-                </div>
-            </div>
+
+    <section class="section">
+        <div class="section-header">
+            <h3 class="page__heading">Editar Insumos</h3>
         </div>
-    </section>
+
+    
+    <div class="section-body">
+
 
     <div class="content px-3">
 
@@ -26,12 +26,13 @@
             </div>
 
             <div class="card-footer">
-                {!! Form::submit('Save', ['class' => 'btn btn-primary']) !!}
-                <a href="{{ route('insumos.index') }}" class="btn btn-default">Cancel</a>
+                {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
+                <a href="{{ route('insumos.index') }}" class="btn btn-danger">Cancelar</a>
             </div>
 
             {!! Form::close() !!}
 
         </div>
     </div>
+    </section>
 @endsection

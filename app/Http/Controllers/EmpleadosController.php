@@ -34,15 +34,18 @@ class EmpleadosController extends AppBaseController
     {
 
         if (request()->ajax()) {
-            $unidades = Empleados::select([
-               'EmpleadoID',
-            'NombreEmpleado',
-            'PuestoID',
-            'ObraID',
-            'NumTelefono',
-            'Correo',
-            'Estado'
+            $unidades = Empleados::join('Obras', 'Empleados.ObraID', '=', 'Obras.ObraID')
+            ->join('Puestos', 'Empleados.PuestoID', '=', 'Puestos.PuestoID')
+            ->select([
+                'Empleados.EmpleadoID',
+                'Empleados.NombreEmpleado',
+                'Puestos.NombrePuesto as nombre_puesto',
+                'Obras.NombreObra as nombre_obra',
+                'Empleados.NumTelefono',
+                'Empleados.Correo',
+                'Empleados.Estado'
             ]);
+
             
             return DataTables::of($unidades)
                 ->addColumn('action', function($row){

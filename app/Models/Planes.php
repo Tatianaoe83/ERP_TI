@@ -60,5 +60,11 @@ class Planes extends Model
         'PrecioPlan' => 'required|numeric'
     ];
 
+    public function companiaslineastelefonicasid()
+    {
+        return $this->belongsTo(\App\Models\CompaniasLineasTelefonicas::class, 'CompaniaID');
+    }
+
+
     
 }

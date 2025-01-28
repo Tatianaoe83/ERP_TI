@@ -7,7 +7,10 @@
 <!-- Planid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('PlanID', 'Plan:') !!}
-    {!! Form::number('PlanID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('PlanID',App\Models\Planes::all()->
+        pluck('NombrePlan','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
 </div>
 
 <!-- Cuentapadre Field -->
@@ -18,7 +21,7 @@
 
 <!-- Cuentahija Field -->
 <div class="form-group col-sm-6">
-    {!! Form::label('CuentaHija', 'Cuent hija:') !!}
+    {!! Form::label('CuentaHija', 'Cuenta hija:') !!}
     {!! Form::text('CuentaHija', null, ['class' => 'form-control','maxlength' => 100,'maxlength' => 100]) !!}
 </div>
 
@@ -31,24 +34,19 @@
 <!-- Obraid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('ObraID', 'Obra:') !!}
-    {!! Form::number('ObraID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('ObraID',App\Models\Obras::all()->
+        pluck('NombreObra','ObraID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
 </div>
 
 <!-- Fechafianza Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
-    {!! Form::text('FechaFianza', null, ['class' => 'form-control','id'=>'FechaFianza']) !!}
+    {!! Form::date('FechaFianza', null, ['class' => 'form-control','id'=>'FechaFianza']) !!}
 </div>
 
-@push('page_scripts')
-    <script type="text/javascript">
-        $('#FechaFianza').datetimepicker({
-            format: 'YYYY-MM-DD HH:mm:ss',
-            useCurrent: true,
-            sideBySide: true
-        })
-    </script>
-@endpush
+
 
 <!-- Costofianza Field -->
 <div class="form-group col-sm-6">

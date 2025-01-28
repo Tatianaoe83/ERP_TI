@@ -38,13 +38,17 @@ class ObrasDataTable extends DataTable
     public function query(Obras $model)
     {
        
-        return $model->newQuery()->select([
-            'ObraID',
-            'NombreObra',
-            'Direccion',
-            'EncargadoDeObra',
-            'UnidadNegocioID'
+    
+        return $model->newQuery()
+        ->join('UnidadesDeNegocio', 'Obras.UnidadNegocioID', '=', 'UnidadesDeNegocio.UnidadNegocioID')
+        ->select([
+            'Obras.ObraID',
+            'Obras.NombreObra',
+            'Obras.Direccion',
+            'Obras.EncargadoDeObra',
+            'UnidadesDeNegocio.NombreEmpresa as nombre_empresa'
         ]);
+
 
     }
 
@@ -152,8 +156,8 @@ class ObrasDataTable extends DataTable
             ],
             'UnidadNegocioID' => [
                 'title' => 'Unidad Negocio',
-                'data' => 'UnidadNegocioID',
-                'name' => 'UnidadNegocioID',
+                'data' => 'nombre_empresa',
+                'name' => 'UnidadesDeNegocio.NombreEmpresa',
             ],
            
             Column::computed('action')

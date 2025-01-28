@@ -39,15 +39,18 @@ class EquiposDataTable extends DataTable
      */
     public function query(Equipos $model)
     {
-        
-        return $model->newQuery()->select([
-            'ID',
-            'CategoriaID',
-            'Marca',
-            'Caracteristicas',
-            'Modelo',
-            'Precio'
+        return $model->newQuery()
+        ->join('Categorias', 'Equipos.CategoriaID', '=', 'Categorias.ID')
+        ->select([
+            'Equipos.ID',
+            'Categorias.Categoria as categoria_name',
+            'Equipos.Marca',
+            'Equipos.Caracteristicas',
+            'Equipos.Modelo',
+            'Equipos.Precio'
         ]);
+
+       
 
     }
 
@@ -135,8 +138,8 @@ class EquiposDataTable extends DataTable
             ],
             'CategoriaID' => [
                 'title' => 'Categoria',
-                'data' => 'CategoriaID',
-                'name' => 'CategoriaID',
+                'data' => 'categoria_name',
+                'name' => 'Categorias.Categoria',
             ],
             'Marca' => [
                 'title' => 'Marca',

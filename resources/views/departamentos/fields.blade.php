@@ -7,5 +7,9 @@
 <!-- Gerenciaid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('GerenciaID', 'Gerencia:') !!}
-    {!! Form::number('GerenciaID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('GerenciaID',App\Models\Gerencia::all()->
+        pluck('NombreGerencia','GerenciaID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
+   
 </div>

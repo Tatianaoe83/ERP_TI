@@ -10,6 +10,9 @@ use App\Repositories\InsumosRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
+use App\Models\Insumos;
+use Yajra\DataTables\DataTables;
+
 
 class InsumosController extends AppBaseController
 {
@@ -30,6 +33,30 @@ class InsumosController extends AppBaseController
      */
     public function index(InsumosDataTable $insumosDataTable)
     {
+
+        if (request()->ajax()) {
+            $unidades = Insumos::join('Categorias', 'Insumos.CategoriaID', '=', 'Categorias.ID')
+            ->select([
+                'Insumos.ID',
+                'Insumos.NombreInsumo',
+                'Categorias.Categoria as nombre_categoria',
+                'Insumos.CostoMensual',
+                'Insumos.CostoAnual',
+                'Insumos.FrecuenciaDePago',
+                'Insumos.Observaciones'
+            ]);
+
+            
+            return DataTables::of($unidades)
+                ->addColumn('action', function($row){
+                    return view('insumos.datatables_actions', ['id' => $row->ID])->render();
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+
+       
+
         return $insumosDataTable->render('insumos.index');
     }
 

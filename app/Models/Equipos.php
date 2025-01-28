@@ -74,6 +74,6 @@ class Equipos extends Model
      **/
     public function categoriaid()
     {
-        return $this->belongsTo(\App\Models\Categoria::class, 'CategoriaID');
+        return $this->belongsTo(\App\Models\Categorias::class, 'CategoriaID');
     }
 }

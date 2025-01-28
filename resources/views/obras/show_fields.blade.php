@@ -19,6 +19,6 @@
 <!-- Unidadnegocioid Field -->
 <div class="col-sm-12">
     {!! Form::label('UnidadNegocioID', 'Unidad negocio:') !!}
-    <p>{{ $obras->UnidadNegocioID }}</p>
+    <p>{{ $obras->unidadnegocioid->NombreEmpresa }}</p>
 </div>
 

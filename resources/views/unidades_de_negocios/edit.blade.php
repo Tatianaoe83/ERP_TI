@@ -26,7 +26,7 @@
             </div>
 
             <div class="card-footer">
-                {!! Form::submit('Guargar', ['class' => 'btn btn-primary']) !!}
+                {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
                 <a href="{{ route('unidadesDeNegocios.index') }}" class="btn btn-danger">Cancelar</a>
             </div>
 

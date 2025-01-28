@@ -39,10 +39,13 @@ class DepartamentosDataTable extends DataTable
      */
     public function query(Departamentos $model)
     {
-        return $model->newQuery()->select([
-            'DepartamentoID',
-            'NombreDepartamento',
-            'GerenciaID'
+
+        return $model->newQuery()
+        ->join('Gerencia', 'Departamentos.GerenciaID', '=', 'Gerencia.GerenciaID')
+        ->select([
+            'Departamentos.DepartamentoID',
+            'Departamentos.NombreDepartamento',
+            'Gerencia.NombreGerencia as nombre_gerencia'
         ]);
 
       
@@ -139,8 +142,8 @@ class DepartamentosDataTable extends DataTable
             ],
             'GerenciaID' => [
                 'title' => 'Nombre Gerencia',
-                'data' => 'GerenciaID',
-                'name' => 'GerenciaID',
+                'data' => 'nombre_gerencia',
+                'name' => 'Gerencia.NombreGerencia',
             ],
             Column::computed('action')
             ->exportable(false)

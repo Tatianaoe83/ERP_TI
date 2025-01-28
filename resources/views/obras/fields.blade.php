@@ -19,5 +19,8 @@
 <!-- Unidadnegocioid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('UnidadNegocioID', 'Unidad negocio:') !!}
-    {!! Form::number('UnidadNegocioID', null, ['class' => 'form-control']) !!}
+ 
+    {!!Form::select('UnidadNegocioID',App\Models\UnidadesDeNegocio::all()->
+        pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
 </div>

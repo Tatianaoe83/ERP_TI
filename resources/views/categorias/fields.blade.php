@@ -1,7 +1,10 @@
 <!-- Tipoid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('TipoID', 'Tipo:') !!}
-    {!! Form::number('TipoID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('TipoID',App\Models\TiposDeCategorias::all()->
+        pluck('Categoria','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
 </div>
 
 <!-- Categoria Field -->

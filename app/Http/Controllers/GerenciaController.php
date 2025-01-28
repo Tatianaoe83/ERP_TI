@@ -33,11 +33,13 @@ class GerenciaController extends AppBaseController
     public function index(GerenciaDataTable $gerenciaDataTable)
     {
         if (request()->ajax()) {
-            $unidades = Gerencia::select([
-                'GerenciaID',
-                'NombreGerencia',
-                'UnidadNegocioID',
-                'NombreGerente'
+            $unidades = Gerencia::join('UnidadesDeNegocio', 'Gerencia.UnidadNegocioID', '=', 'UnidadesDeNegocio.UnidadNegocioID')
+            ->select([
+                'Gerencia.GerenciaID',
+                'Gerencia.NombreGerencia',
+                'Gerencia.UnidadNegocioID',
+                'Gerencia.NombreGerente',
+                'UnidadesDeNegocio.NombreEmpresa as nombre_empresa'
             ]);
             
             return DataTables::of($unidades)

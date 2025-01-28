@@ -33,10 +33,11 @@ class PuestosController extends AppBaseController
     public function index(PuestosDataTable $puestosDataTable)
     {
         if (request()->ajax()) {
-            $unidades = Puestos::select([
-                'PuestoID',
-                'NombrePuesto',
-                'DepartamentoID'
+            $unidades = Puestos::join('Departamentos', 'Puestos.DepartamentoID', '=', 'Departamentos.DepartamentoID')
+            ->select([
+                'Puestos.PuestoID',
+                'Puestos.NombrePuesto',
+                'Departamentos.NombreDepartamento as nombre_departamento'
             ]);
             
             return DataTables::of($unidades)

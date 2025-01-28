@@ -57,5 +57,16 @@ class Departamentos extends Model
         'GerenciaID' => 'nullable|integer'
     ];
 
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+
+    public function gerenciaid()
+    {
+        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
+    }
+
+
     
 }

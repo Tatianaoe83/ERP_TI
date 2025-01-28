@@ -7,7 +7,7 @@
 <!-- Planid Field -->
 <div class="col-sm-12">
     {!! Form::label('PlanID', 'Plan:') !!}
-    <p>{{ $lineasTelefonicas->PlanID }}</p>
+    <p>{{ $lineasTelefonicas->planid->NombrePlan }}</p>
 </div>
 
 <!-- Cuentapadre Field -->
@@ -31,7 +31,7 @@
 <!-- Obraid Field -->
 <div class="col-sm-12">
     {!! Form::label('ObraID', 'Obra:') !!}
-    <p>{{ $lineasTelefonicas->ObraID }}</p>
+    <p>{{ $lineasTelefonicas->obraid->NombreObra }}</p>
 </div>
 
 <!-- Fechafianza Field -->
@@ -49,7 +49,9 @@
 <!-- Activo Field -->
 <div class="col-sm-12">
     {!! Form::label('Activo', 'Activo:') !!}
-    <p>{{ $lineasTelefonicas->Activo }}</p>
+
+    <p>{{ $lineasTelefonicas->Activo == '1' ? 'Activo' : ($lineasTelefonicas->Activo == '0' ? 'No Activo ' : '') }}</p>
+
 </div>
 
 <!-- Disponible Field -->

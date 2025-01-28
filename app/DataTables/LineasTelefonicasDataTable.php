@@ -40,19 +40,23 @@ class LineasTelefonicasDataTable extends DataTable
     public function query(LineasTelefonicas $model)
     {
   
-        return $model->newQuery()->select([
-            'LineaID',
-           'NumTelefonico',
-            'PlanID',
-            'CuentaPadre',
-            'CuentaHija',
-            'TipoLinea',
-            'ObraID',
-            'FechaFianza',
-            'CostoFianza',
-            'Activo',
-            'Disponible',
-            'MontoRenovacionFianza'
+        return $model->newQuery()
+        ->join('Obras', 'Obras.ObraID', '=', 'LineasTelefonicas.ObraID')
+        ->join('Planes', 'Planes.ID', '=', 'LineasTelefonicas.PlanID')
+        ->select([
+            'LineasTelefonicas.LineaID',
+            'LineasTelefonicas.NumTelefonico',
+            'Planes.NombrePlan as nombre_plan',
+            'LineasTelefonicas.CuentaPadre',
+            'LineasTelefonicas.CuentaHija',
+            'LineasTelefonicas.TipoLinea',
+            'Obras.NombreObra as nombre_obra',
+            'LineasTelefonicas.FechaFianza',
+            'LineasTelefonicas.CostoFianza',
+            'LineasTelefonicas.Activo',
+            'LineasTelefonicas.Disponible',
+            'LineasTelefonicas.MontoRenovacionFianza'
+       
         ]);
 
     }
@@ -147,8 +151,8 @@ class LineasTelefonicasDataTable extends DataTable
             ],
             'PlanID' => [
                 'title' => 'Plan',
-                'data' => 'PlanID',
-                'name' => 'PlanID',
+                'data' => 'nombre_plan',
+                'name' => 'Planes.NombrePlan',
             ],
             'CuentaPadre' => [
                     'title' => 'Cuenta Padre',
@@ -167,8 +171,8 @@ class LineasTelefonicasDataTable extends DataTable
             ],
             'ObraID' => [
                 'title' => 'Obra',
-                'data' => 'ObraID',
-                'name' => 'ObraID',
+                'data' => 'nombre_obra',
+                'name' => 'Obras.NombreObra',
             ],
             'FechaFianza' => [
                 'title' => 'Fecha Fianza',

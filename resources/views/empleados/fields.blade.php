@@ -7,13 +7,21 @@
 <!-- Puestoid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('PuestoID', 'Puesto:') !!}
-    {!! Form::number('PuestoID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('PuestoID',App\Models\Puestos::all()->
+        pluck('NombrePuesto','PuestoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
+   
 </div>
 
 <!-- Obraid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('ObraID', 'Obra:') !!}
-    {!! Form::number('ObraID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('ObraID',App\Models\Obras::all()->
+        pluck('NombreObra','ObraID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
+  
 </div>
 
 <!-- Numtelefono Field -->

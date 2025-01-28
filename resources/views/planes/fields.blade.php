@@ -1,7 +1,10 @@
 <!-- Companiaid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('CompaniaID', 'Compania:') !!}
-    {!! Form::number('CompaniaID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('CompaniaID',App\Models\CompaniasLineasTelefonicas::all()->
+        pluck('Compania','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
 </div>
 
 <!-- Nombreplan Field -->

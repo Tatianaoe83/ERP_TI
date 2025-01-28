@@ -7,5 +7,9 @@
 <!-- Departamentoid Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('DepartamentoID', 'Departamento:') !!}
-    {!! Form::number('DepartamentoID', null, ['class' => 'form-control']) !!}
+
+    {!!Form::select('DepartamentoID',App\Models\Departamentos::all()->
+        pluck('NombreDepartamento','DepartamentoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+
+   
 </div>

@@ -98,6 +98,12 @@ class LineasTelefonicas extends Model
      **/
     public function obraid()
     {
-        return $this->belongsTo(\App\Models\Obra::class, 'ObraID');
+        return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
+
+    public function planid()
+    {
+        return $this->belongsTo(\App\Models\Planes::class, 'PlanID');
+    }
+
 }

@@ -37,12 +37,16 @@ class PuestosDataTable extends DataTable
      */
     public function query(Puestos $model)
     {
-        return $model->newQuery()->select([
-            'PuestoID',
-            'NombrePuesto',
-            'DepartamentoID'
+
+        return $model->newQuery()
+        ->join('Departamentos', 'Puestos.DepartamentoID', '=', 'Departamentos.DepartamentoID')
+        ->select([
+            'Puestos.PuestoID',
+            'Puestos.NombrePuesto',
+            'Departamentos.NombreDepartamento as nombre_departamento'
         ]);
 
+    
       
     }
 
@@ -133,8 +137,8 @@ class PuestosDataTable extends DataTable
             ],
             'DepartamentoID' => [
                 'title' => 'Departamento',
-                'data' => 'DepartamentoID',
-                'name' => 'DepartamentoID',
+                'data' => 'nombre_departamento',
+                'name' => 'Departamentos.NombreDepartamento',
             ],
             Column::computed('action')
             ->exportable(false)

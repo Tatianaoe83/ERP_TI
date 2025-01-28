@@ -1,13 +1,13 @@
 {!! Form::open(['route' => ['obras.destroy', $id], 'method' => 'delete']) !!}
 <div class='btn-group'>
-    <a href="{{ route('obras.show', $id) }}" class='btn btn-default btn-xs'>
+    <a href="{{ route('obras.show', $id) }}" class='btn btn-outline-primary btn-xs'>
         <i class="fa fa-eye"></i>
     </a>
-    <a href="{{ route('obras.edit', $id) }}" class='btn btn-default btn-xs'>
+    <a href="{{ route('obras.edit', $id) }}" class='btn btn-outline-secondary btn-xs'>
         <i class="fa fa-edit"></i>
     </a>
 
-    <button type="submit" class="btn btn-xs btn-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
+    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
 </div>
 {!! Form::close() !!}
 

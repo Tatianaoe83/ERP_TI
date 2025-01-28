@@ -33,12 +33,13 @@ class CategoriasController extends AppBaseController
     public function index(CategoriasDataTable $categoriasDataTable)
     {
         if (request()->ajax()) {
-            $unidades = Categorias::select([
-                'ID',
-                'TipoID',
-                'Categoria'
-               
+            $unidades = Categorias::join('TiposDeCategorias', 'Categorias.TipoID', '=', 'TiposDeCategorias.ID')
+            ->select([
+                'Categorias.ID',
+                'TiposDeCategorias.Categoria as nombre_categoria',
+                'Categorias.Categoria'
             ]);
+    
             
             return DataTables::of($unidades)
                 ->addColumn('action', function($row){
