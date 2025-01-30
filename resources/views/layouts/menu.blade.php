@@ -86,7 +86,7 @@
             <ul class="dropdown-menu">
                 
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/inventarios">
                         <i class="fas fa-circle-notch"></i><span>Inventario</span>
                     </a>
                 </li>

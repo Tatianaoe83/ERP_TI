@@ -94,6 +94,11 @@
 <script type="text/javascript">
 $(document).ready(function() {
     $('.jz').select2();
+
+    $('#myTab a').on('click', function (e) {
+        e.preventDefault();
+        $(this).tab('show');
+    });
 });
 </script>
 <script>

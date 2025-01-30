@@ -71,6 +71,15 @@
                     </div>
                 </div>
 
+                <!-- Database Select -->
+                <div class="form-group">
+                    <select name="database" id="database" class="form-control" >
+                        <option value="">Seleccione Base de Datos</option>
+                        <option value="PresupuestosControl">Presupuestos Control</option>
+                        <option value="ControlInventarioTI">Control Inventario TI</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <div class="custom-control custom-checkbox">
                         <input type="checkbox" name="remember" class="custom-control-input" tabindex="3"
@@ -78,6 +87,8 @@
                         <label class="custom-control-label" for="remember">Recordar</label>
                     </div>
                 </div>
+     
+                
 
               
 

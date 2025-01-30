@@ -23,7 +23,7 @@ Route::get('/', function () {
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
-Auth::routes();
+Auth::routes(['register' => false]);
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
@@ -46,6 +46,8 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('insumos', App\Http\Controllers\InsumosController::class);
     Route::resource('categorias', App\Http\Controllers\CategoriasController::class);
     Route::resource('planes', App\Http\Controllers\PlanesController::class);
+    Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
+    
     
 });
 
