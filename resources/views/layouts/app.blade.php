@@ -15,10 +15,7 @@
     <link href="{{ asset('assets/css/sweetalert.css') }}" rel="stylesheet" type="text/css"/>
     <link href="{{ asset('assets/css/select2.min.css') }}" rel="stylesheet" type="text/css"/>
 
-    <!-- cdn datatables css -->
 
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     @stack('styles')
@@ -31,7 +28,7 @@
     @yield('scripts')
 
     @yield('css')
-    @stack('third_party_scripts')
+    @stack('third_party_stylesheets')
 </head>
 <body>
 
@@ -62,46 +59,70 @@
 
 </body>
 
+
 <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
+<script src="{{ asset('assets/js/jquery.nicescroll.js') }}"></script>
 <script src="{{ asset('assets/js/popper.min.js') }}"></script>
 <script src="{{ asset('assets/js/bootstrap.min.js') }}"></script>
 <script src="{{ asset('assets/js/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/js/iziToast.min.js') }}"></script>
 <script src="{{ asset('assets/js/select2.min.js') }}"></script>
-<script src="{{ asset('assets/js/jquery.nicescroll.js') }}"></script>
+
 
 <!-- Template JS File -->
 <script src="{{ asset('web/js/stisla.js') }}"></script>
 <script src="{{ asset('web/js/scripts.js') }}"></script>
 <script src="{{ mix('assets/js/profile.js') }}"></script>
 <script src="{{ mix('assets/js/custom/custom.js') }}"></script>
-<!-- cdn datatables js -->
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap4.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.colVis.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+@stack('third_party_scripts')
 
-@yield('page_js')
+
 
 @yield('scripts')
 
-<script type="text/javascript">
-$(document).ready(function() {
-    $('.jz').select2();
+
+ <!-- Script para inicializar los dropdowns en todas las páginas -->
+ <script type="text/javascript">
+    $(document).ready(function () {
+    // Delegación de eventos para manejar los dropdowns correctamente
+    $(document).on('click', '.dropdown-toggle', function (e) {
+        e.preventDefault();
+        var $parent = $(this).parent();
+        $('.dropdown').not($parent).removeClass('show'); // Cierra otros dropdowns
+        $('.dropdown-menu').not($parent.find('.dropdown-menu')).removeClass('show');
+
+        $parent.toggleClass('show');
+        $parent.find('.dropdown-menu').toggleClass('show');
+    });
+
+    // Cerrar dropdowns al hacer clic fuera
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('.dropdown').length) {
+            $('.dropdown').removeClass('show');
+            $('.dropdown-menu').removeClass('show');
+        }
+    });
+
+    // Asegurar que Select2 también se inicialice correctamente
+    $(document).on('draw.dt', function () {
+        $('.jz').select2();
+    });
 
     $('#myTab a').on('click', function (e) {
         e.preventDefault();
         $(this).tab('show');
     });
+    
 });
+
 </script>
-<script>
+
+
+<script type="text/javascript">
     let loggedInUser =@json(\Illuminate\Support\Facades\Auth::user());
     let loginUrl = '{{ route('login') }}';
     // Loading button plugin (removed from BS4)

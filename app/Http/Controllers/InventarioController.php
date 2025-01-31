@@ -12,6 +12,7 @@ use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\Empleados;
 use App\Models\InventarioEquipo;
+use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use DB;
@@ -142,26 +143,16 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
-        // Obtener datos para los selects
-       /*puestos = DB::table('Puestos')->select('PuestoID', 'NombrePuesto')->get();*/
+       
+        $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID','=',$id)->get();
+        $Equipos = Equipos::select("*")->get();
 
-       $EquiposAsignados2= DB::table('InventarioEquipo')->select('*')->get();
-       $EquiposAsignados = InventarioEquipo::select('*')->where('EmpleadoID',$id)->get();
-
-       //print_r ($EquiposAsignados2);
-       //dd ($EquiposAsignados);
-
-
-      
-
-         /*$$empleados = DB::table('Empleados')->select('EmpleadoID', 'NombreEmpleado')->get();
-        $equipos = DB::table('Equipos')->select('EquipoID', 'NombreEquipo')->get();*/
 
         return view('inventarios.edit')->with([
             'inventario' => $inventario,
-           /* 'puestos' => $puestos,
-            'empleados' => $empleados,
-            'equipos' => $equipos*/
+            'equiposAsignados' => $EquiposAsignados,
+            'equipos' => $Equipos,
+          
         ]);
     }
 
