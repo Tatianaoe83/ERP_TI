@@ -15,7 +15,6 @@
 
         <div class="card">
 
-            {!! Form::model($inventario, ['route' => ['inventarios.update', $inventario->EmpleadoID], 'method' => 'patch']) !!}
 
             <div class="card-body">
                 <div class="row">
@@ -25,8 +24,7 @@
 
             <div class="card-footer">
             </div>
-
-            {!! Form::close() !!}
+   
 
         </div>
     </div>
@@ -34,7 +32,7 @@
     
 <!-- Modal de Edición -->
 <div class="modal fade" id="editModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Editar Equipo</h5>
@@ -42,20 +40,96 @@
             </div>
             <div class="modal-body">
                 <form id="editForm">
-                    <input type="hidden" id="editId">
-                    <div class="form-group">
-                        <label>Categoria Equipo</label>
-                        <input type="text" class="form-control" id="editCategoria">
+                <input type="hidden" id="editId">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-4"> 
+                            <div class="form-group">
+                                <label>Categoria</label>
+                                <input type="text" class="form-control" id="editCategoria">
+                            </div>
+                        </div>
+                        <div class="col-md-4 ms-auto">
+                             <div class="form-group">
+                             <label>Marca</label>
+                             <input type="text" class="form-control" id="editMarca">
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Marca</label>
-                        <input type="text" class="form-control" id="editMarca">
+
+                    <div class="row">
+                        <div class="col-md-4"> 
+                            <div class="form-group">
+                                <label>Caracteristicas</label>
+                                <input type="text" class="form-control" id="editCaracteristicas">
+                            </div>
+                        </div>
+                        <div class="col-md-4 ms-auto">
+                             <div class="form-group">
+                                <label>Modelo</label>
+                                <input type="text" class="form-control" id="editModelo">
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Caracteristicas</label>
-                        <input type="text" class="form-control" id="editCaracteristicas">
+
+                    <div class="row">
+                        <div class="col-md-4"> 
+                            <div class="form-group">
+                                <label>Precio</label>
+                                <input type="text" class="form-control" id="editPrecio">
+                            </div>
+                        </div>
+                        <div class="col-md-4 ms-auto">
+                             <div class="form-group">
+                             <label>Fecha Asignacion</label>
+                             <input type="text" class="form-control" id="editFechaAsignacion">
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+
+                    <div class="row">
+                        <div class="col-md-4"> 
+                            <div class="form-group">
+                                <label>Fecha de Compra</label>
+                                <input type="text" class="form-control" id="editFechaDeCompra">
+                            </div>
+                        </div>
+                        <div class="col-md-4 ms-auto">
+                             <div class="form-group">
+                             <label>Num. Serie</label>
+                             <input type="text" class="form-control" id="editNumSerie">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4"> 
+                            <div class="form-group">
+                                <label>Folio</label>
+                                <input type="text" class="form-control" id="editFolio">
+                            </div>
+                        </div>
+                        <div class="col-md-4 ms-auto">
+                             <div class="form-group">
+                                <label>Gerencia Equipo</label>
+                                 <input type="text" class="form-control" id="editGerenciaEquipo">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4"> 
+                            <div class="form-group">
+                                <label>Comentarios</label>
+                                <input type="text" class="form-control" id="editComentarios">
+                            </div>
+                        </div>
+                        
+                    </div>
+                
+                </div>
+
+                    <button class="btn btn-primary submit_equipo">Guardar Cambios</button>
                 </form>
             </div>
         </div>

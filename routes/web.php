@@ -46,6 +46,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('insumos', App\Http\Controllers\InsumosController::class);
     Route::resource('categorias', App\Http\Controllers\CategoriasController::class);
     Route::resource('planes', App\Http\Controllers\PlanesController::class);
+    Route::post('inventarios/ActEquip/{id}', [InventarioController::class, 'ActEquip'])->name('inventarios.ActEquip');
     Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
     
     

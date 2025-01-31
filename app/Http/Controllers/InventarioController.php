@@ -164,15 +164,10 @@ class InventarioController extends AppBaseController
      *
      * @return Response
      */
-    public function update($id, UpdateInventarioRequest $request)
+    public function ActEquip($id, request $request)
     {
         $inventario = $this->inventarioRepository->find($id);
 
-        if (empty($inventario)) {
-            Flash::error('Inventario not found');
-
-            return redirect(route('inventarios.index'));
-        }
 
         $inventario = $this->inventarioRepository->update($request->all(), $id);
 

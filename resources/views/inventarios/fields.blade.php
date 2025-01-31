@@ -24,7 +24,7 @@
             <!-- NombreEmpleado Field -->
             <div class="form-group col-sm-6">
                 {!! Form::label('NombreEmpleado', 'Nombre del Empleado:') !!}
-                {!! Form::text('NombreEmpleado', old('NombreEmpleado', $inventario->NombreEmpleado ?? ''), ['class' => 'form-control', 'maxlength' => 100]) !!}
+                {!! Form::text('NombreEmpleado', old('NombreEmpleado', $inventario->NombreEmpleado ?? ''), ['class' => 'form-control', 'maxlength' => 100, 'disabled']) !!}
             </div>
 
              <!-- UnidadNegocio Field -->
@@ -32,7 +32,7 @@
                 {!! Form::label('UnidadNegocioID', 'Unidad de Negocio:') !!}
 
                 {!!Form::select('UnidadNegocioID',App\Models\UnidadesDeNegocio::all()->
-                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
               <!-- UnidadNegocio Field -->
@@ -40,7 +40,7 @@
                 {!! Form::label('GerenciaID', 'Gerencia:') !!}
 
                 {!!Form::select('GerenciaID',App\Models\Gerencia::all()->
-                    pluck('NombreGerencia','GerenciaID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+                    pluck('NombreGerencia','GerenciaID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
               <!-- ObraID Field -->
@@ -48,7 +48,7 @@
                 {!! Form::label('ObraID', 'Obra:') !!}
 
                 {!!Form::select('ObraID',App\Models\Obras::all()->
-                    pluck('NombreObra','ObraID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+                    pluck('NombreObra','ObraID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
 
                
             </div>
@@ -58,7 +58,7 @@
                 {!! Form::label('DepartamentoID', 'Departamento:') !!}
 
                 {!!Form::select('DepartamentoID',App\Models\Departamentos::all()->
-                    pluck('NombreDepartamento','DepartamentoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+                    pluck('NombreDepartamento','DepartamentoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
 
@@ -66,20 +66,20 @@
             <div class="form-group col-sm-6">
                 {!! Form::label('PuestoID', 'Puesto:') !!}
                 {!!Form::select('PuestoID',App\Models\Puestos::all()->
-                    pluck('NombrePuesto','PuestoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+                    pluck('NombrePuesto','PuestoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
           
             <!-- NumTelefono Field -->
             <div class="form-group col-sm-6">
                 {!! Form::label('NumTelefono', 'Número de Teléfono:') !!}
-                {!! Form::text('NumTelefono', old('NumTelefono', $inventario->NumTelefono ?? ''), ['class' => 'form-control', 'maxlength' => 50]) !!}
+                {!! Form::text('NumTelefono', old('NumTelefono', $inventario->NumTelefono ?? ''), ['class' => 'form-control', 'maxlength' => 50, 'disabled']) !!}
             </div>
 
             <!-- Correo Field -->
             <div class="form-group col-sm-6">
                 {!! Form::label('Correo', 'Correo Electrónico:') !!}
-                {!! Form::email('Correo', old('Correo', $inventario->Correo ?? ''), ['class' => 'form-control', 'maxlength' => 150]) !!}
+                {!! Form::email('Correo', old('Correo', $inventario->Correo ?? ''), ['class' => 'form-control', 'maxlength' => 150, 'disabled']) !!}
             </div>
 
            
@@ -133,7 +133,7 @@
                         <thead>
                             <tr>
                                 <th>Action</th>
-                                <th>Categoria Equipo</th>
+                                <th>Categoria</th>
                                 <th>Marca</th>
                                 <th>Caracteristicas</th>
                                 <th>Modelo</th>
@@ -142,7 +142,6 @@
                                 <th>Fecha de Compra</th>
                                 <th>Num. Serie</th>
                                 <th>Folio</th>
-                                <th>Marca</th>
                                 <th>Gerencia Equipo</th>
                                 <th>Comentarios</th>
                             </tr>
@@ -167,7 +166,6 @@
                                 <td>{{ $equiposAsignado->FechaDeCompra }}</td>
                                 <td>{{ $equiposAsignado->NumSerie }}</td>
                                 <td>{{ $equiposAsignado->Folio }}</td>
-                                <td>{{ $equiposAsignado->Marca }}</td>
                                 <td>{{ $equiposAsignado->GerenciaEquipo }}</td>
                                 <td>{{ $equiposAsignado->Comentarios }}</td>
                             </tr>
@@ -227,24 +225,12 @@
                 "searching": true,
                 "ordering": true,
                 "info": true,
-                "language": {
-                    "lengthMenu": "Mostrar _MENU_ registros por página",
-                    "zeroRecords": "No se encontraron resultados",
-                    "info": "Mostrando página _PAGE_ de _PAGES_",
-                    "infoEmpty": "No hay registros disponibles",
-                    "infoFiltered": "(filtrado de _MAX_ registros en total)",
-                    "search": "Buscar:",
-                    "paginate": {
-                        "first": "Primero",
-                        "last": "Último",
-                        "next": "Siguiente",
-                        "previous": "Anterior"
-                    }
-                }
+                
             });
 
             // Evento para abrir modal de edición
             $(document).on('click', '.edit-btn', function() {
+                console.log ('boton clikeado');
                 let row = $(this).closest('tr');
                 let id = row.data('id');
                 let categoria = row.find("td:eq(1)").text();
@@ -282,14 +268,17 @@
             });
 
             // Evento para guardar cambios del modal
-            $('#editForm').on('submit', function(e) {
-                e.preventDefault();
+            $(document).on('click', '.submit_equipo', function() {
+                console.log('.........');
+                
                 let id = $('#editId').val();
                 let row = $('#equiposAsignadosTable').find(`tr[data-id="${id}"]`);
                 
                 row.find("td:eq(1)").text($('#editCategoria').val());
                 row.find("td:eq(2)").text($('#editMarca').val());
                 row.find("td:eq(3)").text($('#editCaracteristicas').val());
+
+                console.log (row);
 
                 $('#editModal').modal('hide');
                 Swal.fire("Guardado!", "Los cambios han sido guardados.", "success");
