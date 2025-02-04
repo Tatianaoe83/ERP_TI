@@ -41,21 +41,21 @@ class LineasTelefonicasDataTable extends DataTable
     {
   
         return $model->newQuery()
-        ->join('Obras', 'Obras.ObraID', '=', 'LineasTelefonicas.ObraID')
-        ->join('Planes', 'Planes.ID', '=', 'LineasTelefonicas.PlanID')
+        ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
+        ->join('planes', 'planes.ID', '=', 'lineastelefonicas.PlanID')
         ->select([
-            'LineasTelefonicas.LineaID',
-            'LineasTelefonicas.NumTelefonico',
-            'Planes.NombrePlan as nombre_plan',
-            'LineasTelefonicas.CuentaPadre',
-            'LineasTelefonicas.CuentaHija',
-            'LineasTelefonicas.TipoLinea',
-            'Obras.NombreObra as nombre_obra',
-            'LineasTelefonicas.FechaFianza',
-            'LineasTelefonicas.CostoFianza',
-            'LineasTelefonicas.Activo',
-            'LineasTelefonicas.Disponible',
-            'LineasTelefonicas.MontoRenovacionFianza'
+            'lineastelefonicas.LineaID',
+            'lineastelefonicas.NumTelefonico',
+            'planes.NombrePlan as nombre_plan',
+            'lineastelefonicas.CuentaPadre',
+            'lineastelefonicas.CuentaHija',
+            'lineastelefonicas.TipoLinea',
+            'obras.NombreObra as nombre_obra',
+            'lineastelefonicas.FechaFianza',
+            'lineastelefonicas.CostoFianza',
+            'lineastelefonicas.Activo',
+            'lineastelefonicas.Disponible',
+            'lineastelefonicas.MontoRenovacionFianza'
        
         ]);
 
@@ -152,7 +152,7 @@ class LineasTelefonicasDataTable extends DataTable
             'PlanID' => [
                 'title' => 'Plan',
                 'data' => 'nombre_plan',
-                'name' => 'Planes.NombrePlan',
+                'name' => 'planes.NombrePlan',
             ],
             'CuentaPadre' => [
                     'title' => 'Cuenta Padre',
@@ -172,7 +172,7 @@ class LineasTelefonicasDataTable extends DataTable
             'ObraID' => [
                 'title' => 'Obra',
                 'data' => 'nombre_obra',
-                'name' => 'Obras.NombreObra',
+                'name' => 'obras.NombreObra',
             ],
             'FechaFianza' => [
                 'title' => 'Fecha Fianza',

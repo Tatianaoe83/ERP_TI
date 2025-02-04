@@ -33,23 +33,23 @@ class LineasTelefonicasController extends AppBaseController
     public function index(LineasTelefonicasDataTable $lineasTelefonicasDataTable)
     {
         if (request()->ajax()) {
-            $unidades = LineasTelefonicas::join('Obras', 'Obras.ObraID', '=', 'LineasTelefonicas.ObraID')
-            ->join('Planes', 'Planes.ID', '=', 'LineasTelefonicas.PlanID')
+            $unidades = LineasTelefonicas::join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
+            ->join('planes', 'planes.ID', '=', 'lineastelefonicas.PlanID')
             ->select([
-                'LineasTelefonicas.LineaID',
-                'LineasTelefonicas.NumTelefonico',
-                'Planes.NombrePlan as nombre_plan',
-                'LineasTelefonicas.CuentaPadre',
-                'LineasTelefonicas.CuentaHija',
-                'LineasTelefonicas.TipoLinea',
-                'Obras.NombreObra as nombre_obra',
-                'LineasTelefonicas.FechaFianza',
-                'LineasTelefonicas.CostoFianza',
-                'LineasTelefonicas.Activo',
-                'LineasTelefonicas.Disponible',
-                'LineasTelefonicas.MontoRenovacionFianza'
-       
-        ]);
+                'lineastelefonicas.LineaID',
+                'lineastelefonicas.NumTelefonico',
+                'planes.NombrePlan as nombre_plan',
+                'lineastelefonicas.CuentaPadre',
+                'lineastelefonicas.CuentaHija',
+                'lineastelefonicas.TipoLinea',
+                'obras.NombreObra as nombre_obra',
+                'lineastelefonicas.FechaFianza',
+                'lineastelefonicas.CostoFianza',
+                'lineastelefonicas.Activo',
+                'lineastelefonicas.Disponible',
+                'lineastelefonicas.MontoRenovacionFianza'
+           
+            ]);
 
             return DataTables::of($unidades)
                 ->addColumn('action', function($row){

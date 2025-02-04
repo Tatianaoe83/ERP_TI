@@ -33,12 +33,12 @@ class PlanesController extends AppBaseController
     public function index(PlanesDataTable $planesDataTable)
     {
         if (request()->ajax()) {
-            $unidades = Planes::join('CompaniasLineasTelefonicas', 'Planes.companiaID', '=', 'CompaniasLineasTelefonicas.ID')
+            $unidades = Planes::join('companiaslineastelefonicas', 'planes.companiaID', '=', 'companiaslineastelefonicas.ID')
             ->select([
-                'Planes.ID',
-                'CompaniasLineasTelefonicas.Compania as nombre_compania',
-                'Planes.NombrePlan',
-                'Planes.PrecioPlan'
+                'planes.ID',
+                'companiaslineastelefonicas.Compania as nombre_compania',
+                'planes.NombrePlan',
+                'planes.PrecioPlan'
             ]);
             
             return DataTables::of($unidades)

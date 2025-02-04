@@ -35,15 +35,15 @@ class InsumosController extends AppBaseController
     {
 
         if (request()->ajax()) {
-            $unidades = Insumos::join('Categorias', 'Insumos.CategoriaID', '=', 'Categorias.ID')
+            $unidades = Insumos::join('categorias', 'insumos.CategoriaID', '=', 'categorias.ID')
             ->select([
-                'Insumos.ID',
-                'Insumos.NombreInsumo',
-                'Categorias.Categoria as nombre_categoria',
-                'Insumos.CostoMensual',
-                'Insumos.CostoAnual',
-                'Insumos.FrecuenciaDePago',
-                'Insumos.Observaciones'
+                'insumos.ID',
+                'insumos.NombreInsumo',
+                'categorias.Categoria as nombre_categoria',
+                'insumos.CostoMensual',
+                'insumos.CostoAnual',
+                'insumos.FrecuenciaDePago',
+                'insumos.Observaciones'
             ]);
 
             

@@ -40,11 +40,11 @@ class CategoriasDataTable extends DataTable
     {
 
         return $model->newQuery()
-        ->join('TiposDeCategorias', 'Categorias.TipoID', '=', 'TiposDeCategorias.ID')
+        ->join('tiposdecategorias', 'categorias.TipoID', '=', 'tiposdecategorias.ID')
         ->select([
-            'Categorias.ID',
-            'TiposDeCategorias.Categoria as nombre_categoria',
-            'Categorias.Categoria'
+            'categorias.ID',
+            'tiposdecategorias.Categoria as nombre_categoria',
+            'categorias.Categoria'
         ]);
 
 
@@ -136,7 +136,7 @@ class CategoriasDataTable extends DataTable
             'TipoID' => [
                 'title' => 'Tipo',
                 'data' => 'nombre_categoria',
-                'name' => 'TiposDeCategorias.Categoria',
+                'name' => 'tiposdecategorias.Categoria',
             ],
             'Categoria' => [
                 'title' => 'Categoria',

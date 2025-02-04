@@ -40,15 +40,15 @@ class InsumosDataTable extends DataTable
     {
 
         return $model->newQuery()
-        ->join('Categorias', 'Insumos.CategoriaID', '=', 'Categorias.ID')
+        ->join('categorias', 'insumos.CategoriaID', '=', 'categorias.ID')
         ->select([
-            'Insumos.ID',
-            'Insumos.NombreInsumo',
-            'Categorias.Categoria as nombre_categoria',
-            'Insumos.CostoMensual',
-            'Insumos.CostoAnual',
-            'Insumos.FrecuenciaDePago',
-            'Insumos.Observaciones'
+            'insumos.ID',
+            'insumos.NombreInsumo',
+            'categorias.Categoria as nombre_categoria',
+            'insumos.CostoMensual',
+            'insumos.CostoAnual',
+            'insumos.FrecuenciaDePago',
+            'insumos.Observaciones'
         ]);
 
         
@@ -144,7 +144,7 @@ class InsumosDataTable extends DataTable
             'CategoriaID' => [
                 'title' => 'Categoria',
                 'data' => 'nombre_categoria',
-                'name' => 'Categorias.Categoria',
+                'name' => 'categorias.Categoria',
             ],
             'CostoMensual' => [
                 'title' => 'Costo Mensual',

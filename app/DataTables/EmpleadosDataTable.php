@@ -40,16 +40,16 @@ class EmpleadosDataTable extends DataTable
     public function query(Empleados $model)
     {
         return $model->newQuery()
-            ->join('Obras', 'Empleados.ObraID', '=', 'Obras.ObraID')
-            ->join('Puestos', 'Empleados.PuestoID', '=', 'Puestos.PuestoID')
+            ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
             ->select([
-                'Empleados.EmpleadoID',
-                'Empleados.NombreEmpleado',
-                'Puestos.NombrePuesto as nombre_puesto',
-                'Obras.NombreObra as nombre_obra',
-                'Empleados.NumTelefono',
-                'Empleados.Correo',
-                'Empleados.Estado'
+                'empleados.EmpleadoID',
+                'empleados.NombreEmpleado',
+                'puestos.NombrePuesto as nombre_puesto',
+                'obras.NombreObra as nombre_obra',
+                'empleados.NumTelefono',
+                'empleados.Correo',
+                'empleados.Estado'
             ]);
 
         
@@ -144,12 +144,12 @@ class EmpleadosDataTable extends DataTable
             'PuestoID' => [
                 'title' => 'Puesto',
                 'data' => 'nombre_puesto',
-                'name' => 'Puestos.NombrePuesto',
+                'name' => 'puestos.NombrePuesto',
             ],  
             'ObraID' => [
                 'title' => 'Obra',
                 'data' => 'nombre_obra',
-                'name' => 'Obras.NombreObra',
+                'name' => 'obras.NombreObra',
             ],  
             'NumTelefono' => [
                 'title' => 'Num Telefono',

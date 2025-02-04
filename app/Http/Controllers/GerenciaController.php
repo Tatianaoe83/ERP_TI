@@ -24,7 +24,7 @@ class GerenciaController extends AppBaseController
     }
 
     /**
-     * Display a listing of the Gerencia.
+     * Display a listing of the gerencia.
      *
      * @param GerenciaDataTable $gerenciaDataTable
      *
@@ -33,13 +33,13 @@ class GerenciaController extends AppBaseController
     public function index(GerenciaDataTable $gerenciaDataTable)
     {
         if (request()->ajax()) {
-            $unidades = Gerencia::join('UnidadesDeNegocio', 'Gerencia.UnidadNegocioID', '=', 'UnidadesDeNegocio.UnidadNegocioID')
+            $unidades = Gerencia::join('unidadesdenegocio', 'gerencia.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
             ->select([
-                'Gerencia.GerenciaID',
-                'Gerencia.NombreGerencia',
-                'Gerencia.UnidadNegocioID',
-                'Gerencia.NombreGerente',
-                'UnidadesDeNegocio.NombreEmpresa as nombre_empresa'
+                'gerencia.GerenciaID',
+                'gerencia.NombreGerencia',
+                'gerencia.UnidadNegocioID',
+                'gerencia.NombreGerente',
+                'unidadesdenegocio.NombreEmpresa as nombre_empresa'
             ]);
             
             return DataTables::of($unidades)
@@ -55,7 +55,7 @@ class GerenciaController extends AppBaseController
     }
 
     /**
-     * Show the form for creating a new Gerencia.
+     * Show the form for creating a new gerencia.
      *
      * @return Response
      */
@@ -83,7 +83,7 @@ class GerenciaController extends AppBaseController
     }
 
     /**
-     * Display the specified Gerencia.
+     * Display the specified gerencia.
      *
      * @param int $id
      *
@@ -103,7 +103,7 @@ class GerenciaController extends AppBaseController
     }
 
     /**
-     * Show the form for editing the specified Gerencia.
+     * Show the form for editing the specified gerencia.
      *
      * @param int $id
      *

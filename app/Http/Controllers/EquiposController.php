@@ -33,14 +33,14 @@ class EquiposController extends AppBaseController
     public function index(EquiposDataTable $equiposDataTable)
     {
         if (request()->ajax()) {
-            $unidades = Equipos::join('Categorias', 'Equipos.CategoriaID', '=', 'Categorias.ID')
+            $unidades = Equipos::join('categorias', 'equipos.CategoriaID', '=', 'categorias.ID')
             ->select([
-                'Equipos.ID',
-                'Categorias.Categoria as categoria_name',
-                'Equipos.Marca',
-                'Equipos.Caracteristicas',
-                'Equipos.Modelo',
-                'Equipos.Precio'
+                'equipos.ID',
+                'categorias.Categoria as categoria_name',
+                'equipos.Marca',
+                'equipos.Caracteristicas',
+                'equipos.Modelo',
+                'equipos.Precio'
             ]);
 
             

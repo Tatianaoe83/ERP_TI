@@ -38,16 +38,16 @@ class InventarioController extends AppBaseController
     {
 
         if (request()->ajax()) {
-            $unidades = Empleados::join('Obras', 'Empleados.ObraID', '=', 'Obras.ObraID')
-            ->join('Puestos', 'Empleados.PuestoID', '=', 'Puestos.PuestoID')
+            $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
             ->select([
-                'Empleados.EmpleadoID',
-                'Empleados.NombreEmpleado',
-                'Puestos.NombrePuesto as nombre_puesto',
-                'Obras.NombreObra as nombre_obra',
-                'Empleados.NumTelefono',
-                'Empleados.Correo',
-                'Empleados.Estado'
+                'empleados.EmpleadoID',
+                'empleados.NombreEmpleado',
+                'puestos.NombrePuesto as nombre_puesto',
+                'obras.NombreObra as nombre_obra',
+                'empleados.NumTelefono',
+                'empleados.Correo',
+                'empleados.Estado'
             ]);
 
             

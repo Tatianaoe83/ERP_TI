@@ -33,11 +33,11 @@ class DepartamentosController extends AppBaseController
     public function index(DepartamentosDataTable $departamentosDataTable)
     {
         if (request()->ajax()) {
-            $unidades = Departamentos::join('Gerencia', 'Departamentos.GerenciaID', '=', 'Gerencia.GerenciaID')
+            $unidades = Departamentos::join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
                 ->select([
-                    'Departamentos.DepartamentoID',
-                    'Departamentos.NombreDepartamento',
-                    'Gerencia.NombreGerencia as nombre_gerencia'
+                    'departamentos.DepartamentoID',
+                    'departamentos.NombreDepartamento',
+                    'gerencia.NombreGerencia as nombre_gerencia'
                 ]);
 
             

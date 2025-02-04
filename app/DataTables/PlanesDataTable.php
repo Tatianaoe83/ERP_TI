@@ -40,12 +40,12 @@ class PlanesDataTable extends DataTable
     {
 
         return $model->newQuery()
-        ->join('CompaniasLineasTelefonicas', 'Planes.companiaID', '=', 'CompaniasLineasTelefonicas.ID')
+        ->join('companiaslineastelefonicas', 'planes.companiaID', '=', 'companiaslineastelefonicas.ID')
         ->select([
-            'Planes.ID',
-            'CompaniasLineasTelefonicas.Compania as nombre_compania',
-            'Planes.NombrePlan',
-            'Planes.PrecioPlan'
+            'planes.ID',
+            'companiaslineastelefonicas.Compania as nombre_compania',
+            'planes.NombrePlan',
+            'planes.PrecioPlan'
         ]);
     }
 
@@ -132,7 +132,7 @@ class PlanesDataTable extends DataTable
             'CompaniaID' => [
                 'title' => 'Compania',
                 'data' => 'nombre_compania',
-                'name' => 'CompaniasLineasTelefonicas.Compania',
+                'name' => 'companiaslineastelefonicas.Compania',
             ],
             'NombrePlan' => [
                 'title' => 'Nombre Plan',
