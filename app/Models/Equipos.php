@@ -23,7 +23,7 @@ class Equipos extends Model
     use SoftDeletes;
 
 
-    public $table = 'Equipos';
+    public $table = 'equipos';
     
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';

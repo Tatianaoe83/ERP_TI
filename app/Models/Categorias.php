@@ -22,7 +22,7 @@ class Categorias extends Model
     use SoftDeletes;
 
 
-    public $table = 'Categorias';
+    public $table = 'categorias';
     
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';

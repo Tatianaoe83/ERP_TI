@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class CompaniasLineasTelefonicas extends Model
 {
     use HasFactory;
-    public $table = 'CompaniasLineasTelefonicas';
+    public $table = 'companiaslineastelefonicas';
     
     protected $primaryKey = 'ID';
     protected $keyType = 'int'; 

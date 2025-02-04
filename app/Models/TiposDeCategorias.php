@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class TiposDeCategorias extends Model
 {
     use HasFactory;
-    public $table = 'TiposDeCategorias';
+    public $table = 'tiposdecategorias';
     protected $primaryKey = 'ID';
     protected $keyType = 'int'; 
 

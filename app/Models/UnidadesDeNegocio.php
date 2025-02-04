@@ -21,7 +21,7 @@ class UnidadesDeNegocio extends Model
     use SoftDeletes;
 
 
-    public $table = 'UnidadesDeNegocio';
+    public $table = 'unidadesdenegocio';
     
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
