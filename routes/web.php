@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\InventarioController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -46,7 +47,8 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('insumos', App\Http\Controllers\InsumosController::class);
     Route::resource('categorias', App\Http\Controllers\CategoriasController::class);
     Route::resource('planes', App\Http\Controllers\PlanesController::class);
-    Route::post('inventarios/ActEquip/{id}', [InventarioController::class, 'ActEquip'])->name('inventarios.ActEquip');
+    Route::PUT('inventarios/editar-equipo/{id}', [InventarioController::class, 'editarequipo'])->name('inventarios.editarequipo');
+    Route::POST('inventarios/crear-equipo/{id}', [InventarioController::class, 'crearequipo'])->name('inventarios.crearequipo');
     Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
     
     

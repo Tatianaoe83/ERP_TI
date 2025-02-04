@@ -41,4 +41,9 @@ class InventarioEquipo extends Model
         'FechaDeCompra'
     ];
 
+    public function gerenciaid()
+    {
+        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaEquipoID');
+    }
+
 }

@@ -109,11 +109,14 @@
                         @foreach ($equipos as $equipo)
                         <tr>
                             <td>
-                                <a href="#" class="btn btn-outline-success btn-xs ">
-                                    <i class="fas fa-plus-square"></i>
-                                </a>
+                            
+
+                                <button class='btn btn-outline-success btn-xs crear-btn' data-id="{{ $equipo->CategoriaID }}">
+                                        <i class="fa fa-edit"></i>
+                                </button>
+
                             </td>
-                            <td>{{ $equipo->CategoriaID }}</td>
+                            <td>{{ $equipo->categoriaid->Categoria }}</td>
                             <td>{{ $equipo->Marca }}</td>
                             <td>{{ $equipo->Modelo }}</td>
                             <td>{{ $equipo->Caracteristicas }}</td>
@@ -166,7 +169,7 @@
                                 <td>{{ $equiposAsignado->FechaDeCompra }}</td>
                                 <td>{{ $equiposAsignado->NumSerie }}</td>
                                 <td>{{ $equiposAsignado->Folio }}</td>
-                                <td>{{ $equiposAsignado->GerenciaEquipo }}</td>
+                                <td>{{ $equiposAsignado->gerenciaid->NombreGerencia }}</td>
                                 <td>{{ $equiposAsignado->Comentarios }}</td>
                             </tr>
                             @endforeach
@@ -228,23 +231,122 @@
                 
             });
 
-            // Evento para abrir modal de edición
-            $(document).on('click', '.edit-btn', function() {
-                console.log ('boton clikeado');
-                let row = $(this).closest('tr');
-                let id = row.data('id');
-                let categoria = row.find("td:eq(1)").text();
-                let marca = row.find("td:eq(2)").text();
-                let caracteristicas = row.find("td:eq(3)").text();
+           // Evento para abrir modal de edición
+                $(document).on('click', '.edit-btn', function() {
+                    //console.log('Botón de edición clickeado');
+                   
+                    document.getElementById('titulo').innerHTML = 'Editar Equipo';
 
-                $('#editId').val(id);
-                $('#editCategoria').val(categoria);
-                $('#editMarca').val(marca);
-                $('#editCaracteristicas').val(caracteristicas);
-                
-                $('#editModal').modal('show');
-                
-            });
+                    let row = $(this).closest('tr');
+                    let id = row.data('id');
+        
+                    let categoria = row.find("td:eq(1)").text();
+                    let marca = row.find("td:eq(2)").text();
+                    let caracteristicas = row.find("td:eq(3)").text();
+                    let modelo = row.find("td:eq(4)").text();
+                    let precio = row.find("td:eq(5)").text();
+                    let fecha_asigna = row.find("td:eq(6)").text();
+                    let fecha_compra = row.find("td:eq(7)").text();
+                    let num_serie = row.find("td:eq(8)").text();
+                    let folio = row.find("td:eq(9)").text();
+                    let gerencia_equipo = row.find("td:eq(10)").text();
+                    let comentarios = row.find("td:eq(11)").text();
+
+
+                    $('#editId').val(id);
+                    $('#editEmp').val('');
+                    $('#editCategoria').val(categoria);
+                    $('#editMarca').val(marca);
+                    $('#editCaracteristicas').val(caracteristicas);
+                    $('#editModelo').val(modelo);
+                    $('#editPrecio').val(precio);
+                    $('#editFechaAsignacion').val(fecha_asigna);
+                    $('#editFechaDeCompra').val(fecha_compra);
+                    $('#editNumSerie').val(num_serie);
+                    $('#editFolio').val(folio);
+    
+                    $('#editGerenciaEquipo').val(gerencia_equipo);
+                    $('#editComentarios').val(comentarios);
+                    
+                    $('#editModal').modal('show');
+
+                });
+
+                // Evento para abrir modal de creación
+                $(document).on('click', '.crear-btn', function() {
+
+                    @php
+                        $id_E = $inventario->EmpleadoID;
+                        echo "var id_E ='$id_E'";
+                    @endphp
+    
+                    //console.log('Botón de creación clickeado',id_E);
+                    
+                    // Limpiar los campos del formulario para una nueva entrada
+                    $('#editForm')[0].reset();
+
+                    document.getElementById('titulo').innerHTML = 'Crear Equipo';
+                    let row = $(this).closest('tr');
+                    let categoria = row.find("td:eq(1)").text();
+                    let marca = row.find("td:eq(2)").text();
+                    let modelo = row.find("td:eq(3)").text();
+                    let caracteristicas = row.find("td:eq(4)").text();
+                    let precio = row.find("td:eq(5)").text();
+
+                    $('#editCategoria').val(categoria);
+                    $('#editMarca').val(marca);
+                    $('#editCaracteristicas').val(caracteristicas);
+                    $('#editModelo').val(modelo);
+                    $('#editPrecio').val(precio);
+                    $('#editId').val(''); 
+                    $('#editEmp').val(id_E);
+                    
+                    $('#editModal').modal('show');
+                });
+
+                // Evento para guardar cambios
+                $(document).on('click', '.submit_equipo', function(event) {
+                    event.preventDefault();
+                    
+                    let id_E = $('#editEmp').val();
+                    let id = $('#editId').val();
+                    let url = id ? '/inventarios/editar-equipo/' + id : '/crear-equipo/' + id_E;
+                    let method = id ? 'PUT' : 'POST';
+                    
+                    let formData = {
+                        CategoriaEquipo: $('#editCategoria').val(),
+                        GerenciaEquipoID: $('#editGerenciaEquipo').val(),
+                        Marca: $('#editMarca').val(),
+                        Caracteristicas: $('#editCaracteristicas').val(),
+                        Modelo: $('#editModelo').val(),
+                        Precio: $('#editPrecio').val(),
+                        FechaAsignacion: $('#editFechaAsignacion').val(),
+                        NumSerie: $('#editNumSerie').val(),
+                        Folio: $('#editFolio').val(),
+                        FechaDeCompra: $('#editFechaDeCompra').val(),
+                        Comentarios: $('#editComentarios').val(),
+                        FechaDeCompra: $('#editComentarios').val()
+                    };
+
+                    let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                    fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify(formData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Éxito:', data);
+                        $('#editModal').modal('hide');
+                        location.reload();
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+
 
             // Evento para eliminar con confirmación
             $(document).on('click', '.delete-btn', function() {
@@ -267,22 +369,7 @@
                 });
             });
 
-            // Evento para guardar cambios del modal
-            $(document).on('click', '.submit_equipo', function() {
-                console.log('.........');
-                
-                let id = $('#editId').val();
-                let row = $('#equiposAsignadosTable').find(`tr[data-id="${id}"]`);
-                
-                row.find("td:eq(1)").text($('#editCategoria').val());
-                row.find("td:eq(2)").text($('#editMarca').val());
-                row.find("td:eq(3)").text($('#editCaracteristicas').val());
-
-                console.log (row);
-
-                $('#editModal').modal('hide');
-                Swal.fire("Guardado!", "Los cambios han sido guardados.", "success");
-            });
+        
         });
     </script>
 

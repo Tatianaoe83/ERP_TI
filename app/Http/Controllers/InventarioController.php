@@ -164,17 +164,33 @@ class InventarioController extends AppBaseController
      *
      * @return Response
      */
-    public function ActEquip($id, request $request)
+    public function editarequipo($id, Request $request)
     {
-        $inventario = $this->inventarioRepository->find($id);
+        $inventarioEquipo = InventarioEquipo::where('InventarioID', $id)->first(); 
 
+        if (!$inventarioEquipo) {
+            return response()->json(['error' => 'Equipo no encontrado'], 404);
+        }
 
-        $inventario = $this->inventarioRepository->update($request->all(), $id);
+        $inventarioEquipo->update($request->all());
 
-        Flash::success('Inventario updated successfully.');
+        return response()->json(['message' => 'Inventario actualizado correctamente']);
 
-        return redirect(route('inventarios.index'));
+        Flash::success('Inventario update successfully.');
+
     }
+
+    public function crearequipo($id, Request $request)
+    {
+        
+        InventarioEquipo::create($request->all());
+
+        return response()->json(['message' => 'Inventario actualizado correctamente']);
+
+        Flash::success('Inventario create successfully.');
+
+    }
+
 
     /**
      * Remove the specified Inventario from storage.
