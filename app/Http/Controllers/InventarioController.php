@@ -120,22 +120,22 @@ class InventarioController extends AppBaseController
     public function edit($id)
     {
         // Obtener el inventario con joins
-        $inventario = DB::table('Empleados')
-            ->join('Puestos', 'Empleados.PuestoID', '=', 'Puestos.PuestoID')
-            ->join('Departamentos', 'Puestos.DepartamentoID', '=', 'Departamentos.DepartamentoID')
-            ->join('Obras', 'Empleados.ObraID', '=', 'Obras.ObraID')
-            ->join('Gerencia', 'Departamentos.GerenciaID', '=', 'Gerencia.GerenciaID')
-            ->join('UnidadesDeNegocio', 'UnidadesDeNegocio.UnidadNegocioID', '=', 'Gerencia.UnidadNegocioID')
+        $inventario = DB::table('empleados')
+            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+            ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID')
             ->select(
-                'Empleados.*',
-                'Puestos.PuestoID',
-                'Departamentos.DepartamentoID',
-                'Obras.ObraID',
-                'Gerencia.GerenciaID',
-                'UnidadesDeNegocio.UnidadNegocioID'
+                'empleados.*',
+                'puestos.PuestoID',
+                'departamentos.DepartamentoID',
+                'obras.ObraID',
+                'gerencia.GerenciaID',
+                'unidadesdenegocio.UnidadNegocioID'
                 
             )
-            ->where('Empleados.EmpleadoID', $id)
+            ->where('empleados.EmpleadoID', $id)
             ->first();
 
         if (empty($inventario)) {
