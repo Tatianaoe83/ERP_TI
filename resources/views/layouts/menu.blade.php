@@ -10,7 +10,7 @@
                 
                 <li>
                     <a class="nav-link" href="/unidadesDeNegocios">
-                    <i class="fas fa-circle-notch"></i></i><span>Unidad de medida</span>
+                    <i class="fas fa-circle-notch"></i></i><span>Unidad de negocio</span>
                     </a>
                 </li>
                 
@@ -101,7 +101,7 @@
             <ul class="dropdown-menu">
                 
                 <li>
-                    <a class="nav-link" href="">
+                    <a class="nav-link" href="/presupuesto">
                         <i class="fas fa-circle-notch"></i><span>Presupuesto</span>
                     </a>
                 </li>

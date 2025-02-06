@@ -114,7 +114,9 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Unidad de Negocio</label>
-                  <input type="text" class="form-control" id="editNegocio">
+                  {!!Form::select('editUnidadDeNegocio',App\Models\UnidadesDeNegocio::all()->
+                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','id' => 'editUnidadDeNegocio','onchange' => 'unidadselec(this)'])!!}
+
                 </div>
               </div>
             </div>
@@ -130,6 +132,7 @@
                 <div class="form-group">
                   <label>Gerencia Equipo</label>
                   <input type="text" class="form-control" id="editGerenciaEquipo">
+                  <select class="form-control municipies2" style="width: 100%;display: none;" name="child_report[municipes_id]" id="child_report_municipes_id"></select>
                 </div>
               </div>
 
