@@ -38,8 +38,9 @@
         <h5 class="modal-title" id="titulo"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
+      
       <div class="modal-body">
-        <form id="editForm">
+      <form id="editForm">
           <input type="hidden" id="editId">
           <input type="hidden" id="editEmp">
 
@@ -48,7 +49,7 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Categoria</label>
-                  <input type="text" class="form-control" id="editCategoria" required>
+                  <input type="text" class="form-control" id="editCategoria" required >
                 </div>
               </div>
               <div class="col-md-6">
@@ -63,13 +64,13 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Caracteristicas</label>
-                  <textarea class="form-control"  rows="3" id="editCaracteristicas" required></textarea>
+                  <textarea class="form-control"  rows="3" id="editCaracteristicas" required ></textarea>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Modelo</label>
-                  <input type="text" class="form-control" id="editModelo" required>
+                  <input type="text" class="form-control" id="editModelo" required >
                 </div>
               </div>
             </div>
@@ -78,7 +79,7 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Precio</label>
-                  <input type="text" class="form-control" id="editPrecio" required>
+                  <input type="number" class="form-control" id="editPrecio" required>
                 </div>
               </div>
               <div class="col-md-6">
@@ -108,14 +109,14 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Folio</label>
-                  <input type="text" class="form-control" id="editFolio" required>
+                  <input type="text" class="form-control" id="editFolio" required="required">
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Unidad de Negocio</label>
                   {!!Form::select('editUnidadDeNegocio',App\Models\UnidadesDeNegocio::all()->
-                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','id' => 'editUnidadDeNegocio','onchange' => 'unidadselec(this)'])!!}
+                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz1 form-control','id' => 'editUnidadDeNegocio','disabled'])!!}
 
                 </div>
               </div>
@@ -131,20 +132,22 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Gerencia Equipo</label>
-                  <input type="text" class="form-control" id="editGerenciaEquipo">
-                  <select class="form-control municipies2" style="width: 100%;display: none;" name="child_report[municipes_id]" id="child_report_municipes_id"></select>
+                 
+                  {!!Form::select('editGerenciaEquipo',App\Models\Gerencia::all()->
+                    pluck('NombreGerencia','GerenciaID'),null,['placeholder' => 'Seleccionar','class'=>'jz1 form-control','id' => 'editGerenciaEquipo','required'])!!}
                 </div>
               </div>
 
             </div>
           </div>
-
+          </form>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <button  type="button" class="btn btn-primary submit_equipo">Guardar Cambios</button>
           </div>
-        </form>
+        
       </div>
+      
     </div>
   </div>
 </div>

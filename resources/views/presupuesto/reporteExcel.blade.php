@@ -22,27 +22,27 @@
 	</tr>
 	<tr>
 		<td >
-         Nombre del Gerente: {{$GerenciaTb['0']['NombreGerente']}}
+         Nombre del Gerente: {{$datosheader->NombreGerente}}
 		</td>
 	</tr>
 	<tr>
 		<td >
-            Número de empleados: 
+            Número de empleados: {{$datosheader->CantidadEmpleados}}
 		</td>
 	</tr>
     <tr>
 		<td >
-        Costo Licenciamiento: 
+        Costo Licenciamiento:  $ {{$datosheader->Licenciamiento}}
 		</td>
 	</tr>
     <tr>
 		<td >
-            Costo Inversiones: $
+            Costo Inversiones: $ {{$datosheader->Inversiones}}
 		</td>
 	</tr>
     <tr>
 		<td >
-            Costo Otros Insumos: $
+            Costo Otros Insumos: $ {{$datosheader->{'Otros Insumos'} }}
 		</td>
 	</tr>
     <tr>
@@ -52,12 +52,12 @@
 	</tr>
     <tr>
 		<td >
-        Costo Rentas de Impresoras: $
+        Costo Rentas de Impresoras: $ {{$datosheader->{'Renta de Impresora'} }}
 		</td>
 	</tr>
     <tr>
 		<td >
-            Costo Internet fijo: $
+            Costo Internet fijo: $ {{$datosheader->Internet}}
 		</td>
 	</tr>
     <tr>
@@ -67,6 +67,52 @@
 	</tr>
 </table>
 
+
+<p>Presupuesto de Licenciamiento</p>
+
+    <table class="table">
+        <thead>
+            <tr style="background-color: #191970; color:white; text-align: center;">
+                @if(isset($presup_lics[0]))
+                    @foreach(array_keys((array)$presup_lics[0]) as $key)
+                        <th scope="col">{{ $key }}</th>
+                    @endforeach
+                @endif
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($presup_lics as $presup_lic)
+                <tr class="{{ $presup_lic->NombreEmpleado == 'TOTAL' ? 'highlight-row' : '' }}">
+                    @foreach((array)$presup_lic as $value)
+                        <td>{{ $value }}</td>
+                    @endforeach
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <p>Presupuesto Accesorios y Otros Insumos</p>
+
+<table class="table">
+    <thead>
+        <tr style="background-color: #191970; color:white; text-align: center;">
+            @if(isset($presup_otrosinsums[0]))
+                @foreach(array_keys((array)$presup_otrosinsums[0]) as $key)
+                    <th scope="col">{{ $key }}</th>
+                @endforeach
+            @endif
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($presup_otrosinsums as $presup_otrosinsum)
+            <tr class="{{ $presup_otrosinsum->NombreEmpleado == 'TOTAL' ? 'highlight-row' : '' }}">
+                @foreach((array)$presup_otrosinsum as $value)
+                    <td>{{ $value }}</td>
+                @endforeach
+            </tr>
+        @endforeach
+    </tbody>
+</table>
 
     <p>Presupuesto de Telefonía</p>
 
@@ -145,6 +191,49 @@
             @endforeach
         </tbody>
     </table>
+
+    <p>Calendario de Pagos</p>
+
+<table class="table">
+    <thead>
+        <tr style="background-color: #191970; color:white; text-align: center;">
+            <th scope="col">Nombre Insumo</th>
+            <th scope="col">Enero</th>
+            <th scope="col">Febrero</th>
+            <th scope="col">Marzo</th>
+            <th scope="col">Abril</th>
+            <th scope="col">Mayo</th>
+            <th scope="col">Junio</th>
+            <th scope="col">Julio</th>
+            <th scope="col">Agosto</th>
+            <th scope="col">Septiembre</th>
+            <th scope="col">Octubre</th>
+            <th scope="col">Noviembre</th>
+            <th scope="col">Diciembre</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($presup_cal_pagos as $presup_cal_pago)
+            <tr class="{{ $presup_gp->Orden == 6  ? 'highlight-row' : '' }}">
+                <td>{{$presup_cal_pago->NombreInsumo}}</td>
+                <td>{{$presup_cal_pago->Enero}}</td>
+                <td>{{$presup_cal_pago->Febrero}}</td>
+                <td>{{$presup_cal_pago->Marzo}}</td>
+                <td>{{$presup_cal_pago->Abril}}</td>
+                <td>{{$presup_cal_pago->Mayo}}</td>
+                <td>{{$presup_cal_pago->Junio}}</td>
+                <td>{{$presup_cal_pago->Julio}}</td>
+                <td>{{$presup_cal_pago->Agosto}}</td>
+                <td>{{$presup_cal_pago->Septiembre}}</td>
+                <td>{{$presup_cal_pago->Octubre}}</td>
+                <td>{{$presup_cal_pago->Noviembre}}</td>
+                <td>{{$presup_cal_pago->Diciembre}}</td>
+
+            </tr>
+        @endforeach
+    </tbody>
+</table>
 
 
 

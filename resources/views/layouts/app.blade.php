@@ -108,8 +108,9 @@
     });
 
     // Asegurar que Select2 también se inicialice correctamente
-    $(document).on('draw.dt', function () {
+    $(document).ready(function() {
         $('.jz').select2();
+        $('.jz1').select2({ dropdownParent: "#editModal",width: '100%' });
     });
 
     $('#myTab a').on('click', function (e) {

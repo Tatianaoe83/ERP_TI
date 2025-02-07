@@ -185,6 +185,61 @@
     <!-- TAB Insumo -->
     <div class="tab-pane fade" id="insumo">
         <p>Insumo</p>
+        <div class="row">
+            <!-- insumos Disponibles -->
+            <p class="lead mt-4">Insumos Disponibles</p>
+            <div class="drag-area" id="disponibles">
+            <div class="table-responsive">
+                <table id="insumosTable" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre Insumo</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($insumos as $insumo)
+                        <tr>
+                            
+                            
+                            <td>{{ $insumo->NombreInsumo }}</td>
+                            
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+            <!-- insumosasignados Seleccionados -->
+            <p class="lead mt-4">Insumos Asignados</p>
+
+                <div class="table-responsive">
+                    <table id="insumosAsignadosTable" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>Categoria Insumo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($insumosAsignados as $insumosAsignado)
+                            <tr>
+                                
+                                
+                                <td>{{ $insumosAsignado->CateogoriaInsumo }}</td>
+                                
+                            </tr>
+                            @endforeach
+
+                           
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+
+
     </div>
 
     <!-- TAB Línea -->
@@ -206,7 +261,16 @@
 
     <script>
         $(document).ready(function() {
-            $('#equiposTable').DataTable({
+            let table1_1 =  $('#equiposTable').DataTable({
+                "paging": true,      
+                "lengthMenu": [5, 10, 25, 50],
+                "pageLength": 5,     
+                "searching": true,   
+                "ordering": true,     
+                "info": true,         
+               
+            });
+            let table2_1 = $('#insumosTable').DataTable({
                 "paging": true,      
                 "lengthMenu": [5, 10, 25, 50],
                 "pageLength": 5,     
@@ -231,9 +295,21 @@
                 
             });
 
+                        
+
+            let table2 = $('#insumosAsignadosTable').DataTable({
+                "paging": true,
+                "lengthMenu": [5, 10, 25, 50],
+                "pageLength": 5,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                
+            });
+
            // Evento para abrir modal de edición
                 $(document).on('click', '.edit-btn', function() {
-                    //console.log('Botón de edición clickeado');
+                    console.log('Botón de edición clickeado');
                    
                     document.getElementById('titulo').innerHTML = 'Editar Equipo';
 
@@ -249,9 +325,13 @@
                     let fecha_compra = row.find("td:eq(7)").text();
                     let num_serie = row.find("td:eq(8)").text();
                     let folio = row.find("td:eq(9)").text();
-                    let gerencia_equipo = row.find("td:eq(10)").text();
+                   
                     let comentarios = row.find("td:eq(11)").text();
 
+                    @php
+                        $gerenciaid = $equiposAsignado->GerenciaEquipoID;
+                        echo "var gerenciaid ='$gerenciaid'";
+                    @endphp
 
                     $('#editId').val(id);
                     $('#editEmp').val('');
@@ -265,7 +345,7 @@
                     $('#editNumSerie').val(num_serie);
                     $('#editFolio').val(folio);
     
-                    $('#editGerenciaEquipo').val(gerencia_equipo);
+                    $('#editGerenciaEquipo').val(gerenciaid).trigger('change');
                     $('#editComentarios').val(comentarios);
                     
                     $('#editModal').modal('show');
@@ -280,10 +360,11 @@
                         echo "var id_E ='$id_E'";
                     @endphp
     
-                    //console.log('Botón de creación clickeado',id_E);
+                    console.log('Botón de creación clickeado',id_E);
                     
                     // Limpiar los campos del formulario para una nueva entrada
                     $('#editForm')[0].reset();
+                    $('#editGerenciaEquipo').val(null).trigger('change');
 
                     document.getElementById('titulo').innerHTML = 'Crear Equipo';
                     let row = $(this).closest('tr');
@@ -305,12 +386,13 @@
                 });
 
                 // Evento para guardar cambios
-                $(document).on('click', '.submit_equipo', function(event) {
+                $(document).on('click', '.submit_equipo', function(event) {   
                     event.preventDefault();
                     
                     let id_E = $('#editEmp').val();
                     let id = $('#editId').val();
-                    let url = id ? '/inventarios/editar-equipo/' + id : '/crear-equipo/' + id_E;
+                    let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
+                 
                     let method = id ? 'PUT' : 'POST';
                     
                     let formData = {
@@ -325,7 +407,6 @@
                         Folio: $('#editFolio').val(),
                         FechaDeCompra: $('#editFechaDeCompra').val(),
                         Comentarios: $('#editComentarios').val(),
-                        FechaDeCompra: $('#editComentarios').val()
                     };
 
                     let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -340,9 +421,17 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Éxito:', data);
+                        Swal.fire({
+                            position: "top-end",
+                            icon: "success",
+                            title: "Datos del equipo",
+                            showConfirmButton: false,
+                            timer: 1500
+                            });
                         $('#editModal').modal('hide');
-                        location.reload();
+                            setTimeout(function(){
+                                location.reload();
+                            }, 1600);
                     })
                     .catch(error => console.error('Error:', error));
                 });

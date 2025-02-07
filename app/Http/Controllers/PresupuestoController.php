@@ -100,18 +100,37 @@ class PresupuestoController extends Controller
                 ->where('GerenciaID','=', $request->GerenciaID)
                 ->get();
 
-                $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$request->GerenciaID]);
+               /* $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$request->GerenciaID]);
                 $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$request->GerenciaID]);
-                $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$request->GerenciaID]);
+                $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$request->GerenciaID]);*/
             
+                $datosheader = DB::select('EXECUTE sp_ReporteCostosPorGerenciaID @GerenciaID ='.''. $request->GerenciaID);
+
+                $presup_lics =  $request->tipo == 'mens' ? DB::select('EXECUTE sp_GenerarReporteLicenciasPorGerencia @GerenciaID ='.''. $request->GerenciaID ) : DB::select('EXECUTE sp_GenerarReporteLicenciasPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
+
+                $presup_otrosinsums =  $request->tipo == 'mens' ? DB::select('EXECUTE sp_GenerarReporteAccesoriosYMantenimientosPorGerencia @GerenciaID ='.''. $request->GerenciaID ) : DB::select('EXECUTE sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
+
+
+                $presup_acces =  $request->tipo == 'mens' ? DB::select('EXECUTE sp_ReportePresupuestoLineasVozPorGerencia @GerenciaID ='.''. $request->GerenciaID ) : DB::select('EXECUTE sp_ReportePresupuestoLineasVozPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
+
+                $presup_datos = $request->tipo == 'mens' ? DB::select('EXECUTE sp_ReportePresupuestoLineasDatosPorGerencia @GerenciaID ='.''. $request->GerenciaID) : DB::select('EXECUTE sp_ReportePresupuestoLineasDatosPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
+
+                $presup_gps = $request->tipo == 'mens' ? DB::select('EXECUTE sp_ReportePresupuestoLineasGPSPorGerencia @GerenciaID ='.''. $request->GerenciaID) : DB::select('EXECUTE sp_ReportePresupuestoLineasGPSPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
+
+                $presup_cal_pagos = DB::select('EXECUTE ObtenerInsumosAnualesPorGerencia @GerenciaID ='.''. $request->GerenciaID);
+                
 
 
                 $data = ["title" => $request->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
                         "dato" => $request->tipo == 'mens' ? 'Mensual' : 'Anual',
+                        'datosheader' => $datosheader[0],
                         'GerenciaTb' => $GerenciaTb,
+                        'presup_otrosinsums' => $presup_otrosinsums,
+                        'presup_lics' => $presup_lics,
                         'presup_acces' => $presup_acces,
                         'presup_datos' => $presup_datos,
                         'presup_gps' => $presup_gps,
+                        'presup_cal_pagos' => $presup_cal_pagos
                         ];
 
                     

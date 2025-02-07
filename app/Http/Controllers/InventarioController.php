@@ -12,6 +12,8 @@ use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\Empleados;
 use App\Models\InventarioEquipo;
+use App\Models\InventarioInsumo;
+use App\Models\Insumos;
 use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
@@ -147,11 +149,17 @@ class InventarioController extends AppBaseController
         $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID','=',$id)->get();
         $Equipos = Equipos::select("*")->get();
 
+        $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID','=',$id)->get();
+        $Insumos = Insumos::select("*")->get();
+
+
 
         return view('inventarios.edit')->with([
             'inventario' => $inventario,
             'equiposAsignados' => $EquiposAsignados,
             'equipos' => $Equipos,
+            'insumosAsignados' => $InsumosAsignados,
+            'insumos' => $Insumos
           
         ]);
     }
@@ -166,6 +174,7 @@ class InventarioController extends AppBaseController
      */
     public function editarequipo($id, Request $request)
     {
+     
         $inventarioEquipo = InventarioEquipo::where('InventarioID', $id)->first(); 
 
         if (!$inventarioEquipo) {
@@ -182,8 +191,13 @@ class InventarioController extends AppBaseController
 
     public function crearequipo($id, Request $request)
     {
+
         
-        InventarioEquipo::create($request->all());
+        $data = $request->all();
+        $data['EmpleadoID'] = $id; 
+    
+        InventarioEquipo::create($data);
+
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
 
