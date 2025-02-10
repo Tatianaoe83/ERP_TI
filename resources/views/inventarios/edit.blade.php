@@ -48,14 +48,16 @@
             <div class="row">
               <div class="col-md-6"> 
                 <div class="form-group">
-                  <label>Categoria</label>
-                  <input type="text" class="form-control" id="editCategoria" required >
+                  <label for="editCategoria">Categoría del Equipo </label>
+                  <input type="text" class="form-control" id="editCategoria" name="editCategoria" required>
+                  <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label>Marca</label>
-                  <input type="text" class="form-control" id="editMarca" required>
+                  <label>Marca </label>
+                  <input type="text" class="form-control" id="editMarca" name="Marca" required>
+                  <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
             </div>
@@ -69,8 +71,9 @@
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label>Modelo</label>
-                  <input type="text" class="form-control" id="editModelo" required >
+                  <label>Modelo </label>
+                  <input type="text" class="form-control" id="editModelo" name="Modelo" required>
+                  <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
             </div>
@@ -79,7 +82,8 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Precio</label>
-                  <input type="number" class="form-control" id="editPrecio" required>
+                  <input type="number" class="form-control" id="editPrecio" required step="1" pattern="\d*">
+                  
                 </div>
               </div>
               <div class="col-md-6">
@@ -131,10 +135,14 @@
               </div>
               <div class="col-md-6">
                 <div class="form-group">
-                  <label>Gerencia Equipo</label>
-                 
-                  {!!Form::select('editGerenciaEquipo',App\Models\Gerencia::all()->
-                    pluck('NombreGerencia','GerenciaID'),null,['placeholder' => 'Seleccionar','class'=>'jz1 form-control','id' => 'editGerenciaEquipo','required'])!!}
+                  <label>Gerencia </label>
+                  <select class="form-control" id="editGerenciaEquipo" name="GerenciaEquipoID" required>
+                    <option value="">Seleccione una gerencia</option>
+                    @foreach(App\Models\Gerencia::all() as $gerencia)
+                      <option value="{{ $gerencia->GerenciaID }}">{{ $gerencia->NombreGerencia }}</option>
+                    @endforeach
+                  </select>
+                  <div class="invalid-feedback">Debe seleccionar una gerencia</div>
                 </div>
               </div>
 

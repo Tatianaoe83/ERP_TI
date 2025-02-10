@@ -169,7 +169,7 @@
                                 <td>{{ $equiposAsignado->FechaDeCompra }}</td>
                                 <td>{{ $equiposAsignado->NumSerie }}</td>
                                 <td>{{ $equiposAsignado->Folio }}</td>
-                                <td>{{ $equiposAsignado->gerenciaid->NombreGerencia }}</td>
+                                <td data-gerencia-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->gerenciaid->NombreGerencia }}</td>
                                 <td>{{ $equiposAsignado->Comentarios }}</td>
                             </tr>
                             @endforeach
@@ -325,13 +325,8 @@
                     let fecha_compra = row.find("td:eq(7)").text();
                     let num_serie = row.find("td:eq(8)").text();
                     let folio = row.find("td:eq(9)").text();
-                   
+                    let gerencia = row.find("td:eq(10)").data('gerencia-id');
                     let comentarios = row.find("td:eq(11)").text();
-
-                    @php
-                        $gerenciaid = $equiposAsignado->GerenciaEquipoID;
-                        echo "var gerenciaid ='$gerenciaid'";
-                    @endphp
 
                     $('#editId').val(id);
                     $('#editEmp').val('');
@@ -345,7 +340,7 @@
                     $('#editNumSerie').val(num_serie);
                     $('#editFolio').val(folio);
     
-                    $('#editGerenciaEquipo').val(gerenciaid).trigger('change');
+                    $('#editGerenciaEquipo').val(gerencia).trigger('change');
                     $('#editComentarios').val(comentarios);
                     
                     $('#editModal').modal('show');
@@ -354,13 +349,8 @@
 
                 // Evento para abrir modal de creación
                 $(document).on('click', '.crear-btn', function() {
-
-                    @php
-                        $id_E = $inventario->EmpleadoID;
-                        echo "var id_E ='$id_E'";
-                    @endphp
-    
-                    console.log('Botón de creación clickeado',id_E);
+                    let id_E = '{{ $inventario->EmpleadoID }}';
+                    console.log('Botón de creación clickeado', id_E);
                     
                     // Limpiar los campos del formulario para una nueva entrada
                     $('#editForm')[0].reset();
@@ -389,10 +379,36 @@
                 $(document).on('click', '.submit_equipo', function(event) {   
                     event.preventDefault();
                     
+                    // Limpiar mensajes de error previos
+                    $('.error-message').remove();
+                    $('.is-invalid').removeClass('is-invalid');
+                    
+                    // Validar el formulario
+                    let form = document.getElementById('editForm');
+                    let isValid = true;
+                    
+                    // Validar campos requeridos
+                    $('#editForm [required]').each(function() {
+                        if (!$(this).val()) {
+                            isValid = false;
+                            $(this).addClass('is-invalid');
+                        } else {
+                            $(this).removeClass('is-invalid');
+                        }
+                    });
+
+                    if (!isValid) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Campos requeridos',
+                            text: 'Por favor complete todos los campos obligatorios',
+                        });
+                        return;
+                    }
+                    
                     let id_E = $('#editEmp').val();
                     let id = $('#editId').val();
                     let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
-                 
                     let method = id ? 'PUT' : 'POST';
                     
                     let formData = {
@@ -421,19 +437,42 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        Swal.fire({
-                            position: "top-end",
-                            icon: "success",
-                            title: "Datos del equipo",
-                            showConfirmButton: false,
-                            timer: 1500
+                        if (data.errors) {
+                            // Mostrar errores de validación
+                            Object.keys(data.errors).forEach(field => {
+                                const input = $(`#edit${field}`);
+                                input.addClass('is-invalid');
+                                input.siblings('.invalid-feedback').text(data.errors[field][0]);
                             });
-                        $('#editModal').modal('hide');
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de validación',
+                                text: 'Por favor revise los campos marcados en rojo',
+                            });
+                        } else {
+                            // Éxito
+                            Swal.fire({
+                                position: "top-end",
+                                icon: "success",
+                                title: "Datos del equipo guardados correctamente",
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            $('#editModal').modal('hide');
                             setTimeout(function(){
                                 location.reload();
                             }, 1600);
+                        }
                     })
-                    .catch(error => console.error('Error:', error));
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error",
+                            text: "Ocurrió un error al guardar los datos",
+                        });
+                    });
                 });
 
 
@@ -461,5 +500,16 @@
         
         });
     </script>
+
+    <!-- Agregar un poco de CSS para los campos requeridos -->
+    <style>
+        .form-group label:after {
+            content: " *";
+            color: red;
+        }
+        .form-group:not(:has([required])) label:after {
+            content: "";
+        }
+    </style>
 
 @endpush

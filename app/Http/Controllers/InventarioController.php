@@ -185,7 +185,7 @@ class InventarioController extends AppBaseController
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
 
-        Flash::success('Inventario update successfully.');
+       
 
     }
 
@@ -201,7 +201,7 @@ class InventarioController extends AppBaseController
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
 
-        Flash::success('Inventario create successfully.');
+       
 
     }
 
