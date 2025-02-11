@@ -13,6 +13,8 @@ use Response;
 use App\Models\Empleados;
 use App\Models\InventarioEquipo;
 use App\Models\InventarioInsumo;
+use App\Models\InventarioLineas;
+use App\Models\LineasTelefonicas;
 use App\Models\Insumos;
 use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
@@ -152,6 +154,9 @@ class InventarioController extends AppBaseController
         $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID','=',$id)->get();
         $Insumos = Insumos::select("*")->get();
 
+        $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID','=',$id)->get();
+        $Lineas = LineasTelefonicas::select("*")->where('Disponible','=',0)->get();
+
 
 
         return view('inventarios.edit')->with([
@@ -159,7 +164,9 @@ class InventarioController extends AppBaseController
             'equiposAsignados' => $EquiposAsignados,
             'equipos' => $Equipos,
             'insumosAsignados' => $InsumosAsignados,
-            'insumos' => $Insumos
+            'insumos' => $Insumos,
+            'LineasAsignados' => $LineasAsignados,
+            'Lineas' => $Lineas
           
         ]);
     }
@@ -192,7 +199,6 @@ class InventarioController extends AppBaseController
     public function crearequipo($id, Request $request)
     {
 
-        
         $data = $request->all();
         $data['EmpleadoID'] = $id; 
     
@@ -215,7 +221,9 @@ class InventarioController extends AppBaseController
      */
     public function destroy($id)
     {
-        $inventario = $this->inventarioRepository->find($id);
+       
+        $inventario = InventarioEquipo::where('InventarioID', $id)->first(); 
+
 
         if (empty($inventario)) {
             Flash::error('Inventario not found');
@@ -223,10 +231,179 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
-        $this->inventarioRepository->delete($id);
+         $inventario->delete($id);
 
         Flash::success('Inventario deleted successfully.');
 
-        return redirect(route('inventarios.index'));
+        return redirect()->route('inventarios.edit', ['inventario' => $inventario->EmpleadoID]);
     }
+
+
+    public function editarinsumo($id, Request $request)
+    {
+     
+     
+        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+        if (!$inventarioinsumo) {
+            return response()->json(['error' => 'Equipo no encontrado'], 404);
+        }
+
+        $inventarioinsumo->update($request->all());
+
+        return response()->json(['message' => 'Inventario actualizado correctamente']);
+
+       
+
+    }
+
+    public function crearinsumo($id, Request $request)
+    {
+
+       
+        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first(); 
+
+        $data = $request->all();
+        $data['EmpleadoID'] = $id; 
+        $data['InsumoID'] = $categorias->ID; 
+    
+    
+        InventarioInsumo::create($data);
+
+
+        return response()->json(['message' => 'Inventario actualizado correctamente']);
+
+       
+
+    }
+
+    public function destroyInsumo($id)
+    {
+       
+      
+        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+
+        if (empty($InventarioInsumo)) {
+            Flash::error('Inventario not found');
+
+            return redirect(route('inventarios.index'));
+        }
+
+         $InventarioInsumo->delete($id);
+
+        Flash::success('Inventario deleted successfully.');
+
+        return redirect()->route('inventarios.edit', ['inventario' => $InventarioInsumo->EmpleadoID]);
+    }
+
+    
+    public function editarlinea($id, Request $request)
+    {
+     
+        dd ('editar linea');
+     
+        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+        if (!$inventarioinsumo) {
+            return response()->json(['error' => 'Equipo no encontrado'], 404);
+        }
+
+        $inventarioinsumo->update($request->all());
+
+        return response()->json(['message' => 'Inventario actualizado correctamente']);
+
+       
+
+    }
+
+    public function crearlinea($id, Request $request)
+    {
+
+        dd ($request->all());
+        dd ('crear linea');
+       
+        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first(); 
+
+        $data = $request->all();
+        $data['EmpleadoID'] = $id; 
+        $data['InsumoID'] = $categorias->ID; 
+    
+    
+        InventarioInsumo::create($data);
+
+
+        return response()->json(['message' => 'Inventario actualizado correctamente']);
+
+       
+
+    }
+
+    public function destroylinea($id)
+    {
+       
+      dd ('destroy linea');
+        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+
+        if (empty($InventarioInsumo)) {
+            Flash::error('Inventario not found');
+
+            return redirect(route('inventarios.index'));
+        }
+
+         $InventarioInsumo->delete($id);
+
+        Flash::success('Inventario deleted successfully.');
+
+        return redirect()->route('inventarios.edit', ['inventario' => $InventarioInsumo->EmpleadoID]);
+    }
+
+
+    public function transferir($id)
+    {
+     
+           // Obtener el inventario con joins
+           $inventario = DB::table('empleados')
+           ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+           ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+           ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+           ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+           ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID')
+           ->select(
+               'empleados.*',
+               'puestos.PuestoID',
+               'departamentos.DepartamentoID',
+               'obras.ObraID',
+               'gerencia.GerenciaID',
+               'unidadesdenegocio.UnidadNegocioID'
+               
+           )
+           ->where('empleados.EmpleadoID', $id)
+           ->first();
+
+       if (empty($inventario)) {
+           Flash::error('Inventario no encontrado');
+           return redirect(route('inventarios.index'));
+       }
+
+      
+       $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID','=',$id)->get();
+       $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID','=',$id)->get();
+       $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID','=',$id)->get();
+
+
+
+
+       return view('inventarios.transferir')->with([
+           'inventario' => $inventario,
+           'equiposAsignados' => $EquiposAsignados,
+           'insumosAsignados' => $InsumosAsignados,
+           'LineasAsignados' => $LineasAsignados,
+         
+       ]);
+
+       
+    }
+
 }

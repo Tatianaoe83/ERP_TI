@@ -4,40 +4,44 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class InventarioInsumo extends Model
 {
     use HasFactory;
 
-    use SoftDeletes;
 
 
-    public $table = 'inventarioinsumo';
+    public $table = 'inventariolineas';
     
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
 
-    protected $dates = ['deleted_at'];
+
 
 
     protected $primaryKey = 'InventarioID';
     protected $keyType = 'int'; 
 
     public $fillable = [
-       'EmpleadoID',
-        'InsumoID',
-        'CateogoriaInsumo',
-        'NombreInsumo',
-        'CostoMensual',
-        'CostoAnual',
-        'FrecuenciaDePago',
-        'Observaciones',
+        'EmpleadoID',
+        'NumTelefonico',
+        'Compania',
+        'PlanTel',
+        'CostoRentaMensual',
+        'CuentaPadre',
+        'CuentaHija',
+        'TipoLinea',
+        'ObraID',
+        'Obra',
+        'FechaFianza',
+        'CostoFianza',
         'FechaAsignacion',
-        'NumSerie',
+        'Estado',
         'Comentarios',
-        'MesDePago'
+        'MontoRenovacionFianza',
+        'LineaID'
     ];
 
   

@@ -50,6 +50,19 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('planes', App\Http\Controllers\PlanesController::class);
     Route::PUT('inventarios/editar-equipo/{id}', [InventarioController::class, 'editarequipo'])->name('inventarios.editarequipo');
     Route::POST('inventarios/crear-equipo/{id}', [InventarioController::class, 'crearequipo'])->name('inventarios.crearequipo');
+
+    Route::DELETE('inventarios/delete/{inventario}', [InventarioController::class, 'destroyInsumo'])->name('inventarios.destroyInsumo');
+    Route::PUT('inventarios/editar-insumo/{id}', [InventarioController::class, 'editarinsumo'])->name('inventarios.editarinsumo');
+    Route::POST('inventarios/crear-insumo/{id}', [InventarioController::class, 'crearinsumo'])->name('inventarios.crearinsumo');
+
+    Route::DELETE('inventarios/deleteL/{inventario}', [InventarioController::class, 'destroylinea'])->name('inventarios.destroylinea');
+    Route::PUT('inventarios/editar-linea/{id}', [InventarioController::class, 'editarlinea'])->name('inventarios.editarlinea');
+    Route::POST('inventarios/crear-linea/{id}', [InventarioController::class, 'crearlinea'])->name('inventarios.crearlinea');
+
+    Route::GET('inventarios/{inventario}/transferir', [InventarioController::class, 'transferir'])->name('inventarios.transferir');
+
+
+
     Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);

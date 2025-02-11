@@ -18,7 +18,7 @@
 
             <div class="card-body">
                 <div class="row">
-                    @include('inventarios.fields')
+                  <p>tranferir</p>
                 </div>
             </div>
 
