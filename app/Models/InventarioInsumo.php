@@ -12,7 +12,7 @@ class InventarioInsumo extends Model
 
 
 
-    public $table = 'inventariolineas';
+    public $table = 'inventarioinsumo';
     
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';

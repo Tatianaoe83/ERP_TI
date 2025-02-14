@@ -16,11 +16,155 @@
         <div class="card">
 
 
-            <div class="card-body">
+
+        <div class="card-body">
                 <div class="row">
-                  <p>tranferir</p>
+                    <form action="{{ route('inventarios.transpaso', $inventario->EmpleadoID) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        
+                         <!-- equiposAsignados Seleccionados -->
+                         <p class="lead mt-4">Equipos Asignados</p>
+
+                        <div class="table-responsive">
+                            <table id="equiposAsignadosTable" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="selectAll"></th>
+                                        <th>Categoria</th>
+                                        <th>Marca</th>
+                                        <th>Caracteristicas</th>
+                                        <th>Modelo</th>
+                                        <th>Precio</th>
+                                        <th>Fecha Asignacion</th>
+                                        <th>Fecha de Compra</th>
+                                        <th>Num. Serie</th>
+                                        <th>Folio</th>
+                                        <th>Gerencia Equipo</th>
+                                        <th>Comentarios</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($equiposAsignados as $equiposAsignado)
+                                    <tr data-id="{{ $equiposAsignado->InventarioID }}">
+                                        <td><input type="checkbox" class="selectItem" name="equipos[]" value="{{ $equiposAsignado->inventarioID }}"></td>
+                                        <td>{{ $equiposAsignado->CategoriaEquipo }}</td>
+                                        <td>{{ $equiposAsignado->Marca }}</td>
+                                        <td>{{ $equiposAsignado->Caracteristicas }}</td>
+                                        <td>{{ $equiposAsignado->Modelo }}</td>
+                                        <td>{{ $equiposAsignado->Precio }}</td>
+                                        <td>{{ $equiposAsignado->FechaAsignacion }}</td>
+                                        <td>{{ $equiposAsignado->FechaDeCompra }}</td>
+                                        <td>{{ $equiposAsignado->NumSerie }}</td>
+                                        <td>{{ $equiposAsignado->Folio }}</td>
+                                        <td data-gerencia-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->gerenciaid->NombreGerencia }}</td>
+                                        <td>{{ $equiposAsignado->Comentarios }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+
+                          <!-- insumosasignados Seleccionados -->
+                           <p class="lead mt-4">Insumos Asignados</p>
+
+                            <div class="table-responsive">
+                                <table id="insumosAsignadosTable" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                        <th><input type="checkbox" id="selectAll"></th>
+                                        <th>Categoria Insumo</th>
+                                        <th>Nombre Insumo</th>
+                                        <th>Costo Mensual</th>
+                                        <th>Costo Anual</th>
+                                        <th>Frecuencia de Pago</th>
+                                        <th>Observaciones</th>
+                                        <th>Fecha de Asignacion</th>
+                                        <th>Num. Serie</th>
+                                        <th>Comentarios</th>
+                                        <th>Mes de pago </th>
+
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($insumosAsignados as $insumosAsignado)
+                                        <tr data-id="{{ $insumosAsignado->InventarioID }}">
+                                            <td><input type="checkbox" class="selectItem" name="insumos[]" value="{{ $insumosAsignado->InventarioID }}"></td>
+                                            <td>{{ $insumosAsignado->CateogoriaInsumo }}</td>
+                                            <td>{{ $insumosAsignado->NombreInsumo }}</td>
+                                            <td>{{ $insumosAsignado->CostoMensual }}</td>
+                                            <td>{{ $insumosAsignado->CostoAnual }}</td>
+                                            <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
+                                            <td>{{ $insumosAsignado->Observaciones }}</td>
+                                            <td>{{ $insumosAsignado->FechaAsignacion }}</td>
+                                            <td>{{ $insumosAsignado->NumSerie }}</td>
+                                            <td>{{ $insumosAsignado->Comentarios }}</td>
+                                            <td>{{ $insumosAsignado->MesDePago }}</td>
+                                        </tr>
+                                        @endforeach
+
+                                    
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- lineas asignadas-->
+                            <p class="lead mt-4">Líneas Asignadas</p>
+                                <div class="table-responsive">
+                                    <table id="lineasAsignadosTable" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th><input type="checkbox" id="selectAll"></th>
+                                                <th>Num Telefónico</th>
+                                                <th>Compañía</th>
+                                                <th>Plan Tel</th>
+                                                <th>Costo Renta Mensual</th>
+                                                <th>Cuenta Padre</th>
+                                                <th>Cuenta Hija</th>
+                                                <th>Tipo Línea</th>
+                                                <th>Obra</th>
+                                                <th>Fecha Fianza</th>
+                                                <th>Costo Fianza</th>
+                                                <th>Fecha Asignación</th>
+                                                <th>Estado</th>
+                                                <th>Comentarios</th>
+                                                <th>Monto Renovación Fianza</th>
+                                                <th>Linea ID</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($LineasAsignados as $LineasAsignado)
+                                            <tr data-id="{{ $LineasAsignado->InventarioID }}">
+                                                <td><input type="checkbox" class="selectItem" name="lineas[]" value="{{ $LineasAsignado->LineaID }}"></td>
+                                                <td>{{ $LineasAsignado->NumTelefonico }}</td>
+                                                <td>{{ $LineasAsignado->Compania }}</td>
+                                                <td>{{ $LineasAsignado->PlanTel }}</td>
+                                                <td>{{ $LineasAsignado->CostoRentaMensual }}</td>
+                                                <td>{{ $LineasAsignado->CuentaPadre }}</td>
+                                                <td>{{ $LineasAsignado->CuentaHija }}</td>
+                                                <td>{{ $LineasAsignado->TipoLinea }}</td>
+                                                <td>{{ $LineasAsignado->Obra }}</td>
+                                                <td>{{ $LineasAsignado->FechaFianza }}</td>
+                                                <td>{{ $LineasAsignado->CostoFianza }}</td>
+                                                <td>{{ $LineasAsignado->FechaAsignacion }}</td>
+                                                <td>{{ $LineasAsignado->Estado }}</td>
+                                                <td>{{ $LineasAsignado->Comentarios }}</td>
+                                                <td>{{ $LineasAsignado->MontoRenovacionFianza }}</td>
+                                                <td>{{ $LineasAsignado->LineaID }}</td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+
+
+                        <button type="submit" class="btn btn-primary">Transferir</button>
+                    </form>
                 </div>
             </div>
+         
 
             <div class="card-footer">
             </div>
@@ -29,311 +173,61 @@
         </div>
     </div>
     </section>
-    
-<!-- Modal de Edición -->
-<div class="modal" id="editModal" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="titulo"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      
-      <div class="modal-body">
-      <form id="editForm">
-          <input type="hidden" id="editId">
-          <input type="hidden" id="editEmp">
-
-          <div class="container-fluid">
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label for="editCategoria">Categoría del Equipo </label>
-                  <input type="text" class="form-control" id="editCategoria" name="editCategoria" required>
-                  <div class="invalid-feedback">Este campo es requerido</div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Marca </label>
-                  <input type="text" class="form-control" id="editMarca" name="Marca" required>
-                  <div class="invalid-feedback">Este campo es requerido</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Caracteristicas</label>
-                  <textarea class="form-control"  rows="3" id="editCaracteristicas" required ></textarea>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Modelo </label>
-                  <input type="text" class="form-control" id="editModelo" name="Modelo" required>
-                  <div class="invalid-feedback">Este campo es requerido</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Precio</label>
-                  <input type="number" class="form-control" id="editPrecio" required  min="1" step="1" pattern="\d*">
-                  
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Fecha Asignacion</label>
-                  <input type="date" class="form-control" id="editFechaAsignacion" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Fecha de Compra</label>
-                  <input type="date" class="form-control" id="editFechaDeCompra" required>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Num. Serie</label>
-                  <input type="text" class="form-control" id="editNumSerie" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Folio</label>
-                  <input type="text" class="form-control" id="editFolio" required="required">
-                </div>
-              </div>
-              <div class="col-md-6">
-               
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Comentarios</label>
-                  <input type="text" class="form-control" id="editComentarios">
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Gerencia </label>
-                  <select class="jz1 form-control" id="editGerenciaEquipo" name="GerenciaEquipoID" required>
-                    <option value="">Seleccione una gerencia</option>
-                    @foreach(App\Models\Gerencia::all() as $gerencia)
-                      <option value="{{ $gerencia->GerenciaID }}">{{ $gerencia->NombreGerencia }}</option>
-                    @endforeach
-                  </select>
-                  <div class="invalid-feedback">Debe seleccionar una gerencia</div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-          </form>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            <button  type="button" class="btn btn-primary submit_equipo">Guardar Cambios</button>
-          </div>
-        
-      </div>
-      
-    </div>
-  </div>
-</div>
-
-   
-<!-- Modal de Edición insumo-->
-<div class="modal" id="editModalInsumo" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="tituloinsumo"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      
-      <div class="modal-body">
-      <form id="editFormInsumo">
-          <input type="hidden" id="editId_insumo">
-          <input type="hidden" id="editEmp_insumo">
-
-          <div class="container-fluid">
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label for="editCategoriaInsumo">Categoría del Insumo </label>
-                  <input type="text" class="form-control" id="editCategoriaInsumo" name="editCategoriaInsumo" required>
-                  <div class="invalid-feedback">Este campo es requerido</div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Nombre Insumo </label>
-                  <input type="text" class="form-control" id="editNombreInsumo" name="editNombreInsumo" required>
-                  <div class="invalid-feedback">Este campo es requerido</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Costo Mensual</label>
-                  <input type="text" class="form-control" id="editCostoMensual" name="editCostoMensual" required>
-                
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Costo Anual </label>
-                  <input type="text" class="form-control" id="editCostoAnual" name="editCostoAnual" required>
-                  <div class="invalid-feedback">Este campo es requerido</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Frecuencia de pago</label>
-                  <input type="text" class="form-control" id="editFrecuenciaDePago" name="editFrecuenciaDePago" required>
-                  
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Observaciones</label>
-                  <input type="text" class="form-control" id="editobserv" name="editobserv">
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Fecha de asignacion</label>
-                  <input type="date" class="form-control" id="editFechaDeAsigna" name="editFechaDeAsigna" required>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Num. Serie</label>
-                  <input type="text" class="form-control" id="editNumSerieInsu" id="editNumSerieInsu" required>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label>Mes de pago</label>
-                
-                  <select class="form-select"  id="editMesDePago" name="editMesDePago" required aria-label="Default select example">
-                    <option value="">Seleccione mes</option>
-                    <option value="N/A">N/A</option>
-                    <option value="ENERO">enero </option>
-                    <option value="FEBRERO">febrero</option>
-                    <option value="MARZO">marzo </option>
-                    <option value="ABRIL">abril </option>
-                    <option value="MAYO">mayo</option>
-                    <option value="JUNIO">junio</option>
-                    <option value="JULIO">julio</option>
-                    <option value="AGOSTO">agosto</option>
-                    <option value="SEPTIEMBRE">septiembre</option>
-                    <option value="OCTUBRE">octubre</option>
-                    <option value="NOVIEMBRE">noviembre</option>
-                    <option value="DICIEMBRE">diciembre</option>
-
-                  </select>
-
-                </div>
-              </div>
-              <div class="col-md-6">
-              <div class="form-group">
-                  <label>Comentarios</label>
-                  <input type="text" class="form-control" id="editComentariosInsumo" name="editComentariosInsumo">
-                </div>
-              </div>
-            </div>
-
-          
-          </div>
-          </form>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            <button  type="button" class="btn btn-primary submit_insumo">Guardar Cambios</button>
-          </div>
-        
-      </div>
-      
-    </div>
-  </div>
-  </div>
-
-
-  <!-- Modal de Edición linea-->
-<div class="modal" id="editModalLinea" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-      <h5 class="modal-title" id="titulolinea"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-      <form id="editFormLinea">
-          <input type="hidden" id="editId_linea">
-          <input type="hidden" id="editEmp_linea">
-
-
-          <input type="hidden" id="lineaid">
-
-          
-
-          <div class="container-fluid">
-            <div class="row">
-              <div class="col-md-6"> 
-                <div class="form-group">
-                  <label for="editfechalinea">Fecha de asignacion</label>
-                  <input type="date" class="form-control" id="editfechalinea" name="editfechalinea" required>
-                  <div class="invalid-feedback">Este campo es requerido</div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label>Comentarios </label>
-                  <input type="text" class="form-control" id="editcomenl" name="editcomenl" >
-            
-                </div>
-              </div>
-            </div>
-          
-          </div>
-          </form>
-
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-primary submit_linea">Guardar Cambios</button>
-      </div>
-    </div>
-  </div>
-</div>
-  
-
-
+ 
 @endsection
 
+@push('third_party_stylesheets')
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
+@endpush
+
+@push('third_party_scripts')
+
+ <!-- DataTables JS -->
+ <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+
+<script>
+$(document).ready(function() {
+            // Inicializar DataTables
+            let table = $('#equiposAsignadosTable').DataTable({
+                "paging": true,
+                "lengthMenu": [5, 10, 25, 50],
+                "pageLength": 5,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                
+            });
+
+                        
+
+            let table2 = $('#insumosAsignadosTable').DataTable({
+                "paging": true,
+                "lengthMenu": [5, 10, 25, 50],
+                "pageLength": 5,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                
+            });
+
+            let table3 = $('#lineasAsignadosTable').DataTable({
+                "paging": true,
+                "lengthMenu": [5, 10, 25, 50],
+                "pageLength": 5,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                
+            });
+      });
+</script>          
+<script>
+    document.getElementById('selectAll').addEventListener('click', function() {
+        let checkboxes = document.querySelectorAll('.selectItem');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+</script>
+@endpush
 

@@ -60,6 +60,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::POST('inventarios/crear-linea/{id}', [InventarioController::class, 'crearlinea'])->name('inventarios.crearlinea');
 
     Route::GET('inventarios/{inventario}/transferir', [InventarioController::class, 'transferir'])->name('inventarios.transferir');
+    Route::PUT('inventariosT/{inventario} ', [InventarioController::class, 'transpaso'])->name('inventarios.transpaso');
 
 
 
