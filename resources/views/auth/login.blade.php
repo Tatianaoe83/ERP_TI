@@ -40,16 +40,27 @@
                     </div>
                 @endif
 
-              <!-- Email input -->
+                  <!-- Database Select -->
+                  <div class="form-group">
+                    <label for="database">Base de Datos</label>
+                    <select name="database" id="database" class="form-control" onchange="updateEnvDatabase(this.value)" required>
+                        <option value="">Seleccione Base de Datos</option>
+                        <option value="express_data">Control Inventario TI</option>
+                        <option value="express_data2">Control Inventario TI22</option>
+                    </select>
+                </div>
+
+
+              <!-- username input -->
               <div class="form-group">
                    
-                    <input aria-describedby="emailHelpBlock" id="email" type="email"
-                           class="form-control{{ $errors->has('email') ? ' is-invalid' : '' }}" name="email"
-                           placeholder="Ingrese email" tabindex="1"
-                           value="{{ (Cookie::get('email') !== null) ? Cookie::get('email') : old('email') }}" autofocus
+                    <input aria-describedby="usernameHelpBlock" id="username" type="username"
+                           class="form-control{{ $errors->has('username') ? ' is-invalid' : '' }}" name="username"
+                           placeholder="Ingrese username" tabindex="1"
+                           value="{{ (Cookie::get('username') !== null) ? Cookie::get('username') : old('username') }}" autofocus
                            required>
                     <div class="invalid-feedback">
-                        {{ $errors->first('email') }}
+                        {{ $errors->first('username') }}
                     </div>
                 </div>
 
@@ -71,14 +82,85 @@
                     </div>
                 </div>
 
-                <!-- Database Select -->
-                <div class="form-group">
-                    <select name="database" id="database" class="form-control" >
-                        <option value="">Seleccione Base de Datos</option>
-                        <option value="PresupuestosControl">Presupuestos Control</option>
-                        <option value="ControlInventarioTI">Control Inventario TI</option>
-                    </select>
-                </div>
+          
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script type="text/javascript">
+                  
+
+                    function updateEnvDatabase(value) {
+                        const token = document.querySelector('input[name="_token"]').value;
+                        
+                        fetch('/update-database', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': token
+                            },
+                            body: JSON.stringify({database: value})
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                             
+                                const Toast = Swal.mixin({
+                                  toast: true,
+                                  position: "top-end",
+                                  showConfirmButton: false,
+                                  timer: 3000,
+                                  timerProgressBar: true,
+                                  didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                  }
+                                });
+                                Toast.fire({
+                                  icon: "success",
+                                  title: "Base de datos actualizada correctamente"
+                                }); 
+                               
+                            } else {
+                              
+                                const Toast = Swal.mixin({
+                                  toast: true,
+                                  position: "top-end",
+                                  showConfirmButton: false,
+                                  timer: 3000,
+                                  timerProgressBar: true,
+                                  didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                  }
+                                });
+                                Toast.fire({
+                                  icon: "warning",
+                                  title: 'Error al actualizar: ' + (data.error || 'Error desconocido')
+                                }); 
+
+                            }
+                        })
+                        .catch(error => {
+                          
+                            const Toast = Swal.mixin({
+                                  toast: true,
+                                  position: "top-end",
+                                  showConfirmButton: false,
+                                  timer: 3000,
+                                  timerProgressBar: true,
+                                  didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                  }
+                                });
+                                Toast.fire({
+                                  icon: "error",
+                                  title: "Error al actualizar la base de datos"
+                                }); 
+
+                        });
+                    }
+                </script>
+
+               
 
                 <div class="form-group">
                     <div class="custom-control custom-checkbox">

@@ -8,6 +8,7 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PresupuestoController;
+use App\Http\Controllers\DatabaseController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -70,6 +71,10 @@ Route::group(['middleware' => ['auth']], function() {
     
     
 });
+
+Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
+    ->name('update.database')
+    ->withoutMiddleware(['auth']);
 
 
 
