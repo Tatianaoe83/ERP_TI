@@ -59,20 +59,18 @@
         <tr>
             <td style="padding: 0; width: 70%; vertical-align: top;">
                 <div style="margin: 0; padding: 0;">
-
-             
                   
                     <h3 style="margin: 0; padding: 1px;">PRESUPUESTO DE TECNOLOGIAS {{ $title }} 2025</h3>
-                    <h5 style="margin: 0; padding: 1px;">Gerencia: {{$GerenciaTb['0']['NombreGerencia']}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Nombre del Gerente: {{$datosheader->NombreGerente}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Número de empleados: {{$datosheader->CantidadEmpleados}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Costo Licenciamiento: $ {{$datosheader->Licenciamiento}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Costo Inversiones: $ {{$datosheader->Inversiones}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Costo Otros Insumos: $ {{$datosheader->{'Otros Insumos'} }}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Costo Telefonía, Internet y GPS: $</h5>
-                    <h5 style="margin: 0; padding: 1px;">Costo Rentas de Impresoras: $ {{$datosheader->{'Renta de Impresora'} }}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Costo Internet fijo: $ {{$datosheader->Internet}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Total presupuestado: $</h5>
+                    <h5 style="margin: 0; padding: 1px;">Gerencia: {{$GerenciaTb->NombreGerencia}}</h5>
+                    <h5 style="margin: 0; padding: 1px;">Nombre del Gerente: {{$GerenciaTb->NombreGerente}}</h5>
+                    <h5 style="margin: 0; padding: 1px;">Número de empleados: {{$GerenciaTb->CantidadEmpleados}}</h5>
+
+                   
+
+                    @foreach ($datosheader as $datosheade )
+
+                        <h5 style="margin: 0; padding: 1px;">Costo {{$datosheade->Categoria}}: $ {{$datosheade->TotalCosto}}</h5>
+                    @endforeach
                 </div>
             </td>
             <td style="padding: 0; width: 30%; vertical-align: top;">
@@ -86,24 +84,43 @@
 
 <p>Presupuesto de Licenciamiento</p>
 
-    <table class="table">
+<table class="table">
         <thead>
-            <tr style="background-color: #191970; color:white; text-align: center;">
-                @if(isset($presup_lics[0]))
-                    @foreach(array_keys((array)$presup_lics[0]) as $key)
-                        <th scope="col">{{ $key }}</th>
+                <tr style="background-color: #191970; color:white; text-align: center;">
+                    <th>NombreEmpleado</th>
+                    <th>NombrePuesto</th>
+                    @foreach($columnaspresup_lics as $columna => $_)
+                        <th>{{ $columna }}</th>
                     @endforeach
-                @endif
-            </tr>
-        </thead>
+                    <th>TotalPorEmpleado</th>
+                </tr>
+            </thead>
         <tbody>
-            @foreach ($presup_lics as $presup_lic)
-                <tr class="{{ $presup_lic->NombreEmpleado == 'TOTAL' ? 'highlight-row' : '' }}">
-                    @foreach((array)$presup_lic as $value)
-                        <td>{{ $value }}</td>
+
+       
+            @foreach($tablapresup_lics as $empleado)
+
+            
+                <tr>
+                    <td>{{ $empleado['NombreEmpleado'] }}</td>
+                    <td>{{ $empleado['NombrePuesto'] }}</td>
+                    @foreach($columnaspresup_lics as $columna => $_)
+                        <td> $ {{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
+                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 2) }}</td>
                 </tr>
             @endforeach
+
+                 <!-- Fila de totales -->
+            <tr class= "highlight-row">
+                <td><strong>TOTAL</strong></td>
+                <td></td>
+                @foreach($columnaspresup_lics as $columna => $_)
+                    <td><strong>$ {{ number_format($totalespresup_lics[$columna] ?? 0, 2) }}</strong></td>
+                @endforeach>
+                <td><strong>$ {{ number_format($granTotalpresup_lics, 2) }}</strong></td>
+            </tr>
+
         </tbody>
     </table>
 
@@ -111,22 +128,41 @@
 
     <table class="table">
         <thead>
-            <tr style="background-color: #191970; color:white; text-align: center;">
-                @if(isset($presup_otrosinsums[0]))
-                    @foreach(array_keys((array)$presup_otrosinsums[0]) as $key)
-                        <th scope="col">{{ $key }}</th>
+                <tr style="background-color: #191970; color:white; text-align: center;">
+                    <th>NombreEmpleado</th>
+                    <th>NombrePuesto</th>
+                    @foreach($columnaspresup_otrosinsums as $columna => $_)
+                        <th>{{ $columna }}</th>
                     @endforeach
-                @endif
-            </tr>
-        </thead>
+                    <th>TotalPorEmpleado</th>
+                </tr>
+            </thead>
         <tbody>
-            @foreach ($presup_otrosinsums as $presup_otrosinsum)
-                <tr class="{{ $presup_otrosinsum->NombreEmpleado == 'TOTAL' ? 'highlight-row' : '' }}">
-                    @foreach((array)$presup_otrosinsum as $value)
-                        <td>{{ $value }}</td>
+
+       
+            @foreach($tablapresup_otrosinsums as $empleado)
+
+            
+                <tr>
+                    <td>{{ $empleado['NombreEmpleado'] }}</td>
+                    <td>{{ $empleado['NombrePuesto'] }}</td>
+                    @foreach($columnaspresup_otrosinsums as $columna => $_)
+                        <td> $ {{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
+                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 2) }}</td>
                 </tr>
             @endforeach
+
+                 <!-- Fila de totales -->
+            <tr class= "highlight-row">
+                <td><strong>TOTAL</strong></td>
+                <td></td>
+                @foreach($columnaspresup_otrosinsums as $columna => $_)
+                    <td><strong>$ {{ number_format($totalespresup_otrosinsums[$columna] ?? 0, 2) }}</strong></td>
+                @endforeach>
+                <td><strong>$ {{ number_format($granTotalpresup_otrosinsums, 2) }}</strong></td>
+            </tr>
+
         </tbody>
     </table>
 
@@ -172,7 +208,7 @@
         <tbody>
             @foreach ($presup_datos as $presup_dato)
 
-          
+                
 
                 <tr class="{{ $presup_dato->Orden == 1 ? 'highlight-row' : '' }}">
                     <td>{{$presup_dato->NombreEmpleado}}</td>

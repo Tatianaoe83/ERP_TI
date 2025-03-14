@@ -45,8 +45,8 @@
                     <label for="database">Base de Datos</label>
                     <select name="database" id="database" class="form-control" onchange="updateEnvDatabase(this.value)" required>
                         <option value="">Seleccione Base de Datos</option>
-                        <option value="express_data">Control Inventario TI</option>
-                        <option value="express_data2">Control Inventario TI22</option>
+                        <option value="unidplay_ControlInventarioTI">Control Inventario TI</option>
+                        <option value="unidplay_Presupuestos">Presupuestos</option>
                     </select>
                 </div>
 

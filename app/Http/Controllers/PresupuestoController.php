@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Gerencia;
+use App\Models\Empleados;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ReportExport;
@@ -95,41 +96,188 @@ class PresupuestoController extends Controller
 
 
        if ($request->submitbutton == 'pdf'){
-                $GerenciaTb = Gerencia::query()
-                ->select("*")
-                ->where('GerenciaID','=', $request->GerenciaID)
+
+            $numerogerencia = (int)$request->GerenciaID;
+
+                $GerenciaTb = Empleados::query()
+                ->select("gerencia.NombreGerencia","gerencia.NombreGerente",DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados'))
+                ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
+                ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
+                ->join("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
+                ->where('gerencia.GerenciaID','=', $numerogerencia)
+                ->groupBy('gerencia.GerenciaID')
                 ->get();
 
-               /* $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$request->GerenciaID]);
-                $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$request->GerenciaID]);
-                $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$request->GerenciaID]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$request->GerenciaID]);*/
+
+
+                $datosheader = DB::select('call sp_ReporteCostosPorGerenciaID(?)', [$numerogerencia]);
+
+              
+                $total = 0;
+
+               
+                foreach ($datosheader as $registro) {
+                 
+                    if (is_numeric($registro->TotalCosto)) {
+                        $total += $registro->TotalCosto;
+                    }
+                }
+
+                $datosheader[] = (object) [
+                    'Categoria' => 'Total presupuestado', 
+                    'TotalCosto' => $total
+                ];
+
+               
+
+                $presup_otrosinsums = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_lics  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
             
-                $datosheader = DB::select('EXECUTE sp_ReporteCostosPorGerenciaID @GerenciaID ='.''. $request->GerenciaID);
+                $presup_cal_pagos = DB::select('call ObtenerInsumosAnualesPorGerencia(?)', [$numerogerencia]);
 
-                $presup_lics =  $request->tipo == 'mens' ? DB::select('EXECUTE sp_GenerarReporteLicenciasPorGerencia @GerenciaID ='.''. $request->GerenciaID ) : DB::select('EXECUTE sp_GenerarReporteLicenciasPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
-
-                $presup_otrosinsums =  $request->tipo == 'mens' ? DB::select('EXECUTE sp_GenerarReporteAccesoriosYMantenimientosPorGerencia @GerenciaID ='.''. $request->GerenciaID ) : DB::select('EXECUTE sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
-
-
-                $presup_acces =  $request->tipo == 'mens' ? DB::select('EXECUTE sp_ReportePresupuestoLineasVozPorGerencia @GerenciaID ='.''. $request->GerenciaID ) : DB::select('EXECUTE sp_ReportePresupuestoLineasVozPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
-
-                $presup_datos = $request->tipo == 'mens' ? DB::select('EXECUTE sp_ReportePresupuestoLineasDatosPorGerencia @GerenciaID ='.''. $request->GerenciaID) : DB::select('EXECUTE sp_ReportePresupuestoLineasDatosPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
-
-                $presup_gps = $request->tipo == 'mens' ? DB::select('EXECUTE sp_ReportePresupuestoLineasGPSPorGerencia @GerenciaID ='.''. $request->GerenciaID) : DB::select('EXECUTE sp_ReportePresupuestoLineasGPSPorGerenciaAnual @GerenciaID ='.''. $request->GerenciaID);
-
-                $presup_cal_pagos = DB::select('EXECUTE ObtenerInsumosAnualesPorGerencia @GerenciaID ='.''. $request->GerenciaID);
+                // Inicializar las variables para las sumas de cada mes
+                $sumaEnero = 0;
+                $sumaFebrero = 0;
+                $sumaMarzo = 0;
+                $sumaAbril = 0;
+                $sumaMayo = 0;
+                $sumaJunio = 0;
+                $sumaJulio = 0;
+                $sumaAgosto = 0;
+                $sumaSeptiembre = 0;
+                $sumaOctubre = 0;
+                $sumaNoviembre = 0;
+                $sumaDiciembre = 0;
+                
+                // Recorrer los datos y sumar los valores por cada mes
+                foreach ($presup_cal_pagos as $registro) {
+                    $sumaEnero += is_numeric($registro->Enero) ? $registro->Enero : 0;
+                    $sumaFebrero += is_numeric($registro->Febrero) ? $registro->Febrero : 0;
+                    $sumaMarzo += is_numeric($registro->Marzo) ? $registro->Marzo : 0;
+                    $sumaAbril += is_numeric($registro->Abril) ? $registro->Abril : 0;
+                    $sumaMayo += is_numeric($registro->Mayo) ? $registro->Mayo : 0;
+                    $sumaJunio += is_numeric($registro->Junio) ? $registro->Junio : 0;
+                    $sumaJulio += is_numeric($registro->Julio) ? $registro->Julio : 0;
+                    $sumaAgosto += is_numeric($registro->Agosto) ? $registro->Agosto : 0;
+                    $sumaSeptiembre += is_numeric($registro->Septiembre) ? $registro->Septiembre : 0;
+                    $sumaOctubre += is_numeric($registro->Octubre) ? $registro->Octubre : 0;
+                    $sumaNoviembre += is_numeric($registro->Noviembre) ? $registro->Noviembre : 0;
+                    $sumaDiciembre += is_numeric($registro->Diciembre) ? $registro->Diciembre : 0;
+                }
+                
+                // Agregar la fila "Total"
+                $presup_cal_pagos[] = (object) [
+                    'NombreInsumo' => 'Total',
+                    'Enero' => $sumaEnero,
+                    'Febrero' => $sumaFebrero,
+                    'Marzo' => $sumaMarzo,
+                    'Abril' => $sumaAbril,
+                    'Mayo' => $sumaMayo,
+                    'Junio' => $sumaJunio,
+                    'Julio' => $sumaJulio,
+                    'Agosto' => $sumaAgosto,
+                    'Septiembre' => $sumaSeptiembre,
+                    'Octubre' => $sumaOctubre,
+                    'Noviembre' => $sumaNoviembre,
+                    'Diciembre' => $sumaDiciembre,
+                    'Orden' => '' // Si deseas agregar algún valor en "Orden" para el total, puedes hacerlo.
+                ];
+                
+             
                 
 
 
+                $tablapresup_otrosinsums = [];
+                $columnaspresup_otrosinsums = [];
+                $totalespresup_otrosinsums = []; 
+                $granTotalpresup_otrosinsums = 0; 
+
+                foreach ($presup_otrosinsums as $row) {
+                    $empleadoID = $row->EmpleadoID;
+                    $nombre = $row->NombreEmpleado;
+                    $puesto = $row->NombrePuesto;
+                    $insumo = $row->NombreInsumo;
+                    $costo = (float) $row->CostoTotal;
+
+                    if (!isset($tablapresup_otrosinsums[$empleadoID])) {
+                        $tablapresup_otrosinsums[$empleadoID] = [
+                            'NombreEmpleado' => $nombre,
+                            'NombrePuesto' => $puesto,
+                            'TotalPorEmpleado' => 0
+                        ];
+                    }
+
+                    $tablapresup_otrosinsums[$empleadoID][$insumo] = $costo;
+                    $tablapresup_otrosinsums[$empleadoID]['TotalPorEmpleado'] += $costo;
+
+                  
+                    $columnaspresup_otrosinsums[$insumo] = true;
+
+                    if (!isset($totalespresup_otrosinsums[$insumo])) {
+                        $totalespresup_otrosinsums[$insumo] = 0;
+                    }
+                    $totalespresup_otrosinsums[$insumo] += $costo;
+                    
+                    $granTotalpresup_otrosinsums += $costo;
+                }
+
+
+                $tablapresup_lics = [];
+                $columnaspresup_lics = [];
+                $totalespresup_lics = []; 
+                $granTotalpresup_lics = 0; 
+
+                foreach ($presup_lics as $row) {
+                    $empleadoID = $row->EmpleadoID;
+                    $nombre = $row->NombreEmpleado;
+                    $puesto = $row->NombrePuesto;
+                    $insumo = $row->NombreInsumo;
+                    $costo = (float) $row->CostoTotal;
+
+                    if (!isset($tablapresup_lics[$empleadoID])) {
+                        $tablapresup_lics[$empleadoID] = [
+                            'NombreEmpleado' => $nombre,
+                            'NombrePuesto' => $puesto,
+                            'TotalPorEmpleado' => 0
+                        ];
+                    }
+
+                    $tablapresup_lics[$empleadoID][$insumo] = $costo;
+                    $tablapresup_lics[$empleadoID]['TotalPorEmpleado'] += $costo;
+
+                  
+                    $columnaspresup_lics[$insumo] = true;
+
+                    if (!isset($totalespresup_lics[$insumo])) {
+                        $totalespresup_lics[$insumo] = 0;
+                    }
+                    $totalespresup_lics[$insumo] += $costo;
+                    
+                    $granTotalpresup_lics += $costo;
+                }
+
+              
+              
                 $data = ["title" => $request->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
                         "dato" => $request->tipo == 'mens' ? 'Mensual' : 'Anual',
-                        'datosheader' => $datosheader[0],
-                        'GerenciaTb' => $GerenciaTb,
-                        'presup_otrosinsums' => $presup_otrosinsums,
-                        'presup_lics' => $presup_lics,
+                        'datosheader' => $datosheader,
+                        'GerenciaTb' => $GerenciaTb[0],
+                        'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
+                        'columnaspresup_otrosinsums' => $columnaspresup_otrosinsums,
+                        'totalespresup_otrosinsums' => $totalespresup_otrosinsums,
+                        'granTotalpresup_otrosinsums' => $granTotalpresup_otrosinsums,
+                        'tablapresup_lics' => $tablapresup_lics,
+                        'columnaspresup_lics' => $columnaspresup_lics,
+                        'totalespresup_lics' => $totalespresup_lics,
+                        'granTotalpresup_lics' => $granTotalpresup_lics,
+                        'presup_lics' => [],
                         'presup_acces' => $presup_acces,
                         'presup_datos' => $presup_datos,
                         'presup_gps' => $presup_gps,
+                        'presup_cal_pagos' => [],
                         'presup_cal_pagos' => $presup_cal_pagos
                         ];
 
