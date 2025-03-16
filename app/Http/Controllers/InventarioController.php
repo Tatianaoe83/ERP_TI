@@ -20,6 +20,7 @@ use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use DB;
+use PDF;
 
 class InventarioController extends AppBaseController
 {
@@ -405,5 +406,29 @@ class InventarioController extends AppBaseController
 
        
     }
+
+    public function cartas($id)
+    {
+       
+
+        return view('inventarios.cartas',compact('id'));
+    }
+
+    
+    public function pdffile(request $request,$id){
+
+
+        $data =[
+           
+
+        ];
+       
+        $pdf = PDF::loadView('inventarios.pdffile',$data);
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->stream("Incidencia.pdf", array("Attachment" => false));
+
+
+    } 
+
 
 }
