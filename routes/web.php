@@ -61,6 +61,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::POST('inventarios/crear-linea/{id}', [InventarioController::class, 'crearlinea'])->name('inventarios.crearlinea');
 
     Route::GET('inventarios/{inventario}/transferir', [InventarioController::class, 'transferir'])->name('inventarios.transferir');
+    Route::PUT('inventarios/{inventario}/traspaso', [InventarioController::class, 'formTraspaso'])->name('inventarios.transpaso');
     Route::GET('inventarios/{inventario}/cartas', [InventarioController::class, 'cartas'])->name('inventarios.cartas');
     Route::POST('pdffile/{id}', [InventarioController::class, 'pdffile'])->name('inventarios.pdffile');
 

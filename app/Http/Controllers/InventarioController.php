@@ -44,20 +44,20 @@ class InventarioController extends AppBaseController
 
         if (request()->ajax()) {
             $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-            ->select([
-                'empleados.EmpleadoID',
-                'empleados.NombreEmpleado',
-                'puestos.NombrePuesto as nombre_puesto',
-                'obras.NombreObra as nombre_obra',
-                'empleados.NumTelefono',
-                'empleados.Correo',
-                'empleados.Estado'
-            ]);
+                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->select([
+                    'empleados.EmpleadoID',
+                    'empleados.NombreEmpleado',
+                    'puestos.NombrePuesto as nombre_puesto',
+                    'obras.NombreObra as nombre_obra',
+                    'empleados.NumTelefono',
+                    'empleados.Correo',
+                    'empleados.Estado'
+                ]);
 
-            
+
             return DataTables::of($unidades)
-                ->addColumn('action', function($row){
+                ->addColumn('action', function ($row) {
                     return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
                 })
                 ->rawColumns(['action'])
@@ -138,7 +138,7 @@ class InventarioController extends AppBaseController
                 'obras.ObraID',
                 'gerencia.GerenciaID',
                 'unidadesdenegocio.UnidadNegocioID'
-                
+
             )
             ->where('empleados.EmpleadoID', $id)
             ->first();
@@ -148,15 +148,15 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
-       
-        $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID','=',$id)->get();
+
+        $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID', '=', $id)->get();
         $Equipos = Equipos::select("*")->get();
 
-        $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID','=',$id)->get();
+        $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID', '=', $id)->get();
         $Insumos = Insumos::select("*")->get();
 
-        $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID','=',$id)->get();
-        $Lineas = LineasTelefonicas::select("*")->where('Disponible','=',0)->get();
+        $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID', '=', $id)->get();
+        $Lineas = LineasTelefonicas::select("*")->where('Disponible', '=', 0)->get();
 
 
 
@@ -168,7 +168,7 @@ class InventarioController extends AppBaseController
             'insumos' => $Insumos,
             'LineasAsignados' => $LineasAsignados,
             'Lineas' => $Lineas
-          
+
         ]);
     }
 
@@ -182,8 +182,8 @@ class InventarioController extends AppBaseController
      */
     public function editarequipo($id, Request $request)
     {
-     
-        $inventarioEquipo = InventarioEquipo::where('InventarioID', $id)->first(); 
+
+        $inventarioEquipo = InventarioEquipo::where('InventarioID', $id)->first();
 
         if (!$inventarioEquipo) {
             return response()->json(['error' => 'Equipo no encontrado'], 404);
@@ -192,24 +192,18 @@ class InventarioController extends AppBaseController
         $inventarioEquipo->update($request->all());
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
-
-       
-
     }
 
     public function crearequipo($id, Request $request)
     {
 
         $data = $request->all();
-        $data['EmpleadoID'] = $id; 
-    
+        $data['EmpleadoID'] = $id;
+
         InventarioEquipo::create($data);
 
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
-
-       
-
     }
 
 
@@ -222,8 +216,8 @@ class InventarioController extends AppBaseController
      */
     public function destroy($id)
     {
-       
-        $inventario = InventarioEquipo::where('InventarioID', $id)->first(); 
+
+        $inventario = InventarioEquipo::where('InventarioID', $id)->first();
 
 
         if (empty($inventario)) {
@@ -232,7 +226,7 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
-         $inventario->delete($id);
+        $inventario->delete($id);
 
         Flash::success('Inventario deleted successfully.');
 
@@ -242,9 +236,9 @@ class InventarioController extends AppBaseController
 
     public function editarinsumo($id, Request $request)
     {
-     
-     
-        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+
+        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first();
 
         if (!$inventarioinsumo) {
             return response()->json(['error' => 'Equipo no encontrado'], 404);
@@ -253,36 +247,30 @@ class InventarioController extends AppBaseController
         $inventarioinsumo->update($request->all());
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
-
-       
-
     }
 
     public function crearinsumo($id, Request $request)
     {
 
-       
-        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first(); 
+
+        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first();
 
         $data = $request->all();
-        $data['EmpleadoID'] = $id; 
-        $data['InsumoID'] = $categorias->ID; 
-    
-    
+        $data['EmpleadoID'] = $id;
+        $data['InsumoID'] = $categorias->ID;
+
+
         InventarioInsumo::create($data);
 
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
-
-       
-
     }
 
     public function destroyInsumo($id)
     {
-       
-      
-        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+
+        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first();
 
 
         if (empty($InventarioInsumo)) {
@@ -291,20 +279,20 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
-         $InventarioInsumo->delete($id);
+        $InventarioInsumo->delete($id);
 
         Flash::success('Inventario deleted successfully.');
 
         return redirect()->route('inventarios.edit', ['inventario' => $InventarioInsumo->EmpleadoID]);
     }
 
-    
+
     public function editarlinea($id, Request $request)
     {
-     
-        dd ('editar linea');
-     
-        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+        dd('editar linea');
+
+        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first();
 
         if (!$inventarioinsumo) {
             return response()->json(['error' => 'Equipo no encontrado'], 404);
@@ -313,38 +301,32 @@ class InventarioController extends AppBaseController
         $inventarioinsumo->update($request->all());
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
-
-       
-
     }
 
     public function crearlinea($id, Request $request)
     {
 
-        dd ($request->all());
-        dd ('crear linea');
-       
-        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first(); 
+        dd($request->all());
+        dd('crear linea');
+
+        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first();
 
         $data = $request->all();
-        $data['EmpleadoID'] = $id; 
-        $data['InsumoID'] = $categorias->ID; 
-    
-    
+        $data['EmpleadoID'] = $id;
+        $data['InsumoID'] = $categorias->ID;
+
+
         InventarioInsumo::create($data);
 
 
         return response()->json(['message' => 'Inventario actualizado correctamente']);
-
-       
-
     }
 
     public function destroylinea($id)
     {
-       
-      dd ('destroy linea');
-        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first(); 
+
+        dd('destroy linea');
+        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first();
 
 
         if (empty($InventarioInsumo)) {
@@ -353,7 +335,7 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
-         $InventarioInsumo->delete($id);
+        $InventarioInsumo->delete($id);
 
         Flash::success('Inventario deleted successfully.');
 
@@ -363,72 +345,129 @@ class InventarioController extends AppBaseController
 
     public function transferir($id)
     {
-     
-           // Obtener el inventario con joins
-           $inventario = DB::table('empleados')
-           ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-           ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
-           ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-           ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
-           ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID')
-           ->select(
-               'empleados.*',
-               'puestos.PuestoID',
-               'departamentos.DepartamentoID',
-               'obras.ObraID',
-               'gerencia.GerenciaID',
-               'unidadesdenegocio.UnidadNegocioID'
-               
-           )
-           ->where('empleados.EmpleadoID', $id)
-           ->first();
 
-       if (empty($inventario)) {
-           Flash::error('Inventario no encontrado');
-           return redirect(route('inventarios.index'));
-       }
+        // Obtener el inventario con joins
+        $inventario = DB::table('empleados')
+            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+            ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID')
+            ->select(
+                'empleados.*',
+                'puestos.PuestoID',
+                'departamentos.DepartamentoID',
+                'obras.ObraID',
+                'gerencia.GerenciaID',
+                'unidadesdenegocio.UnidadNegocioID'
 
-      
-       $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID','=',$id)->get();
-       $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID','=',$id)->get();
-       $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID','=',$id)->get();
+            )
+            ->where('empleados.EmpleadoID', $id)
+            ->first();
+
+        if (empty($inventario)) {
+            Flash::error('Inventario no encontrado');
+            return redirect(route('inventarios.index'));
+        }
 
 
+        $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID', '=', $id)->get();
+        $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID', '=', $id)->get();
+        $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID', '=', $id)->get();
+        $Empleados = Empleados::select("*")->get();
 
 
-       return view('inventarios.transferir')->with([
-           'inventario' => $inventario,
-           'equiposAsignados' => $EquiposAsignados,
-           'insumosAsignados' => $InsumosAsignados,
-           'LineasAsignados' => $LineasAsignados,
-         
-       ]);
 
-       
+
+
+        return view('inventarios.transferir')->with([
+            'inventario' => $inventario,
+            'equiposAsignados' => $EquiposAsignados,
+            'insumosAsignados' => $InsumosAsignados,
+            'LineasAsignados' => $LineasAsignados,
+            'Empleados' => $Empleados
+
+        ]);
     }
+
+    public function formTraspaso(Request $request)
+    {
+
+        $equiposSeleccionados = $request->input('equipos', []);
+        $insumosSeleccionados = $request->input('insumos', []);
+        $lineasSeleccionadas = $request->input('lineas', []);
+
+        $empleadoSeleccionado = (int) $request->input('empleado_id');
+
+        // dd([
+
+        //     'equipo' => $equiposSeleccionados,
+        //     'insumos' => $insumosSeleccionados,
+        //     'lineas' => $lineasSeleccionadas,
+        //     'empleadoID' => $empleadoSeleccionado
+        //  ]);
+
+        if (!empty($equiposSeleccionados)) {
+            $equipos = InventarioEquipo::whereIn('InventarioID', $equiposSeleccionados)
+                           ->select('InventarioID')
+                           ->get();
+            foreach ($equipos as $equipo) {
+                $equipo->EmpleadoID = $empleadoSeleccionado;
+                $equipo->save();
+            }
+        } else {
+            Flash::error('Inventario no encontrado');
+        }
+        if (!empty($insumosSeleccionados)) {
+
+            $insumos = InventarioInsumo::whereIn('InventarioID', $insumosSeleccionados)
+                           ->select('InventarioID')
+                           ->get();
+
+            foreach ($insumos as $insumo) {
+                $insumo->EmpleadoID = $empleadoSeleccionado;
+                $insumo->save();
+            }
+        } else {
+            Flash::error('Inventario no encontrado');
+        }
+        if (!empty($lineasSeleccionadas)) {
+
+            $lineas = InventarioLineas::whereIn('InventarioID', $lineasSeleccionadas)
+                           ->select('InventarioID')
+                           ->get();
+
+            foreach ($lineas as $linea) {
+                $linea->EmpleadoID = $empleadoSeleccionado;
+                $linea->save();
+            }
+        } else {
+            Flash::error('Inventario no encontrado');
+        }
+
+        
+
+        
+        return back();
+    }
+
 
     public function cartas($id)
     {
-       
 
-        return view('inventarios.cartas',compact('id'));
+
+        return view('inventarios.cartas', compact('id'));
     }
 
-    
-    public function pdffile(request $request,$id){
+
+    public function pdffile(request $request, $id)
+    {
 
 
-        $data =[
-           
+        $data = [];
 
-        ];
-       
-        $pdf = PDF::loadView('inventarios.pdffile',$data);
+        $pdf = PDF::loadView('inventarios.pdffile', $data);
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream("Incidencia.pdf", array("Attachment" => false));
-
-
-    } 
-
-
+    }
 }
