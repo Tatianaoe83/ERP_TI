@@ -459,6 +459,59 @@ class InventarioController extends AppBaseController
         return view('inventarios.cartas', compact('id'));
     }
 
+    public function getData($tipoId,$id)
+    {
+      
+        $data = [];
+
+        switch ($tipoId) {
+            case 1:
+                $data = InventarioEquipo::select('InventarioID as id','CategoriaEquipo','Marca' ,'Caracteristicas','Modelo','NumSerie','FechaAsignacion')
+                ->where('EmpleadoID', '=', $id)
+                ->where('CategoriaEquipo', '!=', 'Radio')
+                ->get();
+
+                $insumos = InventarioInsumo::select('InventarioID as id','CateogoriaInsumo','NombreInsumo','NumSerie','Comentarios')
+                ->where('EmpleadoID', '=', $id)
+                ->where('CateogoriaInsumo', '=', 'ACCESORIOS')
+                ->get();
+              
+            
+                break;
+            case 2:
+                $data = InventarioEquipo::select('InventarioID as id','CategoriaEquipo','Marca' ,'Caracteristicas','Modelo','NumSerie','FechaAsignacion')
+                ->where('EmpleadoID', '=', $id)
+                ->where('CategoriaEquipo', '=', 'Radio')
+                ->get();
+
+                $insumos=[];
+                break;
+            case 3:
+                $data = InventarioLineas::select('InventarioID as id', 'NumTelefonico')
+                ->where('EmpleadoID', '=', $id)
+                ->get();
+
+                $insumos=[];
+
+                break;
+            case 4:
+                $data = InventarioEquipo::select('InventarioID as id','CategoriaEquipo','Marca' ,'Caracteristicas','Modelo','NumSerie','FechaAsignacion')
+                ->where('EmpleadoID', '=', $id)
+                ->where('CategoriaEquipo', '!=', 'Radio')
+                ->get();
+
+                $insumos = [];
+              
+            
+                break;
+        }
+
+        return response()->json([
+            'data' => $data,
+            'insumos' => $insumos
+        ]);
+    }
+
 
     public function pdffile(request $request, $id)
     {
