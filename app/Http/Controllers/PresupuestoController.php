@@ -277,7 +277,6 @@ class PresupuestoController extends Controller
                         'presup_acces' => $presup_acces,
                         'presup_datos' => $presup_datos,
                         'presup_gps' => $presup_gps,
-                        'presup_cal_pagos' => [],
                         'presup_cal_pagos' => $presup_cal_pagos
                         ];
 

@@ -42,62 +42,14 @@
 </table>
 
 
-<table style="border-collapse: collapse; border: none; border-spacing: 0px;">
-	<tr>
-		<td colspan="4" style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); background-color: rgb(255, 20, 20); padding-right: 3pt; padding-left: 3pt;">
-			w w w w
-		</td>
-	</tr>
-	<tr>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			5
-		</td>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			3
-		</td>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			5
-		</td>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			t6
-		</td>
-	</tr>
-	<tr>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			er
-		</td>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			4
-		</td>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			4
-		</td>
-		<td style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0); padding-right: 3pt; padding-left: 3pt;">
-			w
-		</td>
-	</tr>
-	<tr>
-		<td style="border-width: 1px 1px 2px; border-style: solid; border-color: rgb(0, 0, 0) rgb(0, 0, 0) black; padding-right: 3pt; padding-left: 3pt;">
-			4
-		</td>
-		<td style="border-width: 1px 1px 2px; border-style: solid; border-color: rgb(0, 0, 0) rgb(0, 0, 0) black; padding-right: 3pt; padding-left: 3pt;">
-			4
-		</td>
-		<td style="border-width: 1px 1px 2px; border-style: solid; border-color: rgb(0, 0, 0) rgb(0, 0, 0) black; padding-right: 3pt; padding-left: 3pt;">
-			4
-		</td>
-		<td style="border-width: 1px 1px 2px; border-style: solid; border-color: rgb(0, 0, 0) rgb(0, 0, 0) black; padding-right: 3pt; padding-left: 3pt;">
-			2
-		</td>
-	</tr>
-</table>
+
 
 
 <p style="background-color: #cccccc;">Presupuesto de Licenciamiento</p>
 
 <table class="table" style="background-color: #cccccc;">
         <thead>
-                <tr style="background-color: #191970; color:white; text-align: center;">
+                <tr >
                     <th>NombreEmpleado</th>
                     <th>NombrePuesto</th>
                     @foreach($columnaspresup_lics as $columna => $_)
@@ -139,7 +91,7 @@
 
     <table class="table">
         <thead>
-                <tr style="background-color: #191970; color:white; text-align: center;">
+                <tr >
                     <th>NombreEmpleado</th>
                     <th>NombrePuesto</th>
                     @foreach($columnaspresup_otrosinsums as $columna => $_)
@@ -165,13 +117,13 @@
             @endforeach
 
                  <!-- Fila de totales -->
-            <tr style="background-color: #191970; color:white; text-align: center;">
+            <tr >
                 <td><strong>TOTAL</strong></td>
                 <td></td>
                 @foreach($columnaspresup_otrosinsums as $columna => $_)
                     <td><strong>$ {{ number_format($totalespresup_otrosinsums[$columna] ?? 0, 2) }}</strong></td>
-                @endforeach>
-                <td><strong>$ {{ number_format($granTotalpresup_otrosinsums, 2) }}</strong></td>
+                @endforeach
+                <td> <strong>$ {{ number_format($granTotalpresup_otrosinsums, 2) }}</strong> </td>
             </tr>
 
         </tbody>
@@ -181,7 +133,7 @@
 
     <table class="table">
         <thead>
-            <tr style="background-color: #191970; color:white; text-align: center;">
+            <tr >
                 <th scope="col">NombreEmpleado</th>
                 <th scope="col">NombrePuesto</th>
                 <th scope="col">Voz Costo Renta {{$dato}}</th>
@@ -206,7 +158,7 @@
 
     <table class="table">
         <thead>
-            <tr style="background-color: #191970; color:white; text-align: center;">
+            <tr >
                 <th scope="col">NombreEmpleado</th>
                 <th scope="col">NombrePuesto</th>
                 <th scope="col">Datos Costo Renta {{$dato}} </th>
@@ -216,8 +168,6 @@
         </thead>
         <tbody>
             @foreach ($presup_datos as $presup_dato)
-
-          
 
                 <tr class="{{ $presup_dato->Orden == 1 ? 'highlight-row' : '' }}">
                     <th>{{$presup_dato->NombreEmpleado}}</th>
@@ -234,7 +184,7 @@
 
     <table class="table">
         <thead>
-            <tr style="background-color: #191970; color:white; text-align: center;">
+            <tr >
                 <th scope="col">NombreEmpleado</th>
                 <th scope="col">NombrePuesto</th>
                 <th scope="col">Datos Costo Renta {{$dato}} </th>
@@ -259,7 +209,7 @@
 
 <table class="table">
     <thead>
-        <tr style="background-color: #191970; color:white; text-align: center;">
+        <tr >
             <th scope="col">Nombre Insumo</th>
             <th scope="col">Enero</th>
             <th scope="col">Febrero</th>
