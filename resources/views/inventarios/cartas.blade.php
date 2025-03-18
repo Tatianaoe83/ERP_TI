@@ -52,11 +52,11 @@
                                                 </select>
                                         </div>
 
-                                        <div class="form-group col-sm-6">
+                                        <!--<div class="form-group col-sm-6">
                                             {!! Form::label('tiempo', 'Tiempo:') !!}
                                             <input type="text" class="form-control" name="tiempo">
 
-                                        </div>
+                                        </div>-->
 
                                         <div class="form-group col-sm-6"> <abbr title="requerido">*</abbr>
                                             {!! Form::label('telefono', 'Número de contacto:') !!}
@@ -154,6 +154,14 @@ $(document).ready(function() {
     $('#TipoFor').change(function() {
         let tipoId = $(this).val();
         let url = "{{ url('/inventarios/getData') }}/" + tipoId + "/" + editId;
+
+       
+         selectedEquipos.clear();
+        selectedInsumos.clear();
+
+        
+        $('#checkAllEquipos').prop('checked', false);
+        $('#checkAllInsumos').prop('checked', false);
 
         $.ajax({
             url: url,

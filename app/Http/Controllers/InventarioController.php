@@ -15,12 +15,14 @@ use App\Models\InventarioEquipo;
 use App\Models\InventarioInsumo;
 use App\Models\InventarioLineas;
 use App\Models\LineasTelefonicas;
+use App\Models\UnidadesDeNegocio;
 use App\Models\Insumos;
 use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use DB;
 use PDF;
+use Carbon\Carbon;
 
 class InventarioController extends AppBaseController
 {
@@ -399,13 +401,7 @@ class InventarioController extends AppBaseController
 
         $empleadoSeleccionado = (int) $request->input('empleado_id');
 
-        // dd([
-
-        //     'equipo' => $equiposSeleccionados,
-        //     'insumos' => $insumosSeleccionados,
-        //     'lineas' => $lineasSeleccionadas,
-        //     'empleadoID' => $empleadoSeleccionado
-        //  ]);
+  
 
         if (!empty($equiposSeleccionados)) {
             $equipos = InventarioEquipo::whereIn('InventarioID', $equiposSeleccionados)
@@ -516,9 +512,100 @@ class InventarioController extends AppBaseController
     public function pdffile(request $request, $id)
     {
 
+       //dd ($request->all());
 
-        $data = [];
+       Carbon::setLocale('es'); 
+        setlocale(LC_TIME, 'es_ES.UTF-8'); 
 
+        $empresa = UnidadesDeNegocio::select('NombreEmpresa')
+            ->where('UnidadNegocioID', '=', $request->empresa)
+                    ->get();
+                    
+
+        $entrega = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto')
+                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->where('EmpleadoID', '=', $request->entrega)
+                ->get();
+        $recibe = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto')
+                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->where('EmpleadoID', '=', $id)
+                ->get();
+        
+        $obra_ubica = Empleados::select('obras.NombreObra','unidadesdenegocio.NombreEmpresa')
+                ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+                ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID')
+                ->where('EmpleadoID', '=', $id)
+                ->get();
+
+    
+        $acomodatoOptions = [
+                    'Tobra' => 'TERMINACIÓN DE OBRA',
+                    'TContrato' => 'TERMINACIÓN DE CONTRATO',
+                    'Temp' => 'TEMPORAL'
+        ];
+
+        $tipoFor = $request->input('TipoFor');
+        $selectedItems = $request->input('selectedItems');
+
+        // Separar IDs de equipos e insumos si existe '|'
+        $partes = explode('|', trim($selectedItems, '|'));
+        $equiposIDs = isset($partes[0]) ? explode(',', $partes[0]) : [];
+        $insumosIDs = isset($partes[1]) ? explode(',', $partes[1]) : [];
+
+      
+        $equipos = [];
+        $insumos = [];
+
+        if ($tipoFor == "1" or $tipoFor == "2" or $tipoFor == "4" ) {
+            if (!empty($equiposIDs)) {
+                $equipos = InventarioEquipo::whereIn('InventarioID', $equiposIDs)->get();
+            }
+            if (!empty($insumosIDs)) {
+                $insumos = InventarioInsumo::whereIn('InventarioID', $insumosIDs)->get();
+                
+                
+                foreach ($insumos as $insumo) {
+                    $folioKey = "folio_" . $insumo->InventarioID;
+                    $insumo->folio = $request->input($folioKey, ''); 
+                }
+            }
+        }else if ($tipoFor == "3"){
+            if (!empty($equiposIDs)) {
+                $equipos = InventarioLineas::whereIn('InventarioID', $equiposIDs)->get();
+
+                foreach ($equipos as $equipo) {
+                    $descripcionKey = "descripcion_" . $equipo->InventarioID;
+                    $equipo->Caracteristicas = $request->input($descripcionKey, ''); 
+
+                    $numeroserieKey = "numeroserie_" . $equipo->InventarioID;
+                    $equipo->NumSerie = $request->input($numeroserieKey, ''); 
+
+                }
+                
+            }
+
+        }
+        
+       
+             
+
+        $data = [
+            'fecha' => Carbon::now()->translatedFormat('j \d\e F \d\e Y'),
+            'empresa' =>  $empresa[0]->NombreEmpresa,
+            'entrega' => $entrega[0]->NombreEmpleado,
+            'entregapuesto' => $entrega[0]->NombrePuesto,
+            'recibe' => $recibe[0]->NombreEmpleado,
+            'recibepuesto' => $recibe[0]->NombrePuesto,
+            'obra' => $obra_ubica[0]->NombreEmpresa,
+            'gerencia' =>  $obra_ubica[0]->NombreObra,
+            'telefono' => $request->telefono,
+            'acomodato' => $acomodatoOptions[$request->acomodato] ?? $request->acomodato,
+            'equipos' => $equipos,
+            'insumos' => $insumos,
+            'TipoFor' => $tipoFor
+        ];
+
+      
         $pdf = PDF::loadView('inventarios.pdffile', $data);
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream("Incidencia.pdf", array("Attachment" => false));
