@@ -133,7 +133,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             'Octubre' => $sumaOctubre,
             'Noviembre' => $sumaNoviembre,
             'Diciembre' => $sumaDiciembre,
-            'Orden' => '' // Si deseas agregar algún valor en "Orden" para el total, puedes hacerlo.
+            'Orden' => 7 // Si deseas agregar algún valor en "Orden" para el total, puedes hacerlo.
         ];
 
 
@@ -147,7 +147,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             $nombre = $row->NombreEmpleado;
             $puesto = $row->NombrePuesto;
             $insumo = $row->NombreInsumo;
-            $costo = (float) $row->CostoTotal;
+            $costo = (int) $row->CostoTotal;
 
             if (!isset($tablapresup_otrosinsums[$empleadoID])) {
                 $tablapresup_otrosinsums[$empleadoID] = [
@@ -182,7 +182,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             $nombre = $row->NombreEmpleado;
             $puesto = $row->NombrePuesto;
             $insumo = $row->NombreInsumo;
-            $costo = (float) $row->CostoTotal;
+            $costo = (int) $row->CostoTotal;
 
             if (!isset($tablapresup_lics[$empleadoID])) {
                 $tablapresup_lics[$empleadoID] = [

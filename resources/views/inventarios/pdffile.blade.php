@@ -1,250 +1,291 @@
-<html>
-    <head>
-        <style>
-            /** 
-                Set the margins of the page to 0, so the footer and the header
-                can be of the full height and width !
-             **/
-            @page {
-                margin: 0.9cm 0.9cm;
-                font-family: Arial,Georgia, serif;
-                width: 215.9mm;    /* Ancho carta */
-                height: 279.4mm;   /* Alto carta */
-                font-size:14px;
-               
-            }
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carta de Entrega</title>
+    <style>
+        @page {
+            size: Letter; /* Tamaño carta */
+            margin: 0cm 1cm 1cm 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 1cm 1cm 1cm 0cm;
+            padding: 0;
+            background-color: #cccccc;
+        }
+        .container {
+            width: 100%;
+            max-width: 720px;
+            margin: auto;
+            background: #ffffff;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+        .header {
+            justify-content: space-between;
+            align-items: center;
+            /*border-bottom: 3px solid #cccccc;*/
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .logo img {
+            max-width: 180px;
+        }
+        .invoice-date {
+            font-size: 12px;
+            color: #666;
+            text-align:right; 
+        }
+        h1 {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 10px 0;
+            margin-top: 10px;
+            padding-top:6px;
+            padding-bottom: 6px;
+            background:#cccccc;
+        }
+        .subheader {
+            text-align: left;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .content {
+            font-size: 12px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #444;
+            color: white;
+            padding: 5px;
+            text-align: center;
+        }
+        td {
+            padding: 5px;
+            text-align: center;
+        }
+        .terms {
+            width: 90%;
+            margin-left: 25px;
+            font-size: 12px;
+            line-height: 1.4;
+            background: #f8f8f8;
+            padding: 10px;
+            border-left: 6px solid #444;
+            margin-bottom: 10px;
+        }
+        .signatures {
+            width: 90%;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .signature {
+            text-align: center;
+            width: 45%;
+        }
+        .signature p {
+            margin-top: 40px;
+            border-top: 1px solid #000;
+            padding-top: 3px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .footer {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="header">
+            <div class="logo">
+                <img src="{{public_path('img/logo.png')}}" alt="Logo">
+            </div>
+            <div class="invoice-date">
+                <p>Mérida, Yucatán a {{$fecha}}</p>
+            </div>
+        </div>
 
-            /** Define now the real margins of every page in the PDF **/
-            body {
-                margin-top: 4.1cm;
-                margin-left: 0cm;
-                margin-right: 0cm;
-                margin-bottom:7.5cm;
-			/* background: #2ffd39;*/
-            }
-
-            /** Define the header rules **/
-            header {
-                position: fixed;
-                top: 0cm;
-                left: 0cm;
-                right: 0cm;
-                height: 4.0cm;
-				/*background: #fd2f2f;*/
-            }
-
-            /** Define the footer rules **/
-            footer {
-                position: fixed; 
-                bottom: 0cm; 
-                left: 0cm; 
-                right: 0cm;
-                height: 7.3cm;
-				/*background: #2f70fd;*/
-            }
-
-			
-
-
-        </style>
-    </head>
-    <body>
-       
-        <header>
-        <table align="center" border="0" style="width:100%" >
-            <tr>
-                <td>
-                <td style="text-align: right">
-                <img src="{{public_path('img/logo.png')}}"  style="width: 60%; height: 40%;"></img>
-            <tr>
-                <td>
-                <td style="text-align: right">
-                    Mérida, Yucatán a {{$fecha}}
-            <tr>
-                <td colspan="2" style="text-align: center">
-                    CARTA DE ENTREGA DE 
-                    @if ($TipoFor == "1" or $TipoFor == "2" or $TipoFor == "4")
-                        EQUIPO TI
-                    @else
-                        TELEFONIA
-                    @endif
-
-            <tr>
-                <td style="text-align: left">
-                    Confirmo que recibo el , mismo que a continuación se detalla:
-                <td>
-        </table>
-
-			
-        </header>
-
-        <footer>
-        <table align="center" border="0" style="width:100%; text-align: center">
-            <tr>
-                <td style="width: 50%">Entrega:</td>
-                <td style="width: 50%">Recibe:</td>
-            </tr>
-            <tr>
-                <td style="height: 100px"></td>
-                <td style="height: 100px"></td>
-            </tr>
-            <tr>
-                <td >
-                    {{$entrega}}<br>
-                    {{$entregapuesto}}<br>
-                </td>
-                <td >
-                    {{$recibe}}<br>
-                    {{$recibepuesto}}<br>
-                </td>
-            </tr>
-        </table>
-
-			
-        </footer>
-
-        <!-- Wrap the content of your PDF inside a main tag -->
-        <main>
-
-        
-        @if ($TipoFor == 4)
-            <!-- Tabla especial para TipoFor == 4 (Equipos + Insumos con solo Número de Serie y Descripción) -->
-            <table align="center" border="1" style="text-align: center;width:100%; border: 1px solid black; border-collapse: collapse;">
-                <tr>
-                    <td style="background: black; color: white; border: 1px solid black;">
-                        NÚMERO DE SERIE
-                    </td>
-                    <td style="background: black; color: white; border: 1px solid black;">
-                        DESCRIPCIÓN
-                    </td>
-                </tr>
-                <!-- Equipos -->
-                @foreach ($equipos as $equipo)
-                    <tr>
-                        <td style="border: 1px solid black;">{{ $equipo->NumSerie ?? 'N/A' }}</td>
-                        <td style="border: 1px solid black;">{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
-                    </tr>
-                @endforeach
-                <!-- Insumos -->
-                @if (!empty($insumos) && count($insumos) > 0)
-                    @foreach ($insumos as $insumo)
-                        <tr>
-                            <td style="border: 1px solid black;">{{ $insumo->NumSerie ?? 'N/A' }}</td>
-                            <td style="border: 1px solid black;">{{ $insumo->Comentarios ?? 'Sin descripción' }}</td>
-                        </tr>
-                    @endforeach
-                @endif
-            </table>
+        @if ($TipoFor == "1" or $TipoFor == "2" or $TipoFor == "4")
+            <h1>CARTA DE ENTREGA DE EQUIPO TI</h1>
         @else
-            <!-- Tabla normal para otros tipos -->
-            <table align="center" border="1" style="text-align: center;width:100%; border: 1px solid black; border-collapse: collapse;">
-                <tr>
-                    <td colspan="2" style="background: black; color: white; border: 1px solid black;">
-                        OBRA/UBICACION
-                    </td>
-                    <td colspan="2" style="background: black; color: white; border: 1px solid black;">
-                        VIGENCIA DEL COMODATO
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2" style="border: 1px solid black;">
-                        {{$obra}}
-                    </td>
-                    <td colspan="2" style="border: 1px solid black;">
-                        {{$acomodato}}
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2" style="background: black; color: white; border: 1px solid black;">
-                        NÚMERO DE CONTACTO
-                    </td>
-                    <td colspan="2" style="background: black; color: white; border: 1px solid black;">
-                        GERENCIA
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="2" style="border: 1px solid black;">
-                        {{$telefono}}
-                    </td>
-                    <td colspan="2" style="border: 1px solid black;">
-                        {{$gerencia}}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="background: black; color: white; border: 1px solid black;">
-                        @if ($TipoFor == 3)
-                            NÚMERO DE TELÉFONO
-                        @else
-                            FOLIO
-                        @endif
-                    </td>
-                    <td style="background: black; color: white; border: 1px solid black;">
-                        NÚMERO DE SERIE
-                    </td>
-                    <td colspan="2" style="background: black; color: white; border: 1px solid black;">
-                        DESCRIPCIÓN
-                    </td>
-                </tr>
-                @foreach ($equipos as $equipo)
-                    <tr>
-                        @if ($TipoFor == 3)
-                            <td style="border: 1px solid black;">{{ $equipo->NumTelefonico }}</td>
-                        @else
-                            <td style="border: 1px solid black;">{{ $equipo->Folio }}</td>
-                        @endif
-                        <td style="border: 1px solid black;">{{ $equipo->NumSerie ?? 'N/A' }}</td>
-                        <td colspan="2" style="border: 1px solid black;">{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
-                    </tr>
-                @endforeach
-                @if (!empty($insumos) && count($insumos) > 0)
-                    @foreach ($insumos as $insumo)
-                        <tr>
-                            <td style="border: 1px solid black;">{{ $insumo->folio ?? 'N/A' }}</td>
-                            <td style="border: 1px solid black;">{{ $insumo->NumSerie ?? 'N/A' }}</td>
-                            <td colspan="2" style="border: 1px solid black;">{{ $insumo->Comentarios ?? 'Sin descripción' }}</td>
-                        </tr>
-                    @endforeach
-                @endif
-            </table>
+            <h1>CARTA DE ENTREGA DE TELEFONIA</h1>
         @endif
 
+        <p class="subheader">Confirmo que recibo el siguiente equipo, mismo que se detalla a continuación:</p>
 
-        <br>
+        <!-- Tabla de productos -->
+        @if ($TipoFor == 4)
+                <!-- Tabla especial para TipoFor == 4 (Equipos + Insumos con solo Número de Serie y Descripción) -->
+                <table >
+                    <tr>
+                        <th >
+                            NÚMERO DE SERIE
+                        </th>
+                        <th >
+                            DESCRIPCIÓN
+                        </th>
+                    </tr>
+                    <!-- Equipos -->
+                    @foreach ($equipos as $equipo)
+                        <tr>
+                            <td >{{ $equipo->NumSerie ?? 'N/A' }}</td>
+                            <td >{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
+                        </tr>
+                    @endforeach
+                    <!-- Insumos -->
+                    @if (!empty($insumos) && count($insumos) > 0)
+                        @foreach ($insumos as $insumo)
+                            <tr>
+                                <td >{{ $insumo->NumSerie ?? 'N/A' }}</td>
+                                <td >{{ $insumo->Comentarios ?? 'Sin descripción' }}</td>
+                            </tr>
+                        @endforeach
+                    @endif
+                </table>
+                @else
+                <!-- Tabla normal para otros tipos -->
+                <table >
+                    <tr>
+                        <th colspan="2" >
+                            OBRA/UBICACION
+                        </th>
+                        <th colspan="2" >
+                            VIGENCIA DEL COMODATO
+                        </th>
+                    </tr>
+                    <tr>
+                        <td colspan="2" >
+                            {{$obra}}
+                        </td>
+                        <td colspan="2" >
+                            {{$acomodato}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th colspan="2" >
+                            NÚMERO DE CONTACTO
+                        </th>
+                        <th colspan="2" >
+                            GERENCIA
+                        </th>
+                    </tr>
+                    <tr>
+                        <td colspan="2" >
+                            {{$telefono}}
+                        </td>
+                        <td colspan="2" >
+                            {{$gerencia}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th >
+                            @if ($TipoFor == 3)
+                                NÚMERO DE TELÉFONO
+                            @else
+                                FOLIO
+                            @endif
+                        </th>
+                        <th >
+                            NÚMERO DE SERIE
+                        </th>
+                        <th colspan="2" >
+                            DESCRIPCIÓN
+                        </th>
+                    </tr>
+                    @foreach ($equipos as $equipo)
+                        <tr>
+                            @if ($TipoFor == 3)
+                                <td >{{ $equipo->NumTelefonico }}</td>
+                            @else
+                                <td >{{ $equipo->Folio }}</td>
+                            @endif
+                            <td >{{ $equipo->NumSerie ?? 'N/A' }}</td>
+                            <td colspan="2" >{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
+                        </tr>
+                    @endforeach
+                    @if (!empty($insumos) && count($insumos) > 0)
+                        @foreach ($insumos as $insumo)
+                            <tr>
+                                <td >{{ $insumo->folio ?? 'N/A' }}</td>
+                                <td >{{ $insumo->NumSerie ?? 'N/A' }}</td>
+                                <td colspan="2" >{{ $insumo->Comentarios ?? 'Sin descripción' }}</td>
+                            </tr>
+                        @endforeach
+                    @endif
+                </table>
+                @endif
 
+
+        <!-- Términos y condiciones -->
+        <div class="terms">
         @if ($TipoFor == "4")
-        <table align="center" border="0" style="width:100%;text-align: center">       
-         <tr>
-		    <td style="text-align: center;">
-                Por favor de firmar este documento para confirmar lo recibido.
-            </table>  
-
+            <p>Por favor de firmar este documento para confirmar lo recibido.</p>
         @else   
-        <table align="center" border="0" style="width:100%;text-align: center">       
-         <tr>
-		    <td style="text-align: left;">
-            El equipo o los equipos es propiedad de {{$empresa}} y se me entrega en comodato durante el periodo especificado en la sección superior de vigencia. 
-        <tr>
-                <td style="text-align: left;padding-left: 50px">
-                •	Me comprometo a cuidar, darle buen uso, responder por el equipo y acepto que:  <br>
-        <tr>
-                <td style="text-align: left;padding-left: 84px;padding-right: 82px;">
-                o	En caso de daño, levantar un acta administrativa detallando el hecho y responder por el importe total o parcial del costo de la reparación, según sea el caso.  <br>
-                o	En caso de robo, informar de manera inmediata a la empresa e interponer ante la autoridad una denuncia por el hecho y presentar una copia de la misma.  <br>
-                o	En caso de extravío, levantar un acta administrativa detallando el hecho y reponer en su totalidad el costo del equipo.  <br>
-                o	En caso de reposición del equipo se requiere entregarlo en las mejores condiciones posibles salvo uso cotidiano, en caso de no ser así, me comprometo a responsabilizarme por las reparaciones que se deriven. <br>
-                o	Retornar el equipo al departamento de TI al terminar la vigencia del comodato 
+
+            <p>
+                El equipo o los equipos son propiedad de {{$empresa}} y se entregan en comodato 
+                durante el período especificado en la parte superior de la vigencia.
+            </p>
+            <p>
+                Me comprometo a cuidar, darle buen uso, responder por el equipo y acepto que:
+            </p>
+            <ul>
+                <li>En caso de daño, levantar un acta administrativa detallando el hecho y responder por el importe total o parcial del costo de la reparación, según sea el caso.</li>
+                <li>En caso de robo, informar de manera inmediata a la empresa e interponer ante la autoridad una denuncia por el hecho y presentar una copia de la misma.</li>
+                <li>En caso de extravío, levantar un acta administrativa detallando el hecho y reponer en su totalidad el costo del equipo. </li>
+                <li>En caso de extravío, levantar un acta administrativa detallando el hecho y reponer en su totalidad el costo del equipo. </li>
+                <li>En caso de reposición del equipo se requiere entregarlo en las mejores condiciones posibles salvo uso cotidiano, en caso de no ser así, me comprometo a responsabilizarme por las reparaciones que se deriven.</li>
+                <li> Retornar el equipo al departamento de TI al terminar la vigencia del comodato 
                     @if ($TipoFor == "2")
                         ,incluido los accesorios pertinentes (cable de alimentación, cargador y antena).
                     @elseif ($TipoFor == "3")
                     ,incluido los accesorios pertinentes (SIM).
                     @else
                        .
-                    @endif <br>
-        </table>
+                    @endif </li>
+            </ul>
 
-        @endif
+         @endif
+        </div>
 
-			
-        </main>
-    </body>
+        <!-- Firmas -->
+        
+        <div class="signatures">
+            <div class="signature">
+                <p>Kyrie Petrakis</p>
+                <p>Administrador</p>
+            </div>
+            <div class="signature">
+                <p>Kyrie Petrakis</p>
+                <p>Administrador</p>
+            </div>
+        </div>
+
+        <!-- Pie de página -->
+        <div class="footer">
+            
+           
+        </div>
+    </div>
+</body>
 </html>

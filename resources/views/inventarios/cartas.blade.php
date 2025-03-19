@@ -38,7 +38,7 @@
                                                 </select>
                                             </div>
                                             <div class="form-group col-sm-6">
-                                                {!! Form::label('empresa', 'Empresa:') !!} <abbr title="requerido">*</abbr>
+                                                {!! Form::label('empresa', 'Propiedad de:') !!} <abbr title="requerido">*</abbr>
                                                 {!!Form::select('empresa',App\Models\UnidadesDeNegocio::all()->
                                                     pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'form-control','required'])!!}
                                             </div>
@@ -52,11 +52,11 @@
                                                 </select>
                                         </div>
 
-                                        <!--<div class="form-group col-sm-6">
-                                            {!! Form::label('tiempo', 'Tiempo:') !!}
-                                            <input type="text" class="form-control" name="tiempo">
-
-                                        </div>-->
+                                        <div class="form-group col-sm-6">
+                                                {!! Form::label('ubiequi', 'Obra/ubicacion aquipo:') !!} <abbr title="requerido">*</abbr>
+                                                {!!Form::select('ubiequi',App\Models\UnidadesDeNegocio::all()->
+                                                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'form-control','required'])!!}
+                                            </div>
 
                                         <div class="form-group col-sm-6"> <abbr title="requerido">*</abbr>
                                             {!! Form::label('telefono', 'Número de contacto:') !!}
@@ -91,7 +91,7 @@
                                     <thead>
                                         <tr id="table-header">
                                             <th><input type="checkbox" id="checkAll"></th>
-                                            <th>#</th>
+                                            <th>Folio</th>
                                             <th>ID</th>
                                             <th>Descripción</th>
                                             <th>Detalles</th>
@@ -111,7 +111,7 @@
                                     <thead>
                                         <tr id="table-header-insumos">
                                             <th><input type="checkbox" id="checkAllInsumos"></th>
-                                            <th>#</th>
+                                            <th>Folio</th>
                                             <th>Descripción</th>
                                             <th>Cantidad</th>
                                         </tr>
@@ -178,7 +178,7 @@ $(document).ready(function() {
                 let insumosRows = '';
 
                 if (tipoId == 1) { // Equipos + Insumos
-                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>#</th><th>Categoría</th><th>Marca</th><th>Características</th><th>Modelo</th><th>Número de Serie</th><th>Fecha de Asignación</th>`;
+                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>Folio</th><th>Categoría</th><th>Marca</th><th>Características</th><th>Modelo</th><th>Número de Serie</th><th>Fecha de Asignación</th>`;
                     response.data.forEach(function(item, index) {
                         let isChecked = selectedEquipos.has(item.id) ? 'checked' : '';
                         dataRows += `<tr>
@@ -193,7 +193,7 @@ $(document).ready(function() {
                         </tr>`;
                     });
 
-                    insumosHeaders = `<th><input type='checkbox' id='checkAllInsumos'></th><th>#</th><th>Categoría</th><th>Nombre Insumo</th><th>Número Serie</th><th>Comentarios</th><th>Folio</th>`;
+                    insumosHeaders = `<th><input type='checkbox' id='checkAllInsumos'></th><th>Folio</th><th>Categoría</th><th>Nombre Insumo</th><th>Número Serie</th><th>Comentarios</th><th>Folio</th>`;
                     response.insumos.forEach(function(item, index) {
                         let isChecked = selectedInsumos.has(item.id) ? 'checked' : '';
                         insumosRows += `<tr>
@@ -208,7 +208,7 @@ $(document).ready(function() {
                     });
 
                 } else if (tipoId == 2) { // Radios
-                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>#</th><th>Categoría</th><th>Marca</th><th>Características</th><th>Modelo</th><th>Número Serie</th><th>Fecha de Asignación</th>`;
+                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>Folio</th><th>Categoría</th><th>Marca</th><th>Características</th><th>Modelo</th><th>Número Serie</th><th>Fecha de Asignación</th>`;
                     response.data.forEach(function(item, index) {
                         let isChecked = selectedEquipos.has(item.id) ? 'checked' : '';
                         dataRows += `<tr>
@@ -223,19 +223,23 @@ $(document).ready(function() {
                         </tr>`;
                     });
                 } else if (tipoId == 3) { // Telefonía
-                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>#</th><th>Número Teléfono</th><th>Descripción</th><th>Número de Serie</th>`;
+                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>Folio</th><th>Numero telefono</th><th>Categoría</th><th>Marca</th><th>Caracteristicas</th><th>Modelo</th><th>Num. serie</th>`;
                     response.data.forEach(function(item, index) {
                         let isChecked = selectedEquipos.has(item.id) ? 'checked' : '';
                         dataRows += `<tr>
                             <td><input type='checkbox' class='item-check' value='${item.id}' ${isChecked}></td>
                             <td>${item.id}</td>
                             <td>${item.NumTelefonico}</td>
-                            <td><input type="text" class="form-control" name="descripcion_${item.id}"></td>
-                             <td><input type="text" class="form-control" name="numeroserie_${item.id}"></td>
+                            <td>${item.CategoriaEquipo}</td>
+                            <td>${item.Marca}</td>
+                            <td>${item.Caracteristicas}</td>
+                            <td>${item.Modelo}</td>
+                            <td>${item.NumSerie}</td>
+                           
                         </tr>`;
                     });
                 } else if (tipoId == 4) { // Mantenimiento + Insumos
-                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>#</th><th>Categoría</th><th>Marca</th><th>Características</th><th>Modelo</th><th>Número de Serie</th><th>Fecha de Asignación</th>`;
+                    headers = `<th><input type='checkbox' id='checkAllEquipos'></th><th>Folio</th><th>Categoría</th><th>Marca</th><th>Características</th><th>Modelo</th><th>Número de Serie</th><th>Fecha de Asignación</th>`;
                     response.data.forEach(function(item, index) {
                         let isChecked = selectedEquipos.has(item.id) ? 'checked' : '';
                         dataRows += `<tr>

@@ -107,7 +107,7 @@
                     @foreach($columnaspresup_lics as $columna => $_)
                         <td> $ {{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
-                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 2) }}</td>
+                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 0) }}</td>
                 </tr>
             @endforeach
 
@@ -116,9 +116,9 @@
                 <td><strong>TOTAL</strong></td>
                 <td></td>
                 @foreach($columnaspresup_lics as $columna => $_)
-                    <td><strong>$ {{ number_format($totalespresup_lics[$columna] ?? 0, 2) }}</strong></td>
-                @endforeach>
-                <td><strong>$ {{ number_format($granTotalpresup_lics, 2) }}</strong></td>
+                    <td><strong>$ {{ number_format($totalespresup_lics[$columna] ?? 0) }}</strong></td>
+                @endforeach
+                <td><strong>$ {{ number_format($granTotalpresup_lics, 0) }}</strong></td>
             </tr>
 
         </tbody>
@@ -149,7 +149,7 @@
                     @foreach($columnaspresup_otrosinsums as $columna => $_)
                         <td> $ {{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
-                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 2) }}</td>
+                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 0) }}</td>
                 </tr>
             @endforeach
 
@@ -158,9 +158,9 @@
                 <td><strong>TOTAL</strong></td>
                 <td></td>
                 @foreach($columnaspresup_otrosinsums as $columna => $_)
-                    <td><strong>$ {{ number_format($totalespresup_otrosinsums[$columna] ?? 0, 2) }}</strong></td>
+                    <td><strong>$ {{ number_format($totalespresup_otrosinsums[$columna] ?? 0) }}</strong></td>
                 @endforeach>
-                <td><strong>$ {{ number_format($granTotalpresup_otrosinsums, 2) }}</strong></td>
+                <td><strong>$ {{ number_format($granTotalpresup_otrosinsums, 0) }}</strong></td>
             </tr>
 
         </tbody>
@@ -268,8 +268,9 @@
             </tr>
         </thead>
         <tbody>
+         
             @foreach ($presup_cal_pagos as $presup_cal_pago)
-                <tr class="{{ $presup_gp->Orden == 6  ? 'highlight-row' : '' }}">
+                <tr class="{{ $presup_gp->Orden == 7  ? 'highlight-row' : '' }}">
                     <td>{{$presup_cal_pago->NombreInsumo}}</td>
                     <td>{{$presup_cal_pago->Enero}}</td>
                     <td>{{$presup_cal_pago->Febrero}}</td>

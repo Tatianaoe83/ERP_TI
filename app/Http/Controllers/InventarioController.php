@@ -483,8 +483,10 @@ class InventarioController extends AppBaseController
                 $insumos=[];
                 break;
             case 3:
-                $data = InventarioLineas::select('InventarioID as id', 'NumTelefonico')
-                ->where('EmpleadoID', '=', $id)
+                $data = InventarioEquipo::join('inventariolineas', 'inventarioequipo.EmpleadoID', '=', 'inventariolineas.EmpleadoID')
+                ->select('inventariolineas.InventarioID as id','inventarioequipo.CategoriaEquipo','inventarioequipo.Marca' ,'inventarioequipo.Caracteristicas','inventarioequipo.Modelo','inventarioequipo.NumSerie','inventariolineas.NumTelefonico')
+                ->where('inventarioequipo.empleadoID', '=', $id)
+                ->where('inventarioequipo.CategoriaEquipo', '=', 'TELEFONO CELULAR')
                 ->get();
 
                 $insumos=[];
@@ -512,13 +514,15 @@ class InventarioController extends AppBaseController
     public function pdffile(request $request, $id)
     {
 
-       //dd ($request->all());
 
        Carbon::setLocale('es'); 
         setlocale(LC_TIME, 'es_ES.UTF-8'); 
 
         $empresa = UnidadesDeNegocio::select('NombreEmpresa')
             ->where('UnidadNegocioID', '=', $request->empresa)
+                    ->get();
+        $ubiequipo = UnidadesDeNegocio::select('NombreEmpresa')
+            ->where('UnidadNegocioID', '=', $request->ubiequi)
                     ->get();
                     
 
@@ -531,7 +535,7 @@ class InventarioController extends AppBaseController
                 ->where('EmpleadoID', '=', $id)
                 ->get();
         
-        $obra_ubica = Empleados::select('obras.NombreObra','unidadesdenegocio.NombreEmpresa')
+        $obra_ubica = Empleados::select('obras.NombreObra')
                 ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
                 ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID')
                 ->where('EmpleadoID', '=', $id)
@@ -571,20 +575,17 @@ class InventarioController extends AppBaseController
             }
         }else if ($tipoFor == "3"){
             if (!empty($equiposIDs)) {
-                $equipos = InventarioLineas::whereIn('InventarioID', $equiposIDs)->get();
 
-                foreach ($equipos as $equipo) {
-                    $descripcionKey = "descripcion_" . $equipo->InventarioID;
-                    $equipo->Caracteristicas = $request->input($descripcionKey, ''); 
-
-                    $numeroserieKey = "numeroserie_" . $equipo->InventarioID;
-                    $equipo->NumSerie = $request->input($numeroserieKey, ''); 
+                $equipos =  InventarioEquipo::join('inventariolineas', 'inventarioequipo.EmpleadoID', '=', 'inventariolineas.EmpleadoID')
+                ->select('inventarioequipo.Caracteristicas','inventarioequipo.NumSerie','inventariolineas.NumTelefonico')
+                ->where('inventariolineas.InventarioID', '=', $equiposIDs)
+                ->get();
 
                 }
                 
             }
 
-        }
+        
         
        
              
@@ -596,7 +597,7 @@ class InventarioController extends AppBaseController
             'entregapuesto' => $entrega[0]->NombrePuesto,
             'recibe' => $recibe[0]->NombreEmpleado,
             'recibepuesto' => $recibe[0]->NombrePuesto,
-            'obra' => $obra_ubica[0]->NombreEmpresa,
+            'obra' => $ubiequipo[0]->NombreEmpresa,
             'gerencia' =>  $obra_ubica[0]->NombreObra,
             'telefono' => $request->telefono,
             'acomodato' => $acomodatoOptions[$request->acomodato] ?? $request->acomodato,
