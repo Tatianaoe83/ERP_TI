@@ -31,7 +31,7 @@
                                 <table id="equiposAsignadosTable" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
-                                            <th><input type="checkbox" id="selectAll"></th>
+                                            <th><input type="checkbox" class="selectAll"  data-table="equiposAsignadosTable"></th>
                                             <th>Categoria</th>
                                             <th>Marca</th>
                                             <th>Caracteristicas</th>
@@ -74,7 +74,7 @@
                                 <table id="insumosAsignadosTable" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
-                                            <th><input type="checkbox" id="selectAll"></th>
+                                            <th><input type="checkbox" class="selectAll" data-table="insumosAsignadosTable"></th>
                                             <th>Categoria Insumo</th>
                                             <th>Nombre Insumo</th>
                                             <th>Costo Mensual</th>
@@ -116,7 +116,7 @@
                                 <table id="lineasAsignadosTable" class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
-                                            <th><input type="checkbox" id="selectAll"></th>
+                                            <th><input type="checkbox" class="selectAll" data-table="lineasAsignadosTable"></th>
                                             <th>Num Telefónico</th>
                                             <th>Compañía</th>
                                             <th>Plan Tel</th>
@@ -221,6 +221,12 @@
             "ordering": true,
             "info": true,
 
+        });
+
+         // Select All Checkbox functionality
+         $('.selectAll').click(function() {
+            var tableId = $(this).data('table');
+            $('#' + tableId + ' input[type="checkbox"]').prop('checked', $(this).prop('checked'));
         });
     });
 

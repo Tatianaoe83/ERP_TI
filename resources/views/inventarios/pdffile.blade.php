@@ -7,7 +7,7 @@
     <style>
         @page {
             size: Letter; /* Tamaño carta */
-            margin: 0cm 1cm 1cm 1cm;
+            margin: 0cm 0cm 1cm 1cm;
         }
         body {
             font-family: Arial, sans-serif;
@@ -79,6 +79,9 @@
             padding: 5px;
             text-align: center;
         }
+        td[rowspan] {
+        border-bottom: 1px solid #ddd; 
+        }
         .terms {
             width: 90%;
             margin-left: 25px;
@@ -89,21 +92,20 @@
             border-left: 6px solid #444;
             margin-bottom: 10px;
         }
-        .signatures {
-            width: 90%;
-            justify-content: space-between;
-            margin-top: 20px;
+        .signature-table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+            border: none;
+           
         }
-        .signature {
+        .signature-table td {
+            width: 50%;
             text-align: center;
-            width: 45%;
-        }
-        .signature p {
-            margin-top: 40px;
-            border-top: 1px solid #000;
-            padding-top: 3px;
+            padding-top: 0px;
             font-weight: bold;
             font-size: 12px;
+           
         }
         .footer {
             text-align: center;
@@ -125,8 +127,10 @@
             </div>
         </div>
 
-        @if ($TipoFor == "1" or $TipoFor == "2" or $TipoFor == "4")
+        @if ($TipoFor == "1" or $TipoFor == "4")
             <h1>CARTA DE ENTREGA DE EQUIPO TI</h1>
+        @elseif( $TipoFor == "2" )
+            <h1>CARTA DE ENTREGA DE RADIOS</h1>
         @else
             <h1>CARTA DE ENTREGA DE TELEFONIA</h1>
         @endif
@@ -212,7 +216,7 @@
                             DESCRIPCIÓN
                         </th>
                     </tr>
-                    @foreach ($equipos as $equipo)
+                    @foreach ($equipos as $index => $equipo)
                         <tr>
                             @if ($TipoFor == 3)
                                 <td >{{ $equipo->NumTelefonico }}</td>
@@ -220,7 +224,17 @@
                                 <td >{{ $equipo->Folio }}</td>
                             @endif
                             <td >{{ $equipo->NumSerie ?? 'N/A' }}</td>
-                            <td colspan="2" >{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
+                            @if ($TipoFor == 2 && $index == 0)
+                            
+                            <td rowspan="{{ count($equipos) }}" colspan="2" >
+                                   
+                                        {{ $equipo->Caracteristicas ?? 'Sin descripción' }}
+                                   
+                            </td>
+                            @elseif ($TipoFor != 2)
+                                <td colspan="2" >{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
+                            @endif
+
                         </tr>
                     @endforeach
                     @if (!empty($insumos) && count($insumos) > 0)
@@ -270,16 +284,24 @@
 
         <!-- Firmas -->
         
-        <div class="signatures">
-            <div class="signature">
-                <p>Kyrie Petrakis</p>
-                <p>Administrador</p>
-            </div>
-            <div class="signature">
-                <p>Kyrie Petrakis</p>
-                <p>Administrador</p>
-            </div>
-        </div>
+       
+        <!-- Tabla de Firmas -->
+        <table class="signature-table">
+
+            
+            <tr>
+                <td>
+                <p>Entrega:</p> <br>
+                {{$entrega}}<br>
+                {{$entregapuesto}}
+                </td>
+                <td> 
+                <p>Recibe:</p><br>
+                {{$recibe}}<br>
+                {{$recibepuesto}}
+                </td>
+            </tr>
+        </table>
 
         <!-- Pie de página -->
         <div class="footer">

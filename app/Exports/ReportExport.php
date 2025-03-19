@@ -247,7 +247,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     {
 
 
-        $tituloLicenciamiento = 16;
+        $tituloLicenciamiento = 15;
         $encabezadoicenciamiento = $tituloLicenciamiento + 1;
         $totalLicenciamiento = $encabezadoicenciamiento + $this->tablapresup_licsCount + 1;
 
@@ -302,7 +302,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             ]
         ]);
         // TABLA LICENCIAMENTO
-        $sheet->getStyle("A{$tituloLicenciamiento}:K{$tituloLicenciamiento}")->applyFromArray([
+        $sheet->getStyle("A{$tituloLicenciamiento}:M{$tituloLicenciamiento}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -317,7 +317,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                 'startColor' => ['argb' => 'c0c0c0'],
             ]
         ]);
-        $sheet->getStyle("A{$encabezadoicenciamiento}:K{$encabezadoicenciamiento}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoicenciamiento}:M{$encabezadoicenciamiento}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -334,7 +334,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalLicenciamiento}:K{$totalLicenciamiento}")->applyFromArray([
+        $sheet->getStyle("A{$totalLicenciamiento}:M{$totalLicenciamiento}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -352,7 +352,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         // TABLA ACCESORIOS
         // TITULO
-        $sheet->getStyle("A{$tituloAccesorios}:K{$tituloAccesorios}")->applyFromArray([
+        $sheet->getStyle("A{$tituloAccesorios}:E{$tituloAccesorios}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -369,7 +369,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // ENCABEZADOS
-        $sheet->getStyle("A{$encabezadoAccesorios}:K{$encabezadoAccesorios}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoAccesorios}:E{$encabezadoAccesorios}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -386,7 +386,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalAccesorios}:K{$totalAccesorios}")->applyFromArray([
+        $sheet->getStyle("A{$totalAccesorios}:E{$totalAccesorios}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -404,7 +404,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         // TABLA TELEFONIA
         // TITULO
-        $sheet->getStyle("A{$tituloTelefonia}:K{$tituloTelefonia}")->applyFromArray([
+        $sheet->getStyle("A{$tituloTelefonia}:E{$tituloTelefonia}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -421,7 +421,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // ENCABEZADOS
-        $sheet->getStyle("A{$encabezadoTelefonia}:K{$encabezadoTelefonia}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoTelefonia}:E{$encabezadoTelefonia}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -438,7 +438,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalTelefonia}:K{$totalTelefonia}")->applyFromArray([
+        $sheet->getStyle("A{$totalTelefonia}:E{$totalTelefonia}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -456,7 +456,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         // TABLA DATOS
         // TITULO
-        $sheet->getStyle("A{$tituloDatos}:K{$tituloDatos}")->applyFromArray([
+        $sheet->getStyle("A{$tituloDatos}:E{$tituloDatos}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -471,7 +471,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                 'startColor' => ['argb' => 'c0c0c0'],
             ]
         ]);
-        $sheet->getStyle("A{$encabezadoDatos}:K{$encabezadoDatos}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoDatos}:E{$encabezadoDatos}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -488,7 +488,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalDatos}:K{$totalDatos}")->applyFromArray([
+        $sheet->getStyle("A{$totalDatos}:E{$totalDatos}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -505,7 +505,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
         // TABLA GPS
         // TITULO
-        $sheet->getStyle("A{$tituloGps}:K{$tituloGps}")->applyFromArray([
+        $sheet->getStyle("A{$tituloGps}:E{$tituloGps}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -520,7 +520,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                 'startColor' => ['argb' => 'c0c0c0'],
             ]
         ]);
-        $sheet->getStyle("A{$encabezadoGps}:K{$encabezadoGps}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoGps}:E{$encabezadoGps}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -537,7 +537,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalGps}:K{$totalGps}")->applyFromArray([
+        $sheet->getStyle("A{$totalGps}:E{$totalGps}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -555,7 +555,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         // TABLA CALENDARIO DE PAGOS
         // TITULO
-        $sheet->getStyle("A{$tituloCalendario}:K{$tituloCalendario}")->applyFromArray([
+        $sheet->getStyle("A{$tituloCalendario}:M{$tituloCalendario}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -570,7 +570,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                 'startColor' => ['argb' => 'c0c0c0'],
             ]
         ]);
-        $sheet->getStyle("A{$encabezadoCalendario}:K{$encabezadoCalendario}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoCalendario}:M{$encabezadoCalendario}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -587,7 +587,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalCalendario}:K{$totalCalendario}")->applyFromArray([
+        $sheet->getStyle("A{$totalCalendario}:M{$totalCalendario}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,

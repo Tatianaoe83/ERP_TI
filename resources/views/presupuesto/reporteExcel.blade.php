@@ -80,7 +80,7 @@
                 <td></td>
                 @foreach($columnaspresup_lics as $columna => $_)
                     <td><strong>$ {{ number_format($totalespresup_lics[$columna] ?? 0) }}</strong></td>
-                @endforeach>
+                @endforeach
                 <td><strong>$ {{ number_format($granTotalpresup_lics, 0) }}</strong></td>
             </tr>
 
@@ -228,20 +228,20 @@
     </thead>
     <tbody>
         @foreach ($presup_cal_pagos as $presup_cal_pago)
-            <tr class="{{ $presup_gp->Orden == 6  ? 'highlight-row' : '' }}">
+            <tr class="{{ $presup_cal_pago->Orden == 7  ? 'highlight-row' : '' }}">
                 <td>{{$presup_cal_pago->NombreInsumo}}</td>
-                <td>{{$presup_cal_pago->Enero}}</td>
-                <td>{{$presup_cal_pago->Febrero}}</td>
-                <td>{{$presup_cal_pago->Marzo}}</td>
-                <td>{{$presup_cal_pago->Abril}}</td>
-                <td>{{$presup_cal_pago->Mayo}}</td>
-                <td>{{$presup_cal_pago->Junio}}</td>
-                <td>{{$presup_cal_pago->Julio}}</td>
-                <td>{{$presup_cal_pago->Agosto}}</td>
-                <td>{{$presup_cal_pago->Septiembre}}</td>
-                <td>{{$presup_cal_pago->Octubre}}</td>
-                <td>{{$presup_cal_pago->Noviembre}}</td>
-                <td>{{$presup_cal_pago->Diciembre}}</td>
+                <td>${{$presup_cal_pago->Enero}}</td>
+                <td>${{$presup_cal_pago->Febrero}}</td>
+                <td>${{$presup_cal_pago->Marzo}}</td>
+                <td>${{$presup_cal_pago->Abril}}</td>
+                <td>${{$presup_cal_pago->Mayo}}</td>
+                <td>${{$presup_cal_pago->Junio}}</td>
+                <td>${{$presup_cal_pago->Julio}}</td>
+                <td>${{$presup_cal_pago->Agosto}}</td>
+                <td>${{$presup_cal_pago->Septiembre}}</td>
+                <td>${{$presup_cal_pago->Octubre}}</td>
+                <td>${{$presup_cal_pago->Noviembre}}</td>
+                <td>${{$presup_cal_pago->Diciembre}}</td>
 
             </tr>
         @endforeach
