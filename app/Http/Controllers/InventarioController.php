@@ -22,7 +22,7 @@ use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use DB;
-use Barryvdh\DomPDF\Facade as PDF;
+use PDF;
 use Carbon\Carbon;
 
 class InventarioController extends AppBaseController
