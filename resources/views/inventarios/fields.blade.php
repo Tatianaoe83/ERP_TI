@@ -157,7 +157,11 @@
                                         <i class="fa fa-edit"></i>
                                     </button>
                                     {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroy', $equiposAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                        {!! Form::button('<i class="fa fa-trash"></i>', ['type' => 'submit', 'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn']) !!}
+                                        {!! Form::button('<i class="fa fa-trash"></i>', [
+                                            'type' => 'submit',
+                                            'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn',
+                                            'data-id' => $equiposAsignado->InventarioID 
+                                        ]) !!}
                                     {!! Form::close() !!}
 
                                 </td>
@@ -170,7 +174,7 @@
                                 <td>{{ $equiposAsignado->FechaDeCompra }}</td>
                                 <td>{{ $equiposAsignado->NumSerie }}</td>
                                 <td>{{ $equiposAsignado->Folio }}</td>
-                                <td data-gerencia-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->gerenciaid->NombreGerencia }}</td>
+                                <td>{{ $equiposAsignado->GerenciaEquipo }}</td>
                                 <td>{{ $equiposAsignado->Comentarios }}</td>
                             </tr>
                             @endforeach
@@ -260,8 +264,13 @@
                                     </button>
         
                                     {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroyInsumo', $insumosAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                        {!! Form::button('<i class="fa fa-trash"></i>', ['type' => 'submit', 'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-insumo']) !!}
+                                        {!! Form::button('<i class="fa fa-trash"></i>', [
+                                            'type' => 'submit',
+                                            'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-insumo',
+                                            'data-id' => $insumosAsignado->InventarioID 
+                                        ]) !!}
                                     {!! Form::close() !!}
+
 
                                 </td>
                                 
@@ -392,14 +401,19 @@
                            @foreach ($LineasAsignados as $LineasAsignado)
                            <tr data-id="{{ $LineasAsignado->InventarioID }}">
                                <td>
-                                   <button class='btn btn-outline-secondary btn-xs edit-btn-linea' data-id="{{ $LineasAsignado->LineaID }}">
+                                   <button class='btn btn-outline-secondary btn-xs edit-btn-linea' data-id="{{ $LineasAsignado->InventarioID }}">
                                        <i class="fa fa-edit"></i>
                                    </button>
        
                                    {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroylinea', $LineasAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                       {!! Form::button('<i class="fa fa-trash"></i>', ['type' => 'submit', 'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-linea']) !!}
-                                   {!! Form::close() !!}
+                                        {!! Form::button('<i class="fa fa-trash"></i>', [
+                                            'type' => 'submit',
+                                            'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-linea',
+                                            'data-id' => $LineasAsignado->InventarioID 
+                                        ]) !!}
+                                    {!! Form::close() !!}
 
+                                  
                                </td>
                                
                             
@@ -477,12 +491,6 @@
                
             });
 
-        });
-    </script>
-
-<script>
-        $(document).ready(function() {
-            // Inicializar DataTables
             let table = $('#equiposAsignadosTable').DataTable({
                 "paging": true,
                 "lengthMenu": [5, 10, 25, 50],
@@ -515,554 +523,764 @@
                 
             });
 
-       
-                $(document).on('click', '.edit-btn', function() {
-    
-                    document.getElementById('titulo').innerHTML = 'Editar Equipo';
-
-                    let row = $(this).closest('tr');
-                    let id = row.data('id');
-        
-                    let categoria = row.find("td:eq(1)").text();
-                    let marca = row.find("td:eq(2)").text();
-                    let caracteristicas = row.find("td:eq(3)").text();
-                    let modelo = row.find("td:eq(4)").text();
-                    let precio = row.find("td:eq(5)").text();
-                    let fecha_asigna = row.find("td:eq(6)").text();
-                    let fecha_compra = row.find("td:eq(7)").text();
-                    let num_serie = row.find("td:eq(8)").text();
-                    let folio = row.find("td:eq(9)").text();
-                    let gerencia = row.find("td:eq(10)").data('gerencia-id');
-                    let comentarios = row.find("td:eq(11)").text();
-
-                    $('#editId').val(id);
-                    $('#editEmp').val('');
-                    $('#editCategoria').val(categoria);
-                    $('#editMarca').val(marca);
-                    $('#editCaracteristicas').val(caracteristicas);
-                    $('#editModelo').val(modelo);
-                    $('#editPrecio').val(precio);
-                    $('#editFechaAsignacion').val(fecha_asigna);
-                    $('#editFechaDeCompra').val(fecha_compra);
-                    $('#editNumSerie').val(num_serie);
-                    $('#editFolio').val(folio);
-    
-                    $('#editGerenciaEquipo').val(gerencia).trigger('change');
-                    $('#editComentarios').val(comentarios);
-                    
-                    $('#editModal').modal('show');
-
-                });
-
-              
-                $(document).on('click', '.crear-btn', function() {
-                    let id_E = '{{ $inventario->EmpleadoID }}';
-
-                    $('#editForm')[0].reset();
-                    $('#editGerenciaEquipo').val(null).trigger('change');
-
-                    document.getElementById('titulo').innerHTML = 'Crear Equipo';
-                    let row = $(this).closest('tr');
-                    let categoria = row.find("td:eq(1)").text();
-                    let marca = row.find("td:eq(2)").text();
-                    let modelo = row.find("td:eq(3)").text();
-                    let caracteristicas = row.find("td:eq(4)").text();
-                    let precio = row.find("td:eq(5)").text();
-
-                    $('#editCategoria').val(categoria);
-                    $('#editMarca').val(marca);
-                    $('#editCaracteristicas').val(caracteristicas);
-                    $('#editModelo').val(modelo);
-                    $('#editPrecio').val(precio);
-                    $('#editId').val(''); 
-                    $('#editEmp').val(id_E);
-                    
-                    $('#editModal').modal('show');a
-                });
-
-                $(document).on('click', '.submit_equipo', function(event) {   
-                    event.preventDefault();
-                    
-                    $('.error-message').remove();
-                    $('.is-invalid').removeClass('is-invalid');
-                    
-                    let form = document.getElementById('editForm');
-                    let isValid = true;
-                    
-                    $('#editForm [required]').each(function() {
-                        if (!$(this).val()) {
-                            isValid = false;
-                            $(this).addClass('is-invalid');
-                        } else {
-                            $(this).removeClass('is-invalid');
-                        }
-                    });
-
-                    if (!isValid) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Campos requeridos',
-                            text: 'Por favor complete todos los campos obligatorios',
-                        });
-                        return;
-                    }
-                    
-                    let id_E = $('#editEmp').val();
-                    let id = $('#editId').val();
-                    let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
-                    let method = id ? 'PUT' : 'POST';
-                    
-                    let formData = {
-                        CategoriaEquipo: $('#editCategoria').val(),
-                        GerenciaEquipoID: $('#editGerenciaEquipo').val(),
-                        Marca: $('#editMarca').val(),
-                        Caracteristicas: $('#editCaracteristicas').val(),
-                        Modelo: $('#editModelo').val(),
-                        Precio: $('#editPrecio').val(),
-                        FechaAsignacion: $('#editFechaAsignacion').val(),
-                        NumSerie: $('#editNumSerie').val(),
-                        Folio: $('#editFolio').val(),
-                        FechaDeCompra: $('#editFechaDeCompra').val(),
-                        Comentarios: $('#editComentarios').val(),
-                    };
-
-                    let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                    fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: JSON.stringify(formData)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.errors) {
-                            Object.keys(data.errors).forEach(field => {
-                                const input = $(`#edit${field}`);
-                                input.addClass('is-invalid');
-                                input.siblings('.invalid-feedback').text(data.errors[field][0]);
-                            });
-                            
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error de validación',
-                                text: 'Por favor revise los campos marcados en rojo',
-                            });
-                        } else {
-                            Swal.fire({
-                                position: "top-end",
-                                icon: "success",
-                                title: "Datos del equipo guardados correctamente",
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-                            $('#editModal').modal('hide');
-                            setTimeout(function(){
-                                location.reload();
-                            }, 1600);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        Swal.fire({
-                            icon: "error",
-                            title: "Error",
-                            text: "Ocurrió un error al guardar los datos",
-                        });
-                    });
-                });
-
-            $('.delete-btn').click(function(event) {
-                var form =  $(this).closest("form");
-                event.preventDefault();
-                swal.fire({
-                    title: `Eliminar `,
-                    text: "¿Realmente desea eliminar este equipo asignado?",
-                    icon: "warning",
-                    //buttons: true,
-                    showDenyButton: true,
-                    confirmButtonText: 'Confirmar',
-                    denyButtonText: `Cerrar`,
-                    dangerMode: true,
-                }).then(function(willDelete) {
-                    if (willDelete.isConfirmed) {
-                    swal.fire({
-                        title: 'Hecho!',
-                        text: "Se han guardado los cambios",
-                        icon: 'success'
-                        }).then(function(){
-                        form.submit();
-                        });
-                    }else if (willDelete.isDenied){
-                        swal.fire("Cambios no generados");
-                    }
-                });
-            });
-
-
-            /*insum*/
-
-               $(document).on('click', '.edit-btn-insum', function() {
-    
-                   
-                document.getElementById('tituloinsumo').innerHTML = 'Editar Insumo';
-
-                let row = $(this).closest('tr');
-                let id = row.data('id');
-                let categoria = row.find("td:eq(1)").text();
-                let nombreinsumo = row.find("td:eq(2)").text();
-                let costomensual = row.find("td:eq(3)").text();
-                let costoanual = row.find("td:eq(4)").text();
-                let frecuenciadepago = row.find("td:eq(5)").text();
-                let observaciones = row.find("td:eq(6)").text();
-                let fechadeasignacion = row.find("td:eq(7)").text();
-                let numserie = row.find("td:eq(8)").text();
-                let comentarios = row.find("td:eq(9)").text();
-                let mespago = row.find("td:eq(10)").text();
-                
-
-                $('#editId_insumo').val(id);
-                $('#editEmp_insumo').val('');
-                $('#editCategoriaInsumo').val(categoria);
-                $('#editNombreInsumo').val(nombreinsumo);
-                $('#editCostoMensual').val(costomensual);
-                $('#editCostoAnual').val(costoanual);
-                $('#editFrecuenciaDePago').val(frecuenciadepago);
-                $('#editobserv').val(observaciones);
-                $('#editFechaDeAsigna').val(fechadeasignacion);
-                $('#editNumSerieInsu').val(numserie);
-                $('#editComentariosInsumo').val(comentarios);
-                $('#editMesDePago').val(mespago);
-                
-                $('#editModalInsumo').modal('show');
-
-            });
-
-            $(document).on('click', '.crear-btn-insumo', function() {
-                let id_E = '{{ $inventario->EmpleadoID }}';
-                
-                $('#editFormInsumo')[0].reset();
-              
-                document.getElementById('tituloinsumo').innerHTML = 'Crear Insumo';
-                let row = $(this).closest('tr');
-                let categoria = row.find("td:eq(1)").text();
-                let nombreinsumo = row.find("td:eq(2)").text();
-                let costomensual = row.find("td:eq(3)").text();
-                let costoanual = row.find("td:eq(4)").text();
-                let frecuenciadepago = row.find("td:eq(5)").text();
-                let observaciones = row.find("td:eq(6)").text();
-                
-                $('#editCategoriaInsumo').val(categoria);
-                $('#editNombreInsumo').val(nombreinsumo);
-                $('#editCostoMensual').val(costomensual);
-                $('#editCostoAnual').val(costoanual);
-                $('#editFrecuenciaDePago').val(frecuenciadepago);
-                $('#editobserv').val(observaciones);
-              
-                $('#editId_insumo').val(''); 
-                $('#editEmp_insumo').val(id_E);
-                
-                $('#editModalInsumo').modal('show');
-            });
-
-            $(document).on('click', '.submit_insumo', function(event) {   
-                event.preventDefault();
-                
-                $('.error-message').remove();
-                $('.is-invalid').removeClass('is-invalid');
-                
-                let form = document.getElementById('editFormInsumo');
-                let isValid = true;
-
-                $('#editFormInsumo [required]').each(function() {
-                    if (!$(this).val()) {
-                        isValid = false;
-                        $(this).addClass('is-invalid');
-                    } else {
-                        $(this).removeClass('is-invalid');
-                    }
-                });
-
-                if (!isValid) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Campos requeridos',
-                        text: 'Por favor complete todos los campos obligatorios',
-                    });
-                    return;
-                }
-                
-                let id_E = $('#editEmp_insumo').val();
-                let id = $('#editId_insumo').val();
-
-                let url = id ? '/inventarios/editar-insumo/' + id : '/inventarios/crear-insumo/' + id_E;
-                let method = id ? 'PUT' : 'POST';
-                
-                let formData = {
-                    CateogoriaInsumo: $('#editCategoriaInsumo').val(),
-                    NombreInsumo: $('#editNombreInsumo').val(),
-                    CostoMensual: $('#editCostoMensual').val(),
-                    CostoAnual: $('#editCostoAnual').val(),
-                    FrecuenciaDePago: $('#editFrecuenciaDePago').val(),
-                    Observaciones: $('#editobserv').val(),
-                    FechaAsignacion: $('#editFechaDeAsigna').val(),
-                    NumSerie: $('#editNumSerieInsu').val(),
-                    Comentarios: $('#editComentariosInsumo').val(),
-                    MesDePago: $('#editMesDePago').val(),
-                };
-
-                let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.errors) {
-                        Object.keys(data.errors).forEach(field => {
-                            const input = $(`#edit${field}`);
-                            input.addClass('is-invalid');
-                            input.siblings('.invalid-feedback').text(data.errors[field][0]);
-                        });
-                        
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error de validación',
-                            text: 'Por favor revise los campos marcados en rojo',
-                        });
-                    } else {
-                        Swal.fire({
-                            position: "top-end",
-                            icon: "success",
-                            title: "Datos del insumo guardado correctamente",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
-                        $('#editModalInsumo').modal('hide');
-                        setTimeout(function(){
-                            location.reload();
-                        }, 1600);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error",
-                        text: "Ocurrió un error al guardar los datos",
-                    });
-                });
-            });
-
-            $('.delete-btn-insumo').click(function(event) {
-            var form =  $(this).closest("form");
-            event.preventDefault();
-            swal.fire({
-                title: `Eliminar `,
-                text: "¿Realmente desea eliminar este insumo asignado?",
-                icon: "warning",
-                //buttons: true,
-                showDenyButton: true,
-                confirmButtonText: 'Confirmar',
-                denyButtonText: `Cerrar`,
-                dangerMode: true,
-            }).then(function(willDelete) {
-                if (willDelete.isConfirmed) {
-                swal.fire({
-                    title: 'Hecho!',
-                    text: "Se han guardado los cambios",
-                    icon: 'success'
-                    }).then(function(){
-                    form.submit();
-                    });
-                }else if (willDelete.isDenied){
-                    swal.fire("Cambios no generados");
-                }
-            });
-            });
-
-
-            /*telefono*/
-
-               $(document).on('click', '.edit-btn-linea', function() {
-
-                document.getElementById('titulolinea').innerHTML = 'Editar Linea';
-
-                let row = $(this).closest('tr');
-                let id = row.data('id');
-            
-                let comentarios = row.find("td:eq(13)").text();
-                let FechaAsignacion = row.find("td:eq(11)").text();
-                
-
-                $('#editfechalinea').val(FechaAsignacion);
-                $('#editcomenl').val(comentarios);
-                $('#editId_linea').val(id);
-                $('#editEmp_linea').val('');
-                $('#lineaid').val('');
-        
-                   
-                $('#editModalLinea').modal('show');
-
-            });
-
-            $(document).on('click', '.crear-btn-linea', function() {
-                let id_E = '{{ $inventario->EmpleadoID }}';
-                
-               console.log('click linea');
-                
-                $('#editFormLinea')[0].reset();
-                document.getElementById('titulolinea').innerHTML = 'Crear Linea';
-               
-                let row = $(this).closest('tr');
-                let id = row.data('id');
-                console.log (id);
-
-                $('#editId_linea').val(''); 
-                $('#editEmp_linea').val(id_E);
-                $('#lineaid').val(id);
-                
-                $('#editModalLinea').modal('show');
-            });
-
-            $(document).on('click', '.submit_linea', function(event) {   
-                event.preventDefault();
-                
-                $('.error-message').remove();
-                $('.is-invalid').removeClass('is-invalid');
-                
-                let form = document.getElementById('editFormLinea');
-                let isValid = true;
-
-                $('#editFormLinea [required]').each(function() {
-                    if (!$(this).val()) {
-                        isValid = false;
-                        $(this).addClass('is-invalid');
-                    } else {
-                        $(this).removeClass('is-invalid');
-                    }
-                });
-
-                if (!isValid) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Campos requeridos',
-                        text: 'Por favor complete todos los campos obligatorios',
-                    });
-                    return;
-                }
-
-                let id_E = $('#editEmp_linea').val();
-                let id = $('#editId_linea').val();
-
-                console.log(id_E, id);
-                let url = id ? '/inventarios/editar-linea/' + id : '/inventarios/crear-linea/' + id_E;
-                let method = id ? 'PUT' : 'POST';
-                
-                let formData = {
-                    FechaAsignacion: $('#editfechalinea').val(),
-                    Comentarios: $('#editcomenl').val(),
-                    Linea : $('#lineaid').val()
-                };
-
-                let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-                fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.errors) {
-
-                        Object.keys(data.errors).forEach(field => {
-                            const input = $(`#edit${field}`);
-                            input.addClass('is-invalid');
-                            input.siblings('.invalid-feedback').text(data.errors[field][0]);
-                        });
-                        
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error de validación',
-                            text: 'Por favor revise los campos marcados en rojo',
-                        });
-                    } else {
-                        Swal.fire({
-                            position: "top-end",
-                            icon: "success",
-                            title: "Datos del insumo guardado correctamente",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
-                        $('#editModalLinea').modal('hide');
-                        setTimeout(function(){
-                            location.reload();
-                        }, 1600);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error",
-                        text: "Ocurrió un error al guardar los datos",
-                    });
-                });
-            });
-
-
-            // Evento para eliminar con confirmación
-            $('.delete-btn-linea').click(function(event) {
-            var form =  $(this).closest("form");
-            event.preventDefault();
-            swal.fire({
-                title: `Eliminar `,
-                text: "¿Realmente desea eliminar este linea asignado?",
-                icon: "warning",
-                //buttons: true,
-                showDenyButton: true,
-                confirmButtonText: 'Confirmar',
-                denyButtonText: `Cerrar`,
-                dangerMode: true,
-            }).then(function(willDelete) {
-                if (willDelete.isConfirmed) {
-                swal.fire({
-                    title: 'Hecho!',
-                    text: "Se han guardado los cambios",
-                    icon: 'success'
-                    }).then(function(){
-                    form.submit();
-                    });
-                }else if (willDelete.isDenied){
-                    swal.fire("Cambios no generados");
-                }
-            });
-            });
-
-        
         });
     </script>
 
-    <!-- Agregar un poco de CSS para los campos requeridos -->
-    <style>
-        .form-group label:after {
-            content: " *";
-            color: red;
+<script>
+
+// Seccion equipo 
+// Editar equipo (abriendo el modal con los datos)
+$(document).on('click', '.edit-btn', function() {
+    let row = $(this).closest('tr');
+    let id = row.data('id');
+
+    // Asignar valores al formulario
+    document.getElementById('titulo').innerHTML = 'Editar Equipo';
+    $('#editId').val(id);
+    $('#editEmp').val('');
+    $('#editCategoria').val(row.find("td:eq(1)").text());
+    $('#editMarca').val(row.find("td:eq(2)").text());
+    $('#editCaracteristicas').val(row.find("td:eq(3)").text());
+    $('#editModelo').val(row.find("td:eq(4)").text());
+    $('#editPrecio').val(row.find("td:eq(5)").text());
+    $('#editFechaAsignacion').val(row.find("td:eq(6)").text());
+    $('#editFechaDeCompra').val(row.find("td:eq(7)").text());
+    $('#editNumSerie').val(row.find("td:eq(8)").text());
+    $('#editFolio').val(row.find("td:eq(9)").text());
+    $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('gerencia-id')).trigger('change');
+    $('#editComentarios').val(row.find("td:eq(11)").text());
+
+    $('#editModal').modal('show');
+});
+
+// Crear equipo (con valores vacíos para nuevo registro)
+$(document).on('click', '.crear-btn', function() {
+    let id_E = '{{ $inventario->EmpleadoID }}';
+
+    $('#editForm')[0].reset();
+    $('#editGerenciaEquipo').val(null).trigger('change');
+
+    document.getElementById('titulo').innerHTML = 'Crear Equipo';
+    let row = $(this).closest('tr');
+    let categoria = row.find("td:eq(1)").text();
+    let marca = row.find("td:eq(2)").text();
+    let modelo = row.find("td:eq(3)").text();
+    let caracteristicas = row.find("td:eq(4)").text();
+    let precio = row.find("td:eq(5)").text();
+
+    $('#editCategoria').val(categoria);
+    $('#editMarca').val(marca);
+    $('#editCaracteristicas').val(caracteristicas);
+    $('#editModelo').val(modelo);
+    $('#editPrecio').val(precio);
+    $('#editId').val(''); 
+    $('#editEmp').val(id_E);
+
+    $('#editModal').modal('show');
+});
+
+// Enviar formulario de edición o creación con AJAX
+$(document).on('click', '.submit_equipo', function(event) {
+    event.preventDefault();
+
+    $('.error-message').remove();
+    $('.is-invalid').removeClass('is-invalid');
+
+    let isValid = true;
+
+    // Validación de campos requeridos
+    $('#editForm [required]').each(function() {
+        if (!$(this).val()) {
+            isValid = false;
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
         }
-        .form-group:not(:has([required])) label:after {
-            content: "";
+    });
+
+    if (!isValid) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Campos requeridos',
+            text: 'Por favor complete todos los campos obligatorios',
+        });
+        return;
+    }
+
+    let id = $('#editId').val();
+    let id_E = $('#editEmp').val();
+    let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
+    let method = id ? 'PUT' : 'POST';
+
+    let formData = {
+        CategoriaEquipo: $('#editCategoria').val(),
+        GerenciaEquipoID: $('#editGerenciaEquipo').val(),
+        Marca: $('#editMarca').val(),
+        Caracteristicas: $('#editCaracteristicas').val(),
+        Modelo: $('#editModelo').val(),
+        Precio: $('#editPrecio').val(),
+        FechaAsignacion: $('#editFechaAsignacion').val(),
+        NumSerie: $('#editNumSerie').val(),
+        Folio: $('#editFolio').val(),
+        FechaDeCompra: $('#editFechaDeCompra').val(),
+        Comentarios: $('#editComentarios').val(),
+    };
+
+    let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // Enviar datos con AJAX
+    $.ajax({
+        url: url,
+        method: method,
+        data: formData,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        },
+        success: function(response) {
+            if (response.errors) {
+                // Mostrar errores de validación
+                Object.keys(response.errors).forEach(field => {
+                    const input = $(`#edit${field}`);
+                    input.addClass('is-invalid');
+                    input.siblings('.invalid-feedback').text(response.errors[field][0]);
+                });
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de validación',
+                    text: 'Por favor revise los campos marcados en rojo',
+                });
+            } else {
+                // Si la solicitud fue exitosa, actualizar la fila correspondiente o agregar una nueva
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Datos del equipo guardados correctamente",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+
+                // Actualizar o agregar la fila en la tabla
+                if (id) {
+                    updateTableRow(response.equipo);
+                } else {
+                    addNewRow(response.equipo);
+                }
+
+                $('#editModal').modal('hide');
+            }
+        },
+        error: function(error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Ocurrió un error al guardar los datos',
+            });
         }
-    </style>
+    });
+});
+
+// Actualizar una fila en la tabla después de editar
+function updateTableRow(equipo) {
+    let row = $(`tr[data-id=${equipo.InventarioID}]`);
+    row.find('td:eq(1)').text(equipo.CategoriaEquipo);
+    row.find('td:eq(2)').text(equipo.Marca);
+    row.find('td:eq(3)').text(equipo.Caracteristicas);
+    row.find('td:eq(4)').text(equipo.Modelo);
+    row.find('td:eq(5)').text(equipo.Precio);
+    row.find('td:eq(6)').text(equipo.FechaAsignacion);
+    row.find('td:eq(7)').text(equipo.FechaDeCompra);
+    row.find('td:eq(8)').text(equipo.NumSerie);
+    row.find('td:eq(9)').text(equipo.Folio);
+    row.find('td:eq(10)').text(equipo.GerenciaEquipo);
+    row.find('td:eq(11)').text(equipo.Comentarios);
+}
+
+// Agregar una nueva fila en la tabla (para equipo creado)
+function addNewRow(equipo) {
+    let newRow = `
+        <tr data-id="${equipo.InventarioID}">
+            <td>
+                <button class="btn btn-outline-secondary btn-xs edit-btn" data-id="${equipo.InventarioID}">
+                    <i class="fa fa-edit"></i>
+                </button>
+                <form method="POST" action="/inventarios/destroy/${equipo.InventarioID}" style="display:inline">
+                    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat delete-btn" data-id="${equipo.InventarioID}">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </form>
+            </td>
+            <td>${equipo.CategoriaEquipo}</td>
+            <td>${equipo.Marca}</td>
+            <td>${equipo.Caracteristicas}</td>
+            <td>${equipo.Modelo}</td>
+            <td>${equipo.Precio}</td>
+            <td>${equipo.FechaAsignacion}</td>
+            <td>${equipo.FechaDeCompra}</td>
+            <td>${equipo.NumSerie}</td>
+            <td>${equipo.Folio}</td>
+            <td>${equipo.GerenciaEquipo}</td>
+            <td>${equipo.Comentarios}</td>
+        </tr>
+    `;
+    $('#equiposAsignadosTable tbody').append(newRow);
+}
+
+// Eliminar equipo con AJAX
+$(document).on('click', '.delete-btn', function(event) {
+    event.preventDefault();
+
+    var id = $(this).data('id'); // ✅ Obtener el ID del botón delete-btn
+
+    if (!id) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se encontró el ID del equipo.',
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: `Eliminar`,
+        text: "¿Realmente desea eliminar este equipo asignado?",
+        icon: "warning",
+        showDenyButton: true,
+        confirmButtonText: 'Confirmar',
+        denyButtonText: 'Cerrar',
+        dangerMode: true,
+    }).then(function(willDelete) {
+        if (willDelete.isConfirmed) {
+            $.ajax({
+                url: `/inventarios/${id}`,  // ✅ Se pasa el ID en la URL correctamente
+                method: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Eliminado!',
+                            text: "El equipo fue eliminado correctamente.",
+                            icon: 'success'
+                        });
+
+                        // Eliminar la fila de la tabla
+                        $(`tr[data-id=${id}]`).remove();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo eliminar el equipo',
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Hubo un error al eliminar el equipo.',
+                    });
+                }
+            });
+        }
+    });
+});
+
+// Fin seccion equipo 
+
+// Seccion insumo
+
+$(document).on('click', '.edit-btn-insum', function() {
+    let row = $(this).closest('tr');
+    let id = row.data('id');
+
+    // Asignar valores al formulario
+    document.getElementById('tituloinsumo').innerHTML = 'Editar insumo';
+
+    $('#editId_insumo').val(id);
+    $('#editEmp_insumo').val('');
+    $('#editCategoriaInsumo').val(row.find("td:eq(1)").text());
+    $('#editNombreInsumo').val(row.find("td:eq(2)").text());
+    $('#editCostoMensual').val(row.find("td:eq(3)").text());
+    $('#editCostoAnual').val(row.find("td:eq(4)").text());
+    $('#editFrecuenciaDePago').val(row.find("td:eq(5)").text());
+    $('#editobserv').val(row.find("td:eq(6)").text());
+    $('#editFechaDeAsigna').val(row.find("td:eq(7)").text());
+    $('#editNumSerieInsu').val(row.find("td:eq(8)").text());
+    $('#editComentariosInsumo').val(row.find("td:eq(9)").text());
+    $('#editMesDePago').val(row.find("td:eq(10)").text());
+
+    $('#editModalInsumo').modal('show');
+});
+
+$(document).on('click', '.crear-btn-insumo', function() {
+    let id_E = '{{ $inventario->EmpleadoID }}';
+
+    $('#editFormInsumo')[0].reset();
+    
+    document.getElementById('tituloinsumo').innerHTML = 'Crear insumo';
+    let row = $(this).closest('tr');
+    let categoria = row.find("td:eq(1)").text();
+    let nombreinsumo = row.find("td:eq(2)").text();
+    let costomensual = row.find("td:eq(3)").text();
+    let costoanual = row.find("td:eq(4)").text();
+    let frecuenciadepago = row.find("td:eq(5)").text();
+    let observaciones = row.find("td:eq(6)").text();
+
+    $('#editCategoriaInsumo').val(categoria);
+    $('#editNombreInsumo').val(nombreinsumo);
+    $('#editCostoMensual').val(costomensual);
+    $('#editCostoAnual').val(costoanual);
+    $('#editFrecuenciaDePago').val(frecuenciadepago);
+    $('#editobserv').val(observaciones);
+    $('#editId_insumo').val(''); 
+    $('#editEmp_insumo').val(id_E);
+
+    $('#editModalInsumo').modal('show');
+});
+
+
+$(document).on('click', '.submit_insumo', function(event) {
+    event.preventDefault();
+
+    $('.error-message').remove();
+    $('.is-invalid').removeClass('is-invalid');
+
+    let isValid = true;
+
+    $('#editFormInsumo [required]').each(function() {
+        if (!$(this).val()) {
+            isValid = false;
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+
+    if (!isValid) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Campos requeridos',
+            text: 'Por favor complete todos los campos obligatorios',
+        });
+        return;
+    }
+
+    let id = $('#editId_insumo').val();
+    let id_E = $('#editEmp_insumo').val();
+    let url = id ? '/inventarios/editar-insumo/' + id : '/inventarios/crear-insumo/' + id_E;
+    let method = id ? 'PUT' : 'POST';
+
+    let formData = {
+        CateogoriaInsumo: $('#editCategoriaInsumo').val(),
+        NombreInsumo: $('#editNombreInsumo').val(),
+        CostoMensual: $('#editCostoMensual').val(),
+        CostoAnual: $('#editCostoAnual').val(),
+        FrecuenciaDePago: $('#editFrecuenciaDePago').val(),
+        Observaciones: $('#editobserv').val(),
+        FechaAsignacion: $('#editFechaDeAsigna').val(),
+        NumSerie: $('#editNumSerieInsu').val(),
+        Comentarios: $('#editComentariosInsumo').val(),
+        MesDePago: $('#editMesDePago').val(),
+    };
+
+    let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: formData,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        },
+        success: function(response) {
+            if (response.errors) {
+                
+                Object.keys(response.errors).forEach(field => {
+                    const input = $(`#edit${field}`);
+                    input.addClass('is-invalid');
+                    input.siblings('.invalid-feedback').text(response.errors[field][0]);
+                });
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de validación',
+                    text: 'Por favor revise los campos marcados en rojo',
+                });
+            } else {
+               
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Datos del insumo guardado correctamente",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+
+           
+                if (id) {
+                    updateisnumoTableRow(response.insumo);
+                } else {
+                    addinsumoNewRow(response.insumo);
+                }
+
+                $('#editModalInsumo').modal('hide');
+            }
+        },
+        error: function(error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Ocurrió un error al guardar los datos',
+            });
+        }
+    });
+});
+
+
+function updateisnumoTableRow(insumo) {
+    let row = $(`tr[data-id=${insumo.InventarioID}]`);
+    row.find('td:eq(1)').text(insumo.Categoriainsumo);
+    row.find('td:eq(2)').text(insumo.Marca);
+    row.find('td:eq(3)').text(insumo.Caracteristicas);
+    row.find('td:eq(4)').text(insumo.Modelo);
+    row.find('td:eq(5)').text(insumo.Precio);
+    row.find('td:eq(6)').text(insumo.FechaAsignacion);
+    row.find('td:eq(7)').text(insumo.FechaDeCompra);
+    row.find('td:eq(8)').text(insumo.NumSerie);
+    row.find('td:eq(9)').text(insumo.Folio);
+    row.find('td:eq(10)').text(insumo.Gerenciainsumo);
+    row.find('td:eq(11)').text(insumo.Comentarios);
+}
+
+
+function addinsumoNewRow(insumo) {
+    let newRow = `
+        <tr data-id="${insumo.InventarioID}">
+            <td>
+                <button class="btn btn-outline-secondary btn-xs edit-btn-insum" data-id="${insumo.InventarioID}">
+                    <i class="fa fa-edit"></i>
+                </button>
+                <form method="POST" action="/inventarios/deleteInsumo/${insumo.InventarioID}" style="display:inline">
+                    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat delete-btn-insumo" data-id="${insumo.InventarioID}">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </form>
+            </td>
+            <td>${insumo.CateogoriaInsumo}</td>
+            <td>${insumo.NombreInsumo}</td>
+            <td>${insumo.CostoMensual}</td>
+            <td>${insumo.CostoAnual}</td>
+            <td>${insumo.FrecuenciaDePago}</td>
+            <td>${insumo.Observaciones}</td>
+            <td>${insumo.FechaAsignacion}</td>
+            <td>${insumo.NumSerie}</td>
+            <td>${insumo.Comentarios}</td>
+            <td>${insumo.MesDePago}</td>
+        </tr>
+    `;
+    $('#insumosAsignadosTable tbody').append(newRow);
+}
+
+$(document).on('click', '.delete-btn-insumo', function(event) {
+    event.preventDefault();
+
+    var id = $(this).data('id');
+
+    if (!id) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se encontró el ID del insumo.',
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: `Eliminar`,
+        text: "¿Realmente desea eliminar este insumo asignado?",
+        icon: "warning",
+        showDenyButton: true,
+        confirmButtonText: 'Confirmar',
+        denyButtonText: 'Cerrar',
+        dangerMode: true,
+    }).then(function(willDelete) {
+        if (willDelete.isConfirmed) {
+            $.ajax({
+                url: `/inventarios/deleteInsumo/${id}`, 
+                method: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Eliminado!',
+                            text: "El insumo fue eliminado correctamente.",
+                            icon: 'success'
+                        });
+
+                        // Eliminar la fila de la tabla
+                        $(`tr[data-id=${id}]`).remove();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo eliminar el insumo',
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Hubo un error al eliminar el insumo.',
+                    });
+                }
+            });
+        }
+    });
+});
+
+// Fin Seccion insumo
+
+// Seccion telefono
+
+$(document).on('click', '.edit-btn-linea', function() {
+    let row = $(this).closest('tr');
+    let id = row.data('id');
+    
+    document.getElementById('titulolinea').innerHTML = 'Editar Linea';
+
+    // Asignar valores al formulario
+    $('#editId_linea').val(id);
+    $('#editId_linea2').val(''); 
+    $('#editEmp_linea').val('');
+    $('#editcomenl').val(row.find("td:eq(13)").text());
+    $('#editfechalinea').val(row.find("td:eq(11)").text());
+    
+    $('#editModalLinea').modal('show');
+});
+
+$(document).on('click', '.crear-btn-linea', function() {
+
+    let id_E = '{{ $inventario->EmpleadoID }}';
+
+    $('#editFormLinea')[0].reset();
+    
+    document.getElementById('titulolinea').innerHTML = 'Crear Linea';
+    var id = $(this).data('id');
+    $('#editId_linea').val(''); 
+    $('#editId_linea2').val(id);
+    $('#editEmp_linea').val(id_E);
+
+    $('#editModalLinea').modal('show');
+});
+
+
+$(document).on('click', '.submit_linea', function(event) {
+    event.preventDefault();
+
+    $('.error-message').remove();
+    $('.is-invalid').removeClass('is-invalid');
+
+    let isValid = true;
+
+    $('#editFormLinea [required]').each(function() {
+        if (!$(this).val()) {
+            isValid = false;
+            $(this).addClass('is-invalid');
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+
+    if (!isValid) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Campos requeridos',
+            text: 'Por favor complete todos los campos obligatorios',
+        });
+        return;
+    }
+
+    let id = $('#editId_linea').val();
+    let id2 = $('#editId_linea2').val();
+    let id_E = $('#editEmp_linea').val();
+    let url = id ? '/inventarios/editar-linea/' + id  : '/inventarios/crear-linea/' + id_E +'/' + id2;
+    let method = id ? 'PUT' : 'POST';
+
+    let formData = {
+        FechaAsignacion: $('#editfechalinea').val(),
+        Comentarios: $('#editcomenl').val()
+    };
+
+    let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    $.ajax({
+        url: url,
+        method: method,
+        data: formData,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        },
+        success: function(response) {
+            if (response.errors) {
+                
+                Object.keys(response.errors).forEach(field => {
+                    const input = $(`#edit${field}`);
+                    input.addClass('is-invalid');
+                    input.siblings('.invalid-feedback').text(response.errors[field][0]);
+                });
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de validación',
+                    text: 'Por favor revise los campos marcados en rojo',
+                });
+            } else {
+               
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Datos del telefonia guardado correctamente",
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+
+           
+                if (id) {
+                    updatetelefTableRow(response.telefono);
+                } else {
+                    addtelefNewRow(response.telefono);
+                }
+
+                $('#editModalLinea').modal('hide');
+            }
+        },
+        error: function(error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Ocurrió un error al guardar los datos',
+            });
+        }
+    });
+});
+
+
+function updatetelefTableRow(telefono) {
+    let row = $(`tr[data-id=${telefono.InventarioID}]`);
+    row.find('td:eq(13)').text(telefono.Gerenciainsumo);
+    row.find('td:eq(11)').text(telefono.Comentarios);
+}
+
+
+function addtelefNewRow(telefono) {
+    let newRow = `
+        <tr data-id="${telefono.InventarioID}">
+            <td>
+                <button class="btn btn-outline-secondary btn-xs edit-btn-linea" data-id="${telefono.InventarioID}">
+                    <i class="fa fa-edit"></i>
+                </button>
+                <form method="POST" action="/inventarios/deleteL/${telefono.InventarioID}" style="display:inline">
+                    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat delete-btn-linea" data-id="${telefono.InventarioID}">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </form>
+            </td>
+            <td>${telefono.NumTelefonico}</td>
+            <td>${telefono.Compania}</td>
+            <td>${telefono.PlanTel}</td>
+            <td>${telefono.CostoRentaMensual}</td>
+            <td>${telefono.CuentaPadre}</td>
+            <td>${telefono.CuentaHija}</td>
+            <td>${telefono.TipoLinea}</td>
+            <td>${telefono.Obra}</td>
+            <td>${telefono.FechaAsignacion}</td>
+            <td>${telefono.CostoFianza}</td>
+            <td>${telefono.FechaAsignacion}</td>
+             <td>${telefono.Estado}</td>
+            <td>${telefono.Comentarios}</td>
+              <td>${telefono.MontoRenovacionFianza}</td>
+              <td>${telefono.LineaID}</td>
+        </tr>
+    `;
+    $('#lineasAsignadosTable tbody').append(newRow);
+}
+
+$(document).on('click', '.delete-btn-linea', function(event) {
+    event.preventDefault();
+
+    var id = $(this).data('id');
+
+    if (!id) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se encontró el ID del telefono.',
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: `Eliminar`,
+        text: "¿Realmente desea eliminar este telefono asignado?",
+        icon: "warning",
+        showDenyButton: true,
+        confirmButtonText: 'Confirmar',
+        denyButtonText: 'Cerrar',
+        dangerMode: true,
+    }).then(function(willDelete) {
+        if (willDelete.isConfirmed) {
+            $.ajax({
+                url: `/inventarios/deleteL/${id}`, 
+                method: 'DELETE',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            title: 'Eliminado!',
+                            text: "El telefono fue eliminado correctamente.",
+                            icon: 'success'
+                        });
+
+                        // Eliminar la fila de la tabla
+                        $(`tr[data-id=${id}]`).remove();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo eliminar el telefono',
+                        });
+                    }
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Hubo un error al eliminar el telefono.',
+                    });
+                }
+            });
+        }
+    });
+});
+
+// Fin Seccion telefono
+
+
+
+
+
+    </script>
+
+ 
 
 @endpush

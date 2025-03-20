@@ -45,6 +45,10 @@ class InventarioLineas extends Model
  
     ];
 
+    protected $casts = [
+        'FechaFianza' => 'date', // Laravel lo manejará como una fecha automáticamente
+    ];
+    
     public function gerenciaid()
     {
         return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaEquipoID');

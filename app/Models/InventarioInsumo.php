@@ -26,22 +26,17 @@ class InventarioInsumo extends Model
 
     public $fillable = [
         'EmpleadoID',
-        'NumTelefonico',
-        'Compania',
-        'PlanTel',
-        'CostoRentaMensual',
-        'CuentaPadre',
-        'CuentaHija',
-        'TipoLinea',
-        'ObraID',
-        'Obra',
-        'FechaFianza',
-        'CostoFianza',
+        'InsumoID',
+        'CateogoriaInsumo',
+        'NombreInsumo',
+        'CostoMensual',
+        'CostoAnual',
+        'FrecuenciaDePago',
+        'Observaciones',
         'FechaAsignacion',
-        'Estado',
+        'NumSerie',
         'Comentarios',
-        'MontoRenovacionFianza',
-        'LineaID'
+        'MesDePago'
     ];
 
   

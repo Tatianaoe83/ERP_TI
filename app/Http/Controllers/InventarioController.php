@@ -17,6 +17,7 @@ use App\Models\InventarioLineas;
 use App\Models\LineasTelefonicas;
 use App\Models\UnidadesDeNegocio;
 use App\Models\Insumos;
+use App\Models\Gerencia;
 use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
@@ -191,9 +192,18 @@ class InventarioController extends AppBaseController
             return response()->json(['error' => 'Equipo no encontrado'], 404);
         }
 
-        $inventarioEquipo->update($request->all());
+        $data = $request->all();
 
-        return response()->json(['message' => 'Inventario actualizado correctamente']);
+        $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
+
+        $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+
+        $inventarioEquipo->update($data);
+
+        return response()->json([
+            'equipo' => $inventarioEquipo,
+            'success' => true
+        ]);
     }
 
     public function crearequipo($id, Request $request)
@@ -202,10 +212,18 @@ class InventarioController extends AppBaseController
         $data = $request->all();
         $data['EmpleadoID'] = $id;
 
-        InventarioEquipo::create($data);
+        $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
 
+        $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+      
+        $inventarioEquipo = InventarioEquipo::create($data);
 
-        return response()->json(['message' => 'Inventario actualizado correctamente']);
+        return response()->json([
+            'equipo' => $inventarioEquipo, 
+            'success' => true
+        ]);
+
+        
     }
 
 
@@ -216,23 +234,15 @@ class InventarioController extends AppBaseController
      *
      * @return Response
      */
-    public function destroy($id)
+    public function destroy(InventarioEquipo $inventario)
     {
-
-        $inventario = InventarioEquipo::where('InventarioID', $id)->first();
-
-
-        if (empty($inventario)) {
-            Flash::error('Inventario not found');
-
-            return redirect(route('inventarios.index'));
-        }
-
-        $inventario->delete($id);
-
-        Flash::success('Inventario deleted successfully.');
-
-        return redirect()->route('inventarios.edit', ['inventario' => $inventario->EmpleadoID]);
+        $inventario->delete();
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Equipo eliminado correctamente.',
+            'equipo' => $inventario
+        ]);
     }
 
 
@@ -246,102 +256,113 @@ class InventarioController extends AppBaseController
             return response()->json(['error' => 'Equipo no encontrado'], 404);
         }
 
-        $inventarioinsumo->update($request->all());
+        $data = $request->all();
+        $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
+        $data['InsumoID'] = $idinsumo[0]->ID;
 
-        return response()->json(['message' => 'Inventario actualizado correctamente']);
+        $inventarioinsumo->update($data);
+
+        return response()->json([
+            'insumo' => $inventarioinsumo,
+            'success' => true
+        ]);
+
     }
 
     public function crearinsumo($id, Request $request)
     {
 
-
-        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first();
-
         $data = $request->all();
         $data['EmpleadoID'] = $id;
-        $data['InsumoID'] = $categorias->ID;
+        $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
+        $data['InsumoID'] = $idinsumo[0]->ID;
+        $inventarioinsumo = InventarioInsumo::create($data);
 
+        return response()->json([
+            'insumo' => $inventarioinsumo, 
+            'success' => true
+        ]);
 
-        InventarioInsumo::create($data);
-
-
-        return response()->json(['message' => 'Inventario actualizado correctamente']);
     }
 
-    public function destroyInsumo($id)
-    {
-
-
-        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first();
-
-
-        if (empty($InventarioInsumo)) {
-            Flash::error('Inventario not found');
-
-            return redirect(route('inventarios.index'));
+        public function destroyInsumo(InventarioInsumo $inventarioInsumo)
+        {
+            $inventarioInsumo->delete();
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'Insumo eliminado correctamente.',
+                'insumo' => $inventarioInsumo
+            ]);
         }
 
-        $InventarioInsumo->delete($id);
-
-        Flash::success('Inventario deleted successfully.');
-
-        return redirect()->route('inventarios.edit', ['inventario' => $InventarioInsumo->EmpleadoID]);
-    }
 
 
     public function editarlinea($id, Request $request)
     {
 
-        dd('editar linea');
 
-        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first();
+        $inventariotelf = InventarioLineas::where('InventarioID', $id)->first();
 
-        if (!$inventarioinsumo) {
+        if (!$inventariotelf) {
             return response()->json(['error' => 'Equipo no encontrado'], 404);
         }
 
-        $inventarioinsumo->update($request->all());
+        $data = $request->all();
 
-        return response()->json(['message' => 'Inventario actualizado correctamente']);
+
+        $inventariotelf->update($data);
+
+        return response()->json([
+            'telefono' => $inventariotelf,
+            'success' => true
+        ]);
     }
 
-    public function crearlinea($id, Request $request)
+    public function crearlinea($id,$telf, Request $request)
     {
 
-        dd($request->all());
-        dd('crear linea');
+      
 
-        $categorias = Insumos::select("*")->where('NombreInsumo', $request->NombreInsumo)->first();
+        $linea = LineasTelefonicas::select('lineastelefonicas.NumTelefonico','companiaslineastelefonicas.Compania','planes.NombrePlan','planes.PrecioPlan AS CostoRentaMensual','lineastelefonicas.CuentaPadre','lineastelefonicas.CuentaHija','lineastelefonicas.TipoLinea','lineastelefonicas.FechaFianza','lineastelefonicas.CostoFianza','lineastelefonicas.MontoRenovacionFianza','lineastelefonicas.LineaID','planes.NombrePlan AS PlanTel')
+        ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
+        ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
+        ->where('lineastelefonicas.LineaID', $telf)->get();
 
+
+        $lineaData = $linea->first();
         $data = $request->all();
         $data['EmpleadoID'] = $id;
-        $data['InsumoID'] = $categorias->ID;
+        $data['Estado'] = 'True';
 
+        $data = array_merge($data, $lineaData->toArray());
 
-        InventarioInsumo::create($data);
+        $empleado = Empleados::select('obras.ObraID','obras.NombreObra AS Obra')
+        ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+        ->where('EmpleadoID', $id)->get();
 
+        $empleadoData = $empleado->first();
 
-        return response()->json(['message' => 'Inventario actualizado correctamente']);
+        $data = array_merge($data, $empleadoData->toArray());
+
+   
+        $inventariotelf = InventarioLineas::create($data);
+
+        return response()->json([
+            'telefono' => $inventariotelf, 
+            'success' => true
+        ]);
     }
-
-    public function destroylinea($id)
+    
+    public function destroylinea(InventarioLineas $inventarioLineas)
     {
-
-        dd('destroy linea');
-        $InventarioInsumo = InventarioInsumo::where('InventarioID', $id)->first();
-
-
-        if (empty($InventarioInsumo)) {
-            Flash::error('Inventario not found');
-
-            return redirect(route('inventarios.index'));
-        }
-
-        $InventarioInsumo->delete($id);
-
-        Flash::success('Inventario deleted successfully.');
-
-        return redirect()->route('inventarios.edit', ['inventario' => $InventarioInsumo->EmpleadoID]);
+        $inventarioLineas->delete();
+    
+        return response()->json([
+            'success' => true,
+            'message' => 'Insumo eliminado correctamente.',
+            'telefono' => $inventarioLineas
+        ]);
     }
 
 

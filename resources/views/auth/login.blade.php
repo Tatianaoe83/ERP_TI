@@ -46,7 +46,7 @@
                     <select name="database" id="database" class="form-control" onchange="updateEnvDatabase(this.value)" required>
                         <option value="">Seleccione Base de Datos</option>
                         <option value="unidplay_ControlInventarioTI">Control Inventario TI</option>
-                        <option value="unidplay_Presupuestos">Presupuestos</option>
+                        <option value="unidplay_PresupuestosControl">Presupuestos</option>
                     </select>
                 </div>
 

@@ -49,14 +49,14 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label for="editCategoria">Categoría del Equipo </label>
-                  <input type="text" class="form-control" id="editCategoria" name="editCategoria" required>
+                  <input type="text" class="form-control" id="editCategoria" name="editCategoria" required readonly>
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Marca </label>
-                  <input type="text" class="form-control" id="editMarca" name="Marca" required>
+                  <input type="text" class="form-control" id="editMarca" name="Marca" required readonly>
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -66,13 +66,13 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Caracteristicas</label>
-                  <textarea class="form-control"  rows="3" id="editCaracteristicas" required ></textarea>
+                  <textarea class="form-control"  rows="3" id="editCaracteristicas" required readonly></textarea>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Modelo </label>
-                  <input type="text" class="form-control" id="editModelo" name="Modelo" required>
+                  <input type="text" class="form-control" id="editModelo" name="Modelo" required readonly>
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -82,7 +82,7 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Precio</label>
-                  <input type="number" class="form-control" id="editPrecio" required  min="1" step="1" pattern="\d*">
+                  <input type="number" class="form-control" id="editPrecio" required  min="1" step="1" pattern="\d*" readonly>
                   
                 </div>
               </div>
@@ -175,14 +175,14 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label for="editCategoriaInsumo">Categoría del Insumo </label>
-                  <input type="text" class="form-control" id="editCategoriaInsumo" name="editCategoriaInsumo" required>
+                  <input type="text" class="form-control" id="editCategoriaInsumo" name="editCategoriaInsumo" required readonly>
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Nombre Insumo </label>
-                  <input type="text" class="form-control" id="editNombreInsumo" name="editNombreInsumo" required>
+                  <input type="text" class="form-control" id="editNombreInsumo" name="editNombreInsumo" required readonly>
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -192,14 +192,14 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Costo Mensual</label>
-                  <input type="text" class="form-control" id="editCostoMensual" name="editCostoMensual" required>
+                  <input type="text" class="form-control" id="editCostoMensual" name="editCostoMensual" required readonly>
                 
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Costo Anual </label>
-                  <input type="text" class="form-control" id="editCostoAnual" name="editCostoAnual" required>
+                  <input type="text" class="form-control" id="editCostoAnual" name="editCostoAnual" required readonly>
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -209,14 +209,14 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Frecuencia de pago</label>
-                  <input type="text" class="form-control" id="editFrecuenciaDePago" name="editFrecuenciaDePago" required>
+                  <input type="text" class="form-control" id="editFrecuenciaDePago" name="editFrecuenciaDePago" required readonly>
                   
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Observaciones</label>
-                  <input type="text" class="form-control" id="editobserv" name="editobserv">
+                  <input type="text" class="form-control" id="editobserv" name="editobserv" readonly>
                 </div>
               </div>
             </div>
@@ -295,12 +295,9 @@
       <div class="modal-body">
       <form id="editFormLinea">
           <input type="hidden" id="editId_linea">
+          <input type="hidden" id="editId_linea2">
           <input type="hidden" id="editEmp_linea">
 
-
-          <input type="hidden" id="lineaid">
-
-          
 
           <div class="container-fluid">
             <div class="row">
