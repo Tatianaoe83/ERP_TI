@@ -22,7 +22,7 @@ use App\Models\Equipos;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use DB;
-use PDF;
+use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 
 class InventarioController extends AppBaseController
@@ -353,7 +353,7 @@ class InventarioController extends AppBaseController
             'success' => true
         ]);
     }
-    
+
     public function destroylinea(InventarioLineas $inventarioLineas)
     {
         $inventarioLineas->delete();
