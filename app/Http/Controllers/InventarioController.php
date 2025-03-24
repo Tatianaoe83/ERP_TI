@@ -285,16 +285,27 @@ class InventarioController extends AppBaseController
 
     }
 
-        public function destroyInsumo(InventarioInsumo $inventarioInsumo)
+
+    public function destroyInsumo($id)
         {
-            $inventarioInsumo->delete();
-        
+            // Buscar el insumo por InventarioID
+            $inventaInsumo = InventarioInsumo::where('InventarioID', $id)->first();
+
+            // Verificar si el insumo existe
+            if (!$inventaInsumo) {
+                return response()->json(['error' => 'Insumo no encontrado'], 404);
+            }
+
+            // Eliminar el insumo
+            $inventaInsumo->delete();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Insumo eliminado correctamente.',
-                'insumo' => $inventarioInsumo
+                'insumo' => $inventaInsumo
             ]);
         }
+
 
 
 
@@ -354,13 +365,23 @@ class InventarioController extends AppBaseController
         ]);
     }
 
-    public function destroylinea(InventarioLineas $inventarioLineas)
+    public function destroylinea($id)
     {
+
+         // Buscar el insumo por InventarioID
+         $inventarioLineas = InventarioLineas::where('InventarioID', $id)->first();
+
+         // Verificar si el insumo existe
+         if (!$inventarioLineas) {
+             return response()->json(['error' => 'Linea no encontrado'], 404);
+         }
+
+
         $inventarioLineas->delete();
     
         return response()->json([
             'success' => true,
-            'message' => 'Insumo eliminado correctamente.',
+            'message' => 'Linea eliminado correctamente.',
             'telefono' => $inventarioLineas
         ]);
     }

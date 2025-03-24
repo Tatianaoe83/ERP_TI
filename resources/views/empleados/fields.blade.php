@@ -41,6 +41,6 @@
     <div class="form-check">
         {!! Form::hidden('Estado', 0, ['class' => 'form-check-input']) !!}
         {!! Form::checkbox('Estado', '1', null, ['class' => 'form-check-input']) !!}
-        {!! Form::label('Estado', 'Estado', ['class' => 'form-check-label']) !!}
+        {!! Form::label('Estado', 'Activo', ['class' => 'form-check-label']) !!}
     </div>
 </div>

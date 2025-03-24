@@ -74,8 +74,6 @@ class Empleados extends Model
         'NumTelefono' => 'required|string|max:50',
         'Correo' => 'required|string|max:150',
         'Estado' => 'required|boolean',
-        'created_at' => 'required',
-        'updated_at' => 'required',
         'deleted_at' => 'nullable'
     ];
 

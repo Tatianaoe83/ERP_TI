@@ -18,6 +18,19 @@
 
             <div class="card-body">
                 <div class="row">
+
+                <div class="row">
+                  <div class="col-md-6">
+                  </div>
+                  <div class="col-md-6" style="text-align: end;">
+                    
+                  <a href="{{ route('inventarios.index') }}" class="btn btn-danger">Regresar</a>
+
+      
+                  </div>
+                </div>
+
+
                     @include('inventarios.fields')
                 </div>
             </div>

@@ -162,6 +162,7 @@
 
 
                             <button type="submit" class="btn btn-primary show_confirm">Transferir</button>
+                            <a href="{{ route('inventarios.index') }}" class="btn btn-danger">Regresar</a>
                         </form>
                     </div>
                 </div>
@@ -250,8 +251,14 @@
                 <option value="">--Seleccione un empleado--</option>
                 ${empleadosOptions}
             </select>
-        `,
-            showDenyButton: true,
+        `,  didOpen: () => {
+        // Inicializar Select2 después de que el modal esté en el DOM
+                $('#empleado').select2({
+                    dropdownParent: $('.swal2-popup'), // Asegura que el dropdown esté dentro del modal
+                    width: '100%' // Asegurar que ocupe todo el ancho
+                });
+            },
+                showDenyButton: true,
             confirmButtonText: 'Confirmar',
             denyButtonText: 'Cerrar',
             dangerMode: true,
