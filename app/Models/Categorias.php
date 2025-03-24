@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Categorias extends Model
 {
-    use SoftDeletes;
+    use HasFactory,SoftDeletes;
 
 
     public $table = 'categorias';
