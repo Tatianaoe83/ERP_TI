@@ -140,7 +140,7 @@ class GerenciaDataTable extends DataTable
             'UnidadNegocioID' => [
                 'title' => 'Unidad Negocio',
                 'data' => 'nombre_empresa',
-                'name' => 'UnidadesDeNegocio.NombreEmpresa',
+                'name' => 'unidadesdenegocio.NombreEmpresa',
             ],
             'NombreGerente' => [
                 'title' => 'Nombre Gerente',
