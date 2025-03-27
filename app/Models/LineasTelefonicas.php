@@ -68,7 +68,6 @@ class LineasTelefonicas extends Model
         'CuentaHija' => 'string',
         'TipoLinea' => 'string',
         'ObraID' => 'integer',
-        'FechaFianza' => 'date',
         'CostoFianza' => 'decimal:2',
         'Activo' => 'boolean',
         'Disponible' => 'boolean',

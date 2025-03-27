@@ -43,7 +43,7 @@
 <!-- Fechafianza Field -->
 <div class="form-group col-sm-6">
     {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
-    {!! Form::date('FechaFianza', null, ['class' => 'form-control','id'=>'FechaFianza']) !!}
+    {!! Form::date('FechaFianza', null, ['class' => 'form-control']) !!}
 </div>
 
 
