@@ -63,7 +63,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 12px;
+            font-size: 10px;
             margin-bottom: 10px;
         }
         table, th, td {
@@ -127,135 +127,59 @@
             </div>
         </div>
 
-        @if ($TipoFor == "1" or $TipoFor == "4")
             <h1>CARTA DE ENTREGA DE EQUIPO TI</h1>
-        @elseif( $TipoFor == "2" )
-            <h1>CARTA DE ENTREGA DE RADIOS</h1>
-        @else
-            <h1>CARTA DE ENTREGA DE TELEFONIA</h1>
-        @endif
+   
 
-        <p class="subheader">Confirmo que recibo el siguiente equipo, mismo que se detalla a continuación:</p>
+        <p class="subheader">
+            Por medio del presente documento, hago constar que he recibido en comodato el siguiente equipo, bajo las siguientes condiciones:  <br>
+        </p>
 
-        <!-- Tabla de productos -->
-        @if ($TipoFor == 4)
-                <!-- Tabla especial para TipoFor == 4 (Equipos + Insumos con solo Número de Serie y Descripción) -->
-                <table >
+            <ul style="text-align: justify;font-size: 12px;">
+            <li> Obra/Ubicación: {{$obra}}  </li>
+            <li> Vigencia del Comodato: TERMINACIÓN DE LA OBRA </li>
+            <li> Número de Contacto: {{$telefono}} </li>
+            <li> Gerencia Responsable:  {{$gerencia}} </li>
+        </ul>
+        <p style="text-align: left;font-size: 12px;">
+            Confirmo que he recibido el siguiente equipo, cuyo detalle se menciona a continuación:  
+        </p>
+
+                <table>
+                <thead>
                     <tr>
-                        <th >
-                            NÚMERO DE SERIE
-                        </th>
-                        <th >
-                            DESCRIPCIÓN
-                        </th>
+                       
+                        <th>Categoría</th>
+                        <th>Marca/Nombre</th>
+                        <th>Características</th>
+                        <th>Modelo</th>
+                        <th>Número de Serie</th>
+                        <th>Folio / Num. Asignado</th>
+                       
                     </tr>
-                    <!-- Equipos -->
-                    @foreach ($equipos as $equipo)
-                        <tr>
-                            <td >{{ $equipo->NumSerie ?? 'N/A' }}</td>
-                            <td >{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
-                        </tr>
+                </thead>
+                <tbody>
+                    @foreach ($datosInventario as $item)
+                    <tr>
+                      
+                       
+                        <td>{{ $item->categoria }}</td>
+                        <td>{{ $item->Marca }}</td>
+                        <td>{{ $item->Caracteristicas ?? 'N/A' }}</td>
+                        <td>{{ $item->Modelo ?? 'N/A' }}</td>
+                        <td>{{ $item->NumSerie }}</td>
+                        <td>{{ $item->FechaAsignacion ?? 'N/A' }}</td>
+                       
+                    </tr>
                     @endforeach
-                    <!-- Insumos -->
-                    @if (!empty($insumos) && count($insumos) > 0)
-                        @foreach ($insumos as $insumo)
-                            <tr>
-                                <td >{{ $insumo->NumSerie ?? 'N/A' }}</td>
-                                <td >{{ $insumo->Comentarios ?? 'Sin descripción' }}</td>
-                            </tr>
-                        @endforeach
-                    @endif
-                </table>
-                @else
-                <!-- Tabla normal para otros tipos -->
-                <table >
-                    <tr>
-                        <th colspan="2" >
-                            OBRA/UBICACION
-                        </th>
-                        <th colspan="2" >
-                            VIGENCIA DEL COMODATO
-                        </th>
-                    </tr>
-                    <tr>
-                        <td colspan="2" >
-                            {{$obra}}
-                        </td>
-                        <td colspan="2" >
-                            {{$acomodato}}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th colspan="2" >
-                            NÚMERO DE CONTACTO
-                        </th>
-                        <th colspan="2" >
-                            GERENCIA
-                        </th>
-                    </tr>
-                    <tr>
-                        <td colspan="2" >
-                            {{$telefono}}
-                        </td>
-                        <td colspan="2" >
-                            {{$gerencia}}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th >
-                            @if ($TipoFor == 3)
-                                NÚMERO DE TELÉFONO
-                            @else
-                                FOLIO
-                            @endif
-                        </th>
-                        <th >
-                            NÚMERO DE SERIE
-                        </th>
-                        <th colspan="2" >
-                            DESCRIPCIÓN
-                        </th>
-                    </tr>
-                    @foreach ($equipos as $index => $equipo)
-                        <tr>
-                            @if ($TipoFor == 3)
-                                <td >{{ $equipo->NumTelefonico }}</td>
-                            @else
-                                <td >{{ $equipo->Folio }}</td>
-                            @endif
-                            <td >{{ $equipo->NumSerie ?? 'N/A' }}</td>
-                            @if ($TipoFor == 2 && $index == 0)
-                            
-                            <td rowspan="{{ count($equipos) }}" colspan="2" >
-                                   
-                                        {{ $equipo->Caracteristicas ?? 'Sin descripción' }}
-                                   
-                            </td>
-                            @elseif ($TipoFor != 2)
-                                <td colspan="2" >{{ $equipo->Caracteristicas ?? 'Sin descripción' }}</td>
-                            @endif
+                </tbody>
+            </table>
 
-                        </tr>
-                    @endforeach
-                    @if (!empty($insumos) && count($insumos) > 0)
-                        @foreach ($insumos as $insumo)
-                            <tr>
-                                <td >{{ $insumo->folio ?? 'N/A' }}</td>
-                                <td >{{ $insumo->NumSerie ?? 'N/A' }}</td>
-                                <td colspan="2" >{{ $insumo->Comentarios ?? 'Sin descripción' }}</td>
-                            </tr>
-                        @endforeach
-                    @endif
-                </table>
-                @endif
+
 
 
         <!-- Términos y condiciones -->
         <div class="terms">
-        @if ($TipoFor == "4")
-            <p>Por favor de firmar este documento para confirmar lo recibido.</p>
-        @else   
-
+    
             <p>
                 El equipo o los equipos son propiedad de {{$empresa}} y se entregan en comodato 
                 durante el período especificado en la parte superior de la vigencia.
@@ -270,16 +194,10 @@
                 <li>En caso de extravío, levantar un acta administrativa detallando el hecho y reponer en su totalidad el costo del equipo. </li>
                 <li>En caso de reposición del equipo se requiere entregarlo en las mejores condiciones posibles salvo uso cotidiano, en caso de no ser así, me comprometo a responsabilizarme por las reparaciones que se deriven.</li>
                 <li> Retornar el equipo al departamento de TI al terminar la vigencia del comodato 
-                    @if ($TipoFor == "2")
-                        ,incluido los accesorios pertinentes (cable de alimentación, cargador y antena).
-                    @elseif ($TipoFor == "3")
-                    ,incluido los accesorios pertinentes (SIM).
-                    @else
-                       .
-                    @endif </li>
+               
             </ul>
 
-         @endif
+      
         </div>
 
         <!-- Firmas -->
