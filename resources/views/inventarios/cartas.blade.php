@@ -3,7 +3,7 @@
 @section('content')
 <section class="section">
     <div class="section-header">
-        <h3 class="page__heading">Cartas de entrega</h3>
+        <h3 class="page__heading">Cartas de entrega de: </h3> <h5 style="margin-bottom: 6px;padding-left: 5px;">{{$empleado->NombreEmpleado}}</h5>
     </div>
 
     <div class="section-body">

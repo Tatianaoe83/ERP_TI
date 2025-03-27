@@ -493,6 +493,10 @@ class InventarioController extends AppBaseController
     public function cartas($id)
     {
 
+        $empleado = Empleados::select("*")
+        ->where('EmpleadoID', '=', $id)
+        ->first();
+      
       
         $data = InventarioEquipo::select(
                 'InventarioID as id',
@@ -540,7 +544,7 @@ class InventarioController extends AppBaseController
         $inventario = $data->concat($insumos)->concat($telefono);
 
 
-        return view('inventarios.cartas', compact('id','inventario'));
+        return view('inventarios.cartas', compact('id','inventario','empleado'));
     }
 
 
@@ -558,7 +562,7 @@ class InventarioController extends AppBaseController
         ]
         );
 
-
+        $empleadoid= $id;
 
         $seleccionados = $request->input('inventarioSeleccionado', []);
 
@@ -643,20 +647,19 @@ class InventarioController extends AppBaseController
 
         $entrega = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto')
                 ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-                ->where('EmpleadoID', '=', $request->entrega)
+                ->where('empleados.EmpleadoID', '=', $request->entrega)
                 ->get();
         $recibe = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto')
                 ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-                ->where('EmpleadoID', '=', $id)
+                ->where('empleados.EmpleadoID', '=', $empleadoid)
                 ->get();
         
         $obra_ubica = Empleados::select('obras.NombreObra')
                 ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
                 ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID')
-                ->where('EmpleadoID', '=', $id)
+                ->where('EmpleadoID', '=', $empleadoid)
                 ->get();
 
-    
 
         $data = [
             'fecha' => Carbon::now()->translatedFormat('j \d\e F \d\e Y'),
@@ -671,6 +674,7 @@ class InventarioController extends AppBaseController
             'datosInventario' => $datosInventario,
             
         ];
+
 
       
         $pdf = PDF::loadView('inventarios.pdffile', $data);

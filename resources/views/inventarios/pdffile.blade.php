@@ -34,13 +34,13 @@
             max-width: 180px;
         }
         .invoice-date {
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
             text-align:right; 
         }
         h1 {
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
             margin: 10px 0;
@@ -51,11 +51,11 @@
         }
         .subheader {
             text-align: left;
-            font-size: 12px;
+            font-size: 11px;
             margin-bottom: 10px;
         }
         .content {
-            font-size: 12px;
+            font-size: 11px;
             line-height: 1.4;
             margin-bottom: 10px;
             text-align: justify;
@@ -63,7 +63,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 9px;
             margin-bottom: 10px;
         }
         table, th, td {
@@ -85,7 +85,7 @@
         .terms {
             width: 90%;
             margin-left: 25px;
-            font-size: 12px;
+            font-size: 11px;
             line-height: 1.4;
             background: #f8f8f8;
             padding: 10px;
@@ -104,12 +104,12 @@
             text-align: center;
             padding-top: 0px;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
            
         }
         .footer {
             text-align: center;
-            font-size: 10px;
+            font-size: 9px;
             margin-top: 10px;
             color: #666;
         }
@@ -135,6 +135,8 @@
         </p>
 
             <ul style="text-align: justify;font-size: 12px;">
+            <li> Nombre empleado: {{$recibe}} </li>
+            <li> Puesto: {{$recibepuesto}} </li>
             <li> Obra/Ubicación: {{$obra}}  </li>
             <li> Vigencia del Comodato: TERMINACIÓN DE LA OBRA </li>
             <li> Número de Contacto: {{$telefono}} </li>
@@ -191,9 +193,8 @@
                 <li>En caso de daño, levantar un acta administrativa detallando el hecho y responder por el importe total o parcial del costo de la reparación, según sea el caso.</li>
                 <li>En caso de robo, informar de manera inmediata a la empresa e interponer ante la autoridad una denuncia por el hecho y presentar una copia de la misma.</li>
                 <li>En caso de extravío, levantar un acta administrativa detallando el hecho y reponer en su totalidad el costo del equipo. </li>
-                <li>En caso de extravío, levantar un acta administrativa detallando el hecho y reponer en su totalidad el costo del equipo. </li>
                 <li>En caso de reposición del equipo se requiere entregarlo en las mejores condiciones posibles salvo uso cotidiano, en caso de no ser así, me comprometo a responsabilizarme por las reparaciones que se deriven.</li>
-                <li> Retornar el equipo al departamento de TI al terminar la vigencia del comodato 
+                <li> Retornar el equipo al departamento de TI al termino de la relación laboral
                
             </ul>
 
