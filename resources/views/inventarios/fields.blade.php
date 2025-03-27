@@ -91,7 +91,8 @@
        
             <div class="row">
             <!-- equiposAsignados Disponibles -->
-            <p class="lead mt-4">Equipos Disponibles</p>
+            <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Equipos Disponibles</span>
+
             <div class="drag-area" id="disponibles">
             <div class="table-responsive">
                 <table id="equiposTable" class="table table-bordered table-striped">
@@ -112,7 +113,7 @@
                             
 
                                 <button class='btn btn-outline-success btn-xs crear-btn' data-id="{{ $equipo->CategoriaID }}">
-                                        <i class="fa fa-edit"></i>
+                                    <i class="fas fa-plus"></i>
                                 </button>
 
                             </td>
@@ -129,7 +130,8 @@
         </div>
 
             <!-- equiposAsignados Seleccionados -->
-            <p class="lead mt-4">Equipos Asignados</p>
+            <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Equipos Asignados</span>
+
 
                 <div class="table-responsive">
                     <table id="equiposAsignadosTable" class="table table-bordered table-striped">
@@ -174,7 +176,7 @@
                                 <td>{{ $equiposAsignado->FechaDeCompra }}</td>
                                 <td>{{ $equiposAsignado->NumSerie }}</td>
                                 <td>{{ $equiposAsignado->Folio }}</td>
-                                <td>{{ $equiposAsignado->GerenciaEquipo }}</td>
+                                <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
                                 <td>{{ $equiposAsignado->Comentarios }}</td>
                             </tr>
                             @endforeach
@@ -192,7 +194,7 @@
        
         <div class="row">
             <!-- insumos Disponibles -->
-            <p class="lead mt-4">Insumos Disponibles</p>
+            <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Insumos Disponibles</span>
             <div class="drag-area" id="disponibles">
             <div class="table-responsive">
                 <table id="insumosTable" class="table table-bordered table-striped">
@@ -215,7 +217,7 @@
                                 
 
                                 <button class='btn btn-outline-success btn-xs crear-btn-insumo' data-id="{{ $insumo->CategoriaID }}">
-                                        <i class="fa fa-edit"></i>
+                                    <i class="fas fa-plus"></i>
                                 </button>
 
                             </td>
@@ -235,7 +237,7 @@
         </div>
 
             <!-- insumosasignados Seleccionados -->
-            <p class="lead mt-4">Insumos Asignados</p>
+            <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Insumos Asignados</span>
 
                 <div class="table-responsive">
                     <table id="insumosAsignadosTable" class="table table-bordered table-striped">
@@ -305,7 +307,7 @@
        
        <div class="row">
            <!-- lineas Disponibles -->
-           <p class="lead mt-4">Lineas Disponibles</p>
+           <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Lineas Disponibles</span>
            <div class="drag-area" id="disponibles">
            <div class="table-responsive">
                <table id="lineasTable" class="table table-bordered table-striped">
@@ -335,7 +337,7 @@
                                
 
                                <button class='btn btn-outline-success btn-xs crear-btn-linea' data-id="{{ $Linea->LineaID }}">
-                                       <i class="fa fa-edit"></i>
+                                    <i class="fas fa-plus"></i>
                                </button>
 
                            </td>
@@ -371,7 +373,7 @@
        </div>
 
            <!-- lineasasignados Seleccionados -->
-           <p class="lead mt-4">Lineas Asignados</p>
+           <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Lineas Asignados</span>
 
                <div class="table-responsive">
                    <table id="lineasAsignadosTable" class="table table-bordered table-striped">
@@ -547,7 +549,7 @@ $(document).on('click', '.edit-btn', function() {
     $('#editFechaDeCompra').val(row.find("td:eq(7)").text());
     $('#editNumSerie').val(row.find("td:eq(8)").text());
     $('#editFolio').val(row.find("td:eq(9)").text());
-    $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('gerencia-id')).trigger('change');
+    $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('id')).trigger('change');
     $('#editComentarios').val(row.find("td:eq(11)").text());
 
     $('#editModal').modal('show');

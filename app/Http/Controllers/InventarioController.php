@@ -159,7 +159,7 @@ class InventarioController extends AppBaseController
         $Insumos = Insumos::select("*")->get();
 
         $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID', '=', $id)->get();
-        $Lineas = LineasTelefonicas::select("*")->where('Disponible', '=', 0)->get();
+        $Lineas = LineasTelefonicas::select("*")->where('Disponible', '=', 1)->get();
 
 
 
@@ -333,7 +333,6 @@ class InventarioController extends AppBaseController
     public function crearlinea($id,$telf, Request $request)
     {
 
-      
 
         $linea = LineasTelefonicas::select('lineastelefonicas.NumTelefonico','companiaslineastelefonicas.Compania','planes.NombrePlan','planes.PrecioPlan AS CostoRentaMensual','lineastelefonicas.CuentaPadre','lineastelefonicas.CuentaHija','lineastelefonicas.TipoLinea','lineastelefonicas.FechaFianza','lineastelefonicas.CostoFianza','lineastelefonicas.MontoRenovacionFianza','lineastelefonicas.LineaID','planes.NombrePlan AS PlanTel')
         ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
@@ -358,6 +357,12 @@ class InventarioController extends AppBaseController
 
    
         $inventariotelf = InventarioLineas::create($data);
+     
+        $Lineas = DB::table('lineastelefonicas')
+              ->where('LineaID', $telf)
+              ->update(['Disponible' => 0]);
+
+        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first();
 
         return response()->json([
             'telefono' => $inventariotelf, 
@@ -370,6 +375,10 @@ class InventarioController extends AppBaseController
 
          // Buscar el insumo por InventarioID
          $inventarioLineas = InventarioLineas::where('InventarioID', $id)->first();
+
+        $Lineas = DB::table('lineastelefonicas')
+        ->where('NumTelefonico', $inventarioLineas->NumTelefonico)
+        ->update(['Disponible' => 1]);
 
          // Verificar si el insumo existe
          if (!$inventarioLineas) {

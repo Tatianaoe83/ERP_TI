@@ -37,7 +37,6 @@ class GerenciaController extends AppBaseController
             ->select([
                 'gerencia.GerenciaID',
                 'gerencia.NombreGerencia',
-                'gerencia.UnidadNegocioID',
                 'gerencia.NombreGerente',
                 'unidadesdenegocio.NombreEmpresa as nombre_empresa'
             ]);

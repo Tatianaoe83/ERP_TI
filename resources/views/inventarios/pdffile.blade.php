@@ -194,7 +194,7 @@
                 <li>En caso de robo, informar de manera inmediata a la empresa e interponer ante la autoridad una denuncia por el hecho y presentar una copia de la misma.</li>
                 <li>En caso de extravío, levantar un acta administrativa detallando el hecho y reponer en su totalidad el costo del equipo. </li>
                 <li>En caso de reposición del equipo se requiere entregarlo en las mejores condiciones posibles salvo uso cotidiano, en caso de no ser así, me comprometo a responsabilizarme por las reparaciones que se deriven.</li>
-                <li> Retornar el equipo al departamento de TI al termino de la relación laboral
+                <li> Retornar el equipo al departamento de TI al termino de la relación laboral.
                
             </ul>
 

@@ -138,7 +138,12 @@
               <div class="col-md-6"> 
                 <div class="form-group">
                   <label>Comentarios</label>
-                  <input type="text" class="form-control" id="editComentarios">
+
+                    <div class="form-floating">
+                      <textarea class="form-control" id="editComentarios" name="editComentarios" style="height: 100px"></textarea>
+                    
+                    </div>
+
                 </div>
               </div>
               <div class="col-md-6">
@@ -277,7 +282,11 @@
               <div class="col-md-6">
               <div class="form-group">
                   <label>Comentarios</label>
-                  <input type="text" class="form-control" id="editComentariosInsumo" name="editComentariosInsumo">
+                  <div class="form-floating">
+                      <textarea class="form-control" id="editComentariosInsumo"  name="editComentariosInsumo" style="height: 100px"></textarea>
+                   
+                    </div>
+
                 </div>
               </div>
             </div>
@@ -324,8 +333,12 @@
               <div class="col-md-6">
                 <div class="form-group">
                   <label>Comentarios </label>
-                  <input type="text" class="form-control" id="editcomenl" name="editcomenl" >
-            
+
+                  <div class="form-floating">
+                      <textarea class="form-control" id="editcomenl"  name="editcomenl" style="height: 100px"></textarea>
+                     
+                    </div>
+
                 </div>
               </div>
             </div>
