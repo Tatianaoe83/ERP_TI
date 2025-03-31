@@ -168,7 +168,7 @@
                         <td>{{ $item->Marca }}</td>
                         <td>{{ $item->Caracteristicas ?? 'N/A' }}</td>
                         <td>{{ $item->Modelo ?? 'N/A' }}</td>
-                        <td>{{ $item->NumSerie }}</td>
+                        <td>{{ $item->NumSerie ?? 'N/A' }}</td>
                         <td>{{ $item->FechaAsignacion ?? 'N/A' }}</td>
                        
                     </tr>

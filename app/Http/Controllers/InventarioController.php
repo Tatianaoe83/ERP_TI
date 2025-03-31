@@ -534,19 +534,19 @@ class InventarioController extends AppBaseController
             ->where('CateogoriaInsumo', '=', 'ACCESORIOS')
             ->get();
 
-        $telefono = InventarioEquipo::join('inventariolineas', 'inventarioequipo.EmpleadoID', '=', 'inventariolineas.EmpleadoID')
-            ->select(
-                'inventariolineas.InventarioID as id',
-                'inventarioequipo.CategoriaEquipo as categoria',
-                'inventarioequipo.Marca',
-                'inventarioequipo.Caracteristicas',
-                'inventarioequipo.Modelo',
-                'inventarioequipo.NumSerie',
-                'inventariolineas.NumTelefonico as FechaAsignacion',
-                DB::raw('"TELEFONO" as tipo')
-            )
-            ->where('inventarioequipo.empleadoID', '=', $id)
-            ->where('inventarioequipo.CategoriaEquipo', '=', 'TELEFONO CELULAR')
+        $telefono = InventarioLineas::
+                select(
+                    'InventarioID as id',
+                    DB::raw('"LINEA TELEFONICA" as categoria'),
+                    'Compania as Marca',
+                    'PlanTel as Caracteristicas',
+                    DB::raw('NULL as Modelo'),
+                    DB::raw('NULL as NumSerie'),
+                    'NumTelefonico as FechaAsignacion',
+                    DB::raw('"TELEFONO" as tipo')
+                )
+            ->where('empleadoID', '=', $id)
+          
             ->get();
 
 
@@ -619,19 +619,18 @@ class InventarioController extends AppBaseController
                 }
             
             } elseif ($tipo == "TELEFONO") {
-                $telefono = InventarioEquipo::join('inventariolineas', 'inventarioequipo.EmpleadoID', '=', 'inventariolineas.EmpleadoID')
-                    ->select(
-                        'inventariolineas.InventarioID as id',
-                        'inventarioequipo.CategoriaEquipo as categoria',
-                        'inventarioequipo.Marca',
-                        'inventarioequipo.Caracteristicas',
-                        'inventarioequipo.Modelo',
-                        'inventarioequipo.NumSerie',
-                        'inventariolineas.NumTelefonico as FechaAsignacion',
+                $telefono = InventarioLineas::
+                    select(
+                        'InventarioID as id',
+                        DB::raw('"LINEA TELEFONICA" as categoria'),
+                        'Compania as Marca',
+                        'PlanTel as Caracteristicas',
+                        DB::raw('NULL as Modelo'),
+                        DB::raw('NULL as NumSerie'),
+                        'NumTelefonico as FechaAsignacion',
                         DB::raw('"TELEFONO" as tipo')
                     )
-                    ->where('inventariolineas.EmpleadoID', '=', (INT)$empleadoid)
-                    ->where('inventarioequipo.CategoriaEquipo', '=', 'TELEFONO CELULAR')
+                    ->where('EmpleadoID', '=', (INT)$empleadoid)
                     ->first();
         
                 if ($telefono) {
