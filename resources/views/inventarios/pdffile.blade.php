@@ -137,10 +137,10 @@
             <ul style="text-align: justify;font-size: 12px;">
             <li> Nombre empleado: {{$entrega}} </li>
             <li> Puesto: {{$entregapuesto}} </li>
-            <li> Obra/Ubicación: {{$obra}}  </li>
+            <li> Obra/Ubicación: {{$obraubi}}  </li>
             <li> Vigencia del Comodato: TERMINACIÓN DE LA RELACIÓN LABORAL</li>
             <li> Número de Contacto: {{$entreganumero}} </li>
-            <li> Gerencia Responsable:  {{$gerencia}} </li>
+            <li> Gerencia:  {{$gerencia}} </li>
         </ul>
         <p style="text-align: left;font-size: 12px;">
             Confirmo que he recibido el siguiente equipo, cuyo detalle se menciona a continuación:  

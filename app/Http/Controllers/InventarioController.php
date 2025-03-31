@@ -671,7 +671,8 @@ class InventarioController extends AppBaseController
             'entreganumero' => $entrega[0]->NumTelefono,
             'recibe' => $recibe[0]->NombreEmpleado,
             'recibepuesto' => $recibe[0]->NombrePuesto,
-            'obra' => $entrega[0]->NombreObra,
+            'obra' => $entrega[0]->NombreEmpresa,
+            'obraubi' => $entrega[0]->NombreObra,
             'gerencia' =>  $entrega[0]->NombreGerencia,
             'datosInventario' => $datosInventario,
             
