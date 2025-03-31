@@ -8,8 +8,10 @@
 <div class="form-group col-sm-6">
     {!! Form::label('PuestoID', 'Puesto:') !!}
 
-    {!!Form::select('PuestoID',App\Models\Puestos::all()->
-        pluck('NombrePuesto','PuestoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+    {!!Form::select('PuestoID',App\Models\Puestos::select(DB::raw("CONCAT(puestos.NombrePuesto,' - ', gerencia.NombreGerencia) AS NombrePuesto, puestos.PuestoID"))
+        ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+        ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+        ->pluck('NombrePuesto','PuestoID'),null,[ 'style' => 'width: 100%','placeholder' => 'SELECCIONAR','class'=>'form-control jz'])!!}
 
    
 </div>

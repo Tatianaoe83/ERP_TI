@@ -210,15 +210,16 @@
             
             <tr>
                 <td>
-                <p>Recibe:</p><br>
-                {{$entrega}}<br>
-                {{$entregapuesto}}
+        
+                <p style="margin-bottom: 57px;">Entrega:</p> <br>
+                {{$recibe}}<br>
+                {{$recibepuesto}}
                 </td>
                 <td> 
 
-                <p>Entrega:</p> <br>
-                {{$recibe}}<br>
-                {{$recibepuesto}}
+                <p style="margin-bottom: 57px;">Recibe:</p><br>
+                {{$entrega}}<br>
+                {{$entregapuesto}}
                 </td>
             </tr>
         </table>
