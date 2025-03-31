@@ -619,7 +619,7 @@ class InventarioController extends AppBaseController
                 }
             
             } elseif ($tipo == "TELEFONO") {
-                $telefono = InventarioEquipo::join('inventariolineas', 'inventarioequipo.InventarioID', '=', 'inventariolineas.InventarioID')
+                $telefono = InventarioEquipo::join('inventariolineas', 'inventarioequipo.EmpleadoID', '=', 'inventariolineas.EmpleadoID')
                     ->select(
                         'inventariolineas.InventarioID as id',
                         'inventarioequipo.CategoriaEquipo as categoria',
@@ -630,7 +630,8 @@ class InventarioController extends AppBaseController
                         'inventariolineas.NumTelefonico as FechaAsignacion',
                         DB::raw('"TELEFONO" as tipo')
                     )
-                    ->where('inventariolineas.InventarioID', '=', $id)
+                    ->where('inventariolineas.EmpleadoID', '=', (INT)$empleadoid)
+                    ->where('inventarioequipo.CategoriaEquipo', '=', 'TELEFONO CELULAR')
                     ->first();
         
                 if ($telefono) {
