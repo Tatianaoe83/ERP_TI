@@ -135,11 +135,11 @@
         </p>
 
             <ul style="text-align: justify;font-size: 12px;">
-            <li> Nombre empleado: {{$recibe}} </li>
-            <li> Puesto: {{$recibepuesto}} </li>
+            <li> Nombre empleado: {{$entrega}} </li>
+            <li> Puesto: {{$entregapuesto}} </li>
             <li> Obra/Ubicación: {{$obra}}  </li>
-            <li> Vigencia del Comodato: TERMINACIÓN DE LA OBRA </li>
-            <li> Número de Contacto: {{$telefono}} </li>
+            <li> Vigencia del Comodato: TERMINACIÓN DE LA RELACIÓN LABORAL</li>
+            <li> Número de Contacto: {{$entreganumero}} </li>
             <li> Gerencia Responsable:  {{$gerencia}} </li>
         </ul>
         <p style="text-align: left;font-size: 12px;">
@@ -183,7 +183,7 @@
         <div class="terms">
     
             <p>
-                El equipo o los equipos son propiedad de {{$empresa}} y se entregan en comodato 
+                El equipo o los equipos son propiedad de {{$obra}} y se entregan en comodato 
                 durante el período especificado en la parte superior de la vigencia.
             </p>
             <p>
@@ -210,12 +210,13 @@
             
             <tr>
                 <td>
-                <p>Entrega:</p> <br>
+                <p>Recibe:</p><br>
                 {{$entrega}}<br>
                 {{$entregapuesto}}
                 </td>
                 <td> 
-                <p>Recibe:</p><br>
+
+                <p>Entrega:</p> <br>
                 {{$recibe}}<br>
                 {{$recibepuesto}}
                 </td>

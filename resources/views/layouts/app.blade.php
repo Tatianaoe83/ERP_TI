@@ -84,6 +84,17 @@
 
 @yield('scripts')
 
+<script type="text/javascript">
+  $(function() {
+      $('input, textarea').keyup(function() {
+  
+                this.value = this.value.toUpperCase(); 
+            });
+        });
+  </script>
+
+
+
 
  <!-- Script para inicializar los dropdowns en todas las páginas -->
  <script type="text/javascript">

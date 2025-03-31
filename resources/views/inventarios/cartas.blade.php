@@ -15,57 +15,8 @@
                     <div class="row">
                         <form id="formulario" action="{{ route('inventarios.pdffile', $id) }}" method="POST" target="_blank">
                             @csrf
-                            <div class="card">
-                                <div class="card-header">
-                                    <h4>Datos del formato</h4>
-                                    <div class="card-header-action">
-                                        <a data-collapse="#mycard-collapse" class="btn btn-icon btn-info" href="#">
-                                            <i class="fas fa-minus"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="collapse show" id="mycard-collapse">
-                                    <div class="card-body">
-                                        <div class="row">
-                                           
-                                            <div class="form-group col-sm-6">
-                                                {!! Form::label('empresa', 'Propiedad de:') !!} <abbr title="requerido">*</abbr>
-                                                {!!Form::select('empresa',App\Models\UnidadesDeNegocio::all()->
-                                                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'form-control','required'])!!}
-                                            </div>
-                                       
-
-                                        <div class="form-group col-sm-6">
-                                                {!! Form::label('ubiequi', 'Obra/ubicacion aquipo:') !!} <abbr title="requerido">*</abbr>
-                                                {!!Form::select('ubiequi',App\Models\UnidadesDeNegocio::all()->
-                                                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'form-control','required'])!!}
-                                            </div>
-
-                                        <div class="form-group col-sm-6"> <abbr title="requerido">*</abbr>
-                                            {!! Form::label('telefono', 'Número de contacto:') !!}
-                                            <input type="text" class="form-control phone-number" name="telefono" 
-                                                pattern="[0-9]{10}" maxlength="10" required
-                                                title="Debe ingresar exactamente 10 dígitos numéricos">
-                                        </div>
-
-
-
-                                        <div class="form-group col-sm-6">
-                                            {!! Form::label('entrega', 'Persona que entrega:') !!} <abbr title="requerido">*</abbr>
-
-                                            {!! Form::select('entrega', 
-                                                App\Models\Empleados::where('ObraID', 46)->pluck('NombreEmpleado', 'EmpleadoID'), 
-                                                null, 
-                                                ['placeholder' => 'Seleccionar', 'class' => 'jz form-control', 'required','style'=> 'width:100%;']
-                                            ) !!}
-
-
-                                        </div>
-                                        
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            
+                            
                            
                             
                         <div class="table-responsive">

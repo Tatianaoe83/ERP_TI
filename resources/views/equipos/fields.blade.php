@@ -2,7 +2,7 @@
 <div class="form-group col-sm-6">
     {!! Form::label('CategoriaID', 'Categoria:') !!}
 
-    {!!Form::select('CategoriaID',App\Models\Categorias::all()->
+    {!!Form::select('CategoriaID',App\Models\Categorias::all()-> where ("TipoID", 2)->
         pluck('Categoria','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
 
    

@@ -19,6 +19,7 @@ use App\Models\UnidadesDeNegocio;
 use App\Models\Insumos;
 use App\Models\Gerencia;
 use App\Models\Equipos;
+use App\Models\User;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use DB;
@@ -506,7 +507,6 @@ class InventarioController extends AppBaseController
         ->where('EmpleadoID', '=', $id)
         ->first();
       
-      
         $data = InventarioEquipo::select(
                 'InventarioID as id',
                 'CategoriaEquipo as categoria',
@@ -561,21 +561,18 @@ class InventarioController extends AppBaseController
 
     public function pdffile(request $request, $id)
     {
-        $this->validate($request, [
-            'inventarioSeleccionado.*' => 'required',
-
-        ],
-        [
-            'inventarioSeleccionado.required' => 'Seleccione un dato de la tabla',
-         
-        ]
-        );
-
+      
         $empleadoid= $id;
 
         $seleccionados = $request->input('inventarioSeleccionado', []);
 
+        $entrega=auth()->id();
      
+        $username = User::select('name')
+            ->where('id', '=', $entrega)
+                    ->first();
+       
+
         if (empty($seleccionados)) {
             return back()->with('error', 'No seleccionaste ningún elemento.');
         }
@@ -646,40 +643,36 @@ class InventarioController extends AppBaseController
        Carbon::setLocale('es'); 
         setlocale(LC_TIME, 'es_ES.UTF-8'); 
 
-        $empresa = UnidadesDeNegocio::select('NombreEmpresa')
-            ->where('UnidadNegocioID', '=', $request->empresa)
-                    ->get();
-        $ubiequipo = UnidadesDeNegocio::select('NombreEmpresa')
-            ->where('UnidadNegocioID', '=', $request->ubiequi)
-                    ->get();
-                    
+        
 
-        $entrega = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto')
+        $entrega = Empleados::select('empleados.NombreEmpleado','empleados.NumTelefono','puestos.NombrePuesto','unidadesdenegocio.NombreEmpresa','obras.NombreObra','obras.EncargadoDeObra','gerencia.NombreGerencia','unidadesdenegocio.NombreEmpresa')
                 ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-                ->where('empleados.EmpleadoID', '=', $request->entrega)
-                ->get();
-        $recibe = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto')
-                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->join('obras', 'obras.ObraID', '=', 'empleados.ObraID')
+                ->join('unidadesdenegocio', 'obras.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
+                ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+                ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
                 ->where('empleados.EmpleadoID', '=', $empleadoid)
                 ->get();
-        
-        $obra_ubica = Empleados::select('obras.NombreObra')
-                ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-                ->join('unidadesdenegocio', 'unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID')
-                ->where('EmpleadoID', '=', $empleadoid)
+
+       
+
+        $recibe = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto','empleados.NumTelefono')
+                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->where('empleados.NombreEmpleado', '=', $username->name)
                 ->get();
+        
+    
 
 
         $data = [
             'fecha' => Carbon::now()->translatedFormat('j \d\e F \d\e Y'),
-            'empresa' =>  $empresa[0]->NombreEmpresa,
             'entrega' => $entrega[0]->NombreEmpleado,
             'entregapuesto' => $entrega[0]->NombrePuesto,
+            'entreganumero' => $entrega[0]->NumTelefono,
             'recibe' => $recibe[0]->NombreEmpleado,
             'recibepuesto' => $recibe[0]->NombrePuesto,
-            'obra' => $ubiequipo[0]->NombreEmpresa,
-            'gerencia' =>  $obra_ubica[0]->NombreObra,
-            'telefono' => $request->telefono,
+            'obra' => $entrega[0]->NombreObra,
+            'gerencia' =>  $entrega[0]->NombreGerencia,
             'datosInventario' => $datosInventario,
             
         ];
