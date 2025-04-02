@@ -57,10 +57,7 @@ class Puestos extends Model
      */
     public static $rules = [
         'NombrePuesto' => 'nullable|string|max:75',
-        'DepartamentoID' => 'nullable|integer',
-        'created_at' => 'required',
-        'updated_at' => 'required',
-        'deleted_at' => 'nullable'
+        'DepartamentoID' => 'nullable|integer'
     ];
 
     /**
