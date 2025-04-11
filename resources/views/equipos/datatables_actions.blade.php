@@ -1,6 +1,6 @@
 {!! Form::open(['route' => ['equipos.destroy', $id], 'method' => 'delete']) !!}
 <div class='btn-group'>
-  @can('ver-equipos)
+  @can('ver-equipos')
     <a href="{{ route('equipos.show', $id) }}" class='btn btn-outline-primary btn-xs'>
         <i class="fa fa-eye"></i>
     </a>
