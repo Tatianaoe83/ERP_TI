@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Eloquent as Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 
 /**
@@ -20,9 +21,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $FrecuenciaDePago
  * @property string $Observaciones
  */
-class Insumos extends Model
+class Insumos extends Model  implements Auditable
 {
     use HasFactory,SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
 
 
     public $table = 'insumos';

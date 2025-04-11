@@ -135,7 +135,14 @@
                         <i class="fas fa-circle-notch"></i><span>Presupuesto</span>
                     </a>
                 </li>
-            
+
+                @if(auth()->user()->can('ver-informe'))
+                <li>
+                    <a class="nav-link" href="/informe">
+                        <i class="fas fa-circle-notch"></i><span>Informes</span>
+                    </a>
+                </li>
+                @endif
             </ul>
             </li>
         </ul>

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Eloquent as Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 
 
 /**
@@ -19,9 +20,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $Modelo
  * @property number $Precio
  */
-class Equipos extends Model
+class Equipos extends Model implements Auditable
 {
     use HasFactory,SoftDeletes;
+    use \OwenIt\Auditing\Auditable;
 
 
     public $table = 'equipos';

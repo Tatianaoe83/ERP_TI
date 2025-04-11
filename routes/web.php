@@ -9,6 +9,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\DatabaseController;
+use App\Http\Controllers\AuditController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -70,6 +71,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
+    Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');
 
 
     
