@@ -68,15 +68,15 @@ class EquiposDataTable extends DataTable
             ->minifiedAjax()
             ->dom('Bfrtip')
             ->orderBy(1, 'asc')
-            ->buttons([
-                [
+            ->buttons(array_filter([
+                auth()->user()->can('crear-equipos') ? [
                     'extend' => 'collection',
                     'className' => 'btn btn-primary',
                     'text' => '<i class="fa fa-plus"></i> Crear',
                     'action' => "function() {
                         window.location = '" . route('equipos.create') . "';
                     }"
-                ],
+                ] : null,
              
                 [
                     'extend' => 'excel',
@@ -96,7 +96,7 @@ class EquiposDataTable extends DataTable
                         window.LaravelDataTables["equipos-table"].ajax.reload();
                     }'
                 ],
-            ])
+            ]))
             ->parameters([
                 'processing' => true,
                 'serverSide' => true,

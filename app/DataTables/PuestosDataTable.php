@@ -7,6 +7,7 @@ use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
+use DB;
 
 class PuestosDataTable extends DataTable
 {
@@ -37,17 +38,16 @@ class PuestosDataTable extends DataTable
      */
     public function query(Puestos $model)
     {
-
         return $model->newQuery()
         ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+        ->join('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
         ->select([
             'puestos.PuestoID',
             'puestos.NombrePuesto',
-            'departamentos.NombreDepartamento as nombre_departamento'
+            'departamentos.NombreDepartamento',
+            'gerencia.NombreGerencia',
+            DB::raw('CONCAT(departamentos.NombreDepartamento, " - ", gerencia.NombreGerencia) as nombre_departamento')
         ]);
-
-    
-      
     }
 
     /**
@@ -63,15 +63,15 @@ class PuestosDataTable extends DataTable
         ->minifiedAjax()
         ->dom('Bfrtip')
         ->orderBy(1, 'asc')
-        ->buttons([
-            [
+        ->buttons(array_filter([
+            auth()->user()->can('crear-puestos') ? [
                 'extend' => 'collection',
                 'className' => 'btn btn-primary',
                 'text' => '<i class="fa fa-plus"></i> Crear',
                 'action' => "function() {
                     window.location = '" . route('puestos.create') . "';
                 }"
-            ],
+            ] : null,
          
             [
                 'extend' => 'excel',
@@ -91,7 +91,7 @@ class PuestosDataTable extends DataTable
                     window.LaravelDataTables["puestos-table"].ajax.reload();
                 }'
             ],
-        ])
+        ]))
         ->parameters([
             'processing' => true,
             'serverSide' => true,
@@ -137,8 +137,8 @@ class PuestosDataTable extends DataTable
             ],
             'DepartamentoID' => [
                 'title' => 'Departamento',
-                'data' => 'nombre_departamento',
-                'name' => 'departamentos.NombreDepartamento',
+                'data' => 'nombre_departamento', 
+                'name' => DB::raw('CONCAT(departamentos.NombreDepartamento, " - ", gerencia.NombreGerencia)'),
             ],
             Column::computed('action')
             ->exportable(false)

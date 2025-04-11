@@ -1,13 +1,20 @@
 {!! Form::open(['route' => ['puestos.destroy', $id], 'method' => 'delete']) !!}
 <div class='btn-group'>
+  @can('ver-puestos')
     <a href="{{ route('puestos.show', $id) }}" class='btn btn-outline-primary btn-xs'>
         <i class="fa fa-eye"></i>
     </a>
+    @endcan
+
+    @can('editar-puestos')
     <a href="{{ route('puestos.edit', $id) }}" class='btn btn-outline-secondary btn-xs'>
         <i class="fa fa-edit"></i>
     </a>
-    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
+    @endcan
 
+    @can('borrar-puestos')
+    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
+    @endcan
 
 </div>
 {!! Form::close() !!}

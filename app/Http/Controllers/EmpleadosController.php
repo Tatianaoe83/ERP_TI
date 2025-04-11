@@ -21,6 +21,10 @@ class EmpleadosController extends AppBaseController
     public function __construct(EmpleadosRepository $empleadosRepo)
     {
         $this->empleadosRepository = $empleadosRepo;
+        $this->middleware('permission:ver-empleados|crear-empleados|editar-empleados|borrar-empleados')->only('index');
+        $this->middleware('permission:crear-empleados', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-empleados', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-empleados', ['only' => ['destroy']]);
     }
 
     /**

@@ -25,16 +25,30 @@
 
                         {!! Form::open(array('route' => 'usuarios.store','method'=>'POST')) !!}
                         <div class="row">
-                            <div class="col-xs-12 col-sm-12 col-md-12">
-                                <div class="form-group">
-                                    <label for="name">Nombre</label>
-                                    {!! Form::text('name', null, array('class' => 'form-control')) !!}
+                             <div class="row">
+                                <div class="col-xs-4 col-sm-4 col-md-4">
+                                    <div class="form-group">
+                                        <label for="name">Apellido Paterno</label>
+                                        {!! Form::text('ApellPaterno', null, array('class' => 'form-control')) !!}
+                                    </div>
+                                </div>
+                                <div class="col-xs-4 col-sm-4 col-md-4">
+                                    <div class="form-group">
+                                            <label for="name">Apellido Materno</label>
+                                            {!! Form::text('ApellMaterno', null, array('class' => 'form-control')) !!}
+                                    </div>
+                                </div>
+                                <div class="col-xs-4 col-sm-4 col-md-4">
+                                    <div class="form-group">
+                                        <label for="name">Nombres</label>
+                                        {!! Form::text('nombres', null, array('class' => 'form-control')) !!}
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-xs-12 col-sm-12 col-md-12">
                                 <div class="form-group">
-                                    <label for="email">E-mail</label>
-                                    {!! Form::text('email', null, array('class' => 'form-control')) !!}
+                                    <label for="username">Username</label>
+                                    {!! Form::text('username', null, array('class' => 'form-control')) !!}
                                 </div>
                             </div>
                             <div class="col-xs-12 col-sm-12 col-md-12">
@@ -57,6 +71,7 @@
                             </div>
                             <div class="col-xs-12 col-sm-12 col-md-12">
                                 <button type="submit" class="btn btn-primary">Guardar</button>
+                                <a href="{{ route('usuarios.index') }}" class="btn btn-danger">Cancelar</a>
                             </div>
                         </div>
                         {!! Form::close() !!}

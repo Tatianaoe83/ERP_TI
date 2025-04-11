@@ -35,6 +35,9 @@
                             <div class="form-group">
                                 <label for="">Permisos para este Rol:</label>
                                 <br/>
+                                    <button type="button" class="btn btn-sm btn-info mb-2" id="selectAll">Seleccionar todos</button>
+                                <br/>
+
                                 @foreach($permission as $value)
                                     <label>{{ Form::checkbox('permission[]', $value->id, in_array($value->id, $rolePermissions) ? true : false, array('class' => 'name')) }}
                                     {{ $value->name }}</label>
@@ -42,10 +45,11 @@
                                 @endforeach
                             </div>
                         </div>
-                        
+                        </div>
                         <button type="submit" class="btn btn-primary">Guardar</button>
+                        <a href="{{ route('roles.index') }}" class="btn btn-danger">Cancelar</a>
                         
-                    </div>
+                   
                     {!! Form::close() !!}
 
                         </div>
@@ -55,3 +59,18 @@
         </div>
     </section>
 @endsection
+
+@push('third_party_scripts')
+<script>
+    document.getElementById('selectAll').addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('input[name="permission[]"]');
+        const isChecked = checkboxes[0].checked;
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = !isChecked;
+        });
+        
+        this.textContent = isChecked ? 'Seleccionar todos' : 'Deseleccionar todos';
+    });
+</script>
+@endpush

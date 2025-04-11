@@ -12,6 +12,7 @@ use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\Puestos;
 use Yajra\DataTables\DataTables;
+use DB;
 
 class PuestosController extends AppBaseController
 {
@@ -21,6 +22,10 @@ class PuestosController extends AppBaseController
     public function __construct(PuestosRepository $puestosRepo)
     {
         $this->puestosRepository = $puestosRepo;
+        $this->middleware('permission:ver-puestos|crear-puestos|editar-puestos|borrar-puestos')->only('index');
+        $this->middleware('permission:crear-puestos', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-puestos', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-puestos', ['only' => ['destroy']]);
     }
 
     /**
@@ -34,18 +39,22 @@ class PuestosController extends AppBaseController
     {
         if (request()->ajax()) {
             $unidades = Puestos::join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->join('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
             ->select([
                 'puestos.PuestoID',
                 'puestos.NombrePuesto',
-                'departamentos.NombreDepartamento as nombre_departamento'
+                DB::raw('CONCAT(departamentos.NombreDepartamento," - ", gerencia.NombreGerencia) AS nombre_departamento')
             ]);
-    
             
-            return DataTables::of($unidades)
+        return DataTables::of($unidades)
                 ->addColumn('action', function($row){
                     return view('puestos.datatables_actions', ['id' => $row->PuestoID])->render();
                 })
+                ->filterColumn('nombre_departamento', function($query, $keyword) {
+                    $query->whereRaw("CONCAT(departamentos.NombreDepartamento, ' - ', gerencia.NombreGerencia) like ?", ["%{$keyword}%"]);
+                })
                 ->rawColumns(['action'])
+                ->setRowId('PuestoID')
                 ->make(true);
         }
 

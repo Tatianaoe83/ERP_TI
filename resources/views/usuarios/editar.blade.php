@@ -33,8 +33,8 @@
                             </div>
                             <div class="col-xs-12 col-sm-12 col-md-12">
                                 <div class="form-group">
-                                    <label for="email">E-mail</label>
-                                    {!! Form::text('email', null, array('class' => 'form-control')) !!}
+                                    <label for="username">Username</label>
+                                    {!! Form::text('username', null, array('class' => 'form-control')) !!}
                                 </div>
                             </div>
                             <div class="col-xs-12 col-sm-12 col-md-12">
@@ -57,6 +57,7 @@
                             </div>
                             <div class="col-xs-12 col-sm-12 col-md-12">
                                 <button type="submit" class="btn btn-primary">Guardar</button>
+                                <a href="{{ route('usuarios.index') }}" class="btn btn-danger">Cancelar</a>
                             </div>
                         </div>
                         {!! Form::close() !!}

@@ -22,6 +22,11 @@ class ObrasController extends AppBaseController
     public function __construct(ObrasRepository $obrasRepo)
     {
         $this->obrasRepository = $obrasRepo;
+
+        $this->middleware('permission:ver-obras|crear-obras|editar-obras|borrar-obras')->only('index');
+        $this->middleware('permission:crear-obras', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-obras', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-obras', ['only' => ['destroy']]);
     }
 
     /**

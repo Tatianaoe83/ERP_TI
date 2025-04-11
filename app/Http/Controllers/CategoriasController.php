@@ -21,6 +21,10 @@ class CategoriasController extends AppBaseController
     public function __construct(CategoriasRepository $categoriasRepo)
     {
         $this->categoriasRepository = $categoriasRepo;
+        $this->middleware('permission:ver-categorias|crear-categorias|editar-categorias|borrar-categorias')->only('index');
+        $this->middleware('permission:crear-categorias', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-categorias', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-categorias', ['only' => ['destroy']]);
     }
 
     /**

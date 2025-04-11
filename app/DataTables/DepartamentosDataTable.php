@@ -65,15 +65,15 @@ class DepartamentosDataTable extends DataTable
         ->minifiedAjax()
         ->dom('Bfrtip')
         ->orderBy(1, 'asc')
-        ->buttons([
-            [
+        ->buttons(array_filter([
+            auth()->user()->can('crear-departamentos') ? [
                 'extend' => 'collection',
                 'className' => 'btn btn-primary',
                 'text' => '<i class="fa fa-plus"></i> Crear',
                 'action' => "function() {
                     window.location = '" . route('departamentos.create') . "';
                 }"
-            ],
+            ] : null,
          
             [
                 'extend' => 'excel',
@@ -93,7 +93,7 @@ class DepartamentosDataTable extends DataTable
                     window.LaravelDataTables["departamentos-table"].ajax.reload();
                 }'
             ],
-        ])
+        ]))
         ->parameters([
             'processing' => true,
             'serverSide' => true,

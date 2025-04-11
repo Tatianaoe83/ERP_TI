@@ -21,6 +21,10 @@ class LineasTelefonicasController extends AppBaseController
     public function __construct(LineasTelefonicasRepository $lineasTelefonicasRepo)
     {
         $this->lineasTelefonicasRepository = $lineasTelefonicasRepo;
+        $this->middleware('permission:ver-Lineastelefonicas|crear-Lineastelefonicas|editar-Lineastelefonicas|borrar-Lineastelefonicas')->only('index');
+        $this->middleware('permission:crear-Lineastelefonicas', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-Lineastelefonicas', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-Lineastelefonicas', ['only' => ['destroy']]);
     }
 
     /**

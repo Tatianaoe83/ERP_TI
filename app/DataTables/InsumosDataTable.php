@@ -68,15 +68,15 @@ class InsumosDataTable extends DataTable
         ->minifiedAjax()
         ->dom('Bfrtip')
         ->orderBy(1, 'asc')
-        ->buttons([
-            [
+        ->buttons(array_filter([
+            auth()->user()->can('crear-insumos') ? [
                 'extend' => 'collection',
                 'className' => 'btn btn-primary',
                 'text' => '<i class="fa fa-plus"></i> Crear',
                 'action' => "function() {
                     window.location = '" . route('insumos.create') . "';
                 }"
-            ],
+            ] : null,
          
             [
                 'extend' => 'excel',
@@ -96,7 +96,7 @@ class InsumosDataTable extends DataTable
                     window.LaravelDataTables["insumos-table"].ajax.reload();
                 }'
             ],
-        ])
+        ]))
         ->parameters([
             'processing' => true,
             'serverSide' => true,

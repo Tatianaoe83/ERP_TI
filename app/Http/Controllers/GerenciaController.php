@@ -21,6 +21,11 @@ class GerenciaController extends AppBaseController
     public function __construct(GerenciaRepository $gerenciaRepo)
     {
         $this->gerenciaRepository = $gerenciaRepo;
+
+        $this->middleware('permission:ver-gerencias|crear-gerencias|editar-gerencias|borrar-gerencias')->only('index');
+        $this->middleware('permission:crear-gerencias', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-gerencias', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-gerencias', ['only' => ['destroy']]);
     }
 
     /**

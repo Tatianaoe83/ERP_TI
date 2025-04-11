@@ -1,14 +1,21 @@
 {!! Form::open(['route' => ['lineasTelefonicas.destroy', $id], 'method' => 'delete']) !!}
 <div class='btn-group'>
+
+@can('ver-Lineastelefonicas')
     <a href="{{ route('lineasTelefonicas.show', $id) }}" class='btn btn-outline-primary btn-xs'>
         <i class="fa fa-eye"></i>
     </a>
+    @endcan
+
+    @can('editar-Lineastelefonicas')
     <a href="{{ route('lineasTelefonicas.edit', $id) }}" class='btn btn-outline-secondary btn-xs'>
         <i class="fa fa-edit"></i>
     </a>
+    @endcan
 
+    @can('borrar-Lineastelefonicas')
     <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
-
+    @endcan
 </div>
 {!! Form::close() !!}
 

@@ -22,6 +22,10 @@ class InsumosController extends AppBaseController
     public function __construct(InsumosRepository $insumosRepo)
     {
         $this->insumosRepository = $insumosRepo;
+        $this->middleware('permission:ver-insumos|crear-insumos|editar-insumos|borrar-insumos')->only('index');
+        $this->middleware('permission:crear-insumos', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-insumos', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-insumos', ['only' => ['destroy']]);
     }
 
     /**

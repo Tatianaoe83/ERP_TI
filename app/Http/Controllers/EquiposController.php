@@ -21,6 +21,10 @@ class EquiposController extends AppBaseController
     public function __construct(EquiposRepository $equiposRepo)
     {
         $this->equiposRepository = $equiposRepo;
+        $this->middleware('permission:ver-equipos|crear-equipos|editar-equipos|borrar-equipos')->only('index');
+        $this->middleware('permission:crear-equipos', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-equipos', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-equipos', ['only' => ['destroy']]);
     }
 
     /**

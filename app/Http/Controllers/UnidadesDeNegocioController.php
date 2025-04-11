@@ -21,6 +21,12 @@ class UnidadesDeNegocioController extends AppBaseController
     public function __construct(UnidadesDeNegocioRepository $unidadesDeNegocioRepo)
     {
         $this->unidadesDeNegocioRepository = $unidadesDeNegocioRepo;
+
+        $this->middleware('permission:ver-unidadesdenegocio|crear-unidadesdenegocio|editar-unidadesdenegocio|borrar-unidadesdenegocio')->only('index');
+        $this->middleware('permission:crear-unidadesdenegocio', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-unidadesdenegocio', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-unidadesdenegocio', ['only' => ['destroy']]);
+        
     }
 
     /**

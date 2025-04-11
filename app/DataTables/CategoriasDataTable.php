@@ -66,15 +66,15 @@ class CategoriasDataTable extends DataTable
         ->minifiedAjax()
         ->dom('Bfrtip')
         ->orderBy(1, 'asc')
-        ->buttons([
-            [
+        ->buttons(array_filter([
+            auth()->user()->can('crear-categorias') ? [
                 'extend' => 'collection',
                 'className' => 'btn btn-primary',
                 'text' => '<i class="fa fa-plus"></i> Crear',
                 'action' => "function() {
                     window.location = '" . route('categorias.create') . "';
                 }"
-            ],
+            ] : null,
          
             [
                 'extend' => 'excel',
@@ -94,7 +94,7 @@ class CategoriasDataTable extends DataTable
                     window.LaravelDataTables["categorias-table"].ajax.reload();
                 }'
             ],
-        ])
+        ]))
         ->parameters([
             'processing' => true,
             'serverSide' => true,

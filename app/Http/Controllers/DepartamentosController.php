@@ -21,6 +21,12 @@ class DepartamentosController extends AppBaseController
     public function __construct(DepartamentosRepository $departamentosRepo)
     {
         $this->departamentosRepository = $departamentosRepo;
+
+        $this->middleware('permission:ver-departamentos|crear-departamentos|editar-departamentos|borrar-departamentos')->only('index');
+        $this->middleware('permission:crear-departamentos', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-departamentos', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-departamentos', ['only' => ['destroy']]);
+        
     }
 
     /**

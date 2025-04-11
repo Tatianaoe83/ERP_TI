@@ -74,15 +74,15 @@ class LineasTelefonicasDataTable extends DataTable
         ->minifiedAjax()
         ->dom('Bfrtip')
         ->orderBy(1, 'asc')
-        ->buttons([
-            [
+        ->buttons(array_filter([
+            auth()->user()->can('crear-Lineastelefonicas') ? [
                 'extend' => 'collection',
                 'className' => 'btn btn-primary',
                 'text' => '<i class="fa fa-plus"></i> Crear',
                 'action' => "function() {
                     window.location = '" . route('lineasTelefonicas.create') . "';
                 }"
-            ],
+                ] : null,
          
             [
                 'extend' => 'excel',
@@ -102,7 +102,7 @@ class LineasTelefonicasDataTable extends DataTable
                     window.LaravelDataTables["lineas-telefonicas-table"].ajax.reload();
                 }'
             ],
-        ])
+        ]))
         ->parameters([
             'processing' => true,
             'serverSide' => true,

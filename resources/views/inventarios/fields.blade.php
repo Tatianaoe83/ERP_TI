@@ -32,7 +32,7 @@
                 {!! Form::label('UnidadNegocioID', 'Unidad de Negocio:') !!}
 
                 {!!Form::select('UnidadNegocioID',App\Models\UnidadesDeNegocio::all()->
-                    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
+                    pluck('NombreEmpresa','UnidadNegocioID'),$inventario->UnidadNegocioID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
               <!-- UnidadNegocio Field -->
@@ -40,7 +40,7 @@
                 {!! Form::label('GerenciaID', 'Gerencia:') !!}
 
                 {!!Form::select('GerenciaID',App\Models\Gerencia::all()->
-                    pluck('NombreGerencia','GerenciaID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
+                    pluck('NombreGerencia','GerenciaID'),$inventario->GerenciaID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
               <!-- ObraID Field -->
@@ -48,7 +48,7 @@
                 {!! Form::label('ObraID', 'Obra:') !!}
 
                 {!!Form::select('ObraID',App\Models\Obras::all()->
-                    pluck('NombreObra','ObraID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
+                    pluck('NombreObra','ObraID'),$inventario->ObraID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
 
                
             </div>
@@ -58,7 +58,7 @@
                 {!! Form::label('DepartamentoID', 'Departamento:') !!}
 
                 {!!Form::select('DepartamentoID',App\Models\Departamentos::all()->
-                    pluck('NombreDepartamento','DepartamentoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
+                    pluck('NombreDepartamento','DepartamentoID'),$inventario->DepartamentoID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
 
@@ -66,7 +66,7 @@
             <div class="form-group col-sm-6">
                 {!! Form::label('PuestoID', 'Puesto:') !!}
                 {!!Form::select('PuestoID',App\Models\Puestos::all()->
-                    pluck('NombrePuesto','PuestoID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
+                    pluck('NombrePuesto','PuestoID'),$inventario->PuestoID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
           
@@ -90,6 +90,62 @@
     <div class="tab-pane fade" id="equipo">
        
             <div class="row">
+
+              <!-- equiposAsignados Seleccionados -->
+              <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Equipos Asignados</span>
+
+
+            <div class="table-responsive">
+                <table id="equiposAsignadosTable" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Categoria</th>
+                            <th>Marca</th>
+                            <th>Caracteristicas</th>
+                            <th>Modelo</th>
+                            <th>Precio</th>
+                            <th>Fecha Asignacion</th>
+                            <th>Fecha de Compra</th>
+                            <th>Num. Serie</th>
+                            <th>Folio</th>
+                            <th>Gerencia Equipo</th>
+                            <th>Comentarios</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($equiposAsignados as $equiposAsignado)
+                        <tr data-id="{{ $equiposAsignado->InventarioID }}">
+                            <td>
+                                <button class='btn btn-outline-secondary btn-xs edit-btn' data-id="{{ $equiposAsignado->InventarioID }}">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroy', $equiposAsignado->InventarioID], 'style' => 'display:inline']) !!}
+                                    {!! Form::button('<i class="fa fa-trash"></i>', [
+                                        'type' => 'submit',
+                                        'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn',
+                                        'data-id' => $equiposAsignado->InventarioID 
+                                    ]) !!}
+                                {!! Form::close() !!}
+
+                            </td>
+                            <td>{{ $equiposAsignado->CategoriaEquipo }}</td>
+                            <td>{{ $equiposAsignado->Marca }}</td>
+                            <td>{{ $equiposAsignado->Caracteristicas }}</td>
+                            <td>{{ $equiposAsignado->Modelo }}</td>
+                            <td>{{ $equiposAsignado->Precio }}</td>
+                            <td>{{ $equiposAsignado->FechaAsignacion }}</td>
+                            <td>{{ $equiposAsignado->FechaDeCompra }}</td>
+                            <td>{{ $equiposAsignado->NumSerie }}</td>
+                            <td>{{ $equiposAsignado->Folio }}</td>
+                            <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
+                            <td>{{ $equiposAsignado->Comentarios }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
             <!-- equiposAsignados Disponibles -->
             <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Equipos Disponibles</span>
 
@@ -129,60 +185,7 @@
             </div>
         </div>
 
-            <!-- equiposAsignados Seleccionados -->
-            <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Equipos Asignados</span>
-
-
-                <div class="table-responsive">
-                    <table id="equiposAsignadosTable" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>Action</th>
-                                <th>Categoria</th>
-                                <th>Marca</th>
-                                <th>Caracteristicas</th>
-                                <th>Modelo</th>
-                                <th>Precio</th>
-                                <th>Fecha Asignacion</th>
-                                <th>Fecha de Compra</th>
-                                <th>Num. Serie</th>
-                                <th>Folio</th>
-                                <th>Gerencia Equipo</th>
-                                <th>Comentarios</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($equiposAsignados as $equiposAsignado)
-                            <tr data-id="{{ $equiposAsignado->InventarioID }}">
-                                <td>
-                                    <button class='btn btn-outline-secondary btn-xs edit-btn' data-id="{{ $equiposAsignado->InventarioID }}">
-                                        <i class="fa fa-edit"></i>
-                                    </button>
-                                    {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroy', $equiposAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                        {!! Form::button('<i class="fa fa-trash"></i>', [
-                                            'type' => 'submit',
-                                            'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn',
-                                            'data-id' => $equiposAsignado->InventarioID 
-                                        ]) !!}
-                                    {!! Form::close() !!}
-
-                                </td>
-                                <td>{{ $equiposAsignado->CategoriaEquipo }}</td>
-                                <td>{{ $equiposAsignado->Marca }}</td>
-                                <td>{{ $equiposAsignado->Caracteristicas }}</td>
-                                <td>{{ $equiposAsignado->Modelo }}</td>
-                                <td>{{ $equiposAsignado->Precio }}</td>
-                                <td>{{ $equiposAsignado->FechaAsignacion }}</td>
-                                <td>{{ $equiposAsignado->FechaDeCompra }}</td>
-                                <td>{{ $equiposAsignado->NumSerie }}</td>
-                                <td>{{ $equiposAsignado->Folio }}</td>
-                                <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
-                                <td>{{ $equiposAsignado->Comentarios }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+          
 
             </div>
        
@@ -193,6 +196,66 @@
     <div class="tab-pane fade" id="insumo">
        
         <div class="row">
+
+         <!-- insumosasignados Seleccionados -->
+         <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Insumos Asignados</span>
+
+            <div class="table-responsive">
+                <table id="insumosAsignadosTable" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Categoria Insumo</th>
+                            <th>Nombre Insumo</th>
+                            <th>Costo Mensual</th>
+                            <th>Costo Anual</th>
+                            <th>Frecuencia de Pago</th>
+                            <th>Observaciones</th>
+                            <th>Fecha de Asignacion</th>
+                            <th>Num. Serie</th>
+                            <th>Comentarios</th>
+                            <th>Mes de pago </th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($insumosAsignados as $insumosAsignado)
+                        <tr data-id="{{ $insumosAsignado->InventarioID }}">
+                            <td>
+                                <button class='btn btn-outline-secondary btn-xs edit-btn-insum' data-id="{{ $insumosAsignado->InventarioID }}">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+
+                                {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroyInsumo', $insumosAsignado->InventarioID], 'style' => 'display:inline']) !!}
+                                    {!! Form::button('<i class="fa fa-trash"></i>', [
+                                        'type' => 'submit',
+                                        'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-insumo',
+                                        'data-id' => $insumosAsignado->InventarioID 
+                                    ]) !!}
+                                {!! Form::close() !!}
+
+
+                            </td>
+                            
+                            
+                            <td>{{ $insumosAsignado->CateogoriaInsumo }}</td>
+                            <td>{{ $insumosAsignado->NombreInsumo }}</td>
+                            <td>{{ $insumosAsignado->CostoMensual }}</td>
+                            <td>{{ $insumosAsignado->CostoAnual }}</td>
+                            <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
+                            <td>{{ $insumosAsignado->Observaciones }}</td>
+                            <td>{{ $insumosAsignado->FechaAsignacion }}</td>
+                            <td>{{ $insumosAsignado->NumSerie }}</td>
+                            <td>{{ $insumosAsignado->Comentarios }}</td>
+                            <td>{{ $insumosAsignado->MesDePago }}</td>
+                        </tr>
+                        @endforeach
+
+                    
+                    </tbody>
+                </table>
+            </div>
+
             <!-- insumos Disponibles -->
             <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Insumos Disponibles</span>
             <div class="drag-area" id="disponibles">
@@ -236,66 +299,7 @@
             </div>
         </div>
 
-            <!-- insumosasignados Seleccionados -->
-            <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Insumos Asignados</span>
-
-                <div class="table-responsive">
-                    <table id="insumosAsignadosTable" class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>Action</th>
-                                <th>Categoria Insumo</th>
-                                <th>Nombre Insumo</th>
-                                <th>Costo Mensual</th>
-                                <th>Costo Anual</th>
-                                <th>Frecuencia de Pago</th>
-                                <th>Observaciones</th>
-                                <th>Fecha de Asignacion</th>
-                                <th>Num. Serie</th>
-                                <th>Comentarios</th>
-                                <th>Mes de pago </th>
-
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($insumosAsignados as $insumosAsignado)
-                            <tr data-id="{{ $insumosAsignado->InventarioID }}">
-                                <td>
-                                    <button class='btn btn-outline-secondary btn-xs edit-btn-insum' data-id="{{ $insumosAsignado->InventarioID }}">
-                                        <i class="fa fa-edit"></i>
-                                    </button>
-        
-                                    {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroyInsumo', $insumosAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                        {!! Form::button('<i class="fa fa-trash"></i>', [
-                                            'type' => 'submit',
-                                            'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-insumo',
-                                            'data-id' => $insumosAsignado->InventarioID 
-                                        ]) !!}
-                                    {!! Form::close() !!}
-
-
-                                </td>
-                                
-                                
-                                <td>{{ $insumosAsignado->CateogoriaInsumo }}</td>
-                                <td>{{ $insumosAsignado->NombreInsumo }}</td>
-                                <td>{{ $insumosAsignado->CostoMensual }}</td>
-                                <td>{{ $insumosAsignado->CostoAnual }}</td>
-                                <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
-                                <td>{{ $insumosAsignado->Observaciones }}</td>
-                                <td>{{ $insumosAsignado->FechaAsignacion }}</td>
-                                <td>{{ $insumosAsignado->NumSerie }}</td>
-                                <td>{{ $insumosAsignado->Comentarios }}</td>
-                                <td>{{ $insumosAsignado->MesDePago }}</td>
-                            </tr>
-                            @endforeach
-
-                           
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
+           
         </div>
 
 
@@ -306,6 +310,78 @@
         <div class="tab-pane fade" id="linea">
        
        <div class="row">
+
+       <!-- lineasasignados Seleccionados -->
+<span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Lineas Asignados</span>
+
+<div class="table-responsive">
+    <table id="lineasAsignadosTable" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Action</th>    
+                 <th>Num Telefonico</th>
+                 <th>Compania</th>
+                 <th>PlanTel</th>
+                 <th>Costo Renta Mensual</th>
+                 <th>Cuenta Padre</th>
+                 <th>Cuenta Hija</th>
+                 <th>Tipo Linea</th>
+                 <th>Obra</th>
+                 <th>FechaFianza</th>
+                 <th>CostoFianza</th>
+                 <th>FechaAsignacion</th>
+                 <th>Estado</th>
+                 <th>Comentarios</th>
+                 <th>MontoRenovacionFianza</th>
+                 <th>LineaID</th>
+               
+
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($LineasAsignados as $LineasAsignado)
+            <tr data-id="{{ $LineasAsignado->InventarioID }}">
+                <td>
+                    <button class='btn btn-outline-secondary btn-xs edit-btn-linea' data-id="{{ $LineasAsignado->InventarioID }}">
+                        <i class="fa fa-edit"></i>
+                    </button>
+
+                    {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroylinea', $LineasAsignado->InventarioID], 'style' => 'display:inline']) !!}
+                         {!! Form::button('<i class="fa fa-trash"></i>', [
+                             'type' => 'submit',
+                             'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-linea',
+                             'data-id' => $LineasAsignado->InventarioID 
+                         ]) !!}
+                     {!! Form::close() !!}
+
+                   
+                </td>
+                
+             
+                 <td>{{ $LineasAsignado->NumTelefonico}}</td>
+                 <td>{{ $LineasAsignado->Compania}}</td>
+                 <td>{{ $LineasAsignado->PlanTel}}</td>
+                 <td>{{ $LineasAsignado->CostoRentaMensual}}</td>
+                 <td>{{ $LineasAsignado->CuentaPadre}}</td>
+                 <td>{{ $LineasAsignado->CuentaHija}}</td>
+                 <td>{{ $LineasAsignado->TipoLinea}}</td>
+                 <td>{{ $LineasAsignado->Obra}}</td>
+                 <td>{{ $LineasAsignado->FechaFianza}}</td>
+                 <td>{{ $LineasAsignado->CostoFianza}}</td>
+                 <td>{{ $LineasAsignado->FechaAsignacion}}</td>
+                 <td>{{ $LineasAsignado->Estado}}</td>
+                 <td>{{ $LineasAsignado->Comentarios}}</td>
+                 <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
+                 <td>{{ $LineasAsignado->LineaID}}</td>
+               
+            </tr>
+            @endforeach
+
+           
+        </tbody>
+    </table>
+</div>
+
            <!-- lineas Disponibles -->
            <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Lineas Disponibles</span>
            <div class="drag-area" id="disponibles">
@@ -344,11 +420,11 @@
 
                     
                            <td>{{ $Linea->NumTelefonico}}</td>
-                            <td>{{ $Linea->PlanID}}</td>
+                            <td>{{ $Linea->planid->NombrePlan}}</td>
                             <td>{{ $Linea->CuentaPadre}}</td>
                             <td>{{ $Linea->CuentaHija}}</td>
                             <td>{{ $Linea->TipoLinea}}</td>
-                            <td>{{ $Linea->ObraID}}</td>
+                            <td>{{ $Linea->obraid->NombreObra}}</td>
                             <td>{{ $Linea->FechaFianza}}</td>
                             <td>{{ $Linea->CostoFianza}}</td>
                             <td>
@@ -372,78 +448,7 @@
            </div>
        </div>
 
-           <!-- lineasasignados Seleccionados -->
-           <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Lineas Asignados</span>
-
-               <div class="table-responsive">
-                   <table id="lineasAsignadosTable" class="table table-bordered table-striped">
-                       <thead>
-                           <tr>
-                               <th>Action</th>    
-                                <th>Num Telefonico</th>
-                                <th>Compania</th>
-                                <th>PlanTel</th>
-                                <th>Costo Renta Mensual</th>
-                                <th>Cuenta Padre</th>
-                                <th>Cuenta Hija</th>
-                                <th>Tipo Linea</th>
-                                <th>Obra</th>
-                                <th>FechaFianza</th>
-                                <th>CostoFianza</th>
-                                <th>FechaAsignacion</th>
-                                <th>Estado</th>
-                                <th>Comentarios</th>
-                                <th>MontoRenovacionFianza</th>
-                                <th>LineaID</th>
-                              
-
-                           </tr>
-                       </thead>
-                       <tbody>
-                           @foreach ($LineasAsignados as $LineasAsignado)
-                           <tr data-id="{{ $LineasAsignado->InventarioID }}">
-                               <td>
-                                   <button class='btn btn-outline-secondary btn-xs edit-btn-linea' data-id="{{ $LineasAsignado->InventarioID }}">
-                                       <i class="fa fa-edit"></i>
-                                   </button>
-       
-                                   {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroylinea', $LineasAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                        {!! Form::button('<i class="fa fa-trash"></i>', [
-                                            'type' => 'submit',
-                                            'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-linea',
-                                            'data-id' => $LineasAsignado->InventarioID 
-                                        ]) !!}
-                                    {!! Form::close() !!}
-
-                                  
-                               </td>
-                               
-                            
-                                <td>{{ $LineasAsignado->NumTelefonico}}</td>
-                                <td>{{ $LineasAsignado->Compania}}</td>
-                                <td>{{ $LineasAsignado->PlanTel}}</td>
-                                <td>{{ $LineasAsignado->CostoRentaMensual}}</td>
-                                <td>{{ $LineasAsignado->CuentaPadre}}</td>
-                                <td>{{ $LineasAsignado->CuentaHija}}</td>
-                                <td>{{ $LineasAsignado->TipoLinea}}</td>
-                                <td>{{ $LineasAsignado->Obra}}</td>
-                                <td>{{ $LineasAsignado->FechaFianza}}</td>
-                                <td>{{ $LineasAsignado->CostoFianza}}</td>
-                                <td>{{ $LineasAsignado->FechaAsignacion}}</td>
-                                <td>{{ $LineasAsignado->Estado}}</td>
-                                <td>{{ $LineasAsignado->Comentarios}}</td>
-                                <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
-                                <td>{{ $LineasAsignado->LineaID}}</td>
-                              
-                           </tr>
-                           @endforeach
-
-                          
-                       </tbody>
-                   </table>
-               </div>
-
-           </div>
+         
        </div>
 
 

@@ -21,6 +21,10 @@ class PlanesController extends AppBaseController
     public function __construct(PlanesRepository $planesRepo)
     {
         $this->planesRepository = $planesRepo;
+        $this->middleware('permission:ver-planes|crear-planes|editar-planes|borrar-planes')->only('index');
+        $this->middleware('permission:crear-planes', ['only' => ['create','store']]);
+        $this->middleware('permission:editar-planes', ['only' => ['edit','update']]);
+        $this->middleware('permission:borrar-planes', ['only' => ['destroy']]);
     }
 
     /**

@@ -14,6 +14,14 @@ use Illuminate\Support\Arr;
 
 class UsuarioController extends Controller
 {
+    function __construct()
+        {
+            $this->middleware('permission:ver-usuarios|crear-usuarios|editar-usuarios|borrar-usuarios')->only('index');
+            $this->middleware('permission:crear-usuarios', ['only' => ['create','store']]);
+            $this->middleware('permission:editar-usuarios', ['only' => ['edit','update']]);
+            $this->middleware('permission:borrar-usuarios', ['only' => ['destroy']]);
+        }
+
     /**
      * Display a listing of the resource.
      *
@@ -26,7 +34,7 @@ class UsuarioController extends Controller
         return view('usuarios.index',compact('usuarios')); */
 
         //Con paginación
-        $usuarios = User::paginate(5);
+        $usuarios = User::all();
         return view('usuarios.index',compact('usuarios'));
 
         //al usar esta paginacion, recordar poner en el el index.blade.php este codigo  {!! $usuarios->links() !!}
@@ -53,13 +61,17 @@ class UsuarioController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email',
+            'ApellPaterno' => 'required',
+            'nombres' => 'required',
+            'username' => 'required|unique:users,username',
             'password' => 'required|same:confirm-password',
             'roles' => 'required'
         ]);
-    
+
+        
         $input = $request->all();
+        $input['name'] = $request->ApellPaterno.' '.$request->ApellMaterno.' '. $request->nombres;
+
         $input['password'] = Hash::make($input['password']);
     
         $user = User::create($input);
@@ -104,9 +116,9 @@ class UsuarioController extends Controller
      */
     public function update(Request $request, $id)
     {
+      
         $this->validate($request, [
             'name' => 'required',
-            'email' => 'required|email|unique:users,email,'.$id,
             'password' => 'same:confirm-password',
             'roles' => 'required'
         ]);
