@@ -72,11 +72,11 @@
         th {
             background-color: #444;
             color: white;
-            padding: 5px;
+            padding: 2px;
             text-align: center;
         }
         td {
-            padding: 5px;
+            padding: 2px;
             text-align: center;
         }
         td[rowspan] {

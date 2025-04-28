@@ -266,6 +266,7 @@
 
                          
                             <button type="submit" class="btn btn-primary" >Generar</button>
+                            <a href="{{ route('inventarios.index') }}" class="btn btn-danger">Cancelar</a>
                         </form>
                     </div>
                 </div>
