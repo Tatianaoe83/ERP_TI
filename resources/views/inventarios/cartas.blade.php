@@ -79,14 +79,7 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-3 col-sm-3 col-lg-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox"  name="inventarioPreven[]" value='5' id="defaultCheck5">
-                                <label class="form-check-label" for="defaultCheck5">
-                                    Configuración de software operativos
-                                </label>
-                            </div>
-                        </div>
+                        
                         <div class="col-3 col-sm-3 col-lg-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox"  name="inventarioPreven[]" value='6'  id="defaultCheck6">
@@ -147,14 +140,7 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-3 col-sm-3 col-lg-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox"  name="inventarioPreven[]" value='13' id="defaultCheck13">
-                                <label class="form-check-label" for="defaultCheck13">
-                                    Configuración de impresoras
-                                </label>
-                            </div>
-                        </div>
+                        
                         <div class="col-3 col-sm-3 col-lg-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox"  name="inventarioPreven[]" value='14' id="defaultCheck14">
@@ -175,7 +161,7 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox"  name="inventarioPreven[]" value='16' id="defaultCheck16">
                                 <label class="form-check-label" for="defaultCheck16">
-                                    Cambio de pasta térmica 
+                                    Cambio de pasta térmica en la tarjeta grafica
                                 </label>
                             </div>
                         </div>
