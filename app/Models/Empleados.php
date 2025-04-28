@@ -94,4 +94,19 @@ class Empleados extends Model implements Auditable
     {
         return $this->belongsTo(\App\Models\Puestos::class, 'PuestoID');
     }
+
+    public function inventarioEquipos()
+    {
+        return $this->hasMany(InventarioEquipo::class, 'EmpleadoID', 'EmpleadoID');
+    }
+
+    public function inventarioInsumos()
+    {
+        return $this->hasMany(InventarioInsumo::class, 'EmpleadoID', 'EmpleadoID');
+    }
+
+    public function inventarioLineas()
+    {
+        return $this->hasMany(InventarioLineas::class, 'EmpleadoID', 'EmpleadoID');
+    }
 }

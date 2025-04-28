@@ -50,6 +50,8 @@ Route::group(['middleware' => ['auth']], function() {
     Route::resource('insumos', App\Http\Controllers\InsumosController::class);
     Route::resource('categorias', App\Http\Controllers\CategoriasController::class);
     Route::resource('planes', App\Http\Controllers\PlanesController::class);
+    Route::GET('InventarioVista', [App\Http\Controllers\InventarioController::class, 'indexVista'])->name('inventarios.indexVista');
+    Route::GET('inventarios/{id}/inventario', [App\Http\Controllers\InventarioController::class, 'inventario'])->name('inventarios.inventario');
     Route::PUT('inventarios/editar-equipo/{id}', [InventarioController::class, 'editarequipo'])->name('inventarios.editarequipo');
     Route::POST('inventarios/crear-equipo/{id}', [InventarioController::class, 'crearequipo'])->name('inventarios.crearequipo');
 
@@ -65,6 +67,7 @@ Route::group(['middleware' => ['auth']], function() {
     Route::PUT('inventarios/{inventario}/traspaso', [InventarioController::class, 'formTraspaso'])->name('inventarios.transpaso');
     Route::GET('inventarios/{inventario}/cartas', [InventarioController::class, 'cartas'])->name('inventarios.cartas');
     Route::POST('pdffile/{id}', [InventarioController::class, 'pdffile'])->name('inventarios.pdffile');
+    Route::POST('mantenimiento/{id}', [InventarioController::class, 'mantenimiento'])->name('inventarios.mantenimiento');
 
 
 

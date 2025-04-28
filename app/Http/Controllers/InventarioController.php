@@ -46,33 +46,109 @@ class InventarioController extends AppBaseController
      *
      * @return Response
      */
-    public function index(InventarioDataTable $inventarioDataTable)
-    {
+        public function index()
+        {
+                return view('inventarios.index');
+        }
+        
+        public function indexVista(Request $request)
+        {
+                $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+                    ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                    ->select([
+                        'empleados.EmpleadoID',
+                        'empleados.NombreEmpleado',
+                        'puestos.NombrePuesto as nombre_puesto',
+                        'obras.NombreObra as nombre_obra',
+                        'empleados.NumTelefono',
+                        'empleados.Correo',
+                        'empleados.Estado'
+                    ])
+                    ->orderBy('empleados.EmpleadoID', 'desc')
+                    ->when($request->nombre, fn($q) => $q->where('empleados.NombreEmpleado', 'like', '%' . $request->nombre . '%'))
+                    ->when($request->obra, fn($q) => $q->where('obras.NombreObra', 'like', '%' . $request->obra . '%'))
+                    ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', 'like','%' . $request->puesto . '%'));
 
-        if (request()->ajax()) {
-            $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-                ->select([
-                    'empleados.EmpleadoID',
-                    'empleados.NombreEmpleado',
-                    'puestos.NombrePuesto as nombre_puesto',
-                    'obras.NombreObra as nombre_obra',
-                    'empleados.NumTelefono',
-                    'empleados.Correo',
-                    'empleados.Estado'
-                ]);
 
-
-            return DataTables::of($unidades)
-                ->addColumn('action', function ($row) {
-                    return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
-                })
-                ->rawColumns(['action'])
-                ->make(true);
+                    if ($request->filled('filtro_inventario')) {
+                        $unidades->where(function($q) use ($request) {
+                            $q->whereHas('inventarioEquipos', function($sub) use ($request) {
+                                $sub->where('CategoriaEquipo', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('Marca', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('Modelo', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('NumSerie', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('Folio', 'like', "%{$request->filtro_inventario}%");
+                            })
+                            ->orWhereHas('inventarioInsumos', function($sub) use ($request) {
+                                $sub->where('CateogoriaInsumo', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('NombreInsumo', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('NumSerie', 'like', "%{$request->filtro_inventario}%");
+                            })
+                            ->orWhereHas('inventarioLineas', function($sub) use ($request) {
+                                $sub->where('Compania', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('NumTelefonico', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('Compania', 'like', "%{$request->filtro_inventario}%")
+                                    ->orWhere('PlanTel', 'like', "%{$request->filtro_inventario}%");
+                            });
+                        });
+                    }
+            
+        
+                return DataTables::of($unidades)
+                    ->addColumn('action', function ($row) {
+                        return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
+                    })
+                    ->rawColumns(['action'])
+                    ->make(true);
         }
 
-        return $inventarioDataTable->render('inventarios.index');
-    }
+        public function inventario($id)
+        {
+            $empleadoid = (int)$id;
+
+            $equipos = InventarioEquipo::select(
+                    'InventarioID as id',
+                    'CategoriaEquipo as categoria',
+                    'Marca',
+                    'Caracteristicas',
+                    'Modelo',
+                    'NumSerie',
+                    'Folio as FechaAsignacion',
+                    DB::raw('"EQUIPO" as tipo')
+                )
+                ->where('EmpleadoID', $empleadoid)
+                ->get();
+        
+            $insumos = InventarioInsumo::select(
+                    'InventarioID as id',
+                    'CateogoriaInsumo as categoria',
+                    'NombreInsumo as Marca',
+                    'Comentarios as Caracteristicas',
+                    DB::raw('NULL as Modelo'),
+                    'NumSerie',
+                    DB::raw('NULL as FechaAsignacion'),
+                    DB::raw('"INSUMO" as tipo')
+                )
+                ->where('EmpleadoID', $empleadoid)
+                ->get();
+        
+            $telefonos = InventarioLineas::select(
+                    'InventarioID as id',
+                    DB::raw('"LINEA TELEFONICA" as categoria'),
+                    'Compania as Marca',
+                    'PlanTel as Caracteristicas',
+                    DB::raw('NULL as Modelo'),
+                    DB::raw('NULL as NumSerie'),
+                    'NumTelefonico as FechaAsignacion',
+                    DB::raw('"TELEFONO" as tipo')
+                )
+                ->where('EmpleadoID', $empleadoid)
+                ->get();
+        
+            $datos = collect($equipos)->merge($insumos)->merge($telefonos);
+        
+            return view('empleados.inventario-detalle', compact('datos'));
+        }
 
     /**
      * Show the form for creating a new Inventario.
@@ -669,11 +745,11 @@ class InventarioController extends AppBaseController
 
         $data = [
             'fecha' => Carbon::now()->translatedFormat('j \d\e F \d\e Y'),
-            'entrega' => $entrega[0]->NombreEmpleado,
-            'entregapuesto' => $entrega[0]->NombrePuesto,
+            'entrega' => $entrega[0]->NombreEmpleado ?? '',
+            'entregapuesto' => $entrega[0]->NombrePuesto ?? '',
             'entreganumero' => $entrega[0]->NumTelefono,
-            'recibe' => $recibe[0]->NombreEmpleado,
-            'recibepuesto' => $recibe[0]->NombrePuesto,
+            'recibe' => $recibe[0]->NombreEmpleado ?? '',
+            'recibepuesto' => $recibe[0]->NombrePuesto ?? '',
             'obra' => $entrega[0]->NombreEmpresa,
             'obraubi' => $entrega[0]->NombreObra,
             'gerencia' =>  $entrega[0]->NombreGerencia,
@@ -685,6 +761,99 @@ class InventarioController extends AppBaseController
       
         $pdf = PDF::loadView('inventarios.pdffile', $data);
         $pdf->setPaper('A4', 'portrait');
-        return $pdf->stream("Incidencia.pdf", array("Attachment" => false));
+        return $pdf->stream("Responsiva.pdf", array("Attachment" => false));
     }
+
+    public function mantenimiento(request $request, $id)
+    {
+       
+        $empleadoid= $id;
+
+        $seleccionados = $request->input('inventarioPreven', []);
+
+        $tareas = [
+            1 => 'Desarme y ensamble de equipo',
+            2 => 'Formateo e instalación del sistema operativo',
+            3 => 'Limpieza interna',
+            4 => 'Respaldo de información',
+            5 => 'Configuración de software operativos',
+            6 => 'Cambio de pasta térmica',
+            7 => 'Limpieza de periféricos (Puertos USB, red, etc.)',
+            8 => 'Actualizaciones de software',
+            9 => 'Eliminación de temporales',
+            10 => 'Limpieza de ventiladores',
+            11 => 'Limpieza de fuente de poder',
+            12 => 'Instalación de software por licencia',
+            13 => 'Configuración de impresoras',
+            14 => 'Limpieza del teclado',
+            15 => 'Cambio de piezas (Disco duro, tarjeta madre, memoria RAM, cambio de batería, etc.)',
+            16 => 'Cambio de pasta térmica en la tarjeta grafica',
+            17 => 'Cambio de equipo de computo',
+        ];
+
+        $equipo = InventarioEquipo::select(
+            DB::raw("CONCAT(Folio,' - ', CategoriaEquipo) AS NombreEq")
+        )
+        ->where('InventarioID', $request->IdEquipo)
+        ->get();
+
+
+        $entrega=auth()->id();
+     
+        $username = User::select('name')
+            ->where('id', '=', $entrega)
+                    ->first();
+       
+
+        if (empty($seleccionados)) {
+            return back()->with('error', 'No seleccionaste ningún elemento.');
+        }
+    
+
+       Carbon::setLocale('es'); 
+        setlocale(LC_TIME, 'es_ES.UTF-8'); 
+
+
+
+        
+
+        $entrega = Empleados::select('empleados.NombreEmpleado','empleados.NumTelefono','puestos.NombrePuesto','unidadesdenegocio.NombreEmpresa','obras.NombreObra','obras.EncargadoDeObra','gerencia.NombreGerencia','unidadesdenegocio.NombreEmpresa')
+                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->join('obras', 'obras.ObraID', '=', 'empleados.ObraID')
+                ->join('unidadesdenegocio', 'obras.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
+                ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+                ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+                ->where('empleados.EmpleadoID', '=', $empleadoid)
+                ->get();
+
+       
+
+        $recibe = Empleados::select('empleados.NombreEmpleado','puestos.NombrePuesto','empleados.NumTelefono')
+                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->where('empleados.NombreEmpleado', '=', $username->name)
+                ->get();
+        
+    
+
+
+        $data = [
+            'fecha' => Carbon::now()->translatedFormat('j \d\e F \d\e Y'),
+            'entrega' => $entrega[0]->NombreEmpleado ?? '',
+            'entregapuesto' => $entrega[0]->NombrePuesto ?? '',
+            'recibe' => $recibe[0]->NombreEmpleado ?? '',
+            'recibepuesto' => $recibe[0]->NombrePuesto ?? '',
+            'tareas' => $tareas,
+            'seleccionados' => $seleccionados,
+            'equipofolio' => $equipo[0]->NombreEq
+    
+        ];
+
+
+      
+        $pdf = PDF::loadView('inventarios.pdfMante', $data);
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->stream("Mantenimiento.pdf", array("Attachment" => false));
+
+    }
+
 }
