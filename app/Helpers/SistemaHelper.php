@@ -2,9 +2,7 @@
 
 namespace App\Helpers;
 
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
 
 class SistemaHelper
@@ -13,20 +11,7 @@ class SistemaHelper
     {
         Session::put('sistema_activo', $sistema);
 
-        
-        $conexion = match ($sistema) {
-            'presupuesto' => 'mysql_presupuesto',
-            default => 'mysql_inventario',
-        };
-
-       
-        Config::set('database.default_sistema', $conexion);
-
-        // Opcional: si usas esa conexión explícitamente, también puedes hacer:
-        // DB::purge($conexion);
-        // DB::reconnect($conexion);
-
-        
+        // Refrescar caché de permisos de Spatie
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 

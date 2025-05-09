@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Helpers\SistemaHelper;
 
 
 //Agregamos spatie
@@ -53,9 +52,5 @@ class User extends Authenticatable
        return $this->hasMany(Gerencias_usuarios::class,'users_id','id');
     }
 
-    public function getConnectionName()
-    {
-        return SistemaHelper::obtenerConexion();
-    }
 
 }
