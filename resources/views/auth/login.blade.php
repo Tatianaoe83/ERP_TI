@@ -45,8 +45,8 @@
                     <label for="database">Base de Datos</label>
                     <select name="database" id="database" class="form-control" onchange="updateEnvDatabase(this.value)" required>
                         <option value="">Seleccione Base de Datos</option>
-                        <option value="unidplay_ControlInventarioTI">Control Inventario TI</option>
-                        <option value="unidplay_PresupuestosControl">Presupuestos</option>
+                        <option value="unidplay_controlinventarioti">Control Inventario TI</option>
+                        <option value="unidplay_presupuestoscontrol">Presupuestos</option>
                     </select>
                 </div>
 
@@ -106,7 +106,7 @@
                                   toast: true,
                                   position: "top-end",
                                   showConfirmButton: false,
-                                  timer: 3000,
+                                  timer:  1500,
                                   timerProgressBar: true,
                                   didOpen: (toast) => {
                                     toast.onmouseenter = Swal.stopTimer;
