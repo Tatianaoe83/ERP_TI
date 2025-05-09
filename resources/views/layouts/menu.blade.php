@@ -130,19 +130,31 @@
             <a href="#" class="nav-link has-dropdown"><i class="fas fa-file-alt"></i><span>Reportes</span></a>
             <ul class="dropdown-menu">
                 
+                @if(auth()->user()->can('ver-presupuesto'))
                 <li>
                     <a class="nav-link" href="/presupuesto">
                         <i class="fas fa-circle-notch"></i><span>Presupuesto</span>
                     </a>
                 </li>
+                @endif
+                
+                @if(auth()->user()->can('ver-reporte') or auth()->user()->can('crear-reporte') or auth()->user()->can('editar-reporte') or auth()->user()->can('borrar-reporte') or auth()->user()->can('exportar-reporte'))
+                <li>
+                    <a class="nav-link" href="/reporte">
+                        <i class="fas fa-circle-notch"></i><span>Reporteador</span>
+                    </a>
+                </li>
+                @endif
+                
 
-                @if(auth()->user()->can('ver-informe'))
+                @if(auth()->user()->can('ver-informe') or auth()->user()->can('buscar-informe') )
                 <li>
                     <a class="nav-link" href="/informe">
                         <i class="fas fa-circle-notch"></i><span>Informes</span>
                     </a>
                 </li>
                 @endif
+                
             </ul>
             </li>
         </ul>

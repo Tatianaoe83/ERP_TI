@@ -55,6 +55,14 @@
                                     {!! Form::select('roles[]', $roles,$userRole, array('class' => 'form-control')) !!}
                                 </div>
                             </div>
+
+                            <div class="col-xs-12 col-sm-12 col-md-12">
+                                <div class="form-group">
+                                   <label for="gerenci_id">Gerencia(s) <abbr title="Si se requieren todas las gerencias, dejar vacio">(?)</abbr></label>
+                                   {!! Form::select('gerenci_id[]', $geren,$gerenUsuarios, array('style' => 'width: 100%;height:auto','class'=>'form-control jz', 'multiple'=>'multiple')) !!}
+                                </div>
+                            </div>
+
                             <div class="col-xs-12 col-sm-12 col-md-12">
                                 <button type="submit" class="btn btn-primary">Guardar</button>
                                 <a href="{{ route('usuarios.index') }}" class="btn btn-danger">Cancelar</a>
@@ -67,4 +75,20 @@
             </div>
         </div>
     </section>
+@endsection
+
+@section('js')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script type="text/javascript">
+    // In your Javascript (external .js resource or <script> tag)
+$(document).ready(function() {
+    $('.jz').select2({ 
+    theme: "classic",    
+    width: 'resolve'});
+    $(document).on("select2:open", () => {
+    document.querySelector(".select2-container--open .select2-search__field").focus()
+})
+});
+</script>
 @endsection

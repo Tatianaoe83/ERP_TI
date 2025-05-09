@@ -69,6 +69,16 @@
                                     {!! Form::select('roles[]', $roles,[], array('class' => 'form-control')) !!}
                                 </div>
                             </div>
+
+                            <div class="col-xs-12 col-sm-12 col-md-12">
+                                <div class="form-group">
+                                   <label for="gerenci_id">Gerencia(s) <abbr title="Si se requieren todas las gerencias, dejar vacio">(?)</abbr></label>
+                                   {!!Form::select('gerenci_id[]',App\Models\Gerencia::all()->
+                                    pluck('NombreGerencia','GerenciaID'),null,['class'=>'form-control jz', 'multiple'=>'multiple', 'style' => 'width: 100%'])!!}
+                                   
+                                </div>
+                            </div>
+
                             <div class="col-xs-12 col-sm-12 col-md-12">
                                 <button type="submit" class="btn btn-primary">Guardar</button>
                                 <a href="{{ route('usuarios.index') }}" class="btn btn-danger">Cancelar</a>

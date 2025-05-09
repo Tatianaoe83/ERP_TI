@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Gerencia;
+use App\Models\Gerencias_usuarios;
 use App\Models\Empleados;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
@@ -15,6 +16,12 @@ use App\Exports\ReportExport;
 class PresupuestoController extends Controller
 {
    
+    public function __construct()
+    {
+        $this->middleware('permission:ver-presupuesto')->only('index');
+      
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -22,7 +29,25 @@ class PresupuestoController extends Controller
      */
     public function index()
     {       
-        return view('presupuesto.index');
+
+        $id = auth()->id();
+
+        $usuariosgeren = DB::table('gerencias_usuarios')
+            ->where('users_id', $id)
+            ->pluck('GerenciaID')
+            ->toArray();
+        
+        if (count($usuariosgeren) > 0) {
+            $genusuarios = Gerencia::join("gerencias_usuarios", "gerencias_usuarios.GerenciaID", "=", "gerencia.GerenciaID")
+                ->select('gerencia.*')
+                ->where('gerencias_usuarios.users_id', $id)
+                ->get(); 
+        } else {
+            $genusuarios = Gerencia::all();
+        }
+        
+        return view('presupuesto.index', compact('genusuarios'));
+        
       
     }
 
@@ -97,20 +122,22 @@ class PresupuestoController extends Controller
 
        if ($request->submitbutton == 'pdf'){
 
-            $numerogerencia = (int)$request->GerenciaID;
+            $numerogerencia = (int) $request->GerenciaID;
 
-                $GerenciaTb = Empleados::query()
-                ->select("gerencia.NombreGerencia","gerencia.NombreGerente",DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados'))
+            $GerenciaTb = Empleados::query()
+                ->select(
+                    "gerencia.NombreGerencia",
+                    "gerencia.NombreGerente",
+                    DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
+                )
                 ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
                 ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
-                ->join("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
-                ->where('gerencia.GerenciaID','=', $numerogerencia)
-                ->groupBy('gerencia.GerenciaID')
+                ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
+                ->where('gerencia.GerenciaID', '=', $numerogerencia)
+                ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
                 ->get();
 
-
-
-                $datosheader = DB::select('call sp_ReporteCostosPorGerenciaID(?)', [$numerogerencia]);
+                $datosheader = $request->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)',[$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)',[$numerogerencia]);
 
               
                 $total = 0;
@@ -129,7 +156,7 @@ class PresupuestoController extends Controller
                 ];
 
                
-
+                $presup_hardware  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
                 $presup_otrosinsums = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
                 $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
                 $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
@@ -187,7 +214,40 @@ class PresupuestoController extends Controller
                 ];
                 
              
+                $tablahardware = [];
+                $columnashardware = [];
+                $totaleshardware = []; 
+                $granTotalhardware = 0; 
+
+                foreach ($presup_hardware as $row) {
+                    $empleadoID = $row->EmpleadoID;
+                    $nombre = $row->NombreEmpleado;
+                    $puesto = $row->NombrePuesto;
+                    $insumo = $row->NombreInsumo;
+                    $costo = (int) $row->CostoTotal;
+
+                    if (!isset($tablahardware[$empleadoID])) {
+                        $tablahardware[$empleadoID] = [
+                            'NombreEmpleado' => $nombre,
+                            'NombrePuesto' => $puesto,
+                            'TotalPorEmpleado' => 0
+                        ];
+                    }
+
+                    $tablahardware[$empleadoID][$insumo] = $costo;
+                    $tablahardware[$empleadoID]['TotalPorEmpleado'] += $costo;
+
                 
+                    $columnashardware[$insumo] = true;
+
+                    if (!isset($totaleshardware[$insumo])) {
+                        $totaleshardware[$insumo] = 0;
+                    }
+                    $totaleshardware[$insumo] += $costo;
+                    
+                    $granTotalhardware += $costo;
+                }
+
 
 
                 $tablapresup_otrosinsums = [];
@@ -264,11 +324,15 @@ class PresupuestoController extends Controller
                 $data = ["title" => $request->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
                         "dato" => $request->tipo == 'mens' ? 'Mensual' : 'Anual',
                         'datosheader' => $datosheader,
-                        'GerenciaTb' => $GerenciaTb[0],
+                        'GerenciaTb' => $GerenciaTb[0] ?? '',
                         'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
                         'columnaspresup_otrosinsums' => $columnaspresup_otrosinsums,
                         'totalespresup_otrosinsums' => $totalespresup_otrosinsums,
                         'granTotalpresup_otrosinsums' => $granTotalpresup_otrosinsums,
+                        'tablahardware' => $tablahardware,
+                        'columnashardware' => $columnashardware,
+                        'totaleshardware' => $totaleshardware,
+                        'granTotalhardware' => $granTotalhardware,
                         'tablapresup_lics' => $tablapresup_lics,
                         'columnaspresup_lics' => $columnaspresup_lics,
                         'totalespresup_lics' => $totalespresup_lics,

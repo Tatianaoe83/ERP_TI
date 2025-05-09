@@ -27,9 +27,8 @@
 
                     
                         {!! Form::label('GerenciaID', 'Gerencia:') !!}
+                        {!! Form::select('GerenciaID', $genusuarios->pluck('NombreGerencia','GerenciaID'), null, ['placeholder' => 'Seleccionar', 'class'=>'jz form-control', 'required']) !!}
 
-                        {!!Form::select('GerenciaID',App\Models\Gerencia::all()->
-                            pluck('NombreGerencia','GerenciaID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','required'])!!}
 
                   </div>
                   <div class="card-footer">

@@ -61,9 +61,9 @@
                 <div style="margin: 0; padding: 0;">
                   
                     <h3 style="margin: 0; padding: 1px;">PRESUPUESTO DE TECNOLOGIAS {{ $title }} 2025</h3>
-                    <h5 style="margin: 0; padding: 1px;">Gerencia: {{$GerenciaTb->NombreGerencia}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Nombre del Gerente: {{$GerenciaTb->NombreGerente}}</h5>
-                    <h5 style="margin: 0; padding: 1px;">Número de empleados: {{$GerenciaTb->CantidadEmpleados}}</h5>
+                    <h5 style="margin: 0; padding: 1px;">Gerencia: {{$GerenciaTb->NombreGerencia ?? ''}}</h5>
+                    <h5 style="margin: 0; padding: 1px;">Nombre del Gerente: {{$GerenciaTb->NombreGerente ?? ''}}</h5>
+                    <h5 style="margin: 0; padding: 1px;">Número de empleados: {{$GerenciaTb->CantidadEmpleados ?? ''}}</h5>
 
                    
 
@@ -123,6 +123,49 @@
 
         </tbody>
     </table>
+
+    <p>Presupuesto Inversiones</p>
+
+    <table class="table">
+        <thead>
+                <tr style="background-color: #191970; color:white; text-align: center;">
+                    <th>NombreEmpleado</th>
+                    <th>NombrePuesto</th>
+                    @foreach($columnashardware as $columna => $_)
+                        <th>{{ $columna }}</th>
+                    @endforeach
+                    <th>TotalPorEmpleado</th>
+                </tr>
+            </thead>
+        <tbody>
+
+       
+            @foreach($tablahardware as $empleado)
+
+            
+                <tr>
+                    <td>{{ $empleado['NombreEmpleado'] }}</td>
+                    <td>{{ $empleado['NombrePuesto'] }}</td>
+                    @foreach($columnashardware as $columna => $_)
+                        <td> $ {{ $empleado[$columna] ?? 0 }}</td>
+                    @endforeach
+                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 0) }}</td>
+                </tr>
+            @endforeach
+
+                 <!-- Fila de totales -->
+            <tr class= "highlight-row">
+                <td><strong>TOTAL</strong></td>
+                <td></td>
+                @foreach($columnashardware as $columna => $_)
+                    <td><strong>$ {{ number_format($totaleshardware[$columna] ?? 0) }}</strong></td>
+                @endforeach>
+                <td><strong>$ {{ number_format($granTotalhardware, 0) }}</strong></td>
+            </tr>
+
+        </tbody>
+    </table>
+    
 
     <p>Presupuesto Accesorios y Otros Insumos</p>
 

@@ -20,12 +20,49 @@
             <h3 class="card-title">Informe</h3>
         </div>
         <div class="card-body">
+
+                <div class="row mb-3">
+                <div class="col-xs-3 col-sm-3 col-md-3">
+                    <div class="form-group">
+                    <label>Responsable del cambio:</label>
+                    {!! Form::select('user_type', App\Models\User::whereIn('id',$usuarios)
+                        ->pluck('name','id'), null, ['placeholder' => 'Seleccionar', 'class'=>'jz form-control', 'required', 'id' => 'user_type']) !!}
+
+                    </div>
+
+                </div>
+
+                
+                <div class="col-xs-3 col-sm-3 col-md-3">
+                    <div class="form-group">
+                    <label>Tabla:</label>
+                 
+                    {!! Form::select('auditable_type', App\Models\Audit::whereIn('auditable_type',$tablas)
+                        ->pluck('auditable_type','auditable_type'), null, ['placeholder' => 'Seleccionar', 'class'=>'jz form-control', 'required', 'id' => 'auditable_type']) !!}
+
+                    </div>
+                </div>
+                <div class="col-xs-3 col-sm-3 col-md-3">
+                    <div class="form-group">
+                    <label>Valores:</label>
+                    <input type="text" id="new_values" class="form-control">
+                    </div>
+
+                </div>
+                @can('buscar-informe')
+                <div class="col-xs-3 col-sm-3 col-md-3">
+                    <button id="searchBtn" class="btn btn-primary w-100">Buscar</button>
+                </div>
+                @endcan
+
+            </div>
+
           
 
             <div class="table-responsive">
-            <table id="auditTable" class="table table-bordered table-striped">
-                    <thead>
-                        <tr>
+            <table class="table table-bordered" id="auditsTable">
+                <thead>
+                    <tr>
                             <th>#</th>
                             <th>Responsable del cambio</th>
                             <th>Tabla</th>
@@ -33,33 +70,10 @@
                             <th>Antiguos valores</th>
                             <th>Nuevos valores</th>
                             <th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tfoot>
-                        <tr>
-                            <th>#</th>
-                            <th>Responsable del cambio</th>
-                            <th>Tabla</th>
-                            <th>Num. registro</th>
-                            <th>Antiguos valores</th>
-                            <th>Nuevos valores</th>
-                            <th>Fecha</th>
-                        </tr>
-                    </tfoot>
-                    <tbody>
-                        @foreach($audits as $audit)
-                            <tr>
-                                <td>{{ $audit->id }}</td>
-                                <td>{{ $audit->name }}</td>
-                                <td>{{ $audit->auditable_type }}</td>
-                                <td>{{ $audit->auditable_id }}</td>
-                                <td>{{ $audit->old_values }}</td>
-                                <td>{{ $audit->new_values }}</td>
-                                <td>{{ $audit->created_at }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
             </div>
             </div>
         </div>
@@ -71,33 +85,40 @@
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
 
             <script>
-                $(document).ready(function () {
-                  
-                    $('#auditTable tfoot th').each(function () {
-                        var title = $(this).text();
-                        $(this).html('<select class="form-control"><option value="">ALL</option></select>');
-                    });
+                   let table;
 
-                    var table = $('#auditTable').DataTable();
-
-                    // Añadir opciones únicas a los selects
-                    table.columns().every(function () {
-                        var column = this;
-                        var select = $('select', column.footer());
-
-                        column.data().unique().sort().each(function (d, j) {
-                            if (d && select.find('option[value="' + d + '"]').length === 0) {
-                                select.append('<option value="' + d + '">' + d + '</option>');
-                            }
+                    $(document).ready(function () {
+                      
+                        table = $('#auditsTable').DataTable({
+                            processing: true,
+                            serverSide: true,
+                            searching: false,
+                            paging: true,
+                            ajax: {
+                                url: "{{ route('audits.data') }}",
+                                data: function (d) {
+                                    d.user_type = $('#user_type').val();
+                                    d.auditable_type = $('#auditable_type').val();
+                                    d.new_values = $('#new_values').val();
+                                }
+                            },
+                            columns: [
+                                { data: 'id' },
+                                { data: 'name' },
+                                { data: 'auditable_type' },
+                                { data: 'auditable_id' },
+                                { data: 'old_values' },
+                                { data: 'new_values' },
+                                { data: 'created_at' }
+                            ],
+                            deferLoading: 0 
                         });
 
-                        // Filtro en cambio
-                        select.on('change', function () {
-                            var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                            column.search(val ? '^' + val + '$' : '', true, false).draw();
+                      
+                        $('#searchBtn').on('click', function () {
+                            table.ajax.reload();
                         });
                     });
-                });
             </script>
               
 @endpush

@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 //agregamos lo siguiente
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Gerencias_usuarios;
+use App\Models\Gerencia;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -76,6 +78,17 @@ class UsuarioController extends Controller
     
         $user = User::create($input);
         $user->assignRole($request->input('roles'));
+
+        $IdUsuario = $user->id;
+
+        if ($request->gerenci_id != null){
+            foreach ($request->gerenci_id as $key => $value) {
+                Gerencias_usuarios::create([
+                            'GerenciaID' => $value,
+                            'users_id' => $IdUsuario,
+                ]);
+                }
+        }
     
         return redirect()->route('usuarios.index');
     }
@@ -102,8 +115,11 @@ class UsuarioController extends Controller
         $user = User::find($id);
         $roles = Role::pluck('name','name')->all();
         $userRole = $user->roles->pluck('name','name')->all();
+        $geren = Gerencia::pluck('NombreGerencia','GerenciaID')->all();
+        $gerenUsu= DB::select("SELECT GerenciaID FROM gerencias_usuarios WHERE users_id = $id");
+        $gerenUsuarios = array_column($gerenUsu, 'GerenciaID');
     
-        return view('usuarios.editar',compact('user','roles','userRole'));
+        return view('usuarios.editar',compact('user','roles','userRole','geren','gerenUsuarios'));
     }
     
 
@@ -136,6 +152,44 @@ class UsuarioController extends Controller
     
         $user->assignRole($request->input('roles'));
     
+        $IdUsuario = $user->id;
+
+
+        if ($request->gerenci_id != null){
+                
+                    $gerenEmp= DB::select("SELECT GerenciaID FROM gerencias_usuarios WHERE users_id = $IdUsuario");
+                    $gerenToEmp = array_column($gerenEmp, 'GerenciaID');
+
+                    $resultado = array_diff($request->gerenci_id, $gerenToEmp);
+
+
+                    $resultado2 = array_diff($gerenToEmp, $request->gerenci_id);
+
+                
+                    foreach ($resultado as $key => $value) {
+                        Gerencias_usuarios::create([
+                            'GerenciaID' => $value,
+                            'users_id' => $IdUsuario,
+                            ]);
+                        }
+                    foreach ($resultado2 as $key => $value2) {
+                        Gerencias_usuarios::where('users_id', $IdUsuario)
+                        ->where('GerenciaID',$value2)
+                        ->delete();
+                        }
+                }else{
+                
+                    $gerenEmp= DB::select("SELECT GerenciaID FROM gerencias_usuarios WHERE users_id = $IdUsuario");
+                    $gerenToEmp = array_column($gerenEmp, 'GerenciaID');
+                    foreach ($gerenToEmp as $key => $value2) {
+                    
+                        Gerencias_usuarios::where('users_id', $IdUsuario)
+                        ->where('GerenciaID',$value2)
+                        ->delete();
+                        }
+                    
+        }
+
         return redirect()->route('usuarios.index');
     }
 

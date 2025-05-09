@@ -32,6 +32,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     public $presup_datosCount;
     public $presup_gpsCount;
     public $presup_cal_pagosCount;
+    public $presup_hardware;
+    public $tablaencbezado;
 
 
 
@@ -49,20 +51,23 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     public function view(): View
     {
 
+            $numerogerencia = (int) $this->gerencia;
 
-        $numerogerencia = (int)$this->gerencia;
+            $GerenciaTb = Empleados::query()
+                ->select(
+                    "gerencia.NombreGerencia",
+                    "gerencia.NombreGerente",
+                    DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
+                )
+                ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
+                ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
+                ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
+                ->where('gerencia.GerenciaID', '=', $numerogerencia)
+                ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
+                ->get();
 
-        $GerenciaTb = Empleados::query()
-            ->select("gerencia.NombreGerencia", "gerencia.NombreGerente", DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados'))
-            ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
-            ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
-            ->join("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
-            ->where('gerencia.GerenciaID', '=', $numerogerencia)
-            ->groupBy('gerencia.GerenciaID')
-            ->get();
 
-
-        $datosheader = DB::select('call sp_ReporteCostosPorGerenciaID(?)', [$numerogerencia]);
+                $datosheader = $this->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)',[$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)',[$numerogerencia]);
 
         $total = 0;
 
@@ -79,6 +84,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             'TotalCosto' => $total
         ];
 
+        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
         $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)', [$numerogerencia]);
         $presup_acces =  $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)', [$numerogerencia]);
         $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)', [$numerogerencia]);
@@ -136,6 +142,40 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             'Orden' => 7 // Si deseas agregar algún valor en "Orden" para el total, puedes hacerlo.
         ];
 
+
+        $tablahardware = [];
+        $columnashardware = [];
+        $totaleshardware = []; 
+        $granTotalhardware = 0; 
+
+        foreach ($presup_hardware as $row) {
+            $empleadoID = $row->EmpleadoID;
+            $nombre = $row->NombreEmpleado;
+            $puesto = $row->NombrePuesto;
+            $insumo = $row->NombreInsumo;
+            $costo = (int) $row->CostoTotal;
+
+            if (!isset($tablahardware[$empleadoID])) {
+                $tablahardware[$empleadoID] = [
+                    'NombreEmpleado' => $nombre,
+                    'NombrePuesto' => $puesto,
+                    'TotalPorEmpleado' => 0
+                ];
+            }
+
+            $tablahardware[$empleadoID][$insumo] = $costo;
+            $tablahardware[$empleadoID]['TotalPorEmpleado'] += $costo;
+
+        
+            $columnashardware[$insumo] = true;
+
+            if (!isset($totaleshardware[$insumo])) {
+                $totaleshardware[$insumo] = 0;
+            }
+            $totaleshardware[$insumo] += $costo;
+            
+            $granTotalhardware += $costo;
+        }
 
         $tablapresup_otrosinsums = [];
         $columnaspresup_otrosinsums = [];
@@ -215,16 +255,23 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $this->presup_datosCount = count($presup_datos);
         $this->presup_gpsCount = count($presup_gps);
         $this->presup_cal_pagosCount = count($presup_cal_pagos);
+        $this->tablaencbezadoCount = count($datosheader);
+        $this->presup_hardware = count($presup_hardware);
+
 
         $data = [
             "title" => $this->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
             "dato" => $this->tipo == 'mens' ? 'Mensual' : 'Anual',
             'datosheader' => $datosheader,
-            'GerenciaTb' => $GerenciaTb[0],
+            'GerenciaTb' => $GerenciaTb[0] ?? '',
             'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
             'columnaspresup_otrosinsums' => $columnaspresup_otrosinsums,
             'totalespresup_otrosinsums' => $totalespresup_otrosinsums,
             'granTotalpresup_otrosinsums' => $granTotalpresup_otrosinsums,
+            'tablahardware' => $tablahardware,
+            'columnashardware' => $columnashardware,
+            'totaleshardware' => $totaleshardware,
+            'granTotalhardware' => $granTotalhardware,
             'tablapresup_lics' => $tablapresup_lics,
             'columnaspresup_lics' => $columnaspresup_lics,
             'totalespresup_lics' => $totalespresup_lics,
@@ -247,11 +294,16 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     {
 
 
-        $tituloLicenciamiento = 15;
+        $tituloLicenciamiento = $this->tablaencbezadoCount + 6;
+
         $encabezadoicenciamiento = $tituloLicenciamiento + 1;
         $totalLicenciamiento = $encabezadoicenciamiento + $this->tablapresup_licsCount + 1;
 
-        $tituloAccesorios = $totalLicenciamiento + 2;
+        $titulohardware = $totalLicenciamiento + 2;
+        $encabezadohardware = $titulohardware + 1;
+        $totalhardware = $encabezadohardware + $this->presup_hardware + 1;
+
+        $tituloAccesorios = $totalhardware + 2;
         $encabezadoAccesorios = $tituloAccesorios + 1;
         $totalAccesorios = $encabezadoAccesorios + $this->tablapresup_otrosinsumsCount + 1;
 
@@ -349,6 +401,56 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                 'startColor' => ['argb' => 'add8e6'],
             ]
         ]);
+
+          // TABLA INVERSIONES
+          $sheet->getStyle("A{$titulohardware}:M{$titulohardware}")->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 12,
+                'color' => ['argb' => '030404'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'c0c0c0'],
+            ]
+        ]);
+        $sheet->getStyle("A{$encabezadohardware}:M{$encabezadohardware}")->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 12,
+                'color' => ['argb' => 'FFFFFF'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => '191970'],
+            ]
+        ]);
+
+        // TOTALES
+        $sheet->getStyle("A{$totalhardware}:M{$totalhardware}")->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'size' => 12,
+                'color' => ['argb' => '030404'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'add8e6'],
+            ]
+        ]);
+
 
         // TABLA ACCESORIOS
         // TITULO

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use App\Helpers\SistemaHelper;
 
 class DatabaseController extends Controller
 {
@@ -25,7 +26,8 @@ class DatabaseController extends Controller
             file_put_contents(base_path('.env'), $envContent);
             
             // Limpiar la caché de configuración
-            Artisan::call('config:clear');
+            Artisan::call('optimize:clear');
+            SistemaHelper::establecerSistema('presupuesto'); 
             
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
