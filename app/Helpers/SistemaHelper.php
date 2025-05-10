@@ -15,12 +15,15 @@ class SistemaHelper
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
+    public static function obtenerSistema(): string
+    {
+        return Session::get('sistema_activo', 'inventario'); // valor por defecto
+    }
+
     public static function obtenerConexion(): string
     {
-        return Session::get('sistema_activo') === 'presupuesto'
+        return self::obtenerSistema() === 'presupuesto'
             ? 'mysql_presupuesto'
             : 'mysql_inventario';
     }
 }
-
-?>

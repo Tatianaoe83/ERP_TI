@@ -14,6 +14,7 @@ class DatabaseController extends Controller
         try {
             $database = $request->input('database');
 
+
             if (empty($database)) {
                 return response()->json(['success' => false, 'error' => 'No se seleccionó una base de datos'], 400);
             }
