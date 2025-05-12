@@ -29,7 +29,9 @@
 
     @yield('css')
     @stack('third_party_stylesheets')
+    @livewireStyles
 </head>
+@livewireScripts
 <body>
 
 <div id="app">
@@ -79,7 +81,6 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 @stack('third_party_scripts')
-
 
 
 @yield('scripts')

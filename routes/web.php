@@ -76,6 +76,10 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function() {
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
     Route::get('/informe/data', [AuditController::class, 'getAudits'])->name('audits.data');
     Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');    
+    Route::get('/reportes', function () {
+        return view('reportes.index');
+    })->name('reportes.index');
+    
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
