@@ -23,7 +23,6 @@ class Index extends Component
     public $relacionesSeleccionadas = [];
     public $relacionActual;
     public $columnasRelacionActual = [];
-    public $columnasPreview = [];
     public $tablasDisponibles = [];
     public $modeloClase;
 
@@ -93,13 +92,21 @@ class Index extends Component
 
         $this->resultados = $query->get();
         $this->columnasVistaPrevia = $this->columnasSeleccionadas;
+
+        $this->resetEstado();
     }
 
     private function resetEstado()
     {
+        $this->modelo = '';
+        $this->titulo = '';
         $this->columnas = [];
         $this->columnasSeleccionadas = [];
-        $this->resultados = [];
+        $this->filtros = [];
+        $this->grupo = null;
+        $this->ordenColumna = null;
+        $this->ordenDireccion = 'asc';
+        $this->limite = null;
         $this->relaciones = [];
         $this->relacionesSeleccionadas = [];
         $this->relacionActual = '';

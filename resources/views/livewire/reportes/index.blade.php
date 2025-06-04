@@ -1,44 +1,53 @@
-<div>
-    <h3 class="mb-3">Add Query</h3>
-
-    <div class="mb-3">
-        <label for="titulo">Título</label>
-        <input wire:model="titulo" type="text" class="form-control" placeholder="Ingresa el título">
+<div class="container py-3" style="max-width: 1200px;">
+    {{-- Título del reporte --}}
+    <div class="p-3 border rounded bg-light mb-3">
+        <label class="fw-bold d-block mb-2">Título del Reporte</label>
+        <input wire:model="titulo" type="text" id="titulo" class="form-control form-control-sm" placeholder="Ingresa el título del reporte">
     </div>
 
-    <div class="mb-3">
-        <label for="modelo">Selecciona Tabla Principal</label>
-        <select wire:model="modelo" class="form-select">
-            <option value="">-- Selecciona --</option>
-            @foreach($tablasDisponibles as $tabla)
-            <option value="{{ $tabla }}">{{ ucfirst($tabla) }}</option>
-            @endforeach
-        </select>
+    {{-- Tabla principal y relación --}}
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="p-3 border rounded bg-white shadow-sm">
+                <label for="modelo" class="fw-semibold mb-2 d-block">Tabla Principal</label>
+                <select wire:model="modelo" id="modelo" class="form-select form-select-sm">
+                    <option value="">-- Selecciona --</option>
+                    @foreach($tablasDisponibles as $tabla)
+                    <option value="{{ $tabla }}">{{ ucfirst($tabla) }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        @if(is_array($relaciones) && count($relaciones))
+        <div class="col-md-6">
+            <div class="p-3 border rounded bg-white shadow-sm">
+                <label for="relacionActual" class="fw-semibold mb-2 d-block">Relación Disponible</label>
+                <select wire:model="relacionActual" id="relacionActual" class="form-select form-select-sm">
+                    <option value="">-- Selecciona Relación --</option>
+                    @foreach($relaciones as $relacion => $etiqueta)
+                    <option value="{{ $relacion }}">{{ $etiqueta }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        @endif
     </div>
 
-    @if(is_array($relaciones) && count($relaciones))
-    <div class="mb-3">
-        <label>Selecciona una relación</label>
-        <select wire:model="relacionActual" class="form-select">
-            <option value="">-- Elegir relación --</option>
-            @foreach($relaciones as $relacion => $etiqueta)
-            <option value="{{ $relacion }}">{{ $etiqueta }}</option>
-            @endforeach
-        </select>
-    </div>
-    @endif
-
+    {{-- Columnas disponibles --}}
     @if($columnas || $columnasRelacionActual)
-    <div class="mb-3">
+    <div class="p-3 border rounded bg-light mb-3">
         <div class="row">
             @if($columnas)
             <div class="col-md-6">
-                <label class="fw-bold">{{ $modelo }}</label>
-                <div class="row">
+                <label class="fw-semibold d-block mb-2">{{ ucfirst($modelo) }}</label>
+                <div class="row g-2">
                     @foreach($columnas as $columna)
                     <div class="col-md-6">
-                        <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $columna }}">
-                        {{ $columna }}
+                        <div class="form-check">
+                            <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $columna }}" class="form-check-input">
+                            <label class="form-check-label">{{ $columna }}</label>
+                        </div>
                     </div>
                     @endforeach
                 </div>
@@ -47,12 +56,14 @@
 
             @if($columnasRelacionActual)
             <div class="col-md-6">
-                <label class="fw-bold">{{ $relacionActual }}</label>
-                <div class="row">
+                <label class="fw-semibold d-block mb-2">{{ ucfirst($relacionActual) }}</label>
+                <div class="row g-2">
                     @foreach($columnasRelacionActual as $col)
                     <div class="col-md-6">
-                        <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $col }}">
-                        {{ Str::afterLast($col, '.') }}
+                        <div class="form-check">
+                            <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $col }}" class="form-check-input">
+                            <label class="form-check-label">{{ Str::afterLast($col, '.') }}</label>
+                        </div>
                     </div>
                     @endforeach
                 </div>
@@ -62,14 +73,13 @@
     </div>
     @endif
 
-    @if($columnasSeleccionadas)
-    <!-- <pre>{{ json_encode($columnasSeleccionadas, JSON_PRETTY_PRINT) }}</pre> -->
-    <div class="mb-3">
-        <label> Condiciones </label>
-        @foreach($filtros as $index=>$filtro)
-        <div class="row mb-2">
+    {{-- Condiciones --}}
+    <div class="p-3 border rounded bg-light mb-3">
+        <label class="fw-semibold mb-2">Condiciones</label>
+        @foreach($filtros as $index => $filtro)
+        <div class="row g-2 mb-2 align-items-end">
             <div class="col-md-4">
-                <select wire:model="filtros.{{$index}}.columna" class="form-select">
+                <select wire:model="filtros.{{$index}}.columna" class="form-select form-select-sm">
                     <option value="">Selecciona Columna</option>
                     @foreach($columnasSeleccionadas as $columna)
                     <option value="{{$columna}}">{{Str::afterLast($columna, '.')}}</option>
@@ -77,7 +87,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <select wire:model="filtros.{{$index}}.operador" class="form-select">
+                <select wire:model="filtros.{{$index}}.operador" class="form-select form-select-sm">
                     <option value="=">=</option>
                     <option value="like">like</option>
                     <option value=">">&gt;</option>
@@ -85,22 +95,21 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control">
+                <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control form-control-sm">
             </div>
             <div class="col-md-2">
-                <button wire:click.prevent="eliminarFiltro({{ $index }})" class="btn btn-danger">X</button>
+                <button wire:click.prevent="eliminarFiltro({{ $index }})" class="btn btn-sm btn-outline-danger">Eliminar</button>
             </div>
         </div>
         @endforeach
-        <button wire:click.prevent="agregarFiltro" class="btn btn-secondary">Añade condicion</button>
+        <button wire:click.prevent="agregarFiltro" class="btn btn-sm btn-secondary">Añadir condición</button>
     </div>
-    @endif
 
-    @if($columnasSeleccionadas)
-    <div class="row mb-3">
+    {{-- Ordenamiento y límite --}}
+    <div class="row g-3 mb-3">
         <div class="col-md-4">
-            <label>Order By</label>
-            <select wire:model="ordenColumna" class="form-select">
+            <label class="fw-semibold">Ordenar por</label>
+            <select wire:model="ordenColumna" class="form-select form-select-sm">
                 <option value="">--</option>
                 @foreach($columnasSeleccionadas as $columna)
                 <option value="{{ $columna }}">{{ Str::afterLast($columna, '.') }}</option>
@@ -108,38 +117,39 @@
             </select>
         </div>
         <div class="col-md-2">
-            <label>Direction</label>
-            <select wire:model="ordenDireccion" class="form-select">
+            <label class="fw-semibold">Dirección</label>
+            <select wire:model="ordenDireccion" class="form-select form-select-sm">
                 <option value="asc">Asc</option>
                 <option value="desc">Desc</option>
             </select>
         </div>
         <div class="col-md-3">
-            <label>Group By</label>
-            <select wire:model="grupo" class="form-select">
+            <label class="fw-semibold">Agrupar por</label>
+            <select wire:model="grupo" class="form-select form-select-sm">
                 <option value="">--</option>
                 @foreach($columnasSeleccionadas as $columna)
                 <option value="{{ $columna }}">{{ Str::afterLast($columna, '.') }}</option>
                 @endforeach
             </select>
         </div>
-    </div>
-    @endif
-
-    <div class="col-md-3">
-        <label>Limit</label>
-        <input type="number" wire:model="limite" class="form-control">
+        <div class="col-md-3">
+            <label class="fw-semibold">Límite</label>
+            <input type="number" wire:model="limite" class="form-control form-control-sm">
+        </div>
     </div>
 
-    <button wire:click="generarReporte" type="button" class="btn btn-danger">TEST</button>
+    <div class="text-end">
+        <button wire:click="generarReporte" type="button" class="btn btn-primary">Generar</button>
+    </div>
 
+    {{-- Resultados --}}
     @if(count($resultados) && count($columnasVistaPrevia))
     <div class="table-responsive mt-4">
-        <table class="table table-bordered table-sm">
-            <thead>
+        <table class="table table-sm table-bordered table-striped w-100 text-center align-middle" style="font-size: 0.875rem;">
+            <thead class="table-light">
                 <tr>
                     @foreach ($columnasVistaPrevia as $col)
-                    <th>{{ Str::afterLast($col, '.') }}</th>
+                    <th class="small">{{ Str::afterLast($col, '.') }}</th>
                     @endforeach
                 </tr>
             </thead>
@@ -151,11 +161,13 @@
                     $valor = data_get($fila, $col);
                     $colFinal = Str::afterLast($col, '.');
                     @endphp
-
-                    <td>
+                    <td class="text-break" style="max-width: 200px;">
                         @if(is_iterable($valor))
-                        {{-- Mostrar como array limpio de valores --}}
-                        {{ '[' . collect($valor)->pluck($colFinal)->implode(', ') . ']' }}
+                        <span class="badge bg-secondary">
+                            {{ collect($valor)->pluck($colFinal)->implode(', ') ?: '—' }}
+                        </span>
+                        @elseif(is_null($valor))
+                        <span class="text-muted">—</span>
                         @else
                         {{ $valor }}
                         @endif
