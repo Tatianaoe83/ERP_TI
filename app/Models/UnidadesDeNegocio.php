@@ -19,11 +19,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class UnidadesDeNegocio extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
 
     public $table = 'unidadesdenegocio';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -32,7 +32,7 @@ class UnidadesDeNegocio extends Model
 
 
     protected $primaryKey = 'UnidadNegocioID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     public $fillable = [
         'NombreEmpresa',

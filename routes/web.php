@@ -33,12 +33,12 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 
 
 //y creamos un grupo de rutas protegidas para los controladores
-Route::group(['middleware' => ['auth', 'usarConexion']], function() {
+Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::resource('roles', RolController::class);
     Route::resource('usuarios', UsuarioController::class);
     Route::resource('blogs', BlogController::class);
-    
-    
+
+
     Route::resource('unidadesDeNegocios', App\Http\Controllers\UnidadesDeNegocioController::class);
     Route::resource('gerencias', App\Http\Controllers\GerenciaController::class);
     Route::resource('obras', App\Http\Controllers\ObrasController::class);
@@ -75,21 +75,12 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function() {
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
     Route::get('/informe/data', [AuditController::class, 'getAudits'])->name('audits.data');
-    Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');    
+    Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');
     Route::get('/reportes', function () {
         return view('reportes.index');
     })->name('reportes.index');
-    
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
     ->name('update.database')
     ->withoutMiddleware(['auth']);
-
-
-
-
-
-
-
-

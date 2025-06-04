@@ -20,11 +20,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Obras extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
 
     public $table = 'obras';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -70,7 +70,7 @@ class Obras extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function unidadnegocioid()
+    public function Unidad()
     {
         return $this->belongsTo(\App\Models\UnidadesDeNegocio::class, 'UnidadNegocioID');
     }

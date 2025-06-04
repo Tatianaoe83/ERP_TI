@@ -88,15 +88,16 @@
                   
 
                     function updateEnvDatabase(value) {
-                        const token = document.querySelector('input[name="_token"]').value;
-                        
+                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
                         fetch('/update-database', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': token
                             },
-                            body: JSON.stringify({database: value})
+                            body: JSON.stringify({database: value}),
+                            credentials: 'same-origin',
                         })
                         .then(response => response.json())
                         .then(data => {

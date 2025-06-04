@@ -28,12 +28,12 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 class LineasTelefonicas extends Model implements Auditable
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
     use \OwenIt\Auditing\Auditable;
 
 
     public $table = 'lineastelefonicas';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -98,7 +98,7 @@ class LineasTelefonicas extends Model implements Auditable
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function obraid()
+    public function Obra()
     {
         return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
@@ -107,5 +107,4 @@ class LineasTelefonicas extends Model implements Auditable
     {
         return $this->belongsTo(\App\Models\Planes::class, 'PlanID');
     }
-
 }

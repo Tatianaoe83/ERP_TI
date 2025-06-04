@@ -24,12 +24,12 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 class Empleados extends Model implements Auditable
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
     use \OwenIt\Auditing\Auditable;
 
 
     public $table = 'empleados';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -38,7 +38,7 @@ class Empleados extends Model implements Auditable
 
 
     protected $primaryKey = 'EmpleadoID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     public $fillable = [
         'NombreEmpleado',
@@ -82,7 +82,7 @@ class Empleados extends Model implements Auditable
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function obraid()
+    public function obra()
     {
         return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
@@ -90,23 +90,59 @@ class Empleados extends Model implements Auditable
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function puestoid()
+    public function puesto()
     {
         return $this->belongsTo(\App\Models\Puestos::class, 'PuestoID');
     }
 
-    public function inventarioEquipos()
+    public function InventarioEquipos()
     {
         return $this->hasMany(InventarioEquipo::class, 'EmpleadoID', 'EmpleadoID');
     }
 
-    public function inventarioInsumos()
+    public function InventarioInsumos()
     {
         return $this->hasMany(InventarioInsumo::class, 'EmpleadoID', 'EmpleadoID');
     }
 
-    public function inventarioLineas()
+    public function InventarioLineas()
     {
         return $this->hasMany(InventarioLineas::class, 'EmpleadoID', 'EmpleadoID');
+    }
+
+    public function departamento()
+    {
+        return $this->hasOneThrough(
+            Departamentos::class,
+            Puestos::class,
+            'PuestoID',
+            'DepartamentoID',
+            'PuestoID',
+            'DepartamentoID',
+        );
+    }
+
+    public function gerencia()
+    {
+        return $this->hasOneThrough(
+            Gerencia::class,
+            Departamentos::class,
+            'DepartamentoID',
+            'GerenciaID',
+            'DepartamentoID',
+            'GerenciaID',
+        );
+    }
+
+    public function unidad()
+    {
+        return $this->hasOneThrough(
+            UnidadesDeNegocio::class,
+            Gerencia::class,
+            'GerenciaID',
+            'UnidadNegocioID',
+            'GerenciaID',
+            'UnidadNegocioID',
+        );
     }
 }

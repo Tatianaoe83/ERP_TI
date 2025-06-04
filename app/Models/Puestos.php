@@ -19,11 +19,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Puestos extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
 
     public $table = 'puestos';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -32,7 +32,7 @@ class Puestos extends Model
 
 
     protected $primaryKey = 'PuestoID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     public $fillable = [
         'NombrePuesto',
@@ -63,7 +63,7 @@ class Puestos extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function departamentoid()
+    public function Departamentos()
     {
         return $this->belongsTo(\App\Models\Departamentos::class, 'DepartamentoID');
     }
@@ -71,7 +71,7 @@ class Puestos extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      **/
-    public function obras()
+    public function Obras()
     {
         return $this->belongsToMany(\App\Models\Obra::class, 'Empleados');
     }

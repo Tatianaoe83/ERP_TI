@@ -14,7 +14,7 @@ class InventarioInsumo extends Model implements Auditable
 
 
     public $table = 'inventarioinsumo';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -23,7 +23,7 @@ class InventarioInsumo extends Model implements Auditable
 
 
     protected $primaryKey = 'InventarioID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     public $fillable = [
         'EmpleadoID',
@@ -39,7 +39,4 @@ class InventarioInsumo extends Model implements Auditable
         'Comentarios',
         'MesDePago'
     ];
-
-  
-
 }

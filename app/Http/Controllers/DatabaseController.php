@@ -7,12 +7,15 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\SistemaHelper;
 
+
+
 class DatabaseController extends Controller
 {
     public function updateDatabase(Request $request)
     {
         try {
             $database = $request->input('database');
+            \Log::debug('Database recibida:', ['database' => $database]);
 
 
             if (empty($database)) {
