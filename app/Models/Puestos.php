@@ -22,7 +22,7 @@ class Puestos extends Model
     use HasFactory, SoftDeletes;
 
 
-    public $table = 'puestos';
+    protected $table = 'puestos';
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
@@ -63,16 +63,21 @@ class Puestos extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function Departamentos()
+    public function departamentos()
     {
-        return $this->belongsTo(\App\Models\Departamentos::class, 'DepartamentoID');
+        return $this->belongsTo(\App\Models\Departamentos::class);
     }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      **/
-    public function Obras()
+    /* public function obras()
     {
-        return $this->belongsToMany(\App\Models\Obra::class, 'Empleados');
+        return $this->belongsToMany(\App\Models\Obra::class);
     }
+
+    public function empleados()
+    {
+        return $this->hasMany(Empleados::class);
+    } */
 }

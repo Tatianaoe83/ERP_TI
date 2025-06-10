@@ -142,13 +142,13 @@
         <button wire:click="generarReporte" type="button" class="btn btn-primary">Generar</button>
     </div>
 
-    {{-- Resultados --}}
-    @if(count($resultados) && count($columnasVistaPrevia))
+    <!-- {{-- Resultados --}}
+    @if(count($resultados))
     <div class="table-responsive mt-4">
         <table class="table table-sm table-bordered table-striped w-100 text-center align-middle" style="font-size: 0.875rem;">
             <thead class="table-light">
                 <tr>
-                    @foreach ($columnasVistaPrevia as $col)
+                    @foreach ($columnasSeleccionadas as $col)
                     <th class="small">{{ Str::afterLast($col, '.') }}</th>
                     @endforeach
                 </tr>
@@ -156,7 +156,7 @@
             <tbody>
                 @foreach ($resultados as $fila)
                 <tr>
-                    @foreach ($columnasVistaPrevia as $col)
+                    @foreach ($columnasSeleccionadas as $col)
                     @php
                     $valor = data_get($fila, $col);
                     $colFinal = Str::afterLast($col, '.');
@@ -178,5 +178,5 @@
             </tbody>
         </table>
     </div>
-    @endif
+    @endif -->
 </div>

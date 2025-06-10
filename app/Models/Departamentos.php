@@ -63,8 +63,8 @@ class Departamentos extends Model
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
 
-    public function Gerencia()
+    public function gerencia()
     {
-        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
+        return $this->belongsTo(\App\Models\Gerencia::class);
     }
 }

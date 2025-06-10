@@ -41,8 +41,8 @@ class InventarioEquipo extends Model implements Auditable
         'FechaDeCompra'
     ];
 
-    public function Gerencia()
+    public function empleados()
     {
-        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaEquipoID');
+        return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
     }
 }

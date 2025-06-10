@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 class ReporteService
 {
@@ -106,12 +107,10 @@ class ReporteService
 
     public static function obtenerTablas(): array
     {
-        $ignored = ['audits', 'cache', 'failed_jobs', 'jobs', 'migrations', 'permissions', 'roles'];
         $nameDB = \DB::getDatabaseName();
 
         return collect(\DB::select("SHOW TABLES"))
             ->map(fn($obj) => $obj->{"Tables_in_{$nameDB}"})
-            ->reject(fn($tabla) => in_array($tabla, $ignored))
             ->filter(fn($tabla) => self::modeloDesdeTabla($tabla))
             ->values()
             ->toArray();

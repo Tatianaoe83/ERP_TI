@@ -51,8 +51,8 @@ class InventarioLineas extends Model implements Auditable
         'FechaFianza' => 'date', // Laravel lo manejará como una fecha automáticamente
     ];
 
-    public function Gerencia()
+    public function empleados()
     {
-        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaEquipoID');
+        return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
     }
 }

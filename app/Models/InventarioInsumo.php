@@ -18,10 +18,6 @@ class InventarioInsumo extends Model implements Auditable
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
-
-
-
-
     protected $primaryKey = 'InventarioID';
     protected $keyType = 'int';
 
@@ -39,4 +35,9 @@ class InventarioInsumo extends Model implements Auditable
         'Comentarios',
         'MesDePago'
     ];
+
+    public function empleados()
+    {
+        return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
+    }
 }

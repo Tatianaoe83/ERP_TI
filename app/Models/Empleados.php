@@ -82,35 +82,35 @@ class Empleados extends Model implements Auditable
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function obra()
+    public function obras()
     {
-        return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
+        return $this->belongsTo(\App\Models\Obras::class);
     }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function puesto()
+    public function puestos()
     {
-        return $this->belongsTo(\App\Models\Puestos::class, 'PuestoID');
+        return $this->belongsTo(Puestos::class);
     }
 
-    public function InventarioEquipos()
+    public function inventarioequipos()
     {
-        return $this->hasMany(InventarioEquipo::class, 'EmpleadoID', 'EmpleadoID');
+        return $this->hasMany(InventarioEquipo::class);
     }
 
-    public function InventarioInsumos()
+    public function inventarioinsumos()
     {
-        return $this->hasMany(InventarioInsumo::class, 'EmpleadoID', 'EmpleadoID');
+        return $this->hasMany(InventarioInsumo::class);
     }
 
-    public function InventarioLineas()
+    public function inventariolineas()
     {
-        return $this->hasMany(InventarioLineas::class, 'EmpleadoID', 'EmpleadoID');
+        return $this->hasMany(InventarioLineas::class);
     }
 
-    public function departamento()
+    public function departamentos()
     {
         return $this->hasOneThrough(
             Departamentos::class,
@@ -134,7 +134,7 @@ class Empleados extends Model implements Auditable
         );
     }
 
-    public function unidad()
+    public function unidadesdenegocios()
     {
         return $this->hasOneThrough(
             UnidadesDeNegocio::class,

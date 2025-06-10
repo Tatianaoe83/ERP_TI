@@ -66,8 +66,8 @@ class Gerencia extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function Unidad()
+    public function unidad()
     {
-        return $this->belongsTo(\App\Models\UnidadesDeNegocio::class, 'UnidadNegocioID');
+        return $this->belongsTo(\App\Models\UnidadesDeNegocio::class);
     }
 }

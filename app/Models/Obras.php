@@ -70,7 +70,7 @@ class Obras extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function Unidad()
+    public function unidadesdenegocio()
     {
         return $this->belongsTo(\App\Models\UnidadesDeNegocio::class, 'UnidadNegocioID');
     }

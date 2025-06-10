@@ -6,6 +6,9 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\ReporteService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
 
 class Index extends Component
 {
@@ -45,55 +48,154 @@ class Index extends Component
         }
     }
 
-    public function updatedRelacionActual()
-    {
-        $this->columnasRelacionActual = ReporteService::obtenerColumnasRelacion($this->modeloClase, $this->relacionActual);
-    }
+    protected array $relacionesUniversales = [
+        'empleados' => [
+            'puestos' => ['puestos.PuestoID', '=', 'empleados.PuestoID'],
+        ],
+        'puestos' => [
+            'departamentos' => ['departamentos.DepartamentoID', '=', 'puestos.DepartamentoID'],
+        ],
+        'obras' => [
+            'empleados' => ['empleados.ObraID', '=', 'obras.ObraID']
+        ],
+        'departamentos' => [
+            'gerencia' => ['gerencia.GerenciaID', '=', 'departamentos.GerenciaID'],
+        ],
+        'gerencia' => [
+            'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID'],
+        ],
+        'categorias' => [
+            'tiposdecategorias' => ['tiposdecategorias.ID', '=', 'categorias.TipoID']
+        ],
+        'gerencias_usuarios' => [
+            'gerencia' => ['gerencia.GerenciaID', '=', 'gerencias_usuarios.GerenciaID']
+        ],
+        'insumos' => [
+            'categorias' => ['categorias.CategoriaID', '=', 'insumos.CategoriaID']
+        ],
+        'lineastelefonicas' => [
+            'planes' => ['planes.PlanID', '=', 'lineastelefonicas.PlanID']
+        ],
+        'planes' => [
+            'companiaslineastelefonicas' => ['companialineastelefonicas.ID', '=', 'planes.CompaniaID']
+        ],
+    ];
 
     public function generarReporte()
     {
         if (!$this->modeloClase) return;
 
         $query = $this->modeloClase::query();
+        $tablaBase = $query->getModel()->getTable();
 
-        $relaciones = collect($this->columnasSeleccionadas)
-            ->filter(fn($col) => str_contains($col, '.'))
-            ->map(fn($col) => explode('.', $col)[0])
-            ->unique()
-            ->values()
-            ->toArray();
+        $joinsHechos = [];
+        $columnas = [];
 
-        $columnasPrincipales = collect($this->columnasSeleccionadas)
-            ->filter(fn($col) => !str_contains($col, '.'))
-            ->values()
-            ->toArray();
+        foreach ($this->columnasSeleccionadas as $columna) {
+            if (strpos($columna, '.') !== false) {
+                $partes = explode('.', $columna);
+                $campoFinal = array_pop($partes);
+                $tablaDestino = end($partes);
 
-        $columnasPrincipales = ReporteService::agregarClavesForaneas($relaciones, $columnasPrincipales, $this->modeloClase);
 
-        if (!empty($columnasPrincipales)) {
-            $query->select($columnasPrincipales);
-        }
+                $camino = $this->resolverRutaJoins($tablaBase, $tablaDestino);
 
-        if (!empty($relaciones)) {
-            $query->with($relaciones);
-        }
+                foreach ($camino as [$tablaJoin, [$from, $op, $to]]) {
+                    if (!in_array($tablaJoin, $joinsHechos)) {
+                        $query->join($tablaJoin, $from, $op, $to);
+                        $joinsHechos[] = $tablaJoin;
+                    }
+                }
 
-        foreach ($this->filtros as $filtro) {
-            if (!empty($filtro['columna']) && isset($filtro['valor'])) {
-                $query->where($filtro['columna'], $filtro['operador'] ?? '=', $filtro['valor']);
+                $columnas[] = $tablaDestino . '.' . $campoFinal;
+            } else {
+                $columnas[] = $tablaBase . '.' . $columna;
             }
         }
 
-        if ($this->grupo) $query->groupBy($this->grupo);
+        $query->select($columnas);
+
+        foreach ($this->filtros as $filtro) {
+            if (!empty($filtro['columna']) && isset($filtro['valor'])) {
+                $valor = $filtro['valor'];
+                if ($filtro['operador'] === 'like') {
+                    $valor = '%' . $valor . '%';
+                }
+                $query->where($filtro['columna'], $filtro['operador'] ?? '=', $valor);
+            }
+        }
+
+        if ($this->grupo) {
+            $query->groupBy($this->grupo);
+        }
+
         if ($this->ordenColumna && in_array($this->ordenDireccion, ['asc', 'desc'])) {
             $query->orderBy($this->ordenColumna, $this->ordenDireccion);
         }
-        if ($this->limite) $query->limit($this->limite);
 
-        $this->resultados = $query->get();
-        $this->columnasVistaPrevia = $this->columnasSeleccionadas;
+        if ($this->limite) {
+            $query->limit($this->limite);
+        }
+
+        //dd(vsprintf(str_replace('?', "'%s'", $query->toSql()), $query->getBindings()));
+
+        $this->saveSql(
+            vsprintf(
+                str_replace('?', "'%s'", $query->toSql()),
+                $query->getBindings()
+            )
+        );
 
         $this->resetEstado();
+    }
+
+    public function saveSql($sql)
+    {
+        DB::table('query_forms')->insert([
+            'title' => $this->titulo,
+            'query_details' => json_encode($sql),
+        ]);
+    }
+
+    protected function resolverRutaJoins($desde, $hasta)
+    {
+        $camino = [];
+        $visitado = [];
+
+        $encontrado = $this->buscarRuta($desde, $hasta, $camino, $visitado);
+
+        if (!$encontrado) {
+            throw new \Exception("No se pudo encontrar una ruta entre '$desde' y '$hasta'");
+        }
+
+        return $camino;
+    }
+
+    protected function buscarRuta($actual, $destino, &$camino, &$visitado)
+    {
+        if ($actual === $destino) {
+            return true;
+        }
+
+        if (isset($visitado[$actual])) return false;
+
+        $visitado[$actual] = true;
+
+        if (!isset($this->relacionesUniversales[$actual])) return false;
+
+        foreach ($this->relacionesUniversales[$actual] as $siguiente => $join) {
+            $camino[] = [$siguiente, $join];
+            if ($siguiente === $destino || $this->buscarRuta($siguiente, $destino, $camino, $visitado)) {
+                return true;
+            }
+            array_pop($camino);
+        }
+        return false;
+    }
+
+    public function updatedRelacionActual()
+    {
+        $this->columnasRelacionActual = ReporteService::obtenerColumnasRelacion($this->modeloClase, $this->relacionActual);
     }
 
     private function resetEstado()
@@ -115,7 +217,11 @@ class Index extends Component
 
     public function agregarFiltro()
     {
-        $this->filtros[] = ['columna' => '', 'operador' => '=', 'valor' => ''];
+        $this->filtros[] = [
+            'columna' => '',
+            'operador' => '=',
+            'valor' => '',
+        ];
     }
 
     public function eliminarFiltro($index)

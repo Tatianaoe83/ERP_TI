@@ -74,4 +74,11 @@ class UnidadesDeNegocio extends Model
         'updated_at',
         'deleted_at'
     ];
+
+    public function gerencia()
+    {
+        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
+    }
+
+    
 }
