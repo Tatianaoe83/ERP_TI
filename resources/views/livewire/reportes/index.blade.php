@@ -74,7 +74,7 @@
     @endif
 
     {{-- Condiciones --}}
-    <div class="p-3 border rounded bg-light mb-3">
+    <div class="p-3 border rounded bg-light">
         <label class="fw-semibold mb-2">Condiciones</label>
         @foreach($filtros as $index => $filtro)
         <div class="row g-2 mb-2 align-items-end">
@@ -92,6 +92,8 @@
                     <option value="like">like</option>
                     <option value=">">&gt;</option>
                     <option value="<">&lt;</option>
+                    <option value="between">&lt;</option>
+                    <option value="!=">&lt;</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -102,7 +104,7 @@
             </div>
         </div>
         @endforeach
-        <button wire:click.prevent="agregarFiltro" class="btn btn-sm btn-secondary">Añadir condición</button>
+        <button wire:click.prevent="agregarFiltro" class="btn btn-sm btn-secondary btn-danger">Añadir condición</button>
     </div>
 
     {{-- Ordenamiento y límite --}}
@@ -141,42 +143,4 @@
     <div class="text-end">
         <button wire:click="generarReporte" type="button" class="btn btn-primary">Generar</button>
     </div>
-
-    <!-- {{-- Resultados --}}
-    @if(count($resultados))
-    <div class="table-responsive mt-4">
-        <table class="table table-sm table-bordered table-striped w-100 text-center align-middle" style="font-size: 0.875rem;">
-            <thead class="table-light">
-                <tr>
-                    @foreach ($columnasSeleccionadas as $col)
-                    <th class="small">{{ Str::afterLast($col, '.') }}</th>
-                    @endforeach
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($resultados as $fila)
-                <tr>
-                    @foreach ($columnasSeleccionadas as $col)
-                    @php
-                    $valor = data_get($fila, $col);
-                    $colFinal = Str::afterLast($col, '.');
-                    @endphp
-                    <td class="text-break" style="max-width: 200px;">
-                        @if(is_iterable($valor))
-                        <span class="badge bg-secondary">
-                            {{ collect($valor)->pluck($colFinal)->implode(', ') ?: '—' }}
-                        </span>
-                        @elseif(is_null($valor))
-                        <span class="text-muted">—</span>
-                        @else
-                        {{ $valor }}
-                        @endif
-                    </td>
-                    @endforeach
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif -->
 </div>

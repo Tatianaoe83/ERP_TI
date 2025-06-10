@@ -17,7 +17,6 @@ class Index extends Component
     public $columnas = [];
     public $columnasSeleccionadas = [];
     public $filtros = [];
-    public $resultados = [];
     public $grupo;
     public $ordenColumna;
     public $ordenDireccion = 'asc';
@@ -63,6 +62,9 @@ class Index extends Component
         ],
         'gerencia' => [
             'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID'],
+        ],
+        'unidadesdenegocio' => [
+            'gerencia' => ['gerencia.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID']
         ],
         'categorias' => [
             'tiposdecategorias' => ['tiposdecategorias.ID', '=', 'categorias.TipoID']
@@ -235,7 +237,6 @@ class Index extends Component
         return view('livewire.reportes.index', [
             'tablasDisponibles' => $this->tablasDisponibles,
             'columnas' => $this->columnas,
-            'resultados' => $this->resultados,
             'relaciones' => $this->relaciones,
             'columnasRelacionActual' => $this->columnasRelacionActual,
             'relacionActual' => $this->relacionActual

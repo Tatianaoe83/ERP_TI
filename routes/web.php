@@ -10,6 +10,9 @@ use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\ReporteController;
+use App\Http\Livewire\ReportesLista;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -76,9 +79,14 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
     Route::get('/informe/data', [AuditController::class, 'getAudits'])->name('audits.data');
     Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');
-    Route::get('/reportes', function () {
+
+    /* Route::get('/reportes', function () {
         return view('reportes.index');
-    })->name('reportes.index');
+    })->name('reportes.index'); */
+
+    Route::get('/lista', function () {
+        return view('reportes-lista');
+    })->name('reportes-lista');
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])

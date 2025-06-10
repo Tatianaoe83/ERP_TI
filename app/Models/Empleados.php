@@ -134,7 +134,7 @@ class Empleados extends Model implements Auditable
         );
     }
 
-    public function unidadesdenegocios()
+    public function unidadesdenegocio()
     {
         return $this->hasOneThrough(
             UnidadesDeNegocio::class,
