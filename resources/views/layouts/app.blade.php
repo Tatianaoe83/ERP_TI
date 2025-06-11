@@ -141,9 +141,8 @@
 
 
 <script type="text/javascript">
-    let loggedInUser = @json(\Illuminate\ Support\ Facades\ Auth::user());
-    let loginUrl = '{{ route('
-    login ') }}';
+    let loggedInUser = @json(\Illuminate\Support\Facades\Auth::user());
+    let loginUrl = '{{ route('login') }}';
     // Loading button plugin (removed from BS4)
     (function($) {
         $.fn.button = function(action) {
