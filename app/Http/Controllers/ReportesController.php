@@ -37,6 +37,16 @@ class ReportesController extends AppBaseController
      */
     public function index(ReportesDataTable $dataTable)
     {
+        if (request()->ajax()) {
+            $query = Reportes::select(['id', 'title', 'query_details']);
+
+            return DataTables::of($query)
+                ->addColumn('action', function ($row) {
+                    return view('reportes.datatables_actions', ['id' => $row->id])->render();
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
         return $dataTable->render('reportes.index');
     }
 

@@ -86,9 +86,9 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
         return view('reportes.index');
     })->name('reportes.index'); */
 
-    Route::get('/lista', function () {
+    /* Route::get('/lista', function () {
         return view('reportes.lista');
-    })->name('reportes.lista');
+    })->name('reportes.lista'); */
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
