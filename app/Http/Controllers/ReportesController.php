@@ -35,9 +35,9 @@ class ReportesController extends AppBaseController
      *
      * @return Response
      */
-    public function index(ReportesDataTable $reportesDataTable)
+    public function index(ReportesDataTable $dataTable)
     {
-        return $reportesDataTable->render('reportes.index');
+        return $dataTable->render('reportes.index');
     }
 
     /**

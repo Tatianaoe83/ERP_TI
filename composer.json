@@ -21,6 +21,7 @@
         "maatwebsite/excel": "^3.1",
         "nesbot/carbon": "^2.73",
         "owen-it/laravel-auditing": "^13.7",
+        "rappasoft/laravel-livewire-tables": "^2.15",
         "spatie/laravel-permission": "^4.3",
         "spatie/laravel-query-builder": "^4.0",
         "yajra/laravel-datatables": "^1.5",

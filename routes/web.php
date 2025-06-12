@@ -80,11 +80,11 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::get('/informe/data', [AuditController::class, 'getAudits'])->name('audits.data');
     Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');
 
-    Route::get('datatable/reportes', [\App\Http\Controllers\ReportesController::class, 'datatable'])->name('reportes.datatable');
+    Route::resource('reportes', \App\Http\Controllers\ReportesController::class);
 
-    Route::get('/reportes', function () {
+    /* Route::get('/reportes', function () {
         return view('reportes.index');
-    })->name('reportes.index');
+    })->name('reportes.index'); */
 
     Route::get('/lista', function () {
         return view('reportes.lista');

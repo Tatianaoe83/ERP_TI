@@ -7,11 +7,6 @@
     </div>
 
     <div class="section-body">
-        {!! $reportesDataTable->table(['class' => 'table table-bordered'], true) !!}
     </div>
 </section>
 @endsection
-
-@push('scripts')
-{!! $dataTable->scripts() !!}
-@endpush

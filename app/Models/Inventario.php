@@ -23,11 +23,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Inventario extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
 
     public $table = 'empleados';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
