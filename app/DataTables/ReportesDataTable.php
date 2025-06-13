@@ -50,13 +50,13 @@ class ReportesDataTable extends DataTable
                 'dom'       => 'Bfrtip',
                 'stateSave' => true,
                 'order'     => [[0, 'desc']],
-                'buttons'   => [
+                /* 'buttons'   => [
                     ['extend' => 'create', 'className' => 'btn btn-default btn-sm no-corner',],
                     ['extend' => 'export', 'className' => 'btn btn-default btn-sm no-corner',],
                     ['extend' => 'print', 'className' => 'btn btn-default btn-sm no-corner',],
                     ['extend' => 'reset', 'className' => 'btn btn-default btn-sm no-corner',],
                     ['extend' => 'reload', 'className' => 'btn btn-default btn-sm no-corner',],
-                ],
+                ], */
             ]);
     }
 
@@ -68,9 +68,9 @@ class ReportesDataTable extends DataTable
     protected function getColumns()
     {
         return [
-            'id',
-            'title',
-            'query_details',
+            ['data' => 'id', 'title' => 'ID', 'width' => '5%'],
+            ['data' => 'title', 'title' => 'Nombre del Reporte'],
+            /* 'query_details', */
         ];
     }
 

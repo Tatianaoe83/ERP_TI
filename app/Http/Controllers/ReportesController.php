@@ -11,7 +11,11 @@ use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Reportes;
 use Response;
+use Stringable;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
 
 class ReportesController extends AppBaseController
 {
@@ -22,10 +26,10 @@ class ReportesController extends AppBaseController
     {
         $this->reportesRepository = $reportesRepo;
 
-        $this->middleware('permission:ver-reportes|crear-reportes|editar-reportes|borrar-reportes')->only('index');
-        $this->middleware('permission:crear-reportes', ['only' => ['create', 'store']]);
-        $this->middleware('permission:editar-reportes', ['only' => ['edit', 'update']]);
-        $this->middleware('permission:borrar-reportes', ['only' => ['destroy']]);
+        $this->middleware('permission:ver-reportes')->only(['index', 'show']);
+        $this->middleware('permission:crear-reportes')->only(['create', 'store']);
+        $this->middleware('permission:editar-reportes')->only(['edit', 'update']);
+        $this->middleware('permission:borrar-reportes')->only(['destroy']);
     }
 
     /**
@@ -95,7 +99,21 @@ class ReportesController extends AppBaseController
             return redirect(route('reportes.index'));
         }
 
-        return view('reportes.show')->with('reportes', $reportes);
+        try {
+            $sql = trim($reportes->query_details);
+
+            if (Str::startsWith($sql, '"') && Str::endsWith($sql, '"')) {
+                $sql = substr($sql, 1, -1);
+            }
+
+            $resultado = DB::select($sql);
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('reportes.index')
+                ->with('error', 'Error al ejecutar el query: ' . $e->getMessage());
+        }
+
+        return view('reportes.show', compact('reportes', 'resultado'));
     }
 
     /**
@@ -155,14 +173,14 @@ class ReportesController extends AppBaseController
         $reportes = $this->reportesRepository->find($id);
 
         if (empty($reportes)) {
-            Flash::error('Reportes not found');
+            Flash::error('Reporte not found');
 
             return redirect(route('reportes.index'));
         }
 
         $this->reportesRepository->delete($id);
 
-        Flash::success('Reportes deleted successfully.');
+        Flash::success('Reporte deleted successfully.');
 
         return redirect(route('reportes.index'));
     }

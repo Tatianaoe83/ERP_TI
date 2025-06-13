@@ -376,7 +376,6 @@ class InventarioController extends AppBaseController
 
         return response()->json([
             'success' => true,
-            'message' => 'Insumo eliminado correctamente.',
             'insumo' => $inventaInsumo
         ]);
     }
