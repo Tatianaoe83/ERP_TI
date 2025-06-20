@@ -9,6 +9,31 @@
         <i class="fas fa-edit"></i>
     </a>
     @endcan
+    <div class="dropdown" style="position: relative;">
+        <button class="btn btn-outline-secondary btn-xs dropdown-toggle" type="button" id="dropdownExportar{{ $id }}" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-download me-1"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="dropdownExportar{{ $id }}" style="min-width: 180px; z-index: 1050;">
+            @can('exportar-reportes')
+            <li>
+                <form action="{{ route('reportes.exportPdf', $id) }}" method="POST" class="w-100">
+                    @csrf
+                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                        <i class="fas fa-file-pdf text-danger"></i> PDF
+                    </button>
+                </form>
+            </li>
+            <li>
+                <form action="{{ route('reportes.exportExcel', $id) }}" method="POST" class="w-100">
+                    @csrf
+                    <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                        <i class="fas fa-file-excel text-success"></i> Excel
+                    </button>
+                </form>
+            </li>
+            @endcan
+        </ul>
+    </div>
     @can('borrar-reportes')
     <form action="{{ route('reportes.destroy', $id) }}" method="POST" style="display:inline;">
         @csrf
@@ -18,7 +43,6 @@
         </button>
     </form>
     @endcan
-
 </div>
 
 <script type="text/javascript">

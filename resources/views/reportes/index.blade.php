@@ -1,24 +1,16 @@
+@extends('layouts.app')
 @section('content')
 
 <section class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <a href="{{ route('reportes.create') }}" class="btn btn-primary float-right">
-                    <i class="fas fa-plus"></i> Crear nuevo reporte
-                </a>
             </div>
         </div>
     </div>
 </section>
 
 <div class="content px-3">
-
-    @include('flash::message')
-
-    <!-- <a href="{{ route('reportes.create') }}" class="btn btn-primary float-right mb-2">
-        <i class="fas fa-plus"></i> Crear nuevo reporte
-    </a> -->
 
     <div class="clearfix"></div>
 
