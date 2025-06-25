@@ -9,12 +9,12 @@
     <h4 class="mb-4 mt-4">Reporte: <strong>{{ $reportes->title }}</strong></h4>
 
     <div class="table-responsive">
-        <table id="reporte-dinamico" class="table table-bordered table-striped table-sm w-100">
+        <table id="reporte-dinamico" class="table table-bordered table-striped table-hover table-sm mb-0">
             @if (count($resultado) > 0)
             <thead>
                 <tr>
                     @foreach (array_keys((array)$resultado[0]) as $col)
-                    <th>{{ ucfirst($col) }}</th>
+                    <th class="px-3 py-2">{{ ucfirst($col) }}</th>
                     @endforeach
                 </tr>
             </thead>
@@ -22,7 +22,7 @@
                 @foreach ($resultado as $fila)
                 <tr>
                     @foreach ((array)$fila as $valor)
-                    <td>{{ $valor }}</td>
+                    <td class="px-3 py-2 small">{{ $valor }}</td>
                     @endforeach
                 </tr>
                 @endforeach

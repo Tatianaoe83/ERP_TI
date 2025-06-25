@@ -6,7 +6,7 @@ use App\DataTables\ReportesDataTable;
 use App\Exports\ReporteExport;
 use App\Helpers\JoinHelper;
 use App\Helpers\ReporteHelper;
-use App\Http\Requests;
+use Illuminate\Http\Request;
 use App\Http\Requests\CreateReportesRequest;
 use App\Http\Requests\UpdateReportesRequest;
 use App\Repositories\ReportesRepository;
@@ -14,7 +14,6 @@ use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Reportes;
 use Barryvdh\DomPDF\Facade\Pdf;
-use GuzzleHttp\Psr7\Request;
 use Response;
 use Stringable;
 use Yajra\DataTables\Facades\DataTables;
@@ -32,7 +31,7 @@ class ReportesController extends AppBaseController
     {
         $this->reportesRepository = $reportesRepo;
 
-        $this->middleware('permission:ver-reportes')->only(['index', 'show']);
+        $this->middleware('permission:ver-reportes')->only(['index', 'show', 'preview']);
         $this->middleware('permission:crear-reportes')->only(['create', 'store']);
         $this->middleware('permission:editar-reportes')->only(['edit', 'update']);
         $this->middleware('permission:borrar-reportes')->only(['destroy']);
@@ -99,7 +98,7 @@ class ReportesController extends AppBaseController
         'empleados' => [
             'obras' => ['obras.ObraID', '=', 'empleados.ObraID'],
             'puestos' => ['puestos.PuestoID', '=', 'empleados.PuestoID'],
-            'inventarioinsumo' => ['inventarioinsumo.EmpleadoID', '=', 'inventarioinsumo.EmpleadoID'],
+            'inventarioinsumo' => ['inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID'],
             'inventarioequipo' => ['inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID'],
             'inventariolineas' => ['inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID']
         ],
@@ -162,64 +161,22 @@ class ReportesController extends AppBaseController
                 ->with('error', 'No se pudo interpretar la metadata del reporte.');
         }
 
-        $tabla = $metadata['tabla_principal'];
-        $relacionesBrutas = $metadata['tabla_relacion'] ?? [];
-        $relaciones = is_array($relacionesBrutas) ? $relacionesBrutas : [$relacionesBrutas];
-        $columnas = $metadata['columnas'] ?? ['*'];
-        $filtros = $metadata['filtros'] ?? [];
-        $grupo = $metadata['grupo'] ?? null;
-        $ordenCol = $metadata['ordenColumna'] ?? null;
-        $ordenDir = $metadata['ordenDireccion'] ?? 'asc';
-        $limite = $metadata['limite'] ?? null;
-
-        $query = DB::table($tabla);
-        $joinsHechos = [];
-
-        foreach ($relaciones as $relacion) {
-            $camino = JoinHelper::resolverRutaJoins($tabla, $relacion, $this->relacionesUniversales);
-            foreach ($camino as [$tablaJoin, [$from, $op, $to]]) {
-                if (!in_array($tablaJoin, $joinsHechos)) {
-                    $query->join($tablaJoin, $from, $op, $to);
-                    $joinsHechos[] = $tablaJoin;
-                }
-            }
-        }
-
-        if ($grupo) {
-            $columnas = array_map(function ($col) use ($grupo) {
-                return $col === $grupo ? $col : DB::raw("MAX($col) as `" . str_replace('.', '_', $col) . "`");
-            }, $columnas);
-        }
-
-        $query->select($columnas);
-
-        foreach ($filtros as $filtro) {
-            if (!empty($filtro['columna']) && isset($filtro['valor'])) {
-                $valor = $filtro['valor'];
-                if ($filtro['operador'] === 'like') {
-                    $valor = '%' . $valor . '%';
-                }
-                $query->where($filtro['columna'], $filtro['operador'] ?? '=', $valor);
-            }
-        }
-
-        if ($grupo) {
-            $query->groupBy($grupo);
-        }
-
-        if ($ordenCol) {
-            $query->orderBy($ordenCol, $ordenDir);
-        }
-
-        if ($limite) {
-            $query->limit($limite);
-        }
+        $metadata['limite'] = 10;
 
         try {
-            $resultado = $query->get();
+            $resultado = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
         } catch (\Exception $e) {
             return redirect()->route('reportes.index')
                 ->with('error', 'Error al ejecutar la consulta: ' . $e->getMessage());
+        }
+
+        if ($resultado->isEmpty()) {
+            return redirect()->route('reportes.index')
+                ->with('error', 'No se encontraron resultados para el reporte.');
+        }
+
+        if (request()->ajax()) {
+            return view('reportes.preview', compact('resultado'));
         }
 
         return view('reportes.show', compact('reportes', 'resultado'));
@@ -246,7 +203,6 @@ class ReportesController extends AppBaseController
 
         $tablaPrincipal = $metadata['tabla_principal'] ?? null;
         $tablaRelacionInput  = $metadata['tabla_relacion'] ?? null;
-        $grupo = $metadata['grupo'] ?? null;
         $ordenCol = $metadata['ordenColumna'] ?? null;
         $ordenDir = $metadata['ordenDireccion'] ?? null;
         $limite = $metadata['limite'] ?? null;
@@ -255,12 +211,18 @@ class ReportesController extends AppBaseController
 
         $condiciones = $metadata['filtros'] ?? [];
 
-        $columnasPrincipales = $tablaPrincipal ? Schema::getColumnListing($tablaPrincipal) : [];
+        $columnasPrincipales = $tablaPrincipal ? Collect(Schema::getColumnListing($tablaPrincipal))
+            ->reject(fn($col) => Str::endsWith($col, ['ID', 'Id', '_id', '_at', 'created_at', 'updated_at', 'deleted_at']))
+            ->map(fn($col) => $col)
+            ->toArray() : [];
         $columnasRelacion    = [];
 
         foreach ($tablaRelacion as $tablaRel) {
             if (Schema::hasTable($tablaRel)) {
-                $columnasRelacion[$tablaRel] = Schema::getColumnListing($tablaRel);
+                $columnasRelacion[$tablaRel] = Collect(Schema::getColumnListing($tablaRel))
+                    ->reject(fn($col) => Str::endsWith($col, ['ID', 'Id', '_id', '_at', 'created_at', 'updated_at', 'deleted_at']))
+                    ->map(fn($col) => $col)
+                    ->toArray();
             }
         }
 
@@ -271,7 +233,6 @@ class ReportesController extends AppBaseController
             'tablaRelacion',
             'columnasPrincipales',
             'columnasRelacion',
-            'grupo',
             'ordenCol',
             'ordenDir',
             'limite',
@@ -301,7 +262,6 @@ class ReportesController extends AppBaseController
         $filtros = $request->input('filtros', []);
         $orderCol = $request->input('ordenColumna');
         $orderDir = $request->input('ordenDireccion');
-        $group = $request->input('grupo');
         $limite = $request->input('limite');
 
         $metadataOriginal = json_decode($reportes->query_metadata, true);
@@ -312,7 +272,6 @@ class ReportesController extends AppBaseController
                 'columnas' => $columnas,
                 'ordenColumna' => $orderCol,
                 'ordenDireccion' => $orderDir,
-                'grupo' => $group,
                 'limite' => $limite,
                 'filtros' => $filtros
             ]
@@ -372,40 +331,19 @@ class ReportesController extends AppBaseController
                 ->with('error', 'Error al ejecutar la consulta' . $e->getMessage());
         }
 
-        $columns = collect($resultado->first() ?? [])->map(function ($_, $key) {
+        $columns = collect($resultado)->first() ? collect($resultado->first())->keys()->map(function ($key) {
             return ['title' => $key, 'field' => $key];
-        })->values();
+        })->values() : [];
+
+        if ($resultado->isEmpty()) {
+            return redirect()->route('reportes.index')
+                ->with('error', 'No se encontraron resultados para el reporte.');
+        }
 
         $nombre_reporte = $reportes->title;
 
         $pdf = Pdf::loadView('reportes.exportPdf', compact('reportes', 'resultado', 'columns', 'nombre_reporte'));
         return $pdf->download(Str::slug($reportes->title) . '.pdf');
-    }
-
-    public function preview(Request $request)
-    {
-        $metadata = $request->all();
-
-        if (empty($metadata['tabla_principal']) || empty($metadata['columnas'])) {
-            return back()->with('error', 'Informacion insuficiente para previsualizar');
-        }
-
-        try {
-            $resultado = ReporteHelper::ejecutarConsulta(
-                $metadata['tabla_principal'],
-                $metadata['tabla_relacion'] ?? [],
-                $metadata['columnas'] ?? ['*'],
-                $metadata['filtros'] ?? [],
-                $metadata['grupo'] ?? null,
-                $metadata['ordenColumna'] ?? null,
-                $metadata['ordenDireccion'] ?? 'asc',
-                $metadata['limite'] ?? null
-            );
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error al generar el preview' . $e->getMessage());
-        }
-
-        return view('reportes.index', compact('resultado', 'metadata'));
     }
 
     public function exportExcel($id)
@@ -417,8 +355,58 @@ class ReportesController extends AppBaseController
         }
 
         $metadata = json_decode($reportes->query_metadata, true);
-        $datos = \App\Helpers\ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
+
+        try {
+            $datos = \App\Helpers\ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
+        } catch (\Exception $e) {
+            return redirect()->route('reportes.index')
+                ->with('error', 'Error al ejecutar la consulta' . $e->getMessage());
+        }
+
+        if ($datos->isEmpty()) {
+            return redirect()->route('reportes.index')
+                ->with('error', 'No se encontraron resultados para el reporte.');
+        }
 
         return Excel::download(new ReporteExport($datos), Str::slug($reportes->title) . '.xlsx');
+    }
+
+    public function preview(Request $request)
+    {
+        try {
+            $metadata = $request->all();
+
+            if (empty($metadata['tabla_principal']) || empty($metadata['columnas'])) {
+                return response()->json(['error' => 'Faltan datos esenciales.'], 422);
+            }
+
+            if (!is_array($metadata['tabla_relacion'])) {
+                $metadata['tabla_relacion'] = json_decode($metadata['tabla_relacion'], true) ?? [];
+            }
+
+            $metadata['limite'] = 10;
+
+            $resultado = ReporteHelper::ejecutarConsulta(
+                $metadata,
+                $this->relacionesUniversales
+            );
+
+            $html = view('reportes.preview', compact('resultado'))->render();
+
+            return response()->json(['html' => $html]);
+        } catch (\Throwable $e) {
+            Log::error('Error fatal en preview', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return response()->json([
+                'error' => 'Error en preview',
+                'mensaje' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile(),
+            ], 500);
+        }
     }
 }

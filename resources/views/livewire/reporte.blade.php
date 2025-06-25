@@ -1,8 +1,20 @@
 <div class="container py-4" style="max-width: 1200px;">
+
+    @include('flash::message')
+
+    @if ($errors->any())
+    <div class="alert alert-danger border border-danger-subtle shadow-sm rounded small d-flex align-items-start gap-2 mb-4">
+        <i class="fas fa-exclamation-triangle mt-1 text-danger"></i>
+        <div>
+            <strong>Completa todos los campos requeridos.</strong>
+        </div>
+    </div>
+    @endif
+
     {{-- Título del reporte --}}
     <div class="p-3 border rounded bg-light mb-3 shadow-sm">
         <label class="fw-bold d-block mb-2">Título del Reporte</label>
-        <input wire:model="titulo" type="text" class="form-control form-control-sm shadow-sm border-primary-subtle" placeholder="Ingresa el título del reporte">
+        <input wire:model="titulo" type="text" required class="form-control form-control-sm shadow-sm border-primary-subtle" placeholder="Ingresa el título del reporte">
     </div>
 
     {{-- Tabla principal y relaciones --}}
@@ -83,7 +95,7 @@
     @endif
 
     {{-- Condiciones --}}
-    <div class="p-3 border rounded bg-light shadow-sm">
+    <div class="p-3 border rounded bg-light shadow-sm mb-4">
         <label class="fw-semibold mb-2">Filtros</label>
         @foreach($filtros as $index => $filtro)
         <div class="row g-2 mb-2 align-items-end">
@@ -95,6 +107,7 @@
                     @endforeach
                 </select>
             </div>
+
             <div class="col-md-2">
                 <select wire:model="filtros.{{$index}}.operador" class="form-select form-select-sm">
                     <option value="=">igual</option>
@@ -105,57 +118,82 @@
                     <option value="!=">es diferente</option>
                 </select>
             </div>
-            <div class="col-md-4">
-                <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control form-control-sm">
+
+            <div class="col-md-5">
+                @if($filtro['operador'] === 'between')
+                <div class="d-flex align-items-center gap-2">
+                    <input type="text" wire:model="filtros.{{ $index }}.valor.inicio" class="form-control form-control-sm" placeholder="desde">
+                    <span class="fw-semibold small">y</span>
+                    <input type="text" wire:model="filtros.{{ $index }}.valor.fin" class="form-control form-control-sm" placeholder="hasta">
+                    <span
+                        class="d-inline-block"
+                        tabindex="0"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Introduce un rango desde - hasta.">
+                        <i class="fas fa-info-circle text-primary"></i>
+                    </span>
+                </div>
+                @else
+                <div class="d-flex align-items-center gap-2">
+                    <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control form-control-sm" placeholder="valor">
+                    <span
+                        class="d-inline-block"
+                        tabindex="0"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Introduce un valor para filtrar.">
+                        <i class="fas fa-info-circle text-primary"></i>
+                    </span>
+                </div>
+                @endif
             </div>
-            <div class="col-md-2 text-end">
-                <button wire:click.prevent="eliminarFiltro({{ $index }})" class="btn btn-sm btn-outline-danger">Eliminar</button>
+
+            <div class="col-md-1 text-end">
+                <button wire:click.prevent="eliminarFiltro({{ $index }})" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
         </div>
         @endforeach
         <button wire:click.prevent="agregarFiltro" class="btn btn-sm btn-danger">Añadir filtro</button>
     </div>
 
-    {{-- Ordenamiento y límite --}}
-    <div class="row g-3 mb-3 mt-3">
-        <div class="col-md-4">
-            <label class="fw-semibold">Ordenar por</label>
-            <select wire:model="ordenColumna" class="form-select form-select-sm">
-                <option value="">--</option>
-                @foreach($columnasSeleccionadas as $columna)
-                <option value="{{ $columna }}">{{ Str::afterLast($columna, '.') }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-2">
-            <label class="fw-semibold">Dirección</label>
-            <select wire:model="ordenDireccion" class="form-select form-select-sm">
-                <option value="asc">Asc</option>
-                <option value="desc">Desc</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="fw-semibold">Agrupar por</label>
-            <select wire:model="grupo" class="form-select form-select-sm">
-                <option value="">--</option>
-                @foreach($columnasSeleccionadas as $columna)
-                <option value="{{ $columna }}">{{ Str::afterLast($columna, '.') }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="fw-semibold">Límite</label>
-            <input type="number" wire:model="limite" class="form-control form-control-sm">
+    <div class="p-3 border rounded bg-white shadow-sm">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="fw-semibold small">Ordenar por</label>
+                <select wire:model="ordenColumna" class="form-select form-select-sm">
+                    <option value="">--</option>
+                    @foreach($columnasSeleccionadas as $columna)
+                    <option value="{{ $columna }}">{{ Str::afterLast($columna, '.') }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="fw-semibold small">Dirección</label>
+                <select wire:model="ordenDireccion" class="form-select form-select-sm">
+                    <option value="asc">Asc</option>
+                    <option value="desc">Desc</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="fw-semibold small">Límite</label>
+                <input type="number" wire:model="limite" class="form-control form-control-sm" placeholder="Ej: 100">
+            </div>
         </div>
     </div>
 
     {{-- Botón generar y preview --}}
-    <div class="mt-4 d-flex justify-content-between">
-        <button type="button" class="btn btn-outline-info btn-sm" wire:click="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
+    <div class="text-end mt-4">
+        <a href="{{ route('reportes.index') }}" class="btn btn-outline-danger btn-xs">Cancelar</a>
+        <button type="button" class="btn btn-outline-info btn-xs" wire:click="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
             Previsualizar
         </button>
-        <button wire:click="generarReporte" type="button" class="btn btn-success btn-sm px-4 shadow-sm">
-            <i class="fas fa-cogs me-1"></i> Generar Reporte
+        <button wire:click="generarReporte" type="button" class="btn btn-success btn-xs px-4 shadow-sm">
+            Generar Reporte
         </button>
     </div>
 
@@ -169,19 +207,19 @@
                 <div class="modal-body">
                     @if(!empty($resultado) && count($resultado) > 0)
                     <div class="table-responsive">
-                        <table id="tabla-preview" class="table table-bordered table-sm w-100">
+                        <table id="tabla-preview" class="table table-bordered table-striped table-hover table-sm mb-0">
                             <thead>
                                 <tr>
                                     @foreach(array_keys((array)$resultado[0]) as $col)
-                                    <th>{{ ucfirst(str_replace('_', ' ', $col)) }}</th>
+                                    <th class="px-3 py-2">{{ ucfirst(str_replace('_', ' ', $col)) }}</th>
                                     @endforeach
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($resultado as $fila)
+                                @foreach(collect($resultado)->take(10) as $fila)
                                 <tr>
                                     @foreach((array)$fila as $valor)
-                                    <td>{{ $valor }}</td>
+                                    <td class="px-3 py-2 small">{{ $valor }}</td>
                                     @endforeach
                                 </tr>
                                 @endforeach

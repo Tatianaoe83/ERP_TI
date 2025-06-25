@@ -19,7 +19,6 @@ class Reporte extends Component
     public $columnas = [];
     public $columnasSeleccionadas = [];
     public $filtros = [];
-    public $grupo;
     public $ordenColumna;
     public $ordenDireccion = 'asc';
     public $limite;
@@ -38,10 +37,9 @@ class Reporte extends Component
             'tabla_relacion'    => $this->relacionesSeleccionadas,
             'columnas'          => $this->columnasSeleccionadas,
             'filtros'           => $this->filtros,
-            'grupo'             => $this->grupo,
             'ordenColumna'      => $this->ordenColumna,
             'ordenDireccion'    => $this->ordenDireccion,
-            'limite'            => $this->limite,
+            'limite'            => 10,
         ];
 
         try {
@@ -81,7 +79,7 @@ class Reporte extends Component
         'empleados' => [
             'obras' => ['obras.ObraID', '=', 'empleados.ObraID'],
             'puestos' => ['puestos.PuestoID', '=', 'empleados.PuestoID'],
-            'inventarioinsumo' => ['inventarioinsumo.InsumoID', '=', 'inventarioinsumo.InsumoID'],
+            'inventarioinsumo' => ['inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID'],
             'inventarioequipo' => ['inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID'],
             'inventariolineas' => ['inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID']
         ],
@@ -129,6 +127,12 @@ class Reporte extends Component
             return;
         }
 
+        $this->validate([
+            'titulo' => 'required|string|max:255',
+            'modelo' => 'required',
+            'columnasSeleccionadas' => 'required|array|min:1',
+        ]);
+
         $query = $this->modeloClase::query();
         $tablaBase = $query->getModel()->getTable();
 
@@ -165,17 +169,30 @@ class Reporte extends Component
         $query->select($columnas);
 
         foreach ($this->filtros as $filtro) {
-            if (!empty($filtro['columna']) && isset($filtro['valor'])) {
-                $valor = $filtro['valor'];
-                if ($filtro['operador'] === 'like') {
+            if (empty($filtro['columna']) || !isset($filtro['valor'])) {
+                continue;
+            }
+
+            $columna = $filtro['columna'];
+            $operador = $filtro['operador'] ?? '=';
+            $valor = $filtro['valor'];
+
+            if ($operador === 'between') {
+                if (is_array($valor)) {
+                    $inicio = $valor['inicio'] ?? null;
+                    $fin = $valor['fin'] ?? null;
+
+                    if (!is_null($inicio) && !is_null($fin)) {
+                        $query->whereBetween($columna, [$inicio, $fin]);
+                    }
+                }
+            } elseif (!is_array($valor)) {
+                if ($operador === 'like') {
                     $valor = '%' . $valor . '%';
                 }
-                $query->where($filtro['columna'], $filtro['operador'] ?? '=', $valor);
-            }
-        }
 
-        if ($this->grupo) {
-            $query->groupBy($this->grupo);
+                $query->where($columna, $operador, $valor);
+            }
         }
 
         if ($this->ordenColumna && in_array($this->ordenDireccion, ['asc', 'desc'])) {
@@ -200,12 +217,24 @@ class Reporte extends Component
                 'tabla_relacion' => $this->relacionesSeleccionadas,
                 'columnas' => $columnasPrefijo,
                 'filtros' => $this->filtros,
-                'grupo' => $this->grupo,
                 'ordenColumna' => $this->ordenColumna,
                 'ordenDireccion' => $this->ordenDireccion,
                 'limite' => $this->limite
             ])
         ], JSON_PRETTY_PRINT);
+    }
+
+    public function updatedFiltros($value, $key)
+    {
+        if (Str::endsWith($key, '.operador')) {
+            $index = explode('.', $key)[0];
+
+            if ($this->filtros[$index]['operador'] === 'between') {
+                $this->filtros[$index]['valor'] = ['inicio' => '', 'fin' => ''];
+            } else {
+                $this->filtros[$index]['valor'] = '';
+            }
+        }
     }
 
     public function updatedRelacionActual($relacion)
@@ -231,7 +260,6 @@ class Reporte extends Component
         $this->columnas = [];
         $this->columnasSeleccionadas = [];
         $this->filtros = [];
-        $this->grupo = null;
         $this->ordenColumna = null;
         $this->ordenDireccion = 'asc';
         $this->limite = null;

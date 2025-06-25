@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use App\Helpers\JoinHelper;
+use Illuminate\Support\Facades\Log;
 
 class ReporteHelper
 {
@@ -13,7 +14,6 @@ class ReporteHelper
         $relaciones = is_array($metadata['tabla_relacion'] ?? []) ? $metadata['tabla_relacion'] : [$metadata['tabla_relacion']];
         $columnas = $metadata['columnas'] ?? ['*'];
         $filtros = $metadata['filtros'] ?? [];
-        $grupo = $metadata['grupo'] ?? null;
         $ordenCol = $metadata['ordenColumna'] ?? null;
         $ordenDir = $metadata['ordenDireccion'] ?? 'asc';
         $limite = $metadata['limite'] ?? null;
@@ -31,27 +31,44 @@ class ReporteHelper
             }
         }
 
-        if ($grupo) {
-            $columnas = array_map(function ($col) use ($grupo) {
-                return $col === $grupo ? $col : DB::raw("MAX($col) as `" . str_replace('.', '_', $col) . "`");
-            }, $columnas);
-        }
-
         $query->select($columnas);
 
         foreach ($filtros as $filtro) {
-            if (!empty($filtro['columna']) && isset($filtro['valor'])) {
-                $valor = $filtro['valor'];
-                if ($filtro['operador'] === 'like') {
-                    $valor = "%$valor%";
+            if (empty($filtro['columna']) || !isset($filtro['valor'])) {
+                continue;
+            }
+
+            $columna = $filtro['columna'];
+            $operador = $filtro['operador'] ?? '=';
+            $valor = $filtro['valor'];
+
+            if ($operador === 'between') {
+                if (is_array($valor)) {
+                    $inicio = $valor['inicio'] ?? null;
+                    $fin = $valor['fin'] ?? null;
+
+                    if (!is_null($inicio) && !is_null($fin)) {
+                        $query->whereBetween($columna, [$inicio, $fin]);
+                    }
                 }
-                $query->where($filtro['columna'], $filtro['operador'] ?? '=', $valor);
+            } else {
+                if ($operador === 'like') {
+                    $valor = "%{$valor}%";
+                }
+                $query->where($columna, $operador, $valor);
             }
         }
 
-        if ($grupo) $query->groupBy($grupo);
-        if ($ordenCol) $query->orderBy($ordenCol, $ordenDir);
-        if ($limite) $query->limit($limite);
+        if ($ordenCol) {
+            $query->orderBy($ordenCol, $ordenDir);
+        }
+
+        if ($limite) {
+            $query->limit($limite);
+        }
+
+        Log::debug('Query generada:', [$query->toSql(), $query->getBindings()]);
+        //dd($query->toSql());
 
         return $query->get();
     }

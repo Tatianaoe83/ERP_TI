@@ -29,7 +29,10 @@ class ReporteService
 
     public static function listarColumnas(string $tabla): array
     {
-        return Schema::getColumnListing($tabla);
+        return collect(Schema::getColumnListing($tabla))
+            ->reject(fn($col) => Str::endsWith($col, ['ID', 'Id', '_id', '_at', 'created_at', 'updated_at', 'deleted_at']))
+            ->values()
+            ->toArray();
     }
 
     public static function relacionesTablas(string $modeloClase): array
@@ -90,20 +93,24 @@ class ReporteService
     {
         try {
             $instancia = new $modeloClase;
+
             foreach (explode('.', $relacion) as $rel) {
                 $relacionObj = $instancia->$rel();
                 $instancia = $relacionObj->getRelated();
             }
+
             $tabla = $instancia->getTable();
             $columnas = Schema::getColumnListing($tabla);
 
             return collect($columnas)
-                ->map(fn($col) => strtolower($relacion) . '.' . $col)
+                ->reject(fn($col) => Str::endsWith($col, ['ID', 'Id', '_id', '_at', 'created_at', 'updated_at', 'deleted_at']))
+                ->map(fn($col) => $tabla . '.' . $col)
                 ->toArray();
         } catch (\Throwable $e) {
             return [];
         }
     }
+
 
     public static function obtenerTablas(): array
     {
