@@ -357,7 +357,7 @@ class ReportesController extends AppBaseController
         $metadata = json_decode($reportes->query_metadata, true);
 
         try {
-            $datos = \App\Helpers\ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
+            $datos = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
         } catch (\Exception $e) {
             return redirect()->route('reportes.index')
                 ->with('error', 'Error al ejecutar la consulta' . $e->getMessage());
@@ -368,7 +368,9 @@ class ReportesController extends AppBaseController
                 ->with('error', 'No se encontraron resultados para el reporte.');
         }
 
-        return Excel::download(new ReporteExport($datos), Str::slug($reportes->title) . '.xlsx');
+        $columnas = array_keys((array) $datos->first());
+
+        return Excel::download(new ReporteExport($datos, $columnas), Str::slug($reportes->title) . '.xlsx');
     }
 
     public function preview(Request $request)

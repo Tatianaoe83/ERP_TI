@@ -33,6 +33,13 @@ class ReporteHelper
 
         $query->select($columnas);
 
+        // Diccionario de meses
+        $meses = [
+            'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4, 'Mayo' => 5,
+            'Junio' => 6, 'Julio' => 7, 'Agosto' => 8, 'Septiembre' => 9,
+            'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12
+        ];
+
         foreach ($filtros as $filtro) {
             if (empty($filtro['columna']) || !isset($filtro['valor'])) {
                 continue;
@@ -48,7 +55,25 @@ class ReporteHelper
                     $fin = $valor['fin'] ?? null;
 
                     if (!is_null($inicio) && !is_null($fin)) {
-                        $query->whereBetween($columna, [$inicio, $fin]);
+                        if ($columna === 'inventarioinsumo.MesDePago') {
+                            $inicioNum = $meses[$inicio] ?? null;
+                            $finNum = $meses[$fin] ?? null;
+
+                            if ($inicioNum && $finNum) {
+                                $query->whereBetween(
+                                    DB::raw("FIELD(`MesDePago`, " . implode(',', array_map(fn($m) => "'$m'", array_keys($meses))) . ")"),
+                                    [$inicioNum, $finNum]
+                                );
+                            }
+                        }
+                        elseif (
+                            (strtotime($inicio) && strtotime($fin)) ||
+                            (is_numeric($inicio) && is_numeric($fin))
+                        ) {
+                            $query->whereBetween($columna, [$inicio, $fin]);
+                        } else {
+                            Log::warning("Filtro 'between' inválido: se ignoró", compact('columna', 'valor'));
+                        }
                     }
                 }
             } else {
@@ -68,7 +93,6 @@ class ReporteHelper
         }
 
         Log::debug('Query generada:', [$query->toSql(), $query->getBindings()]);
-        //dd($query->toSql());
 
         return $query->get();
     }

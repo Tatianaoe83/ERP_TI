@@ -93,49 +93,45 @@
         <div id="filtros-wrapper">
             @foreach ($condiciones as $i => $filtro)
             <div class="row align-items-end mb-3 filtro-item">
-                <div class="col-md-1">
-                    <label class="form-label small">Columna</label>
-                    <select name="filtros[{{ $i }}][columna]" class="form-select form-select-sm">
-                        <option value="">-- Selecciona --</option>
-                        @foreach ($columnasSeleccionadas as $col)
-                        <option value="{{ $col }}" {{ $filtro['columna'] == $col ? 'selected' : '' }}>{{ $col }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                <div class="col-md-4">
+    <select name="filtros[{{ $i }}][columna]" class="form-select form-select-sm">
+        <option value="">-- Selecciona --</option>
+        @foreach ($columnasSeleccionadas as $col)
+        <option value="{{ $col }}" {{ $filtro['columna'] == $col ? 'selected' : '' }}>{{ $col }}</option>
+        @endforeach
+    </select>
+</div>
 
-                <div class="col-md-3">
-                    <label class="form-label small">Operador</label>
-                    <select name="filtros[{{ $i }}][operador]" class="form-select form-select-sm">
-                        <option value="=" {{ $filtro['operador'] == '=' ? 'selected' : '' }}>=</option>
-                        <option value="like" {{ $filtro['operador'] == 'like' ? 'selected' : '' }}>like</option>
-                        <option value=">" {{ $filtro['operador'] == '>' ? 'selected' : '' }}>&gt;</option>
-                        <option value="<" {{ $filtro['operador'] == '<' ? 'selected' : '' }}>&lt;</option>
-                        <option value="between" {{ $filtro['operador'] == 'between' ? 'selected' : '' }}>between</option>
-                    </select>
-                </div>
+               <div class="col-md-3">
+    <select name="filtros[{{ $i }}][operador]" class="form-select form-select-sm" onchange="mostrarFiltrosRange({{ $i }})">
+        <option value="=" {{ $filtro['operador'] == '=' ? 'selected' : '' }}>igual</option>
+        <option value="like" {{ $filtro['operador'] == 'like' ? 'selected' : '' }}>si contiene</option>
+        <option value=">" {{ $filtro['operador'] == '>' ? 'selected' : '' }}>mayor que</option>
+        <option value="<" {{ $filtro['operador'] == '<' ? 'selected' : '' }}>menor que</option>
+        <option value="between" {{ $filtro['operador'] == 'between' ? 'selected' : '' }}>entre</option>
+    </select>
+</div>
 
-                @if(is_array($filtro['valor']))
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-6 col-md-5">
-                            <input type="text" name="filtros[{{ $i }}][valor][inicio]" class="form-control form-control-sm"
-                                placeholder="Desde" value="{{ $filtro['valor']['inicio'] ?? '' }}">
-                        </div>
-                        <div class="col-6 col-md-2 text-center d-flex justify-content-center align-items-center">
-                            <span class="text-muted">a</span>
-                        </div>
-                        <div class="col-6 col-md-5">
-                            <input type="text" name="filtros[{{ $i }}][valor][fin]" class="form-control form-control-sm"
-                                placeholder="Hasta" value="{{ $filtro['valor']['fin'] ?? '' }}">
-                        </div>
-                    </div>
-                </div>
-                @else
-                <div class="col-md-6">
-                    <input type="text" name="filtros[{{ $i }}][valor]" class="form-control form-control-sm"
-                        value="{{ $filtro['valor'] ?? '' }}">
-                </div>
-                @endif
+                <div class="col-md-4" id="valor_filtro_{{ $i }}">
+    @if(is_array($filtro['valor']))
+    <div class="row">
+        <div class="col-6 col-md-5">
+            <input type="text" name="filtros[{{ $i }}][valor][inicio]" class="form-control form-control-sm"
+                placeholder="Desde" value="{{ $filtro['valor']['inicio'] ?? '' }}">
+        </div>
+        <div class="col-6 col-md-2 text-center d-flex justify-content-center align-items-center">
+            <span class="text-muted">a</span>
+        </div>
+        <div class="col-6 col-md-5">
+            <input type="text" name="filtros[{{ $i }}][valor][fin]" class="form-control form-control-sm"
+                placeholder="Hasta" value="{{ $filtro['valor']['fin'] ?? '' }}">
+        </div>
+    </div>
+    @else
+    <input type="text" name="filtros[{{ $i }}][valor]" class="form-control form-control-sm"
+        placeholder="Valor" value="{{ $filtro['valor'] ?? '' }}">
+    @endif
+</div>
 
                 <div class="col-md-1">
                     <button type="button" class="btn btn-sm btn-danger eliminar-filtro">
@@ -217,10 +213,10 @@
                 const inicio = item.querySelector('[name*="[valor][inicio]"]')?.value?.trim();
                 const fin = item.querySelector('[name*="[valor][fin]"]')?.value?.trim();
                 if (inicio && fin) {
-                    valor = {inicio,fin};
+                    valor = { inicio, fin };
                 }
             } else {
-                const valorInput = item.querySelector('[name*="[valor]"]:not([name*="[valor]"])');
+                const valorInput = item.querySelector('input[name$="[valor]"]');
                 valor = valorInput?.value?.trim();
             }
 
