@@ -173,7 +173,7 @@
                                 </button>
 
                             </td>
-                            <td>{{ $equipo->categoriaid->Categoria }}</td>
+                            <td>{{ $equipo->categorias->Categoria }}</td>
                             <td>{{ $equipo->Marca }}</td>
                             <td>{{ $equipo->Modelo }}</td>
                             <td>{{ $equipo->Caracteristicas }}</td>
@@ -420,11 +420,11 @@
 
                     
                            <td>{{ $Linea->NumTelefonico}}</td>
-                            <td>{{ $Linea->planid->NombrePlan}}</td>
+                            <td>{{ $Linea->planes->NombrePlan}}</td>
                             <td>{{ $Linea->CuentaPadre}}</td>
                             <td>{{ $Linea->CuentaHija}}</td>
                             <td>{{ $Linea->TipoLinea}}</td>
-                            <td>{{ $Linea->obraid->NombreObra}}</td>
+                            <td>{{ $Linea->obraid->NombreObra ?? 'Sin obra'}}</td>
                             <td>{{ $Linea->FechaFianza}}</td>
                             <td>{{ $Linea->CostoFianza}}</td>
                             <td>

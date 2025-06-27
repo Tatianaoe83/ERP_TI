@@ -17,11 +17,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Departamentos extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
 
     public $table = 'departamentos';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -30,7 +30,7 @@ class Departamentos extends Model
 
 
     protected $primaryKey = 'DepartamentoID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     public $fillable = [
         'NombreDepartamento',
@@ -63,11 +63,8 @@ class Departamentos extends Model
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
 
-    public function gerenciaid()
+    public function gerencia()
     {
         return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
     }
-
-
-    
 }

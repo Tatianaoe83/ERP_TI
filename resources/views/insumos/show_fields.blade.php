@@ -33,4 +33,3 @@
     {!! Form::label('Observaciones', 'Observaciones:') !!}
     <p>{{ $insumos->Observaciones }}</p>
 </div>
-

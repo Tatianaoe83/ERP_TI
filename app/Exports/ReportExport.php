@@ -51,23 +51,23 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     public function view(): View
     {
 
-            $numerogerencia = (int) $this->gerencia;
+        $numerogerencia = (int) $this->gerencia;
 
-            $GerenciaTb = Empleados::query()
-                ->select(
-                    "gerencia.NombreGerencia",
-                    "gerencia.NombreGerente",
-                    DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
-                )
-                ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
-                ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
-                ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
-                ->where('gerencia.GerenciaID', '=', $numerogerencia)
-                ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
-                ->get();
+        $GerenciaTb = Empleados::query()
+            ->select(
+                "gerencia.NombreGerencia",
+                "gerencia.NombreGerente",
+                DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
+            )
+            ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
+            ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
+            ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
+            ->where('gerencia.GerenciaID', '=', $numerogerencia)
+            ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
+            ->get();
 
 
-                $datosheader = $this->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)',[$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)',[$numerogerencia]);
+        $datosheader = $this->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)', [$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)', [$numerogerencia]);
 
         $total = 0;
 
@@ -84,7 +84,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             'TotalCosto' => $total
         ];
 
-        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
+        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)', [$numerogerencia]);
         $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)', [$numerogerencia]);
         $presup_acces =  $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)', [$numerogerencia]);
         $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)', [$numerogerencia]);
@@ -145,8 +145,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         $tablahardware = [];
         $columnashardware = [];
-        $totaleshardware = []; 
-        $granTotalhardware = 0; 
+        $totaleshardware = [];
+        $granTotalhardware = 0;
 
         foreach ($presup_hardware as $row) {
             $empleadoID = $row->EmpleadoID;
@@ -166,14 +166,14 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             $tablahardware[$empleadoID][$insumo] = $costo;
             $tablahardware[$empleadoID]['TotalPorEmpleado'] += $costo;
 
-        
+
             $columnashardware[$insumo] = true;
 
             if (!isset($totaleshardware[$insumo])) {
                 $totaleshardware[$insumo] = 0;
             }
             $totaleshardware[$insumo] += $costo;
-            
+
             $granTotalhardware += $costo;
         }
 
@@ -332,9 +332,9 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $drawing->setName('Logo');
         $drawing->setDescription('Logo de la empresa');
         $drawing->setPath($imagePath);
-        
+
         $drawing->setCoordinates('d1');
-        $drawing->setWidth(80); 
+        $drawing->setWidth(80);
         $drawing->setHeight(80);
         $drawing->setWorksheet($sheet);
 
@@ -402,8 +402,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             ]
         ]);
 
-          // TABLA INVERSIONES
-          $sheet->getStyle("A{$titulohardware}:M{$titulohardware}")->applyFromArray([
+        // TABLA INVERSIONES
+        $sheet->getStyle("A{$titulohardware}:M{$titulohardware}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,

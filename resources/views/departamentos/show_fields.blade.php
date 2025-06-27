@@ -7,6 +7,6 @@
 <!-- Gerenciaid Field -->
 <div class="col-sm-12">
     {!! Form::label('GerenciaID', 'Gerencia:') !!}
-    <p>{{ $departamentos->gerenciaid->NombreGerencia }}</p>
+    <p>{{ $departamentos->gerencia->NombreGerencia }}</p>
 </div>
 

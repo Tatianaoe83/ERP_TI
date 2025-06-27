@@ -7,13 +7,13 @@
 <!-- Puestoid Field -->
 <div class="col-sm-12">
     {!! Form::label('PuestoID', 'Puesto:') !!}
-    <p>{{ $empleados->puestoid->NombrePuesto }}</p>
+    <p>{{ $empleados->puestos->NombrePuesto }}</p>
 </div>
 
 <!-- Obraid Field -->
 <div class="col-sm-12">
     {!! Form::label('ObraID', 'Obra:') !!}
-    <p>{{ $empleados->obraid->NombreObra }}</p>
+    <p>{{ $empleados->obras->NombreObra }}</p>
 </div>
 
 <!-- Numtelefono Field -->

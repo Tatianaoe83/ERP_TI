@@ -7,7 +7,7 @@
 <!-- Planid Field -->
 <div class="col-sm-12">
     {!! Form::label('PlanID', 'Plan:') !!}
-    <p>{{ $lineasTelefonicas->planid->NombrePlan }}</p>
+    <p>{{ $lineasTelefonicas->planes->NombrePlan }}</p>
 </div>
 
 <!-- Cuentapadre Field -->

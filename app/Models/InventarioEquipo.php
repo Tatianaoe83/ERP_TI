@@ -15,7 +15,7 @@ class InventarioEquipo extends Model implements Auditable
 
 
     public $table = 'inventarioequipo';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -23,10 +23,10 @@ class InventarioEquipo extends Model implements Auditable
 
 
     protected $primaryKey = 'InventarioID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     public $fillable = [
-       'EmpleadoID',
+        'EmpleadoID',
         'CategoriaEquipo',
         'GerenciaEquipoID',
         'Marca',
@@ -41,9 +41,18 @@ class InventarioEquipo extends Model implements Auditable
         'FechaDeCompra'
     ];
 
-    public function gerenciaid()
+    public function empleados()
     {
-        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaEquipoID');
+        return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
     }
 
+    public function gerencia()
+    {
+        return $this->belongsTo(Gerencia::class, 'GerenciaID');
+    }
+
+   /*  public function gerenciaid()
+    {
+        return $this->belongsTo(Gerencia::class, 'GerenciaID');
+    } */
 }

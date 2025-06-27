@@ -21,14 +21,11 @@ class InventarioDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
 
         return $dataTable
-        ->addColumn('action', function($row){
-            return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('EmpleadoID');
-
-
-       
+            ->addColumn('action', function ($row) {
+                return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('EmpleadoID');
     }
 
     /**
@@ -51,9 +48,6 @@ class InventarioDataTable extends DataTable
                 'empleados.Correo',
                 'empleados.Estado'
             ]);
-
-        
-
     }
 
     /**
@@ -64,35 +58,35 @@ class InventarioDataTable extends DataTable
     public function html()
     {
         return $this->builder()
-        ->setTableId('inventarios-table')
-        ->columns($this->getColumns())
-        ->minifiedAjax()
-        ->dom('Bfrtip')
-        ->orderBy(1, 'asc')
-        ->buttons([
-            
-           
-            [
-                'className' => 'btn btn-default',
-                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                'action' => 'function() { 
+            ->setTableId('inventarios-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->dom('Bfrtip')
+            ->orderBy(1, 'asc')
+            ->buttons([
+
+
+                [
+                    'className' => 'btn btn-default',
+                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                    'action' => 'function() { 
                     window.LaravelDataTables["inventarios-table"].ajax.reload();
                 }'
-            ],
-        ])
-        ->parameters([
-            'processing' => true,
-            'serverSide' => true,
-            'responsive' => true,
-            'pageLength' => 10,
-            'searching' => true,
-            'language' => [
-                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            ],
-            'drawCallback' => 'function() {
+                ],
+            ])
+            ->parameters([
+                'processing' => true,
+                'serverSide' => true,
+                'responsive' => true,
+                'pageLength' => 10,
+                'searching' => true,
+                'language' => [
+                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                ],
+                'drawCallback' => 'function() {
                 $("[data-toggle=tooltip]").tooltip();
             }',
-            'initComplete' => "function() {
+                'initComplete' => "function() {
                 this.api().columns().every(function () {
                     var column = this;
                     var input = document.createElement(\"input\");
@@ -102,7 +96,7 @@ class InventarioDataTable extends DataTable
                     });
                 });
             }",
-        ]);
+            ]);
     }
 
     /**
@@ -117,43 +111,43 @@ class InventarioDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'EmpleadoID',
                 'name' => 'EmpleadoID',
-            ],  
+            ],
             'NombreEmpleado' => [
                 'title' => 'Nombre Empleado',
                 'data' => 'NombreEmpleado',
                 'name' => 'NombreEmpleado',
-            ],  
+            ],
             'PuestoID' => [
                 'title' => 'Puesto',
                 'data' => 'nombre_puesto',
                 'name' => 'puestos.NombrePuesto',
-            ],  
+            ],
             'ObraID' => [
                 'title' => 'Obra',
                 'data' => 'nombre_obra',
                 'name' => 'obras.NombreObra',
-            ],  
+            ],
             'NumTelefono' => [
                 'title' => 'Num Telefono',
                 'data' => 'NumTelefono',
                 'name' => 'NumTelefono',
-            ],  
+            ],
             'Correo' => [
                 'title' => 'Correo',
                 'data' => 'Correo',
                 'name' => 'Correo',
-            ],  
+            ],
             'Estado' => [
                 'title' => 'Estado',
                 'data' => 'Estado',
                 'name' => 'Estado',
-            ],  
+            ],
 
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center')
         ];
     }
 

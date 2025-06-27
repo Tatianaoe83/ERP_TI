@@ -14,16 +14,12 @@ class InventarioInsumo extends Model implements Auditable
 
 
     public $table = 'inventarioinsumo';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
-
-
-
-
     protected $primaryKey = 'InventarioID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     public $fillable = [
         'EmpleadoID',
@@ -40,6 +36,13 @@ class InventarioInsumo extends Model implements Auditable
         'MesDePago'
     ];
 
-  
+    public function empleados()
+    {
+        return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
+    }
 
+    /* public function inventarioinsumo()
+    {
+        return $this->belongsTo(Insumos::class, 'InsumoID');
+    } */
 }

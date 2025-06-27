@@ -10,6 +10,9 @@ use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\ReportesController;
+use App\Http\Livewire\ReportesLista;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -33,12 +36,12 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 
 
 //y creamos un grupo de rutas protegidas para los controladores
-Route::group(['middleware' => ['auth', 'usarConexion']], function() {
+Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::resource('roles', RolController::class);
     Route::resource('usuarios', UsuarioController::class);
     Route::resource('blogs', BlogController::class);
-    
-    
+
+
     Route::resource('unidadesDeNegocios', App\Http\Controllers\UnidadesDeNegocioController::class);
     Route::resource('gerencias', App\Http\Controllers\GerenciaController::class);
     Route::resource('obras', App\Http\Controllers\ObrasController::class);
@@ -75,21 +78,14 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function() {
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
     Route::get('/informe/data', [AuditController::class, 'getAudits'])->name('audits.data');
-    Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');    
-    Route::get('/reportes', function () {
-        return view('reportes.index');
-    })->name('reportes.index');
-    
+    Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');
+
+    Route::resource('reportes', \App\Http\Controllers\ReportesController::class);
+    Route::post('reportes/{id}/export-pdf', [ReportesController::class, 'exportPdf'])->name('reportes.exportPdf');
+    Route::post('reportes/{id}/export-excel', [ReportesController::class, 'exportExcel'])->name('reportes.exportExcel');
+    Route::post('/reportes/preview', [ReportesController::class, 'preview'])->name('reportes.preview');
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
     ->name('update.database')
     ->withoutMiddleware(['auth']);
-
-
-
-
-
-
-
-
