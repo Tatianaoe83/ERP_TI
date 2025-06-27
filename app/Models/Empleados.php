@@ -84,7 +84,7 @@ class Empleados extends Model implements Auditable
      **/
     public function obras()
     {
-        return $this->belongsTo(\App\Models\Obras::class);
+        return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
 
     /**
@@ -92,20 +92,7 @@ class Empleados extends Model implements Auditable
      **/
     public function puestos()
     {
-        return $this->belongsTo(Puestos::class);
-    }
-
-    public function obraid()
-    {
-        return $this->belongsTo(\App\Models\Obras::class);
-    }
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     **/
-    public function puestoid()
-    {
-        return $this->belongsTo(Puestos::class);
+        return $this->belongsTo(Puestos::class, 'PuestoID');
     }
 
     public function inventarioequipo()

@@ -111,13 +111,15 @@ class ReporteService
         }
     }
 
-
     public static function obtenerTablas(): array
     {
         $nameDB = \DB::getDatabaseName();
 
+        $ignorar = ['audits', 'blog', 'gerencias_usuarios', 'query_forms', 'users','tiposdecategorias'];
+
         return collect(\DB::select("SHOW TABLES"))
             ->map(fn($obj) => $obj->{"Tables_in_{$nameDB}"})
+            ->reject(fn($tabla) => in_array($tabla, $ignorar))
             ->filter(fn($tabla) => self::modeloDesdeTabla($tabla))
             ->values()
             ->toArray();

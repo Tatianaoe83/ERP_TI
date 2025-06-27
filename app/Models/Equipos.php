@@ -75,7 +75,7 @@ class Equipos extends Model implements Auditable
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function categoriaid()
+    public function categorias()
     {
         return $this->belongsTo(\App\Models\Categorias::class, 'CategoriaID');
     }

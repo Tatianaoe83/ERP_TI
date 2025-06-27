@@ -7,7 +7,7 @@
 <!-- Unidadnegocioid Field -->
 <div class="col-sm-12">
     {!! Form::label('UnidadNegocioID', 'Unidad negocio:') !!}
-    <p>{{ $gerencia->unidadnegocioid->NombreEmpresa }}</p>
+    <p>{{ $gerencia->unidadesdenegocio->NombreEmpresa}}</p>
 </div>
 
 <!-- Nombregerente Field -->
@@ -15,4 +15,3 @@
     {!! Form::label('NombreGerente', 'Nombre gerente:') !!}
     <p>{{ $gerencia->NombreGerente }}</p>
 </div>
-

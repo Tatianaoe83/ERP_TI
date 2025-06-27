@@ -63,11 +63,8 @@ class Planes extends Model implements Auditable
         'PrecioPlan' => 'required|numeric'
     ];
 
-    public function companiaslineastelefonicasid()
+    public function companiaslineastelefonicas()
     {
         return $this->belongsTo(\App\Models\CompaniasLineasTelefonicas::class, 'CompaniaID');
-    }
-
-
-    
+    }  
 }

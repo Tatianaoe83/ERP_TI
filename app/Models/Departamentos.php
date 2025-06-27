@@ -65,11 +65,6 @@ class Departamentos extends Model
 
     public function gerencia()
     {
-        return $this->belongsTo(\App\Models\Gerencia::class);
-    }
-
-    public function gerenciaid()
-    {
-        return $this->belongsTo(\App\Models\Gerencia::class);
+        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
     }
 }

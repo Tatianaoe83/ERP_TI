@@ -68,11 +68,6 @@ class Gerencia extends Model
      **/
     public function unidadesdenegocio()
     {
-        return $this->belongsTo(\App\Models\UnidadesDeNegocio::class);
-    }
-
-    public function unidadnegocioid()
-    {
-        return $this->belongsTo(\App\Models\UnidadesDeNegocio::class);
+        return $this->belongsTo(\App\Models\UnidadesDeNegocio::class, 'UnidadNegocioID');
     }
 }

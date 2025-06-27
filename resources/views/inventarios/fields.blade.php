@@ -173,7 +173,7 @@
                                 </button>
 
                             </td>
-                            <td>{{ $equipo->categoriaid->Categoria }}</td>
+                            <td>{{ $equipo->categorias->Categoria }}</td>
                             <td>{{ $equipo->Marca }}</td>
                             <td>{{ $equipo->Modelo }}</td>
                             <td>{{ $equipo->Caracteristicas }}</td>
@@ -285,7 +285,7 @@
 
                             </td>
 
-                            <td>{{ $insumo->categoriaid->Categoria }}</td>
+                            <td>{{ $insumo->categorias->Categoria }}</td>
                             <td>{{ $insumo->NombreInsumo }}</td>
                             <td>{{ $insumo->CostoMensual }}</td>
                             <td>{{ $insumo->CostoAnual }}</td>
@@ -420,7 +420,7 @@
 
                     
                            <td>{{ $Linea->NumTelefonico}}</td>
-                            <td>{{ $Linea->planid->NombrePlan}}</td>
+                            <td>{{ $Linea->planes->NombrePlan}}</td>
                             <td>{{ $Linea->CuentaPadre}}</td>
                             <td>{{ $Linea->CuentaHija}}</td>
                             <td>{{ $Linea->TipoLinea}}</td>

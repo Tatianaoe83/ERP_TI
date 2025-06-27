@@ -103,7 +103,7 @@ class LineasTelefonicas extends Model implements Auditable
         return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
 
-    public function planid()
+    public function planes()
     {
         return $this->belongsTo(\App\Models\Planes::class, 'PlanID');
     }

@@ -74,7 +74,7 @@ class Reporte extends Component
             'tiposdecategorias' => ['tiposdecategorias.ID', '=', 'categorias.TipoID'],
         ],
         'departamentos' => [
-            'gerencia' => ['gerencia.GerenciaID', '=', 'departamentos.GerencialID'],
+            'gerencia' => ['gerencia.GerenciaID', '=', 'departamentos.GerenciaID'],
         ],
         'empleados' => [
             'obras' => ['obras.ObraID', '=', 'empleados.ObraID'],
@@ -84,7 +84,7 @@ class Reporte extends Component
             'inventariolineas' => ['inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID']
         ],
         'equipos' => [
-            'categorias' => ['categorias.CategoriaID', '=', 'equipos.CategoriaID'],
+            'categorias' => ['categorias.ID', '=', 'equipos.ID'],
         ],
         'gerencia' => [
             'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID'],
@@ -110,6 +110,7 @@ class Reporte extends Component
         ],
         'lineastelefonicas' => [
             'obras' => ['obras.ObraID', '=', 'lineastelefonicas.ObraID'],
+            'planes' => ['planes.ID', '=', 'lineastelefonicas.PlanID']
         ],
         'obras' => [
             'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID'],
@@ -117,6 +118,9 @@ class Reporte extends Component
         'puestos' => [
             'departamentos' => ['departamentos.DepartamentoID', '=', 'puestos.DepartamentoID'],
         ],
+        'planes' => [
+            'companiaslineastelefonicas' => ['companiaslineastelefonicas.ID', '=', 'planes.CompaniaID'],
+        ]
     ];
 
     public function generarReporte()

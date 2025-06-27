@@ -1,7 +1,7 @@
 <!-- Categoriaid Field -->
 <div class="col-sm-12">
     {!! Form::label('CategoriaID', 'Categoria:') !!}
-    <p>{{ $equipos->categoriaid->Categoria }}</p>
+    <p>{{ $equipos->categorias->Categoria }}</p>
 </div>
 
 <!-- Marca Field -->

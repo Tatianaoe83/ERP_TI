@@ -7,7 +7,7 @@
 <!-- Categoriaid Field -->
 <div class="col-sm-12">
     {!! Form::label('CategoriaID', 'Categoria:') !!}
-    <p>{{ $insumos->categoriaid->Categoria }}</p>
+    <p>{{ $insumos->categorias->Categoria }}</p>
 </div>
 
 <!-- Costomensual Field -->

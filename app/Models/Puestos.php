@@ -65,7 +65,7 @@ class Puestos extends Model
      **/
     public function departamentos()
     {
-        return $this->belongsTo(\App\Models\Departamentos::class);
+        return $this->belongsTo(\App\Models\Departamentos::class, 'DepartamentoID');
     }
 
     /**
@@ -74,15 +74,10 @@ class Puestos extends Model
     public function obras()
     {
         return $this->belongsToMany(\App\Models\Obra::class);
-    }   
+    }
 
     public function empleados()
     {
         return $this->hasMany(Empleados::class);
-    }
-
-    public function departamentoid()
-    {
-        return $this->belongsTo(\App\Models\Departamentos::class);
     }
 }
