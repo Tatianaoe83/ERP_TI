@@ -285,7 +285,7 @@
 
                             </td>
 
-                            <td>{{ $insumo->categorias->Categoria }}</td>
+                            <td>{{ $insumo->categoriaid->Categoria }}</td>
                             <td>{{ $insumo->NombreInsumo }}</td>
                             <td>{{ $insumo->CostoMensual }}</td>
                             <td>{{ $insumo->CostoAnual }}</td>

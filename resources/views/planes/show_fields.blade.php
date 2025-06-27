@@ -1,7 +1,7 @@
 <!-- Companiaid Field -->
 <div class="col-sm-12">
     {!! Form::label('CompaniaID', 'Compania:') !!}
-    <p>{{ $planes->lineastelefonicas->Compania }}</p>
+    <p>{{ $planes->companiaslineastelefonicas->Compania }}</p>
 </div>
 
 <!-- Nombreplan Field -->
