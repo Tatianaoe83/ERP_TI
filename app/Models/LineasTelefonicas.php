@@ -98,7 +98,7 @@ class LineasTelefonicas extends Model implements Auditable
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function Obra()
+    public function obraid()
     {
         return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }

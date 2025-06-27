@@ -424,7 +424,7 @@
                             <td>{{ $Linea->CuentaPadre}}</td>
                             <td>{{ $Linea->CuentaHija}}</td>
                             <td>{{ $Linea->TipoLinea}}</td>
-                            <td>{{ $Linea->obraid->NombreObra}}</td>
+                            <td>{{ $Linea->obraid->NombreObra ?? 'Sin obra'}}</td>
                             <td>{{ $Linea->FechaFianza}}</td>
                             <td>{{ $Linea->CostoFianza}}</td>
                             <td>

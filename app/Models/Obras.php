@@ -74,4 +74,9 @@ class Obras extends Model
     {
         return $this->belongsTo(\App\Models\UnidadesDeNegocio::class, 'UnidadNegocioID');
     }
+
+    public function unidadnegocioid()
+    {
+        return $this->belongsTo(\App\Models\UnidadesDeNegocio::class, 'UnidadNegocioID');
+    }
 }

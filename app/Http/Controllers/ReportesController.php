@@ -161,8 +161,6 @@ class ReportesController extends AppBaseController
                 ->with('error', 'No se pudo interpretar la metadata del reporte.');
         }
 
-        $metadata['limite'] = 10;
-
         try {
             $resultado = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
         } catch (\Exception $e) {
@@ -397,12 +395,6 @@ class ReportesController extends AppBaseController
 
             return response()->json(['html' => $html]);
         } catch (\Throwable $e) {
-            Log::error('Error fatal en preview', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-
             return response()->json([
                 'error' => 'Error en preview',
                 'mensaje' => $e->getMessage(),

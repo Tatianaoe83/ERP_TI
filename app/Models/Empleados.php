@@ -95,6 +95,19 @@ class Empleados extends Model implements Auditable
         return $this->belongsTo(Puestos::class);
     }
 
+    public function obraid()
+    {
+        return $this->belongsTo(\App\Models\Obras::class);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+    public function puestoid()
+    {
+        return $this->belongsTo(Puestos::class);
+    }
+
     public function inventarioequipo()
     {
         return $this->hasMany(InventarioEquipo::class);

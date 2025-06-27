@@ -79,6 +79,4 @@ class UnidadesDeNegocio extends Model
     {
         return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
     }
-
-    
 }

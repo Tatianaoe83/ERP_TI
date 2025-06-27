@@ -71,13 +71,18 @@ class Puestos extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      **/
-    /* public function obras()
+    public function obras()
     {
         return $this->belongsToMany(\App\Models\Obra::class);
-    }
+    }   
 
     public function empleados()
     {
         return $this->hasMany(Empleados::class);
-    } */
+    }
+
+    public function departamentoid()
+    {
+        return $this->belongsTo(\App\Models\Departamentos::class);
+    }
 }

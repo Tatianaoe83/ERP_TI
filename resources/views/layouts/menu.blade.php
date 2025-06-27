@@ -138,7 +138,7 @@
                 </li>
                 @endif
 
-                @if(auth()->user()->can('ver-reporte') or auth()->user()->can('crear-reporte') or auth()->user()->can('editar-reporte') or auth()->user()->can('borrar-reporte') or auth()->user()->can('exportar-reporte'))
+                @if(auth()->user()->can('ver-reportes') or auth()->user()->can('crear-reportes') or auth()->user()->can('editar-reportes') or auth()->user()->can('borrar-reportes') or auth()->user()->can('exportar-reporte'))
                 <li>
                     <a class="nav-link" href="/reportes">
                         <i class="fas fa-circle-notch"></i><span>Reporteador</span>

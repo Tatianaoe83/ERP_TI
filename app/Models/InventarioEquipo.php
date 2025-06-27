@@ -45,4 +45,14 @@ class InventarioEquipo extends Model implements Auditable
     {
         return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
     }
+
+    public function gerencia()
+    {
+        return $this->belongsTo(Gerencia::class, 'GerenciaID');
+    }
+
+    public function gerenciaid()
+    {
+        return $this->belongsTo(Gerencia::class, 'GerenciaID');
+    }
 }

@@ -40,4 +40,9 @@ class InventarioInsumo extends Model implements Auditable
     {
         return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
     }
+
+    public function inventarioinsumo()
+    {
+        return $this->belongsTo(Insumos::class, 'InsumoID');
+    }
 }
