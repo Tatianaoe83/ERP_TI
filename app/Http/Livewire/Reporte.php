@@ -207,7 +207,7 @@ class Reporte extends Component
             $query->limit($this->limite);
         }
 
-        dd($query->toSql());
+       
 
         $this->saveSql($query->getBindings(), $columnas);
 

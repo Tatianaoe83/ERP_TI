@@ -71,19 +71,19 @@ class InventarioController extends AppBaseController
 
         if ($request->filled('filtro_inventario')) {
             $unidades->where(function ($q) use ($request) {
-                $q->whereHas('inventarioEquipos', function ($sub) use ($request) {
+                $q->whereHas('inventarioequipo', function ($sub) use ($request) {
                     $sub->where('CategoriaEquipo', 'like', "%{$request->filtro_inventario}%")
                         ->orWhere('Marca', 'like', "%{$request->filtro_inventario}%")
                         ->orWhere('Modelo', 'like', "%{$request->filtro_inventario}%")
                         ->orWhere('NumSerie', 'like', "%{$request->filtro_inventario}%")
                         ->orWhere('Folio', 'like', "%{$request->filtro_inventario}%");
                 })
-                    ->orWhereHas('inventarioInsumos', function ($sub) use ($request) {
+                    ->orWhereHas('inventarioinsumo', function ($sub) use ($request) {
                         $sub->where('CateogoriaInsumo', 'like', "%{$request->filtro_inventario}%")
                             ->orWhere('NombreInsumo', 'like', "%{$request->filtro_inventario}%")
                             ->orWhere('NumSerie', 'like', "%{$request->filtro_inventario}%");
                     })
-                    ->orWhereHas('inventarioLineas', function ($sub) use ($request) {
+                    ->orWhereHas('inventariolineas', function ($sub) use ($request) {
                         $sub->where('Compania', 'like', "%{$request->filtro_inventario}%")
                             ->orWhere('NumTelefonico', 'like', "%{$request->filtro_inventario}%")
                             ->orWhere('Compania', 'like', "%{$request->filtro_inventario}%")

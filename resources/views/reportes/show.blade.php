@@ -5,40 +5,28 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-4">
-    <h4 class="mb-4 mt-4">Reporte: <strong>{{ $reportes->title }}</strong></h4>
-
-    <div class="table-responsive">
-        <table id="reporte-dinamico" class="table table-bordered table-striped table-hover table-sm mb-0">
-            @if (count($resultado) > 0)
-            <thead>
-                <tr>
-                    @foreach (array_keys((array)$resultado[0]) as $col)
-                    <th class="px-3 py-2">{{ ucfirst($col) }}</th>
-                    @endforeach
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($resultado as $fila)
-                <tr>
-                    @foreach ((array)$fila as $valor)
-                    <td class="px-3 py-2 small">{{ $valor }}</td>
-                    @endforeach
-                </tr>
-                @endforeach
-            </tbody>
-            @else
-            <tr>
-                <td colspan="100%" class="text-center text-muted">No se encontraron datos para este reporte.</td>
-            </tr>
-            @endif
-        </table>
+<section class="section">
+    <div class="section-header">
+        <h3 class="page__heading">Detalles del Reporte: {{ $reportes->title }}</h3>
     </div>
-</div>
+    <div class="section-body">
+        <div class="content px-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        @include('reportes.show_fields')
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ route('reportes.index') }}" class="btn btn-danger">Cancelar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 @endsection
 
 @push('third_party_scripts')
-
 <!-- Bootstrap Bundle (solo si no está en tu layout) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 

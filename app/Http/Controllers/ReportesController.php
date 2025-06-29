@@ -93,7 +93,7 @@ class ReportesController extends AppBaseController
             'tiposdecategorias' => ['tiposdecategorias.ID', '=', 'categorias.TipoID'],
         ],
         'departamentos' => [
-            'gerencia' => ['gerencia.GerenciaID', '=', 'departamentos.GerencialID'],
+            'gerencia' => ['gerencia.GerenciaID', '=', 'departamentos.GerenciaID'],
         ],
         'empleados' => [
             'obras' => ['obras.ObraID', '=', 'empleados.ObraID'],
@@ -109,7 +109,7 @@ class ReportesController extends AppBaseController
             'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID'],
         ],
         'gerencias_usuarios' => [
-            'gerencia' => ['gerencia.GerenciaID', '=', 'gerencias_usuarios.GerencialID'],
+            'gerencia' => ['gerencia.GerenciaID', '=', 'gerencias_usuarios.GerenciaID'],
             'users' => ['users.id', '=', 'gerencias_usuarios.user_id'],
         ],
         'insumos' => [

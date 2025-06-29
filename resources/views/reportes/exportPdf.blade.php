@@ -129,7 +129,7 @@
         </div>
 
         <div class="footer">
-            <p>Reporte generado automáticamente por el sistema ERP_TI</p>
+           
         </div>
     </div>
 </body>
