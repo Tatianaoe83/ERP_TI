@@ -58,7 +58,7 @@
                                             <td>{{ $equiposAsignado->FechaDeCompra }}</td>
                                             <td>{{ $equiposAsignado->NumSerie }}</td>
                                             <td>{{ $equiposAsignado->Folio }}</td>
-                                            <td data-gerencia-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->gerenciaid->NombreGerencia }}</td>
+                                            <td data-gerencia-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->gerencia->NombreGerencia ?? 'Sin Gerencia' }}</td>
                                             <td>{{ $equiposAsignado->Comentarios }}</td>
                                         </tr>
                                         @endforeach
