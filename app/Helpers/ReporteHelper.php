@@ -33,11 +33,19 @@ class ReporteHelper
 
         $query->select($columnas);
 
-        // Diccionario de meses
         $meses = [
-            'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4, 'Mayo' => 5,
-            'Junio' => 6, 'Julio' => 7, 'Agosto' => 8, 'Septiembre' => 9,
-            'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12
+            'Enero' => 1,
+            'Febrero' => 2,
+            'Marzo' => 3,
+            'Abril' => 4,
+            'Mayo' => 5,
+            'Junio' => 6,
+            'Julio' => 7,
+            'Agosto' => 8,
+            'Septiembre' => 9,
+            'Octubre' => 10,
+            'Noviembre' => 11,
+            'Diciembre' => 12
         ];
 
         foreach ($filtros as $filtro) {
@@ -65,8 +73,7 @@ class ReporteHelper
                                     [$inicioNum, $finNum]
                                 );
                             }
-                        }
-                        elseif (
+                        } elseif (
                             (strtotime($inicio) && strtotime($fin)) ||
                             (is_numeric($inicio) && is_numeric($fin))
                         ) {
@@ -91,8 +98,6 @@ class ReporteHelper
         if ($limite) {
             $query->limit($limite);
         }
-
-        Log::debug('Query generada:', [$query->toSql(), $query->getBindings()]);
 
         return $query->get();
     }
