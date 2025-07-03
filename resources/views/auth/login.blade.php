@@ -1,30 +1,199 @@
 @extends('layouts.auth_app')
-
 @section('title')
-Admin Login
+    Admin Login
 @endsection
-
 @section('content')
-{{-- Texto a la izquierda --}}
-<div class="text-white flex flex-col h-full w-full px-6">
+<!-- Section: Design Block -->
+<section class="text-center text-lg-start">
+  <style>
+    .cascading-right {
+      margin-right: -50px;
+    }
 
-  <div class="pt-4">
-    <img src="{{ asset('img/LogoBlanco.png') }}" width="300" alt="Logo">
-  </div>
+    @media (max-width: 991.98px) {
+      .cascading-right {
+        margin-right: 0;
+      }
+    }
+  </style>
 
-  <div class="flex flex-col justify-center flex-1 space-y-6 mb-2">
-    <h3 class="text-4xl font-semibold text-white">Sistema de gestión de <br> tecnologías de la información</h3>
+  <!-- Jumbotron -->
+  <div class="container py-4">
+    <div class="row g-0 align-items-center">
+      <div class="col-12 col-md-12 col-lg-6 mb-5 mb-lg-0">
+        <div class="card cascading-right bg-body-tertiary" style="
+            backdrop-filter: blur(30px);
+            ">
+          <div class="card-body p-5 shadow-5 text-center">
+          <img class="navbar-brand-full app-header-logo" src="{{ asset('img/logo.png') }}" width="50%"
+          alt="Infyom Logo">
+            <h4 class="fw-bold mb-5">Inicio de sesion</h4>
+            <form method="POST" action="{{ route('login') }}">
+            @csrf
+                @if ($errors->any())
+                    <div class="alert alert-danger p-0">
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-    <p class="text-gray-300 text-xs leading-relaxed max-w">
-      Sistema especializado para la gestión eficiente de información del departamento de TI, incluyendo activos, documentación técnica,
-      usuarios, etc., permitiendo un control centralizado, actualizado y accesible.
-    </p>
+                  <!-- Database Select -->
+                  <div class="form-group">
+                    <label for="database">Base de Datos</label>
+                    <select name="database" id="database" class="form-control" onchange="updateEnvDatabase(this.value)" required>
+                        <option value="">Seleccione Base de Datos</option>
+                        <option value="unidplay_controlinventarioti">Control Inventario TI</option>
+                        <option value="unidplay_presupuestoscontrol">Presupuestos</option>
+                    </select>
+                </div>
 
-    <div class="flex space-x-2 pt-4">
-      <div class="w-12 h-1 bg-white"></div>
-      <div class="w-8 h-1 bg-gray-400"></div>
-      <div class="w-6 h-1 bg-gray-600"></div>
+
+              <!-- username input -->
+              <div class="form-group">
+                   
+                    <input aria-describedby="usernameHelpBlock" id="username" type="username"
+                           class="form-control{{ $errors->has('username') ? ' is-invalid' : '' }}" name="username"
+                           placeholder="Ingrese username" tabindex="1"
+                           value="{{ (Cookie::get('username') !== null) ? Cookie::get('username') : old('username') }}" autofocus
+                           required>
+                    <div class="invalid-feedback">
+                        {{ $errors->first('username') }}
+                    </div>
+                </div>
+
+              <!-- Password input -->
+              <div class="form-group">
+                    <div class="d-block">
+                       
+                        <div class="float-right">
+                           
+                        </div>
+                    </div>
+                    <input aria-describedby="passwordHelpBlock" id="password" type="password"
+                           value="{{ (Cookie::get('password') !== null) ? Cookie::get('password') : null }}"
+                           placeholder="Ingrese password"
+                           class="form-control{{ $errors->has('password') ? ' is-invalid': '' }}" name="password"
+                           tabindex="2" required>
+                    <div class="invalid-feedback">
+                        {{ $errors->first('password') }}
+                    </div>
+                </div>
+
+          
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script type="text/javascript">
+                  
+
+                    function updateEnvDatabase(value) {
+                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                        fetch('/update-database', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': token
+                            },
+                            body: JSON.stringify({database: value}),
+                            credentials: 'same-origin',
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                             
+                                const Toast = Swal.mixin({
+                                  toast: true,
+                                  position: "top-end",
+                                  showConfirmButton: false,
+                                  timer:  1500,
+                                  timerProgressBar: true,
+                                  didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                  }
+                                });
+                                Toast.fire({
+                                  icon: "success",
+                                  title: "Base de datos actualizada correctamente"
+                                }); 
+                               
+                            } else {
+                              
+                                const Toast = Swal.mixin({
+                                  toast: true,
+                                  position: "top-end",
+                                  showConfirmButton: false,
+                                  timer: 3000,
+                                  timerProgressBar: true,
+                                  didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                  }
+                                });
+                                Toast.fire({
+                                  icon: "warning",
+                                  title: 'Error al actualizar: ' + (data.error || 'Error desconocido')
+                                }); 
+
+                            }
+                        })
+                        .catch(error => {
+                          
+                            const Toast = Swal.mixin({
+                                  toast: true,
+                                  position: "top-end",
+                                  showConfirmButton: false,
+                                  timer: 3000,
+                                  timerProgressBar: true,
+                                  didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                  }
+                                });
+                                Toast.fire({
+                                  icon: "error",
+                                  title: "Error al actualizar la base de datos"
+                                }); 
+
+                        });
+                    }
+                </script>
+
+               
+
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" name="remember" class="custom-control-input" tabindex="3"
+                               id="remember"{{ (Cookie::get('remember') !== null) ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="remember">Recordar</label>
+                    </div>
+                </div>
+     
+                
+
+              
+
+              <!-- Submit button -->
+              <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-lg btn-block" tabindex="4">
+                        Ingresar
+                    </button>
+                </div>
+
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6 mb-5 mb-lg-0">
+        <img  src="{{ asset('img/corporativo-web-2.jpg') }}" class="w-100 rounded-4 shadow-4"
+          alt="" />
+      </div>
     </div>
   </div>
-</div>
+  <!-- Jumbotron -->
+</section>
+<!-- Section: Design Block -->
 @endsection

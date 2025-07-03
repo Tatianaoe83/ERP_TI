@@ -5,24 +5,29 @@
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>ERP TI Proser</title>
-    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
     <link rel="icon" href="{!! asset('img/mantenimiento.ico') !!}" />
-
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <!-- Bootstrap 4.1.1 -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
+    <!-- Ionicons -->
     <link href="//fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet">
     <link href="{{ asset('assets/css/@fortawesome/fontawesome-free/css/all.css') }}" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="{{ asset('assets/css/iziToast.min.css') }}">
     <link href="{{ asset('assets/css/sweetalert.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/select2.min.css') }}" rel="stylesheet" type="text/css" />
+
+
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
+    @stack('styles')
+
+    @yield('page_css')
+    <!-- Template CSS -->
     <link rel="stylesheet" href="{{ asset('web/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('web/css/components.css')}}">
-
-    <link href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}" rel="stylesheet">
-
-    @stack('styles')
     @yield('page_css')
+    @yield('scripts')
+
     @yield('css')
     @stack('third_party_stylesheets')
     @livewireStyles
