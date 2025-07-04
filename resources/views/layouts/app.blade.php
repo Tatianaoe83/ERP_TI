@@ -7,6 +7,7 @@
     <title>ERP TI Proser</title>
     <link rel="icon" href="{!! asset('img/mantenimiento.ico') !!}" />
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <!-- Bootstrap 4.1.1 -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
     <!-- Ionicons -->
