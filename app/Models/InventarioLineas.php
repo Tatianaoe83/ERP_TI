@@ -65,4 +65,9 @@ class InventarioLineas extends Model implements Auditable
     {
         return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaEquipoID');
     }
+
+    public function lineas()
+    {
+        return $this->belongsTo(LineasTelefonicas::class, 'LineaID');
+    }
 }

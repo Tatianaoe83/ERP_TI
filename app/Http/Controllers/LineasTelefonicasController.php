@@ -11,6 +11,8 @@ use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\LineasTelefonicas;
+use Illuminate\Database\QueryException;
+use Laracasts\Flash\Flash as FlashFlash;
 use Yajra\DataTables\DataTables;
 
 class LineasTelefonicasController extends AppBaseController
@@ -22,8 +24,8 @@ class LineasTelefonicasController extends AppBaseController
     {
         $this->lineasTelefonicasRepository = $lineasTelefonicasRepo;
         $this->middleware('permission:ver-Lineastelefonicas|crear-Lineastelefonicas|editar-Lineastelefonicas|borrar-Lineastelefonicas')->only('index');
-        $this->middleware('permission:crear-Lineastelefonicas', ['only' => ['create','store']]);
-        $this->middleware('permission:editar-Lineastelefonicas', ['only' => ['edit','update']]);
+        $this->middleware('permission:crear-Lineastelefonicas', ['only' => ['create', 'store']]);
+        $this->middleware('permission:editar-Lineastelefonicas', ['only' => ['edit', 'update']]);
         $this->middleware('permission:borrar-Lineastelefonicas', ['only' => ['destroy']]);
     }
 
@@ -38,25 +40,25 @@ class LineasTelefonicasController extends AppBaseController
     {
         if (request()->ajax()) {
             $unidades = LineasTelefonicas::join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
-            ->join('planes', 'planes.ID', '=', 'lineastelefonicas.PlanID')
-            ->select([
-                'lineastelefonicas.LineaID',
-                'lineastelefonicas.NumTelefonico',
-                'planes.NombrePlan as nombre_plan',
-                'lineastelefonicas.CuentaPadre',
-                'lineastelefonicas.CuentaHija',
-                'lineastelefonicas.TipoLinea',
-                'obras.NombreObra as nombre_obra',
-                'lineastelefonicas.FechaFianza',
-                'lineastelefonicas.CostoFianza',
-                'lineastelefonicas.Activo',
-                'lineastelefonicas.Disponible',
-                'lineastelefonicas.MontoRenovacionFianza'
-           
-            ]);
+                ->join('planes', 'planes.ID', '=', 'lineastelefonicas.PlanID')
+                ->select([
+                    'lineastelefonicas.LineaID',
+                    'lineastelefonicas.NumTelefonico',
+                    'planes.NombrePlan as nombre_plan',
+                    'lineastelefonicas.CuentaPadre',
+                    'lineastelefonicas.CuentaHija',
+                    'lineastelefonicas.TipoLinea',
+                    'obras.NombreObra as nombre_obra',
+                    'lineastelefonicas.FechaFianza',
+                    'lineastelefonicas.CostoFianza',
+                    'lineastelefonicas.Activo',
+                    'lineastelefonicas.Disponible',
+                    'lineastelefonicas.MontoRenovacionFianza'
+
+                ]);
 
             return DataTables::of($unidades)
-                ->addColumn('action', function($row){
+                ->addColumn('action', function ($row) {
                     return view('lineas_telefonicas.datatables_actions', ['id' => $row->LineaID])->render();
                 })
                 ->rawColumns(['action'])
@@ -88,9 +90,25 @@ class LineasTelefonicasController extends AppBaseController
     {
         $input = $request->all();
 
-        $lineasTelefonicas = $this->lineasTelefonicasRepository->create($input);
-
-        Flash::success('Lineas Telefonicas saved successfully.');
+        try {
+            $lineasTelefonicas = $this->lineasTelefonicasRepository->create($input);
+            Flash::success('Linea telefonica guardada correctamente');
+        } catch (QueryException $e) {
+            if ($e->getCode() == 23000) {
+                session()->flash('swal', [
+                    'icon' => 'error',
+                    'title' => 'Duplicado',
+                    'text' => 'El número telefónico ya existe.'
+                ]);
+                return redirect()->back()->withInput();
+            }
+            session()->flash('swal', [
+                'icon' => 'error',
+                'title' => 'Error',
+                'text' => 'Error al guardar la línea: ' . $e->getMessage()
+            ]);
+            return redirect()->back()->withInput();
+        }
 
         return redirect(route('lineasTelefonicas.index'));
     }

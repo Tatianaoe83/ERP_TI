@@ -93,4 +93,9 @@ class Inventario extends Model
     {
         return $this->belongsTo(\App\Models\Puesto::class, 'PuestoID');
     }
+
+    public function lineas()
+    {
+        return $this->belongsTo(LineasTelefonicas::class, 'LineaID');
+    }
 }

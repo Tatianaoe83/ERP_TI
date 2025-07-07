@@ -408,9 +408,10 @@ class InventarioController extends AppBaseController
     {
 
 
-        $linea = LineasTelefonicas::select('lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.LineaID', 'planes.NombrePlan AS PlanTel')
+        $linea = LineasTelefonicas::select('obras.NombreObra AS Obra','lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.LineaID', 'planes.NombrePlan AS PlanTel')
             ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
             ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
+            ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
             ->where('lineastelefonicas.LineaID', $telf)->get();
 
 
@@ -421,7 +422,7 @@ class InventarioController extends AppBaseController
 
         $data = array_merge($data, $lineaData->toArray());
 
-        $empleado = Empleados::select('obras.ObraID', 'obras.NombreObra AS Obra')
+       $empleado = Empleados::select('obras.ObraID', 'obras.NombreObra AS NombreObra')
             ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->where('EmpleadoID', $id)->get();
 
