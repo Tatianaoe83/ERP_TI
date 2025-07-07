@@ -34,7 +34,7 @@
 <body>
 
     <div class="relative z-10 h-screen overflow-hidden"
-        style="background-image: url('img/fondotech.jpg'); background-size: auto; background-position: center;">
+        style="background-image: url('img/fondotech.jpg'); background-size: auto; background-position: center; filter:grayscale(60%)">
         <div class="flex justify-center px-6 pt-12 fuente">
             <div id="tsparticles"></div>
             <div class="w-full max-w-7xl grid lg:grid-cols-2 content-start pt-10 mt-10">
