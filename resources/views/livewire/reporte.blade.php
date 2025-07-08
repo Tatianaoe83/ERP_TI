@@ -1,4 +1,4 @@
-<div class="container-fluid py-3 px-2" ">
+<div class="container-fluid py-3 px-2">
 
     @include('flash::message')
 

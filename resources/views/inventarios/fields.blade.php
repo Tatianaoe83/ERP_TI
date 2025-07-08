@@ -365,7 +365,7 @@
                  <td>{{ $LineasAsignado->CuentaPadre}}</td>
                  <td>{{ $LineasAsignado->CuentaHija}}</td>
                  <td>{{ $LineasAsignado->TipoLinea}}</td>
-                 <td>{{ $LineasAsignado->Obra}}</td>
+                 <td>{{ $LineasAsignado->lineas->obraid->NombreObra}}</td>
                  <td>{{ $LineasAsignado->FechaFianza}}</td>
                  <td>{{ $LineasAsignado->CostoFianza}}</td>
                  <td>{{ $LineasAsignado->FechaAsignacion}}</td>
@@ -424,7 +424,7 @@
                             <td>{{ $Linea->CuentaPadre}}</td>
                             <td>{{ $Linea->CuentaHija}}</td>
                             <td>{{ $Linea->TipoLinea}}</td>
-                            <td>{{ $Linea->obraid->NombreObra ?? 'Sin obra'}}</td>
+                            <td>{{ $Linea->obraid->NombreObra}}</td>
                             <td>{{ $Linea->FechaFianza}}</td>
                             <td>{{ $Linea->CostoFianza}}</td>
                             <td>

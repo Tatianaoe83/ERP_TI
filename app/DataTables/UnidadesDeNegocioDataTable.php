@@ -17,14 +17,14 @@ class UnidadesDeNegocioDataTable extends DataTable
      * @return \Yajra\DataTables\DataTableAbstract
      */
 
-    
-    
+
+
     public function dataTable($query)
     {
         $dataTable = new EloquentDataTable($query);
 
         return $dataTable
-            ->addColumn('action', function($row){
+            ->addColumn('action', function ($row) {
                 return view('unidades_de_negocios.datatables_actions', ['id' => $row->UnidadNegocioID])->render();
             })
             ->rawColumns(['action'])
@@ -55,7 +55,7 @@ class UnidadesDeNegocioDataTable extends DataTable
      */
     public function html()
     {
-        
+
         return $this->builder()
             ->setTableId('unidadesDeNegocios-table')
             ->columns($this->getColumns())
@@ -68,7 +68,7 @@ class UnidadesDeNegocioDataTable extends DataTable
                     'className' => 'btn btn-primary',
                     'text' => '<i class="fa fa-plus"></i> Crear',
                     'action' => "function() {
-                        window.location = '" . route('equipos.create') . "';
+                        window.location = '" . route('unidadesDeNegocios.create') . "';
                     }"
                 ] : null,
                 /*[
