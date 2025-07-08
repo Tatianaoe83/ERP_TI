@@ -114,7 +114,7 @@
             <a href="#" class="nav-link has-dropdown"><i class="fas fa-exchange-alt"></i><span>Movimientos</span></a>
             <ul class="dropdown-menu">
 
-                @if(auth()->user()->can('transferir-inventario') or auth()->user()->can('cartas-inventario') or auth()->user()->can('asignar-inventario'))
+                @if(auth()->user()->can('transferir-inventario') or auth()->user()->can('cartas-inventario') or auth()->user()->can('asignar-inventario') or auth()->user()->can('ver-inventario'))
                 <li>
                     <a class="nav-link" href="/inventarios">
                         <i class="fas fa-circle-notch"></i><span>Inventario</span>

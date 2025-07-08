@@ -34,7 +34,7 @@ class InventarioController extends AppBaseController
     public function __construct(InventarioRepository $inventarioRepo)
     {
         $this->inventarioRepository = $inventarioRepo;
-        $this->middleware('permission:transferir-inventario|cartas-inventario|asignar-inventario')->only('index');
+        $this->middleware('permission:transferir-inventario|cartas-inventario|asignar-inventario|ver-inventario')->only('index');
         $this->middleware('permission:asignar-inventario', ['only' => ['edit', 'update']]);
     }
 

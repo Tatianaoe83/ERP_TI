@@ -6,9 +6,11 @@
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title mb-0">Lista de Reportes</h3>
+            @can('reportes.create')
             <a href="{{ route('reportes.create') }}" class="btn btn-sm btn-primary shadow-sm">
                 <i class="fas fa-plus me-1"></i> Nuevo Reporte
             </a>
+            @endcan
         </div>
 
         <div class="card-body">
