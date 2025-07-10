@@ -25,7 +25,14 @@ class LineasTelefonicasDataTable extends DataTable
         ->addColumn('action', function($row){
             return view('lineas_telefonicas.datatables_actions', ['id' => $row->LineaID])->render();
         })
-        ->rawColumns(['action'])
+        ->addColumn('estado_disponibilidad', function ($row) {
+            if ($row->Disponible == 1) {
+                return '<span class="badge badge-success">Disponible</span>';
+            } else {
+                return '<span class="badge badge-danger">Asignada</span>';
+            }
+        })
+        ->rawColumns(['action', 'estado_disponibilidad'])
         ->setRowId('LineaID');
 
         
@@ -189,10 +196,12 @@ class LineasTelefonicasDataTable extends DataTable
                 'data' => 'Activo',
                 'name' => 'Activo',
             ],
-            'Disponible' => [
-                'title' => 'Disponible',
-                'data' => 'Disponible',
-                'name' => 'Disponible',
+            'estado_disponibilidad' => [
+                'title' => 'Estado',
+                'data' => 'estado_disponibilidad',
+                'name' => 'estado_disponibilidad',
+                'orderable' => false,
+                'searchable' => false,
             ],
             'MontoRenovacionFianza' => [
                 'title' => 'Monto Renovacion Fianza',
