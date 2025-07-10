@@ -15,12 +15,8 @@
                 <div class="card">
                   <div class="card-header">
                     <h4>Mantenimiento preventivo</h4>
-                    <div class="card-header-action">
-                      <a data-collapse="#mycard-collapse" class="btn btn-icon btn-info" href="#"><i class="fas fa-plus"></i></a>
-                    </div>
                   </div>
-                  <div class="collapse" id="mycard-collapse" style="">
-                    <div class="card-body">
+                  <div class="card-body">
                     
                     <form id="formulario2" action="{{ route('inventarios.mantenimiento', $id) }}" method="POST" target="_blank">
                         @csrf
