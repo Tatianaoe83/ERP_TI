@@ -38,23 +38,21 @@
 <body>
 
     <div id="app">
-        <div class="main-wrapper main-wrapper-1">
-            <div class="navbar-bg"></div>
-            <nav class="navbar navbar-expand-lg main-navbar">
-                @include('layouts.header')
-
-            </nav>
-            <div class="main-sidebar main-sidebar-postion">
+        <nav class="bg-white h-[80px] text-white text-white border-b border-b-gray-300 rounded-md">
+            @include('layouts.header')
+        </nav>
+        <div class="flex flex-1 min-h-[calc(100vh-80px)]">
+            <aside class="bg-white w-[300px] border-r border-gray-300 rounded-md dark:!bg-[#101010]">
                 @include('layouts.sidebar')
-            </div>
-            <!-- Main Content -->
-            <div class="main-content">
+            </aside>
+
+            <main class="flex-1 p-6 dark:bg-[#101010]">
                 @yield('content')
-            </div>
-            <footer class="main-footer">
-                @include('layouts.footer')
-            </footer>
+            </main>
         </div>
+        <!-- <footer class="main-footer">
+            @include('layouts.footer')
+        </footer> -->
     </div>
 
     @include('profile.change_password')

@@ -20,15 +20,13 @@ class DepartamentosDataTable extends DataTable
     {
         $dataTable = new EloquentDataTable($query);
 
-         
-        return $dataTable
-        ->addColumn('action', function($row){
-            return view('departamentos.datatables_actions', ['id' => $row->DepartamentoID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('DepartamentoID');
 
-        
+        return $dataTable
+            ->addColumn('action', function ($row) {
+                return view('departamentos.datatables_actions', ['id' => $row->DepartamentoID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('DepartamentoID');
     }
 
     /**
@@ -41,14 +39,12 @@ class DepartamentosDataTable extends DataTable
     {
 
         return $model->newQuery()
-        ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
-        ->select([
-            'departamentos.DepartamentoID',
-            'departamentos.NombreDepartamento',
-            'gerencia.NombreGerencia as nombre_gerencia'
-        ]);
-
-      
+            ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->select([
+                'departamentos.DepartamentoID',
+                'departamentos.NombreDepartamento',
+                'gerencia.NombreGerencia as nombre_gerencia'
+            ]);
     }
 
     /**
@@ -60,53 +56,53 @@ class DepartamentosDataTable extends DataTable
     {
 
         return $this->builder()
-        ->setTableId('departamentos-table')
-        ->columns($this->getColumns())
-        ->minifiedAjax()
-        ->dom('Bfrtip')
-        ->orderBy(1, 'asc')
-        ->buttons(array_filter([
-            auth()->user()->can('crear-departamentos') ? [
-                'extend' => 'collection',
-                'className' => 'btn btn-primary',
-                'text' => '<i class="fa fa-plus"></i> Crear',
-                'action' => "function() {
+            ->setTableId('departamentos-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->dom('Bfrtip')
+            ->orderBy(1, 'asc')
+            ->buttons(array_filter([
+                auth()->user()->can('crear-departamentos') ? [
+                    'extend' => 'collection',
+                    'className' => 'btn btn-primary',
+                    'text' => '<i class="fa fa-plus"></i> Crear',
+                    'action' => "function() {
                     window.location = '" . route('departamentos.create') . "';
                 }"
-            ] : null,
-         
-            [
-                'extend' => 'excel',
-                'className' => 'btn btn-success',
-                'text' => '<i class="fa fa-file-excel"></i> Excel'
-            ],
-            [
-                'extend' => 'pdf',
-                'className' => 'btn btn-danger',
-                'text' => '<i class="fa fa-file-pdf"></i> PDF'
-            ],
-           
-            [
-                'className' => 'btn btn-default',
-                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                'action' => 'function() { 
+                ] : null,
+
+                [
+                    'extend' => 'excel',
+                    'className' => 'btn btn-success',
+                    'text' => '<i class="fa fa-file-excel"></i> Excel'
+                ],
+                [
+                    'extend' => 'pdf',
+                    'className' => 'btn btn-danger',
+                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
+                ],
+
+                [
+                    'className' => 'btn btn-default',
+                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                    'action' => 'function() { 
                     window.LaravelDataTables["departamentos-table"].ajax.reload();
                 }'
-            ],
-        ]))
-        ->parameters([
-            'processing' => true,
-            'serverSide' => true,
-            'responsive' => true,
-            'pageLength' => 10,
-            'searching' => true,
-            'language' => [
-                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            ],
-            'drawCallback' => 'function() {
+                ],
+            ]))
+            ->parameters([
+                'processing' => true,
+                'serverSide' => true,
+                'responsive' => true,
+                'pageLength' => 7,
+                'searching' => true,
+                'language' => [
+                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                ],
+                'drawCallback' => 'function() {
                 $("[data-toggle=tooltip]").tooltip();
             }',
-            'initComplete' => "function() {
+                'initComplete' => "function() {
                 this.api().columns().every(function () {
                     var column = this;
                     var input = document.createElement(\"input\");
@@ -116,9 +112,7 @@ class DepartamentosDataTable extends DataTable
                     });
                 });
             }",
-        ]);
-
-        
+            ]);
     }
 
     /**
@@ -133,23 +127,26 @@ class DepartamentosDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'DepartamentoID',
                 'name' => 'DepartamentoID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
 
-            'NombreDepartamento'=> [
+            'NombreDepartamento' => [
                 'title' => 'Nombre Departamento',
                 'data' => 'NombreDepartamento',
                 'name' => 'NombreDepartamento',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'GerenciaID' => [
                 'title' => 'Nombre Gerencia',
                 'data' => 'nombre_gerencia',
                 'name' => 'gerencia.NombreGerencia',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
 

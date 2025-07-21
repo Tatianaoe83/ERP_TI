@@ -1,6 +1,6 @@
 <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item">
-        <a class="nav-link active" data-toggle="tab" href="#empleados">Empleado</a>
+        <a class="nav-link dark:text-white" data-toggle="tab" href="#empleados">Empleado</a>
     </li>
     <li class="nav-item">
         <a class="nav-link" data-toggle="tab" href="#equipo">Equipo de cómputo</a>
@@ -22,30 +22,30 @@
     <div class="tab-pane fade show active" id="empleados">
         <div class="row">
             <!-- NombreEmpleado Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('NombreEmpleado', 'Nombre del Empleado:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('NombreEmpleado', 'Nombre del Empleado:', ['class' => 'dark:text-white']) !!}
                 {!! Form::text('NombreEmpleado', old('NombreEmpleado', $inventario->NombreEmpleado ?? ''), ['class' => 'form-control', 'maxlength' => 100, 'disabled']) !!}
             </div>
 
             <!-- UnidadNegocio Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('UnidadNegocioID', 'Unidad de Negocio:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('UnidadNegocioID', 'Unidad de Negocio:',['class' => 'dark:text-white']) !!}
 
                 {!!Form::select('UnidadNegocioID',App\Models\UnidadesDeNegocio::all()->
                 pluck('NombreEmpresa','UnidadNegocioID'),$inventario->UnidadNegocioID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
             <!-- UnidadNegocio Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('GerenciaID', 'Gerencia:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('GerenciaID', 'Gerencia:', ['class' => 'dark:text-white']) !!}
 
                 {!!Form::select('GerenciaID',App\Models\Gerencia::all()->
                 pluck('NombreGerencia','GerenciaID'),$inventario->GerenciaID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
             <!-- ObraID Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('ObraID', 'Obra:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('ObraID', 'Obra:', ['class' => 'dark:text-white']) !!}
 
                 {!!Form::select('ObraID',App\Models\Obras::all()->
                 pluck('NombreObra','ObraID'),$inventario->ObraID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
@@ -54,8 +54,8 @@
             </div>
 
             <!-- ObraID Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('DepartamentoID', 'Departamento:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('DepartamentoID', 'Departamento:', ['class' => 'dark:text-white']) !!}
 
                 {!!Form::select('DepartamentoID',App\Models\Departamentos::all()->
                 pluck('NombreDepartamento','DepartamentoID'),$inventario->DepartamentoID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
@@ -63,22 +63,22 @@
 
 
             <!-- PuestoID Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('PuestoID', 'Puesto:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('PuestoID', 'Puesto:', ['class' => 'dark:text-white']) !!}
                 {!!Form::select('PuestoID',App\Models\Puestos::all()->
                 pluck('NombrePuesto','PuestoID'),$inventario->PuestoID ?? NULL,['placeholder' => 'Seleccionar','class'=>'jz form-control', 'disabled'])!!}
             </div>
 
 
             <!-- NumTelefono Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('NumTelefono', 'Número de Teléfono:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('NumTelefono', 'Número de Teléfono:', ['class' => 'dark:text-white']) !!}
                 {!! Form::text('NumTelefono', old('NumTelefono', $inventario->NumTelefono ?? ''), ['class' => 'form-control', 'maxlength' => 50, 'disabled']) !!}
             </div>
 
             <!-- Correo Field -->
-            <div class="form-group col-sm-6">
-                {!! Form::label('Correo', 'Correo Electrónico:') !!}
+            <div class="col-sm-6">
+                {!! Form::label('Correo', 'Correo Electrónico:', ['class' => 'dark:text-white']) !!}
                 {!! Form::email('Correo', old('Correo', $inventario->Correo ?? ''), ['class' => 'form-control', 'maxlength' => 150, 'disabled']) !!}
             </div>
 
@@ -476,8 +476,9 @@
             "searching": true,
             "ordering": true,
             "info": true,
-
         });
+        $('#equiposTable tbody tr').addClass('dark:bg-[#101010]');
+
         let table2_1 = $('#insumosTable').DataTable({
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
@@ -485,7 +486,6 @@
             "searching": true,
             "ordering": true,
             "info": true,
-
         });
 
         let table3_1 = $('#lineasTable').DataTable({
@@ -508,8 +508,6 @@
 
         });
 
-
-
         let table2 = $('#insumosAsignadosTable').DataTable({
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
@@ -529,7 +527,6 @@
             "info": true,
 
         });
-
     });
 </script>
 
@@ -1240,6 +1237,13 @@
             confirmButtonText: 'Confirmar',
             denyButtonText: 'Cerrar',
             dangerMode: true,
+            didOpen: () => {
+                $('#editEmpleado').select2({
+                    dropdownParent: $('.swal2-popup'),
+                    width: '100%',
+                    theme: 'classic'
+                }).addClass('bg-dark text-white');
+            }
         }).then(function(willDelete) {
             if (willDelete.isConfirmed) {
                 $.ajax({

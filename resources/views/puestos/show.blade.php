@@ -1,29 +1,15 @@
-
 @extends('layouts.app')
 
 @section('content')
-<section class="section">
-        <div class="section-header">
-            <h3 class="page__heading">Puesto Detalles</h3>
+<h3 class="text-[#101D49] dark:text-white">Puesto Detalles</h3>
+<div class="content px-3">
+    <div class="card-body">
+        <div class="row">
+            @include('puestos.show_fields')
         </div>
-        <div class="section-body">
-
-    
-
-        <div class="content px-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        @include('puestos.show_fields')
-                    </div>
-                </div>
-                <div class="card-footer">
-                
-                <a href="{{ route('puestos.index') }}" class="btn btn-danger">Cancelar</a>
-            </div>
-            </div>
-        </div>
-        </section>
-
+    </div>
+    <div class="">
+        <a href="{{ route('puestos.index') }}" class="btn btn-danger">Cancelar</a>
+    </div>
+</div>
 @endsection
-

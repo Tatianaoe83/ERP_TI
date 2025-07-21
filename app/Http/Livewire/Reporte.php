@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\ReporteService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\View;
 
@@ -29,6 +30,11 @@ class Reporte extends Component
     public $columnasPorRelacion = [];
     public $tablasDisponibles = [];
     public $modeloClase;
+    public $filtroAutocompletarIndex = null;
+    protected $listeners = [
+        'valorAutocompletado' => 'valorAutocompletado',
+    ];
+
 
     public function mostrarPreview()
     {
@@ -158,13 +164,6 @@ class Reporte extends Component
                         }
                     }
                 }
-
-                foreach ($camino as [$tablaJoin, [$from, $op, $to]]) {
-                    if (!in_array($tablaJoin, $joinsHechos)) {
-                        $query->join($tablaJoin, $from, $op, $to);
-                        $joinsHechos[] = $tablaJoin;
-                    }
-                }
             } else {
                 $columnas[] = $tablaBase . '.' . $columna;
             }
@@ -207,7 +206,7 @@ class Reporte extends Component
             $query->limit($this->limite);
         }
 
-       
+
 
         $this->saveSql($query->getBindings(), $columnas);
 
@@ -240,6 +239,13 @@ class Reporte extends Component
             } else {
                 $this->filtros[$index]['valor'] = '';
             }
+        }
+    }
+
+    public function valorAutocompletado($value, $index)
+    {
+        if (isset($this->filtros[$index])) {
+            $this->filtros[$index]['valor'] = $value;
         }
     }
 
@@ -278,6 +284,7 @@ class Reporte extends Component
     public function agregarFiltro()
     {
         $this->filtros[] = [
+            'id' => Str::uuid()->toString(),
             'columna' => '',
             'operador' => '=',
             'valor' => '',
@@ -287,7 +294,6 @@ class Reporte extends Component
     public function eliminarFiltro($index)
     {
         unset($this->filtros[$index]);
-        $this->filtros = array_values($this->filtros);
     }
 
     public function agregarRelacion()

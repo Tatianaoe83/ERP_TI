@@ -1,16 +1,16 @@
 <div class='btn-group'>
     @can('ver-reportes')
-    <a href="{{ route('reportes.show', $id) }}" class='btn btn-outline-success btn-xs'>
+    <a href="{{ route('reportes.show', $id) }}" class='btn btn-outline-primary btn-xs'>
         <i class="fas fa-eye"></i>
     </a>
     @endcan
     @can('editar-reportes')
-    <a href="{{ route('reportes.edit', $id) }}" class='btn btn-outline-warning btn-xs'>
+    <a href="{{ route('reportes.edit', $id) }}" class='btn btn-outline-secondary btn-xs'>
         <i class="fas fa-edit"></i>
     </a>
     @endcan
     <div class="dropdown" style="position: relative;">
-        <button class="btn btn-outline-secondary btn-xs dropdown-toggle" type="button" id="dropdownExportar{{ $id }}" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-outline-info btn-xs dropdown-toggle" type="button" id="dropdownExportar{{ $id }}" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-download me-1"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="dropdownExportar{{ $id }}" style="min-width: 180px; z-index: 1050;">

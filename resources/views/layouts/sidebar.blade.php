@@ -1,17 +1,9 @@
-<aside id="sidebar-wrapper">
-    <div class="sidebar-brand">
-        <a href="{{ url('/') }}" class="block">
-            <img src="{{ asset('img/logo.png') }}" alt="Infyom Logo"
-                class="app-header-logo mx-auto mt-4" width="50%" />
+<div class="py-4">
+    <div class="flex flex-col gap-1">
+        <a href="/home" class="no-underline h-[50px] flex items-center gap-2 px-1 py-2.5 rounded-xl mr-3 ml-3 text-[#101D49] hover:bg-[#101D49] transition-all hover:text-white dark:text-white">
+            <i class="fas fa-home w-10 text-center text-[2.25rem]"></i>
+            <span class="text-lg font-bold tracking-wide">Dashboard</span>
         </a>
-    </div>
-    <div class="sidebar-brand sidebar-brand-sm">
-        <a href="{{ url('/') }}" class="block">
-            <img src="{{ asset('img/LogoAzul.png') }}" alt=""
-                class="w-[35px] mx-auto mt-3" width="30%" />
-        </a>
-    </div>
-    <ul class="sidebar-menu">
         @include('layouts.menu')
-    </ul>
-</aside>
+    </div>
+</div>

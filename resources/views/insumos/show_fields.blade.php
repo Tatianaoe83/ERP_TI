@@ -1,35 +1,35 @@
 <!-- Nombreinsumo Field -->
-<div class="col-sm-12">
+<div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('NombreInsumo', 'Nombre insumo:') !!}
     <p>{{ $insumos->NombreInsumo }}</p>
 </div>
 
 <!-- Categoriaid Field -->
-<div class="col-sm-12">
+<div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('CategoriaID', 'Categoria:') !!}
     <p>{{ $insumos->categoriaid->Categoria }}</p>
 </div>
 
 <!-- Costomensual Field -->
-<div class="col-sm-12">
+<div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('CostoMensual', 'Costo mensual:') !!}
     <p>{{ $insumos->CostoMensual }}</p>
 </div>
 
 <!-- Costoanual Field -->
-<div class="col-sm-12">
+<div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('CostoAnual', 'Costo anual:') !!}
     <p>{{ $insumos->CostoAnual }}</p>
 </div>
 
 <!-- Frecuenciadepago Field -->
-<div class="col-sm-12">
+<div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('FrecuenciaDePago', 'Frecuencia de pago:') !!}
     <p>{{ $insumos->FrecuenciaDePago }}</p>
 </div>
 
 <!-- Observaciones Field -->
-<div class="col-sm-12">
+<div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('Observaciones', 'Observaciones:') !!}
     <p>{{ $insumos->Observaciones }}</p>
 </div>

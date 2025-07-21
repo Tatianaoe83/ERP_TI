@@ -1,57 +1,69 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="section">
-        <div class="section-header">
-            <h3 class="page__heading">Dashboard</h3>
-        </div>
-        <div class="section-body">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-body">                          
-                                <div class="row">
-
-                                @if(auth()->user()->can('ver-usuarios') or auth()->user()->can('crear-usuarios') or auth()->user()->can('editar-usuarios') or auth()->user()->can('borrar-usuarios'))
-                                    <div class="col-md-4 col-xl-4">
-                                    
-                                    <div class="card bg-c-blue order-card">
-                                            <div class="card-block">
-                                            <h5>Usuarios</h5>                                               
-                                                <p class="m-b-0 text-right"><a href="/usuarios" class="text-white">Ver más</a></p>
-                                            </div>                                            
-                                        </div>                                    
-                                    </div>
-                                    @endif
-                                    
-                                    @if(auth()->user()->can('ver-rol') or auth()->user()->can('crear-rol') or auth()->user()->can('editar-rol') or auth()->user()->can('borrar-rol'))
-                                    <div class="col-md-4 col-xl-4">
-                                        <div class="card bg-c-green order-card">
-                                            <div class="card-block">
-                                            <h5>Roles</h5>                                               
-
-                                                <p class="m-b-0 text-right"><a href="/roles" class="text-white">Ver más</a></p>
-                                            </div>
-                                        </div>
-                                    </div>   
-                                    @endif                                                             
-                                    
-                                    <div class="col-md-4 col-xl-4">
-                                        <div class="card bg-danger order-card">
-                                            <div class="card-block">
-                                            <h5>Presupuesto</h5>                                               
-
-                                                <p class="m-b-0 text-right"><a href="/presupuesto" class="text-white">Ver más</a></p>
-                                            </div>
-                                        </div>
-                                    </div>   
-                                    
-                                </div>                        
-                        </div>
-                    </div>
+<div class="flex gap-2 justify-around flex-wrap">
+    @if(auth()->user()->can('ver-usuarios') or auth()->user()->can('crear-usuarios') or auth()->user()->can('editar-usuarios') or auth()->user()->can('borrar-usuarios'))
+    <a href="/usuarios" class="group block no-underline shadow-md dark:shadow-md">
+        <div class="bg-[#f0fdf4] dark:bg-[#101010] h-[360px] w-[350px] rounded-xl flex flex-col justify-between p-4 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900 hover:shadow-md">
+            <div class="flex justify-between items-start">
+                <div class="bg-blue-600 h-[70px] w-[70px] text-white p-2 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-3xl"></i>
                 </div>
             </div>
-        </div>
-    </section>
-@endsection
 
+            <div>
+                <div class="text-xl font-semibold text-[#101D49] dark:text-white mt-1">Usuarios</div>
+                <div class="text-lg text-[#101D49] dark:text-gray-300">Gestión de usuarios del sistema</div>
+            </div>
+
+            <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300 mt-2">
+                <span class="text-[#101D49] dark:text-white">Ver más</span>
+                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-125 text-[#101D49] dark:text-white"></i>
+            </div>
+        </div>
+    </a>
+    @endif
+
+    @if(auth()->user()->can('ver-rol') or auth()->user()->can('crear-rol') or auth()->user()->can('editar-rol') or auth()->user()->can('borrar-rol'))
+    <a href="/roles" class="group block no-underline shadow-md dark:shadow-md">
+        <div class=" bg-[#f0fdf4] dark:bg-[#101010] h-[360px] w-[350px] rounded-xl flex flex-col justify-between p-4 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900 hover:shadow-md transition">
+            <div class="flex justify-between items-start">
+                <div class="bg-green-600 h-[70px] w-[70px] text-white p-2 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-3xl"></i>
+                </div>
+            </div>
+
+            <div>
+                <div class="text-xl font-semibold text-[#101D49] dark:text-white mt-1">Roles</div>
+                <div class="text-lg text-[#101D49] dark:text-gray-300">Administración de permisos</div>
+            </div>
+
+            <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300 mt-2">
+                <span class="text-[#101D49] dark:text-white">Ver más</span>
+                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-125 text-[#101D49] dark:text-white"></i>
+            </div>
+        </div>
+    </a>
+    @endif
+
+    <a href="/presupuesto" class="group block no-underline shadow-md dark:shadow-md">
+        <div class=" group bg-[#f0fdf4] dark:bg-[#101010] h-[360px] w-[350px] rounded-xl flex flex-col justify-between p-4 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900 hover:shadow-md">
+            <div class="flex justify-between items-start">
+                <div class="bg-red-600 h-[70px] w-[70px] text-white p-2 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-invoice-dollar text-3xl"></i>
+                </div>
+            </div>
+
+            <div>
+                <div class="text-xl font-semibold text-[#101D49] dark:text-white mt-1">Presupuestos</div>
+                <div class="text-lg text-[#101D49] dark:text-gray-300">Informe de presupuesto de gerencias</div>
+            </div>
+
+            <div class="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300 mt-2">
+                <span class="text-[#101D49] dark:text-white">Ver más</span>
+                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-125 text-[#101D49] dark:text-white"></i>
+            </div>
+        </div>
+    </a>
+</div>
+@endsection

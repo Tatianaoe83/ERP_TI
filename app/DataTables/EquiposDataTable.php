@@ -21,14 +21,11 @@ class EquiposDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
 
         return $dataTable
-        ->addColumn('action', function($row){
-            return view('equipos.datatables_actions', ['id' => $row->ID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('ID');
-
-
-       
+            ->addColumn('action', function ($row) {
+                return view('equipos.datatables_actions', ['id' => $row->ID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('ID');
     }
 
     /**
@@ -40,18 +37,15 @@ class EquiposDataTable extends DataTable
     public function query(Equipos $model)
     {
         return $model->newQuery()
-        ->join('categorias', 'equipos.CategoriaID', '=', 'categorias.ID')
-        ->select([
-            'equipos.ID',
-            'categorias.Categoria as categoria_name',
-            'equipos.Marca',
-            'equipos.Caracteristicas',
-            'equipos.Modelo',
-            'equipos.Precio'
-        ]);
-
-       
-
+            ->join('categorias', 'equipos.CategoriaID', '=', 'categorias.ID')
+            ->select([
+                'equipos.ID',
+                'categorias.Categoria as categoria_name',
+                'equipos.Marca',
+                'equipos.Caracteristicas',
+                'equipos.Modelo',
+                'equipos.Precio'
+            ]);
     }
 
     /**
@@ -62,7 +56,7 @@ class EquiposDataTable extends DataTable
     public function html()
     {
 
-            return $this->builder()
+        return $this->builder()
             ->setTableId('equipos-table')
             ->columns($this->getColumns())
             ->minifiedAjax()
@@ -77,7 +71,7 @@ class EquiposDataTable extends DataTable
                         window.location = '" . route('equipos.create') . "';
                     }"
                 ] : null,
-             
+
                 [
                     'extend' => 'excel',
                     'className' => 'btn btn-success',
@@ -88,7 +82,7 @@ class EquiposDataTable extends DataTable
                     'className' => 'btn btn-danger',
                     'text' => '<i class="fa fa-file-pdf"></i> PDF'
                 ],
-               
+
                 [
                     'className' => 'btn btn-default',
                     'text' => '<i class="fa fa-sync-alt"></i> Recargar',
@@ -101,7 +95,7 @@ class EquiposDataTable extends DataTable
                 'processing' => true,
                 'serverSide' => true,
                 'responsive' => true,
-                'pageLength' => 10,
+                'pageLength' => 7,
                 'searching' => true,
                 'language' => [
                     'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
@@ -120,7 +114,6 @@ class EquiposDataTable extends DataTable
                     });
                 }",
             ]);
-
     }
 
     /**
@@ -135,37 +128,43 @@ class EquiposDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'ID',
                 'name' => 'ID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'CategoriaID' => [
                 'title' => 'Categoria',
                 'data' => 'categoria_name',
                 'name' => 'categorias.Categoria',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Marca' => [
                 'title' => 'Marca',
                 'data' => 'Marca',
                 'name' => 'Marca',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Caracteristicas' => [
                 'title' => 'Caracteristicas',
                 'data' => 'Caracteristicas',
                 'name' => 'Caracteristicas',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Modelo' => [
                 'title' => 'Modelo',
                 'data' => 'Modelo',
                 'name' => 'Modelo',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Precio' => [
                 'title' => 'Precio',
                 'data' => 'Precio',
                 'name' => 'Precio',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
 
         ];
     }

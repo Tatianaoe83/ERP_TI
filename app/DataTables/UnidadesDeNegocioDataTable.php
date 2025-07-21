@@ -103,7 +103,7 @@ class UnidadesDeNegocioDataTable extends DataTable
                 'processing' => true,
                 'serverSide' => true,
                 'responsive' => true,
-                'pageLength' => 10,
+                'pageLength' => 7,
                 'searching' => true,
                 'language' => [
                     'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
@@ -136,32 +136,37 @@ class UnidadesDeNegocioDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'UnidadNegocioID',
                 'name' => 'UnidadNegocioID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombreEmpresa' => [
                 'title' => 'Nombre Empresa',
                 'data' => 'NombreEmpresa',
                 'name' => 'NombreEmpresa',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'RFC' => [
                 'title' => 'RFC',
                 'data' => 'RFC',
                 'name' => 'RFC',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Direccion' => [
                 'title' => 'Dirección',
                 'data' => 'Direccion',
                 'name' => 'Direccion',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NumTelefono' => [
                 'title' => 'Teléfono',
                 'data' => 'NumTelefono',
                 'name' => 'NumTelefono',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)
                 ->width(60)
-                ->addClass('text-center')
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
 

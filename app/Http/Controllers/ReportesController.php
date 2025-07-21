@@ -14,6 +14,7 @@ use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Reportes;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Response;
 use Stringable;
 use Yajra\DataTables\Facades\DataTables;
@@ -308,6 +309,9 @@ class ReportesController extends AppBaseController
 
     public function exportPdf($id)
     {
+        set_time_limit(600);
+        ini_set('memory_limit', '2048M');
+
         $reportes = $this->reportesRepository->find($id);
 
         if (empty($reportes)) {
@@ -402,5 +406,25 @@ class ReportesController extends AppBaseController
                 'archivo' => $e->getFile(),
             ], 500);
         }
+    }
+
+    public function autocomplete(Request $request): JsonResponse
+    {
+        $tabla = $request->get('tabla');
+        $columna = $request->get('columna');
+        $query = $request->get('query');
+
+        if (!Schema::hasTable($tabla) || !Schema::hasColumn($tabla, $columna)) {
+            return response()->json([], 400);
+        }
+
+        $resultados = DB::table($tabla)
+            ->select($columna)
+            ->where($columna, 'like', '%' . $query . '%')
+            ->groupBy($columna)
+            ->limit(5)
+            ->pluck($columna);
+
+        return response()->json($resultados);
     }
 }
