@@ -1,6 +1,6 @@
 <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item">
-        <a class="nav-link dark:text-white" data-toggle="tab" href="#empleados">Empleado</a>
+        <a class="nav-link active dark:text-white" data-toggle="tab" href="#empleados">Empleado</a>
     </li>
     <li class="nav-item">
         <a class="nav-link" data-toggle="tab" href="#equipo">Equipo de cómputo</a>
@@ -477,7 +477,6 @@
             "ordering": true,
             "info": true,
         });
-        $('#equiposTable tbody tr').addClass('dark:bg-[#101010]');
 
         let table2_1 = $('#insumosTable').DataTable({
             "paging": true,
@@ -531,6 +530,19 @@
 </script>
 
 <script>
+    $(document).ready(function() {
+        $('#myTab a').on('click', function(event) {
+            event.preventDefault();
+            var target = $(this).attr('href');
+
+            $('#myTab a').removeClass('active');
+            $('.tab-pane').removeClass('show active');
+
+            $(this).addClass('active');
+            $(target).addClass('show active');
+        });
+    });
+
     // Seccion equipo 
     // Editar equipo (abriendo el modal con los datos)
     $(document).on('click', '.edit-btn', function() {
@@ -606,6 +618,9 @@
                 icon: 'error',
                 title: 'Campos requeridos',
                 text: 'Por favor complete todos los campos obligatorios',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
             });
             return;
         }
@@ -652,6 +667,9 @@
                         icon: 'error',
                         title: 'Error de validación',
                         text: 'Por favor revise los campos marcados en rojo',
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
                     });
                 } else {
                     // Si la solicitud fue exitosa, actualizar la fila correspondiente o agregar una nueva
@@ -660,7 +678,10 @@
                         icon: "success",
                         title: "Datos del equipo guardados correctamente",
                         showConfirmButton: false,
-                        timer: 1500
+                        timer: 1500,
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
                     });
 
                     // Actualizar o agregar la fila en la tabla
@@ -679,6 +700,9 @@
                     icon: 'error',
                     title: 'Error',
                     text: 'Ocurrió un error al guardar los datos',
+                    customClass: {
+                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                    }
                 });
             }
         });
@@ -741,6 +765,9 @@
                 icon: 'error',
                 title: 'Error',
                 text: 'No se encontró el ID del equipo.',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
             });
             return;
         }
@@ -753,6 +780,9 @@
             confirmButtonText: 'Confirmar',
             denyButtonText: 'Cerrar',
             dangerMode: true,
+            customClass: {
+                popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+            }
         }).then(function(willDelete) {
             if (willDelete.isConfirmed) {
                 $.ajax({
@@ -766,7 +796,10 @@
                             Swal.fire({
                                 title: 'Eliminado!',
                                 text: "El equipo fue eliminado correctamente.",
-                                icon: 'success'
+                                icon: 'success',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
                             });
 
                             // Eliminar la fila de la tabla
@@ -776,6 +809,9 @@
                                 icon: 'error',
                                 title: 'Error',
                                 text: 'No se pudo eliminar el equipo',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
                             });
                         }
                     },
@@ -784,6 +820,9 @@
                             icon: 'error',
                             title: 'Error',
                             text: 'Hubo un error al eliminar el equipo.',
+                            customClass: {
+                                popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                            }
                         });
                     }
                 });
@@ -867,6 +906,9 @@
                 icon: 'error',
                 title: 'Campos requeridos',
                 text: 'Por favor complete todos los campos obligatorios',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
             });
             return;
         }
@@ -911,6 +953,9 @@
                         icon: 'error',
                         title: 'Error de validación',
                         text: 'Por favor revise los campos marcados en rojo',
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
                     });
                 } else {
 
@@ -919,7 +964,10 @@
                         icon: "success",
                         title: "Datos del insumo guardado correctamente",
                         showConfirmButton: false,
-                        timer: 1500
+                        timer: 1500,
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
                     });
 
 
@@ -938,6 +986,9 @@
                     icon: 'error',
                     title: 'Error',
                     text: 'Ocurrió un error al guardar los datos',
+                    customClass: {
+                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                    }
                 });
             }
         });
@@ -998,6 +1049,9 @@
                 icon: 'error',
                 title: 'Error',
                 text: 'No se encontró el ID del insumo.',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
             });
             return;
         }
@@ -1010,6 +1064,9 @@
             confirmButtonText: 'Confirmar',
             denyButtonText: 'Cerrar',
             dangerMode: true,
+            customClass: {
+                popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+            }
         }).then(function(willDelete) {
             if (willDelete.isConfirmed) {
                 $.ajax({
@@ -1023,7 +1080,10 @@
                             Swal.fire({
                                 title: 'Eliminado!',
                                 text: "El insumo fue eliminado correctamente.",
-                                icon: 'success'
+                                icon: 'success',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
                             });
 
                             // Eliminar la fila de la tabla
@@ -1033,6 +1093,9 @@
                                 icon: 'error',
                                 title: 'Error',
                                 text: 'No se pudo eliminar el insumo',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
                             });
                         }
                     },
@@ -1041,6 +1104,9 @@
                             icon: 'error',
                             title: 'Error',
                             text: 'Hubo un error al eliminar el insumo.',
+                            customClass: {
+                                popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                            }
                         });
                     }
                 });
@@ -1106,6 +1172,9 @@
                 icon: 'error',
                 title: 'Campos requeridos',
                 text: 'Por favor complete todos los campos obligatorios',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
             });
             return;
         }
@@ -1143,6 +1212,9 @@
                         icon: 'error',
                         title: 'Error de validación',
                         text: 'Por favor revise los campos marcados en rojo',
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
                     });
                 } else {
 
@@ -1151,7 +1223,10 @@
                         icon: "success",
                         title: "Datos del telefonia guardado correctamente",
                         showConfirmButton: false,
-                        timer: 1500
+                        timer: 1500,
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
                     });
 
 
@@ -1170,6 +1245,9 @@
                     icon: 'error',
                     title: 'Error',
                     text: 'Ocurrió un error al guardar los datos',
+                    customClass: {
+                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                    }
                 });
             }
         });
@@ -1225,6 +1303,9 @@
                 icon: 'error',
                 title: 'Error',
                 text: 'No se encontró el ID del telefono.',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
             });
             return;
         }
@@ -1242,7 +1323,10 @@
                     dropdownParent: $('.swal2-popup'),
                     width: '100%',
                     theme: 'classic'
-                }).addClass('bg-dark text-white');
+                });
+
+                $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
+                $('.swal2-title').addClass('dark:text-white');
             }
         }).then(function(willDelete) {
             if (willDelete.isConfirmed) {
@@ -1257,7 +1341,10 @@
                             Swal.fire({
                                 title: 'Eliminado!',
                                 text: "El telefono fue eliminado correctamente.",
-                                icon: 'success'
+                                icon: 'success',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
                             });
 
                             const table = $('#lineasAsignadosTable').DataTable();
@@ -1267,6 +1354,9 @@
                                 icon: 'error',
                                 title: 'Error',
                                 text: 'No se pudo eliminar el telefono',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
                             });
                         }
                     },
@@ -1275,6 +1365,9 @@
                             icon: 'error',
                             title: 'Error',
                             text: 'Hubo un error al eliminar el telefono.',
+                            customClass: {
+                                popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                            }
                         });
                     }
                 });

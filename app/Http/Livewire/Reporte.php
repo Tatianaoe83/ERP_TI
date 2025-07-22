@@ -75,6 +75,12 @@ class Reporte extends Component
         }
     }
 
+    public function initModel()
+    {
+        $this->modelo = 'empleados';
+        $this->updatedModelo();
+    }
+
     protected array $relacionesUniversales = [
         'categorias' => [
             'tiposdecategorias' => ['tiposdecategorias.ID', '=', 'categorias.TipoID'],

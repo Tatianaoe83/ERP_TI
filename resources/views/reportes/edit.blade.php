@@ -201,7 +201,7 @@
 
 <div class="modal fade" id="modalPreview" tabindex="-1" aria-labelledby="modalPreviewLabel" aria-hidden="false">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content">
+        <div class="modal-content dark:bg-gray-800 dark:text-white">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalPreviewLabel">Vista previa del reporte</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -296,7 +296,11 @@
 </script>
 
 <script>
-    let contadorFiltros = {{count($condiciones ?? [])}};
+    let contadorFiltros = {
+        {
+            count($condiciones ?? [])
+        }
+    };
 
     function obtenerColumnasSeleccionadas() {
         const columnas = [];

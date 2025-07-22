@@ -41,7 +41,7 @@
                                         <th>Comentarios</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="!table-black">
                                     @foreach ($equiposAsignados as $equiposAsignado)
                                     <tr data-id="{{ $equiposAsignado->InventarioID }}">
                                         <td><input type="checkbox" class="selectItem" name="equipos[]" value="{{ $equiposAsignado->InventarioID}}"></td>
@@ -241,7 +241,7 @@
             icon: "warning",
             html: `
             <label for="empleado" class="dark:text-white">Selecciona un empleado:</label>
-            <select id="empleado" class="swal2-input dark:bg-[#101010]">
+            <select id="empleado" class="dark:bg-[#101010]">
                 <option value="">--Seleccione un empleado--</option>
                 ${empleadosOptions}
             </select>
@@ -253,8 +253,7 @@
 
                 });
 
-                $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
-                $('.swal2-title').addClass('dark:text-white');
+                $('.swal2-popup').addClass('dark:bg-[#101010]');
             },
             showDenyButton: true,
             confirmButtonText: 'Confirmar',

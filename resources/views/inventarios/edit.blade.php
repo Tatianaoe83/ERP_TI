@@ -30,7 +30,7 @@
 <!-- Modal de Edición -->
 <div class="modal" id="editModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
-    <div class="modal-content dark:bg-[#101010] text-white">
+    <div class="modal-content dark:bg-[#101010]">
       <div class="modal-header">
         <h5 class="modal-title" id="titulo"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -161,7 +161,7 @@
 <!-- Modal de Edición insumo-->
 <div class="modal" id="editModalInsumo" tabindex="-1">
   <div class="modal-dialog modal-xl">
-    <div class="modal-content dark:bg-[#101010] text-white">
+    <div class="modal-content dark:bg-[#101010]">
       <div class="modal-header">
         <h5 class="modal-title" id="tituloinsumo"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -293,7 +293,7 @@
 <!-- Modal de Edición linea-->
 <div class="modal" id="editModalLinea" tabindex="-1">
   <div class="modal-dialog modal-xl">
-    <div class="modal-content dark:bg-[#101010] text-white">
+    <div class="modal-content dark:bg-[#101010]">
       <div class="modal-header">
         <h5 class="modal-title" id="titulolinea"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

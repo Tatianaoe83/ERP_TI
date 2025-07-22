@@ -1,4 +1,4 @@
-<div class="container-fluid py-3 px-2">
+<div class="container-fluid py-3 px-2" wire:init="initModel">
 
     @include('flash::message')
 
@@ -209,7 +209,7 @@
 
     <div wire:ignore.self class="modal fade" id="modalPreview" tabindex="-1" aria-labelledby="modalPreviewLabel" aria-hidden="true">
         <div class="modal-dialog modal-fullscreen-sm-down modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
+            <div class="modal-content dark:bg-black">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalPreviewLabel">Vista Previa del Reporte</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
