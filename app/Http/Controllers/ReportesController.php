@@ -20,6 +20,7 @@ use Stringable;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -155,14 +156,16 @@ class ReportesController extends AppBaseController
             return redirect(route('reportes.index'));
         }
 
-        $metadata = json_decode($reportes->query_metadata, true);
+        $metadata = json_decode($reportes->query_details, true);
 
         if (!$metadata || !isset($metadata['tabla_principal'])) {
+            Log::debug('Pasa aqui2');
             return redirect()->route('reportes.index')
                 ->with('error', 'No se pudo interpretar la metadata del reporte.');
         }
 
         try {
+            $metadata = json_decode($reportes->query_details, true);
             $resultado = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
         } catch (\Exception $e) {
             return redirect()->route('reportes.index')
@@ -198,7 +201,7 @@ class ReportesController extends AppBaseController
             return redirect(route('reportes.index'));
         }
 
-        $metadata = json_decode($reportes->query_metadata, true);
+        $metadata = json_decode($reportes->query_details, true);
 
         $tablaPrincipal = $metadata['tabla_principal'] ?? null;
         $tablaRelacionInput  = $metadata['tabla_relacion'] ?? null;

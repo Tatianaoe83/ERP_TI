@@ -212,8 +212,6 @@ class Reporte extends Component
             $query->limit($this->limite);
         }
 
-
-
         $this->saveSql($query->getBindings(), $columnas);
 
         return redirect()->route('reportes.index');
@@ -223,7 +221,7 @@ class Reporte extends Component
     {
         $result = DB::table('query_forms')->insert([
             'title' => $this->titulo,
-            'query_metadata' => json_encode([
+            'query_details' => json_encode([
                 'tabla_principal' => $this->modelo,
                 'tabla_relacion' => $this->relacionesSeleccionadas,
                 'columnas' => $columnasPrefijo,

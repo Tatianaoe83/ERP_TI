@@ -296,11 +296,7 @@
 </script>
 
 <script>
-    let contadorFiltros = {
-        {
-            count($condiciones ?? [])
-        }
-    };
+    let contadorFiltros = {{count($condiciones ?? [])}};
 
     function obtenerColumnasSeleccionadas() {
         const columnas = [];
