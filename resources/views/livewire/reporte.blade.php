@@ -75,7 +75,7 @@
             {{-- Tablas relacionadas --}}
             @foreach($columnasPorRelacion as $relacion => $columnas)
             <div class="col-12 col-lg-6">
-                <div class="rounded p-3 h-100">
+                <div class="rounded p-1 h-100">
                     <h6 class="fw-bold text-[#101D49] dark:text-white mb-3">{{ ucfirst($relacion) }}</h6>
                     <div class="row g-2">
                         @foreach($columnas as $col)

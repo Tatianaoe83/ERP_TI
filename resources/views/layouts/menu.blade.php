@@ -186,6 +186,12 @@
                 </a>
             </li>
             @endif
+            <li>
+                <a href="/cortes" class="flex items-center gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-2 py-1 rounded-lg transition dark:text-white">
+                    <i class="fas fa-print"></i>
+                    <Span>Facturas</Span>
+                </a>
+            </li>
         </ul>
     </li>
 

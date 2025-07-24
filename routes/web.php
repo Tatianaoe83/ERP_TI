@@ -85,6 +85,9 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('reportes/{id}/export-excel', [ReportesController::class, 'exportExcel'])->name('reportes.exportExcel');
     Route::post('/reportes/preview', [ReportesController::class, 'preview'])->name('reportes.preview');
     Route::get('autocomplete', [ReportesController::class, 'autocomplete']);
+
+    Route::resource('facturas', App\Http\Controllers\FacturasController::class);
+    Route::resource('cortes', App\Http\Controllers\CortesController::class);
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
