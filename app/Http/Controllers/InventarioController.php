@@ -700,7 +700,7 @@ class InventarioController extends AppBaseController
                     'NumTelefonico as FechaAsignacion',
                     DB::raw('"TELEFONO" as tipo')
                 )
-                    ->where('EmpleadoID', '=', (int)$empleadoid)
+                    ->where('InventarioID', '=', $id)
                     ->first();
 
                 if ($telefono) {
