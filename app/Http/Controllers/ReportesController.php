@@ -266,7 +266,7 @@ class ReportesController extends AppBaseController
         $orderDir = $request->input('ordenDireccion');
         $limite = $request->input('limite');
 
-        $metadataOriginal = json_decode($reportes->query_metadata, true);
+        $metadataOriginal = json_decode($reportes->query_details, true);
 
         $nuevoMetadata = array_merge(
             $metadataOriginal,
@@ -279,7 +279,7 @@ class ReportesController extends AppBaseController
             ]
         );
 
-        $reportes->query_metadata = json_encode($nuevoMetadata);
+        $reportes->query_details = json_encode($nuevoMetadata);
         $reportes->save();
 
         Flash::success('Reporte actualizado correctamente.');
@@ -312,6 +312,7 @@ class ReportesController extends AppBaseController
 
     public function exportPdf($id)
     {
+       
         set_time_limit(600);
         ini_set('memory_limit', '2048M');
 
@@ -322,7 +323,7 @@ class ReportesController extends AppBaseController
             return redirect(route('reportes.index'));
         }
 
-        $metadata = json_decode($reportes->query_metadata, true);
+        $metadata = json_decode($reportes->query_details, true);
 
         if (!$metadata || !isset($metadata['tabla_principal'])) {
             return redirect()->route('reportes.index')
@@ -359,7 +360,7 @@ class ReportesController extends AppBaseController
             return redirect()->route('reportes.index')->with('error', 'Reporte no encontrado');
         }
 
-        $metadata = json_decode($reportes->query_metadata, true);
+        $metadata = json_decode($reportes->query_details, true);
 
         try {
             $datos = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
