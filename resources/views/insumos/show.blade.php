@@ -1,28 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="section">
-        <div class="section-header">
-            <h3 class="page__heading">Insumos Detalles</h3>
-        </div>
-        <div class="section-body">
+<h3 class="text-[#101D49] dark:text-white">Insumos Detalles</h3>
 
-    
-
-        <div class="content px-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        @include('insumos.show_fields')
-                    </div>
-                </div>
-                <div class="card-footer">
-                
-                <a href="{{ route('insumos.index') }}" class="btn btn-danger">Cancelar</a>
-            </div>
-            </div>
-        </div>
-        </section>
+<div class="content px-3">
+    <div class="row">
+        @include('insumos.show_fields')
+    </div>
+    <div class=>
+        <a href="{{ route('insumos.index') }}" class="btn btn-danger">Cancelar</a>
+    </div>
+</div>
 
 @endsection
-

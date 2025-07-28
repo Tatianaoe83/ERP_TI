@@ -20,13 +20,13 @@ class ObrasDataTable extends DataTable
     {
         $dataTable = new EloquentDataTable($query);
 
-        
+
         return $dataTable
-        ->addColumn('action', function($row){
-            return view('obras.datatables_actions', ['id' => $row->ObraID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('ObraID');
+            ->addColumn('action', function ($row) {
+                return view('obras.datatables_actions', ['id' => $row->ObraID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('ObraID');
     }
 
     /**
@@ -37,19 +37,17 @@ class ObrasDataTable extends DataTable
      */
     public function query(Obras $model)
     {
-       
-    
+
+
         return $model->newQuery()
-        ->join('unidadesdenegocio', 'obras.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
-        ->select([
-            'obras.ObraID',
-            'obras.NombreObra',
-            'obras.Direccion',
-            'obras.EncargadoDeObra',
-            'unidadesdenegocio.NombreEmpresa as nombre_empresa'
-        ]);
-
-
+            ->join('unidadesdenegocio', 'obras.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
+            ->select([
+                'obras.ObraID',
+                'obras.NombreObra',
+                'obras.Direccion',
+                'obras.EncargadoDeObra',
+                'unidadesdenegocio.NombreEmpresa as nombre_empresa'
+            ]);
     }
 
     /**
@@ -59,8 +57,8 @@ class ObrasDataTable extends DataTable
      */
     public function html()
     {
-       
-            return $this->builder()
+
+        return $this->builder()
             ->setTableId('obras-table')
             ->columns($this->getColumns())
             ->minifiedAjax()
@@ -75,7 +73,7 @@ class ObrasDataTable extends DataTable
                         window.location = '" . route('obras.create') . "';
                     }"
                 ] : null,
-             
+
                 [
                     'extend' => 'excel',
                     'className' => 'btn btn-success',
@@ -86,7 +84,7 @@ class ObrasDataTable extends DataTable
                     'className' => 'btn btn-danger',
                     'text' => '<i class="fa fa-file-pdf"></i> PDF'
                 ],
-               
+
                 [
                     'className' => 'btn btn-default',
                     'text' => '<i class="fa fa-sync-alt"></i> Recargar',
@@ -99,7 +97,7 @@ class ObrasDataTable extends DataTable
                 'processing' => true,
                 'serverSide' => true,
                 'responsive' => true,
-                'pageLength' => 10,
+                'pageLength' => 7,
                 'searching' => true,
                 'language' => [
                     'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
@@ -118,8 +116,6 @@ class ObrasDataTable extends DataTable
                     });
                 }",
             ]);
-
-            
     }
 
     /**
@@ -129,44 +125,46 @@ class ObrasDataTable extends DataTable
      */
     protected function getColumns()
     {
-       
-
         return [
-            
+
             'ObraID' => [
                 'title' => 'ID',
                 'data' => 'ObraID',
                 'name' => 'ObraID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombreObra' => [
                 'title' => 'Nombre Obra',
                 'data' => 'NombreObra',
                 'name' => 'NombreObra',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'Direccion' =>[
+            'Direccion' => [
                 'title' => 'Dirección',
                 'data' => 'Direccion',
                 'name' => 'Direccion',
+                'class' => 'dark:bg-[#101010] dark:text-white'
 
             ],
             'EncargadoDeObra' => [
                 'title' => 'Encargado Obra',
                 'data' => 'EncargadoDeObra',
                 'name' => 'EncargadoDeObra',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'UnidadNegocioID' => [
                 'title' => 'Unidad Negocio',
                 'data' => 'nombre_empresa',
                 'name' => 'unidadesdenegocio.NombreEmpresa',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-           
-            Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
-        ];
 
+            Column::computed('action')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
+        ];
     }
 
     /**

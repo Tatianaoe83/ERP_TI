@@ -14,11 +14,13 @@ use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Reportes;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Response;
 use Stringable;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -154,14 +156,16 @@ class ReportesController extends AppBaseController
             return redirect(route('reportes.index'));
         }
 
-        $metadata = json_decode($reportes->query_metadata, true);
+        $metadata = json_decode($reportes->query_details, true);
 
         if (!$metadata || !isset($metadata['tabla_principal'])) {
+            Log::debug('Pasa aqui2');
             return redirect()->route('reportes.index')
                 ->with('error', 'No se pudo interpretar la metadata del reporte.');
         }
 
         try {
+            $metadata = json_decode($reportes->query_details, true);
             $resultado = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
         } catch (\Exception $e) {
             return redirect()->route('reportes.index')
@@ -197,7 +201,7 @@ class ReportesController extends AppBaseController
             return redirect(route('reportes.index'));
         }
 
-        $metadata = json_decode($reportes->query_metadata, true);
+        $metadata = json_decode($reportes->query_details, true);
 
         $tablaPrincipal = $metadata['tabla_principal'] ?? null;
         $tablaRelacionInput  = $metadata['tabla_relacion'] ?? null;
@@ -308,6 +312,9 @@ class ReportesController extends AppBaseController
 
     public function exportPdf($id)
     {
+        set_time_limit(600);
+        ini_set('memory_limit', '2048M');
+
         $reportes = $this->reportesRepository->find($id);
 
         if (empty($reportes)) {
@@ -402,5 +409,25 @@ class ReportesController extends AppBaseController
                 'archivo' => $e->getFile(),
             ], 500);
         }
+    }
+
+    public function autocomplete(Request $request): JsonResponse
+    {
+        $tabla = $request->get('tabla');
+        $columna = $request->get('columna');
+        $query = $request->get('query');
+
+        if (!Schema::hasTable($tabla) || !Schema::hasColumn($tabla, $columna)) {
+            return response()->json([], 400);
+        }
+
+        $resultados = DB::table($tabla)
+            ->select($columna)
+            ->where($columna, 'like', '%' . $query . '%')
+            ->groupBy($columna)
+            ->limit(5)
+            ->pluck($columna);
+
+        return response()->json($resultados);
     }
 }

@@ -5,6 +5,8 @@ namespace App\DataTables;
 use App\Models\Reportes;
 use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\EloquentDataTable;
+use Yajra\DataTables\Html\Column;
+
 
 class ReportesDataTable extends DataTable
 {
@@ -45,18 +47,11 @@ class ReportesDataTable extends DataTable
         return $this->builder()
             ->columns($this->getColumns())
             ->minifiedAjax()
-            ->addAction(['width' => '120px', 'printable' => false])
+            ->addAction(['width' => '120px', 'printable' => false, 'class' => 'dark:bg-[#101010] dark:text-white'])
             ->parameters([
                 'dom'       => 'Bfrtip',
                 'stateSave' => true,
                 'order'     => [[0, 'desc']],
-                /* 'buttons'   => [
-                    ['extend' => 'create', 'className' => 'btn btn-default btn-sm no-corner',],
-                    ['extend' => 'export', 'className' => 'btn btn-default btn-sm no-corner',],
-                    ['extend' => 'print', 'className' => 'btn btn-default btn-sm no-corner',],
-                    ['extend' => 'reset', 'className' => 'btn btn-default btn-sm no-corner',],
-                    ['extend' => 'reload', 'className' => 'btn btn-default btn-sm no-corner',],
-                ], */
             ]);
     }
 
@@ -68,9 +63,8 @@ class ReportesDataTable extends DataTable
     protected function getColumns()
     {
         return [
-            ['data' => 'id', 'title' => 'ID', 'width' => '5%'],
-            ['data' => 'title', 'title' => 'Nombre del Reporte'],
-            /* 'query_details', */
+            ['data' => 'id', 'title' => 'ID', 'width' => '5%', 'class' => 'dark:bg-[#101010] dark:text-white'],
+            ['data' => 'title', 'title' => 'Nombre del Reporte', 'class' => 'dark:bg-[#101010] dark:text-white'],
         ];
     }
 

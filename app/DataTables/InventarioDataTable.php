@@ -78,7 +78,7 @@ class InventarioDataTable extends DataTable
                 'processing' => true,
                 'serverSide' => true,
                 'responsive' => true,
-                'pageLength' => 10,
+                'pageLength' => 7,
                 'searching' => true,
                 'language' => [
                     'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
@@ -111,43 +111,50 @@ class InventarioDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'EmpleadoID',
                 'name' => 'EmpleadoID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombreEmpleado' => [
                 'title' => 'Nombre Empleado',
                 'data' => 'NombreEmpleado',
                 'name' => 'NombreEmpleado',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'PuestoID' => [
                 'title' => 'Puesto',
                 'data' => 'nombre_puesto',
                 'name' => 'puestos.NombrePuesto',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'ObraID' => [
                 'title' => 'Obra',
                 'data' => 'nombre_obra',
                 'name' => 'obras.NombreObra',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NumTelefono' => [
                 'title' => 'Num Telefono',
                 'data' => 'NumTelefono',
                 'name' => 'NumTelefono',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Correo' => [
                 'title' => 'Correo',
                 'data' => 'Correo',
                 'name' => 'Correo',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Estado' => [
                 'title' => 'Estado',
                 'data' => 'Estado',
                 'name' => 'Estado',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
 
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)
                 ->width(60)
-                ->addClass('text-center')
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
 

@@ -22,12 +22,11 @@ class PuestosDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
 
         return $dataTable
-        ->addColumn('action', function($row){
-            return view('puestos.datatables_actions', ['id' => $row->PuestoID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('PuestoID');
-
+            ->addColumn('action', function ($row) {
+                return view('puestos.datatables_actions', ['id' => $row->PuestoID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('PuestoID');
     }
 
     /**
@@ -39,15 +38,15 @@ class PuestosDataTable extends DataTable
     public function query(Puestos $model)
     {
         return $model->newQuery()
-        ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
-        ->join('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
-        ->select([
-            'puestos.PuestoID',
-            'puestos.NombrePuesto',
-            'departamentos.NombreDepartamento',
-            'gerencia.NombreGerencia',
-            DB::raw('CONCAT(departamentos.NombreDepartamento, " - ", gerencia.NombreGerencia) as nombre_departamento')
-        ]);
+            ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->join('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
+            ->select([
+                'puestos.PuestoID',
+                'puestos.NombrePuesto',
+                'departamentos.NombreDepartamento',
+                'gerencia.NombreGerencia',
+                DB::raw('CONCAT(departamentos.NombreDepartamento, " - ", gerencia.NombreGerencia) as nombre_departamento')
+            ]);
     }
 
     /**
@@ -58,53 +57,53 @@ class PuestosDataTable extends DataTable
     public function html()
     {
         return $this->builder()
-        ->setTableId('puestos-table')
-        ->columns($this->getColumns())
-        ->minifiedAjax()
-        ->dom('Bfrtip')
-        ->orderBy(1, 'asc')
-        ->buttons(array_filter([
-            auth()->user()->can('crear-puestos') ? [
-                'extend' => 'collection',
-                'className' => 'btn btn-primary',
-                'text' => '<i class="fa fa-plus"></i> Crear',
-                'action' => "function() {
+            ->setTableId('puestos-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->dom('Bfrtip')
+            ->orderBy(1, 'asc')
+            ->buttons(array_filter([
+                auth()->user()->can('crear-puestos') ? [
+                    'extend' => 'collection',
+                    'className' => 'btn btn-primary',
+                    'text' => '<i class="fa fa-plus"></i> Crear',
+                    'action' => "function() {
                     window.location = '" . route('puestos.create') . "';
                 }"
-            ] : null,
-         
-            [
-                'extend' => 'excel',
-                'className' => 'btn btn-success',
-                'text' => '<i class="fa fa-file-excel"></i> Excel'
-            ],
-            [
-                'extend' => 'pdf',
-                'className' => 'btn btn-danger',
-                'text' => '<i class="fa fa-file-pdf"></i> PDF'
-            ],
-           
-            [
-                'className' => 'btn btn-default',
-                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                'action' => 'function() { 
+                ] : null,
+
+                [
+                    'extend' => 'excel',
+                    'className' => 'btn btn-success',
+                    'text' => '<i class="fa fa-file-excel"></i> Excel'
+                ],
+                [
+                    'extend' => 'pdf',
+                    'className' => 'btn btn-danger',
+                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
+                ],
+
+                [
+                    'className' => 'btn btn-default',
+                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                    'action' => 'function() { 
                     window.LaravelDataTables["puestos-table"].ajax.reload();
                 }'
-            ],
-        ]))
-        ->parameters([
-            'processing' => true,
-            'serverSide' => true,
-            'responsive' => true,
-            'pageLength' => 10,
-            'searching' => true,
-            'language' => [
-                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            ],
-            'drawCallback' => 'function() {
+                ],
+            ]))
+            ->parameters([
+                'processing' => true,
+                'serverSide' => true,
+                'responsive' => true,
+                'pageLength' => 7,
+                'searching' => true,
+                'language' => [
+                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                ],
+                'drawCallback' => 'function() {
                 $("[data-toggle=tooltip]").tooltip();
             }',
-            'initComplete' => "function() {
+                'initComplete' => "function() {
                 this.api().columns().every(function () {
                     var column = this;
                     var input = document.createElement(\"input\");
@@ -114,7 +113,7 @@ class PuestosDataTable extends DataTable
                     });
                 });
             }",
-        ]);
+            ]);
     }
 
     /**
@@ -129,24 +128,25 @@ class PuestosDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'PuestoID',
                 'name' => 'PuestoID',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'NombrePuesto' => [
                 'title' => 'Nombre Puesto',
                 'data' => 'NombrePuesto',
                 'name' => 'NombrePuesto',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'DepartamentoID' => [
                 'title' => 'Departamento',
-                'data' => 'nombre_departamento', 
+                'data' => 'nombre_departamento',
                 'name' => DB::raw('CONCAT(departamentos.NombreDepartamento, " - ", gerencia.NombreGerencia)'),
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
-
-           
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
 

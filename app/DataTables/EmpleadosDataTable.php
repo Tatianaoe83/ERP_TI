@@ -21,14 +21,11 @@ class EmpleadosDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
 
         return $dataTable
-        ->addColumn('action', function($row){
-            return view('empleados.datatables_actions', ['id' => $row->EmpleadoID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('EmpleadoID');
-
-
-       
+            ->addColumn('action', function ($row) {
+                return view('empleados.datatables_actions', ['id' => $row->EmpleadoID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('EmpleadoID');
     }
 
     /**
@@ -51,9 +48,6 @@ class EmpleadosDataTable extends DataTable
                 'empleados.Correo',
                 'empleados.Estado'
             ]);
-
-        
-
     }
 
     /**
@@ -64,53 +58,53 @@ class EmpleadosDataTable extends DataTable
     public function html()
     {
         return $this->builder()
-        ->setTableId('empleados-table')
-        ->columns($this->getColumns())
-        ->minifiedAjax()
-        ->dom('Bfrtip')
-        ->orderBy(1, 'asc')
-        ->buttons(array_filter([
-            auth()->user()->can('crear-empleados') ? [
-                'extend' => 'collection',
-                'className' => 'btn btn-primary',
-                'text' => '<i class="fa fa-plus"></i> Crear',
-                'action' => "function() {
+            ->setTableId('empleados-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->dom('Bfrtip')
+            ->orderBy(1, 'asc')
+            ->buttons(array_filter([
+                auth()->user()->can('crear-empleados') ? [
+                    'extend' => 'collection',
+                    'className' => 'btn btn-primary',
+                    'text' => '<i class="fa fa-plus"></i> Crear',
+                    'action' => "function() {
                     window.location = '" . route('empleados.create') . "';
                 }"
-            ] : null,
-         
-            [
-                'extend' => 'excel',
-                'className' => 'btn btn-success',
-                'text' => '<i class="fa fa-file-excel"></i> Excel'
-            ],
-            [
-                'extend' => 'pdf',
-                'className' => 'btn btn-danger',
-                'text' => '<i class="fa fa-file-pdf"></i> PDF'
-            ],
-           
-            [
-                'className' => 'btn btn-default',
-                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                'action' => 'function() { 
+                ] : null,
+
+                [
+                    'extend' => 'excel',
+                    'className' => 'btn btn-success',
+                    'text' => '<i class="fa fa-file-excel"></i> Excel'
+                ],
+                [
+                    'extend' => 'pdf',
+                    'className' => 'btn btn-danger',
+                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
+                ],
+
+                [
+                    'className' => 'btn btn-default',
+                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                    'action' => 'function() { 
                     window.LaravelDataTables["empleados-table"].ajax.reload();
                 }'
-            ],
-        ]))
-        ->parameters([
-            'processing' => true,
-            'serverSide' => true,
-            'responsive' => true,
-            'pageLength' => 10,
-            'searching' => true,
-            'language' => [
-                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            ],
-            'drawCallback' => 'function() {
+                ],
+            ]))
+            ->parameters([
+                'processing' => true,
+                'serverSide' => true,
+                'responsive' => true,
+                'pageLength' => 7,
+                'searching' => true,
+                'language' => [
+                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                ],
+                'drawCallback' => 'function() {
                 $("[data-toggle=tooltip]").tooltip();
             }',
-            'initComplete' => "function() {
+                'initComplete' => "function() {
                 this.api().columns().every(function () {
                     var column = this;
                     var input = document.createElement(\"input\");
@@ -120,7 +114,7 @@ class EmpleadosDataTable extends DataTable
                     });
                 });
             }",
-        ]);
+            ]);
     }
 
     /**
@@ -135,43 +129,50 @@ class EmpleadosDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'EmpleadoID',
                 'name' => 'EmpleadoID',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'NombreEmpleado' => [
                 'title' => 'Nombre Empleado',
                 'data' => 'NombreEmpleado',
                 'name' => 'NombreEmpleado',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'PuestoID' => [
                 'title' => 'Puesto',
                 'data' => 'nombre_puesto',
                 'name' => 'puestos.NombrePuesto',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'ObraID' => [
                 'title' => 'Obra',
                 'data' => 'nombre_obra',
                 'name' => 'obras.NombreObra',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'NumTelefono' => [
                 'title' => 'Num Telefono',
                 'data' => 'NumTelefono',
                 'name' => 'NumTelefono',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'Correo' => [
                 'title' => 'Correo',
                 'data' => 'Correo',
                 'name' => 'Correo',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'Estado' => [
                 'title' => 'Estado',
                 'data' => 'Estado',
                 'name' => 'Estado',
-            ],  
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
 
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
 

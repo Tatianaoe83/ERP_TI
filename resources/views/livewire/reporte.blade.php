@@ -1,9 +1,9 @@
-<div class="container-fluid py-3 px-2">
+<div class="container-fluid py-3 px-2" wire:init="initModel">
 
     @include('flash::message')
 
     @if ($errors->any())
-    <div class="alert alert-danger border border-danger-subtle shadow-sm rounded small d-flex align-items-start gap-2 mb-3">
+    <div class="alert alert-danger border border-danger-subtle rounded small d-flex align-items-start gap-2 mb-3">
         <i class="fas fa-exclamation-triangle mt-1 text-danger"></i>
         <div>
             <strong>Completa todos los campos requeridos.</strong>
@@ -12,17 +12,17 @@
     @endif
 
     {{-- Título del reporte --}}
-    <div class="p-3 border rounded bg-light mb-3 shadow-sm">
-        <label class="fw-bold d-block mb-2">Título del Reporte</label>
-        <input wire:model="titulo" type="text" required class="form-control shadow-sm border-primary-subtle" placeholder="Ingresa el título del reporte">
+    <div class="rounded mb-3">
+        <label class="fw-bold d-block mb-2 text-[#101D49] dark:text-white">Título del Reporte</label>
+        <input wire:model="titulo" type="text" required class="form-control" placeholder="Ingresa el título del reporte">
     </div>
 
     {{-- Tabla principal y relaciones --}}
-    <div class="row g-3 mb-3">
+    <div class="row g-1 mb-3">
         <div class="col-12 col-md-6">
-            <div class="p-3 border rounded bg-white shadow-sm">
+            <div class="rounded text-[#101D49] dark:text-white">
                 <label for="modelo" class="fw-semibold mb-2 d-block">Tabla Principal</label>
-                <select wire:model="modelo" class="form-select shadow-sm border-primary-subtle">
+                <select wire:model="modelo" class="form-select">
                     <option value="">-- Selecciona --</option>
                     @foreach($tablasDisponibles as $tabla)
                     <option value="{{ $tabla }}">{{ ucfirst($tabla) }}</option>
@@ -33,9 +33,9 @@
 
         @if(is_array($relaciones) && count($relaciones))
         <div class="col-12 col-md-6">
-            <div class="p-3 border rounded bg-white shadow-sm">
+            <div class="rounded text-[#101D49] dark:text-white">
                 <label class="fw-semibold mb-2 d-block">Relación Disponible</label>
-                <select wire:model="relacionActual" class="form-select shadow-sm border-primary-subtle">
+                <select wire:model="relacionActual" class="form-select">
                     <option value="">-- Selecciona o deselecciona relación --</option>
                     @foreach($relaciones as $relacion => $etiqueta)
                     <option value="{{ $relacion }}">
@@ -51,13 +51,13 @@
 
     {{-- Columnas disponibles --}}
     @if($columnas || count($columnasPorRelacion))
-    <div class="p-3 border rounded bg-light mb-3 shadow-sm">
-        <div class="row g-3">
+    <div class="rounded mb-3">
+        <div class="row g-5">
             {{-- Tabla principal --}}
             @if($columnas)
             <div class="col-12 col-lg-6">
-                <div class="border rounded p-3 bg-white shadow-sm h-100">
-                    <h6 class="fw-bold text-primary mb-3">{{ ucfirst($modelo) }}</h6>
+                <div class="rounded p-1 h-100">
+                    <h6 class="fw-bold text-[#101D49] dark:text-white mb-3">{{ ucfirst($modelo) }}</h6>
                     <div class="row g-2">
                         @foreach($columnas as $columna)
                         <div class="col-6 col-sm-4 col-md-6">
@@ -75,8 +75,8 @@
             {{-- Tablas relacionadas --}}
             @foreach($columnasPorRelacion as $relacion => $columnas)
             <div class="col-12 col-lg-6">
-                <div class="border rounded p-3 bg-white shadow-sm h-100">
-                    <h6 class="fw-bold text-primary mb-3">{{ ucfirst($relacion) }}</h6>
+                <div class="rounded p-1 h-100">
+                    <h6 class="fw-bold text-[#101D49] dark:text-white mb-3">{{ ucfirst($relacion) }}</h6>
                     <div class="row g-2">
                         @foreach($columnas as $col)
                         <div class="col-6 col-sm-4 col-md-6">
@@ -95,78 +95,84 @@
     @endif
 
     {{-- Condiciones --}}
-    <div class="p-3 border rounded bg-light shadow-sm mb-4">
-        <label class="fw-semibold mb-3 d-block">Filtros</label>
-        @foreach($filtros as $index => $filtro)
-        <div class="row g-2 mb-3 align-items-end">
-            <div class="col-12 col-sm-6 col-md-4">
-                <label class="form-label small mb-1">Columna</label>
-                <select wire:model="filtros.{{$index}}.columna" class="form-select">
-                    <option value="">Selecciona Columna</option>
-                    @foreach($columnasSeleccionadas as $columna)
-                    <option value="{{$columna}}">{{Str::afterLast($columna, '.')}}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="col-6 col-sm-3 col-md-2">
-                <label class="form-label small mb-1">Operador</label>
-                <select wire:model="filtros.{{$index}}.operador" class="form-select">
-                    <option value="=">igual</option>
-                    <option value="like">empiece en</option>
-                    <option value=">">mayor que</option>
-                    <option value="<">menor que</option>
-                    <option value="between">entre</option>
-                    <option value="!=">es diferente</option>
-                </select>
-            </div>
-
-            <div class="col-6 col-sm-3 col-md-5">
-                @if($filtro['operador'] === 'between')
-                <label class="form-label small mb-1">Rango</label>
-                <div class="d-flex align-items-center gap-1">
-                    <input type="text" wire:model="filtros.{{ $index }}.valor.inicio" class="form-control" placeholder="desde">
-                    <span class="fw-semibold small">y</span>
-                    <input type="text" wire:model="filtros.{{ $index }}.valor.fin" class="form-control" placeholder="hasta">
-                    <span
-                        class="d-inline-block"
-                        tabindex="0"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Introduce un rango desde - hasta.">
-                        <i class="fas fa-info-circle text-primary"></i>
-                    </span>
+    <div class="rounded mb-4">
+        <label class="fw-semibold mb-3 d-block text-[#101D49] dark:text-white">Filtros</label>
+        @foreach($filtros as $index=> $filtro)
+        <div wire:key="filtro-{{$filtro['id']}}">
+            <div class="row g-2 mb-3 align-items-end">
+                <div class="col-12 col-sm-6 col-md-4">
+                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Columna</label>
+                    <select wire:model="filtros.{{$index}}.columna" class="form-select">
+                        <option value="">Selecciona Columna</option>
+                        @foreach($columnasSeleccionadas as $columna)
+                        <option value="{{$columna}}">{{Str::afterLast($columna, '.')}}</option>
+                        @endforeach
+                    </select>
                 </div>
-                @else
-                <label class="form-label small mb-1">Valor</label>
-                <div class="d-flex align-items-center gap-1">
+
+                <div class="col-6 col-sm-3 col-md-2">
+                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Operador</label>
+                    <select wire:model="filtros.{{$index}}.operador" class="form-select">
+                        <option value="=">igual a</option>
+                        <option value="like">contiene</option>
+                        <option value=">">mayor que</option>
+                        <option value="<">menor que</option>
+                        <option value="between">entre</option>
+                        <option value="!=">sin</option>
+                    </select>
+                </div>
+
+                <div class="col-6 col-sm-3 col-md-5">
+                    @if($filtro['operador'] === 'between')
+                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Entre</label>
+                    <div class="d-flex align-items-center gap-1">
+                        <input type="text" wire:model="filtros.{{ $index }}.valor.inicio" class="form-control" placeholder="desde">
+                        <span class="fw-semibold small">y</span>
+                        <input type="text" wire:model="filtros.{{ $index }}.valor.fin" class="form-control" placeholder="hasta">
+                        <span
+                            class="d-inline-block"
+                            tabindex="0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Introduce un rango desde - hasta.">
+                            <i class="fas fa-info-circle text-primary"></i>
+                        </span>
+                    </div>
+                    @else
+                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Valor</label>
+                    @php
+                    $col = $filtro['columna'] ?? null;
+                    $oper = $filtro['operador'] ?? null;
+                    @endphp
+                    @if($col && in_array($oper, ['like', '=']) && str_contains($col, '.'))
+                    @php [$tabla, $campo] = explode('.',$col); @endphp
+                    <livewire:autocomplete-input
+                        :tabla="$tabla"
+                        :columna="$campo"
+                        :indice="$index"
+                        wire:model="filtros.{{ $index }}.valor"
+                        wire:key="autocompletado-{{ $index }}" />
+                    @else
                     <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control" placeholder="valor">
-                    <span
-                        class="d-inline-block"
-                        tabindex="0"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Introduce un valor para filtrar.">
-                        <i class="fas fa-info-circle text-primary"></i>
-                    </span>
+                    @endif
+                    @endif
                 </div>
-                @endif
-            </div>
 
-            <div class="col-12 col-sm-12 col-md-1 text-center text-md-end">
-                <button wire:click.prevent="eliminarFiltro({{ $index }})" class="btn btn-outline-danger btn-sm">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <div class="col-12 col-sm-12 col-md-1 text-center text-md-end">
+                    <button wire:click.prevent="eliminarFiltro({{ $index }})" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
             </div>
         </div>
         @endforeach
         <button wire:click.prevent="agregarFiltro" class="btn btn-danger btn-sm">Añadir filtro</button>
     </div>
 
-    <div class="p-3 border rounded bg-white shadow-sm mb-4">
+    <div class="rounded mb-4">
         <div class="row g-3">
             <div class="col-12 col-sm-6 col-md-3">
-                <label class="fw-semibold small mb-1 d-block">Ordenar por</label>
+                <label class="fw-semibold small mb-1 d-block text-[#101D49] dark:text-white">Ordenar por</label>
                 <select wire:model="ordenColumna" class="form-select">
                     <option value="">--</option>
                     @foreach($columnasSeleccionadas as $columna)
@@ -175,35 +181,35 @@
                 </select>
             </div>
 
-            <div class="col-6 col-sm-6 col-md-2">
-                <label class="fw-semibold small mb-1 d-block">Dirección</label>
+            <div class="col-6 col-sm-6 col-md-3">
+                <label class="fw-semibold small mb-1 d-block text-[#101D49] dark:text-white">Dirección</label>
                 <select wire:model="ordenDireccion" class="form-select">
                     <option value="asc">Asc</option>
                     <option value="desc">Desc</option>
                 </select>
             </div>
 
-            <div class="col-6 col-sm-12 col-md-3">
-                <label class="fw-semibold small mb-1 d-block">Límite</label>
-                <input type="number" wire:model="limite" class="form-control" placeholder="Ej: 100">
+            <div class="col-6 col-sm-6 col-md-3">
+                <label class="fw-semibold small mb-1 d-block text-[#101D49] dark:text-white">Límite</label>
+                <input type="number" wire:model="limite" class="form-control form-control-md" placeholder="Ej: 100" min="0">
             </div>
         </div>
     </div>
 
     {{-- Botón generar y preview --}}
-    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-end mt-4">
-        <a href="{{ route('reportes.index') }}" class="btn btn-outline-danger">Cancelar</a>
-        <button type="button" class="btn btn-outline-info" wire:click="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
-            <i class="fas fa-eye me-1"></i>Previsualizar
+    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-start mt-4">
+        <a href="{{ route('reportes.index') }}" class="btn btn-danger">Cancelar</a>
+        <button type="button" class="btn btn-info" wire:click="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
+            Previsualizar
         </button>
-        <button wire:click="generarReporte" type="button" class="btn btn-success px-4 shadow-sm">
-            <i class="fas fa-file-alt me-1"></i>Generar Reporte
+        <button wire:click="generarReporte" type="button" class="btn btn-success px-4">
+            Generar Reporte
         </button>
     </div>
 
     <div wire:ignore.self class="modal fade" id="modalPreview" tabindex="-1" aria-labelledby="modalPreviewLabel" aria-hidden="true">
         <div class="modal-dialog modal-fullscreen-sm-down modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
+            <div class="modal-content dark:bg-black">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalPreviewLabel">Vista Previa del Reporte</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>

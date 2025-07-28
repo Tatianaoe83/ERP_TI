@@ -31,6 +31,7 @@ class ReporteService
     {
         return collect(Schema::getColumnListing($tabla))
             ->reject(fn($col) => Str::endsWith($col, ['ID', 'Id', '_id', '_at', 'created_at', 'updated_at', 'deleted_at']))
+            ->map(fn($col) => $tabla . '.' . $col)
             ->values()
             ->toArray();
     }
@@ -115,7 +116,7 @@ class ReporteService
     {
         $nameDB = \DB::getDatabaseName();
 
-        $ignorar = ['audits', 'blog', 'gerencias_usuarios', 'query_forms', 'users','tiposdecategorias'];
+        $ignorar = ['audits', 'blog', 'gerencias_usuarios', 'query_forms', 'users', 'tiposdecategorias'];
 
         return collect(\DB::select("SHOW TABLES"))
             ->map(fn($obj) => $obj->{"Tables_in_{$nameDB}"})

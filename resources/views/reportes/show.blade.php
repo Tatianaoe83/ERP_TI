@@ -5,25 +5,15 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="section">
-    <div class="section-header">
-        <h3 class="page__heading">Detalles del Reporte: {{ $reportes->title }}</h3>
+<h3 class="space-x-1 dark:bg-[#101010] dark:text-white">Detalles del Reporte: {{ $reportes->title }}</h3>
+<div class="content px-3">
+    <div class="row">
+        @include('reportes.show_fields')
     </div>
-    <div class="section-body">
-        <div class="content px-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        @include('reportes.show_fields')
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="{{ route('reportes.index') }}" class="btn btn-danger">Cancelar</a>
-                </div>
-            </div>
-        </div>
+    <div class="card-footer">
+        <a href="{{ route('reportes.index') }}" class="btn btn-danger">Cancelar</a>
     </div>
-</section>
+</div>
 @endsection
 
 @push('third_party_scripts')
@@ -41,7 +31,13 @@
             pageLength: 10,
             language: {
                 url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-            }
+            },
+            columnDefs: [{
+                targets: '_all',
+                createdCell: function(td) {
+                    $(td).addClass('bg-[#E6EBF5] dark:bg-[#101010] text-[#101D49] dark:text-white');
+                }
+            }],
         });
     });
 </script>

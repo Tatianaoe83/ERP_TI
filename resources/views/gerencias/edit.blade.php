@@ -1,36 +1,29 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="section">
-        <div class="section-header">
-            <h3 class="page__heading">Editar Agencia</h3>
+<h3 class="text-[#101D49] dark:text-white">Editar Agencia</h3>
+
+<div class="content px-3">
+
+    @include('adminlte-templates::common.errors')
+
+
+    {!! Form::model($gerencia, ['route' => ['gerencias.update', $gerencia->GerenciaID], 'method' => 'patch']) !!}
+
+    <div class="flex flex-col gap-2">
+        <div>
+            <div class="row text-[#101D49] dark:text-white">
+                @include('gerencias.fields')
+            </div>
         </div>
 
-    
-    <div class="section-body">
-
-    <div class="content px-3">
-
-        @include('adminlte-templates::common.errors')
-
-        <div class="card">
-
-            {!! Form::model($gerencia, ['route' => ['gerencias.update', $gerencia->GerenciaID], 'method' => 'patch']) !!}
-
-            <div class="card-body">
-                <div class="row">
-                    @include('gerencias.fields')
-                </div>
-            </div>
-
-            <div class="card-footer">
-                {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-                <a href="{{ route('gerencias.index') }}" class="btn btn-danger">Cancelar</a>
-            </div>
-
-            {!! Form::close() !!}
-
+        <div>
+            {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
+            <a href="{{ route('gerencias.index') }}" class="btn btn-danger">Cancelar</a>
         </div>
     </div>
-    </section>
+
+    {!! Form::close() !!}
+
+</div>
 @endsection

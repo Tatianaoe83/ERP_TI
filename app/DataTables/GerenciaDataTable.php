@@ -20,14 +20,13 @@ class GerenciaDataTable extends DataTable
     {
         $dataTable = new EloquentDataTable($query);
 
-       
-        return $dataTable
-        ->addColumn('action', function($row){
-            return view('gerencias.datatables_actions', ['id' => $row->GerenciaID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('GerenciaID');
 
+        return $dataTable
+            ->addColumn('action', function ($row) {
+                return view('gerencias.datatables_actions', ['id' => $row->GerenciaID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('GerenciaID');
     }
 
     /**
@@ -55,55 +54,55 @@ class GerenciaDataTable extends DataTable
      */
     public function html()
     {
-        
+
         return $this->builder()
-        ->setTableId('gerencias-table')
-        ->columns($this->getColumns())
-        ->minifiedAjax()
-        ->dom('Bfrtip')
-        ->orderBy(1, 'asc')
-        ->buttons(array_filter([
-            auth()->user()->can('crear-gerencias') ? [
-                'extend' => 'collection',
-                'className' => 'btn btn-primary',
-                'text' => '<i class="fa fa-plus"></i> Crear',
-                'action' => "function() {
+            ->setTableId('gerencias-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->dom('Bfrtip')
+            ->orderBy(1, 'asc')
+            ->buttons(array_filter([
+                auth()->user()->can('crear-gerencias') ? [
+                    'extend' => 'collection',
+                    'className' => 'btn btn-primary',
+                    'text' => '<i class="fa fa-plus"></i> Crear',
+                    'action' => "function() {
                     window.location = '" . route('gerencias.create') . "';
                 }"
-            ] : null,
-         
-            [
-                'extend' => 'excel',
-                'className' => 'btn btn-success',
-                'text' => '<i class="fa fa-file-excel"></i> Excel'
-            ],
-            [
-                'extend' => 'pdf',
-                'className' => 'btn btn-danger',
-                'text' => '<i class="fa fa-file-pdf"></i> PDF'
-            ],
-           
-            [
-                'className' => 'btn btn-default',
-                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                'action' => 'function() { 
+                ] : null,
+
+                [
+                    'extend' => 'excel',
+                    'className' => 'btn btn-success',
+                    'text' => '<i class="fa fa-file-excel"></i> Excel'
+                ],
+                [
+                    'extend' => 'pdf',
+                    'className' => 'btn btn-danger',
+                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
+                ],
+
+                [
+                    'className' => 'btn btn-default',
+                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                    'action' => 'function() { 
                     window.LaravelDataTables["gerencias-table"].ajax.reload();
                 }'
-            ],
-        ]))
-        ->parameters([
-            'processing' => true,
-            'serverSide' => true,
-            'responsive' => true,
-            'pageLength' => 10,
-            'searching' => true,
-            'language' => [
-                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            ],
-            'drawCallback' => 'function() {
+                ],
+            ]))
+            ->parameters([
+                'processing' => true,
+                'serverSide' => true,
+                'responsive' => true,
+                'pageLength' => 7,
+                'searching' => true,
+                'language' => [
+                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                ],
+                'drawCallback' => 'function() {
                 $("[data-toggle=tooltip]").tooltip();
             }',
-            'initComplete' => "function() {
+                'initComplete' => "function() {
                 this.api().columns().every(function () {
                     var column = this;
                     var input = document.createElement(\"input\");
@@ -113,9 +112,7 @@ class GerenciaDataTable extends DataTable
                     });
                 });
             }",
-        ]);
-
-          
+            ]);
     }
 
     /**
@@ -126,32 +123,36 @@ class GerenciaDataTable extends DataTable
     protected function getColumns()
     {
         return [
-            
+
             'GerenciaID' => [
                 'title' => 'ID',
                 'data' => 'GerenciaID',
                 'name' => 'GerenciaID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombreGerencia' => [
                 'title' => 'Nombre Gerencia',
                 'data' => 'NombreGerencia',
                 'name' => 'NombreGerencia',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'UnidadNegocioID' => [
                 'title' => 'Unidad Negocio',
                 'data' => 'nombre_empresa',
                 'name' => 'unidadesdenegocio.NombreEmpresa',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombreGerente' => [
                 'title' => 'Nombre Gerente',
                 'data' => 'NombreGerente',
                 'name' => 'NombreGerente',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
 

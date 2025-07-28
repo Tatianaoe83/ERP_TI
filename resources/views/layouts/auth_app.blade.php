@@ -34,10 +34,10 @@
 <body>
 
     <div class="relative z-10 h-screen overflow-hidden"
-        style="background-image: url('img/fondotech.jpg'); background-size: auto; background-position: center; filter:grayscale(60%)">
+        style="background-image: url('img/fondotech.jpg'); background-size: cover; background-position: center; filter:grayscale(60%)">
         <div class="flex justify-center px-6 pt-12 fuente">
             <div id="tsparticles"></div>
-            <div class="w-full max-w-7xl grid lg:grid-cols-2 content-start pt-10 mt-10">
+            <div class="w-full max-w-7xl grid lg:grid-cols-2 sm:grid-cols-1 content-start pt-10 mt-10">
 
                 <div class="hidden lg:block min-h-screen">
                     <div class="w-full">
@@ -45,7 +45,7 @@
                     </div>
                 </div>
 
-                <div class="glass-card rounded-t-lg p-8 w-[400px] max-w-md mx-auto">
+                <div class="glass-card rounded-t-lg p-8 w-[400px] max-w-md mx-auto md:rounded-lg">
                     <div class="mb-8">
                         <p class="text-black text-sm font-medium mb-2">BIENVENIDO DE NUEVO</p>
                         <h3 class="text-4xl font-semibold text-gray-800">Iniciar sesión</h3>
@@ -132,13 +132,13 @@
                             max: 3
                         }
                     }
-                }
+                },
                 interactivity: {
                     events: {
                         onHover: {
-                            enable: false
+                            enable: false,
                             mode: repulse
-                        }
+                        },
                         onclick: {
                             enable: false
                         }

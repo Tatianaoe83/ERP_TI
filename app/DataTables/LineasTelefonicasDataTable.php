@@ -19,7 +19,6 @@ class LineasTelefonicasDataTable extends DataTable
     public function dataTable($query)
     {
         $dataTable = new EloquentDataTable($query);
-
         
         return $dataTable
         ->addColumn('action', function($row){
@@ -35,7 +34,6 @@ class LineasTelefonicasDataTable extends DataTable
         ->rawColumns(['action', 'estado_disponibilidad'])
         ->setRowId('LineaID');
 
-        
     }
 
     /**
@@ -46,26 +44,25 @@ class LineasTelefonicasDataTable extends DataTable
      */
     public function query(LineasTelefonicas $model)
     {
-  
-        return $model->newQuery()
-        ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
-        ->join('planes', 'planes.ID', '=', 'lineastelefonicas.PlanID')
-        ->select([
-            'lineastelefonicas.LineaID',
-            'lineastelefonicas.NumTelefonico',
-            'planes.NombrePlan as nombre_plan',
-            'lineastelefonicas.CuentaPadre',
-            'lineastelefonicas.CuentaHija',
-            'lineastelefonicas.TipoLinea',
-            'obras.NombreObra as nombre_obra',
-            'lineastelefonicas.FechaFianza',
-            'lineastelefonicas.CostoFianza',
-            'lineastelefonicas.Activo',
-            'lineastelefonicas.Disponible',
-            'lineastelefonicas.MontoRenovacionFianza'
-       
-        ]);
 
+        return $model->newQuery()
+            ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
+            ->join('planes', 'planes.ID', '=', 'lineastelefonicas.PlanID')
+            ->select([
+                'lineastelefonicas.LineaID',
+                'lineastelefonicas.NumTelefonico',
+                'planes.NombrePlan as nombre_plan',
+                'lineastelefonicas.CuentaPadre',
+                'lineastelefonicas.CuentaHija',
+                'lineastelefonicas.TipoLinea',
+                'obras.NombreObra as nombre_obra',
+                'lineastelefonicas.FechaFianza',
+                'lineastelefonicas.CostoFianza',
+                'lineastelefonicas.Activo',
+                'lineastelefonicas.Disponible',
+                'lineastelefonicas.MontoRenovacionFianza'
+
+            ]);
     }
 
     /**
@@ -76,53 +73,53 @@ class LineasTelefonicasDataTable extends DataTable
     public function html()
     {
         return $this->builder()
-        ->setTableId('lineas-telefonicas-table')
-        ->columns($this->getColumns())
-        ->minifiedAjax()
-        ->dom('Bfrtip')
-        ->orderBy(1, 'asc')
-        ->buttons(array_filter([
-            auth()->user()->can('crear-Lineastelefonicas') ? [
-                'extend' => 'collection',
-                'className' => 'btn btn-primary',
-                'text' => '<i class="fa fa-plus"></i> Crear',
-                'action' => "function() {
+            ->setTableId('lineas-telefonicas-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->dom('Bfrtip')
+            ->orderBy(1, 'asc')
+            ->buttons(array_filter([
+                auth()->user()->can('crear-Lineastelefonicas') ? [
+                    'extend' => 'collection',
+                    'className' => 'btn btn-primary',
+                    'text' => '<i class="fa fa-plus"></i> Crear',
+                    'action' => "function() {
                     window.location = '" . route('lineasTelefonicas.create') . "';
                 }"
                 ] : null,
-         
-            [
-                'extend' => 'excel',
-                'className' => 'btn btn-success',
-                'text' => '<i class="fa fa-file-excel"></i> Excel'
-            ],
-            [
-                'extend' => 'pdf',
-                'className' => 'btn btn-danger',
-                'text' => '<i class="fa fa-file-pdf"></i> PDF'
-            ],
-           
-            [
-                'className' => 'btn btn-default',
-                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                'action' => 'function() { 
+
+                [
+                    'extend' => 'excel',
+                    'className' => 'btn btn-success',
+                    'text' => '<i class="fa fa-file-excel"></i> Excel'
+                ],
+                [
+                    'extend' => 'pdf',
+                    'className' => 'btn btn-danger',
+                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
+                ],
+
+                [
+                    'className' => 'btn btn-default',
+                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                    'action' => 'function() { 
                     window.LaravelDataTables["lineas-telefonicas-table"].ajax.reload();
                 }'
-            ],
-        ]))
-        ->parameters([
-            'processing' => true,
-            'serverSide' => true,
-            'responsive' => true,
-            'pageLength' => 10,
-            'searching' => true,
-            'language' => [
-                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            ],
-            'drawCallback' => 'function() {
+                ],
+            ]))
+            ->parameters([
+                'processing' => true,
+                'serverSide' => true,
+                'responsive' => true,
+                'pageLength' => 4,
+                'searching' => true,
+                'language' => [
+                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                ],
+                'drawCallback' => 'function() {
                 $("[data-toggle=tooltip]").tooltip();
             }',
-            'initComplete' => "function() {
+                'initComplete' => "function() {
                 this.api().columns().every(function () {
                     var column = this;
                     var input = document.createElement(\"input\");
@@ -132,10 +129,7 @@ class LineasTelefonicasDataTable extends DataTable
                     });
                 });
             }",
-        ]);
-
-
-    
+            ]);
     }
 
     /**
@@ -150,70 +144,82 @@ class LineasTelefonicasDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'LineaID',
                 'name' => 'LineaID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NumTelefonico' => [
                 'title' => 'Num Telefonico',
                 'data' => 'NumTelefonico',
                 'name' => 'NumTelefonico',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'PlanID' => [
                 'title' => 'Plan',
                 'data' => 'nombre_plan',
                 'name' => 'planes.NombrePlan',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'CuentaPadre' => [
-                    'title' => 'Cuenta Padre',
-                    'data' => 'CuentaPadre',
-                    'name' => 'CuentaPadre',
-                ],
+                'title' => 'Cuenta Padre',
+                'data' => 'CuentaPadre',
+                'name' => 'CuentaPadre',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'CuentaHija' => [
-                    'title' => 'Cuenta Hija',
-                    'data' => 'CuentaHija',
-                    'name' => 'CuentaHija',
-                ],
+                'title' => 'Cuenta Hija',
+                'data' => 'CuentaHija',
+                'name' => 'CuentaHija',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'TipoLinea' => [
                 'title' => 'Tipo Linea',
                 'data' => 'TipoLinea',
                 'name' => 'TipoLinea',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'ObraID' => [
                 'title' => 'Obra',
                 'data' => 'nombre_obra',
                 'name' => 'obras.NombreObra',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'FechaFianza' => [
                 'title' => 'Fecha Fianza',
                 'data' => 'FechaFianza',
                 'name' => 'FechaFianza',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'CostoFianza' => [
                 'title' => 'Costo Fianza',
                 'data' => 'CostoFianza',
                 'name' => 'CostoFianza',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Activo' => [
                 'title' => 'Activo',
                 'data' => 'Activo',
                 'name' => 'Activo',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'estado_disponibilidad' => [
-                'title' => 'Estado',
-                'data' => 'estado_disponibilidad',
-                'name' => 'estado_disponibilidad',
-                'orderable' => false,
-                'searchable' => false,
+
+            'Disponible' => [
+                'title' => 'Disponible',
+                'data' => 'Disponible',
+                'name' => 'Disponible',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+
             ],
             'MontoRenovacionFianza' => [
                 'title' => 'Monto Renovacion Fianza',
                 'data' => 'MontoRenovacionFianza',
                 'name' => 'MontoRenovacionFianza',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-        
+
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
 

@@ -21,13 +21,11 @@ class PlanesDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
 
         return $dataTable
-        ->addColumn('action', function($row){
-            return view('planes.datatables_actions', ['id' => $row->ID])->render();
-        })
-        ->rawColumns(['action'])
-        ->setRowId('ID');
-
-
+            ->addColumn('action', function ($row) {
+                return view('planes.datatables_actions', ['id' => $row->ID])->render();
+            })
+            ->rawColumns(['action'])
+            ->setRowId('ID');
     }
 
     /**
@@ -40,13 +38,13 @@ class PlanesDataTable extends DataTable
     {
 
         return $model->newQuery()
-        ->join('companiaslineastelefonicas', 'planes.companiaID', '=', 'companiaslineastelefonicas.ID')
-        ->select([
-            'planes.ID',
-            'companiaslineastelefonicas.Compania as nombre_compania',
-            'planes.NombrePlan',
-            'planes.PrecioPlan'
-        ]);
+            ->join('companiaslineastelefonicas', 'planes.companiaID', '=', 'companiaslineastelefonicas.ID')
+            ->select([
+                'planes.ID',
+                'companiaslineastelefonicas.Compania as nombre_compania',
+                'planes.NombrePlan',
+                'planes.PrecioPlan'
+            ]);
     }
 
     /**
@@ -57,53 +55,53 @@ class PlanesDataTable extends DataTable
     public function html()
     {
         return $this->builder()
-        ->setTableId('planes-table')
-        ->columns($this->getColumns())
-        ->minifiedAjax()
-        ->dom('Bfrtip')
-        ->orderBy(1, 'asc')
-        ->buttons(array_filter([
-            auth()->user()->can('crear-planes') ? [
-                'extend' => 'collection',
-                'className' => 'btn btn-primary',
-                'text' => '<i class="fa fa-plus"></i> Crear',
-                'action' => "function() {
+            ->setTableId('planes-table')
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->dom('Bfrtip')
+            ->orderBy(1, 'asc')
+            ->buttons(array_filter([
+                auth()->user()->can('crear-planes') ? [
+                    'extend' => 'collection',
+                    'className' => 'btn btn-primary',
+                    'text' => '<i class="fa fa-plus"></i> Crear',
+                    'action' => "function() {
                     window.location = '" . route('planes.create') . "';
                 }"
-            ] : null,
-         
-            [
-                'extend' => 'excel',
-                'className' => 'btn btn-success',
-                'text' => '<i class="fa fa-file-excel"></i> Excel'
-            ],
-            [
-                'extend' => 'pdf',
-                'className' => 'btn btn-danger',
-                'text' => '<i class="fa fa-file-pdf"></i> PDF'
-            ],
-           
-            [
-                'className' => 'btn btn-default',
-                'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                'action' => 'function() { 
+                ] : null,
+
+                [
+                    'extend' => 'excel',
+                    'className' => 'btn btn-success',
+                    'text' => '<i class="fa fa-file-excel"></i> Excel'
+                ],
+                [
+                    'extend' => 'pdf',
+                    'className' => 'btn btn-danger',
+                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
+                ],
+
+                [
+                    'className' => 'btn btn-default',
+                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                    'action' => 'function() { 
                     window.LaravelDataTables["planes-table"].ajax.reload();
                 }'
-            ],
-        ]))
-        ->parameters([
-            'processing' => true,
-            'serverSide' => true,
-            'responsive' => true,
-            'pageLength' => 10,
-            'searching' => true,
-            'language' => [
-                'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-            ],
-            'drawCallback' => 'function() {
+                ],
+            ]))
+            ->parameters([
+                'processing' => true,
+                'serverSide' => true,
+                'responsive' => true,
+                'pageLength' => 7,
+                'searching' => true,
+                'language' => [
+                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+                ],
+                'drawCallback' => 'function() {
                 $("[data-toggle=tooltip]").tooltip();
             }',
-            'initComplete' => "function() {
+                'initComplete' => "function() {
                 this.api().columns().every(function () {
                     var column = this;
                     var input = document.createElement(\"input\");
@@ -113,7 +111,7 @@ class PlanesDataTable extends DataTable
                     });
                 });
             }",
-        ]);
+            ]);
     }
 
     /**
@@ -128,28 +126,32 @@ class PlanesDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'ID',
                 'name' => 'ID',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'CompaniaID' => [
                 'title' => 'Compania',
                 'data' => 'nombre_compania',
                 'name' => 'companiaslineastelefonicas.Compania',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombrePlan' => [
                 'title' => 'Nombre Plan',
                 'data' => 'NombrePlan',
                 'name' => 'NombrePlan',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'PrecioPlan' => [
                 'title' => 'Precio Plan',
                 'data' => 'PrecioPlan',
                 'name' => 'PrecioPlan',
+                'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             Column::computed('action')
-            ->exportable(false)
-            ->printable(false)
-            ->width(60)
-            ->addClass('text-center')
-           
+                ->exportable(false)
+                ->printable(false)
+                ->width(60)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
+
         ];
     }
 
