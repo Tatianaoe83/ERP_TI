@@ -6,12 +6,17 @@
     <div class="flex items-center justify-center">
         <div class="flex flex-row gap-3">
             <Span class="text-lg text-black">Seleccionar gerencia</Span>
-            <div class="flex flex-col gap-3">
-                <select name="" id="" class="w-300 h-[40px] cursor-pointer border border-gray-800 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
-                    <option value="" disabled selected>Selecciona un opcion</option>
-                </select>
-                <button type="submit" class="w-40 h-10 text-white text-lg rounded-md bg-[#6777ef] hover:bg-green-500 transition">Generar corte</button>
-            </div>
+            <form action="{{route('cortes.index')}}" method="GET">
+                <div class="flex flex-col gap-3">
+                    <select name="gerenciaID" id="gerenciaID" class="w-300 h-[40px] cursor-pointer border border-gray-800 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                        <option value="" disabled selected>Selecciona un opcion</option>
+                        @foreach($gerencia as $gerencias)
+                        <option value="{{$gerencias->GerenciaID}}">{{$gerencias->NombreGerencia}}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="w-40 h-10 text-white text-lg rounded-md bg-[#6777ef] hover:bg-green-500 transition">Generar corte</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

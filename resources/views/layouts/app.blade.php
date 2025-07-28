@@ -1,7 +1,18 @@
 <!DOCTYPE html>
-<html class="dark">
+<html class>
 
 <head>
+    <script>
+        if (
+            localStorage.getItem('theme') === 'dark' ||
+            (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>ERP TI Proser</title>
@@ -35,7 +46,7 @@
 </head>
 @livewireScripts
 
-<body>
+<body class="transition-colors duration-500 ease-in-out">
 
     <div id="app">
         <nav class="bg-white h-[80px] text-white text-white border-b border-b-gray-300 rounded-md">

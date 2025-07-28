@@ -9,7 +9,12 @@ use App\Http\Requests\UpdateCortesRequest;
 use App\Repositories\CortesRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
+use App\Models\Gerencia;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Js;
 use Response;
+use Yajra\DataTables\Html\Editor\Fields\Select;
 
 class CortesController extends AppBaseController
 {
@@ -28,9 +33,22 @@ class CortesController extends AppBaseController
      *
      * @return Response
      */
-    public function index(CortesDataTable $cortesDataTable)
+    /* public function index(CortesDataTable $cortesDataTable)
     {
         return $cortesDataTable->render('cortes.index');
+    } */
+
+    public function index(Request $request)
+    {
+        $gerencia = Gerencia::all();
+
+        $results = [];
+        if ($gerenciaID = $request->input('gerenciaID')) {
+            dd("ID recibido: $gerenciaID");
+            $results = DB::select('CALL ObtenerInsumosAnualesPorGerencia2(?)', [$gerenciaID]);
+            dd($results);
+        }
+        return view('cortes.index', compact('results', 'gerencia'));
     }
 
     /**
@@ -40,7 +58,7 @@ class CortesController extends AppBaseController
      */
     public function create()
     {
-        
+
         return view('cortes.create');
     }
 
