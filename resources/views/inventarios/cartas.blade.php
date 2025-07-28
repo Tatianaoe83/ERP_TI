@@ -10,16 +10,27 @@
     <div class="content px-3">
         @include('adminlte-templates::common.errors')
 
-        <div class="row">
-            <div class="col-12 col-sm-12 col-lg-12 gap-2">
-                <div class="flex flex-row items-center justify-between">
-                    <h4 class="dark:bg-[#101010] dark:text-white">Mantenimiento preventivo</h4>
-                    <div class="">
-                        <a data-collapse="#mycard-collapse" class="btn btn-icon btn-info" href="#"><i class="fas fa-plus"></i></a>
+            <div class="row">
+            <div class="col-12 col-sm-12 col-lg-12">
+                <div class="card">
+                  <div class="card-header">
+                    <h4>Mantenimiento preventivo</h4>
+                  </div>
+                  <div class="card-body">
+                    
+                    <form id="formulario2" action="{{ route('inventarios.mantenimiento', $id) }}" method="POST" target="_blank">
+                        @csrf
+
+                    <div class="row">
+                        <div class="col-12 col-sm-12 col-lg-12" style="margin-bottom: 12px;">
+                        {!! Form::label('IdEquipo', 'Seleccione el equipo:') !!}
+                        
+                        {!!Form::select('IdEquipo',App\Models\InventarioEquipo::select(DB::raw("CONCAT(Folio,' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
+                            ->where('EmpleadoID', '=', $id)
+                            ->pluck('NombreEq','InventarioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%'])!!}
+                        </div>
                     </div>
-                </div>
-                <div class="collapse" id="mycard-collapse">
-                    <div class="card-body">
+
 
                         <form id="formulario2" action="{{ route('inventarios.mantenimiento', $id) }}" method="POST" target="_blank">
                             @csrf

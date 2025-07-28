@@ -61,7 +61,14 @@ class LineasTelefonicasController extends AppBaseController
                 ->addColumn('action', function ($row) {
                     return view('lineas_telefonicas.datatables_actions', ['id' => $row->LineaID])->render();
                 })
-                ->rawColumns(['action'])
+                ->addColumn('estado_disponibilidad', function ($row) {
+                    if ($row->Disponible == 1) {
+                        return '<span class="badge badge-success">Disponible</span>';
+                    } else {
+                        return '<span class="badge badge-danger">Asignada</span>';
+                    }
+                })
+                ->rawColumns(['action', 'estado_disponibilidad'])
                 ->make(true);
         }
 

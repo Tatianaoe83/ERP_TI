@@ -3,11 +3,13 @@
 @section('content')
 <div class="col-xs-12 col-sm-12 col-md-12">
 
+
     <div class="d-flex justify-content-between align-items-center">
         <h3 class="mb-0 text-[#101D49] dark:text-white">Lista de Reportes</h3>
         <a href="{{ route('reportes.create') }}" class="btn btn-sm btn-primary shadow-sm">
             <i class="fas fa-plus me-1"></i> Nuevo Reporte
         </a>
+
     </div>
 
     @push('third_party_stylesheets')

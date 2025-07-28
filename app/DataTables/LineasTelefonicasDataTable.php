@@ -19,14 +19,21 @@ class LineasTelefonicasDataTable extends DataTable
     public function dataTable($query)
     {
         $dataTable = new EloquentDataTable($query);
-
-
+        
         return $dataTable
-            ->addColumn('action', function ($row) {
-                return view('lineas_telefonicas.datatables_actions', ['id' => $row->LineaID])->render();
-            })
-            ->rawColumns(['action'])
-            ->setRowId('LineaID');
+        ->addColumn('action', function($row){
+            return view('lineas_telefonicas.datatables_actions', ['id' => $row->LineaID])->render();
+        })
+        ->addColumn('estado_disponibilidad', function ($row) {
+            if ($row->Disponible == 1) {
+                return '<span class="badge badge-success">Disponible</span>';
+            } else {
+                return '<span class="badge badge-danger">Asignada</span>';
+            }
+        })
+        ->rawColumns(['action', 'estado_disponibilidad'])
+        ->setRowId('LineaID');
+
     }
 
     /**
@@ -193,11 +200,13 @@ class LineasTelefonicasDataTable extends DataTable
                 'name' => 'Activo',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
+
             'Disponible' => [
                 'title' => 'Disponible',
                 'data' => 'Disponible',
                 'name' => 'Disponible',
                 'class' => 'dark:bg-[#101010] dark:text-white'
+
             ],
             'MontoRenovacionFianza' => [
                 'title' => 'Monto Renovacion Fianza',
