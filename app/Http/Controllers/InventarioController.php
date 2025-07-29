@@ -638,7 +638,7 @@ class InventarioController extends AppBaseController
         $empleadoid = $id;
 
         $seleccionados = $request->input('inventarioSeleccionado', []);
-        dd($seleccionados);
+       
 
         $entrega = auth()->id();
 
