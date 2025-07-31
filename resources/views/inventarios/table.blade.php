@@ -56,7 +56,7 @@
 
 
 
-    <table id="tabla-empleados" class="table">
+    <table id="tabla-empleados" class="table" style="width: 100%;">
         <thead>
             <tr>
                 <th></th>

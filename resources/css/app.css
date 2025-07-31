@@ -1,3 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Importar estilos globales para DataTables en modo oscuro */
+@import 'datatables-dark.css';

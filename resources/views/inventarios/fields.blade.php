@@ -319,21 +319,20 @@
                     <thead>
                         <tr>
                             <th>Action</th>
-                            <th>Num Telefonico</th>
+                            <th>Num. Tel.</th>
                             <th>Compania</th>
-                            <th>PlanTel</th>
+                            <th>Plan</th>
                             <th>Costo Renta Mensual</th>
                             <th>Cuenta Padre</th>
                             <th>Cuenta Hija</th>
                             <th>Tipo Linea</th>
                             <th>Obra</th>
-                            <th>FechaFianza</th>
-                            <th>CostoFianza</th>
-                            <th>FechaAsignacion</th>
-                            <th>Estado</th>
-                            <th>Comentarios</th>
-                            <th>MontoRenovacionFianza</th>
-                            <th>LineaID</th>
+                            <th>Fecha Fianza</th>
+                            <th>Costo Fianza</th>
+                            <th>Fecha Asignación</th>
+                            <th>Comentario</th>
+                            <th>Monto Renovación Fianza</th>
+                           
 
 
                         </tr>
@@ -369,11 +368,9 @@
                             <td>{{ $LineasAsignado->FechaFianza}}</td>
                             <td>{{ $LineasAsignado->CostoFianza}}</td>
                             <td>{{ $LineasAsignado->FechaAsignacion}}</td>
-                            <td>{{ $LineasAsignado->Estado}}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
-                            <td>{{ $LineasAsignado->LineaID}}</td>
-
+                            
                         </tr>
                         @endforeach
 
@@ -390,7 +387,7 @@
                         <thead>
                             <tr>
                                 <th>Asignar</th>
-                                <th>Num. Telefonico</th>
+                                <th>Num. Tel.</th>
                                 <th>Plan</th>
                                 <th>Cuenta Padre</th>
                                 <th>Cuenta Hija</th>
@@ -399,8 +396,7 @@
                                 <th>Fecha Fianza</th>
                                 <th>Costo Fianza</th>
                                 <th>Activo</th>
-                                <th>Disponible</th>
-                                <th>Monto Renovacion Fianza</th>
+                                <th>Monto Renovación Fianza</th>
 
 
 
@@ -433,12 +429,7 @@
                                     </label>
 
                                 </td>
-                                <td>
-                                    <input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled" checked disabled>
-                                    <label class="form-check-label" for="flexCheckCheckedDisabled">
-                                    </label>
-
-                                </td>
+                               
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
 
                             </tr>
@@ -1128,7 +1119,7 @@
         $('#editId_linea').val(id);
         $('#editId_linea2').val('');
         $('#editEmp_linea').val('');
-        $('#editcomenl').val(row.find("td:eq(13)").text());
+        $('#editcomenl').val(row.find("td:eq(12)").text());
         $('#editfechalinea').val(row.find("td:eq(11)").text());
 
         $('#editModalLinea').modal('show');
@@ -1255,9 +1246,9 @@
 
 
     function updatetelefTableRow(telefono) {
-        let row = $(`tr[data-id=${telefono.InventarioID}]`);
-        row.find('td:eq(13)').text(telefono.Gerenciainsumo);
-        row.find('td:eq(11)').text(telefono.Comentarios);
+        let row = $(`tr[data-id=${telefono.InventarioID}]`);    
+        row.find('td:eq(11)').text(telefono.FechaAsignacion);
+        row.find('td:eq(12)').text(telefono.Comentarios);
     }
 
 
@@ -1284,10 +1275,8 @@
             telefono.FechaFianza,
             telefono.CostoFianza,
             telefono.FechaAsignacion,
-            telefono.Estado,
             telefono.Comentarios,
-            telefono.MontoRenovacionFianza,
-            telefono.LineaID
+            telefono.MontoRenovacionFianza
         ];
 
         table.row.add(newRow).draw(false);

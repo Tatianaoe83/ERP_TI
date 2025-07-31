@@ -1,0 +1,537 @@
+/* ==========================================
+   DATATABLES DARK MODE - GLOBAL STYLES
+   ========================================== */
+
+/* Estilos base para DataTables en modo oscuro */
+.dark .table-responsive {
+    width: 100% !important;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background-color: #1f2937;
+}
+
+.dark .table {
+    width: 100% !important;
+    background-color: #1f2937;
+    color: #f9fafb;
+    border-collapse: collapse;
+}
+
+.dark .table thead th {
+    background-color: #374151;
+    color: #ffffff !important;
+    border: 1px solid #4b5563;
+    padding: 12px 8px;
+    font-weight: 600;
+}
+
+.dark .table tbody td {
+    background-color: #1f2937;
+    color: #f9fafb;
+    border: 1px solid #4b5563;
+    padding: 12px 8px;
+}
+
+.dark .table tbody tr:nth-child(even) {
+    background-color: #374151;
+}
+
+.dark .table tbody tr:hover {
+    background-color: #4b5563;
+}
+
+.dark .table-bordered {
+    border: 1px solid #4b5563;
+}
+
+.dark .table-striped tbody tr:nth-of-type(odd) {
+    background-color: #1f2937;
+}
+
+.dark .table-striped tbody tr:nth-of-type(even) {
+    background-color: #374151;
+}
+
+/* DataTables Wrapper - Controles principales */
+.dark .dataTables_wrapper .dataTables_length,
+.dark .dataTables_wrapper .dataTables_filter,
+.dark .dataTables_wrapper .dataTables_info,
+.dark .dataTables_wrapper .dataTables_processing,
+.dark .dataTables_wrapper .dataTables_paginate {
+    color: #f9fafb;
+}
+
+/* Asegurar que los headers de DataTables sean blancos */
+.dark .dataTables_wrapper .dataTable thead th {
+    color: #ffffff !important;
+}
+
+/* Campo de búsqueda */
+.dark .dataTables_wrapper .dataTables_filter input {
+    background-color: #374151;
+    color: #f9fafb;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+    padding: 6px 12px;
+}
+
+.dark .dataTables_wrapper .dataTables_filter input:focus {
+    background-color: #374151;
+    border-color: #3b82f6;
+    color: #f9fafb;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Selector de longitud de página */
+.dark .dataTables_wrapper .dataTables_length select {
+    background-color: #374151;
+    color: #f9fafb;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+.dark .dataTables_wrapper .dataTables_length select:focus {
+    background-color: #374151;
+    border-color: #3b82f6;
+    color: #f9fafb;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Botones de paginación */
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border: 1px solid #4b5563 !important;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 0 3px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    min-width: 35px;
+    text-align: center;
+    display: inline-block;
+    text-decoration: none !important;
+}
+
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background-color: #4b5563 !important;
+    color: #ffffff !important;
+    border-color: #4b5563 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+    border-color: #3b82f6 !important;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    background-color: #374151 !important;
+    color: #6b7280 !important;
+    border-color: #6b7280 !important;
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Contenedor de paginación */
+.dark .dataTables_wrapper .dataTables_paginate {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button.previous,
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button.next {
+    font-weight: 600;
+    padding: 8px 16px;
+}
+
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button.first,
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button.last {
+    font-weight: 600;
+    padding: 8px 14px;
+}
+
+/* Checkboxes en modo oscuro */
+.dark input[type="checkbox"] {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+}
+
+.dark input[type="checkbox"]:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.dark input[type="checkbox"]:focus {
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Formularios en modo oscuro */
+.dark .form-control {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    color: #f9fafb;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.dark .form-control:focus {
+    background-color: #374151;
+    border-color: #3b82f6;
+    color: #f9fafb;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+.dark .form-control::placeholder {
+    color: #9ca3af;
+}
+
+/* Labels en modo oscuro */
+.dark label {
+    color: #f9fafb;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+/* Cards en modo oscuro */
+.dark .card {
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.dark .card-header {
+    background-color: #374151;
+    border-bottom: 1px solid #4b5563;
+    color: #f9fafb;
+    padding: 15px 20px;
+}
+
+.dark .card-header h4 {
+    color: #f9fafb;
+    margin: 0;
+    font-weight: 600;
+}
+
+.dark .card-body {
+    background-color: #1f2937;
+    color: #f9fafb;
+    padding: 20px;
+}
+
+.dark .card-footer {
+    background-color: #374151;
+    border-top: 1px solid #4b5563;
+    padding: 15px 20px;
+}
+
+/* Botones en modo oscuro */
+.dark .btn {
+    border-radius: 6px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 24px;
+    padding: .3rem .8rem;
+    letter-spacing: .5px;
+}
+
+.dark .btn-primary {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: #ffffff;
+}
+
+.dark .btn-primary:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
+}
+
+.dark .btn-warning {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+    color: #ffffff;
+}
+
+.dark .btn-warning:hover {
+    background-color: #d97706;
+    border-color: #d97706;
+}
+
+.dark .btn-danger {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
+.dark .btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
+.dark .btn-success {
+    background-color: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+}
+
+.dark .btn-success:hover {
+    background-color: #059669;
+    border-color: #059669;
+}
+
+.dark .btn-info {
+    background-color: #06b6d4;
+    border-color: #06b6d4;
+    color: #ffffff;
+}
+
+.dark .btn-info:hover {
+    background-color: #0891b2;
+    border-color: #0891b2;
+}
+
+/* Checkboxes de formulario */
+.dark .form-check-input {
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 4px;
+}
+
+.dark .form-check-input:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+.dark .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+.dark .form-check-label {
+    color: #f9fafb;
+    margin-left: 8px;
+}
+
+/* Tipos de inventario con colores adaptados al modo oscuro */
+.dark .table tbody td span[style*="color: blue"] {
+    color: #60a5fa !important;
+}
+
+.dark .table tbody td span[style*="color: green"] {
+    color: #34d399 !important;
+}
+
+.dark .table tbody td span[style*="color: red"] {
+    color: #f87171 !important;
+}
+
+.dark .table tbody td span[style*="color: orange"] {
+    color: #fbbf24 !important;
+}
+
+.dark .table tbody td span[style*="color: purple"] {
+    color: #a78bfa !important;
+}
+
+/* Asegurar que las tablas tengan 100% de ancho */
+.table-responsive {
+    width: 100% !important;
+}
+
+.table {
+    width: 100% !important;
+}
+
+
+/* Títulos de sección */
+.dark .lead {
+    color: #f9fafb;
+    font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 15px;
+    padding: 10px 0;
+    border-bottom: 2px solid #3b82f6;
+}
+
+/* SweetAlert2 en modo oscuro */
+.dark .swal2-popup {
+    background-color: #1f2937 !important;
+    color: #f9fafb !important;
+}
+
+.dark .swal2-title {
+    color: #f9fafb !important;
+}
+
+.dark .swal2-content {
+    color: #f9fafb !important;
+}
+
+.dark .swal2-input {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border: 1px solid #4b5563 !important;
+}
+
+.dark .swal2-select {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+    border: 1px solid #4b5563 !important;
+}
+
+/* Select2 en modo oscuro */
+.dark .select2-container--default .select2-selection--single {
+    background-color: #374151 !important;
+    border: 1px solid #4b5563 !important;
+    color: #f9fafb !important;
+}
+
+.dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #f9fafb !important;
+}
+
+.dark .select2-container--default .select2-dropdown {
+    background-color: #374151 !important;
+    border: 1px solid #4b5563 !important;
+}
+
+.dark .select2-container--default .select2-results__option {
+    color: #f9fafb !important;
+}
+
+.dark .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+
+
+
+/* Elementos deshabilitados en modo oscuro */
+.dark .btn:disabled,
+.dark .btn.disabled {
+    background-color: #6b7280 !important;
+    border-color: #6b7280 !important;
+    color: #d1d5db !important;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.dark .form-control:disabled,
+.dark .form-control[readonly] {
+    background-color: #374151 !important;
+    border-color: #6b7280 !important;
+    color: #9ca3af !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.dark input[type="checkbox"]:disabled {
+    background-color: #6b7280 !important;
+    border-color: #6b7280 !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dark .form-check-input:disabled {
+    background-color: #6b7280 !important;
+    border-color: #6b7280 !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.dark .form-check-input:disabled:checked {
+    background-color: #6b7280 !important;
+    border-color: #6b7280 !important;
+    opacity: 0.7;
+}
+
+.dark select:disabled {
+    background-color: #374151 !important;
+    border-color: #6b7280 !important;
+    color: #9ca3af !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.dark textarea:disabled {
+    background-color: #374151 !important;
+    border-color: #6b7280 !important;
+    color: #9ca3af !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.dark .select2-container--default.select2-container--disabled .select2-selection--single {
+    background-color: #374151 !important;
+    border-color: #6b7280 !important;
+    color: #9ca3af !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.dark .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    background-color: #374151 !important;
+    color: #6b7280 !important;
+    border-color: #6b7280 !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Modales en modo oscuro */
+.dark .modal-content {
+    background-color: #1f2937 !important;
+    border: 1px solid #374151 !important;
+    color: #f9fafb !important;
+}
+
+.dark .modal-header {
+    background-color: #374151 !important;
+    border-bottom: 1px solid #4b5563 !important;
+    color: #f9fafb !important;
+}
+
+.dark .modal-title {
+    color: #f9fafb !important;
+}
+
+.dark .modal-body {
+    background-color: #1f2937 !important;
+    color: #f9fafb !important;
+}
+
+.dark .modal-footer {
+    background-color: #374151 !important;
+    border-top: 1px solid #4b5563 !important;
+}
+
+.dark .btn-close {
+    filter: invert(1);
+}
+
+/* Forzar responsividad en todas las tablas */
+.dark .table-responsive,
+.dark .table-responsive-sm,
+.dark .table-responsive-md,
+.dark .table-responsive-lg,
+.dark .table-responsive-xl {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+/* Asegurar que todas las tablas sean responsivas */
+.dark table {
+    width: 100% !important;
+    min-width: 600px !important;
+}

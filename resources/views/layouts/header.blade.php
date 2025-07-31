@@ -45,9 +45,9 @@
                 <button class="text-[#101D49] hover:scale-125 transition dark:text-white" onclick="setTheme('dark')">
                     <i class="fas fa-moon"></i>
                 </button>
-                <button class="text-[#101D49] hover:scale-125 transition dark:text-white" onclick="setTheme('system')">
+                <!--<button class="text-[#101D49] hover:scale-125 transition dark:text-white" onclick="setTheme('system')">
                     <i class="fas fa-desktop"></i>
-                </button>
+                </button>-->
             </div>
 
             <a href="{{ url('logout') }}"

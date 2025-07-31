@@ -10,7 +10,7 @@
     </a>
     @endcan
     @can('cartas-inventario')
-    <a href="{{ route('inventarios.cartas', $id) }}" class='btn btn-outline-dark btn-xs'>
+    <a href="{{ route('inventarios.cartas', $id) }}" class='btn btn-outline-secondary btn-xs'>
         <i class="fas fa-print"></i>
     </a>
     @endcan
