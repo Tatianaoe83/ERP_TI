@@ -23,7 +23,7 @@ class Cortes extends Model
 
 
     public $table = 'cortes';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -33,9 +33,10 @@ class Cortes extends Model
 
 
     public $fillable = [
+        'NombreInsumo',
         'Mes',
-        'GerenciaID',
-        'InsumoID'
+        'Costo',
+        'GerenciaID'
     ];
 
     /**
@@ -45,9 +46,10 @@ class Cortes extends Model
      */
     protected $casts = [
         'CortesID' => 'integer',
+        'NombreInsumo' => 'string',
         'Mes' => 'string',
+        'Costo' => 'float',
         'GerenciaID' => 'integer',
-        'InsumoID' => 'integer'
     ];
 
     /**
@@ -56,9 +58,10 @@ class Cortes extends Model
      * @var array
      */
     public static $rules = [
+        'NombreInsumo' => 'required|string|100',
         'Mes' => 'required|string|max:100',
+        'Costo' => 'required|float',
         'GerenciaID' => 'nullable|integer',
-        'InsumoID' => 'nullable|integer'
     ];
 
     /**
@@ -66,7 +69,7 @@ class Cortes extends Model
      **/
     public function gerenciaid()
     {
-        return $this->belongsTo(\App\Models\Gerencium::class, 'GerenciaID');
+        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
     }
 
     /**
