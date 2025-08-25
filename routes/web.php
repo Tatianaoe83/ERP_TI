@@ -10,7 +10,10 @@ use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\CortesController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\SoporteTIController;
+use App\Http\Controllers\TicketsController;
 use App\Http\Livewire\ReportesLista;
 
 /*
@@ -86,10 +89,25 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/reportes/preview', [ReportesController::class, 'preview'])->name('reportes.preview');
     Route::get('autocomplete', [ReportesController::class, 'autocomplete']);
 
-    Route::resource('facturas', App\Http\Controllers\FacturasController::class);
+    //Route::resource('facturas', App\Http\Controllers\FacturasController::class);
     Route::resource('cortes', App\Http\Controllers\CortesController::class);
+    Route::get('indexVista', [App\Http\Controllers\CortesController::class, 'indexVista'])->name('cortes.indexVista');
+    Route::post('/cortes/saveXML', [CortesController::class, 'saveXML'])->name('cortes.saveXML');
+    Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
+
+    Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index']);
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
     ->name('update.database')
     ->withoutMiddleware(['auth']);
+
+
+//Rutas para soporte de ticket y solicitudes    
+Route::get('/SoporteTI', [App\Http\Controllers\SoporteTIController::class, 'index']);
+Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
+Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
+Route::POST('/crearTickets', [SoporteTIController::class, 'crearTickets'])
+    ->name('soporte.ticket')
+    ->withoutMiddleware(['auth']);
+Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);

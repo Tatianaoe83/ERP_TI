@@ -59,7 +59,7 @@
                                 class="peer text-black w-full px-4 py-3 rounded-lg border borderinput focus:outline-none focus:border-black cursor-pointer"
                                 onchange="updateEnvDatabase(this.value)" required>
                                 <option value="">Selecciona</option>
-                                <option value="unidplay_controlinventarioti">Control Inventario TI</option>
+                                <option value="unidplay_controlinventarioti2">Control Inventario TI</option>
                                 <option value="unidplay_presupuestoscontrol">Presupuestos</option>
                             </select>
                             <label for="database" class="absolute text-sm text-gray-500 duration-300 transform -translate-y-3 scale-75 to-2 left-12 z-10 origin-[0] bg-white px-1 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-3 peer-focus:scale-75 peer-focus:-translate-y-3">

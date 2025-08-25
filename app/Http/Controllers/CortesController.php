@@ -44,7 +44,7 @@ class CortesController extends AppBaseController
 
         $results = [];
         if ($gerenciaID = $request->input('gerenciaID')) {
-            $results = DB::select('CALL ObtenerInsumosAnualesPorGerencia2(?)', [$gerenciaID]);
+            $results = DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]);
         }
         return view('cortes.index', compact('results', 'gerencia'));
     }
