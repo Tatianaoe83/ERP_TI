@@ -89,26 +89,29 @@ class CortesController extends AppBaseController
 
     public function indexVista(Request $request)
     {
-        $query = DB::table('cortes');
-
         $gerenciaID = $request->input('gerenci_id');
-        $mes = $request->input('mesFilter');
-
-        if ($gerenciaID && $mes) {
-            $query->where('GerenciaID', $gerenciaID)->where('Mes', $mes);
-        }
+        $mes = $request->input('mes');
 
         if ($request->ajax()) {
-            return DataTables::of($query)
-                ->addColumn('action', function ($row) {
-                    return view('cortes.datatables_actions', ['id' => $row->CortesID])->render();
-                })
-                ->rawColumns(['action'])
-                ->make(true);
+            if ($gerenciaID && $mes) {
+                $query = DB::table('cortes')
+                    ->where('GerenciaID', $gerenciaID)
+                    ->where('Mes', $mes);
+
+                return DataTables::of($query)
+                    ->addColumn('action', function ($row) {
+                        return view('cortes.datatables_actions', ['id' => $row->CortesID])->render();
+                    })
+                    ->rawColumns(['action'])
+                    ->make(true);
+            } else {
+                return DataTables::of(collect([]))->make(true);
+            }
         }
 
         return view('cortes.index');
     }
+
 
     public function readXml(Request $request)
     {
