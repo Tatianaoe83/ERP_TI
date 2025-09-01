@@ -28,7 +28,7 @@
 <!-- Frecuenciadepago Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('FrecuenciaDePago', 'Frecuencia de pago:') !!}
-    {!! Form::text('FrecuenciaDePago', null, ['class' => 'form-control','maxlength' => 50,'maxlength' => 50]) !!}
+    {!! Form::select('FrecuenciaDePago', ['Mensual' => 'Mensual', 'Pago único' => 'Pago único', 'Anual' => 'Anual'], null, ['class' => 'form-control']) !!}
 </div>
 
 <!-- Observaciones Field -->
