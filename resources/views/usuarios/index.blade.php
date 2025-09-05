@@ -94,7 +94,7 @@
       }).then(function(willDelete) {
         if (willDelete.isConfirmed) {
           swal.fire({
-            title: 'Unidad borrada',
+            title: 'Usuario borrado',
             icon: 'success'
           }).then(function() {
             form.submit();

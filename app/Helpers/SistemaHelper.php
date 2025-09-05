@@ -22,8 +22,12 @@ class SistemaHelper
 
     public static function obtenerConexion(): string
     {
-        return self::obtenerSistema() === 'presupuesto'
-            ? 'mysql_presupuesto'
-            : 'mysql_inventario';
+        $sistema = self::obtenerSistema();
+        
+        return match ($sistema) {
+            'presupuesto' => 'mysql_presupuesto',
+            'presupuesto 2026' => 'mysql_presupuesto2026',
+            default => 'mysql_inventario'
+        };
     }
 }
