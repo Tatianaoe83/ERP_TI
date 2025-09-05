@@ -5,6 +5,7 @@ namespace App\Helpers;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\JoinHelper;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ReporteHelper
 {
@@ -28,6 +29,16 @@ class ReporteHelper
                     $query->join($tablaJoin, $from, $op, $to);
                     $joinsHechos[] = $tablaJoin;
                 }
+            }
+        }
+
+        if (Schema::hasColumn($tabla, 'deleted_at')) {
+            $query->whereNull("$tabla.deleted_at");
+        }
+
+        foreach ($joinsHechos as $tablaJoin) {
+            if (Schema::hasColumn($tablaJoin, 'deleted_at')) {
+                $query->whereNull("$tablaJoin.deleted_at");
             }
         }
 
@@ -98,6 +109,7 @@ class ReporteHelper
             $query->limit($limite);
         }
 
+        //dd($query->toSql(), $query->getBindings());
         Log::debug('Query generada:', [$query->toSql(), $query->getBindings()]);
 
         return $query->get();
