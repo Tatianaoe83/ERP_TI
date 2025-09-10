@@ -10,9 +10,14 @@ use App\Repositories\CortesRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Cortes;
+use App\Models\Empleados;
 use App\Models\Gerencia;
+use App\Models\Insumos;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Js;
 use Response;
 use Yajra\DataTables\Facades\DataTables;
@@ -59,31 +64,6 @@ class CortesController extends AppBaseController
             'Diciembre'
         ];
 
-        if ($gerenciaID = $request->input('gerenciaID')) {
-
-            $exist = Cortes::where('GerenciaID', $gerenciaID)->exists();
-            if ($exist) {
-                return redirect()->back()->with('error', 'Corte de esta gerencia ya fue realizado.');
-            }
-
-            try {
-                $resultados = DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]);
-
-                foreach ($resultados as $fila) {
-                    Cortes::create([
-                        'NombreInsumo' => $fila->NombreInsumo ?? '',
-                        'Mes' => $fila->Mes ?? '',
-                        'Costo' => $fila->Costo ?? 0,
-                        'GerenciaID' => $fila->GerenciaID
-                    ]);
-                }
-
-                return redirect()->back()->with('success', 'Corte realizado correctamente.');
-            } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Error al realizar el corte');
-            }
-        }
-
         return view('cortes.index', compact('meses', 'gerencia'));
     }
 
@@ -111,7 +91,6 @@ class CortesController extends AppBaseController
 
         return view('cortes.index');
     }
-
 
     public function readXml(Request $request)
     {
@@ -232,6 +211,175 @@ class CortesController extends AppBaseController
         return null;
     }
 
+    public function obtenerInsumos(Request $request)
+    {
+        $gerenciaID = $request->input('gerenciaID');
+
+        if (empty($gerenciaID)) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Por favor, selecciona una gerencia',
+                    'data'    => [],
+                ], 422);
+            }
+            return back()->with('error', 'Por favor, selecciona una gerencia');
+        }
+
+        try {
+            $rows = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]));
+
+            if ($rows->isEmpty()) {
+                return $request->expectsJson()
+                    ? response()->json(['data' => []])
+                    : back()->with('warning', 'No hay datos para la gerencia');
+            }
+
+            $mesMap = [
+                'enero' => 1,
+                'febrero' => 2,
+                'marzo' => 3,
+                'abril' => 4,
+                'mayo' => 5,
+                'junio' => 6,
+                'julio' => 7,
+                'agosto' => 8,
+                'septiembre' => 9,
+                'octubre' => 10,
+                'noviembre' => 11,
+                'diciembre' => 12
+            ];
+
+            $resultado = $rows
+                ->groupBy('NombreInsumo')
+                ->map(function (Collection $items, $nombre) use ($mesMap) {
+                    $montosPorMes = $items
+                        ->map(function ($r) use ($mesMap) {
+                            $costo = round((float) ($r->Costo ?? 0), 2);
+                            if ($costo <= 0) return null;
+
+                            $mesRaw = $r->Mes ?? null;
+                            $mesNum = is_numeric($mesRaw)
+                                ? max(1, min(12, (int) $mesRaw))
+                                : ($mesMap[strtolower((string) $mesRaw)] ?? null);
+
+                            if (!$mesNum) return null;
+
+                            return ['Mes' => $mesNum, 'Costo' => $costo];
+                        })
+                        ->filter()
+                        ->values();
+
+                    if ($montosPorMes->isEmpty()) {
+                        return null;
+                    }
+
+                    $distintos = $montosPorMes->pluck('Costo')->unique()->sort()->values()->all();
+
+                    return [
+                        'NombreInsumo'  => (string) $nombre,
+                        'MontosPorMes'  => $montosPorMes->all(),
+                        'Distintos'     => $distintos,
+                        'SelectedIndex' => 0,
+                        'Margen'        => 0,
+                    ];
+                })
+                ->filter()
+                ->values();
+
+            return DataTables::of($resultado)->make(true);
+        } catch (\Throwable $th) {
+            report($th);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'No se pudo procesar los insumos presupuestados',
+                    'data'    => [],
+                ], 500);
+            }
+            return back()->with('error', 'No se pudo procesar los insumos presupuestados');
+        }
+    }
+
+    public function store(Request $request)
+    {
+
+        $data = $request->validate([
+            'rows'                       => ['required', 'array', 'min:1'],
+            'rows.*.NombreInsumo'        => ['required', 'string', 'max:255'],
+            'rows.*.Mes'                 => ['required', 'integer', 'between:1,12'],
+            'rows.*.Costo'               => ['required', 'numeric', 'min:0'],
+            'rows.*.Margen'              => ['required', 'numeric', 'min:0', 'max:100'],
+            'rows.*.CostoTotal'          => ['required', 'numeric', 'min:0'],
+            'rows.*.GerenciaID'          => ['required', 'integer'],
+        ], [
+            'rows.required' => 'No hay filas a guardar.',
+        ]);
+
+        $ids = collect($data['rows'])->pluck('GerenciaID')->unique()->values();
+        if ($ids->count() !== 1) {
+            return response()->json([
+                'message' => 'Todas las filas deben pertenecer a la misma gerencia.'
+            ], 422);
+        }
+
+        $gerenciaID = (int) $ids->first();
+        $año = Carbon::now()->format('Y') + 1;
+
+        $yaExiste = \App\Models\Cortes::where('GerenciaID', $gerenciaID)
+            ->where('Año', $año)
+            ->exists();
+
+        if ($yaExiste) {
+            return response()->json([
+                'message' => 'El corte anual de la gerencia para el año indicado ya fue realizado.'
+            ], 409);
+        }
+
+        $numToName = [
+            1 => 'Enero',
+            2 => 'Febrero',
+            3 => 'Marzo',
+            4 => 'Abril',
+            5 => 'Mayo',
+            6 => 'Junio',
+            7 => 'Julio',
+            8 => 'Agosto',
+            9 => 'Septiembre',
+            10 => 'Octubre',
+            11 => 'Noviembre',
+            12 => 'Diciembre',
+        ];
+
+        $toInsert = collect($data['rows'])->map(function (array $r) use ($año, $numToName) {
+            $mes = $numToName[(int) $r['Mes']] ?? null;
+            $costo  = round((float) $r['Costo'], 2);
+            $margen = max(0, min(100, (float) $r['Margen']));
+            $calc   = round($costo * (1 + $margen / 100), 2);
+
+            return [
+                'NombreInsumo' => (string) $r['NombreInsumo'],
+                'Mes'          => $mes,
+                'Costo'        => $costo,
+                'Margen'       => $margen,
+                'CostoTotal'   => $calc,
+                'Año'          => $año,
+                'GerenciaID'   => (int) $r['GerenciaID'],
+            ];
+        });
+
+
+        if ($toInsert->isEmpty()) {
+            return response()->json(['message' => 'Nada que guardar'], 422);
+        }
+
+        $insertados = 0;
+        DB::transaction(function () use ($toInsert, &$insertados) {
+            $insertados = Cortes::insertOrIgnore($toInsert->all());
+        });
+
+        return response()->json([
+            'message'  => 'Corte anual registrado',
+        ], 201);
+    }
 
     /**
      * Show the form for creating a new Cortes.
@@ -242,24 +390,6 @@ class CortesController extends AppBaseController
     {
 
         return view('cortes.create');
-    }
-
-    /**
-     * Store a newly created Cortes in storage.
-     *
-     * @param CreateCortesRequest $request
-     *
-     * @return Response
-     */
-    public function store(CreateCortesRequest $request)
-    {
-        $input = $request->all();
-
-        $cortes = $this->cortesRepository->create($input);
-
-        Flash::success('Cortes saved successfully.');
-
-        return redirect(route('cortes.index'));
     }
 
     /**

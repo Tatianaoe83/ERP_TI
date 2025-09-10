@@ -32,7 +32,6 @@
 </head>
 
 <body>
-
     <div class="relative z-10 h-screen overflow-hidden"
         style="background-image: url('img/fondotech.jpg'); background-size: cover; background-position: center; filter:grayscale(60%)">
         <div class="flex justify-center px-6 pt-12 fuente">
@@ -107,46 +106,6 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        tsParticles.load(
-            "tsparticles", {
-                background: {
-                    color: "#000"
-                },
-                particles: {
-                    links: {
-                        enable: true
-                    },
-                    move: {
-                        enable: true
-                    },
-                    opacity: {
-                        value: {
-                            min: 0.5,
-                            max: 1
-                        }
-                    },
-                    size: {
-                        value: {
-                            min: 1,
-                            max: 3
-                        }
-                    }
-                },
-                interactivity: {
-                    events: {
-                        onHover: {
-                            enable: false,
-                            mode: repulse
-                        },
-                        onclick: {
-                            enable: false
-                        }
-                    }
-                }
-            }
-        )
-    </script>
     <script>
         function updateEnvDatabase(value) {
             const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

@@ -24,7 +24,6 @@
     <div class="mt-6">
         <div id="panel-1" class="tab-panel transition-all duration-500 opacity-100 translate-x-0">
             <div class="grid grid-cols-3 gap-4 max-h-[36rem] overflow-y-auto">
-
                 <div class="rounded-xl border flex flex-col">
                     <h2 class="text-2xl font-bold bg-[#101D49] text-white rounded-md p-3 border-b">Abierto</h2>
                     <div class="rounded-xl flex flex-col">

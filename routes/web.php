@@ -11,6 +11,7 @@ use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CortesController;
+use App\Http\Controllers\FacturasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\SoporteTIController;
 use App\Http\Controllers\TicketsController;
@@ -75,8 +76,6 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::POST('pdffile/{id}', [InventarioController::class, 'pdffile'])->name('inventarios.pdffile');
     Route::POST('mantenimiento/{id}', [InventarioController::class, 'mantenimiento'])->name('inventarios.mantenimiento');
 
-
-
     Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
@@ -89,8 +88,11 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/reportes/preview', [ReportesController::class, 'preview'])->name('reportes.preview');
     Route::get('autocomplete', [ReportesController::class, 'autocomplete']);
 
-    //Route::resource('facturas', App\Http\Controllers\FacturasController::class);
+    Route::resource('facturas', App\Http\Controllers\FacturasController::class);
+    Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
+
     Route::resource('cortes', App\Http\Controllers\CortesController::class);
+    Route::get('/verInsumos', [CortesController::class, 'obtenerInsumos'])->name('cortes.ver');
     Route::get('indexVista', [App\Http\Controllers\CortesController::class, 'indexVista'])->name('cortes.indexVista');
     Route::post('/cortes/saveXML', [CortesController::class, 'saveXML'])->name('cortes.saveXML');
     Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');

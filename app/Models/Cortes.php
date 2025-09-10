@@ -36,6 +36,9 @@ class Cortes extends Model
         'NombreInsumo',
         'Mes',
         'Costo',
+        'Margen',
+        'CostoTotal',
+        'Año',
         'GerenciaID'
     ];
 
@@ -49,6 +52,9 @@ class Cortes extends Model
         'NombreInsumo' => 'string',
         'Mes' => 'string',
         'Costo' => 'float',
+        'Margen' => 'float',
+        'CostoTotal' => 'float',
+        'Año' => 'date',
         'GerenciaID' => 'integer',
     ];
 
@@ -61,6 +67,9 @@ class Cortes extends Model
         'NombreInsumo' => 'required|string|100',
         'Mes' => 'required|string|max:100',
         'Costo' => 'required|float',
+        'Margen' => 'required|float',
+        'CostoTotal' => 'required|float',
+        'Año' => 'required|date',
         'GerenciaID' => 'nullable|integer',
     ];
 

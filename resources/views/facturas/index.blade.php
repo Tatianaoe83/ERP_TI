@@ -1,41 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Facturas</h1>
-                </div>
-                <div class="col-sm-6">
-                    <a class="btn btn-primary float-right"
-                       href="{{ route('facturas.create') }}">
-                        Add New
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="content px-3">
-
-        @include('flash::message')
-
-        <div class="clearfix"></div>
-
-        <div class="card">
-            <div class="card-body p-0">
-                @include('facturas.table')
-
-                <div class="card-footer clearfix">
-                    <div class="float-right">
-                        
-                    </div>
-                </div>
-            </div>
-
-        </div>
+<div class="bg-red-500">
+    <div class="bg-white rounded-md border border-gray-500 mt-5 p-5">
+        @include('facturas.table')
+        <div class="card-footer clearfix"></div>
     </div>
-
+</div>
 @endsection
-
