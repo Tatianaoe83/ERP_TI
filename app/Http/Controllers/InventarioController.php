@@ -97,7 +97,14 @@ class InventarioController extends AppBaseController
             ->addColumn('action', function ($row) {
                 return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
             })
-            ->rawColumns(['action'])
+            ->editColumn('Estado', function ($row) {
+                if ($row->Estado == 1 || $row->Estado === true) {
+                    return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
+                } else {
+                    return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
+                }
+            })
+            ->rawColumns(['action', 'Estado'])
             ->make(true);
     }
 

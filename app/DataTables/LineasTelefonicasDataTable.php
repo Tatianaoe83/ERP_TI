@@ -26,9 +26,9 @@ class LineasTelefonicasDataTable extends DataTable
         })
         ->addColumn('estado_disponibilidad', function ($row) {
             if ($row->Disponible == 1) {
-                return '<span class="badge badge-success">Disponible</span>';
+                return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Disponible</span>';
             } else {
-                return '<span class="badge badge-danger">Asignada</span>';
+                return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
             }
         })
         ->rawColumns(['action', 'estado_disponibilidad'])
@@ -58,7 +58,6 @@ class LineasTelefonicasDataTable extends DataTable
                 'obras.NombreObra as nombre_obra',
                 'lineastelefonicas.FechaFianza',
                 'lineastelefonicas.CostoFianza',
-                'lineastelefonicas.Activo',
                 'lineastelefonicas.Disponible',
                 'lineastelefonicas.MontoRenovacionFianza'
 
@@ -208,6 +207,12 @@ class LineasTelefonicasDataTable extends DataTable
                 'class' => 'dark:bg-[#101010] dark:text-white'
 
             ],
+            Column::computed('estado_disponibilidad')
+                ->title('Estado')
+                ->exportable(false)
+                ->printable(false)
+                ->width(100)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white'),
             'MontoRenovacionFianza' => [
                 'title' => 'Monto Renovacion Fianza',
                 'data' => 'MontoRenovacionFianza',

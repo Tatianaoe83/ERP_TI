@@ -36,29 +36,6 @@ class EmpleadosController extends AppBaseController
      */
     public function index(EmpleadosDataTable $empleadosDataTable)
     {
-
-        if (request()->ajax()) {
-            $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-            ->select([
-                'empleados.EmpleadoID',
-                'empleados.NombreEmpleado',
-                'puestos.NombrePuesto as nombre_puesto',
-                'obras.NombreObra as nombre_obra',
-                'empleados.NumTelefono',
-                'empleados.Correo',
-                'empleados.Estado'
-            ]);
-
-            
-            return DataTables::of($unidades)
-                ->addColumn('action', function($row){
-                    return view('empleados.datatables_actions', ['id' => $row->EmpleadoID])->render();
-                })
-                ->rawColumns(['action'])
-                ->make(true);
-        }
-
         return $empleadosDataTable->render('empleados.index');
     }
 
