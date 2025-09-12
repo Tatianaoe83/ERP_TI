@@ -89,10 +89,10 @@ class LineasTelefonicas extends Model implements Auditable
         'TipoLinea' => 'required|string|max:50',
         'ObraID' => 'required|integer',
         'FechaFianza' => 'required',
-        'CostoFianza' => 'required|numeric',
+        'CostoFianza' => 'required|numeric|min:0',
         'Activo' => 'required|boolean',
         'Disponible' => 'required|boolean',
-        'MontoRenovacionFianza' => 'nullable|numeric'
+        'MontoRenovacionFianza' => 'nullable|numeric|min:0'
     ];
 
     /**

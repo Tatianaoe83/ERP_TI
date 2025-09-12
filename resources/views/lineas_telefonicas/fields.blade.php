@@ -9,7 +9,7 @@
     {!! Form::label('PlanID', 'Plan:') !!}
 
     {!!Form::select('PlanID',App\Models\Planes::all()->
-    pluck('NombrePlan','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+    pluck('NombrePlan','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%'])!!}
 
 </div>
 
@@ -36,7 +36,7 @@
     {!! Form::label('ObraID', 'Obra:') !!}
 
     {!!Form::select('ObraID',App\Models\Obras::all()->
-    pluck('NombreObra','ObraID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+    pluck('NombreObra','ObraID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%'])!!}
 
 </div>
 
@@ -51,7 +51,7 @@
 <!-- Costofianza Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('CostoFianza', 'Costo fianza:') !!}
-    {!! Form::number('CostoFianza', null, ['class' => 'form-control']) !!}
+    {!! Form::number('CostoFianza', null, ['class' => 'form-control','step' => '0.01','min' => '0','placeholder' => '0.00']) !!}
 </div>
 
 <!-- Activo Field -->
@@ -68,7 +68,7 @@
 <div class="col-sm-6 text-[#101D49] dark:text-white mt-3">
     <div class="form-check">
         {!! Form::hidden('Disponible', 0, ['class' => 'form-check-input']) !!}
-        {!! Form::checkbox('Disponible', '1', null, ['class' => 'form-check-input']) !!}
+        {!! Form::checkbox('Disponible', '1', null, ['class' => 'form-check-input','disabled' => 'disabled']) !!}
         {!! Form::label('Disponible', 'Disponible', ['class' => 'form-check-label']) !!}
     </div>
 </div>
@@ -77,5 +77,5 @@
 <!-- Montorenovacionfianza Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('MontoRenovacionFianza', 'Monto renovacion fianza:') !!}
-    {!! Form::number('MontoRenovacionFianza', null, ['class' => 'form-control']) !!}
+    {!! Form::number('MontoRenovacionFianza', null, ['class' => 'form-control','step' => '0.01','min' => '0','placeholder' => '0.00']) !!}
 </div>

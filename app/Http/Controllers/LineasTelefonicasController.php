@@ -11,6 +11,10 @@ use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\LineasTelefonicas;
+use App\Models\InventarioLineas;
+use App\Models\Planes;
+use App\Models\Obras;
+use App\Models\CompaniasLineasTelefonicas;
 use Illuminate\Database\QueryException;
 use Laracasts\Flash\Flash as FlashFlash;
 use Yajra\DataTables\DataTables;
@@ -73,6 +77,73 @@ class LineasTelefonicasController extends AppBaseController
 
 
         return $lineasTelefonicasDataTable->render('lineas_telefonicas.index');
+    }
+
+    public function getInventarioRecords()
+    {
+        try {
+            $lineaId = request('linea_id');
+            
+            if (!$lineaId) {
+                return response()->json(['records' => []]);
+            }
+
+            // Buscar la línea actual
+            $linea = LineasTelefonicas::find($lineaId);
+            if (!$linea) {
+                return response()->json(['records' => []]);
+            }
+            
+            // Buscar registros de inventario que coincidan con el número telefónico
+            $records = InventarioLineas::where('NumTelefonico', $linea->NumTelefonico)
+                ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
+                ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
+                ->select([
+                    'inventariolineas.InventarioID as id',
+                    'inventariolineas.NumTelefonico',
+                    'inventariolineas.Compania',
+                    'inventariolineas.PlanTel',
+                    'inventariolineas.CostoRentaMensual',
+                    'inventariolineas.CuentaPadre',
+                    'inventariolineas.CuentaHija',
+                    'inventariolineas.TipoLinea',
+                    'inventariolineas.Obra',
+                    'inventariolineas.FechaFianza',
+                    'inventariolineas.CostoFianza',
+                    'inventariolineas.FechaAsignacion',
+                    'inventariolineas.Estado',
+                    'inventariolineas.Comentarios',
+                    'inventariolineas.MontoRenovacionFianza',
+                    'empleados.NombreEmpleado as empleado',
+                    'obras.NombreObra as obra'
+                ])
+                ->get()
+                ->map(function($record) {
+                    return [
+                        'id' => $record->id,
+                        'num_telefonico' => $record->NumTelefonico,
+                        'compania' => $record->Compania,
+                        'plan_tel' => $record->PlanTel,
+                        'costo_renta_mensual' => $record->CostoRentaMensual,
+                        'cuenta_padre' => $record->CuentaPadre,
+                        'cuenta_hija' => $record->CuentaHija,
+                        'tipo_linea' => $record->TipoLinea,
+                        'obra' => $record->obra,
+                        'fecha_fianza' => $record->FechaFianza ? \Carbon\Carbon::parse($record->FechaFianza)->format('d/m/Y') : null,
+                        'costo_fianza' => $record->CostoFianza,
+                        'fecha_asignacion' => $record->FechaAsignacion ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') : null,
+                        'estado' => $record->Estado,
+                        'comentarios' => $record->Comentarios,
+                        'monto_renovacion_fianza' => $record->MontoRenovacionFianza,
+                        'empleado' => $record->empleado
+                    ];
+                });
+
+            return response()->json(['records' => $records]);
+        } catch (\Exception $e) {
+            \Log::error('Error en getInventarioRecords líneas: ' . $e->getMessage());
+            return response()->json(['records' => [], 'error' => 'Error interno del servidor'], 500);
+        }
     }
 
     /**
@@ -177,11 +248,151 @@ class LineasTelefonicasController extends AppBaseController
             return redirect(route('lineasTelefonicas.index'));
         }
 
+        // Guardar los datos originales para buscar en inventario
+        $datosOriginales = $lineasTelefonicas->toArray();
+
+        // Verificar si hay cambios en los campos que se sincronizan con inventario
+        $camposSincronizacion = ['PlanID', 'CuentaPadre', 'CuentaHija', 'TipoLinea', 'ObraID', 'FechaFianza', 'CostoFianza', 'MontoRenovacionFianza','NumTelefonico','Activo'];
+        $hayCambios = false;
+        $camposModificados = [];
+
+        foreach ($camposSincronizacion as $campo) {
+            if ($datosOriginales[$campo] != $request->input($campo)) {
+                $hayCambios = true;
+                $camposModificados[] = $campo;
+            }
+        }
+
+        // Verificar cambios indirectos en el plan (compañía, nombre, precio)
+        $planOriginal = null;
+        $planNuevo = null;
+        
+        if ($datosOriginales['PlanID']) {
+            $planOriginal = Planes::find($datosOriginales['PlanID']);
+        }
+        
+        if ($request->input('PlanID')) {
+            $planNuevo = Planes::find($request->input('PlanID'));
+        }
+
+        // Verificar si cambió el plan o si el plan actual cambió su compañía
+        $cambioEnPlan = false;
+        if ($planOriginal && $planNuevo) {
+            // Verificar si cambió el plan
+            if ($planOriginal->ID != $planNuevo->ID) {
+                $cambioEnPlan = true;
+                $camposModificados[] = 'PlanID';
+            }
+            // Verificar si el plan actual cambió su compañía, nombre o precio
+            elseif ($planOriginal->CompaniaID != $planNuevo->CompaniaID || 
+                    $planOriginal->NombrePlan != $planNuevo->NombrePlan || 
+                    $planOriginal->PrecioPlan != $planNuevo->PrecioPlan) {
+                $cambioEnPlan = true;
+                $camposModificados[] = 'PlanData';
+            }
+        } elseif ($planOriginal || $planNuevo) {
+            // Si uno es null y el otro no, hay cambio
+            $cambioEnPlan = true;
+            $camposModificados[] = 'PlanID';
+        }
+
+        if ($cambioEnPlan) {
+            $hayCambios = true;
+        }
+        
+        // Actualizar la línea telefónica
         $lineasTelefonicas = $this->lineasTelefonicasRepository->update($request->all(), $id);
 
-        Flash::success('Lineas Telefonicas updated successfully.');
+        // Obtener los datos actualizados
+        $lineaActualizada = $this->lineasTelefonicasRepository->find($id);
 
+        // Si hay cambios, sincronizar automáticamente con inventario usando datos originales
+        if ($hayCambios) {
+            \Log::info("Cambios detectados en línea {$lineaActualizada->NumTelefonico}: " . implode(', ', $camposModificados));
+            $this->sincronizarConInventario($lineaActualizada, $datosOriginales);
+            $mensaje = 'Línea telefónica actualizada exitosamente y sincronizada automáticamente con inventario.';
+        } else {
+            $mensaje = 'Línea telefónica actualizada exitosamente.';
+        }
+
+        // Si es una petición AJAX, devolver JSON
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $mensaje,
+                'data' => $lineaActualizada,
+                'cambios_realizados' => $hayCambios,
+                'campos_modificados' => $camposModificados
+            ]);
+        }
+
+        Flash::success($mensaje);
         return redirect(route('lineasTelefonicas.index'));
+    }
+
+    private function sincronizarConInventario($lineaActualizada, $datosOriginales)
+    {
+        try {
+            // Obtener información del plan actualizado
+            $plan = Planes::find($lineaActualizada->PlanID);
+            $nombrePlan = $plan ? $plan->NombrePlan : '';
+            $precioPlan = $plan ? $plan->PrecioPlan : 0;
+            
+            // Asegurar que el nombre del plan esté en UTF-8
+            $nombrePlan = mb_convert_encoding($nombrePlan, 'UTF-8', 'auto');
+            
+            // Obtener información de la obra actualizada
+            $obra = Obras::find($lineaActualizada->ObraID);
+            $nombreObra = $obra ? $obra->NombreObra : '';
+
+            // Obtener información de la compañía del plan actualizado
+            $nombreCompania = '';
+            if ($plan && $plan->CompaniaID) {
+                $compania = CompaniasLineasTelefonicas::find($plan->CompaniaID);
+                $nombreCompania = $compania ? $compania->Compania : '';
+            }
+            
+            // Asegurar que el nombre de la obra esté en UTF-8
+            $nombreObra = mb_convert_encoding($nombreObra, 'UTF-8', 'auto');
+            
+            // Buscar registros de inventario usando los datos ORIGINALES de la línea
+            $registrosInventario = InventarioLineas::where('NumTelefonico', $datosOriginales['NumTelefonico'])
+                ->get();
+            
+            $registrosActualizados = 0;
+            
+            // Actualizar cada registro encontrado con los datos NUEVOS de la línea
+            foreach ($registrosInventario as $registro) {
+                // Determinar el estado basado en los campos de la línea
+                $estado = $lineaActualizada->Activo ? 'Activo' : 'Inactivo';
+                if (!$lineaActualizada->Disponible) {
+                    $estado = 'Asignado';
+                }
+                
+                $registro->update([
+                    'NumTelefonico' => $lineaActualizada->NumTelefonico,
+                    'PlanTel' => $nombrePlan,
+                    'Compania' => $nombreCompania,
+                    'CostoRentaMensual' => $precioPlan,
+                    'CuentaPadre' => $lineaActualizada->CuentaPadre,
+                    'CuentaHija' => $lineaActualizada->CuentaHija,
+                    'TipoLinea' => $lineaActualizada->TipoLinea,
+                    'ObraID' => $lineaActualizada->ObraID,
+                    'Obra' => $nombreObra,
+                    'FechaFianza' => $lineaActualizada->FechaFianza,
+                    'CostoFianza' => $lineaActualizada->CostoFianza,
+                    'MontoRenovacionFianza' => $lineaActualizada->MontoRenovacionFianza,
+                    
+                ]);
+                $registrosActualizados++;
+            }
+            
+            \Log::info("Sincronización de línea completada: {$registrosActualizados} registros de inventario actualizados para línea {$lineaActualizada->NumTelefonico}. Plan: {$nombrePlan}, Compañía: {$nombreCompania}, Obra: {$nombreObra}");
+            
+        } catch (\Exception $e) {
+            \Log::error('Error en sincronización de línea con inventario: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**
