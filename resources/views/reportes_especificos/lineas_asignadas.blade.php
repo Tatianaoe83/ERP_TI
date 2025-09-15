@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
+<div class="container mx-auto px-4 py-6 dark:bg-[#101010] dark:text-white">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <div>
@@ -9,10 +9,11 @@
             <p class="text-gray-600 dark:text-gray-300">Reporte de líneas telefónicas asignadas a empleados y obras</p>
         </div>
         <div class="flex space-x-3">
-            <a href="{{ route('reportes-especificos.export-lineas-asignadas', $filtros) }}" 
-               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
-                <i class="fas fa-download mr-2"></i>Descargar PDF
+            <a href="{{ route('reportes-especificos.export-lineas-asignadas-excel', $filtros) }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                <i class="fas fa-file-excel mr-2"></i>Descargar Excel
             </a>
+            
             <a href="{{ route('reportes-especificos.index') }}" 
                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
                 <i class="fas fa-arrow-left mr-2"></i>Volver
@@ -21,7 +22,7 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 dark:bg-[#101010] dark:text-white">
         <h3 class="text-lg font-semibold text-[#101D49] dark:text-white mb-4">
             <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
         </h3>
@@ -30,7 +31,7 @@
             <!-- Empleado -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Empleado</label>
-                <select name="empleado_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                <select name="empleado_id" class="jz form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
                     <option value="">Todos los empleados</option>
                     @foreach(\App\Models\Empleados::whereNull('deleted_at')->get() as $empleado)
                         <option value="{{ $empleado->EmpleadoID }}" {{ $filtros['empleado_id'] == $empleado->EmpleadoID ? 'selected' : '' }}>
@@ -40,41 +41,44 @@
                 </select>
             </div>
 
-            <!-- Línea -->
+            <!-- cuenta padre -->
+       
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Línea</label>
-                <select name="linea_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                    <option value="">Todas las líneas</option>
-                    @foreach(\App\Models\LineasTelefonicas::whereNull('deleted_at')->get() as $linea)
-                        <option value="{{ $linea->LineaID }}" {{ $filtros['linea_id'] == $linea->LineaID ? 'selected' : '' }}>
-                            {{ $linea->Numero }} - {{ $linea->Tipo }}
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cuenta Padre</label>
+                <select name="cuenta_padre" class="jz form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                    <option value="">Todos los cuentas padres</option>
+                    @foreach(\App\Models\InventarioLineas::select('CuentaPadre')->distinct()->get() as $cuentapadre)
+               
+                        <option value="{{ $cuentapadre->CuentaPadre }}" {{ $filtros['cuenta_padre'] == $cuentapadre->CuentaPadre ? 'selected' : '' }}>
+                            {{ $cuentapadre->CuentaPadre }}
                         </option>
                     @endforeach
                 </select>
             </div>
 
-            <!-- Estatus -->
+            <!-- Línea -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estatus</label>
-                <select name="estatus" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                    <option value="">Todos los estatus</option>
-                    <option value="Activo" {{ $filtros['estatus'] == 'Activo' ? 'selected' : '' }}>Activo</option>
-                    <option value="Inactivo" {{ $filtros['estatus'] == 'Inactivo' ? 'selected' : '' }}>Inactivo</option>
-                    <option value="Suspendido" {{ $filtros['estatus'] == 'Suspendido' ? 'selected' : '' }}>Suspendido</option>
-                    <option value="Cancelado" {{ $filtros['estatus'] == 'Cancelado' ? 'selected' : '' }}>Cancelado</option>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Línea</label>
+                <select name="linea_id" class="jz form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                    <option value="">Todas las líneas</option>
+                    @foreach(\App\Models\LineasTelefonicas::whereNull('deleted_at')->get() as $linea)
+                        <option value="{{ $linea->LineaID }}" {{ $filtros['linea_id'] == $linea->LineaID ? 'selected' : '' }}>
+                            {{ $linea->NumTelefonico }} - {{ $linea->TipoLinea }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
             <!-- Fecha Desde -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Desde</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Desde Asignación</label>
                 <input type="date" name="fecha_desde" value="{{ $filtros['fecha_desde'] ?? '' }}" 
                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
             </div>
 
             <!-- Fecha Hasta -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Hasta</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Hasta Asignación</label>
                 <input type="date" name="fecha_hasta" value="{{ $filtros['fecha_hasta'] ?? '' }}" 
                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
             </div>
@@ -99,74 +103,38 @@
                 <h3 class="text-lg font-semibold text-[#101D49] dark:text-white">
                     Resultados del Reporte
                 </h3>
-                <span class="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-3 py-1 rounded-full text-sm font-medium">
-                    {{ $resultado->count() }} registros encontrados
-                </span>
             </div>
 
-            @if($resultado->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Empleado</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Número de Línea</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tipo</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Obra</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha Asignación</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estatus</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Observaciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            @foreach($resultado as $item)
-                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                         {{ $item->empleado_nombre }}
-                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ $item->linea_numero }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ $item->linea_tipo }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ $item->obra_nombre }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                        {{ \Carbon\Carbon::parse($item->FechaAsignacion)->format('d/m/Y') }}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        @php
-                                            $estatusColors = [
-                                                'Activo' => 'bg-green-100 text-green-800',
-                                                'Inactivo' => 'bg-gray-100 text-gray-800',
-                                                'Suspendido' => 'bg-yellow-100 text-yellow-800',
-                                                'Cancelado' => 'bg-red-100 text-red-800'
-                                            ];
-                                            $colorClass = $estatusColors[$item->Estatus] ?? 'bg-gray-100 text-gray-800';
-                                        @endphp
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $colorClass }}">
-                                            {{ $item->Estatus }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                        {{ $item->Observaciones ?? 'Sin observaciones' }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+            @push('third_party_stylesheets')
+            <!-- DataTables CSS -->
+            <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+            <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css">
+            @endpush
+
+            <div class="table-responsive">
+                {!! $dataTable->table(['width' => '100%', 'class' => 'table table-bordered table-striped']) !!}
                 </div>
-            @else
-                <div class="text-center py-12">
-                    <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                        <i class="fas fa-phone text-gray-400 text-2xl"></i>
-                    </div>
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No se encontraron resultados</h3>
-                    <p class="text-gray-500 dark:text-gray-400">Intenta ajustar los filtros de búsqueda para encontrar líneas asignadas.</p>
-                </div>
-            @endif
+
+            @push('third_party_scripts')
+            <!-- DataTables Core -->
+            <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+            <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+
+            <!-- DataTables Buttons -->
+            <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap4.min.js"></script>
+            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+
+            <!-- JSZIP y PDFMake para exportación -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js"></script>
+
+            <!-- DataTables Scripts -->
+            {!! $dataTable->scripts() !!}
+            @endpush
         </div>
     </div>
 </div>

@@ -193,33 +193,18 @@ class LineasTelefonicasDataTable extends DataTable
                 'name' => 'CostoFianza',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'Activo' => [
-                'title' => 'Activo',
-                'data' => 'Activo',
-                'name' => 'Activo',
-                'class' => 'dark:bg-[#101010] dark:text-white'
-            ],
-
-            'Disponible' => [
-                'title' => 'Disponible',
-                'data' => 'Disponible',
-                'name' => 'Disponible',
-                'class' => 'dark:bg-[#101010] dark:text-white'
-
-            ],
-            Column::computed('estado_disponibilidad')
-                ->title('Estado')
-                ->exportable(false)
-                ->printable(false)
-                ->width(100)
-                ->addClass('text-center dark:bg-[#101010] dark:text-white'),
             'MontoRenovacionFianza' => [
                 'title' => 'Monto Renovacion Fianza',
                 'data' => 'MontoRenovacionFianza',
                 'name' => 'MontoRenovacionFianza',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-
+            Column::computed('estado_disponibilidad')
+                ->title('Estado Disponibilidad')
+                ->exportable(false)
+                ->printable(false)
+                ->width(120)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white'),
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)

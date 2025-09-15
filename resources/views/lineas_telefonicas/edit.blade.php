@@ -134,88 +134,60 @@ function initializeLineaEdit() {
         loadInventarioCount(function(count) {
             // Crear el contenido HTML para el SweetAlert
             var htmlContent = `
-                <div class="text-left">
-                    <div class="alert alert-warning mb-3">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>¡Atención!</strong> Los cambios se aplicarán automáticamente al inventario.
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-primary mb-3">
-                                <i class="fas fa-phone me-2"></i>Cambios en la Línea:
-                            </h6>
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Número:</span>
-                                    <span class="fw-bold">${numTelefonico || 'Sin número'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Plan:</span>
-                                    <span class="fw-bold">${planId || 'Sin plan'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Cuenta Padre:</span>
-                                    <span class="fw-bold">${cuentaPadre || 'Sin cuenta padre'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Cuenta Hija:</span>
-                                    <span class="fw-bold">${cuentaHija || 'Sin cuenta hija'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Tipo de Línea:</span>
-                                    <span class="fw-bold">${tipoLinea || 'Sin tipo'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Obra:</span>
-                                    <span class="fw-bold">${obraId || 'Sin obra'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Fecha Fianza:</span>
-                                    <span class="fw-bold">${fechaFianza || 'Sin fecha'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Costo Fianza:</span>
-                                    <span class="fw-bold">${costoFianza ? '$' + parseFloat(costoFianza).toFixed(2) : '$0.00'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Monto Renovación:</span>
-                                    <span class="fw-bold">${montoRenovacion ? '$' + parseFloat(montoRenovacion).toFixed(2) : '$0.00'}</span>
-                                </li>
-                            </ul>
+             <div class="text-left">
+                    <div class="mb-4">
+                        <h6 class="mb-3">Cambios en la Línea:</h6>
+                        <div class="mb-2">
+                            <strong>Número:</strong> ${numTelefonico || 'Sin número'}
                         </div>
-                        <div class="col-md-6">
-                            <h6 class="text-success mb-3">
-                                <i class="fas fa-sync me-2"></i>Impacto en Inventario:
-                            </h6>
-                            <div class="alert alert-info">
-                                <i class="fas fa-database me-2"></i>
-                                <strong>Registros afectados:</strong> ${count}
-                            </div>
-                            <p class="text-muted small">
-                                <i class="fas fa-check-circle me-1"></i>
-                                Todos los registros del inventario con esta línea se actualizarán automáticamente.
-                            </p>
+                        <div class="mb-2">
+                            <strong>Plan:</strong> ${planId || 'Sin plan'}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Cuenta Padre:</strong> ${cuentaPadre || 'Sin cuenta padre'}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Cuenta Hija:</strong> ${cuentaHija || 'Sin cuenta hija'}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Tipo de Línea:</strong> ${tipoLinea || 'Sin tipo de línea'}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Fecha Fianza:</strong> ${fechaFianza || 'Sin fecha fianza'}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Costo Fianza:</strong> ${costoFianza || 'Sin costo fianza'}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Monto de Renovación de Fianza:</strong> ${montoRenovacion || 'Sin monto de renovación de fianza'}
                         </div>
                     </div>
                     
-                    <div class="alert alert-danger mt-3">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>¿Estás seguro de continuar?</strong> Esta acción no se puede deshacer.
+                    <div class="mb-4">
+                        <div class="mb-2">
+                            <strong>Registros en inventario afectados:</strong> ${count}
+                        </div>
+                        <p class="text-muted small mb-0">
+                            Los cambios se aplicarán automáticamente al inventario.
+                        </p>
+                    </div>
+                    
+                    <div class="border-top pt-3">
+                        <p class="mb-0"><strong>¿Continuar con el guardado?</strong></p>
                     </div>
                 </div>
             `;
             
             // Mostrar SweetAlert
             Swal.fire({
-                title: '<i class="fas fa-exclamation-triangle text-warning me-2"></i>Confirmar Guardado',
+                title: 'Confirmar Guardado',
                 html: htmlContent,
                 width: '800px',
                 showCancelButton: true,
                 confirmButtonColor: '#ffc107',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-save me-2"></i>Sí, Guardar y Sincronizar',
-                cancelButtonText: '<i class="fas fa-times me-2"></i>Cancelar',
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 showLoaderOnConfirm: true,
@@ -251,17 +223,10 @@ function initializeLineaEdit() {
                     // Mostrar mensaje de éxito con el mensaje del servidor
                     var serverMessage = result.value ? result.value.message : 'La línea se ha actualizado correctamente';
                     Swal.fire({
-                        title: '<i class="fas fa-check-circle text-success me-2"></i>¡Actualización Exitosa!',
-                        html: `
-                            <div class="text-center">
-                                <div class="alert alert-success">
-                                    <i class="fas fa-sync me-2"></i>
-                                    <strong>${serverMessage}</strong>
-    </div>
-</div>
-                        `,
+                        title: 'Actualización Exitosa',
+                        text: serverMessage,
                         icon: 'success',
-                        confirmButtonText: '<i class="fas fa-arrow-left me-2"></i>Volver al Listado',
+                        confirmButtonText: 'Continuar',
                         allowOutsideClick: false,
                         allowEscapeKey: false
                     }).then(() => {
@@ -272,7 +237,7 @@ function initializeLineaEdit() {
             }).catch((error) => {
                 // Mostrar mensaje de error
                 Swal.fire({
-                    title: '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Error',
+                    title: 'Error',
                     text: error,
                     icon: 'error',
                     confirmButtonText: 'Entendido'

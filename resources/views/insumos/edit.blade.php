@@ -111,75 +111,53 @@ function initializeInsumoEdit() {
             // Crear el contenido HTML para el SweetAlert
             var htmlContent = `
                 <div class="text-left">
-                    <div class="alert alert-warning mb-3">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>¡Atención!</strong> Los cambios se aplicarán automáticamente al inventario.
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-primary mb-3">
-                                <i class="fas fa-desktop me-2"></i>Cambios en el Insumo:
-                            </h6>
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Categoría:</span>
-                                    <span class="fw-bold">${categoria || 'Sin categoría'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Nombre del Insumo:</span>
-                                    <span class="fw-bold">${nombreInsumo || 'Sin nombre del insumo'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Costo Mensual:</span>
-                                    <span class="fw-bold">${costoMensual ? '$' + parseFloat(costoMensual).toFixed(2) : '$0.00'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Costo Anual:</span>
-                                    <span class="fw-bold">${costoAnual ? '$' + parseFloat(costoAnual).toFixed(2) : '$0.00'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Frecuencia de Pago:</span>
-                                    <span class="fw-bold">${frecuenciaDePago || 'Sin frecuencia'}</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between">
-                                    <span>Observaciones:</span>
-                                    <span class="fw-bold">${observaciones || 'Sin observaciones'}</span>
-                                </li>
-                            </ul>
+                    <div class="mb-4">
+                        <h6 class="mb-3">Cambios en el Insumo:</h6>
+                        <div class="mb-2">
+                            <strong>Categoría:</strong> ${categoria || 'Sin categoría'}
                         </div>
-                        <div class="col-md-6">
-                            <h6 class="text-success mb-3">
-                                <i class="fas fa-sync me-2"></i>Impacto en Inventario:
-                            </h6>
-                            <div class="alert alert-info">
-                                <i class="fas fa-database me-2"></i>
-                                <strong>Registros afectados:</strong> ${count}
-                            </div>
-                            <p class="text-muted small">
-                                <i class="fas fa-check-circle me-1"></i>
-                                Todos los registros del inventario con este insumo se actualizarán automáticamente.
-                            </p>
+                        <div class="mb-2">
+                            <strong>Nombre del Insumo:</strong> ${nombreInsumo || 'Sin nombre del insumo'}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Costo Mensual:</strong> ${costoMensual ? '$' + parseFloat(costoMensual).toFixed(2) : '$0.00'}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Costo Anual:</strong> ${costoAnual ? '$' + parseFloat(costoAnual).toFixed(2) : '$0.00'}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Frecuencia de Pago:</strong> ${frecuenciaDePago || 'Sin frecuencia'}
+                        </div>
+                        <div class="mb-3">
+                            <strong>Observaciones:</strong> ${observaciones || 'Sin observaciones'}
                         </div>
                     </div>
                     
-                    <div class="alert alert-danger mt-3">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>¿Estás seguro de continuar?</strong> Esta acción no se puede deshacer.
+                    <div class="mb-4">
+                        <div class="mb-2">
+                            <strong>Registros en inventario afectados:</strong> ${count}
+                        </div>
+                        <p class="text-muted small mb-0">
+                            Los cambios se aplicarán automáticamente al inventario.
+                        </p>
+                    </div>
+                    
+                    <div class="border-top pt-3">
+                        <p class="mb-0"><strong>¿Continuar con el guardado?</strong></p>
                     </div>
                 </div>
             `;
             
             // Mostrar SweetAlert
             Swal.fire({
-                title: '<i class="fas fa-exclamation-triangle text-warning me-2"></i>Confirmar Guardado',
+                title: 'Confirmar Guardado',
                 html: htmlContent,
-                width: '800px',
+                width: '500px',
                 showCancelButton: true,
-                confirmButtonColor: '#ffc107',
+                confirmButtonColor: '#007bff',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-save me-2"></i>Sí, Guardar y Sincronizar',
-                cancelButtonText: '<i class="fas fa-times me-2"></i>Cancelar',
+                confirmButtonText: 'Guardar',
+                cancelButtonText: 'Cancelar',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 showLoaderOnConfirm: true,
@@ -215,17 +193,10 @@ function initializeInsumoEdit() {
                     // Mostrar mensaje de éxito con el mensaje del servidor
                     var serverMessage = result.value ? result.value.message : 'El insumo se ha actualizado correctamente';
                     Swal.fire({
-                        title: '<i class="fas fa-check-circle text-success me-2"></i>¡Actualización Exitosa!',
-                        html: `
-                            <div class="text-center">
-                                <div class="alert alert-success">
-                                    <i class="fas fa-sync me-2"></i>
-                                    <strong>${serverMessage}</strong>
-                                </div>
-                            </div>
-                        `,
+                        title: 'Actualización Exitosa',
+                        text: serverMessage,
                         icon: 'success',
-                        confirmButtonText: '<i class="fas fa-arrow-left me-2"></i>Volver al Listado',
+                        confirmButtonText: 'Continuar',
                         allowOutsideClick: false,
                         allowEscapeKey: false
                     }).then(() => {
@@ -236,7 +207,7 @@ function initializeInsumoEdit() {
             }).catch((error) => {
                 // Mostrar mensaje de error
                 Swal.fire({
-                    title: '<i class="fas fa-exclamation-triangle text-danger me-2"></i>Error',
+                    title: 'Error',
                     text: error,
                     icon: 'error',
                     confirmButtonText: 'Entendido'

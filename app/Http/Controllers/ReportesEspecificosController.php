@@ -10,10 +10,13 @@ use App\Models\InventarioLineas;
 use App\Models\InventarioInsumo;
 use App\Models\Insumos;
 use App\DataTables\EstatusLicenciasDataTable;
+use App\DataTables\EquiposAsignadosDataTable;
+use App\DataTables\LineasAsignadasDataTable;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AppBaseController;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LineasAsignadasExport;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
@@ -60,7 +63,7 @@ class ReportesEspecificosController extends AppBaseController
     /**
      * Reporte de equipos asignados
      */
-    public function equiposAsignados(Request $request)
+    public function equiposAsignados(Request $request, EquiposAsignadosDataTable $dataTable)
     {
         $filtros = $request->only(['empleado_id', 'equipo_id', 'estatus', 'fecha_desde', 'fecha_hasta', 'gerencia_id']) + [
             'empleado_id' => '',
@@ -70,119 +73,33 @@ class ReportesEspecificosController extends AppBaseController
             'fecha_hasta' => '',
             'gerencia_id' => ''
         ];
-        
-        $query = DB::table('inventarioequipo')
-            //->join('equipos', 'inventarioequipo.EquipoID', '=', 'equipos.EquipoID')
-            ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
-            ->select([
-                'empleados.NombreEmpleado as empleado_nombre',
-                'inventarioequipo.GerenciaEquipo',
-                //'equipos.Marca as equipo_marca',
-                //'equipos.Modelo as equipo_modelo',
-                //'equipos.NumeroSerie as equipo_serie',
-                'inventarioequipo.Marca',
-                'inventarioequipo.Modelo',
-                'inventarioequipo.Folio',
-                'inventarioequipo.Caracteristicas',
-                'inventarioequipo.NumSerie',
-                'inventarioequipo.FechaAsignacion',
-               
-              
-            ]);
-          
-            //->whereNull('inventarioequipo.deleted_at')
-            //->whereNull('equipos.deleted_at')
-            //->whereNull('empleados.deleted_at');
-
-        // Aplicar filtros
-        if (!empty($filtros['empleado_id'])) {
-            $query->where('inventarioequipo.EmpleadoID', $filtros['empleado_id']);
-        }
-
-        if (!empty($filtros['equipo_id'])) {
-            $query->where('inventarioequipo.EquipoID', $filtros['equipo_id']);
-        }
-
-        if (!empty($filtros['estatus'])) {
-            $query->where('inventarioequipo.Estatus', $filtros['estatus']);
-        }
-
-        if (!empty($filtros['fecha_desde'])) {
-            $query->whereDate('inventarioequipo.FechaAsignacion', '>=', $filtros['fecha_desde']);
-        }
-
-        if (!empty($filtros['fecha_hasta'])) {
-            $query->whereDate('inventarioequipo.FechaAsignacion', '<=', $filtros['fecha_hasta']);
-        }
-
-        $resultado = $query->orderBy('inventarioequipo.FechaAsignacion', 'desc')->get();
 
         if ($request->ajax()) {
-            return response()->json($resultado);
+            return $dataTable->ajax();
         }
 
-        return view('reportes_especificos.equipos_asignados', compact('resultado', 'filtros'));
+        return $dataTable->render('reportes_especificos.equipos_asignados', ['filtros' => $filtros]);
     }
 
     /**
      * Reporte de líneas asignadas
      */
-    public function lineasAsignadas(Request $request)
+    public function lineasAsignadas(Request $request, LineasAsignadasDataTable $dataTable)
     {
-        $filtros = $request->only(['empleado_id', 'linea_id', 'estatus', 'fecha_desde', 'fecha_hasta']) + [
+        $filtros = $request->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre']) + [
             'empleado_id' => '',
             'linea_id' => '',
-            'estatus' => '',
             'fecha_desde' => '',
-            'fecha_hasta' => ''
+            'fecha_hasta' => '',
+            'cuenta_padre' => ''
         ];
-        
-        $query = DB::table('inventariolineas')
-            ->join('lineastelefonicas', 'inventariolineas.LineaID', '=', 'lineastelefonicas.LineaID')
-            ->join('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
-            ->join('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
-            ->select([
-                'empleados.NombreEmpleado as empleado_nombre',
-                'lineastelefonicas.Numero as linea_numero',
-                'lineastelefonicas.Tipo as linea_tipo',
-                'obras.Nombre as obra_nombre',
-                'inventariolineas.FechaAsignacion',
-                'inventariolineas.Estatus',
-                'inventariolineas.Observaciones'
-            ])
-            ->whereNull('inventariolineas.deleted_at')
-            ->whereNull('lineastelefonicas.deleted_at')
-            ->whereNull('empleados.deleted_at')
-            ->whereNull('obras.deleted_at');
 
-        // Aplicar filtros
-        if (!empty($filtros['empleado_id'])) {
-            $query->where('inventariolineas.EmpleadoID', $filtros['empleado_id']);
-        }
-
-        if (!empty($filtros['linea_id'])) {
-            $query->where('inventariolineas.LineaID', $filtros['linea_id']);
-        }
-
-        if (!empty($filtros['estatus'])) {
-            $query->where('inventariolineas.Estatus', $filtros['estatus']);
-        }
-
-        if (!empty($filtros['fecha_desde'])) {
-            $query->whereDate('inventariolineas.FechaAsignacion', '>=', $filtros['fecha_desde']);
-        }
-
-        if (!empty($filtros['fecha_hasta'])) {
-            $query->whereDate('inventariolineas.FechaAsignacion', '<=', $filtros['fecha_hasta']);
-        }
-
-        $resultado = $query->orderBy('inventariolineas.FechaAsignacion', 'desc')->get();
 
         if ($request->ajax()) {
-            return response()->json($resultado);
+            return $dataTable->ajax();
         }
 
-        return view('reportes_especificos.lineas_asignadas', compact('resultado', 'filtros'));
+        return $dataTable->render('reportes_especificos.lineas_asignadas', ['filtros' => $filtros]);
     }
 
     /**
@@ -286,25 +203,56 @@ class ReportesEspecificosController extends AppBaseController
      */
     public function exportLineasAsignadas(Request $request)
     {
-        $filtros = $request->only(['empleado_id', 'linea_id', 'estatus', 'fecha_desde', 'fecha_hasta']);
+      
+        $filtros =[];
         
         $query = DB::table('inventariolineas')
-            ->join('lineastelefonicas', 'inventariolineas.LineaID', '=', 'lineastelefonicas.LineaID')
-            ->join('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
-            ->join('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
+            ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
+            ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
             ->select([
+                'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
-                'lineastelefonicas.Numero as linea_numero',
-                'lineastelefonicas.Tipo as linea_tipo',
-                'obras.Nombre as obra_nombre',
-                'inventariolineas.FechaAsignacion',
-                'inventariolineas.Estatus',
-                'inventariolineas.Observaciones'
-            ])
-            ->whereNull('inventariolineas.deleted_at')
-            ->whereNull('lineastelefonicas.deleted_at')
-            ->whereNull('empleados.deleted_at')
-            ->whereNull('obras.deleted_at');
+                'inventariolineas.NumTelefonico as linea_numero',
+                'inventariolineas.TipoLinea as linea_tipo',
+                'obras.NombreObra as obra_nombre',
+                'inventariolineas.FechaAsignacion as fecha_asignacion',
+                'inventariolineas.CostoRentaMensual as costo_renta_mensual',
+                'inventariolineas.CuentaPadre as cuenta_padre',
+                'inventariolineas.CuentaHija as cuenta_hija',
+                'inventariolineas.MontoRenovacionFianza as monto_renovacion_fianza'
+            ]);
+
+    
+
+        $resultado = $query->orderBy('inventariolineas.FechaAsignacion', 'desc')->get();
+
+        $nombreArchivo = 'lineas_asignadas_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        return Excel::download(new LineasAsignadasExport($resultado, $filtros), $nombreArchivo);
+    }
+
+    /**
+     * Exportar líneas asignadas a Excel
+     */
+    public function exportLineasAsignadasExcel(Request $request)
+    {
+        $filtros = $request->only(['empleado_id', 'linea_id', 'fecha_desde', 'fecha_hasta', 'cuenta_padre']);
+        
+        $query = DB::table('inventariolineas')
+            ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
+            ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
+            ->select([
+                'inventariolineas.InventarioID',
+                'empleados.NombreEmpleado as empleado_nombre',
+                'inventariolineas.NumTelefonico as linea_numero',
+                'inventariolineas.TipoLinea as linea_tipo',
+                'obras.NombreObra as obra_nombre',
+                'inventariolineas.FechaAsignacion as fecha_asignacion',
+                'inventariolineas.CostoRentaMensual as costo_renta_mensual',
+                'inventariolineas.CuentaPadre as cuenta_padre',
+                'inventariolineas.CuentaHija as cuenta_hija',
+                'inventariolineas.MontoRenovacionFianza as monto_renovacion_fianza'
+            ]);
 
         // Aplicar filtros
         if (!empty($filtros['empleado_id'])) {
@@ -312,11 +260,15 @@ class ReportesEspecificosController extends AppBaseController
         }
 
         if (!empty($filtros['linea_id'])) {
-            $query->where('inventariolineas.LineaID', $filtros['linea_id']);
+            // Buscar por número telefónico en lugar de LineaID
+            $linea = DB::table('lineastelefonicas')->where('LineaID', $filtros['linea_id'])->first();
+            if ($linea) {
+                $query->where('inventariolineas.NumTelefonico', $linea->NumTelefonico);
+            }
         }
 
-        if (!empty($filtros['estatus'])) {
-            $query->where('inventariolineas.Estatus', $filtros['estatus']);
+        if (!empty($filtros['cuenta_padre'])) {
+            $query->where('inventariolineas.CuentaPadre', $filtros['cuenta_padre']);
         }
 
         if (!empty($filtros['fecha_desde'])) {
@@ -329,7 +281,8 @@ class ReportesEspecificosController extends AppBaseController
 
         $resultado = $query->orderBy('inventariolineas.FechaAsignacion', 'desc')->get();
 
-        $pdf = Pdf::loadView('reportes_especificos.export_lineas_asignadas_pdf', compact('resultado', 'filtros'));
-        return $pdf->download('lineas_asignadas_' . date('Y-m-d') . '.pdf');
+        $nombreArchivo = 'lineas_asignadas_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        return Excel::download(new LineasAsignadasExport($resultado, $filtros), $nombreArchivo);
     }
 }

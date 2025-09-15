@@ -144,21 +144,16 @@
                 <span class="filter-value">{{ $linea ? $linea->Numero . ' - ' . $linea->Tipo : 'N/A' }}</span>
             </div>
         @endif
-        @if(!empty($filtros['estatus']))
-            <div class="filter-item">
-                <span class="filter-label">Estatus:</span>
-                <span class="filter-value">{{ $filtros['estatus'] }}</span>
-            </div>
-        @endif
+      
         @if(!empty($filtros['fecha_desde']))
             <div class="filter-item">
-                <span class="filter-label">Fecha Desde:</span>
+                <span class="filter-label">Fecha Desde Asignación:</span>
                 <span class="filter-value">{{ \Carbon\Carbon::parse($filtros['fecha_desde'])->format('d/m/Y') }}</span>
             </div>
         @endif
         @if(!empty($filtros['fecha_hasta']))
             <div class="filter-item">
-                <span class="filter-label">Fecha Hasta:</span>
+                <span class="filter-label">Fecha Hasta Asignación:</span>
                 <span class="filter-value">{{ \Carbon\Carbon::parse($filtros['fecha_hasta'])->format('d/m/Y') }}</span>
             </div>
         @endif
@@ -174,7 +169,10 @@
                     <th>Tipo</th>
                     <th>Obra</th>
                     <th>Fecha Asignación</th>
-                    <th>Estatus</th>
+                    <th>Costo Renta Mensual</th>
+                    <th>Cuenta Padre</th>
+                    <th>Cuenta Hija</th>
+                    <th>Monto Renovación Fianza</th>
                     <th>Observaciones</th>
                 </tr>
             </thead>
