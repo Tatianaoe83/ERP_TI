@@ -113,7 +113,7 @@
                     Información sobre los Reportes
                 </h4>
                 <ul class="text-blue-700 dark:text-blue-300 text-sm space-y-1">
-                    <li>• Todos los reportes incluyen opciones de filtrado por empleado, estatus y fechas</li>
+                    <li>• Todos los reportes incluyen opciones de filtrado por empleado y fechas</li>
                     <li>• Los reportes se pueden descargar directamente en formato PDF</li>
                     <li>• Los datos se actualizan en tiempo real según la información del sistema</li>
                     <li>• Los filtros aplicados se mantienen al descargar el reporte</li>

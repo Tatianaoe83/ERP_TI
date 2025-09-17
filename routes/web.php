@@ -97,7 +97,9 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
         Route::get('/equipos-asignados', [App\Http\Controllers\ReportesEspecificosController::class, 'equiposAsignados'])->name('equipos-asignados');
         Route::get('/lineas-asignadas', [App\Http\Controllers\ReportesEspecificosController::class, 'lineasAsignadas'])->name('lineas-asignadas');
         Route::get('/export-estatus-licencias', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEstatusLicencias'])->name('export-estatus-licencias');
+        Route::get('/export-estatus-licencias-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEstatusLicenciasExcel'])->name('export-estatus-licencias-excel');
         Route::get('/export-equipos-asignados', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEquiposAsignados'])->name('export-equipos-asignados');
+        Route::get('/export-equipos-asignados-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEquiposAsignadosExcel'])->name('export-equipos-asignados-excel');
         Route::get('/export-lineas-asignadas', [App\Http\Controllers\ReportesEspecificosController::class, 'exportLineasAsignadas'])->name('export-lineas-asignadas');
         Route::get('/export-lineas-asignadas-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportLineasAsignadasExcel'])->name('export-lineas-asignadas-excel');
     });

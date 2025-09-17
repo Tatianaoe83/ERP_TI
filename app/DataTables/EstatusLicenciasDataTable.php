@@ -7,6 +7,7 @@ use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
 use Yajra\DataTables\Services\DataTable;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\QueryDataTable;
 
 class EstatusLicenciasDataTable extends DataTable
 {
@@ -18,17 +19,10 @@ class EstatusLicenciasDataTable extends DataTable
      */
     public function dataTable($query)
     {
-        return datatables($query)
-            ->addColumn('fecha_formateada', function ($row) {
-                return $row->FechaAsignacion ? \Carbon\Carbon::parse($row->FechaAsignacion)->format('d/m/Y') : 'N/A';
-            })
-            ->addColumn('costo_formateado', function ($row) {
-                return '$' . number_format($row->CostoMensual ?? 0, 2);
-            })
-            ->addColumn('observaciones_formateadas', function ($row) {
-                return $row->Observaciones ?? 'Sin observaciones';
-            })
-            ->rawColumns(['fecha_formateada', 'costo_formateado', 'observaciones_formateadas']);
+        $dataTable = new QueryDataTable($query);
+
+        return $dataTable
+            ->setRowId('InventarioID');
     }
 
     /**
@@ -39,35 +33,59 @@ class EstatusLicenciasDataTable extends DataTable
      */
     public function query(InventarioInsumo $model)
     {
-        $filtros = request()->only(['empleado_id', 'estatus', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago']);
+        $filtros = request()->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago']);
         
-        $query = DB::table('inventarioinsumo')
-            ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        try {
+           
+            
+            $query = DB::table('inventarioinsumo')
+                ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+                ->where('inventarioinsumo.CateogoriaInsumo', 'Licencia')
+           
             ->select([
-                'inventarioinsumo.*',
-                'empleados.NombreEmpleado as empleado_nombre'
+                'inventarioinsumo.InventarioID',
+                'empleados.NombreEmpleado as empleado_nombre',
+                'inventarioinsumo.NombreInsumo as insumo_nombre',
+                'inventarioinsumo.CateogoriaInsumo as insumo_tipo',
+                'inventarioinsumo.FechaAsignacion',
+                'inventarioinsumo.NumSerie as num_serie',
+                'inventarioinsumo.FrecuenciaDePago as frecuencia_pago',
+                'inventarioinsumo.CostoMensual as costo_mensual',
+                'inventarioinsumo.CostoAnual as costo_anual',
+                'inventarioinsumo.MesDePago as mes_pago',
+                'inventarioinsumo.Observaciones as observaciones',
+                'inventarioinsumo.Comentarios as comentarios'
             ])
-            ->whereNull('inventarioinsumo.deleted_at')
-            ->whereNull('empleados.deleted_at');
+            ;
 
-        // Aplicar filtros
-        if (!empty($filtros['empleado_id'])) {
-            $query->where('inventarioinsumo.EmpleadoID', $filtros['empleado_id']);
+            // Aplicar filtros
+            if (!empty($filtros['empleado_id'])) {
+                $query->where('inventarioinsumo.EmpleadoID', $filtros['empleado_id']);
+            }
+
+            if (!empty($filtros['fecha_desde'])) {
+                $query->whereDate('inventarioinsumo.FechaAsignacion', '>=', $filtros['fecha_desde']);
+            }
+
+            if (!empty($filtros['fecha_hasta'])) {
+                $query->whereDate('inventarioinsumo.FechaAsignacion', '<=', $filtros['fecha_hasta']);
+            }
+
+            if (!empty($filtros['frecuencia_pago'])) {
+                $query->where('inventarioinsumo.FrecuenciaDePago', $filtros['frecuencia_pago']);
+            }
+
+            if (!empty($filtros['inventarioinsumo_mes_pago'])) {
+                $query->where('inventarioinsumo.MesDePago', $filtros['inventarioinsumo_mes_pago']);
+            }
+
+            return $query->orderBy('inventarioinsumo.InventarioID', 'desc');
+            
+        } catch (\Exception $e) {
+            // En caso de error, devolver una consulta vacía
+           
+            return DB::table('inventarioinsumo')->whereRaw('1 = 0');
         }
-
-        if (!empty($filtros['fecha_desde'])) {
-            $query->whereDate('inventarioinsumo.FechaAsignacion', '>=', $filtros['fecha_desde']);
-        }
-
-        if (!empty($filtros['fecha_hasta'])) {
-            $query->whereDate('inventarioinsumo.FechaAsignacion', '<=', $filtros['fecha_hasta']);
-        }
-
-        if (!empty($filtros['frecuencia_pago'])) {
-            $query->where('inventarioinsumo.FrecuenciaDePago', $filtros['frecuencia_pago']);
-        }
-
-        return $query;
     }
 
     /**
@@ -82,23 +100,51 @@ class EstatusLicenciasDataTable extends DataTable
                     ->columns($this->getColumns())
                     ->minifiedAjax()
                     ->dom('Bfrtip')
-                    ->orderBy(0)
+                    ->orderBy(0, 'desc') // Ordenar por fecha de asignación descendente
                     ->buttons([
-                        Button::make('excel'),
-                        Button::make('csv'),
-                        Button::make('pdf'),
-                        Button::make('print'),
-                        Button::make('reset'),
-                        Button::make('reload')
+                        [
+                            'className' => 'btn btn-default',
+                            'text' => '<i class="fa fa-sync-alt"></i> Recargar',
+                            'action' => 'function() { 
+                                window.LaravelDataTables["estatus-licencias-table"].ajax.reload();
+                            }'
+                        ]
                     ])
                     ->parameters([
+                        'processing' => true,
+                        'serverSide' => true,
                         'responsive' => true,
-                        'autoWidth' => false,
+                        'pageLength' => 10,
+                        'searching' => true,
                         'language' => [
-                            'url' => '//cdn.datatables.net/plug-ins/1.10.24/i18n/Spanish.json'
+                            'processing' => 'Procesando...',
+                            'lengthMenu' => 'Mostrar _MENU_ registros',
+                            'zeroRecords' => 'No se encontraron resultados',
+                            'emptyTable' => 'Ningún dato disponible en esta tabla',
+                            'info' => 'Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros',
+                            'infoEmpty' => 'Mostrando registros del 0 al 0 de un total de 0 registros',
+                            'infoFiltered' => '(filtrado de un total de _MAX_ registros)',
+                            'infoPostFix' => '',
+                            'search' => 'Buscar:',
+                            'url' => '',
+                            'infoThousands' => ',',
+                            'loadingRecords' => 'Cargando...',
+                            'paginate' => [
+                                'first' => 'Primero',
+                                'last' => 'Último',
+                                'next' => 'Siguiente',
+                                'previous' => 'Anterior'
+                            ],
+                            'aria' => [
+                                'sortAscending' => ': Activar para ordenar la columna de manera ascendente',
+                                'sortDescending' => ': Activar para ordenar la columna de manera descendente'
+                            ]
                         ],
-                        'pageLength' => 25,
-                        'lengthMenu' => [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]]
+                        'drawCallback' => 'function() {
+                            if (typeof $ !== "undefined" && $.fn.tooltip) {
+                                $("[data-toggle=tooltip]").tooltip();
+                            }
+                        }',
                     ]);
     }
 
@@ -110,28 +156,67 @@ class EstatusLicenciasDataTable extends DataTable
     protected function getColumns()
     {
         return [
-            Column::make('empleado_nombre')
-                ->title('Empleado')
-                ->addClass('text-left'),
-            Column::make('NombreInsumo')
-                ->title('Insumo')
-                ->addClass('text-left'),
-            Column::make('CateogoriaInsumo')
-                ->title('Categoría')
-                ->addClass('text-left'),
-            Column::make('fecha_formateada')
-                ->title('Fecha Asignación')
-                ->addClass('text-left'),
-            Column::make('costo_formateado')
-                ->title('Costo Mensual')
-                ->addClass('text-right'),
-            Column::make('FrecuenciaDePago')
-                ->title('Frecuencia de Pago')
-                ->addClass('text-left'),
-            Column::make('observaciones_formateadas')
-                ->title('Observaciones')
-                ->addClass('text-left'),
-        ];
+                'empleado_nombre' => [
+                    'title' => 'Empleado',
+                    'data' => 'empleado_nombre',
+                    'name' => 'empleados.NombreEmpleado',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'insumo_nombre' => [
+                    'title' => 'Nombre del Insumo',
+                    'data' => 'insumo_nombre',
+                    'name' => 'insumos.NombreInsumo',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'insumo_tipo' => [
+                    'title' => 'Tipo',
+                    'data' => 'insumo_tipo',
+                    'name' => 'insumos.CategoriaInsumo',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'num_serie' => [
+                    'title' => 'Número de Serie',
+                    'data' => 'num_serie',
+                    'name' => 'inventarioinsumo.NumSerie',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'frecuencia_pago' => [
+                    'title' => 'Frecuencia de Pago',
+                    'data' => 'frecuencia_pago',
+                    'name' => 'inventarioinsumo.FrecuenciaDePago',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'costo_mensual' => [
+                    'title' => 'Costo Mensual',
+                    'data' => 'costo_mensual',
+                    'name' => 'inventarioinsumo.CostoMensual',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'costo_anual' => [
+                    'title' => 'Costo Anual',
+                    'data' => 'costo_anual',
+                    'name' => 'inventarioinsumo.CostoAnual',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'mes_pago' => [
+                    'title' => 'Mes de Pago',
+                    'data' => 'mes_pago',
+                    'name' => 'inventarioinsumo.MesDePago',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'observaciones' => [
+                    'title' => 'Observaciones',
+                    'data' => 'observaciones',
+                    'name' => 'inventarioinsumo.Observaciones',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ],
+                'comentarios' => [
+                    'title' => 'Comentarios',
+                    'data' => 'comentarios',
+                    'name' => 'inventarioinsumo.Comentarios',
+                    'class' => 'dark:bg-[#101010] dark:text-white'
+                ]
+            ];
     }
 
     /**

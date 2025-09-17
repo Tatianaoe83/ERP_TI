@@ -20,11 +20,7 @@ class EquiposAsignadosDataTable extends DataTable
         $dataTable = new QueryDataTable($query);
 
         return $dataTable
-            ->addColumn('fecha_formateada', function ($row) {
-                return \Carbon\Carbon::parse($row->FechaAsignacion)->format('d/m/Y');
-            })
-            ->rawColumns(['fecha_formateada'])
-            ->setRowId('Folio');
+            ->setRowId('InventarioID');
     }
 
     /**
@@ -34,11 +30,13 @@ class EquiposAsignadosDataTable extends DataTable
      */
     public function query()
     {
-        $filtros = request()->only(['empleado_id', 'equipo_id', 'estatus', 'fecha_desde', 'fecha_hasta', 'gerencia_id']);
+
+        $filtros = request()->only(['empleado_id', 'equipo_id', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre','marca']);
         
         $query = DB::table('inventarioequipo')
             ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
             ->select([
+                'inventarioequipo.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
                 'inventarioequipo.GerenciaEquipo',
                 'inventarioequipo.Marca',
@@ -47,6 +45,7 @@ class EquiposAsignadosDataTable extends DataTable
                 'inventarioequipo.Caracteristicas',
                 'inventarioequipo.NumSerie',
                 'inventarioequipo.FechaAsignacion',
+                'inventarioequipo.CategoriaEquipo',
             ]);
 
         // Aplicar filtros
@@ -58,8 +57,12 @@ class EquiposAsignadosDataTable extends DataTable
             $query->where('inventarioequipo.EquipoID', $filtros['equipo_id']);
         }
 
-        if (!empty($filtros['estatus'])) {
-            $query->where('inventarioequipo.Estatus', $filtros['estatus']);
+        if (!empty($filtros['marca'])) {
+            $query->where('inventarioequipo.Marca', $filtros['marca']);
+        }
+
+        if (!empty($filtros['categoria_nombre'])) {
+            $query->where('inventarioequipo.CategoriaEquipo', $filtros['categoria_nombre']);
         }
 
         if (!empty($filtros['fecha_desde'])) {
@@ -70,7 +73,11 @@ class EquiposAsignadosDataTable extends DataTable
             $query->whereDate('inventarioequipo.FechaAsignacion', '<=', $filtros['fecha_hasta']);
         }
 
-        return $query->orderBy('inventarioequipo.FechaAsignacion', 'desc');
+        if (!empty($filtros['gerencia_id'])) {
+            $query->where('inventarioequipo.GerenciaEquipoID', $filtros['gerencia_id']);
+        }
+
+        return $query->orderBy('inventarioequipo.InventarioID', 'desc');
     }
 
     /**
@@ -85,18 +92,8 @@ class EquiposAsignadosDataTable extends DataTable
             ->columns($this->getColumns())
             ->minifiedAjax()
             ->dom('Bfrtip')
-            ->orderBy(5, 'desc') // Ordenar por fecha de asignación descendente
+            ->orderBy(8, 'desc') // Ordenar por fecha de asignación descendente
             ->buttons([
-                [
-                    'extend' => 'excel',
-                    'className' => 'btn btn-success',
-                    'text' => '<i class="fa fa-file-excel"></i> Excel'
-                ],
-                [
-                    'extend' => 'pdf',
-                    'className' => 'btn btn-danger',
-                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],
                 [
                     'className' => 'btn btn-default',
                     'text' => '<i class="fa fa-sync-alt"></i> Recargar',
@@ -164,12 +161,27 @@ class EquiposAsignadosDataTable extends DataTable
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Marca' => [
-                'title' => 'Marca/Modelo',
+                'title' => 'Marca',
                 'data' => 'Marca',
                 'name' => 'inventarioequipo.Marca',
-                'render' => 'function(data, type, row) {
-                    return data + " " + row.Modelo;
-                }',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'Modelo' => [
+                'title' => 'Modelo',
+                'data' => 'Modelo',
+                'name' => 'inventarioequipo.Modelo',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'Folio' => [
+                'title' => 'Folio',
+                'data' => 'Folio',
+                'name' => 'inventarioequipo.Folio',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'Caracteristicas' => [
+                'title' => 'Caracteristicas',
+                'data' => 'Caracteristicas',
+                'name' => 'inventarioequipo.Caracteristicas',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NumSerie' => [
@@ -178,11 +190,24 @@ class EquiposAsignadosDataTable extends DataTable
                 'name' => 'inventarioequipo.NumSerie',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            Column::computed('fecha_formateada')
-                ->title('Fecha Asignación')
-                ->exportable(true)
-                ->printable(true)
-                ->addClass('dark:bg-[#101010] dark:text-white'),
+            'CategoriaEquipo' => [
+                'title' => 'Categoria',
+                'data' => 'CategoriaEquipo',
+                'name' => 'inventarioequipo.CategoriaEquipo',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'FechaAsignacion' => [
+                'title' => 'Fecha Asignación',
+                'data' => 'FechaAsignacion',
+                'name' => 'inventarioequipo.FechaAsignacion',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'CategoriaEquipo' => [
+                'title' => 'Categoria Equipo',
+                'data' => 'CategoriaEquipo',
+                'name' => 'inventarioequipo.CategoriaEquipo',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
         ];
     }
 

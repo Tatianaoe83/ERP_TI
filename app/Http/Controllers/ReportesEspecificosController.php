@@ -17,6 +17,8 @@ use App\Http\Controllers\AppBaseController;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\LineasAsignadasExport;
+use App\Exports\EquiposAsignadosExport;
+use App\Exports\EstatusLicenciasExport;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 
@@ -42,13 +44,12 @@ class ReportesEspecificosController extends AppBaseController
     public function estatusLicencias(Request $request, EstatusLicenciasDataTable $dataTable)
     {
 
-        print_r($request->all());
-        $filtros = $request->only(['empleado_id', 'estatus', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago']) + [
+        $filtros = $request->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago']) + [
             'empleado_id' => '',
-            'estatus' => '',
             'fecha_desde' => '',
             'fecha_hasta' => '',
-            'frecuencia_pago' => ''
+            'frecuencia_pago' => '',
+            'inventarioinsumo_mes_pago' => ''
         ];
 
        
@@ -65,13 +66,16 @@ class ReportesEspecificosController extends AppBaseController
      */
     public function equiposAsignados(Request $request, EquiposAsignadosDataTable $dataTable)
     {
-        $filtros = $request->only(['empleado_id', 'equipo_id', 'estatus', 'fecha_desde', 'fecha_hasta', 'gerencia_id']) + [
+
+
+        $filtros = $request->only(['empleado_id', 'equipo_id', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre','marca']) + [
             'empleado_id' => '',
             'equipo_id' => '',
-            'estatus' => '',
             'fecha_desde' => '',
             'fecha_hasta' => '',
-            'gerencia_id' => ''
+            'gerencia_id' => '',
+            'categoria_nombre' => '',
+            'marca' => ''
         ];
 
         if ($request->ajax()) {
@@ -105,32 +109,36 @@ class ReportesEspecificosController extends AppBaseController
     /**
      * Exportar estatus de licencias a PDF
      */
-    public function exportEstatusLicencias(Request $request)
+    public function exportEstatusLicenciasExcel(Request $request)
     {
-        $filtros = $request->only(['empleado_id', 'estatus', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago']);
+        $filtros = $request->only(['empleado_id', 'fecha_desde', 'fecha_hasta', 'frecuencia_pago', 'inventarioinsumo_mes_pago']);
         
         $query = DB::table('inventarioinsumo')
-            ->join('insumos', 'inventarioinsumo.InsumoID', '=', 'insumos.InsumoID')
-            ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
-            ->select([
-                'empleados.NombreEmpleado as empleado_nombre',
-                'insumos.Nombre as insumo_nombre',
-                'insumos.Tipo as insumo_tipo',
-                'inventarioinsumo.FechaAsignacion',
-                'inventarioinsumo.Estatus',
-                'inventarioinsumo.Observaciones'
-            ])
-            ->whereNull('inventarioinsumo.deleted_at')
-            ->whereNull('insumos.deleted_at')
-            ->whereNull('empleados.deleted_at');
+        ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->where('inventarioinsumo.CateogoriaInsumo', 'Licencia')
+   
+        ->select([
+            'inventarioinsumo.InventarioID',
+            'empleados.NombreEmpleado as empleado_nombre',
+            'inventarioinsumo.NombreInsumo as insumo_nombre',
+            'inventarioinsumo.CateogoriaInsumo as insumo_tipo',
+            'inventarioinsumo.FechaAsignacion',
+            'inventarioinsumo.NumSerie as num_serie',
+            'inventarioinsumo.FrecuenciaDePago as frecuencia_pago',
+            'inventarioinsumo.CostoMensual as costo_mensual',
+            'inventarioinsumo.CostoAnual as costo_anual',
+            'inventarioinsumo.MesDePago as mes_pago',
+            'inventarioinsumo.Observaciones as observaciones',
+            'inventarioinsumo.Comentarios as comentarios'
+        ]);
 
         // Aplicar filtros
         if (!empty($filtros['empleado_id'])) {
             $query->where('inventarioinsumo.EmpleadoID', $filtros['empleado_id']);
         }
 
-        if (!empty($filtros['estatus'])) {
-            $query->where('inventarioinsumo.Estatus', $filtros['estatus']);
+        if (!empty($filtros['frecuencia_pago'])) {
+            $query->where('inventarioinsumo.FrecuenciaDePago', $filtros['frecuencia_pago']);
         }
 
         if (!empty($filtros['fecha_desde'])) {
@@ -141,34 +149,102 @@ class ReportesEspecificosController extends AppBaseController
             $query->whereDate('inventarioinsumo.FechaAsignacion', '<=', $filtros['fecha_hasta']);
         }
 
+        if (!empty($filtros['inventarioinsumo_mes_pago'])) {
+            $query->where('inventarioinsumo.MesDePago', $filtros['inventarioinsumo_mes_pago']);
+        }
+
         $resultado = $query->orderBy('inventarioinsumo.FechaAsignacion', 'desc')->get();
 
-        $pdf = Pdf::loadView('reportes_especificos.export_estatus_licencias_pdf', compact('resultado', 'filtros'));
-        return $pdf->download('estatus_licencias_' . date('Y-m-d') . '.pdf');
+        $nombreArchivo = 'estatus_licencias_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        return Excel::download(new EstatusLicenciasExport($resultado, $filtros), $nombreArchivo);
+    }
+
+    public function exportEstatusLicencias(Request $request)
+    {
+        $filtros = [];
+        
+        $query = DB::table('inventarioinsumo')
+        ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->where('inventarioinsumo.CateogoriaInsumo', 'Licencia')
+   
+        ->select([
+            'inventarioinsumo.InventarioID',
+            'empleados.NombreEmpleado as empleado_nombre',
+            'inventarioinsumo.NombreInsumo as insumo_nombre',
+            'inventarioinsumo.CateogoriaInsumo as insumo_tipo',
+            'inventarioinsumo.FechaAsignacion',
+            'inventarioinsumo.NumSerie as num_serie',
+            'inventarioinsumo.FrecuenciaDePago as frecuencia_pago',
+            'inventarioinsumo.CostoMensual as costo_mensual',
+            'inventarioinsumo.CostoAnual as costo_anual',
+            'inventarioinsumo.MesDePago as mes_pago',
+            'inventarioinsumo.Observaciones as observaciones',
+            'inventarioinsumo.Comentarios as comentarios'
+        ]);
+
+
+        $resultado = $query->orderBy('inventarioinsumo.InventarioID', 'desc')->get();
+
+        $nombreArchivo = 'estatus_licencias_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        return Excel::download(new EstatusLicenciasExport($resultado, $filtros), $nombreArchivo);
+    }
+
+
+
+        /**
+     * Exportar equipos asignados a PDF
+     */
+    public function exportEquiposAsignados(Request $request)
+    {
+        $filtros = [];
+        
+        $query = DB::table('inventarioequipo')
+        ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->select([
+            'inventarioequipo.InventarioID',
+            'empleados.NombreEmpleado as empleado_nombre',
+            'inventarioequipo.GerenciaEquipo',
+            'inventarioequipo.Marca',
+            'inventarioequipo.Modelo',
+            'inventarioequipo.Folio',
+            'inventarioequipo.Caracteristicas',
+            'inventarioequipo.NumSerie',
+            'inventarioequipo.FechaAsignacion',
+            'inventarioequipo.CategoriaEquipo',
+        ])
+            ->whereNull('empleados.deleted_at');
+
+            
+        $resultado = $query->orderBy('inventarioequipo.FechaAsignacion', 'desc')->get();
+
+        $nombreArchivo = 'equipos_asignados_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        return Excel::download(new EquiposAsignadosExport($resultado, $filtros), $nombreArchivo);
     }
 
     /**
      * Exportar equipos asignados a PDF
      */
-    public function exportEquiposAsignados(Request $request)
+    public function exportEquiposAsignadosExcel(Request $request)
     {
-        $filtros = $request->only(['empleado_id', 'equipo_id', 'estatus', 'fecha_desde', 'fecha_hasta']);
+        $filtros = $request->only(['empleado_id', 'equipo_id', 'marca', 'fecha_desde', 'fecha_hasta', 'gerencia_id','categoria_nombre']);
         
         $query = DB::table('inventarioequipo')
-            ->join('equipos', 'inventarioequipo.EquipoID', '=', 'equipos.EquipoID')
-            ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
-            ->select([
-                'empleados.NombreEmpleado as empleado_nombre',
-                'equipos.Nombre as equipo_nombre',
-                'equipos.Marca as equipo_marca',
-                'equipos.Modelo as equipo_modelo',
-                'equipos.NumeroSerie as equipo_serie',
-                'inventarioequipo.FechaAsignacion',
-                'inventarioequipo.Estatus',
-                'inventarioequipo.Observaciones'
-            ])
-            ->whereNull('inventarioequipo.deleted_at')
-            ->whereNull('equipos.deleted_at')
+        ->join('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
+        ->select([
+            'inventarioequipo.InventarioID',
+            'empleados.NombreEmpleado as empleado_nombre',
+            'inventarioequipo.GerenciaEquipo',
+            'inventarioequipo.Marca',
+            'inventarioequipo.Modelo',
+            'inventarioequipo.Folio',
+            'inventarioequipo.Caracteristicas',
+            'inventarioequipo.NumSerie',
+            'inventarioequipo.FechaAsignacion',
+            'inventarioequipo.CategoriaEquipo',
+        ])
             ->whereNull('empleados.deleted_at');
 
         // Aplicar filtros
@@ -180,8 +256,8 @@ class ReportesEspecificosController extends AppBaseController
             $query->where('inventarioequipo.EquipoID', $filtros['equipo_id']);
         }
 
-        if (!empty($filtros['estatus'])) {
-            $query->where('inventarioequipo.Estatus', $filtros['estatus']);
+        if (!empty($filtros['marca'])) {
+            $query->where('inventarioequipo.Marca', $filtros['marca']);
         }
 
         if (!empty($filtros['fecha_desde'])) {
@@ -192,10 +268,19 @@ class ReportesEspecificosController extends AppBaseController
             $query->whereDate('inventarioequipo.FechaAsignacion', '<=', $filtros['fecha_hasta']);
         }
 
+        if (!empty($filtros['gerencia_id'])) {
+            $query->where('inventarioequipo.GerenciaEquipoID', $filtros['gerencia_id']);    
+        }
+
+        if (!empty($filtros['categoria_nombre'])) {
+            $query->where('inventarioequipo.CategoriaEquipo', $filtros['categoria_nombre']);
+        }
+
         $resultado = $query->orderBy('inventarioequipo.FechaAsignacion', 'desc')->get();
 
-        $pdf = Pdf::loadView('reportes_especificos.export_equipos_asignados_pdf', compact('resultado', 'filtros'));
-        return $pdf->download('equipos_asignados_' . date('Y-m-d') . '.pdf');
+        $nombreArchivo = 'equipos_asignados_' . date('Y-m-d_H-i-s') . '.xlsx';
+        
+        return Excel::download(new EquiposAsignadosExport($resultado, $filtros), $nombreArchivo);
     }
 
     /**

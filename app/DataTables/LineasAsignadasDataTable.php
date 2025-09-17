@@ -88,7 +88,7 @@ class LineasAsignadasDataTable extends DataTable
             ->columns($this->getColumns())
             ->minifiedAjax()
             ->dom('Bfrtip')
-            ->orderBy(4, 'desc') // Ordenar por fecha de asignación descendente
+            ->orderBy(7, 'desc') // Ordenar por fecha de asignación descendente
             ->buttons([
                 [
                     'className' => 'btn btn-default',
