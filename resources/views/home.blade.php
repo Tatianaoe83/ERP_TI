@@ -67,7 +67,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
         <!-- Top Empleados con Inventario -->
         <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg">
-            <h3 class="text-lg font-semibold text-[#101D49] dark:text-white mb-3 flex items-center">
+            <h3 class="text-lg font-semibold text-[#101D49] dark:text-gray-300 mb-3 flex items-center">
                 <i class="fas fa-trophy text-yellow-500 mr-2"></i>
                 Top Empleados con mayor asignacion en inventario
             </h3>
@@ -95,7 +95,7 @@
 
         <!-- Estadísticas por Gerencia Compacta -->
         <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg">
-            <h3 class="text-lg font-semibold text-[#101D49] dark:text-white mb-3 flex items-center">
+            <h3 class="text-lg font-semibold text-[#101D49] dark:text-gray-300 mb-3 flex items-center">
                 <i class="fas fa-building text-blue-500 mr-2"></i>
                 Gerencias Principales con mayor numero de empleados
             </h3>
@@ -123,7 +123,7 @@
 
     <!-- Resumen Organizacional Compacto -->
     <div class="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-5 shadow-lg mb-6 lg:mb-8">
-        <h3 class="text-lg font-semibold text-[#101D49] dark:text-white mb-3 lg:mb-4 flex items-center">
+        <h3 class="text-lg font-semibold text-[#101D49] dark:text-gray-300 mb-3 lg:mb-4 flex items-center">
             <i class="fas fa-sitemap text-green-500 mr-2"></i>
             Resumen Organizacional
         </h3>
@@ -131,21 +131,21 @@
             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div class="flex items-center">
                     <i class="fas fa-hard-hat text-orange-500 mr-3"></i>
-                    <span class="text-[#101D49] dark:text-white font-medium">Obras</span>
+                    <span class="text-[#101D49] dark:text-gray-300 font-medium">Obras</span>
                 </div>
                 <span class="font-bold text-xl text-[#101D49] dark:text-white">{{ $stats['organizacion']['obras'] }}</span>
             </div>
             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div class="flex items-center">
                     <i class="fas fa-building text-blue-500 mr-3"></i>
-                    <span class="text-[#101D49] dark:text-white font-medium">Gerencias</span>
+                    <span class="text-[#101D49] dark:text-gray-300 font-medium">Gerencias</span>
                 </div>
                 <span class="font-bold text-xl text-[#101D49] dark:text-white">{{ $stats['organizacion']['gerencias'] }}</span>
             </div>
             <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div class="flex items-center">
                     <i class="fas fa-industry text-purple-500 mr-3"></i>
-                    <span class="text-[#101D49] dark:text-white font-medium">Unidades</span>
+                    <span class="text-[#101D49] dark:text-gray-300 font-medium">Unidades</span>
                 </div>
                 <span class="font-bold text-xl text-[#101D49] dark:text-white">{{ $stats['organizacion']['unidades_negocio'] }}</span>
             </div>
@@ -154,7 +154,7 @@
 
     <!-- Accesos Rápidos -->
     <div class="mb-4">
-        <h2 class="text-xl font-bold text-[#101D49] dark:text-white mb-3">Accesos Rápidos</h2>
+        <h2 class="text-xl font-bold text-[#101D49] dark:text-gray-300 mb-3">Accesos Rápidos</h2>
             </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 lg:gap-4">
@@ -168,11 +168,11 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Inventarios</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Inventarios</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Gestión</div>
                 </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
                 </div>
             </div>
         </a>
@@ -188,7 +188,7 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Empleados</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Empleados</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Gestión</div>
                 </div>
                 <div class="flex justify-center">
@@ -208,11 +208,11 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Equipos</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Equipos</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Catálogo</div>
                 </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
                 </div>
             </div>
         </a>
@@ -228,11 +228,11 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Reportes</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Reportes</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Generar</div>
                 </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
                 </div>
             </div>
         </a>
@@ -248,11 +248,11 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Reportes Específicos</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Reportes Específicos</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Descargar</div>
                 </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
                 </div>
             </div>
         </a>
@@ -268,11 +268,11 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Usuarios</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Usuarios</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Gestión</div>
                 </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
             </div>
         </div>
     </a>
@@ -288,11 +288,11 @@
                 </div>
             </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Roles</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Roles</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Permisos</div>
             </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
             </div>
         </div>
     </a>
@@ -307,11 +307,11 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Presupuestos</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Presupuestos</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Informes</div>
                 </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                        <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
                 </div>
             </div>
         </a>
@@ -326,11 +326,11 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Informes</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Informes</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Registro</div>
             </div>
                 <div class="flex justify-center">
-                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
+                    <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
             </div>
         </div>
     </a>
