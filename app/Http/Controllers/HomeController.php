@@ -34,10 +34,11 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Estadísticas de empleados
-        $totalEmpleados = Empleados::count();
-        $empleadosActivos = Empleados::where('Estado', true)->count();
-        $empleadosInactivos = Empleados::where('Estado', false)->count();
+        try {
+            // Estadísticas de empleados
+            $totalEmpleados = Empleados::count();
+            $empleadosActivos = Empleados::where('Estado', true)->count();
+            $empleadosInactivos = Empleados::where('Estado', false)->count();
 
         // Estadísticas de inventario
         $totalEquipos = Equipos::count();
@@ -115,6 +116,24 @@ class HomeController extends Controller
             'estadisticas_gerencia' => $estadisticasPorGerencia,
         ];
 
-        return view('home', compact('stats'));
+            return view('home', compact('stats'));
+        } catch (\Exception $e) {
+            // En caso de error, devolver valores por defecto
+            $stats = [
+                'empleados' => ['total' => 0, 'activos' => 0, 'inactivos' => 0],
+                'inventario' => [
+                    'equipos' => ['total' => 0, 'asignados' => 0],
+                    'insumos' => ['total' => 0, 'asignados' => 0],
+                    'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0],
+                ],
+                'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
+                'empleados_con_inventario' => collect(),
+                'estadisticas_gerencia' => collect(),
+                'error' => true,
+                'error_message' => 'Error al cargar las estadísticas del dashboard.'
+            ];
+            
+            return view('home', compact('stats'));
+        }
     }
 }

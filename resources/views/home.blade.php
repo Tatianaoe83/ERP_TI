@@ -3,10 +3,6 @@
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <!-- Título del Dashboard -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-[#101D49] dark:text-white mb-2">Dashboard ERP TI</h1>
-        <p class="text-gray-600 dark:text-gray-300">Resumen ejecutivo y accesos rápidos del sistema</p>
-    </div>
 
     <!-- Estadísticas Principales -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
@@ -163,7 +159,7 @@
 
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 lg:gap-4">
         <!-- Inventarios -->
-        @if(auth()->user()->can('ver-inventarios') or auth()->user()->can('crear-inventarios') or auth()->user()->can('editar-inventarios') or auth()->user()->can('borrar-inventarios'))
+        @if(auth()->user()->can('ver-inventario') or auth()->user()->can('transferir-inventario') or auth()->user()->can('cartas-inventario') or auth()->user()->can('asignar-inventario'))
         <a href="/inventarios" class="group block no-underline">
             <div class="bg-white dark:bg-gray-800 h-[140px] rounded-xl flex flex-col justify-between p-4 cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600">
                 <div class="flex justify-center">
@@ -223,7 +219,7 @@
         @endif
 
         <!-- Reportes -->
-        @if(auth()->user()->can('ver-reportes') or auth()->user()->can('crear-reportes') or auth()->user()->can('editar-reportes') or auth()->user()->can('borrar-reportes'))
+        @if(auth()->user()->can('ver-reportes') or auth()->user()->can('crear-reportes') or auth()->user()->can('editar-reportes') or auth()->user()->can('borrar-reportes') or auth()->user()->can('exportar-reportes') or auth()->user()->can('ver-reportes-especificos'))
         <a href="/reportes" class="group block no-underline">
             <div class="bg-white dark:bg-gray-800 h-[140px] rounded-xl flex flex-col justify-between p-4 cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600">
                 <div class="flex justify-center">
@@ -243,7 +239,7 @@
         @endif
 
         <!-- Reportes Específicos -->
-        @if(auth()->user()->can('ver-reportes') or auth()->user()->can('exportar-reportes'))
+        @if(auth()->user()->can('ver-reportes-especificos') or auth()->user()->can('exportar-reportes-especificos'))
         <a href="/reportes-especificos" class="group block no-underline">
             <div class="bg-white dark:bg-gray-800 h-[140px] rounded-xl flex flex-col justify-between p-4 cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600">
                 <div class="flex justify-center">
@@ -321,8 +317,8 @@
         </a>
 
         <!-- Auditoría -->
-        @if(auth()->user()->can('ver-auditoria') or auth()->user()->can('crear-auditoria') or auth()->user()->can('editar-auditoria') or auth()->user()->can('borrar-auditoria'))
-        <a href="/auditoria" class="group block no-underline">
+        @if(auth()->user()->can('ver-informe') or auth()->user()->can('buscar-informe'))
+        <a href="/informe" class="group block no-underline">
             <div class="bg-white dark:bg-gray-800 h-[140px] rounded-xl flex flex-col justify-between p-4 cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500">
                 <div class="flex justify-center">
                     <div class="bg-gray-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
@@ -330,7 +326,7 @@
                     </div>
                 </div>
                 <div class="text-center">
-                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Auditoría</div>
+                    <div class="text-sm font-semibold text-[#101D49] dark:text-white mb-1">Informes</div>
                     <div class="text-xs text-gray-600 dark:text-gray-300">Registro</div>
             </div>
                 <div class="flex justify-center">

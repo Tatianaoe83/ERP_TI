@@ -26,8 +26,8 @@ class ReportesEspecificosController extends AppBaseController
 {
     public function __construct()
     {
-        $this->middleware('permission:ver-reportes')->only(['index', 'estatusLicencias', 'equiposAsignados', 'lineasAsignadas']);
-        $this->middleware('permission:exportar-reportes')->only(['exportEstatusLicencias', 'exportEquiposAsignados', 'exportLineasAsignadas']);
+        $this->middleware('permission:ver-reportes-especificos')->only(['index', 'estatusLicencias', 'equiposAsignados', 'lineasAsignadas',]);
+        $this->middleware('permission:exportar-reportes-especificos')->only(['exportEstatusLicencias', 'exportEquiposAsignados', 'exportLineasAsignadas']);
     }
 
     /**

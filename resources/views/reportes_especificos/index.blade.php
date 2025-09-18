@@ -22,7 +22,7 @@
                         Licencias
                     </span>
                 </div>
-                <h3 class="text-xl font-semibold text-[#101D49] dark:text-white mb-2">
+                <h3 class="text-xl font-semibold text-[#101D49] dark:text-gray-400 mb-2">
                     Estatus de Licencias Asignadas
                 </h3>
                 <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm">
@@ -52,7 +52,7 @@
                         Equipos
                     </span>
                 </div>
-                <h3 class="text-xl font-semibold text-[#101D49] dark:text-white mb-2">
+                <h3 class="text-xl font-semibold text-[#101D49] dark:text-gray-400 mb-2">
                     Listado de Equipos Asignados
                 </h3>
                 <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm">
@@ -82,7 +82,7 @@
                         Líneas
                     </span>
                 </div>
-                <h3 class="text-xl font-semibold text-[#101D49] dark:text-white mb-2">
+                <h3 class="text-xl font-semibold text-[#101D49] dark:text-gray-400 mb-2">
                     Listado de Líneas Asignadas
                 </h3>
                 <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm">

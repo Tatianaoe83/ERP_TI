@@ -28,15 +28,15 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-
 Auth::routes(['register' => false]);
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 
 //y creamos un grupo de rutas protegidas para los controladores
 Route::group(['middleware' => ['auth', 'usarConexion']], function () {
+    // Dashboard principal
+    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
+    
     Route::resource('roles', RolController::class);
     Route::resource('usuarios', UsuarioController::class);
     Route::resource('blogs', BlogController::class);
@@ -111,3 +111,11 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
     ->name('update.database')
     ->withoutMiddleware(['auth']);
+
+// Ruta de fallback para redirigir al dashboard
+Route::fallback(function () {
+    if (auth()->check()) {
+        return redirect()->route('home')->with('warning', 'La página solicitada no existe. Has sido redirigido al dashboard.');
+    }
+    return redirect('/login')->with('error', 'Debes iniciar sesión para acceder al sistema.');
+});

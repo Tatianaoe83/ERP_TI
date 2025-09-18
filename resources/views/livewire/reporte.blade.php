@@ -11,21 +11,73 @@
     </div>
     @endif
 
+     <!-- Información adicional -->
+     <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
+        <div class="flex items-start">
+            <div class="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg mr-4">
+                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+                <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                    Información sobre Relaciones de Inventarios
+                </h4>
+                <ul class="text-blue-700 dark:text-blue-300 text-sm space-y-1">
+                    <li> <strong>📋 Relaciones Directas:</strong> Todos los inventarios (Equipos, Líneas Telefónicas e Insumos) 
+                        están directamente relacionados con la tabla de <strong>Empleados</strong>.</li>
+                    <li> <strong>🔗 Consultas Indirectas:</strong> Las demás tablas del sistema (Departamentos, Gerencias, Obras, etc.) 
+                        se consultan de forma indirecta a través de las relaciones establecidas en las tablas.</li>
+                   
+                </ul>
+            </div>
+        </div>
+    </div>
+
     {{-- Título del reporte --}}
-    <div class="rounded mb-3">
-        <label class="fw-bold d-block mb-2 text-[#101D49] dark:text-white">Título del Reporte</label>
-        <input wire:model="titulo" type="text" required class="form-control" placeholder="Ingresa el título del reporte">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">1</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Título del Reporte</h6>
+                    <p class="small text-muted mb-0">Define un nombre descriptivo para identificar tu reporte.</p>
+                </div>
+            </div>
+            <input wire:model="titulo" type="text" required class="form-control" placeholder="Ej: Inventario de Equipos por Departamento - Enero 2024">
+        </div>
     </div>
 
     {{-- Tabla principal y relaciones --}}
-    <div class="row g-1 mb-3">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">2</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Selección de Datos</h6>
+                    <p class="small text-muted mb-0">Elige la tabla principal y sus relaciones para obtener los datos necesarios.</p>
+                </div>
+            </div>
+            <div class="row g-3">
         <div class="col-12 col-md-6">
-            <div class="rounded text-[#101D49] dark:text-white">
-                <label for="modelo" class="fw-semibold mb-2 d-block">Tabla Principal</label>
+                    <div class="rounded">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-database text-muted"></i>
+                            <label for="modelo" class="fw-semibold mb-0 d-block">Tabla Principal</label>
+                            <span class="badge bg-secondary text-white small">Requerido</span>
+                        </div>
+                        <p class="small text-muted mb-2">Selecciona la tabla base de tu consulta.</p>
                 <select wire:model="modelo" class="form-select">
-                    <option value="">-- Selecciona --</option>
+                            <option value="">-- Selecciona una tabla --</option>
                     @foreach($tablasDisponibles as $tabla)
-                    <option value="{{ $tabla }}">{{ ucfirst($tabla) }}</option>
+                            <option value="{{ $tabla }}">
+                                {{ ucfirst($tabla) }}
+                                @if(in_array($tabla, ['equipos', 'lineas_telefonicas', 'insumos']))
+                                    (Inventario)
+                                @endif
+                            </option>
                     @endforeach
                 </select>
             </div>
@@ -33,37 +85,80 @@
 
         @if(is_array($relaciones) && count($relaciones))
         <div class="col-12 col-md-6">
-            <div class="rounded text-[#101D49] dark:text-white">
-                <label class="fw-semibold mb-2 d-block">Relación Disponible</label>
+                    <div class="rounded">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-link text-muted"></i>
+                            <label class="fw-semibold mb-0 d-block">Tablas Relacionadas</label>
+                            <span class="badge bg-light text-dark small border">Opcional</span>
+                            <span
+                                class="d-inline-block"
+                                tabindex="0"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="Las tablas relacionadas te permiten obtener información adicional conectada a través de empleados">
+                                <i class="fas fa-question-circle text-muted small"></i>
+                            </span>
+                        </div>
+                        <p class="small text-muted mb-2">Agrega tablas relacionadas para enriquecer tu reporte.</p>
                 <select wire:model="relacionActual" class="form-select">
-                    <option value="">-- Selecciona o deselecciona relación --</option>
+                            <option value="">-- Agregar tabla relacionada --</option>
                     @foreach($relaciones as $relacion => $etiqueta)
                     <option value="{{ $relacion }}">
                         {{ $etiqueta }}
-                        @if(in_array($relacion, $relacionesSeleccionadas)) ✔️ @endif
+                                @if(in_array($relacion, $relacionesSeleccionadas)) ✓ Agregada @endif
                     </option>
                     @endforeach
                 </select>
+                        @if(!empty($relacionesSeleccionadas))
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-check-circle"></i> 
+                                {{ count($relacionesSeleccionadas) }} tabla(s) relacionada(s) agregada(s)
+                            </small>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
-        @endif
     </div>
 
     {{-- Columnas disponibles --}}
     @if($columnas || count($columnasPorRelacion))
-    <div class="rounded mb-3">
-        <div class="row g-5">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">3</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Selección de Columnas</h6>
+                    <p class="small text-muted mb-0">Elige qué información deseas incluir en tu reporte.</p>
+                </div>
+            </div>
+            <div class="row g-4">
             {{-- Tabla principal --}}
             @if($columnas)
             <div class="col-12 col-lg-6">
-                <div class="rounded p-1 h-100">
-                    <h6 class="fw-bold text-[#101D49] dark:text-white mb-3">{{ ucfirst($modelo) }}</h6>
+                    <div class="border rounded p-3 h-100">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="fas fa-table text-muted"></i>
+                            <h6 class="fw-bold mb-0">
+                                {{ ucfirst($modelo) }}
+                                @if(in_array($modelo, ['equipos', 'lineas_telefonicas', 'insumos']))
+                                    <span class="badge bg-light text-dark small ms-1 border">Inventario</span>
+                                @endif
+                            </h6>
+                        </div>
                     <div class="row g-2">
                         @foreach($columnas as $columna)
                         <div class="col-6 col-sm-4 col-md-6">
                             <div class="form-check">
-                                <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $columna }}" class="form-check-input border border-dark">
-                                <label class="form-check-label small">{{ Str::afterLast($columna, '.') }}</label>
+                                <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $columna }}" class="form-check-input">
+                                <label class="form-check-label small">
+                                    {{ ucfirst(str_replace('_', ' ', Str::afterLast($columna, '.'))) }}
+                                </label>
                             </div>
                         </div>
                         @endforeach
@@ -75,33 +170,62 @@
             {{-- Tablas relacionadas --}}
             @foreach($columnasPorRelacion as $relacion => $columnas)
             <div class="col-12 col-lg-6">
-                <div class="rounded p-1 h-100">
-                    <h6 class="fw-bold text-[#101D49] dark:text-white mb-3">{{ ucfirst($relacion) }}</h6>
+                    <div class="border rounded p-3 h-100">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="fas fa-link text-muted"></i>
+                            <h6 class="fw-bold mb-0">
+                                {{ ucfirst($relacion) }}
+                                <span class="badge bg-light text-dark small ms-1 border">Relacionada</span>
+                            </h6>
+                        </div>
                     <div class="row g-2">
                         @foreach($columnas as $col)
                         <div class="col-6 col-sm-4 col-md-6">
                             <div class="form-check">
-                                <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $col }}" class="form-check-input border border-dark">
-                                <label class="form-check-label small">{{ Str::afterLast($col, '.') }}</label>
+                                <input type="checkbox" wire:model="columnasSeleccionadas" value="{{ $col }}" class="form-check-input">
+                                <label class="form-check-label small">
+                                    {{ ucfirst(str_replace('_', ' ', Str::afterLast($col, '.'))) }}
+                                </label>
+                                </div>
                             </div>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
                 </div>
+                @endforeach
             </div>
-            @endforeach
+            @if(!empty($columnasSeleccionadas))
+            <div class="mt-3 p-2 bg-light rounded border">
+                <small class="text-muted">
+                    <i class="fas fa-check-circle"></i> 
+                    {{ count($columnasSeleccionadas) }} columna(s) seleccionada(s)
+                </small>
+            </div>
+            @endif
         </div>
     </div>
     @endif
 
     {{-- Condiciones --}}
-    <div class="rounded mb-4">
-        <label class="fw-semibold mb-3 d-block text-[#101D49] dark:text-white">Filtros</label>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">4</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Filtros de Datos</h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <p class="small text-muted mb-0">Aplica filtros para obtener solo los datos que necesitas.</p>
+                        <span class="badge bg-light text-dark small border">Opcional</span>
+                    </div>
+                </div>
+            </div>
         @foreach($filtros as $index=> $filtro)
         <div wire:key="filtro-{{$filtro['id']}}">
             <div class="row g-2 mb-3 align-items-end">
                 <div class="col-12 col-sm-6 col-md-4">
-                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Columna</label>
+                    <label class="form-label small mb-1">Columna</label>
                     <select wire:model="filtros.{{$index}}.columna" class="form-select">
                         <option value="">Selecciona Columna</option>
                         @foreach($columnasSeleccionadas as $columna)
@@ -111,7 +235,7 @@
                 </div>
 
                 <div class="col-6 col-sm-3 col-md-2">
-                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Operador</label>
+                    <label class="form-label small mb-1">Operador</label>
                     <select wire:model="filtros.{{$index}}.operador" class="form-select">
                         <option value="=">igual a</option>
                         <option value="like">contiene</option>
@@ -124,7 +248,7 @@
 
                 <div class="col-6 col-sm-3 col-md-5">
                     @if($filtro['operador'] === 'between')
-                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Entre</label>
+                    <label class="form-label small mb-1">Entre</label>
                     <div class="d-flex align-items-center gap-1">
                         <input type="text" wire:model="filtros.{{ $index }}.valor.inicio" class="form-control" placeholder="desde">
                         <span class="fw-semibold small">y</span>
@@ -139,7 +263,17 @@
                         </span>
                     </div>
                     @else
-                    <label class="form-label small mb-1 text-[#101D49] dark:text-white">Valor</label>
+                    <div class="d-flex align-items-center gap-1 mb-1">
+                        <label class="form-label small mb-0">Valor</label>
+                        <span
+                            class="d-inline-block"
+                            tabindex="0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Para búsquedas que contengan texto usa 'contiene', para valores exactos usa 'igual a'">
+                            <i class="fas fa-question-circle text-muted small"></i>
+                        </span>
+                    </div>
                     @php
                     $col = $filtro['columna'] ?? null;
                     $oper = $filtro['operador'] ?? null;
@@ -153,7 +287,7 @@
                         wire:model="filtros.{{ $index }}.valor"
                         wire:key="autocompletado-{{ $index }}" />
                     @else
-                    <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control" placeholder="valor">
+                    <input type="text" wire:model="filtros.{{ $index }}.valor" class="form-control" placeholder="Ingresa el valor a filtrar">
                     @endif
                     @endif
                 </div>
@@ -166,45 +300,104 @@
             </div>
         </div>
         @endforeach
-        <button wire:click.prevent="agregarFiltro" class="btn btn-danger btn-sm">Añadir filtro</button>
+        <div class="d-flex align-items-center gap-2">
+            <button wire:click.prevent="agregarFiltro" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-plus"></i> Añadir filtro
+            </button>
+            @if(count($filtros) > 0)
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i> 
+                {{ count($filtros) }} filtro(s) aplicado(s)
+            </small>
+            @endif
+        </div>
+        </div>
     </div>
 
-    <div class="rounded mb-4">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">5</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Configuración de Resultados</h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <p class="small text-muted mb-0">Personaliza cómo quieres que se muestren los resultados.</p>
+                        <span class="badge bg-light text-dark small border">Opcional</span>
+                    </div>
+                </div>
+            </div>
         <div class="row g-3">
-            <div class="col-12 col-sm-6 col-md-3">
-                <label class="fw-semibold small mb-1 d-block text-[#101D49] dark:text-white">Ordenar por</label>
+                <div class="col-12 col-sm-6 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-sort-amount-down text-muted"></i>
+                        <label class="fw-semibold small mb-0 d-block">Ordenar por</label>
+                    </div>
                 <select wire:model="ordenColumna" class="form-select">
-                    <option value="">--</option>
+                        <option value="">-- Sin ordenar --</option>
                     @foreach($columnasSeleccionadas as $columna)
-                    <option value="{{ $columna }}">{{ Str::afterLast($columna, '.') }}</option>
+                        <option value="{{ $columna }}">{{ ucfirst(str_replace('_', ' ', Str::afterLast($columna, '.'))) }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <div class="col-6 col-sm-6 col-md-3">
-                <label class="fw-semibold small mb-1 d-block text-[#101D49] dark:text-white">Dirección</label>
+                <div class="col-6 col-sm-6 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-arrow-up-down text-muted"></i>
+                        <label class="fw-semibold small mb-0 d-block">Dirección</label>
+                    </div>
                 <select wire:model="ordenDireccion" class="form-select">
-                    <option value="asc">Asc</option>
-                    <option value="desc">Desc</option>
+                        <option value="asc">Ascendente (A-Z, 1-9)</option>
+                        <option value="desc">Descendente (Z-A, 9-1)</option>
                 </select>
             </div>
 
-            <div class="col-6 col-sm-6 col-md-3">
-                <label class="fw-semibold small mb-1 d-block text-[#101D49] dark:text-white">Límite</label>
-                <input type="number" wire:model="limite" class="form-control form-control-md" placeholder="Ej: 100" min="0">
+                <div class="col-6 col-sm-6 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-list-ol text-muted"></i>
+                        <label class="fw-semibold small mb-0 d-block">Límite de registros</label>
+                    </div>
+                    <input type="number" wire:model="limite" class="form-control" placeholder="Ej: 100 (vacío = todos)" min="0">
+                    <small class="text-muted">Deja vacío para mostrar todos los registros</small>
+                </div>
             </div>
         </div>
     </div>
 
-    {{-- Botón generar y preview --}}
-    <div class="d-flex flex-column flex-sm-row gap-2 justify-content-start mt-4">
-        <a href="{{ route('reportes.index') }}" class="btn btn-danger">Cancelar</a>
-        <button type="button" class="btn btn-info" wire:click="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
-            Previsualizar
+    {{-- Botones de acción --}}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">6</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Generar Reporte</h6>
+                    <p class="small text-muted mb-0">Previsualiza o genera tu reporte personalizado.</p>
+                </div>
+            </div>
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <a href="{{ route('reportes.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </a>
+                <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2" wire:click="mostrarPreview" data-bs-toggle="modal" data-bs-target="#modalPreview">
+                    <i class="fas fa-eye"></i>
+                    Vista Previa
         </button>
-        <button wire:click="generarReporte" type="button" class="btn btn-success px-4">
+                <button wire:click="generarReporte" type="button" class="btn btn-dark d-flex align-items-center gap-2 px-4">
+                    <i class="fas fa-file-export"></i>
             Generar Reporte
         </button>
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-lightbulb"></i>
+                    Tip: Usa "Vista Previa" para verificar los datos antes de generar el reporte final
+                </small>
+            </div>
+        </div>
     </div>
 
     <div wire:ignore.self class="modal fade" id="modalPreview" tabindex="-1" aria-labelledby="modalPreviewLabel" aria-hidden="true">
