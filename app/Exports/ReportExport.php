@@ -706,42 +706,42 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             ]
         ]);
 
-        // Aplicar formato de número a todas las celdas numéricas
+        // Aplicar formato de moneda a todas las celdas numéricas
         $this->applyNumberFormatting($sheet, $tituloLicenciamiento, $totalLicenciamiento, $titulohardware, $totalhardware, $tituloAccesorios, $totalAccesorios, $tituloTelefonia, $totalTelefonia, $tituloDatos, $totalDatos, $tituloGps, $totalGps, $tituloCalendario, $totalCalendario);
     }
 
     private function applyNumberFormatting($sheet, $tituloLicenciamiento, $totalLicenciamiento, $titulohardware, $totalhardware, $tituloAccesorios, $totalAccesorios, $tituloTelefonia, $totalTelefonia, $tituloDatos, $totalDatos, $tituloGps, $totalGps, $tituloCalendario, $totalCalendario)
     {
-        // Formato para la sección de costos generales (filas 7-14)
-        $sheet->getStyle("B7:B14")->getNumberFormat()->setFormatCode('#,##0');
+        // Formato de moneda para la sección de costos generales (filas 7-14)
+        $sheet->getStyle("B7:B14")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
-        // Formato para la tabla de licenciamiento (datos y totales)
+        // Formato de moneda para la tabla de licenciamiento (datos y totales)
         $encabezadoicenciamiento = $tituloLicenciamiento + 1;
-        $sheet->getStyle("C{$encabezadoicenciamiento}:M{$totalLicenciamiento}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("C{$encabezadoicenciamiento}:M{$totalLicenciamiento}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
-        // Formato para la tabla de hardware/inversiones (datos y totales)
+        // Formato de moneda para la tabla de hardware/inversiones (datos y totales)
         $encabezadohardware = $titulohardware + 1;
-        $sheet->getStyle("C{$encabezadohardware}:M{$totalhardware}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("C{$encabezadohardware}:M{$totalhardware}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
-        // Formato para la tabla de accesorios (datos y totales)
+        // Formato de moneda para la tabla de accesorios (datos y totales)
         $encabezadoAccesorios = $tituloAccesorios + 1;
-        $sheet->getStyle("C{$encabezadoAccesorios}:E{$totalAccesorios}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("C{$encabezadoAccesorios}:E{$totalAccesorios}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
-        // Formato para la tabla de telefonía (datos)
+        // Formato de moneda para la tabla de telefonía (datos)
         $encabezadoTelefonia = $tituloTelefonia + 1;
-        $sheet->getStyle("C{$encabezadoTelefonia}:E{$totalTelefonia}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("C{$encabezadoTelefonia}:E{$totalTelefonia}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
-        // Formato para la tabla de datos (datos)
+        // Formato de moneda para la tabla de datos (datos)
         $encabezadoDatos = $tituloDatos + 1;
-        $sheet->getStyle("C{$encabezadoDatos}:E{$totalDatos}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("C{$encabezadoDatos}:E{$totalDatos}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
-        // Formato para la tabla de GPS (datos)
+        // Formato de moneda para la tabla de GPS (datos)
         $encabezadoGps = $tituloGps + 1;
-        $sheet->getStyle("C{$encabezadoGps}:E{$totalGps}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("C{$encabezadoGps}:E{$totalGps}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
-        // Formato para la tabla de calendario de pagos (datos y totales)
+        // Formato de moneda para la tabla de calendario de pagos (datos y totales)
         $encabezadoCalendario = $tituloCalendario + 1;
-        $sheet->getStyle("B{$encabezadoCalendario}:M{$totalCalendario}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("B{$encabezadoCalendario}:M{$totalCalendario}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
     }
 
 
