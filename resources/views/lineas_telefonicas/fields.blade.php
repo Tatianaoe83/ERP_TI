@@ -51,7 +51,7 @@
 <!-- Costofianza Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('CostoFianza', 'Costo fianza:') !!}
-    {!! Form::number('CostoFianza', null, ['class' => 'form-control','step' => '0.01','min' => '0','placeholder' => '0.00']) !!}
+    {!! Form::number('CostoFianza', null, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
 </div>
 
 <!-- Activo Field -->
@@ -77,5 +77,5 @@
 <!-- Montorenovacionfianza Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('MontoRenovacionFianza', 'Monto renovacion fianza:') !!}
-    {!! Form::number('MontoRenovacionFianza', null, ['class' => 'form-control','step' => '0.01','min' => '0','placeholder' => '0.00']) !!}
+    {!! Form::number('MontoRenovacionFianza', null, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
 </div>

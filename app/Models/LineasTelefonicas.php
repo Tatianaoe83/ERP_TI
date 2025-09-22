@@ -70,10 +70,10 @@ class LineasTelefonicas extends Model implements Auditable
         'CuentaHija' => 'string',
         'TipoLinea' => 'string',
         'ObraID' => 'integer',
-        'CostoFianza' => 'decimal:2',
+        'CostoFianza' => 'integer',
         'Activo' => 'boolean',
         'Disponible' => 'boolean',
-        'MontoRenovacionFianza' => 'decimal:2'
+        'MontoRenovacionFianza' => 'integer'
     ];
 
     /**
@@ -89,10 +89,10 @@ class LineasTelefonicas extends Model implements Auditable
         'TipoLinea' => 'required|string|max:50',
         'ObraID' => 'required|integer',
         'FechaFianza' => 'required',
-        'CostoFianza' => 'required|numeric|min:0',
+        'CostoFianza' => 'required|integer|min:0',
         'Activo' => 'required|boolean',
         'Disponible' => 'required|boolean',
-        'MontoRenovacionFianza' => 'nullable|numeric|min:0'
+        'MontoRenovacionFianza' => 'nullable|integer|min:0'
     ];
 
     /**

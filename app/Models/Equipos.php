@@ -56,7 +56,7 @@ class Equipos extends Model implements Auditable
         'Marca' => 'string',
         'Caracteristicas' => 'string',
         'Modelo' => 'string',
-        'Precio' => 'decimal:2'
+        'Precio' => 'integer'
     ];
 
     /**
@@ -69,7 +69,7 @@ class Equipos extends Model implements Auditable
         'Marca' => 'required|string|max:150',
         'Caracteristicas' => 'required|string|max:255',
         'Modelo' => 'required|string|max:100',
-        'Precio' => 'required|numeric'
+        'Precio' => 'required|integer'
     ];
 
     /**

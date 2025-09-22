@@ -29,5 +29,5 @@
 <!-- Precio Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('Precio', 'Precio:') !!}
-    {!! Form::number('Precio', null, ['class' => 'form-control']) !!}
+    {!! Form::number('Precio', null, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
 </div>

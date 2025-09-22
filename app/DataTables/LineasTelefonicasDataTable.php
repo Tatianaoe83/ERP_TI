@@ -31,6 +31,15 @@ class LineasTelefonicasDataTable extends DataTable
                 return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
             }
         })
+        ->filterColumn('estado_disponibilidad', function($query, $keyword) {
+            if ($keyword === 'Disponible' || $keyword === 'disponible') {
+                $query->where('lineastelefonicas.Disponible', 1);
+            } elseif ($keyword === 'Asignada' || $keyword === 'asignada') {
+                $query->where('lineastelefonicas.Disponible', 0);
+            } else {
+                $query->where('lineastelefonicas.Disponible', $keyword);
+            }
+        })
         ->rawColumns(['action', 'estado_disponibilidad'])
         ->setRowId('LineaID');
 
@@ -199,12 +208,15 @@ class LineasTelefonicasDataTable extends DataTable
                 'name' => 'MontoRenovacionFianza',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            Column::computed('estado_disponibilidad')
-                ->title('Estado Disponibilidad')
-                ->exportable(false)
-                ->printable(false)
-                ->width(120)
-                ->addClass('text-center dark:bg-[#101010] dark:text-white'),
+            'estado_disponibilidad' => [
+                'title' => 'Estado Disponibilidad',
+                'data' => 'estado_disponibilidad',
+                'name' => 'Disponible',
+                'class' => 'text-center dark:bg-[#101010] dark:text-white',
+                'width' => '120px',
+                'searchable' => true,
+                'orderable' => true,
+            ],
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)

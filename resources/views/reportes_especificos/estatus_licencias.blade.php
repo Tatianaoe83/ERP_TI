@@ -22,7 +22,7 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-6 dark:bg-[#101010] dark:text-white">
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
         <h3 class="text-lg font-semibold text-[#101D49] dark:text-white mb-4">
             <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
         </h3>
@@ -94,7 +94,7 @@
     </div>
 
     <!-- Resultados -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
         <div class="p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-[#101D49] dark:text-white">

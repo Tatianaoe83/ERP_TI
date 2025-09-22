@@ -91,32 +91,6 @@ function initializeLineaEdit() {
         validateForm();
     });
     
-    // Mejorar el manejo de decimales en campos numéricos
-    $('#CostoFianza, #MontoRenovacionFianza').on('input', function() {
-        var value = $(this).val();
-        // Permitir solo números y un punto decimal
-        value = value.replace(/[^0-9.]/g, '');
-        // Asegurar que solo haya un punto decimal
-        var parts = value.split('.');
-        if (parts.length > 2) {
-            value = parts[0] + '.' + parts.slice(1).join('');
-        }
-        // Limitar a 2 decimales
-        if (parts[1] && parts[1].length > 2) {
-            value = parts[0] + '.' + parts[1].substring(0, 2);
-        }
-        $(this).val(value);
-        validateForm();
-    });
-    
-    // Formatear decimales al perder el foco
-    $('#CostoFianza, #MontoRenovacionFianza').on('blur', function() {
-        var value = parseFloat($(this).val());
-        if (!isNaN(value)) {
-            $(this).val(value.toFixed(2));
-        }
-        validateForm();
-    });
     
     function showConfirmAlert() {
         // Obtener valores actuales para el preview
@@ -356,17 +330,17 @@ function initializeLineaEdit() {
             isValid = false;
         }
         
-        if (!$('#CostoFianza').val() || parseFloat($('#CostoFianza').val()) < 0) {
+        if (!$('#CostoFianza').val() || $('#CostoFianza').val() < 0) {
             isValid = false;
         }
         
         // Validar MontoRenovacionFianza si tiene valor
-        if ($('#MontoRenovacionFianza').val() && parseFloat($('#MontoRenovacionFianza').val()) < 0) {
+        if ($('#MontoRenovacionFianza').val() && $('#MontoRenovacionFianza').val() < 0) {
             isValid = false;
         }
         
         // Habilitar/deshabilitar botón
-        if (!isValid) {
+        if (!isValid) { 
             $('#btn-guardar').prop('disabled', true).addClass('disabled');
         } else {
             $('#btn-guardar').prop('disabled', false).removeClass('disabled');

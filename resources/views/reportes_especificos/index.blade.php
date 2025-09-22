@@ -12,7 +12,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         
         <!-- Estatus de Licencias Asignadas -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
@@ -42,7 +42,7 @@
         </div>
 
         <!-- Equipos Asignados -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
@@ -72,7 +72,7 @@
         </div>
 
         <!-- Líneas Asignadas -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
