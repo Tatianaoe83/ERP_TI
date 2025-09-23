@@ -63,10 +63,8 @@ class UnidadesDeNegocio extends Model
         'NombreEmpresa' => 'required|string|max:100',
         'RFC' => 'required|string|max:100',
         'Direccion' => 'required|string|max:150',
-        'NumTelefono' => 'required|string|max:100',
-        'created_at' => 'nullable',
-        'updated_at' => 'nullable',
-        'deleted_at' => 'nullable'
+        'NumTelefono' => 'required|string|max:100'
+       
     ];
 
     protected $hidden = [

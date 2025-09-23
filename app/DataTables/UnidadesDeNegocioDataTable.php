@@ -75,7 +75,7 @@ class UnidadesDeNegocioDataTable extends DataTable
                     'extend' => 'csv',
                     'className' => 'btn btn-info',
                     'text' => '<i class="fa fa-file-csv"></i> CSV'
-                ],*/
+                ],
                 [
                     'extend' => 'excel',
                     'className' => 'btn btn-success',
@@ -85,7 +85,7 @@ class UnidadesDeNegocioDataTable extends DataTable
                     'extend' => 'pdf',
                     'className' => 'btn btn-danger',
                     'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],
+                ],*/
                 /*[
                     'extend' => 'print',
                     'className' => 'btn btn-light',

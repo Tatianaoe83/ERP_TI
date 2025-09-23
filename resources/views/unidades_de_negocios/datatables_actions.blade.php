@@ -35,7 +35,7 @@
        }).then(function(willDelete) {
          if (willDelete.isConfirmed) {
           swal.fire({
-              title: 'Unidad borrada',
+              title: 'Unidad de negocio borrada',
               icon: 'success'
             }).then(function(){
               form.submit();

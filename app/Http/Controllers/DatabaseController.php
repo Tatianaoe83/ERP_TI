@@ -22,18 +22,20 @@ class DatabaseController extends Controller
                 return response()->json(['success' => false, 'error' => 'No se seleccionó una base de datos'], 400);
             }
 
-            // Establecer base de datos en tiempo de ejecución
-            Config::set('database.connections.mysql.database', $database);
-            DB::purge('mysql');
-            DB::reconnect('mysql');
-
             // Determinar sistema y establecerlo (Spatie y sesión)
             $sistema = match ($database) {
                 'unidplay_presupuestoscontrol' => 'presupuesto',
+                'unidplay_presupuestoscontrol2026' => 'presupuesto 2026',
                 default => 'inventario'
             };
 
             SistemaHelper::establecerSistema($sistema);
+            
+            // Establecer la conexión correcta usando el helper
+            $conexion = SistemaHelper::obtenerConexion();
+            Config::set('database.default', $conexion);
+            DB::purge($conexion);
+            DB::reconnect($conexion);
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {

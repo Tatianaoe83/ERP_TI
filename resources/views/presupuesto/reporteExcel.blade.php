@@ -34,7 +34,10 @@
     @foreach ($datosheader as $datosheade )
     <tr>
 		<td >
-        Costo {{$datosheade->Categoria}}: $ {{$datosheade->TotalCosto}}
+        {{$datosheade->Categoria}}:
+		</td>
+		<td >
+        {{$datosheade->TotalCosto}}
 		</td>
 	</tr>
     @endforeach
@@ -68,9 +71,9 @@
                     <td>{{ $empleado['NombreEmpleado'] }}</td>
                     <td>{{ $empleado['NombrePuesto'] }}</td>
                     @foreach($columnaspresup_lics as $columna => $_)
-                        <td> $ {{ $empleado[$columna] ?? 0 }}</td>
+                        <td>{{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
-                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 0) }}</td>
+                    <td>{{ $empleado['TotalPorEmpleado'] }}</td>
                 </tr>
             @endforeach
 
@@ -79,9 +82,9 @@
                 <td><strong>TOTAL</strong></td>
                 <td></td>
                 @foreach($columnaspresup_lics as $columna => $_)
-                    <td><strong>$ {{ number_format($totalespresup_lics[$columna] ?? 0) }}</strong></td>
+                    <td><strong>{{ $totalespresup_lics[$columna] ?? 0 }}</strong></td>
                 @endforeach
-                <td><strong>$ {{ number_format($granTotalpresup_lics, 0) }}</strong></td>
+                <td><strong>{{ $granTotalpresup_lics }}</strong></td>
             </tr>
 
         </tbody>
@@ -110,9 +113,9 @@
                     <td>{{ $empleado['NombreEmpleado'] }}</td>
                     <td>{{ $empleado['NombrePuesto'] }}</td>
                     @foreach($columnashardware as $columna => $_)
-                        <td> $ {{ $empleado[$columna] ?? 0 }}</td>
+                        <td>{{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
-                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 0) }}</td>
+                    <td>{{ $empleado['TotalPorEmpleado'] }}</td>
                 </tr>
             @endforeach
 
@@ -121,10 +124,10 @@
                 <td><strong>TOTAL</strong></td>
                 <td></td>
                 @foreach($columnashardware as $columna => $_)
-                    <td><strong>$ {{ number_format($totaleshardware[$columna] ?? 0) }}</strong></td>
+                    <td><strong>{{ $totaleshardware[$columna] ?? 0 }}</strong></td>
                 @endforeach
 
-                <td><strong>$ {{ number_format($granTotalhardware, 0) }}</strong></td>
+                <td><strong>{{ $granTotalhardware }}</strong></td>
             </tr>
 
         </tbody>
@@ -153,9 +156,9 @@
                     <td>{{ $empleado['NombreEmpleado'] }}</td>
                     <td>{{ $empleado['NombrePuesto'] }}</td>
                     @foreach($columnaspresup_otrosinsums as $columna => $_)
-                        <td> $ {{ $empleado[$columna] ?? 0 }}</td>
+                        <td>{{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
-                    <td>$ {{ number_format($empleado['TotalPorEmpleado'], 0) }}</td>
+                    <td>{{ $empleado['TotalPorEmpleado'] }}</td>
                 </tr>
             @endforeach
 
@@ -164,9 +167,9 @@
                 <td><strong>TOTAL</strong></td>
                 <td></td>
                 @foreach($columnaspresup_otrosinsums as $columna => $_)
-                    <td><strong>$ {{ number_format($totalespresup_otrosinsums[$columna] ?? 0) }}</strong></td>
+                    <td><strong>{{ $totalespresup_otrosinsums[$columna] ?? 0 }}</strong></td>
                 @endforeach
-                <td> <strong>$ {{ number_format($granTotalpresup_otrosinsums, 0) }}</strong> </td>
+                <td> <strong>{{ $granTotalpresup_otrosinsums }}</strong> </td>
             </tr>
 
         </tbody>
@@ -189,9 +192,9 @@
                 <tr class="{{ $presup_acce->Orden == 1 ? 'highlight-row' : '' }}">
                     <th>{{$presup_acce->NombreEmpleado}}</th>
                     <td>{{$presup_acce->NombrePuesto}}</td>
-                    <td>$ {{$dato == 'Anual' ? $presup_acce->Voz_Costo_Renta_Anual : $presup_acce->Voz_Costo_Renta_Mensual }}</td>
-                    <td>$ {{$dato == 'Anual' ? $presup_acce->Voz_Costo_Fianza_Anual : $presup_acce->Voz_Costo_Fianza }}  </td>
-                    <td>$ {{$dato == 'Anual' ? $presup_acce->Voz_Monto_Renovacion_Anual : $presup_acce->Voz_Monto_Renovacion }}</td>
+                    <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Costo_Renta_Anual : $presup_acce->Voz_Costo_Renta_Mensual }}</td>
+                    <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Costo_Fianza_Anual : $presup_acce->Voz_Costo_Fianza }}  </td>
+                    <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Monto_Renovacion_Anual : $presup_acce->Voz_Monto_Renovacion }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -215,9 +218,9 @@
                 <tr class="{{ $presup_dato->Orden == 1 ? 'highlight-row' : '' }}">
                     <th>{{$presup_dato->NombreEmpleado}}</th>
                     <td>{{$presup_dato->NombrePuesto}}</td>
-                    <td>$ {{$dato == 'Anual' ? $presup_dato->Datos_Costo_Renta_Anual : $presup_dato->Datos_Costo_Renta_Mensual }} </td>
-                    <td>$ {{$dato == 'Anual' ? $presup_dato->Datos_Costo_Fianza_Anual : $presup_dato->Datos_Costo_Fianza }}  </td>
-                    <td>$ {{$dato == 'Anual' ? $presup_dato->Datos_Monto_Renovacion_Anual : $presup_dato->Datos_Monto_Renovacion }} </td>
+                    <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Costo_Renta_Anual : $presup_dato->Datos_Costo_Renta_Mensual }} </td>
+                    <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Costo_Fianza_Anual : $presup_dato->Datos_Costo_Fianza }}  </td>
+                    <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Monto_Renovacion_Anual : $presup_dato->Datos_Monto_Renovacion }} </td>
                 </tr>
             @endforeach
         </tbody>
@@ -240,9 +243,9 @@
                 <tr class="{{ $presup_gp->Orden == 1 ? 'highlight-row' : '' }}">
                     <th>{{$presup_gp->NombreEmpleado}}</th>
                     <td>{{$presup_gp->NombrePuesto}}</td>
-                    <td>$ {{$dato == 'Anual' ? $presup_gp->GPS_Costo_Renta_Anual : $presup_gp->GPS_Costo_Renta_Mensual }} </td>
-                    <td>$ {{$dato == 'Anual' ? $presup_gp->GPS_Costo_Fianza_Anual : $presup_gp->GPS_Costo_Fianza }} </td>
-                    <td>$ {{$dato == 'Anual' ? $presup_gp->GPS_Monto_Renovacion_Anual : $presup_gp->GPS_Monto_Renovacion }} </td>
+                    <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Costo_Renta_Anual : $presup_gp->GPS_Costo_Renta_Mensual }} </td>
+                    <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Costo_Fianza_Anual : $presup_gp->GPS_Costo_Fianza }} </td>
+                    <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Monto_Renovacion_Anual : $presup_gp->GPS_Monto_Renovacion }} </td>
                 </tr>
             @endforeach
         </tbody>
@@ -273,18 +276,18 @@
         @foreach ($presup_cal_pagos as $presup_cal_pago)
             <tr class="{{ $presup_cal_pago->Orden == 7  ? 'highlight-row' : '' }}">
                 <td>{{$presup_cal_pago->NombreInsumo}}</td>
-                <td>${{$presup_cal_pago->Enero}}</td>
-                <td>${{$presup_cal_pago->Febrero}}</td>
-                <td>${{$presup_cal_pago->Marzo}}</td>
-                <td>${{$presup_cal_pago->Abril}}</td>
-                <td>${{$presup_cal_pago->Mayo}}</td>
-                <td>${{$presup_cal_pago->Junio}}</td>
-                <td>${{$presup_cal_pago->Julio}}</td>
-                <td>${{$presup_cal_pago->Agosto}}</td>
-                <td>${{$presup_cal_pago->Septiembre}}</td>
-                <td>${{$presup_cal_pago->Octubre}}</td>
-                <td>${{$presup_cal_pago->Noviembre}}</td>
-                <td>${{$presup_cal_pago->Diciembre}}</td>
+                <td>{{ $presup_cal_pago->Enero }}</td>
+                <td>{{ $presup_cal_pago->Febrero }}</td>
+                <td>{{ $presup_cal_pago->Marzo }}</td>
+                <td>{{ $presup_cal_pago->Abril }}</td>
+                <td>{{ $presup_cal_pago->Mayo }}</td>
+                <td>{{ $presup_cal_pago->Junio }}</td>
+                <td>{{ $presup_cal_pago->Julio }}</td>
+                <td>{{ $presup_cal_pago->Agosto }}</td>
+                <td>{{ $presup_cal_pago->Septiembre }}</td>
+                <td>{{ $presup_cal_pago->Octubre }}</td>
+                <td>{{ $presup_cal_pago->Noviembre }}</td>
+                <td>{{ $presup_cal_pago->Diciembre }}</td>
 
             </tr>
         @endforeach

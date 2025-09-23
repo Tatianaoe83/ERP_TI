@@ -26,9 +26,18 @@ class LineasTelefonicasDataTable extends DataTable
         })
         ->addColumn('estado_disponibilidad', function ($row) {
             if ($row->Disponible == 1) {
-                return '<span class="badge badge-success">Disponible</span>';
+                return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Disponible</span>';
             } else {
-                return '<span class="badge badge-danger">Asignada</span>';
+                return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
+            }
+        })
+        ->filterColumn('estado_disponibilidad', function($query, $keyword) {
+            if ($keyword === 'Disponible' || $keyword === 'disponible') {
+                $query->where('lineastelefonicas.Disponible', 1);
+            } elseif ($keyword === 'Asignada' || $keyword === 'asignada') {
+                $query->where('lineastelefonicas.Disponible', 0);
+            } else {
+                $query->where('lineastelefonicas.Disponible', $keyword);
             }
         })
         ->rawColumns(['action', 'estado_disponibilidad'])
@@ -58,7 +67,6 @@ class LineasTelefonicasDataTable extends DataTable
                 'obras.NombreObra as nombre_obra',
                 'lineastelefonicas.FechaFianza',
                 'lineastelefonicas.CostoFianza',
-                'lineastelefonicas.Activo',
                 'lineastelefonicas.Disponible',
                 'lineastelefonicas.MontoRenovacionFianza'
 
@@ -88,7 +96,7 @@ class LineasTelefonicasDataTable extends DataTable
                 }"
                 ] : null,
 
-                [
+                /*[
                     'extend' => 'excel',
                     'className' => 'btn btn-success',
                     'text' => '<i class="fa fa-file-excel"></i> Excel'
@@ -97,7 +105,7 @@ class LineasTelefonicasDataTable extends DataTable
                     'extend' => 'pdf',
                     'className' => 'btn btn-danger',
                     'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],
+                ],*/
 
                 [
                     'className' => 'btn btn-default',
@@ -194,27 +202,21 @@ class LineasTelefonicasDataTable extends DataTable
                 'name' => 'CostoFianza',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'Activo' => [
-                'title' => 'Activo',
-                'data' => 'Activo',
-                'name' => 'Activo',
-                'class' => 'dark:bg-[#101010] dark:text-white'
-            ],
-
-            'Disponible' => [
-                'title' => 'Disponible',
-                'data' => 'Disponible',
-                'name' => 'Disponible',
-                'class' => 'dark:bg-[#101010] dark:text-white'
-
-            ],
             'MontoRenovacionFianza' => [
                 'title' => 'Monto Renovacion Fianza',
                 'data' => 'MontoRenovacionFianza',
                 'name' => 'MontoRenovacionFianza',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-
+            'estado_disponibilidad' => [
+                'title' => 'Estado Disponibilidad',
+                'data' => 'estado_disponibilidad',
+                'name' => 'Disponible',
+                'class' => 'text-center dark:bg-[#101010] dark:text-white',
+                'width' => '120px',
+                'searchable' => true,
+                'orderable' => true,
+            ],
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)

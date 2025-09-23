@@ -9,7 +9,7 @@
     {!! Form::label('CategoriaID', 'Categoria:') !!}
 
     {!!Form::select('CategoriaID',App\Models\Categorias::all()-> where ("TipoID", 1)->
-    pluck('Categoria','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+    pluck('Categoria','ID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%'])!!}
 
 </div>
 
@@ -28,11 +28,11 @@
 <!-- Frecuenciadepago Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('FrecuenciaDePago', 'Frecuencia de pago:') !!}
-    {!! Form::text('FrecuenciaDePago', null, ['class' => 'form-control','maxlength' => 50,'maxlength' => 50]) !!}
+    {!! Form::select('FrecuenciaDePago', ['Mensual' => 'Mensual', 'Pago único' => 'Pago único', 'Anual' => 'Anual'], null, ['class' => 'form-control']) !!}
 </div>
 
 <!-- Observaciones Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('Observaciones', 'Observaciones:') !!}
-    {!! Form::text('Observaciones', null, ['class' => 'form-control','maxlength' => 255,'maxlength' => 255]) !!}
+    {!! Form::textarea('Observaciones', null, ['class' => 'form-control','maxlength' => 255,'maxlength' => 255,'rows' => 3]) !!}
 </div>

@@ -19,16 +19,11 @@ class UsarConexionSistema
      */
     public function handle(Request $request, Closure $next)
     {
-        $sistema = SistemaHelper::obtenerSistema(); // usa sesión o cookie
-
-        if ($sistema === 'presupuesto') {
-            Config::set('database.default', 'mysql_presupuesto');
-        } else {
-            Config::set('database.default', 'mysql_inventario');
-        }
-    
-        DB::purge(Config::get('database.default'));
-        DB::reconnect(Config::get('database.default'));
+        $conexion = SistemaHelper::obtenerConexion();
+        
+        Config::set('database.default', $conexion);
+        DB::purge($conexion);
+        DB::reconnect($conexion);
     
         return $next($request);
     }

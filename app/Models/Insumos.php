@@ -21,7 +21,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $FrecuenciaDePago
  * @property string $Observaciones
  */
-class Insumos extends Model  implements Auditable
+class Insumos extends Model implements Auditable
 {
     use HasFactory,SoftDeletes;
     use \OwenIt\Auditing\Auditable;
@@ -44,7 +44,9 @@ class Insumos extends Model  implements Auditable
         'CostoMensual',
         'CostoAnual',
         'FrecuenciaDePago',
-        'Observaciones'
+        'Observaciones',
+        'created_at',
+        'updated_at'
     ];
 
     /**
@@ -56,10 +58,12 @@ class Insumos extends Model  implements Auditable
         'ID' => 'integer',
         'NombreInsumo' => 'string',
         'CategoriaID' => 'integer',
-        'CostoMensual' => 'decimal:2',
-        'CostoAnual' => 'decimal:2',
+        'CostoMensual' => 'integer',
+        'CostoAnual' => 'integer',
         'FrecuenciaDePago' => 'string',
-        'Observaciones' => 'string'
+        'Observaciones' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     /**
@@ -73,10 +77,7 @@ class Insumos extends Model  implements Auditable
         'CostoMensual' => 'required|numeric',
         'CostoAnual' => 'required|numeric',
         'FrecuenciaDePago' => 'required|string|max:50',
-        'Observaciones' => 'nullable|string|max:255',
-        'created_at' => 'required',
-        'updated_at' => 'required',
-        'deleted_at' => 'nullable'
+        'Observaciones' => 'nullable|string|max:255'
     ];
 
     /**

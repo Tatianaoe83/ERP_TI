@@ -11,6 +11,8 @@ use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\Equipos;
+use App\Models\InventarioEquipo;
+use App\Models\Categorias;
 use Yajra\DataTables\DataTables;
 
 class EquiposController extends AppBaseController
@@ -57,6 +59,63 @@ class EquiposController extends AppBaseController
         }
 
         return $equiposDataTable->render('equipos.index');
+    }
+
+    /**
+     * Get statistics for equipos dashboard
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    /**
+     * Get inventario records for a specific equipo
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getInventarioRecords()
+    {
+        $equipoId = request('equipo_id');
+        
+        
+        if (!$equipoId) {
+           
+            return response()->json(['records' => []]);
+        }
+
+        // Buscar el equipo actual
+        $equipo = Equipos::find($equipoId);
+        if (!$equipo) {
+         
+            return response()->json(['records' => []]);
+        }
+        // Buscar registros que coincidan con la marca y modelo ACTUALES del equipo
+        // Esto mostrará cuántos registros se actualizarán si se modifica el equipo
+        $records = InventarioEquipo::where('Marca', $equipo->Marca)
+            ->where('Modelo', $equipo->Modelo)
+            ->leftJoin('empleados', 'inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID')
+            ->select([
+                'inventarioequipo.InventarioID as id',
+                'inventarioequipo.FechaAsignacion',
+                'inventarioequipo.Marca',
+                'inventarioequipo.Modelo',
+                'inventarioequipo.CategoriaEquipo',
+                'inventarioequipo.Precio',
+                'empleados.NombreEmpleado as empleado'
+            ])
+            ->get()
+            ->map(function($record) {
+                return [
+                    'id' => $record->id,
+                    'marca' => $record->Marca,
+                    'modelo' => $record->Modelo,
+                    'categoria' => $record->CategoriaEquipo,
+                    'precio' => $record->Precio,
+                    'empleado' => $record->empleado,
+                    'fecha_asignacion' => $record->FechaAsignacion ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') : null
+                ];
+            });
+
+
+        return response()->json(['records' => $records]);
     }
 
     /**
@@ -145,11 +204,88 @@ class EquiposController extends AppBaseController
             return redirect(route('equipos.index'));
         }
 
+        // Guardar los datos originales para buscar en inventario
+        $datosOriginales = $equipos->toArray();
+        
+        // Verificar si hay cambios en los campos que se sincronizan con inventario
+        $camposSincronizacion = ['CategoriaID', 'Marca', 'Caracteristicas', 'Modelo', 'Precio'];
+        $hayCambios = false;
+        $camposModificados = [];
+        
+        foreach ($camposSincronizacion as $campo) {
+            if ($datosOriginales[$campo] != $request->input($campo)) {
+                $hayCambios = true;
+                $camposModificados[] = $campo;
+            }
+        }
+           
+        // Actualizar el equipo
         $equipos = $this->equiposRepository->update($request->all(), $id);
+        
+        // Obtener los datos actualizados
+        $equiposActualizado = $this->equiposRepository->find($id);
+        
+        // Si hay cambios, sincronizar automáticamente con inventario usando datos originales
+        if ($hayCambios) {
+            $this->sincronizarConInventario($equiposActualizado, $datosOriginales);
+            $mensaje = 'Equipo actualizado exitosamente y sincronizado automáticamente con inventario.';
+        } else {
+            $mensaje = 'Equipo actualizado exitosamente.';
+        }
 
-        Flash::success('Equipos updated successfully.');
+        // Si es una petición AJAX, devolver JSON
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $mensaje,
+                'data' => $equiposActualizado,
+                'cambios_realizados' => $hayCambios,
+                'campos_modificados' => $camposModificados
+            ]);
+        }
 
+        Flash::success($mensaje);
         return redirect(route('equipos.index'));
+    }
+    
+    /**
+     * Sincronizar los datos del equipo con la tabla de inventario
+     *
+     * @param Equipos $equipoActualizado
+     * @param array $datosOriginales
+     * @return void
+     */
+    private function sincronizarConInventario($equipoActualizado, $datosOriginales)
+    {
+        // Obtener el nombre de la categoría actualizada
+        $categoria = Categorias::find($equipoActualizado->CategoriaID);
+        $nombreCategoria = $categoria ? $categoria->Categoria : '';
+        
+     
+        // Buscar registros de inventario usando los datos ORIGINALES del equipo
+        // Esto es crucial porque los registros en inventario tienen los datos viejos
+        $registrosInventario = InventarioEquipo::where('Marca', $datosOriginales['Marca'])
+            ->where('Modelo', $datosOriginales['Modelo'])
+            ->get();
+        
+       
+        
+        $registrosActualizados = 0;
+        
+        // Actualizar cada registro encontrado con los datos NUEVOS del equipo
+        foreach ($registrosInventario as $registro) {
+            $registro->update([
+                'CategoriaEquipo' => $nombreCategoria,
+                'Marca' => $equipoActualizado->Marca,
+                'Caracteristicas' => $equipoActualizado->Caracteristicas,
+                'Modelo' => $equipoActualizado->Modelo,
+                'Precio' => $equipoActualizado->Precio
+            ]);
+            $registrosActualizados++;
+            
+          
+        }
+    
     }
 
     /**

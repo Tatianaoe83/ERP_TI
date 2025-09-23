@@ -3,7 +3,7 @@
 @section('content')
 <div class="col-xs-12 col-sm-12 col-md-12">
 
-    <h3 class="text-[#101D49] dark:text-white">Empleados</h3>
+    <h3 class="text-[#101D49] dark:text-white">Inventario</h3>
     @push('third_party_stylesheets')
     <!-- css -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">

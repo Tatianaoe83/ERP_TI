@@ -236,7 +236,7 @@
             icon: "warning",
             html: `
             <label for="empleado" class="dark:text-white">Selecciona un empleado:</label>
-            <select id="empleado" class="dark:bg-[#101010]">
+            <select id="empleado" class="dark:bg-[#101010] dark:text-white">
                 <option value="">--Seleccione un empleado--</option>
                 ${empleadosOptions}
             </select>
@@ -249,6 +249,13 @@
                 });
 
                 $('.swal2-popup').addClass('dark:bg-[#101010]');
+                
+                // Aplicar estilos para modo oscuro en select2
+                setTimeout(() => {
+                    $('.select2-search__field').addClass('dark:bg-[#101010] dark:text-white dark:placeholder-gray-400');
+                    $('.select2-results__option').addClass('dark:bg-[#101010] dark:text-white');
+                    $('.select2-dropdown').addClass('dark:bg-[#101010]');
+                }, 100);
             },
             showDenyButton: true,
             confirmButtonText: 'Confirmar',
@@ -296,5 +303,46 @@
         });
     });
 </script>
+
+<style>
+/* Estilos para modo oscuro en select2 */
+.dark .select2-search__field {
+    background-color: #101010 !important;
+    color: white !important;
+}
+
+.dark .select2-search__field::placeholder {
+    color: #9ca3af !important;
+}
+
+.dark .select2-results__option {
+    background-color: #101010 !important;
+    color: white !important;
+}
+
+.dark .select2-results__option--highlighted {
+    background-color: #3b82f6 !important;
+    color: white !important;
+}
+
+.dark .select2-dropdown {
+    background-color: #101010 !important;
+    border-color: #374151 !important;
+}
+
+.dark .select2-container--default .select2-selection--single {
+    background-color: #101010 !important;
+    border-color: #374151 !important;
+    color: white !important;
+}
+
+.dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: white !important;
+}
+
+.dark .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #9ca3af !important;
+}
+</style>
 
 @endpush

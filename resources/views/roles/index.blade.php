@@ -85,7 +85,7 @@
             }).then(function(willDelete) {
                 if (willDelete.isConfirmed) {
                     swal.fire({
-                        title: 'Unidad borrada',
+                        title: 'Rol borrado',
                         icon: 'success'
                     }).then(function() {
                         form.submit();

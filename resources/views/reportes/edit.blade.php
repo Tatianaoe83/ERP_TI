@@ -2,12 +2,58 @@
 
 @section('content')
 
-<h3 class="dark:bg-[#101010] dark:text-white">Editar Reporte: {{ $reportes->title }}</h3>
-
-<div class="section-body">
-    <div class="content px-3">
+<div class="container-fluid py-3 px-2">
 
         @include('adminlte-templates::common.errors')
+
+     <!-- Información adicional -->
+     <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
+        <div class="flex items-start">
+            <div class="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg mr-4">
+                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+                <h4 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                    Información sobre Relaciones de Inventarios
+                </h4>
+                <ul class="text-blue-700 dark:text-blue-300 text-sm space-y-1">
+                    <li> <strong>📋 Relaciones Directas:</strong> Todos los inventarios (Equipos, Líneas Telefónicas e Insumos) 
+                        están directamente relacionados con la tabla de <strong>Empleados</strong>.</li>
+                    <li> <strong>🔗 Consultas Indirectas:</strong> Las demás tablas del sistema (Departamentos, Gerencias, Obras, etc.) 
+                        se consultan de forma indirecta a través de las relaciones establecidas en las tablas.</li>
+                   
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {{-- Título del reporte --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">1</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Editando Reporte</h6>
+                    <p class="small text-muted mb-0">{{ $reportes->title }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Configuración de datos --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">2</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Configuración de Datos</h6>
+                    <p class="small text-muted mb-0">Tabla principal y relaciones seleccionadas (no editables).</p>
+                </div>
+            </div>
 
         <form action="{{ route('reportes.update', $reportes->id) }}" method="POST">
             @csrf
@@ -19,46 +65,71 @@
 
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
-                    <label class="fw-semibold small text-muted">Tabla Principal</label>
-                    <select class="form-select form-select-sm border-secondary" disabled>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-database text-muted"></i>
+                            <label class="fw-semibold small mb-0">Tabla Principal</label>
+                        </div>
+                        <select class="form-select" disabled>
                         <option>{{ ucfirst($tablaPrincipal) }}</option>
                     </select>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="fw-semibold small text-muted">Relaciones Seleccionadas</label>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-link text-muted"></i>
+                            <label class="fw-semibold small mb-0">Relaciones Seleccionadas</label>
+                        </div>
                     <div class="d-flex flex-wrap gap-2">
                         @foreach ($tablaRelacion as $rel)
-                        <span class="badge bg-primary-subtle text-dark border px-3 py-2 rounded-pill">
+                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">
                             {{ ucfirst($rel) }}
                         </span>
                         @endforeach
                     </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    {{-- Selección de columnas --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">3</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Selección de Columnas</h6>
+                    <p class="small text-muted mb-0">Elige qué información deseas incluir en tu reporte.</p>
                 </div>
             </div>
 
             <div class="row g-4">
                 {{-- Tabla Principal --}}
                 <div class="col-md-6">
-                    <div class="shadow-sm h-100 flex flex-col gap-3">
-                        <div class="text-[#101D49] fw-bold dark:text-white">
+                    <div class="border rounded p-3 h-100">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="fas fa-table text-muted"></i>
+                            <h6 class="fw-bold mb-0">
                             {{ ucfirst($tablaPrincipal) }}
+                                @if(in_array($tablaPrincipal, ['equipos', 'lineas_telefonicas', 'insumos']))
+                                    <span class="badge bg-light text-dark small ms-1 border">Inventario</span>
+                                @endif
+                            </h6>
                         </div>
-                        <div class="card-body">
-                            <div class="row row-cols-2">
+                        <div class="row g-2">
                                 @foreach ($columnasPrincipales as $col)
                                 @php $colPrincipal = $tablaPrincipal . '.' . $col; @endphp
-                                <div class="col mb-2">
-                                    <div class="form-check small">
-                                        <input type="checkbox" style="cursor: pointer;" class="form-check-input border border-dark columna-check"
+                            <div class="col-6 col-sm-4 col-md-6">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input columna-check"
                                             name="columnas[]"
                                             value="{{ $colPrincipal }}"
                                             {{ in_array($colPrincipal, $columnasSeleccionadas) ? 'checked' : '' }}>
-                                        <label class="form-check-label">{{ $col }}</label>
-                                    </div>
+                                    <label class="form-check-label small">{{ ucfirst(str_replace('_', ' ', $col)) }}</label>
                                 </div>
-                                @endforeach
                             </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -66,137 +137,212 @@
                 {{-- Tablas Relacionadas --}}
                 @foreach ($columnasRelacion as $tabla => $columnas)
                 <div class="col-md-6">
-                    <div class="shadow-sm h-100 flex flex-col gap-3">
-                        <div class="text-[#101D49] dark:text-white fw-bold">
+                    <div class="border rounded p-3 h-100">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <i class="fas fa-link text-muted"></i>
+                            <h6 class="fw-bold mb-0">
                             {{ ucfirst($tabla) }}
+                                <span class="badge bg-light text-dark small ms-1 border">Relacionada</span>
+                            </h6>
                         </div>
-                        <div class="card-body">
-                            <div class="row row-cols-2">
+                        <div class="row g-2">
                                 @foreach ($columnas as $col)
                                 @php $relCol = $tabla . '.' . $col; @endphp
-                                <div class="col mb-2">
-                                    <div class="form-check small">
-                                        <input type="checkbox" class="form-check-input border border-dark columna-check"
+                            <div class="col-6 col-sm-4 col-md-6">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input columna-check"
                                             name="columnas[]"
                                             value="{{ $relCol }}"
                                             {{ in_array($relCol, $columnasSeleccionadas) ? 'checked' : '' }}>
-                                        <label class="form-check-label">{{ $col }}</label>
-                                    </div>
+                                    <label class="form-check-label small">{{ ucfirst(str_replace('_', ' ', $col)) }}</label>
                                 </div>
-                                @endforeach
                             </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
                 @endforeach
             </div>
+        </div>
+            </div>
 
-            <hr class="my-4">
-
-            <h6 class="fw-bold text-muted mb-3">Filtros aplicados</h6>
+    {{-- Filtros aplicados --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">4</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Filtros Aplicados</h6>
+                    <p class="small text-muted mb-0">Modifica los filtros existentes del reporte.</p>
+                </div>
+            </div>
 
             <div id="filtros-wrapper">
                 @foreach ($condiciones as $i => $filtro)
-                <div class="row align-items-end mb-3 filtro-item">
-                    <div class="col-md-4">
-                        <select name="filtros[{{ $i }}][columna]" class="form-select form-select-sm">
-                            <option value="">-- Selecciona --</option>
+                <div class="row g-2 mb-3 align-items-end filtro-item">
+                    <div class="col-12 col-sm-6 col-md-4">
+                        <label class="form-label small mb-1">Columna</label>
+                        <select name="filtros[{{ $i }}][columna]" class="form-select">
+                            <option value="">Selecciona Columna</option>
                             @foreach ($columnasSeleccionadas as $col)
-                            <option value="{{ $col }}" {{ $filtro['columna'] == $col ? 'selected' : '' }}>{{ $col }}</option>
+                            <option value="{{ $col }}" {{ $filtro['columna'] == $col ? 'selected' : '' }}>{{ Str::afterLast($col, '.') }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div class="col-md-3">
-                        <select name="filtros[{{ $i }}][operador]" class="form-select form-select-sm" onchange="mostrarFiltrosRange({{ $i }})">
-                            <option value="=" {{ $filtro['operador'] == '=' ? 'selected' : '' }}>igual</option>
+                    <div class="col-6 col-sm-3 col-md-2">
+                        <label class="form-label small mb-1">Operador</label>
+                        <select name="filtros[{{ $i }}][operador]" class="form-select" onchange="mostrarFiltrosRange({{ $i }})">
+                            <option value="=" {{ $filtro['operador'] == '=' ? 'selected' : '' }}>igual a</option>
                             <option value="like" {{ $filtro['operador'] == 'like' ? 'selected' : '' }}>contiene</option>
                             <option value=">" {{ $filtro['operador'] == '>' ? 'selected' : '' }}>mayor que</option>
                             <option value="<" {{ $filtro['operador'] == '<' ? 'selected' : '' }}>menor que</option>
                             <option value="between" {{ $filtro['operador'] == 'between' ? 'selected' : '' }}>entre</option>
+                            <option value="!=" {{ $filtro['operador'] == '!=' ? 'selected' : '' }}>sin</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4" id="valor_filtro_{{ $i }}">
+                    <div class="col-6 col-sm-3 col-md-5" id="valor_filtro_{{ $i }}">
                         @if(is_array($filtro['valor']))
-                        <div class="row">
-                            <div class="col-6 col-md-5">
-                                <input type="text" name="filtros[{{ $i }}][valor][inicio]" class="form-control form-control-sm"
-                                    placeholder="Desde" value="{{ $filtro['valor']['inicio'] ?? '' }}">
-                            </div>
-                            <div class="col-6 col-md-2 text-center d-flex justify-content-center align-items-center">
-                                <span class="text-muted">a</span>
-                            </div>
-                            <div class="col-6 col-md-5">
-                                <input type="text" name="filtros[{{ $i }}][valor][fin]" class="form-control form-control-sm"
-                                    placeholder="Hasta" value="{{ $filtro['valor']['fin'] ?? '' }}">
-                            </div>
+                        <label class="form-label small mb-1">Entre</label>
+                        <div class="d-flex align-items-center gap-1">
+                            <input type="text" name="filtros[{{ $i }}][valor][inicio]" class="form-control"
+                                placeholder="desde" value="{{ $filtro['valor']['inicio'] ?? '' }}">
+                            <span class="fw-semibold small">y</span>
+                            <input type="text" name="filtros[{{ $i }}][valor][fin]" class="form-control"
+                                placeholder="hasta" value="{{ $filtro['valor']['fin'] ?? '' }}">
                         </div>
                         @else
+                        <label class="form-label small mb-1">Valor</label>
                         @php
                         $partes = explode('.', $filtro['columna']);
                         $tabla = $partes[0] ?? null;
                         $columna = $partes[1] ?? null;
                         @endphp
                         @if(in_array($filtro['operador'], ['=','like']) && $tabla && $columna)
-                        <input type="text" class="form-control form-control-sm autocomplete w-4"
-                            placeholder="Valor" value="{{$filtro['valor'] ?? ''}}"
+                        <input type="text" class="form-control autocomplete"
+                            placeholder="Ingresa el valor a filtrar" value="{{$filtro['valor'] ?? ''}}"
                             data-name="filtros[{{$i}}][valor]" data-tabla="{{$tabla}}"
                             data-columna="{{$columna}}">
                         @else
-                        <input type="text" name="filtros[{{ $i }}][valor]" class="form-control form-control-sm"
-                            placeholder="Valor" value="{{ $filtro['valor'] ?? '' }}">
+                        <input type="text" name="filtros[{{ $i }}][valor]" class="form-control"
+                            placeholder="Ingresa el valor a filtrar" value="{{ $filtro['valor'] ?? '' }}">
                         @endif
                         @endif
                     </div>
 
-                    <div class="col-md-1">
-                        <button type="button" class="btn btn-sm btn-danger eliminar-filtro">
-                            <i class="fas fa-trash"></i>
+                    <div class="col-12 col-sm-12 col-md-1 text-center text-md-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm eliminar-filtro">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
                 </div>
                 @endforeach
             </div>
 
-            <div class="mb-3">
-                <button type="button" class="btn btn-sm btn-outline-primary" id="agregar-filtro">+ Agregar Filtro</button>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="agregar-filtro">
+                    <i class="fas fa-plus"></i> Añadir filtro
+                </button>
+                @if(count($condiciones) > 0)
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> 
+                    {{ count($condiciones) }} filtro(s) aplicado(s)
+                </small>
+                @endif
+            </div>
+        </div>
             </div>
 
-            <hr class="my-4">
-
-            <div class="flex flex-col gap-2">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="ordenColumna" class="form-label small fw-semibold text-muted">Ordenar por columna</label>
-                        <select id="ordenColumna" name="ordenColumna" class="form-select form-select-sm">
-                            <option value="">-- Sin orden --</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="ordenDireccion" class="form-label small fw-semibold text-muted">Tipo de orden</label>
-                        <select id="ordenDireccion" name="ordenDireccion" class="form-select form-select-sm">
-                            <option value="">Sin orden</option>
-                            <option value="asc" {{ $ordenDir === 'asc' ? 'selected' : '' }}>Ascendente</option>
-                            <option value="desc" {{ $ordenDir === 'desc' ? 'selected' : '' }}>Descendente</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label for="limite" class="form-label small fw-semibold text-muted">Límite de resultados</label>
-                        <input type="number" id="limite" name="limite" value="{{ $limite }}" class="form-control form-control-sm" min="1" placeholder="Ej: 100">
-                    </div>
+    {{-- Configuración de resultados --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">5</span>
                 </div>
-
                 <div>
-                    <a href="{{ route('reportes.index') }}" class="btn btn-danger">Cancelar</a>
-                    <button type="button" class="btn btn-info btn-xs" id="btnPreview">Previsualizar reporte</button>
-                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    <h6 class="fw-bold mb-1">Configuración de Resultados</h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <p class="small text-muted mb-0">Personaliza cómo quieres que se muestren los resultados.</p>
+                        <span class="badge bg-light text-dark small border">Opcional</span>
+                    </div>
                 </div>
-        </form>
+            </div>
+
+                <div class="row g-3">
+                <div class="col-12 col-sm-6 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-sort-amount-down text-muted"></i>
+                        <label for="ordenColumna" class="fw-semibold small mb-0 d-block">Ordenar por</label>
+                    </div>
+                    <select id="ordenColumna" name="ordenColumna" class="form-select">
+                        <option value="">-- Sin ordenar --</option>
+                        </select>
+                    </div>
+
+                <div class="col-6 col-sm-6 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-arrow-up-down text-muted"></i>
+                        <label for="ordenDireccion" class="fw-semibold small mb-0 d-block">Dirección</label>
+                    </div>
+                    <select id="ordenDireccion" name="ordenDireccion" class="form-select">
+                            <option value="">Sin orden</option>
+                        <option value="asc" {{ $ordenDir === 'asc' ? 'selected' : '' }}>Ascendente (A-Z, 1-9)</option>
+                        <option value="desc" {{ $ordenDir === 'desc' ? 'selected' : '' }}>Descendente (Z-A, 9-1)</option>
+                        </select>
+                    </div>
+
+                <div class="col-6 col-sm-6 col-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fas fa-list-ol text-muted"></i>
+                        <label for="limite" class="fw-semibold small mb-0 d-block">Límite de registros</label>
+                    </div>
+                    <input type="number" id="limite" name="limite" value="{{ $limite }}" class="form-control" min="0" placeholder="Ej: 100 (vacío = todos)">
+                    <small class="text-muted">Deja vacío para mostrar todos los registros</small>
+                </div>
+            </div>
+                    </div>
+                </div>
+
+    {{-- Botones de acción --}}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                    <span class="fw-bold text-muted">6</span>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">Guardar Cambios</h6>
+                    <p class="small text-muted mb-0">Previsualiza o guarda los cambios realizados en el reporte.</p>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <a href="{{ route('reportes.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </a>
+                <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2" id="btnPreview">
+                    <i class="fas fa-eye"></i>
+                    Vista Previa
+                </button>
+                <button type="submit" class="btn btn-dark d-flex align-items-center gap-2 px-4">
+                    <i class="fas fa-save"></i>
+                    Guardar Cambios
+                </button>
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-lightbulb"></i>
+                    Tip: Usa "Vista Previa" para verificar los cambios antes de guardar
+                </small>
+            </div>
+        </div>
     </div>
-</div>
+    </form>
 </div>
 
 <div class="modal fade" id="modalPreview" tabindex="-1" aria-labelledby="modalPreviewLabel" aria-hidden="false">

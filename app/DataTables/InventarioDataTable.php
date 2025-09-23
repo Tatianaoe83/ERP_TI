@@ -3,10 +3,12 @@
 namespace App\DataTables;
 
 use App\Models\Empleados;
+use App\Models\Inventario;
 use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Button;
 use Yajra\DataTables\Html\Column;
+use Illuminate\Support\Facades\DB;
 
 class InventarioDataTable extends DataTable
 {
@@ -24,17 +26,25 @@ class InventarioDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
             })
-            ->rawColumns(['action'])
+            ->addColumn('estado_disponibilidad', function ($row) {
+            if ($row->Disponible == 1) {
+                return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Disponible</span>';
+            } else {
+                return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
+            }
+        })
+        ->rawColumns(['action', 'estado_disponibilidad'])
+            
             ->setRowId('EmpleadoID');
     }
 
     /**
      * Get query source of dataTable.
      *
-     * @param \App\Models\Inventario $model
+     * @param \App\Models\Empleados $model
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function query(Inventario $model)
+    public function query(Empleados $model)
     {
         return $model->newQuery()
             ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
@@ -46,7 +56,12 @@ class InventarioDataTable extends DataTable
                 'obras.NombreObra as nombre_obra',
                 'empleados.NumTelefono',
                 'empleados.Correo',
-                'empleados.Estado'
+                'empleados.Estado',
+                DB::raw('CASE 
+                    WHEN EXISTS(SELECT 1 FROM inventario_equipo WHERE EmpleadoID = empleados.EmpleadoID) 
+                         OR EXISTS(SELECT 1 FROM inventario_insumo WHERE EmpleadoID = empleados.EmpleadoID)
+                         OR EXISTS(SELECT 1 FROM inventario_lineas WHERE EmpleadoID = empleados.EmpleadoID)
+                    THEN 0 ELSE 1 END as Disponible')
             ]);
     }
 
@@ -143,12 +158,13 @@ class InventarioDataTable extends DataTable
                 'name' => 'Correo',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'Estado' => [
-                'title' => 'Estado',
-                'data' => 'Estado',
-                'name' => 'Estado',
-                'class' => 'dark:bg-[#101010] dark:text-white'
-            ],
+          
+            Column::computed('estado_disponibilidad')
+                ->title('Estado')
+                ->exportable(false)
+                ->printable(false)
+                ->width(100)
+                ->addClass('text-center dark:bg-[#101010] dark:text-white'),    
 
             Column::computed('action')
                 ->exportable(false)

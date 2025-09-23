@@ -69,7 +69,7 @@
 
                     @foreach ($datosheader as $datosheade )
 
-                        <h5 style="margin: 0; padding: 1px;">Costo {{$datosheade->Categoria}}: $ {{$datosheade->TotalCosto}}</h5>
+                        <h5 style="margin: 0; padding: 1px;">{{$datosheade->Categoria}}: $ {{$datosheade->TotalCosto}}</h5>
                     @endforeach
                 </div>
             </td>

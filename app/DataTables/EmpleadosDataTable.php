@@ -24,7 +24,14 @@ class EmpleadosDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 return view('empleados.datatables_actions', ['id' => $row->EmpleadoID])->render();
             })
-            ->rawColumns(['action'])
+            ->editColumn('Estado', function ($row) {
+                if ($row->Estado == 1 || $row->Estado === true) {
+                    return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
+                } else {
+                    return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
+                }
+            })
+            ->rawColumns(['action', 'Estado'])
             ->setRowId('EmpleadoID');
     }
 
@@ -58,7 +65,7 @@ class EmpleadosDataTable extends DataTable
     public function html()
     {
         return $this->builder()
-            ->setTableId('empleados-table')
+            ->setTableId('tabla-empleados')
             ->columns($this->getColumns())
             ->minifiedAjax()
             ->dom('Bfrtip')
@@ -73,7 +80,7 @@ class EmpleadosDataTable extends DataTable
                 }"
                 ] : null,
 
-                [
+                /*[
                     'extend' => 'excel',
                     'className' => 'btn btn-success',
                     'text' => '<i class="fa fa-file-excel"></i> Excel'
@@ -82,13 +89,13 @@ class EmpleadosDataTable extends DataTable
                     'extend' => 'pdf',
                     'className' => 'btn btn-danger',
                     'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],
+                ],*/
 
                 [
                     'className' => 'btn btn-default',
                     'text' => '<i class="fa fa-sync-alt"></i> Recargar',
                     'action' => 'function() { 
-                    window.LaravelDataTables["empleados-table"].ajax.reload();
+                    window.LaravelDataTables["tabla-empleados"].ajax.reload();
                 }'
                 ],
             ]))

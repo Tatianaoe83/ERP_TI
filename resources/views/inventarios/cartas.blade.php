@@ -18,20 +18,6 @@
                   </div>
                   <div class="card-body">
                     
-                    <form id="formulario2" action="{{ route('inventarios.mantenimiento', $id) }}" method="POST" target="_blank">
-                        @csrf
-
-                    <div class="row">
-                        <div class="col-12 col-sm-12 col-lg-12" style="margin-bottom: 12px;">
-                        {!! Form::label('IdEquipo', 'Seleccione el equipo:') !!}
-                        
-                        {!!Form::select('IdEquipo',App\Models\InventarioEquipo::select(DB::raw("CONCAT(Folio,' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
-                            ->where('EmpleadoID', '=', $id)
-                            ->pluck('NombreEq','InventarioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%'])!!}
-                        </div>
-                    </div>
-
-
                         <form id="formulario2" action="{{ route('inventarios.mantenimiento', $id) }}" method="POST" target="_blank">
                             @csrf
 

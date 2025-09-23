@@ -12,6 +12,8 @@ use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\Insumos;
 use Yajra\DataTables\DataTables;
+use App\Models\InventarioInsumo;
+use App\Models\Categorias;
 
 
 class InsumosController extends AppBaseController
@@ -63,6 +65,60 @@ class InsumosController extends AppBaseController
 
         return $insumosDataTable->render('insumos.index');
     }
+
+    public function getInventarioRecords()
+    {
+        try {
+            $insumoId = request('insumo_id');
+            
+            if (!$insumoId) {
+                return response()->json(['records' => []]);
+            }
+
+            // Buscar el insumo actual
+            $insumo = Insumos::find($insumoId);
+            if (!$insumo) {
+                return response()->json(['records' => []]);
+            }
+
+          
+            // Buscar registros que coincidan con el nombre del insumo ACTUAL
+            // Esto mostrará cuántos registros se actualizarán si se modifica el insumo
+            $records = InventarioInsumo::where('NombreInsumo', $insumo->NombreInsumo)
+                ->leftJoin('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
+                ->select([
+                    'inventarioinsumo.InventarioID as id',
+                    'inventarioinsumo.FechaAsignacion',
+                    'inventarioinsumo.CateogoriaInsumo',
+                    'inventarioinsumo.NombreInsumo',
+                    'inventarioinsumo.CostoMensual',
+                    'inventarioinsumo.CostoAnual',
+                    'inventarioinsumo.FrecuenciaDePago',
+                    'inventarioinsumo.Observaciones',
+                    'empleados.NombreEmpleado as empleado'
+                ])
+                ->get()
+                ->map(function($record) {
+                    return [
+                        'id' => $record->id,
+                        'nombre_insumo' => $record->NombreInsumo,
+                        'categoria' => $record->CateogoriaInsumo,
+                        'costo_mensual' => $record->CostoMensual,
+                        'costo_anual' => $record->CostoAnual,
+                        'frecuencia_pago' => $record->FrecuenciaDePago,
+                        'observaciones' => $record->Observaciones,
+                        'empleado' => $record->empleado,
+                        'fecha_asignacion' => $record->FechaAsignacion ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') : null
+                    ];
+                });
+
+            return response()->json(['records' => $records]);
+        } catch (\Exception $e) {
+            \Log::error('Error en getInventarioRecords: ' . $e->getMessage());
+            return response()->json(['records' => [], 'error' => 'Error interno del servidor'], 500);
+        }
+    }
+
 
     /**
      * Show the form for creating a new Insumos.
@@ -150,12 +206,83 @@ class InsumosController extends AppBaseController
             return redirect(route('insumos.index'));
         }
 
+      // Guardar los datos originales para buscar en inventario
+        $datosOriginales = $insumos->toArray();
+
+        // Verificar si hay cambios en los campos que se sincronizan con inventario
+        $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'Observaciones'];
+        $hayCambios = false;
+        $camposModificados = [];
+
+        foreach ($camposSincronizacion as $campo) {
+            if ($datosOriginales[$campo] != $request->input($campo)) {
+                $hayCambios = true;
+                $camposModificados[] = $campo;
+            }
+        }
+        
+        // Actualizar el insumo
         $insumos = $this->insumosRepository->update($request->all(), $id);
 
-        Flash::success('Insumos updated successfully.');
+        // Obtener los datos actualizados
+        $insumosActualizado = $this->insumosRepository->find($id);
 
+        // Si hay cambios, sincronizar automáticamente con inventario usando datos originales
+        if ($hayCambios) {
+            $this->sincronizarConInventario($insumosActualizado, $datosOriginales);
+            $mensaje = 'Insumo actualizado exitosamente y sincronizado automáticamente con inventario.';
+        } else {
+            $mensaje = 'Insumo actualizado exitosamente.';
+        }
+
+        // Si es una petición AJAX, devolver JSON
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $mensaje,
+                'data' => $insumosActualizado,
+                'cambios_realizados' => $hayCambios,
+                'campos_modificados' => $camposModificados
+            ]);
+        }
+
+        Flash::success($mensaje);
         return redirect(route('insumos.index'));
     }
+
+    private function sincronizarConInventario($insumoActualizado, $datosOriginales)
+    {
+        // Obtener el nombre de la categoría actualizada
+        $categoria = Categorias::find($insumoActualizado->CategoriaID);
+        $nombreCategoria = $categoria ? $categoria->Categoria : '';
+        
+     
+        // Buscar registros de inventario usando los datos ORIGINALES del insumo
+        // Esto es crucial porque los registros en inventario tienen los datos viejos
+        $registrosInventario = InventarioInsumo::where('NombreInsumo', $datosOriginales['NombreInsumo'])
+            ->get();
+        
+       
+        
+        $registrosActualizados = 0;
+        
+        // Actualizar cada registro encontrado con los datos NUEVOS del equipo
+        foreach ($registrosInventario as $registro) {
+            $registro->update([
+                'CategoriaInsumo' => $nombreCategoria,
+                'NombreInsumo' => $insumoActualizado->NombreInsumo,
+                'CostoMensual' => $insumoActualizado->CostoMensual,
+                'CostoAnual' => $insumoActualizado->CostoAnual,
+                'FrecuenciaDePago' => $insumoActualizado->FrecuenciaDePago,
+                'Observaciones' => $insumoActualizado->Observaciones
+            ]);
+            $registrosActualizados++;
+            
+          
+        }
+    
+    }
+
 
     /**
      * Remove the specified Insumos from storage.

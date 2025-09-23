@@ -32,15 +32,15 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-
 Auth::routes(['register' => false]);
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 
 //y creamos un grupo de rutas protegidas para los controladores
 Route::group(['middleware' => ['auth', 'usarConexion']], function () {
+    // Dashboard principal
+    Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+    Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
+    
     Route::resource('roles', RolController::class);
     Route::resource('usuarios', UsuarioController::class);
     Route::resource('blogs', BlogController::class);
@@ -53,8 +53,12 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::resource('puestos', App\Http\Controllers\PuestosController::class);
     Route::resource('empleados', App\Http\Controllers\EmpleadosController::class);
     Route::resource('lineasTelefonicas', App\Http\Controllers\LineasTelefonicasController::class);
+    Route::get('lineas-telefonicas-inventario-records', [App\Http\Controllers\LineasTelefonicasController::class, 'getInventarioRecords'])->name('lineas-telefonicas.inventario-records');
     Route::resource('equipos', App\Http\Controllers\EquiposController::class);
+    //Route::get('equipos-stats', [App\Http\Controllers\EquiposController::class, 'getStats'])->name('equipos.stats');
+    Route::get('equipos-inventario-records', [App\Http\Controllers\EquiposController::class, 'getInventarioRecords'])->name('equipos.inventario-records');
     Route::resource('insumos', App\Http\Controllers\InsumosController::class);
+    Route::get('insumos-inventario-records', [App\Http\Controllers\InsumosController::class, 'getInventarioRecords'])->name('insumos.inventario-records');
     Route::resource('categorias', App\Http\Controllers\CategoriasController::class);
     Route::resource('planes', App\Http\Controllers\PlanesController::class);
     Route::GET('InventarioVista', [App\Http\Controllers\InventarioController::class, 'indexVista'])->name('inventarios.indexVista');
@@ -88,6 +92,20 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/reportes/preview', [ReportesController::class, 'preview'])->name('reportes.preview');
     Route::get('autocomplete', [ReportesController::class, 'autocomplete']);
 
+    // Rutas para reportes específicos
+    Route::prefix('reportes-especificos')->name('reportes-especificos.')->group(function () {
+        Route::get('/', [App\Http\Controllers\ReportesEspecificosController::class, 'index'])->name('index');
+        Route::get('/estatus-licencias', [App\Http\Controllers\ReportesEspecificosController::class, 'estatusLicencias'])->name('estatus-licencias');
+        Route::get('/equipos-asignados', [App\Http\Controllers\ReportesEspecificosController::class, 'equiposAsignados'])->name('equipos-asignados');
+        Route::get('/lineas-asignadas', [App\Http\Controllers\ReportesEspecificosController::class, 'lineasAsignadas'])->name('lineas-asignadas');
+        Route::get('/export-estatus-licencias', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEstatusLicencias'])->name('export-estatus-licencias');
+        Route::get('/export-estatus-licencias-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEstatusLicenciasExcel'])->name('export-estatus-licencias-excel');
+        Route::get('/export-equipos-asignados', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEquiposAsignados'])->name('export-equipos-asignados');
+        Route::get('/export-equipos-asignados-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportEquiposAsignadosExcel'])->name('export-equipos-asignados-excel');
+        Route::get('/export-lineas-asignadas', [App\Http\Controllers\ReportesEspecificosController::class, 'exportLineasAsignadas'])->name('export-lineas-asignadas');
+        Route::get('/export-lineas-asignadas-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportLineasAsignadasExcel'])->name('export-lineas-asignadas-excel');
+    });
+
     Route::resource('facturas', App\Http\Controllers\FacturasController::class);
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
 
@@ -113,3 +131,12 @@ Route::POST('/crearTickets', [SoporteTIController::class, 'crearTickets'])
     ->name('soporte.ticket')
     ->withoutMiddleware(['auth']);
 Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
+
+
+// Ruta de fallback para redirigir al dashboard
+Route::fallback(function () {
+    if (auth()->check()) {
+        return redirect()->route('home')->with('warning', 'La página solicitada no existe. Has sido redirigido al dashboard.');
+    }
+    return redirect('/login')->with('error', 'Debes iniciar sesión para acceder al sistema.');
+});

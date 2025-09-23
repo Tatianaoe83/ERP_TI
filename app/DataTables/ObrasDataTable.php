@@ -74,7 +74,7 @@ class ObrasDataTable extends DataTable
                     }"
                 ] : null,
 
-                [
+                /*[
                     'extend' => 'excel',
                     'className' => 'btn btn-success',
                     'text' => '<i class="fa fa-file-excel"></i> Excel'
@@ -83,7 +83,7 @@ class ObrasDataTable extends DataTable
                     'extend' => 'pdf',
                     'className' => 'btn btn-danger',
                     'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],
+                ],*/  
 
                 [
                     'className' => 'btn btn-default',
