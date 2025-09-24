@@ -133,7 +133,7 @@ class EmpleadosController extends AppBaseController
     }
 
     /**
-     * Remove the specified Empleados from storage.
+     * Dar de baja al empleado (cambiar estado a inactivo).
      *
      * @param int $id
      *
@@ -149,9 +149,10 @@ class EmpleadosController extends AppBaseController
             return redirect(route('empleados.index'));
         }
 
-        $this->empleadosRepository->delete($id);
+        // Cambiar estado a 0 (inactivo) en lugar de soft delete
+        $empleados->update(['Estado' => 0]);
 
-        Flash::success('Empleados deleted successfully.');
+        Flash::success('Empleado dado de baja exitosamente.');
 
         return redirect(route('empleados.index'));
     }

@@ -46,11 +46,15 @@ class EmpleadosDataTable extends DataTable
         return $model->newQuery()
             ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
             ->select([
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
                 'puestos.NombrePuesto as nombre_puesto',
                 'obras.NombreObra as nombre_obra',
+                'departamentos.NombreDepartamento as nombre_departamento',
+                'gerencia.NombreGerencia as nombre_gerencia',
                 'empleados.NumTelefono',
                 'empleados.Correo',
                 'empleados.Estado'
@@ -154,6 +158,18 @@ class EmpleadosDataTable extends DataTable
                 'title' => 'Obra',
                 'data' => 'nombre_obra',
                 'name' => 'obras.NombreObra',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'DepartamentoID' => [
+                'title' => 'Departamento',
+                'data' => 'nombre_departamento',
+                'name' => 'departamentos.NombreDepartamento',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'GerenciaID' => [
+                'title' => 'Gerencia',
+                'data' => 'nombre_gerencia',
+                'name' => 'gerencia.NombreGerencia',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NumTelefono' => [
