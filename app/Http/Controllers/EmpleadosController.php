@@ -189,4 +189,22 @@ class EmpleadosController extends AppBaseController
             ], 500);
         }
     }
+
+    public function destroy($id)
+    {
+        // Cambiar estado a 0 (inactivo) en lugar de soft delete
+        $empleados = $this->empleadosRepository->find($id);
+
+        if (empty($empleados)) {
+            Flash::error('Empleados not found');
+
+            return redirect(route('empleados.index'));
+        }
+
+        $empleados->update(['Estado' => 0]);
+
+        Flash::success('Empleado dado de baja exitosamente.');
+        
+         return redirect(route('empleados.index'));
+    }
 }
