@@ -48,6 +48,7 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::resource('departamentos', App\Http\Controllers\DepartamentosController::class);
     Route::resource('puestos', App\Http\Controllers\PuestosController::class);
     Route::resource('empleados', App\Http\Controllers\EmpleadosController::class);
+    Route::get('empleados-filtros', [App\Http\Controllers\EmpleadosController::class, 'filtros'])->name('empleados.filtros');
     Route::resource('lineasTelefonicas', App\Http\Controllers\LineasTelefonicasController::class);
     Route::get('lineas-telefonicas-inventario-records', [App\Http\Controllers\LineasTelefonicasController::class, 'getInventarioRecords'])->name('lineas-telefonicas.inventario-records');
     Route::resource('equipos', App\Http\Controllers\EquiposController::class);

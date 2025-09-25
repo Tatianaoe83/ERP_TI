@@ -72,7 +72,7 @@ class EmpleadosDataTable extends DataTable
             ->setTableId('tabla-empleados')
             ->columns($this->getColumns())
             ->minifiedAjax()
-            ->dom('Bfrtip')
+            ->dom('Brtip')
             ->orderBy(1, 'asc')
             ->buttons(array_filter([
                 auth()->user()->can('crear-empleados') ? [
@@ -116,14 +116,11 @@ class EmpleadosDataTable extends DataTable
                 $("[data-toggle=tooltip]").tooltip();
             }',
                 'initComplete' => "function() {
-                this.api().columns().every(function () {
-                    var column = this;
-                    var input = document.createElement(\"input\");
-                    $(input).appendTo($(column.footer()).empty())
-                    .on('change', function () {
-                        column.search($(this).val(), false, false, true).draw();
-                    });
-                });
+                // Cargar opciones en los selectores de filtros
+                cargarOpcionesFiltros();
+                
+                // Configurar eventos de filtros
+                configurarFiltros();
             }",
             ]);
     }

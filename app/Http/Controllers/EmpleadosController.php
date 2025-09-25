@@ -133,27 +133,60 @@ class EmpleadosController extends AppBaseController
     }
 
     /**
-     * Dar de baja al empleado (cambiar estado a inactivo).
+     * Obtener datos para los filtros de empleados.
      *
-     * @param int $id
-     *
-     * @return Response
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy($id)
+    public function filtros()
     {
-        $empleados = $this->empleadosRepository->find($id);
+        try {
+            $puestos = \DB::table('puestos')
+                ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+                ->select('puestos.NombrePuesto')
+                ->distinct()
+                ->orderBy('puestos.NombrePuesto')
+                ->pluck('puestos.NombrePuesto')
+                ->toArray();
 
-        if (empty($empleados)) {
-            Flash::error('Empleados not found');
+            $departamentos = \DB::table('departamentos')
+                ->join('puestos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
+                ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+                ->select('departamentos.NombreDepartamento')
+                ->distinct()
+                ->orderBy('departamentos.NombreDepartamento')
+                ->pluck('departamentos.NombreDepartamento')
+                ->toArray();
 
-            return redirect(route('empleados.index'));
+            $obras = \DB::table('obras')
+                ->join('empleados', 'obras.ObraID', '=', 'empleados.ObraID')
+                ->select('obras.NombreObra')
+                ->distinct()
+                ->orderBy('obras.NombreObra')
+                ->pluck('obras.NombreObra')
+                ->toArray();
+
+            $gerencias = \DB::table('gerencia')
+                ->join('departamentos', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
+                ->join('puestos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
+                ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+                ->select('gerencia.NombreGerencia')
+                ->distinct()
+                ->orderBy('gerencia.NombreGerencia')
+                ->pluck('gerencia.NombreGerencia')
+                ->toArray();
+
+            return response()->json([
+                'puestos' => $puestos,
+                'departamentos' => $departamentos,
+                'obras' => $obras,
+                'gerencias' => $gerencias
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al cargar los datos de filtros',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Cambiar estado a 0 (inactivo) en lugar de soft delete
-        $empleados->update(['Estado' => 0]);
-
-        Flash::success('Empleado dado de baja exitosamente.');
-
-        return redirect(route('empleados.index'));
     }
 }
