@@ -13,7 +13,7 @@
     @endcan
 
     @can('borrar-empleados')
-    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
+    <button type="submit" class="btn btn-xs btn-outline-warning btn-flat show_confirm" title="Dar de baja"><i class="fa fa-user-times"></i></button>
     @endcan
 </div>
 {!! Form::close() !!}
@@ -27,7 +27,7 @@
        var form =  $(this).closest("form");
        event.preventDefault();
        swal.fire({
-           title: `¿Está seguro de que desea borrar este empleado? `,
+           title: `¿Está seguro de que desea dar de baja este empleado? `,
            icon: "warning",
            //buttons: true,
            showDenyButton: true,
@@ -37,7 +37,7 @@
        }).then(function(willDelete) {
          if (willDelete.isConfirmed) {
           swal.fire({
-              title: 'Empleado borrado',
+              title: 'Empleado dado de baja',
               icon: 'success'
             }).then(function(){
               form.submit();

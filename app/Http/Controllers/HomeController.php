@@ -49,7 +49,7 @@ class HomeController extends Controller
         $insumosAsignados = InventarioInsumo::count();
         
 
-        $totalLineas = LineasTelefonicas::count();
+        $totalLineas = LineasTelefonicas::where('Activo',true)->count();
         $lineasAsignadas = InventarioLineas::count();
         $lineasDisponibles = $totalLineas - $lineasAsignadas;
 

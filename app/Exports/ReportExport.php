@@ -64,6 +64,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
             ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
             ->where('gerencia.GerenciaID', '=', $numerogerencia)
+            ->where('empleados.Estado', '=', 1)
             ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
             ->get();
 

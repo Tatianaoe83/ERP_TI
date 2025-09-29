@@ -133,14 +133,66 @@ class EmpleadosController extends AppBaseController
     }
 
     /**
-     * Remove the specified Empleados from storage.
+     * Obtener datos para los filtros de empleados.
      *
-     * @param int $id
-     *
-     * @return Response
+     * @return \Illuminate\Http\JsonResponse
      */
+    public function filtros()
+    {
+        try {
+            $puestos = \DB::table('puestos')
+                ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+                ->select('puestos.NombrePuesto')
+                ->distinct()
+                ->orderBy('puestos.NombrePuesto')
+                ->pluck('puestos.NombrePuesto')
+                ->toArray();
+
+            $departamentos = \DB::table('departamentos')
+                ->join('puestos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
+                ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+                ->select('departamentos.NombreDepartamento')
+                ->distinct()
+                ->orderBy('departamentos.NombreDepartamento')
+                ->pluck('departamentos.NombreDepartamento')
+                ->toArray();
+
+            $obras = \DB::table('obras')
+                ->join('empleados', 'obras.ObraID', '=', 'empleados.ObraID')
+                ->select('obras.NombreObra')
+                ->distinct()
+                ->orderBy('obras.NombreObra')
+                ->pluck('obras.NombreObra')
+                ->toArray();
+
+            $gerencias = \DB::table('gerencia')
+                ->join('departamentos', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
+                ->join('puestos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
+                ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+                ->select('gerencia.NombreGerencia')
+                ->distinct()
+                ->orderBy('gerencia.NombreGerencia')
+                ->pluck('gerencia.NombreGerencia')
+                ->toArray();
+
+            return response()->json([
+                'puestos' => $puestos,
+                'departamentos' => $departamentos,
+                'obras' => $obras,
+                'gerencias' => $gerencias
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al cargar los datos de filtros',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function destroy($id)
     {
+        // Cambiar estado a 0 (inactivo) en lugar de soft delete
         $empleados = $this->empleadosRepository->find($id);
 
         if (empty($empleados)) {
@@ -149,10 +201,10 @@ class EmpleadosController extends AppBaseController
             return redirect(route('empleados.index'));
         }
 
-        $this->empleadosRepository->delete($id);
+        $empleados->update(['Estado' => 0]);
 
-        Flash::success('Empleados deleted successfully.');
-
-        return redirect(route('empleados.index'));
+        Flash::success('Empleado dado de baja exitosamente.');
+        
+         return redirect(route('empleados.index'));
     }
 }

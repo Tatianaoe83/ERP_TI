@@ -38,11 +38,5 @@
     {!! Form::text('Correo', null, ['class' => 'form-control','maxlength' => 150,'maxlength' => 150]) !!}
 </div>
 
-<!-- Estado Field -->
-<div class="mt-4 col-sm-6 text-[#101D49] dark:text-white">
-    <div class="form-check">
-        {!! Form::hidden('Estado', 0, ['class' => 'form-check-input']) !!}
-        {!! Form::checkbox('Estado', '1', null, ['class' => 'form-check-input']) !!}
-        {!! Form::label('Estado', 'Activo', ['class' => 'form-check-label']) !!}
-    </div>
-</div>
+<!-- Estado Field - Oculto con valor por defecto 1 -->
+{!! Form::hidden('Estado', 1) !!}
