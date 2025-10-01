@@ -32,13 +32,12 @@ class HomeController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
             // Estadísticas de empleados
             $totalEmpleados = Empleados::count();
-            $empleadosActivos = Empleados::where('Estado', true)->count();
-            $empleadosInactivos = Empleados::where('Estado', false)->count();
+            $empleadosActivos = Empleados::where('Estado', true)->where('tipo_persona', 'FISICA')->count();
 
         // Estadísticas de inventario
         $totalEquipos = Equipos::count();
@@ -54,23 +53,15 @@ class HomeController extends Controller
         $lineasDisponibles = $totalLineas - $lineasAsignadas;
 
         // Estadísticas de obras y gerencias
-        $totalObras = Obras::count();
-        $totalGerencias = Gerencia::count();
-        $totalUnidadesNegocio = UnidadesDeNegocio::count();
+        $totalObras = Obras::where('Estado', true)->count();
+        $totalGerencias = Gerencia::where('Estado', true)->count();
+        $totalUnidadesNegocio = UnidadesDeNegocio::where('Estado', true)->count();
 
-        // Empleados con más inventario asignado
-        $empleadosConInventario = DB::table('empleados')
-            ->select('empleados.NombreEmpleado', 'empleados.EmpleadoID')
-            ->selectRaw('
-                (SELECT COUNT(*) FROM inventarioequipo WHERE inventarioequipo.EmpleadoID = empleados.EmpleadoID) +
-                (SELECT COUNT(*) FROM inventarioinsumo WHERE inventarioinsumo.EmpleadoID = empleados.EmpleadoID) +
-                (SELECT COUNT(*) FROM inventariolineas WHERE inventariolineas.EmpleadoID = empleados.EmpleadoID) as total_inventario
-            ')
-            ->where('empleados.Estado', 1)
-            ->having('total_inventario', '>', 0)
-            ->orderBy('total_inventario', 'desc')
-            ->limit(5)
-            ->get();
+        // Insumos por categoría 'licencia' agrupados por nombre con paginación
+        $insumosPorLicencia = $this->getInsumosPorLicencia($request);
+
+        // Equipos por categoría específica (LAPTOP, PC ESCRITORIO, IMPRESORA)
+        $equiposPorCategoria = $this->getEquiposPorCategoria();
 
         // Estadísticas por gerencia (optimizada)
         $estadisticasPorGerencia = DB::table('gerencia')
@@ -80,17 +71,20 @@ class HomeController extends Controller
             ->select('gerencia.NombreGerencia')
             ->selectRaw('COUNT(DISTINCT empleados.EmpleadoID) as total_empleados')
             ->selectRaw('COUNT(CASE WHEN empleados.Estado = 1 THEN 1 END) as empleados_activos')
+            ->where('gerencia.Estado', true)
+            ->where('empleados.Estado', true)
+            ->where('empleados.tipo_persona', 'FISICA')
             ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia')
             ->having('total_empleados', '>', 0)
             ->orderBy('total_empleados', 'desc')
-            ->limit(4)
+            ->limit(7)
             ->get();
 
         $stats = [
             'empleados' => [
                 'total' => $totalEmpleados,
                 'activos' => $empleadosActivos,
-                'inactivos' => $empleadosInactivos,
+               
             ],
             'inventario' => [
                 'equipos' => [
@@ -112,22 +106,29 @@ class HomeController extends Controller
                 'gerencias' => $totalGerencias,
                 'unidades_negocio' => $totalUnidadesNegocio,
             ],
-            'empleados_con_inventario' => $empleadosConInventario,
+            'insumos_por_licencia' => $insumosPorLicencia,
+            'equipos_por_categoria' => $equiposPorCategoria,
             'estadisticas_gerencia' => $estadisticasPorGerencia,
         ];
 
+            // Si es request AJAX, retornar solo la vista parcial
+            if ($request->ajax()) {
+                return view('partials.insumos-licencia', compact('stats'))->render();
+            }
+            
             return view('home', compact('stats'));
         } catch (\Exception $e) {
             // En caso de error, devolver valores por defecto
             $stats = [
-                'empleados' => ['total' => 0, 'activos' => 0, 'inactivos' => 0],
+                'empleados' => ['total' => 0, 'activos' => 0],
                 'inventario' => [
                     'equipos' => ['total' => 0, 'asignados' => 0],
                     'insumos' => ['total' => 0, 'asignados' => 0],
                     'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0],
                 ],
                 'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
-                'empleados_con_inventario' => collect(),
+                'insumos_por_licencia' => collect(),
+                'equipos_por_categoria' => collect(),
                 'estadisticas_gerencia' => collect(),
                 'error' => true,
                 'error_message' => 'Error al cargar las estadísticas del dashboard.'
@@ -135,5 +136,48 @@ class HomeController extends Controller
             
             return view('home', compact('stats'));
         }
+    }
+
+    /**
+     * Obtener insumos por licencia con paginación
+     */
+    private function getInsumosPorLicencia(Request $request)
+    {
+        return DB::table('inventarioinsumo')
+            ->select('NombreInsumo')
+            ->selectRaw('COUNT(InventarioID) as total_inventario')
+            ->where('CateogoriaInsumo', 'LICENCIA')
+            ->groupBy('NombreInsumo')
+            ->orderBy('total_inventario', 'desc')
+            ->paginate(7);
+    }
+
+    /**
+     * Paginación AJAX para insumos por licencia
+     */
+    public function insumosLicenciaPagination(Request $request)
+    {
+        try {
+            $insumosPorLicencia = $this->getInsumosPorLicencia($request);
+            $stats = ['insumos_por_licencia' => $insumosPorLicencia];
+            
+            return view('partials.insumos-licencia', compact('stats'))->render();
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al cargar los datos'], 500);
+        }
+    }
+
+    /**
+     * Obtener equipos por categoría específica
+     */
+    private function getEquiposPorCategoria()
+    {
+        return DB::table('inventarioequipo')
+            ->select('CategoriaEquipo')
+            ->selectRaw('COUNT(InventarioID) as total_inventario')
+            ->whereIn('CategoriaEquipo', ['LAPTOP', 'PC ESCRITORIO', 'IMPRESORA'])
+            ->groupBy('CategoriaEquipo')
+            ->orderBy('total_inventario', 'desc')
+            ->get();
     }
 }

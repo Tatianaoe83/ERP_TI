@@ -195,16 +195,27 @@ class EmpleadosController extends AppBaseController
         // Cambiar estado a 0 (inactivo) en lugar de soft delete
         $empleados = $this->empleadosRepository->find($id);
 
-        if (empty($empleados)) {
-            Flash::error('Empleados not found');
+        //Revisar inventario
+        $inventario = $empleados->inventarioequipo->count();
+        $inventarioinsumo = $empleados->inventarioinsumo->count();
+        $inventariolineas = $empleados->inventariolineas->count();
+        
+        if ($inventario > 0 || $inventarioinsumo > 0 || $inventariolineas > 0) {
+            $tiposInventario = [];
+            if ($inventario > 0) $tiposInventario[] = "equipos ($inventario)";
+            if ($inventarioinsumo > 0) $tiposInventario[] = "insumos ($inventarioinsumo)";
+            if ($inventariolineas > 0) $tiposInventario[] = "líneas telefónicas ($inventariolineas)";
+            
+            $mensaje = 'El empleado ' . $empleados->NombreEmpleado . ' tiene inventario asociado y no puede ser dado de baja.';
+            return redirect(route('empleados.index'))->with('sweetalert_error', $mensaje);
+        }
 
-            return redirect(route('empleados.index'));
+        if (empty($empleados)) {
+            return redirect(route('empleados.index'))->with('sweetalert_error', 'Empleado no encontrado.');
         }
 
         $empleados->update(['Estado' => 0]);
 
-        Flash::success('Empleado dado de baja exitosamente.');
-        
-         return redirect(route('empleados.index'));
+        return redirect(route('empleados.index'))->with('sweetalert_success', 'Empleado dado de baja exitosamente.');
     }
 }

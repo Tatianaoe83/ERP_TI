@@ -46,7 +46,8 @@ class Empleados extends Model implements Auditable
         'ObraID',
         'NumTelefono',
         'Correo',
-        'Estado'
+        'Estado',
+        'tipo_persona'
     ];
 
     /**
@@ -61,7 +62,8 @@ class Empleados extends Model implements Auditable
         'ObraID' => 'integer',
         'NumTelefono' => 'string',
         'Correo' => 'string',
-        'Estado' => 'boolean'
+        'Estado' => 'boolean',
+        'tipo_persona' => 'string'
     ];
 
     /**
@@ -76,6 +78,7 @@ class Empleados extends Model implements Auditable
         'NumTelefono' => 'required|string|max:50',
         'Correo' => 'required|string|max:150',
         'Estado' => 'required|boolean',
+        'tipo_persona' => 'required|in:FISICA,REFERENCIADO|required',
         'deleted_at' => 'nullable'
     ];
 

@@ -36,6 +36,7 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     // Dashboard principal
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
+    Route::get('/insumos-licencia-pagination', [App\Http\Controllers\HomeController::class, 'insumosLicenciaPagination'])->name('insumos.licencia.pagination');
     
     Route::resource('roles', RolController::class);
     Route::resource('usuarios', UsuarioController::class);

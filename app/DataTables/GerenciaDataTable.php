@@ -25,7 +25,14 @@ class GerenciaDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 return view('gerencias.datatables_actions', ['id' => $row->GerenciaID])->render();
             })
-            ->rawColumns(['action'])
+            ->addColumn('estado_formatted', function ($row) {
+                if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
+                    return '<span class="badge badge-success">Si</span>';
+                } else {
+                    return '<span class="badge badge-danger">No</span>';
+                }
+            })
+            ->rawColumns(['action', 'estado_formatted'])
             ->setRowId('GerenciaID');
     }
 
@@ -43,6 +50,7 @@ class GerenciaDataTable extends DataTable
                 'gerencia.GerenciaID',
                 'gerencia.NombreGerencia',
                 'gerencia.NombreGerente',
+                'gerencia.estado',
                 'unidadesdenegocio.NombreEmpresa as nombre_empresa'
             ]);
     }
@@ -147,6 +155,14 @@ class GerenciaDataTable extends DataTable
                 'data' => 'NombreGerente',
                 'name' => 'NombreGerente',
                 'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'estado' => [
+                'title' => 'Es gerencia',
+                'data' => 'estado_formatted',
+                'name' => 'estado',
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'orderable' => true,
+                'searchable' => false
             ],
             Column::computed('action')
                 ->exportable(false)

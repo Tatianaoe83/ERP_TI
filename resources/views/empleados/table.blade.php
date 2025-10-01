@@ -9,6 +9,7 @@
         </div>
 
         <div class="card-body">
+            <div class="clearfix"></div>
             <!-- Filtros responsivos -->
             <div class="row mb-4">
                 <!-- Primera fila de filtros -->
@@ -63,6 +64,17 @@
                         <label for="filtro_gerencia" class="text-[#101D49] dark:text-white">Gerencia:</label>
                         <select id="filtro_gerencia" class="jz1 form-control">
                             <option value="">Todas las gerencias</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="form-group">
+                        <label for="filtro_tipo_persona" class="text-[#101D49] dark:text-white">Tipo de Persona:</label>
+                        <select id="filtro_tipo_persona" class="jz1 form-control">
+                            <option value="">Todos los tipos</option>
+                            <option value="FISICA">FISICA</option>
+                            <option value="REFERENCIADO">REFERENCIADO</option>
                         </select>
                     </div>
                 </div>
@@ -270,6 +282,7 @@
                     $('#filtro_estado').val('').trigger('change');
                     $('#filtro_obra').val('').trigger('change');
                     $('#filtro_gerencia').val('').trigger('change');
+                    $('#filtro_tipo_persona').val('').trigger('change');
                     
                     // Limpiar búsquedas en todas las columnas usando el mismo método
                     table.search('').columns().search('').draw();
@@ -282,7 +295,7 @@
                 });
                 
                 // Filtros en tiempo real para los selects
-                $('#filtro_puesto, #filtro_departamento, #filtro_estado, #filtro_obra, #filtro_gerencia').on('change', function() {
+                $('#filtro_puesto, #filtro_departamento, #filtro_estado, #filtro_obra, #filtro_gerencia, #filtro_tipo_persona').on('change', function() {
                     aplicarFiltros();
                 });
                 
@@ -319,6 +332,7 @@
                     var filtroEstado = $('#filtro_estado').val();
                     var filtroObra = $('#filtro_obra').val();
                     var filtroGerencia = $('#filtro_gerencia').val();
+                    var filtroTipoPersona = $('#filtro_tipo_persona').val();
                     
                     // Aplicar filtros usando índices de columna
                     // Para nombre, usar búsqueda normal (LIKE)
@@ -349,17 +363,68 @@
                         table.column(5).search(''); // Gerencia
                     }
                     
+                    if (filtroTipoPersona) {
+                        table.column(8).search('^' + filtroTipoPersona + '$', true, false); // Tipo Persona - búsqueda exacta
+                    } else {
+                        table.column(8).search(''); // Tipo Persona
+                    }
+                    
                     // Para estado, usar búsqueda exacta también
                     if (filtroEstado) {
-                        table.column(8).search('^' + filtroEstado + '$', true, false); // Estado - búsqueda exacta
+                        table.column(9).search('^' + filtroEstado + '$', true, false); // Estado - búsqueda exacta
                     } else {
-                        table.column(8).search(''); // Estado
+                        table.column(9).search(''); // Estado
                     }
                     
                     // Redibujar la tabla
                     table.draw();
                 }
             }
+            </script>
+            
+            <!-- SweetAlert para mensajes -->
+            <script>
+            $(document).ready(function() {
+                @if(session('sweetalert_success'))
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: '{{ session('sweetalert_success') }}',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#28a745'
+                    });
+                @endif
+
+                @if(session('sweetalert_error'))
+                    Swal.fire({
+                        icon: 'error',
+                        title: '¡Error!',
+                        text: '{{ session('sweetalert_error') }}',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#dc3545'
+                    });
+                @endif
+
+                @if(session('sweetalert_warning'))
+                    Swal.fire({
+                        icon: 'warning',
+                        title: '¡Advertencia!',
+                        text: '{{ session('sweetalert_warning') }}',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#ffc107'
+                    });
+                @endif
+
+                @if(session('sweetalert_info'))
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Información',
+                        text: '{{ session('sweetalert_info') }}',
+                        confirmButtonText: 'Aceptar',
+                        confirmButtonColor: '#17a2b8'
+                    });
+                @endif
+            });
             </script>
             
             @endpush
