@@ -43,7 +43,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
 
             @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
-            <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-700 rounded-lg border border-white">
+            <div class="flex items-center justify-between p-3 bg-green-500 dark:bg-green-700 rounded-lg border border-white">
                 <div class="flex items-center">
                     <i class="fas fa-desktop text-white mr-3"></i>
                     <span class="text-green-100 font-medium">{{ Str::limit($equipo->CategoriaEquipo, 15) }}</span>
