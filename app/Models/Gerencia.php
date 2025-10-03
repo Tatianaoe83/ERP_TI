@@ -37,7 +37,8 @@ class Gerencia extends Model
     public $fillable = [
         'NombreGerencia',
         'UnidadNegocioID',
-        'NombreGerente'
+        'NombreGerente',
+        'estado'
     ];
 
     /**
@@ -49,7 +50,8 @@ class Gerencia extends Model
         'GerenciaID' => 'integer',
         'NombreGerencia' => 'string',
         'UnidadNegocioID' => 'integer',
-        'NombreGerente' => 'string'
+        'NombreGerente' => 'string',
+        'estado' => 'boolean'
     ];
 
     /**
@@ -60,7 +62,8 @@ class Gerencia extends Model
     public static $rules = [
         'NombreGerencia' => 'required|string|max:100',
         'UnidadNegocioID' => 'nullable|integer',
-        'NombreGerente' => 'nullable|string|max:100'
+        'NombreGerente' => 'nullable|string|max:100',
+        'estado' => 'boolean'
     ];
 
     /**

@@ -37,8 +37,10 @@
        }).then(function(willDelete) {
          if (willDelete.isConfirmed) {
           swal.fire({
-              title: 'Empleado dado de baja',
-              icon: 'success'
+              title: 'Verificando...',
+              text: 'Espere un momento mientras verificamos si el empleado tiene inventario asociado.',
+              icon: 'info',
+              
             }).then(function(){
               form.submit();
             });

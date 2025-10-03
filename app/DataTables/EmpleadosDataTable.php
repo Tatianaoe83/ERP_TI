@@ -57,7 +57,8 @@ class EmpleadosDataTable extends DataTable
                 'gerencia.NombreGerencia as nombre_gerencia',
                 'empleados.NumTelefono',
                 'empleados.Correo',
-                'empleados.Estado'
+                'empleados.Estado',
+                'empleados.tipo_persona'
             ]);
     }
 
@@ -181,13 +182,18 @@ class EmpleadosDataTable extends DataTable
                 'name' => 'Correo',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
+            'tipo_persona' => [
+                'title' => 'Tipo Persona',
+                'data' => 'tipo_persona',
+                'name' => 'tipo_persona',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'Estado' => [
                 'title' => 'Estado',
                 'data' => 'Estado',
-                'name' => 'Estado',
+                'name' => 'empleados.Estado',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)

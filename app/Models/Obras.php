@@ -39,7 +39,8 @@ class Obras extends Model
         'NombreObra',
         'Direccion',
         'EncargadoDeObra',
-        'UnidadNegocioID'
+        'UnidadNegocioID',
+        'estado'
     ];
 
     /**
@@ -52,8 +53,10 @@ class Obras extends Model
         'NombreObra' => 'string',
         'Direccion' => 'string',
         'EncargadoDeObra' => 'string',
-        'UnidadNegocioID' => 'integer'
+        'UnidadNegocioID' => 'integer',
+        'estado' => 'boolean'
     ];
+
 
     /**
      * Validation rules
@@ -64,7 +67,8 @@ class Obras extends Model
         'NombreObra' => 'required|string|max:100',
         'Direccion' => 'required|string|max:150',
         'EncargadoDeObra' => 'required|string|max:150',
-        'UnidadNegocioID' => 'required|integer'
+        'UnidadNegocioID' => 'required|integer',
+        'estado' => 'boolean'
     ];
 
     /**

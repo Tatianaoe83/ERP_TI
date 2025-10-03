@@ -46,14 +46,22 @@ class ObrasController extends AppBaseController
                 'obras.NombreObra',
                 'obras.Direccion',
                 'obras.EncargadoDeObra',
+                'obras.estado',
                 'unidadesdenegocio.NombreEmpresa as nombre_empresa'
             ]);
             
             return DataTables::of($unidades)
+                ->addColumn('estado_formatted', function ($row) {
+                    if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
+                        return '<span class="badge badge-success">Si</span>';
+                    } else {
+                        return '<span class="badge badge-danger">No</span>';
+                    }
+                })
                 ->addColumn('action', function($row){
                     return view('obras.datatables_actions', ['id' => $row->ObraID])->render();
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['estado_formatted', 'action'])
                 ->make(true);
         }
 
