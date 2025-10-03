@@ -47,7 +47,7 @@ class AuditController extends Controller
             ]);
 
         if ($request->filled('user_type')) {
-            $query->where('users.user_type', $request->input('user_type'));
+            $query->where('users.id', $request->input('user_type'));
         }
 
         if ($request->filled('auditable_type')) {
