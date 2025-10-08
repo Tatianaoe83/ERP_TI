@@ -29,6 +29,8 @@ class Tickets extends Model
 
 
     public $table = 'tickets';
+    
+    protected $primaryKey = 'TicketID';
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';

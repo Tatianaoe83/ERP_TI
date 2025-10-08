@@ -91,32 +91,33 @@
                         <h3 class="text-xl font-bold text-black text-lg mb-2">Formulario de Ticket</h3>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="">Correo Electrónico *</label>
+                            <input type="email" id="correoEmpleado" placeholder="Correo Electrónico" name="Correo" class="w-full p-2 border rounded mb-2" required />
+                            <div id="correo-error" class="text-red-500 text-sm hidden mb-2"></div>
+                        </div>
                         <div class="relative w-full">
                             <label for="">Empleado</label>
-                            <input type="text" id="autoEmpleadosTicket" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2">
+                            <input type="text" id="autoEmpleadosTicket" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2 bg-gray-100" disabled>
                             <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoID">
                             <div id="suggestions" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
                         </div>
                         <div>
-                            <label for="">Correo Electrónico</label>
-                            <input type="email" selected placeholder="Correo Electrónico" name="Correo" class="w-full p-2 border rounded mb-2" />
+                            <label for="">Número Telefónico *</label>
+                            <input type="number" id="numeroTelefono" placeholder="Número Telefónico" name="Numero" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
-                            <label for="">Número Telefónico</label>
-                            <input type="number" placeholder="Número Telefónico" name="Numero" class="w-full p-2 border rounded mb-2" />
+                            <label for="">Código AnyDesk *</label>
+                            <input type="number" placeholder="Código AnyDesk" name="CodeAnyDesk" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
-                            <label for="">Código AnyDesk</label>
-                            <input type="number" placeholder="Código AnyDesk" name="CodeAnyDesk" class="w-full p-2 border rounded mb-2" />
-                        </div>
-                        <div>
-                            <label for="">Descripción</label>
-                            <textarea placeholder="Descripción" name="Descripcion" class="w-full p-2 border rounded"></textarea>
+                            <label for="">Descripción *</label>
+                            <textarea placeholder="Descripción" name="Descripcion" class="w-full p-2 border rounded bg-gray-100" disabled></textarea>
                         </div>
                         <div
                             id="dropzone"
-                            class="w-full border-2 border-dashed border-gray-400 rounded-md p-6 text-center cursor-pointer transition hover:bg-gray-100">
-                            <input type="file" id="fileInput" name="imagen[]" class="hidden" multiple />
+                            class="w-full border-2 border-dashed border-gray-400 rounded-md p-6 text-center transition bg-gray-100 opacity-50">
+                            <input type="file" id="fileInput" name="imagen[]" class="hidden" multiple disabled />
                             <p class="text-gray-600">
                                 Arrastra tus archivos aquí o
                                 <span class="text-blue-600 underline">haz clic para subir</span>
@@ -124,7 +125,7 @@
                             <p id="counter" class="text-sm text-black mt-1">0/4 Imágenes</p>
                             <div id="previewGrid" class="grid grid-cols-2 gap-3 mt-3"></div>
                         </div>
-                        <button type="submit" class="w-20 h-10 bg-red-500 text-white rounded-md hover:scale-105 transition-all duration-300">Enviar</button>
+                        <button type="submit" id="btnEnviar" class="w-20 h-10 bg-gray-400 text-white rounded-md transition-all duration-300 cursor-not-allowed" disabled>Enviar</button>
                     </div>
                 </div>
 
@@ -594,6 +595,233 @@
             $(document).on("click", function(e) {
                 if (!$(e.target).closest(".autoSupervisor, .suggestionsSupervisor").length) {
                     $suggestions.empty().addClass("hidden");
+                }
+            });
+        });
+    </script>
+    <script>
+        // Script para validar correo y llenar datos automáticamente
+        $(document).ready(function() {
+            let correoTimeout;
+            
+            // Función para deshabilitar todos los campos excepto el correo
+            function deshabilitarCampos() {
+                $('#autoEmpleadosTicket').prop('disabled', true).addClass('bg-gray-100');
+                $('#numeroTelefono').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
+                $('input[name="CodeAnyDesk"]').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
+                $('textarea[name="Descripcion"]').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
+                $('#fileInput').prop('disabled', true);
+                $('#btnEnviar').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
+                $('#dropzone').addClass('bg-gray-100 opacity-50').removeClass('hover:bg-gray-100');
+            }
+            
+            // Función para habilitar solo campos específicos
+            function habilitarCamposEspecificos() {
+                // Mantener empleado deshabilitado pero visible
+                $('#autoEmpleadosTicket').prop('disabled', true).addClass('bg-gray-100');
+                
+                // Habilitar solo campos específicos y hacerlos requeridos
+                $('#numeroTelefono').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
+                $('input[name="CodeAnyDesk"]').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
+                $('textarea[name="Descripcion"]').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
+                $('#fileInput').prop('disabled', false);
+                $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
+                $('#dropzone').removeClass('bg-gray-100 opacity-50').addClass('hover:bg-gray-100');
+            }
+            
+            // Deshabilitar campos inicialmente
+            deshabilitarCampos();
+            
+            $('#correoEmpleado').on('input', function() {
+                const correo = $(this).val().trim();
+                const $errorDiv = $('#correo-error');
+                const $empleadoInput = $('#autoEmpleadosTicket');
+                const $numeroInput = $('#numeroTelefono');
+                const $empleadoIDInput = $('#EmpleadoID');
+                
+                // Limpiar timeout anterior
+                clearTimeout(correoTimeout);
+                
+                // Deshabilitar campos si el correo está vacío
+                if (correo === '') {
+                    deshabilitarCampos();
+                    $empleadoInput.val('').removeClass('border-green-500').addClass('border-gray-300');
+                    $numeroInput.val('').removeClass('border-green-500').addClass('border-gray-300');
+                    $empleadoIDInput.val('');
+                    $errorDiv.addClass('hidden').text('');
+                    return;
+                }
+                
+                // Validar formato de correo básico
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(correo)) {
+                    deshabilitarCampos();
+                    $errorDiv.removeClass('hidden').text('Por favor ingresa un correo válido');
+                    $empleadoInput.val('').removeClass('border-green-500').addClass('border-red-500');
+                    $numeroInput.val('').removeClass('border-green-500').addClass('border-red-500');
+                    $empleadoIDInput.val('');
+                    return;
+                }
+                
+                // Esperar 500ms después de que el usuario deje de escribir
+                correoTimeout = setTimeout(function() {
+                    buscarEmpleadoPorCorreo(correo);
+                }, 500);
+            });
+            
+            function buscarEmpleadoPorCorreo(correo) {
+                const $errorDiv = $('#correo-error');
+                const $empleadoInput = $('#autoEmpleadosTicket');
+                const $numeroInput = $('#numeroTelefono');
+                const $empleadoIDInput = $('#EmpleadoID');
+                
+                // Mostrar indicador de carga
+                $empleadoInput.val('Buscando...').addClass('border-blue-500');
+                $numeroInput.val('Buscando...').addClass('border-blue-500');
+                $errorDiv.addClass('hidden').text('');
+                
+                $.ajax({
+                    url: '/buscarEmpleadoPorCorreo',
+                    method: 'GET',
+                    data: { correo: correo },
+                    success: function(data) {
+                        // Empleado encontrado - habilitar campos específicos
+                        habilitarCamposEspecificos();
+                        $empleadoInput.val(data.NombreEmpleado)
+                            .removeClass('border-blue-500 border-red-500')
+                            .addClass('border-green-500');
+                        $numeroInput.val(data.NumTelefono)
+                            .removeClass('border-blue-500 border-red-500')
+                            .addClass('border-green-500');
+                        $empleadoIDInput.val(data.EmpleadoID);
+                        $errorDiv.addClass('hidden').text('');
+                    },
+                    error: function(xhr) {
+                        // Error en la búsqueda - deshabilitar campos
+                        deshabilitarCampos();
+                        if (xhr.status === 404) {
+                            $empleadoInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $numeroInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $empleadoIDInput.val('');
+                            $errorDiv.removeClass('hidden').text(xhr.responseJSON.error || 'No se encontró correo, contacta a soporte');
+                        } else {
+                            $empleadoInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $numeroInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $empleadoIDInput.val('');
+                            $errorDiv.removeClass('hidden').text('Error al buscar empleado. Intenta de nuevo.');
+                        }
+                    }
+                });
+            }
+            
+            // Validación del número telefónico (10 dígitos)
+            $('#numeroTelefono').on('input', function() {
+                const numero = $(this).val().replace(/\D/g, ''); // Solo números
+                const $errorDiv = $('#telefono-error');
+                
+                // Crear div de error si no existe
+                if ($errorDiv.length === 0) {
+                    $(this).after('<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>');
+                }
+                
+                if (numero.length === 0) {
+                    $('#telefono-error').addClass('hidden').text('');
+                    $(this).removeClass('border-red-500 border-green-500').addClass('border-gray-300');
+                } else if (numero.length === 10) {
+                    $('#telefono-error').addClass('hidden').text('');
+                    $(this).removeClass('border-red-500 border-gray-300').addClass('border-green-500');
+                } else {
+                    $('#telefono-error').removeClass('hidden').text('El número telefónico debe tener exactamente 10 dígitos');
+                    $(this).removeClass('border-green-500 border-gray-300').addClass('border-red-500');
+                }
+                
+                // Actualizar el valor solo con números
+                $(this).val(numero);
+            });
+            
+            // Validación del código AnyDesk
+            $('input[name="CodeAnyDesk"]').on('input', function() {
+                const anyDesk = $(this).val().trim();
+                const $errorDiv = $('#anydesk-error');
+                
+                // Crear div de error si no existe
+                if ($errorDiv.length === 0) {
+                    $(this).after('<div id="anydesk-error" class="text-red-500 text-sm hidden mb-2"></div>');
+                }
+                
+                if (anyDesk.length === 0) {
+                    $('#anydesk-error').addClass('hidden').text('');
+                    $(this).removeClass('border-red-500 border-green-500').addClass('border-gray-300');
+                } else {
+                    $('#anydesk-error').addClass('hidden').text('');
+                    $(this).removeClass('border-red-500 border-gray-300').addClass('border-green-500');
+                }
+            });
+            
+            // Validación de la descripción
+            $('textarea[name="Descripcion"]').on('input', function() {
+                const descripcion = $(this).val().trim();
+                const $errorDiv = $('#descripcion-error');
+                
+                // Crear div de error si no existe
+                if ($errorDiv.length === 0) {
+                    $(this).after('<div id="descripcion-error" class="text-red-500 text-sm hidden mb-2"></div>');
+                }
+                
+                if (descripcion.length === 0) {
+                    $('#descripcion-error').addClass('hidden').text('');
+                    $(this).removeClass('border-red-500 border-green-500').addClass('border-gray-300');
+                } else {
+                    $('#descripcion-error').addClass('hidden').text('');
+                    $(this).removeClass('border-red-500 border-gray-300').addClass('border-green-500');
+                }
+            });
+            
+            // Validar formulario antes de enviar
+            $('form').on('submit', function(e) {
+                const numero = $('#numeroTelefono').val().replace(/\D/g, '');
+                const anyDesk = $('input[name="CodeAnyDesk"]').val().trim();
+                const descripcion = $('textarea[name="Descripcion"]').val().trim();
+                const correo = $('#correoEmpleado').val().trim();
+                
+                let errores = [];
+                
+                // Validar que el correo esté validado
+                if (!correo || !$('#EmpleadoID').val()) {
+                    errores.push('Debe validar un correo electrónico válido');
+                }
+                
+                // Validar número telefónico
+                if (numero.length !== 10) {
+                    errores.push('El número telefónico debe tener exactamente 10 dígitos');
+                }
+                
+                // Validar código AnyDesk
+                if (!anyDesk) {
+                    errores.push('El código AnyDesk es requerido');
+                }
+                
+                // Validar descripción
+                if (!descripcion) {
+                    errores.push('La descripción es requerida');
+                }
+                
+                if (errores.length > 0) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de validación',
+                        html: 'Por favor corrige los siguientes errores:<br><br>• ' + errores.join('<br>• ')
+                    });
+                    return false;
                 }
             });
         });

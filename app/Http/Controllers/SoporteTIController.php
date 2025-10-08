@@ -34,6 +34,30 @@ class SoporteTIController extends Controller
         return response()->json($resultados);
     }
 
+    public function buscarEmpleadoPorCorreo(Request $request): JsonResponse
+    {
+        $correo = $request->input('correo');
+        
+        if (empty($correo)) {
+            return response()->json(['error' => 'Correo requerido'], 400);
+        }
+
+        $empleado = Empleados::where('Correo', $correo)->first();
+
+        if (!$empleado) {
+            return response()->json(['error' => 'No se encontró correo, contacta a soporte'], 404);
+        }
+
+        return response()->json([
+            'EmpleadoID' => $empleado->EmpleadoID,
+            'NombreEmpleado' => $empleado->NombreEmpleado,
+            'Correo' => $empleado->Correo,
+            'NumTelefono' => $empleado->NumTelefono,
+            'PuestoID' => $empleado->PuestoID,
+            'ObraID' => $empleado->ObraID,
+        ]);
+    }
+
     public function getEmpleadoInfo(Request $request): JsonResponse
     {
         $empleadoID = $request->input('EmpleadoID');
@@ -111,6 +135,17 @@ class SoporteTIController extends Controller
         }
 
         if ($type === 'Ticket') {
+            // Validar que el correo esté presente
+            $correo = $request->input('Correo');
+            if (empty($correo)) {
+                return redirect()->back()->with('error', 'El correo electrónico es requerido');
+            }
+
+            // Buscar el empleado por correo para obtener el EmpleadoID
+            $empleado = Empleados::where('Correo', $correo)->first();
+            if (!$empleado) {
+                return redirect()->back()->with('error', 'No se encontró el empleado con el correo proporcionado');
+            }
 
             $files = $request->file('imagen');
             $names = [];
@@ -124,7 +159,7 @@ class SoporteTIController extends Controller
             }
 
             $ticket = Tickets::create([
-                'EmpleadoID' => $request->input('EmpleadoID'),
+                'EmpleadoID' => $empleado->EmpleadoID,
                 'Numero' => $request->input('Numero'),
                 'CodeAnyDesk' => $request->input('CodeAnyDesk'),
                 'Descripcion' => $request->input('Descripcion'),
@@ -135,9 +170,20 @@ class SoporteTIController extends Controller
         }
 
         if ($type === 'Solicitud') {
+            // Validar que el correo esté presente
+            $correo = $request->input('Correo');
+            if (empty($correo)) {
+                return redirect()->back()->with('error', 'El correo electrónico es requerido');
+            }
+
+            // Buscar el empleado por correo para obtener el EmpleadoID
+            $empleado = Empleados::where('Correo', $correo)->first();
+            if (!$empleado) {
+                return redirect()->back()->with('error', 'No se encontró el empleado con el correo proporcionado');
+            }
 
             $solicitud = Solicitud::create([
-                'EmpleadoID' => $request->input('EmpleadoID'),
+                'EmpleadoID' => $empleado->EmpleadoID,
                 'Motivo' => $request->input('Motivo'),
                 'DescripcionMotivo' => $request->input('DescripcionMotivo'),
                 'Requerimientos' => $request->input('Requerimientos'),

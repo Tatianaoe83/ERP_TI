@@ -58,7 +58,7 @@
                                 class="peer text-black w-full px-4 py-3 rounded-lg border borderinput focus:outline-none focus:border-black cursor-pointer"
                                 onchange="updateEnvDatabase(this.value)" required>
                                 <option value="">Selecciona</option>
-                                <option value="unidplay_controlinventarioti2">Control Inventario TI</option>
+                                <option value="unidplay_controlinventarioti">Control Inventario TI</option>
                                 <option value="unidplay_presupuestoscontrol">Presupuestos</option>
                                 <option value="unidplay_presupuestoscontrol2026">Presupuestos 2026</option>
                             </select>

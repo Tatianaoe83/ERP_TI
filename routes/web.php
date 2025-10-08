@@ -118,6 +118,7 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
 
     Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index']);
+    Route::post('/tickets/update', [App\Http\Controllers\TicketsController::class, 'update']);
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
@@ -129,6 +130,7 @@ Route::post('/update-database', [App\Http\Controllers\DatabaseController::class,
 Route::get('/SoporteTI', [App\Http\Controllers\SoporteTIController::class, 'index']);
 Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
 Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
+Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmpleadoPorCorreo']);
 Route::POST('/crearTickets', [SoporteTIController::class, 'crearTickets'])
     ->name('soporte.ticket')
     ->withoutMiddleware(['auth']);
