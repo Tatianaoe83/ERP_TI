@@ -269,7 +269,7 @@ class InsumosController extends AppBaseController
         // Actualizar cada registro encontrado con los datos NUEVOS del equipo
         foreach ($registrosInventario as $registro) {
             $registro->update([
-                'CategoriaInsumo' => $nombreCategoria,
+                'CateogoriaInsumo' => $nombreCategoria,
                 'NombreInsumo' => $insumoActualizado->NombreInsumo,
                 'CostoMensual' => $insumoActualizado->CostoMensual,
                 'CostoAnual' => $insumoActualizado->CostoAnual,

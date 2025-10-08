@@ -294,6 +294,7 @@
     <table class="table">
         <thead>
             <tr style="background-color: #191970; color:white; text-align: center;">
+                <th scope="col">Orden</th>
                 <th scope="col">Nombre Insumo</th>
                 <th scope="col">Enero</th>
                 <th scope="col">Febrero</th>
@@ -313,7 +314,8 @@
         <tbody>
          
             @foreach ($presup_cal_pagos as $presup_cal_pago)
-                <tr class="{{ $presup_cal_pago->Orden == 7  ? 'highlight-row' : '' }}">
+                <tr class={{ $presup_cal_pago->Orden == 7  ? 'highlight-row' : '' }}>
+                    <th>{{$presup_cal_pago->Orden}}</th>
                     <td>{{$presup_cal_pago->NombreInsumo}}</td>
                     <td>${{$presup_cal_pago->Enero}}</td>
                     <td>${{$presup_cal_pago->Febrero}}</td>
