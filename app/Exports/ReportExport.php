@@ -71,27 +71,105 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         $datosheader = $this->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)', [$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)', [$numerogerencia]);
 
+        // Calcular totales directamente desde las tablas para verificar
+        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)', [$numerogerencia]);
+        $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)', [$numerogerencia]);
+        $presup_lics  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)', [$numerogerencia]);
+        $presup_acces =  $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)', [$numerogerencia]);
+        $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)', [$numerogerencia]);
+        $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)', [$numerogerencia]);
+
+        // Calcular totales reales desde las tablas individuales
+        $totalHardware = 0;
+        foreach ($presup_hardware as $row) {
+            $totalHardware += (int) $row->CostoTotal;
+        }
+
+        $totalOtrosInsumos = 0;
+        foreach ($presup_otrosinsums as $row) {
+            $totalOtrosInsumos += (int) $row->CostoTotal;
+        }
+
+        $totalLicencias = 0;
+        foreach ($presup_lics as $row) {
+            $totalLicencias += (int) $row->CostoTotal;
+        }
+
+        $totalTelefonia = 0;
+        foreach ($presup_acces as $row) {
+            // Calcular el total para cada empleado en telefonía
+            if ($this->tipo == 'mens') {
+                $row->Total = (int) $row->Voz_Costo_Renta_Mensual + (int) $row->Voz_Costo_Fianza + (int) $row->Voz_Monto_Renovacion;
+                $totalTelefonia += $row->Total;
+            } else {
+                $row->Total = (int) $row->Voz_Costo_Renta_Anual + (int) $row->Voz_Costo_Fianza_Anual + (int) $row->Voz_Monto_Renovacion_Anual;
+                $totalTelefonia += $row->Total;
+            }
+        }
+
+        $totalDatos = 0;
+        foreach ($presup_datos as $row) {
+            // Calcular el total para cada empleado en datos
+            if ($this->tipo == 'mens') {
+                $row->Total = (int) $row->Datos_Costo_Renta_Mensual + (int) $row->Datos_Costo_Fianza + (int) $row->Datos_Monto_Renovacion;
+                $totalDatos += $row->Total;
+            } else {
+                $row->Total = (int) $row->Datos_Costo_Renta_Anual + (int) $row->Datos_Costo_Fianza_Anual + (int) $row->Datos_Monto_Renovacion_Anual;
+                $totalDatos += $row->Total;
+            }
+        }
+
+        $totalGPS = 0;
+        foreach ($presup_gps as $row) {
+            // Calcular el total para cada empleado en GPS
+            if ($this->tipo == 'mens') {
+                $row->Total = (int) $row->GPS_Costo_Renta_Mensual + (int) $row->GPS_Costo_Fianza + (int) $row->GPS_Monto_Renovacion;
+                $totalGPS += $row->Total;
+            } else {
+                $row->Total = (int) $row->GPS_Costo_Renta_Anual + (int) $row->GPS_Costo_Fianza_Anual + (int) $row->GPS_Monto_Renovacion_Anual;
+                $totalGPS += $row->Total;
+            }
+        }
+
+        $totalCalculadoReal = $totalHardware + $totalOtrosInsumos + $totalLicencias + $totalTelefonia + $totalDatos + $totalGPS;
+
+        // Recalcular el total del encabezado basado en los datos reales
         $total = 0;
-
-
         foreach ($datosheader as $registro) {
-
-            if (is_numeric($registro->TotalCosto)) {
+            if (is_numeric($registro->TotalCosto) && strpos(strtolower($registro->Categoria), 'total') === false) {
                 $total += $registro->TotalCosto;
             }
         }
 
-        $datosheader[] = (object) [
-            'Categoria' => 'Total presupuestado',
-            'TotalCosto' => $total
-        ];
+        // Si hay diferencia significativa, usar el total calculado real
+        if (abs($total - $totalCalculadoReal) > 100) { // Tolerancia de $100
+            // Reemplazar el último elemento de datosheader con el total correcto
+            $datosheader = array_filter($datosheader, function($registro) {
+                return strpos(strtolower($registro->Categoria), 'total') === false;
+            });
+            
+            $datosheader[] = (object) [
+                'Categoria' => 'Total presupuestado',
+                'TotalCosto' => $totalCalculadoReal
+            ];
+        } else {
+            // Agregar el total si no existe
+            $tieneTotal = false;
+            foreach ($datosheader as $registro) {
+                if (strpos(strtolower($registro->Categoria), 'total') !== false) {
+                    $tieneTotal = true;
+                    break;
+                }
+            }
 
-        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_acces =  $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_lics  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)', [$numerogerencia]);
+            if (!$tieneTotal) {
+                $datosheader[] = (object) [
+                    'Categoria' => 'Total presupuestado',
+                    'TotalCosto' => $total
+                ];
+            }
+        }
+
 
 
         $presup_cal_pagos = DB::select('call ObtenerInsumosAnualesPorGerencia(?)', [$numerogerencia]);
@@ -110,8 +188,27 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $sumaNoviembre = 0;
         $sumaDiciembre = 0;
 
-        // Recorrer los datos y sumar los valores por cada mes
+        // Recorrer los datos y sumar los valores por cada mes, además agregar el total por fila
         foreach ($presup_cal_pagos as $registro) {
+            // Calcular el total para cada insumo (suma horizontal de los 12 meses)
+            $totalFila = 0;
+            $totalFila += is_numeric($registro->Enero) ? $registro->Enero : 0;
+            $totalFila += is_numeric($registro->Febrero) ? $registro->Febrero : 0;
+            $totalFila += is_numeric($registro->Marzo) ? $registro->Marzo : 0;
+            $totalFila += is_numeric($registro->Abril) ? $registro->Abril : 0;
+            $totalFila += is_numeric($registro->Mayo) ? $registro->Mayo : 0;
+            $totalFila += is_numeric($registro->Junio) ? $registro->Junio : 0;
+            $totalFila += is_numeric($registro->Julio) ? $registro->Julio : 0;
+            $totalFila += is_numeric($registro->Agosto) ? $registro->Agosto : 0;
+            $totalFila += is_numeric($registro->Septiembre) ? $registro->Septiembre : 0;
+            $totalFila += is_numeric($registro->Octubre) ? $registro->Octubre : 0;
+            $totalFila += is_numeric($registro->Noviembre) ? $registro->Noviembre : 0;
+            $totalFila += is_numeric($registro->Diciembre) ? $registro->Diciembre : 0;
+            
+            // Agregar la columna Total al registro
+            $registro->Total = $totalFila;
+            
+            // Sumar para los totales verticales
             $sumaEnero += is_numeric($registro->Enero) ? $registro->Enero : 0;
             $sumaFebrero += is_numeric($registro->Febrero) ? $registro->Febrero : 0;
             $sumaMarzo += is_numeric($registro->Marzo) ? $registro->Marzo : 0;
@@ -125,6 +222,10 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             $sumaNoviembre += is_numeric($registro->Noviembre) ? $registro->Noviembre : 0;
             $sumaDiciembre += is_numeric($registro->Diciembre) ? $registro->Diciembre : 0;
         }
+
+        // Calcular el gran total (suma de todos los meses)
+        $granTotal = $sumaEnero + $sumaFebrero + $sumaMarzo + $sumaAbril + $sumaMayo + $sumaJunio + 
+                     $sumaJulio + $sumaAgosto + $sumaSeptiembre + $sumaOctubre + $sumaNoviembre + $sumaDiciembre;
 
         // Agregar la fila "Total"
         $presup_cal_pagos[] = (object) [
@@ -141,6 +242,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             'Octubre' => $sumaOctubre,
             'Noviembre' => $sumaNoviembre,
             'Diciembre' => $sumaDiciembre,
+            'Total' => $granTotal,
             'Orden' => 7 // Si deseas agregar algún valor en "Orden" para el total, puedes hacerlo.
         ];
 
@@ -150,12 +252,29 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $totaleshardware = [];
         $granTotalhardware = 0;
 
+        // Agrupar por empleado e insumo para evitar duplicados
+        $datosAgrupados = [];
         foreach ($presup_hardware as $row) {
-            $empleadoID = $row->EmpleadoID;
-            $nombre = $row->NombreEmpleado;
-            $puesto = $row->NombrePuesto;
-            $insumo = $row->NombreInsumo;
-            $costo = (int) $row->CostoTotal;
+            $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+            if (!isset($datosAgrupados[$key])) {
+                $datosAgrupados[$key] = [
+                    'EmpleadoID' => $row->EmpleadoID,
+                    'NombreEmpleado' => $row->NombreEmpleado,
+                    'NombrePuesto' => $row->NombrePuesto,
+                    'NombreInsumo' => $row->NombreInsumo,
+                    'CostoTotal' => (int) $row->CostoTotal
+                ];
+            } else {
+                $datosAgrupados[$key]['CostoTotal'] += (int) $row->CostoTotal;
+            }
+        }
+
+        foreach ($datosAgrupados as $key => $row) {
+            $empleadoID = $row['EmpleadoID'];
+            $nombre = $row['NombreEmpleado'];
+            $puesto = $row['NombrePuesto'];
+            $insumo = $row['NombreInsumo'];
+            $costo = $row['CostoTotal'];
 
             if (!isset($tablahardware[$empleadoID])) {
                 $tablahardware[$empleadoID] = [
@@ -167,7 +286,6 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
             $tablahardware[$empleadoID][$insumo] = $costo;
             $tablahardware[$empleadoID]['TotalPorEmpleado'] += $costo;
-
 
             $columnashardware[$insumo] = true;
 
@@ -184,12 +302,29 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $totalespresup_otrosinsums = [];
         $granTotalpresup_otrosinsums = 0;
 
+        // Agrupar por empleado e insumo para evitar duplicados
+        $datosAgrupadosOtros = [];
         foreach ($presup_otrosinsums as $row) {
-            $empleadoID = $row->EmpleadoID;
-            $nombre = $row->NombreEmpleado;
-            $puesto = $row->NombrePuesto;
-            $insumo = $row->NombreInsumo;
-            $costo = (int) $row->CostoTotal;
+            $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+            if (!isset($datosAgrupadosOtros[$key])) {
+                $datosAgrupadosOtros[$key] = [
+                    'EmpleadoID' => $row->EmpleadoID,
+                    'NombreEmpleado' => $row->NombreEmpleado,
+                    'NombrePuesto' => $row->NombrePuesto,
+                    'NombreInsumo' => $row->NombreInsumo,
+                    'CostoTotal' => (int) $row->CostoTotal
+                ];
+            } else {
+                $datosAgrupadosOtros[$key]['CostoTotal'] += (int) $row->CostoTotal;
+            }
+        }
+
+        foreach ($datosAgrupadosOtros as $key => $row) {
+            $empleadoID = $row['EmpleadoID'];
+            $nombre = $row['NombreEmpleado'];
+            $puesto = $row['NombrePuesto'];
+            $insumo = $row['NombreInsumo'];
+            $costo = $row['CostoTotal'];
 
             if (!isset($tablapresup_otrosinsums[$empleadoID])) {
                 $tablapresup_otrosinsums[$empleadoID] = [
@@ -201,7 +336,6 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
             $tablapresup_otrosinsums[$empleadoID][$insumo] = $costo;
             $tablapresup_otrosinsums[$empleadoID]['TotalPorEmpleado'] += $costo;
-
 
             $columnaspresup_otrosinsums[$insumo] = true;
 
@@ -219,12 +353,29 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $totalespresup_lics = [];
         $granTotalpresup_lics = 0;
 
+        // Agrupar por empleado e insumo para evitar duplicados
+        $datosAgrupadosLics = [];
         foreach ($presup_lics as $row) {
-            $empleadoID = $row->EmpleadoID;
-            $nombre = $row->NombreEmpleado;
-            $puesto = $row->NombrePuesto;
-            $insumo = $row->NombreInsumo;
-            $costo = (int) $row->CostoTotal;
+            $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+            if (!isset($datosAgrupadosLics[$key])) {
+                $datosAgrupadosLics[$key] = [
+                    'EmpleadoID' => $row->EmpleadoID,
+                    'NombreEmpleado' => $row->NombreEmpleado,
+                    'NombrePuesto' => $row->NombrePuesto,
+                    'NombreInsumo' => $row->NombreInsumo,
+                    'CostoTotal' => (int) $row->CostoTotal
+                ];
+            } else {
+                $datosAgrupadosLics[$key]['CostoTotal'] += (int) $row->CostoTotal;
+            }
+        }
+
+        foreach ($datosAgrupadosLics as $key => $row) {
+            $empleadoID = $row['EmpleadoID'];
+            $nombre = $row['NombreEmpleado'];
+            $puesto = $row['NombrePuesto'];
+            $insumo = $row['NombreInsumo'];
+            $costo = $row['CostoTotal'];
 
             if (!isset($tablapresup_lics[$empleadoID])) {
                 $tablapresup_lics[$empleadoID] = [
@@ -237,12 +388,12 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             $tablapresup_lics[$empleadoID][$insumo] = $costo;
             $tablapresup_lics[$empleadoID]['TotalPorEmpleado'] += $costo;
 
-
             $columnaspresup_lics[$insumo] = true;
 
             if (!isset($totalespresup_lics[$insumo])) {
                 $totalespresup_lics[$insumo] = 0;
             }
+
             $totalespresup_lics[$insumo] += $costo;
 
             $granTotalpresup_lics += $costo;
@@ -659,7 +810,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         // TABLA CALENDARIO DE PAGOS
         // TITULO
-        $sheet->getStyle("A{$tituloCalendario}:M{$tituloCalendario}")->applyFromArray([
+        $sheet->getStyle("A{$tituloCalendario}:N{$tituloCalendario}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -674,7 +825,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                 'startColor' => ['argb' => 'c0c0c0'],
             ]
         ]);
-        $sheet->getStyle("A{$encabezadoCalendario}:M{$encabezadoCalendario}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoCalendario}:N{$encabezadoCalendario}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -691,7 +842,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalCalendario}:M{$totalCalendario}")->applyFromArray([
+        $sheet->getStyle("A{$totalCalendario}:N{$totalCalendario}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -742,7 +893,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         // Formato de moneda para la tabla de calendario de pagos (datos y totales)
         $encabezadoCalendario = $tituloCalendario + 1;
-        $sheet->getStyle("B{$encabezadoCalendario}:M{$totalCalendario}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
+        $sheet->getStyle("B{$encabezadoCalendario}:N{$totalCalendario}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
     }
 
 
@@ -753,3 +904,4 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         return 'Facturados';
     }
 }
+

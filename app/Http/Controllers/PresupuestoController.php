@@ -117,52 +117,167 @@ class PresupuestoController extends Controller
       
     }
 
+    public function debugTotales(Request $request)
+    {
+        $numerogerencia = (int) $request->GerenciaID ?? 1;
+        $tipo = $request->tipo ?? 'mens';
+        
+        $datosheader = $tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)',[$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)',[$numerogerencia]);
+        
+        $total = 0;
+        $debugInfo = [];
+        
+        foreach ($datosheader as $index => $registro) {
+            $info = [
+                'index' => $index,
+                'categoria' => $registro->Categoria,
+                'totalCosto' => $registro->TotalCosto,
+                'esNumerico' => is_numeric($registro->TotalCosto),
+                'contieneTotal' => strpos(strtolower($registro->Categoria), 'total') !== false,
+                'seSuma' => false
+            ];
+            
+            if (is_numeric($registro->TotalCosto) && strpos(strtolower($registro->Categoria), 'total') === false) {
+                $total += $registro->TotalCosto;
+                $info['seSuma'] = true;
+                $info['totalAcumulado'] = $total;
+            }
+            
+            $debugInfo[] = $info;
+        }
+        
+        return response()->json([
+            'datosOriginales' => $datosheader,
+            'debugInfo' => $debugInfo,
+            'totalCalculado' => $total,
+            'totalEsperado' => 17 * 3372, // Basado en tu ejemplo
+            'diferencia' => $total - (17 * 3372)
+        ]);
+    }
+
     public function descargar(request $request){
 
 
+        $numerogerencia = (int) $request->GerenciaID;
+        $GerenciaTb = Empleados::query()
+        ->select(
+            "gerencia.NombreGerencia",
+            "gerencia.NombreGerente",
+            DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
+        )
+        ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
+        ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
+        ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
+        ->where('gerencia.GerenciaID', '=', $numerogerencia)
+        ->where('empleados.Estado', '=', 1)
+        ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
+        ->get();
+
        if ($request->submitbutton == 'pdf'){
-
-            $numerogerencia = (int) $request->GerenciaID;
-
-            $GerenciaTb = Empleados::query()
-                ->select(
-                    "gerencia.NombreGerencia",
-                    "gerencia.NombreGerente",
-                    DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
-                )
-                ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
-                ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
-                ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
-                ->where('gerencia.GerenciaID', '=', $numerogerencia)
-                ->where('empleados.Estado', '=', 1)
-                ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
-                ->get();
 
                 $datosheader = $request->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)',[$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)',[$numerogerencia]);
 
-              
-                $total = 0;
+                // Calcular totales directamente desde las tablas para verificar
+                $presup_hardware  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_otrosinsums = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_lics  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
+                $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
 
-               
+                // Calcular totales reales desde las tablas individuales
+                $totalHardware = 0;
+                foreach ($presup_hardware as $row) {
+                    $totalHardware += (int) $row->CostoTotal;
+                }
+
+                $totalOtrosInsumos = 0;
+                foreach ($presup_otrosinsums as $row) {
+                    $totalOtrosInsumos += (int) $row->CostoTotal;
+                }
+
+                $totalLicencias = 0;
+                foreach ($presup_lics as $row) {
+                    $totalLicencias += (int) $row->CostoTotal;
+                }
+
+                $totalTelefonia = 0;
+                foreach ($presup_acces as $row) {
+                    // Calcular el total para cada empleado en telefonía
+                    if ($request->tipo == 'mens') {
+                        $row->Total = (int) $row->Voz_Costo_Renta_Mensual + (int) $row->Voz_Costo_Fianza + (int) $row->Voz_Monto_Renovacion;
+                        $totalTelefonia += $row->Total;
+                    } else {
+                        $row->Total = (int) $row->Voz_Costo_Renta_Anual + (int) $row->Voz_Costo_Fianza_Anual + (int) $row->Voz_Monto_Renovacion_Anual;
+                        $totalTelefonia += $row->Total;
+                    }
+                }
+
+                $totalDatos = 0;
+                foreach ($presup_datos as $row) {
+                    // Calcular el total para cada empleado en datos
+                    if ($request->tipo == 'mens') {
+                        $row->Total = (int) $row->Datos_Costo_Renta_Mensual + (int) $row->Datos_Costo_Fianza + (int) $row->Datos_Monto_Renovacion;
+                        $totalDatos += $row->Total;
+                    } else {
+                        $row->Total = (int) $row->Datos_Costo_Renta_Anual + (int) $row->Datos_Costo_Fianza_Anual + (int) $row->Datos_Monto_Renovacion_Anual;
+                        $totalDatos += $row->Total;
+                    }
+                }
+
+                $totalGPS = 0;
+                foreach ($presup_gps as $row) {
+                    // Calcular el total para cada empleado en GPS
+                    if ($request->tipo == 'mens') {
+                        $row->Total = (int) $row->GPS_Costo_Renta_Mensual + (int) $row->GPS_Costo_Fianza + (int) $row->GPS_Monto_Renovacion;
+                        $totalGPS += $row->Total;
+                    } else {
+                        $row->Total = (int) $row->GPS_Costo_Renta_Anual + (int) $row->GPS_Costo_Fianza_Anual + (int) $row->GPS_Monto_Renovacion_Anual;
+                        $totalGPS += $row->Total;
+                    }
+                }
+
+                $totalCalculadoReal = $totalHardware + $totalOtrosInsumos + $totalLicencias + $totalTelefonia + $totalDatos + $totalGPS;
+
+            
+
+                // Recalcular el total del encabezado basado en los datos reales
+                $total = 0;
                 foreach ($datosheader as $registro) {
-                 
-                    if (is_numeric($registro->TotalCosto)) {
+                    if (is_numeric($registro->TotalCosto) && strpos(strtolower($registro->Categoria), 'total') === false) {
                         $total += $registro->TotalCosto;
                     }
                 }
 
+                
+                if (abs($total - $totalCalculadoReal) > 100) { 
+                  
+                   
+                    $datosheader = array_filter($datosheader, function($registro) {
+                        return strpos(strtolower($registro->Categoria), 'total') === false;
+                    });
+                    
+                    $datosheader[] = (object) [
+                        'Categoria' => 'Total presupuestado', 
+                        'TotalCosto' => $totalCalculadoReal
+                    ];
+                } else {
+                   
+                    $tieneTotal = false;
+                    foreach ($datosheader as $registro) {
+                        if (strpos(strtolower($registro->Categoria), 'total') !== false) {
+                            $tieneTotal = true;
+                            break;
+                        }
+                    }
+
+                    if (!$tieneTotal) {
                 $datosheader[] = (object) [
                     'Categoria' => 'Total presupuestado', 
                     'TotalCosto' => $total
                 ];
-
-               
-                $presup_hardware  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_otrosinsums = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_lics  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
+                    }
+                }               
             
                 $presup_cal_pagos = DB::select('call ObtenerInsumosAnualesPorGerencia(?)', [$numerogerencia]);
 
@@ -180,8 +295,27 @@ class PresupuestoController extends Controller
                 $sumaNoviembre = 0;
                 $sumaDiciembre = 0;
                 
-                // Recorrer los datos y sumar los valores por cada mes
+                // Recorrer los datos y sumar los valores por cada mes, además agregar el total por fila
                 foreach ($presup_cal_pagos as $registro) {
+                    // Calcular el total para cada insumo (suma horizontal de los 12 meses)
+                    $totalFila = 0;
+                    $totalFila += is_numeric($registro->Enero) ? $registro->Enero : 0;
+                    $totalFila += is_numeric($registro->Febrero) ? $registro->Febrero : 0;
+                    $totalFila += is_numeric($registro->Marzo) ? $registro->Marzo : 0;
+                    $totalFila += is_numeric($registro->Abril) ? $registro->Abril : 0;
+                    $totalFila += is_numeric($registro->Mayo) ? $registro->Mayo : 0;
+                    $totalFila += is_numeric($registro->Junio) ? $registro->Junio : 0;
+                    $totalFila += is_numeric($registro->Julio) ? $registro->Julio : 0;
+                    $totalFila += is_numeric($registro->Agosto) ? $registro->Agosto : 0;
+                    $totalFila += is_numeric($registro->Septiembre) ? $registro->Septiembre : 0;
+                    $totalFila += is_numeric($registro->Octubre) ? $registro->Octubre : 0;
+                    $totalFila += is_numeric($registro->Noviembre) ? $registro->Noviembre : 0;
+                    $totalFila += is_numeric($registro->Diciembre) ? $registro->Diciembre : 0;
+                    
+                    // Agregar la columna Total al registro
+                    $registro->Total = $totalFila;
+                    
+                    // Sumar para los totales verticales
                     $sumaEnero += is_numeric($registro->Enero) ? $registro->Enero : 0;
                     $sumaFebrero += is_numeric($registro->Febrero) ? $registro->Febrero : 0;
                     $sumaMarzo += is_numeric($registro->Marzo) ? $registro->Marzo : 0;
@@ -195,6 +329,10 @@ class PresupuestoController extends Controller
                     $sumaNoviembre += is_numeric($registro->Noviembre) ? $registro->Noviembre : 0;
                     $sumaDiciembre += is_numeric($registro->Diciembre) ? $registro->Diciembre : 0;
                 }
+                
+                // Calcular el gran total (suma de todos los meses)
+                $granTotal = $sumaEnero + $sumaFebrero + $sumaMarzo + $sumaAbril + $sumaMayo + $sumaJunio + 
+                             $sumaJulio + $sumaAgosto + $sumaSeptiembre + $sumaOctubre + $sumaNoviembre + $sumaDiciembre;
                 
                 // Agregar la fila "Total"
                 $presup_cal_pagos[] = (object) [
@@ -211,7 +349,8 @@ class PresupuestoController extends Controller
                     'Octubre' => $sumaOctubre,
                     'Noviembre' => $sumaNoviembre,
                     'Diciembre' => $sumaDiciembre,
-                    'Orden' => 7 // Si deseas agregar algún valor en "Orden" para el total, puedes hacerlo.
+                    'Total' => $granTotal,
+                    'Orden' => 7 
                 ];
                 
              
@@ -220,12 +359,30 @@ class PresupuestoController extends Controller
                 $totaleshardware = []; 
                 $granTotalhardware = 0; 
 
+                // Agrupar por empleado e insumo para evitar duplicados
+                $datosAgrupados = [];
                 foreach ($presup_hardware as $row) {
-                    $empleadoID = $row->EmpleadoID;
-                    $nombre = $row->NombreEmpleado;
-                    $puesto = $row->NombrePuesto;
-                    $insumo = $row->NombreInsumo;
-                    $costo = (int) $row->CostoTotal;
+                    $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+                    if (!isset($datosAgrupados[$key])) {
+                        $datosAgrupados[$key] = [
+                            'EmpleadoID' => $row->EmpleadoID,
+                            'NombreEmpleado' => $row->NombreEmpleado,
+                            'NombrePuesto' => $row->NombrePuesto,
+                            'NombreInsumo' => $row->NombreInsumo,
+                            'CostoTotal' => (int) $row->CostoTotal
+                        ];
+                    } else {
+                        // Si ya existe, sumar el costo (por si hay duplicados en el procedimiento)
+                        $datosAgrupados[$key]['CostoTotal'] += (int) $row->CostoTotal;
+                    }
+                }
+
+                foreach ($datosAgrupados as $key => $row) {
+                    $empleadoID = $row['EmpleadoID'];
+                    $nombre = $row['NombreEmpleado'];
+                    $puesto = $row['NombrePuesto'];
+                    $insumo = $row['NombreInsumo'];
+                    $costo = $row['CostoTotal'];
 
                     if (!isset($tablahardware[$empleadoID])) {
                         $tablahardware[$empleadoID] = [
@@ -237,7 +394,6 @@ class PresupuestoController extends Controller
 
                     $tablahardware[$empleadoID][$insumo] = $costo;
                     $tablahardware[$empleadoID]['TotalPorEmpleado'] += $costo;
-
                 
                     $columnashardware[$insumo] = true;
 
@@ -256,12 +412,29 @@ class PresupuestoController extends Controller
                 $totalespresup_otrosinsums = []; 
                 $granTotalpresup_otrosinsums = 0; 
 
+                // Agrupar por empleado e insumo para evitar duplicados
+                $datosAgrupadosOtros = [];
                 foreach ($presup_otrosinsums as $row) {
-                    $empleadoID = $row->EmpleadoID;
-                    $nombre = $row->NombreEmpleado;
-                    $puesto = $row->NombrePuesto;
-                    $insumo = $row->NombreInsumo;
-                    $costo = (int) $row->CostoTotal;
+                    $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+                    if (!isset($datosAgrupadosOtros[$key])) {
+                        $datosAgrupadosOtros[$key] = [
+                            'EmpleadoID' => $row->EmpleadoID,
+                            'NombreEmpleado' => $row->NombreEmpleado,
+                            'NombrePuesto' => $row->NombrePuesto,
+                            'NombreInsumo' => $row->NombreInsumo,
+                            'CostoTotal' => (int) $row->CostoTotal
+                        ];
+                    } else {
+                        $datosAgrupadosOtros[$key]['CostoTotal'] += (int) $row->CostoTotal;
+                    }
+                }
+
+                foreach ($datosAgrupadosOtros as $key => $row) {
+                    $empleadoID = $row['EmpleadoID'];
+                    $nombre = $row['NombreEmpleado'];
+                    $puesto = $row['NombrePuesto'];
+                    $insumo = $row['NombreInsumo'];
+                    $costo = $row['CostoTotal'];
 
                     if (!isset($tablapresup_otrosinsums[$empleadoID])) {
                         $tablapresup_otrosinsums[$empleadoID] = [
@@ -273,7 +446,6 @@ class PresupuestoController extends Controller
 
                     $tablapresup_otrosinsums[$empleadoID][$insumo] = $costo;
                     $tablapresup_otrosinsums[$empleadoID]['TotalPorEmpleado'] += $costo;
-
                   
                     $columnaspresup_otrosinsums[$insumo] = true;
 
@@ -291,12 +463,29 @@ class PresupuestoController extends Controller
                 $totalespresup_lics = []; 
                 $granTotalpresup_lics = 0; 
 
+                // Agrupar por empleado e insumo para evitar duplicados
+                $datosAgrupadosLics = [];
                 foreach ($presup_lics as $row) {
-                    $empleadoID = $row->EmpleadoID;
-                    $nombre = $row->NombreEmpleado;
-                    $puesto = $row->NombrePuesto;
-                    $insumo = $row->NombreInsumo;
-                    $costo = (int) $row->CostoTotal;
+                    $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+                    if (!isset($datosAgrupadosLics[$key])) {
+                        $datosAgrupadosLics[$key] = [
+                            'EmpleadoID' => $row->EmpleadoID,
+                            'NombreEmpleado' => $row->NombreEmpleado,
+                            'NombrePuesto' => $row->NombrePuesto,
+                            'NombreInsumo' => $row->NombreInsumo,
+                            'CostoTotal' => (int) $row->CostoTotal
+                        ];
+                    } else {
+                        $datosAgrupadosLics[$key]['CostoTotal'] += (int) $row->CostoTotal;
+                    }
+                }
+
+                foreach ($datosAgrupadosLics as $key => $row) {
+                    $empleadoID = $row['EmpleadoID'];
+                    $nombre = $row['NombreEmpleado'];
+                    $puesto = $row['NombrePuesto'];
+                    $insumo = $row['NombreInsumo'];
+                    $costo = $row['CostoTotal'];
 
                     if (!isset($tablapresup_lics[$empleadoID])) {
                         $tablapresup_lics[$empleadoID] = [
@@ -309,7 +498,6 @@ class PresupuestoController extends Controller
                     $tablapresup_lics[$empleadoID][$insumo] = $costo;
                     $tablapresup_lics[$empleadoID]['TotalPorEmpleado'] += $costo;
 
-                  
                     $columnaspresup_lics[$insumo] = true;
 
                     if (!isset($totalespresup_lics[$insumo])) {
@@ -349,14 +537,15 @@ class PresupuestoController extends Controller
                 $pdf = PDF::loadView('presupuesto.reporte', $data);
                 $pdf->setPaper('A4', 'landscape');
                 $pdf->render();
-                return $pdf->stream('document.pdf');
+                return $pdf->stream('Reporte_Presupuesto_' . $GerenciaTb[0]->NombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.pdf');
 
         
        }else{
-                $fileName = 'Reporte_Presupuesto_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.xlsx';
+                $fileName = 'Reporte_Presupuesto_' . $GerenciaTb[0]->NombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.xlsx';
                 return Excel::download(new ReportExport($request->GerenciaID, $request->tipo), $fileName);
        }
         
 
     }
 }
+

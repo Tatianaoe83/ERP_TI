@@ -24,6 +24,12 @@ class InsumosDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 return view('insumos.datatables_actions', ['id' => $row->ID])->render();
             })
+            ->editColumn('Importe', function ($row) {
+                if ($row->Importe === null || $row->Importe === '') {
+                    return '0.00%';
+                }
+                return number_format((float)$row->Importe, 2) . '%';
+            })
             ->rawColumns(['action'])
             ->setRowId('ID');
     }
@@ -45,6 +51,7 @@ class InsumosDataTable extends DataTable
                 'categorias.Categoria as nombre_categoria',
                 'insumos.CostoMensual',
                 'insumos.CostoAnual',
+                'insumos.Importe',
                 'insumos.FrecuenciaDePago',
                 'insumos.Observaciones'
             ]);
@@ -153,6 +160,12 @@ class InsumosDataTable extends DataTable
                 'title' => 'Costo Anual',
                 'data' => 'CostoAnual',
                 'name' => 'CostoAnual',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'Importe' => [
+                'title' => 'IVA (%)',
+                'data' => 'Importe',
+                'name' => 'Importe',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'FrecuenciaDePago' => [
