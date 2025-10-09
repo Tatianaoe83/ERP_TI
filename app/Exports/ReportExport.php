@@ -69,15 +69,15 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             ->get();
 
 
-        $datosheader = $this->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)', [$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)', [$numerogerencia]);
+        $datosheader = $this->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)',[$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)',[$numerogerencia]);
 
         // Calcular totales directamente desde las tablas para verificar
-        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_lics  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_acces =  $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)', [$numerogerencia]);
-        $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)', [$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)', [$numerogerencia]);
+        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
+        $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
+        $presup_lics  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
+        $presup_acces =  $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
+        $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
+        $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
 
         // Calcular totales reales desde las tablas individuales
         $totalHardware = 0;
@@ -133,6 +133,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         $totalCalculadoReal = $totalHardware + $totalOtrosInsumos + $totalLicencias + $totalTelefonia + $totalDatos + $totalGPS;
 
+            
+
         // Recalcular el total del encabezado basado en los datos reales
         $total = 0;
         foreach ($datosheader as $registro) {
@@ -141,19 +143,20 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             }
         }
 
-        // Si hay diferencia significativa, usar el total calculado real
-        if (abs($total - $totalCalculadoReal) > 100) { // Tolerancia de $100
-            // Reemplazar el último elemento de datosheader con el total correcto
+        
+        if (abs($total - $totalCalculadoReal) > 100) { 
+          
+           
             $datosheader = array_filter($datosheader, function($registro) {
                 return strpos(strtolower($registro->Categoria), 'total') === false;
             });
             
             $datosheader[] = (object) [
-                'Categoria' => 'Total presupuestado',
+                'Categoria' => 'Total presupuestado', 
                 'TotalCosto' => $totalCalculadoReal
             ];
         } else {
-            // Agregar el total si no existe
+           
             $tieneTotal = false;
             foreach ($datosheader as $registro) {
                 if (strpos(strtolower($registro->Categoria), 'total') !== false) {
@@ -163,10 +166,10 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             }
 
             if (!$tieneTotal) {
-                $datosheader[] = (object) [
-                    'Categoria' => 'Total presupuestado',
-                    'TotalCosto' => $total
-                ];
+        $datosheader[] = (object) [
+            'Categoria' => 'Total presupuestado', 
+            'TotalCosto' => $total
+        ];
             }
         }
 
@@ -462,15 +465,15 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         $tituloTelefonia = $totalAccesorios + 2;
         $encabezadoTelefonia = $tituloTelefonia + 1;
-        $totalTelefonia = $encabezadoTelefonia + $this->presup_accesCount;
+        $totalTelefonia = $encabezadoTelefonia + $this->presup_accesCount + 1;
 
         $tituloDatos = $totalTelefonia + 2;
         $encabezadoDatos = $tituloDatos + 1;
-        $totalDatos = $encabezadoDatos + $this->presup_datosCount;
+        $totalDatos = $encabezadoDatos + $this->presup_datosCount + 1;
 
         $tituloGps = $totalDatos + 2;
         $encabezadoGps = $tituloGps + 1;
-        $totalGps = $encabezadoGps + $this->presup_gpsCount;
+        $totalGps = $encabezadoGps + $this->presup_gpsCount + 1;
 
         $tituloCalendario = $totalGps + 2;
         $encabezadoCalendario = $tituloCalendario + 1;
