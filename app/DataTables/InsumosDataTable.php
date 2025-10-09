@@ -163,7 +163,7 @@ class InsumosDataTable extends DataTable
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Importe' => [
-                'title' => 'IVA (%)',
+                'title' => 'Inflación (%)',
                 'data' => 'Importe',
                 'name' => 'Importe',
                 'class' => 'dark:bg-[#101010] dark:text-white'

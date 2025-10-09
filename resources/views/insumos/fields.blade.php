@@ -27,17 +27,17 @@
 
 <!-- Importe Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
-    {!! Form::label('Importe', 'IVA (%):') !!}
-    {!! Form::number('Importe', null, ['class' => 'form-control', 'step' => '0.01', 'id' => 'Importe_fields', 'min' => '0', 'max' => '100']) !!}
-    <small class="form-text text-muted">Porcentaje de IVA que se aplica al costo</small>
+    {!! Form::label('Importe', 'Inflación (%):') !!}
+    {!! Form::text('Importe', null, ['class' => 'form-control', 'id' => 'Importe_fields', 'placeholder' => 'Ej: 10.50']) !!}
+    <small class="form-text text-muted">Porcentaje de Inflación que se aplica al costo</small>
 </div>
 
-<!-- Costos con IVA -->
+<!-- Costos con Inflación -->
 <div class="col-sm-12">
     <div class="card mt-3">
         <div class="card-header">
             <h6 class="card-title mb-0 text-[#101D49] dark:text-white">
-                <i class="fas fa-calculator me-2"></i>Costos con ajustes aplicados
+                <i class="fas fa-calculator me-2"></i>Costos con Inflación aplicados
             </h6>
         </div>
         <div class="card-body">
@@ -72,6 +72,64 @@ document.addEventListener('DOMContentLoaded', function() {
     const costoMensual = document.getElementById('CostoMensual_fields');
     const costoAnual = document.getElementById('CostoAnual_fields');
     const importe = document.getElementById('Importe_fields');
+    
+    // Validación para solo números y punto decimal en el campo de inflación
+    if (importe) {
+        importe.addEventListener('input', function(e) {
+            let value = this.value;
+            
+            // Permitir solo números, punto decimal y remover caracteres no válidos
+            value = value.replace(/[^0-9.]/g, '');
+            
+            // Permitir solo un punto decimal
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Limitar a 2 decimales
+            if (parts.length === 2 && parts[1].length > 2) {
+                value = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+            
+            // Validar que no exceda 100%
+            const numValue = parseFloat(value);
+            if (numValue > 100) {
+                value = '100';
+            }
+            
+            this.value = value;
+        });
+        
+        // Validación adicional al perder el foco
+        importe.addEventListener('blur', function() {
+            if (this.value) {
+                const numValue = parseFloat(this.value);
+                if (!isNaN(numValue)) {
+                    // Formatear a 2 decimales si es un número válido
+                    this.value = numValue.toFixed(2);
+                }
+            }
+        });
+        
+        // Prevenir entrada de caracteres no numéricos desde el teclado
+        importe.addEventListener('keypress', function(e) {
+            const char = String.fromCharCode(e.which);
+            const value = this.value;
+            
+            // Permitir solo números y punto
+            if (!/[0-9.]/.test(char)) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // No permitir más de un punto
+            if (char === '.' && value.includes('.')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
     
     let isCalculating = false; 
     

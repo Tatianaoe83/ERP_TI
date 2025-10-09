@@ -66,11 +66,10 @@
                     <h5 style="margin: 0; padding: 1px;">Número de empleados: {{$GerenciaTb->CantidadEmpleados ?? ''}}</h5>
 
                    
-
-                    @foreach ($datosheader as $datosheade )
-
-                        <h5 style="margin: 0; padding: 1px;">{{$datosheade->Categoria}}: $ {{$datosheade->TotalCosto}}</h5>
+                    @foreach($datosheader as $item)
+                    <h5 style="margin: 0; padding: 1px;">{{$item->Categoria}}: $ {{$item->TotalCosto}}</h5>
                     @endforeach
+                  
                 </div>
             </td>
             <td style="padding: 0; width: 30%; vertical-align: top;">
@@ -326,7 +325,7 @@
     <table class="table">
         <thead>
             <tr style="background-color: #191970; color:white; text-align: center;">
-                <th scope="col">Orden</th>
+                
                 <th scope="col">Nombre Insumo</th>
                 <th scope="col">Enero</th>
                 <th scope="col">Febrero</th>
@@ -348,7 +347,7 @@
          
             @foreach ($presup_cal_pagos as $presup_cal_pago)
                 <tr class={{ $presup_cal_pago->Orden == 7  ? 'highlight-row' : '' }}>
-                    <th>{{$presup_cal_pago->Orden }}</th>
+                    
                     <td>{{$presup_cal_pago->NombreInsumo}}</td>
                     <td>${{$presup_cal_pago->Enero}}</td>
                     <td>${{$presup_cal_pago->Febrero}}</td>

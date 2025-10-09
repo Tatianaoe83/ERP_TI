@@ -69,7 +69,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             ->get();
 
 
-        $datosheader = $this->tipo == 'mens' ? DB::select('call sp_ReporteCostosPorGerenciaID(?)',[$numerogerencia]) : DB::select('call sp_ReporteCostosAnualesPorGerenciaID(?)',[$numerogerencia]);
+      
 
         // Calcular totales directamente desde las tablas para verificar
         $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
@@ -79,100 +79,165 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
         $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
 
-        // Calcular totales reales desde las tablas individuales
-        $totalHardware = 0;
-        foreach ($presup_hardware as $row) {
-            $totalHardware += (int) $row->CostoTotal;
-        }
 
-        $totalOtrosInsumos = 0;
-        foreach ($presup_otrosinsums as $row) {
-            $totalOtrosInsumos += (int) $row->CostoTotal;
-        }
+          //Sumar costos de Renta de Impresora
+          if ($this->tipo == 'mens') {
+            // Consulta para costo mensual
+            $presup_impresoras = DB::select("
+                SELECT 
+        'Costo Renta de Impresora' AS Categoria,
+         ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
+        FROM inventarioinsumo ii
+        INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+        INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+        INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+        INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+        WHERE g.GerenciaID = ?
+            AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
+            ", [$numerogerencia]);
 
-        $totalLicencias = 0;
-        foreach ($presup_lics as $row) {
-            $totalLicencias += (int) $row->CostoTotal;
-        }
-
-        $totalTelefonia = 0;
-        foreach ($presup_acces as $row) {
-            // Calcular el total para cada empleado en telefonía
-            if ($this->tipo == 'mens') {
-                $row->Total = (int) $row->Voz_Costo_Renta_Mensual + (int) $row->Voz_Costo_Fianza + (int) $row->Voz_Monto_Renovacion;
-                $totalTelefonia += $row->Total;
-            } else {
-                $row->Total = (int) $row->Voz_Costo_Renta_Anual + (int) $row->Voz_Costo_Fianza_Anual + (int) $row->Voz_Monto_Renovacion_Anual;
-                $totalTelefonia += $row->Total;
-            }
-        }
-
-        $totalDatos = 0;
-        foreach ($presup_datos as $row) {
-            // Calcular el total para cada empleado en datos
-            if ($this->tipo == 'mens') {
-                $row->Total = (int) $row->Datos_Costo_Renta_Mensual + (int) $row->Datos_Costo_Fianza + (int) $row->Datos_Monto_Renovacion;
-                $totalDatos += $row->Total;
-            } else {
-                $row->Total = (int) $row->Datos_Costo_Renta_Anual + (int) $row->Datos_Costo_Fianza_Anual + (int) $row->Datos_Monto_Renovacion_Anual;
-                $totalDatos += $row->Total;
-            }
-        }
-
-        $totalGPS = 0;
-        foreach ($presup_gps as $row) {
-            // Calcular el total para cada empleado en GPS
-            if ($this->tipo == 'mens') {
-                $row->Total = (int) $row->GPS_Costo_Renta_Mensual + (int) $row->GPS_Costo_Fianza + (int) $row->GPS_Monto_Renovacion;
-                $totalGPS += $row->Total;
-            } else {
-                $row->Total = (int) $row->GPS_Costo_Renta_Anual + (int) $row->GPS_Costo_Fianza_Anual + (int) $row->GPS_Monto_Renovacion_Anual;
-                $totalGPS += $row->Total;
-            }
-        }
-
-        $totalCalculadoReal = $totalHardware + $totalOtrosInsumos + $totalLicencias + $totalTelefonia + $totalDatos + $totalGPS;
+            $presup_internet_fijo = DB::select("
+            SELECT 
+    'Costo Internet Fijo' AS Categoria,
+     ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
+    FROM inventarioinsumo ii
+    INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+    INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+    INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+    INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+    WHERE g.GerenciaID = ?
+        AND ii.CateogoriaInsumo = 'INTERNET'
+        ", [$numerogerencia]);
 
             
-
-        // Recalcular el total del encabezado basado en los datos reales
-        $total = 0;
-        foreach ($datosheader as $registro) {
-            if (is_numeric($registro->TotalCosto) && strpos(strtolower($registro->Categoria), 'total') === false) {
-                $total += $registro->TotalCosto;
-            }
-        }
-
-        
-        if (abs($total - $totalCalculadoReal) > 100) { 
-          
-           
-            $datosheader = array_filter($datosheader, function($registro) {
-                return strpos(strtolower($registro->Categoria), 'total') === false;
-            });
-            
-            $datosheader[] = (object) [
-                'Categoria' => 'Total presupuestado', 
-                'TotalCosto' => $totalCalculadoReal
-            ];
         } else {
-           
-            $tieneTotal = false;
-            foreach ($datosheader as $registro) {
-                if (strpos(strtolower($registro->Categoria), 'total') !== false) {
-                    $tieneTotal = true;
-                    break;
-                }
-            }
+            // Consulta para costo anual
+            $presup_impresoras = DB::select("
+                     SELECT 
+                    'Costo Renta de Impresora' AS Categoria,
+                    ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
+                    FROM inventarioinsumo ii
+                    INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+                    INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+                    INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+                    INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+                    WHERE g.GerenciaID = ?
+                        AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
+            ", [$numerogerencia]);
 
-            if (!$tieneTotal) {
-        $datosheader[] = (object) [
-            'Categoria' => 'Total presupuestado', 
-            'TotalCosto' => $total
-        ];
-            }
+            $presup_internet_fijo = DB::select("
+            SELECT 
+           'Costo Internet Fijo' AS Categoria,
+           ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
+           FROM inventarioinsumo ii
+           INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+           INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+           INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+           INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+           WHERE g.GerenciaID = ?
+               AND ii.CateogoriaInsumo = 'INTERNET'
+   ", [$numerogerencia]);
         }
 
+
+       // Calcular totales reales desde las tablas individuales
+       $totalHardware = 0;
+       foreach ($presup_hardware as $row) {
+           $totalHardware += (int) $row->CostoTotal;
+       }
+
+       $totalOtrosInsumos = 0;
+       foreach ($presup_otrosinsums as $row) {
+           $totalOtrosInsumos += (int) $row->CostoTotal;
+       }
+
+       $totalLicencias = 0;
+       foreach ($presup_lics as $row) {
+           $totalLicencias += (int) $row->CostoTotal;
+       }
+
+       $totalTelefonia = 0;
+       foreach ($presup_acces as $row) {
+           // Calcular el total para cada empleado en telefonía
+           if ($this->tipo == 'mens') {
+               $row->Total = (int) $row->Voz_Costo_Renta_Mensual + (int) $row->Voz_Costo_Fianza + (int) $row->Voz_Monto_Renovacion;
+               $totalTelefonia += $row->Total;
+           } else {
+               $row->Total = (int) $row->Voz_Costo_Renta_Anual + (int) $row->Voz_Costo_Fianza_Anual + (int) $row->Voz_Monto_Renovacion_Anual;
+               $totalTelefonia += $row->Total;
+           }
+       }
+
+       $totalDatos = 0;
+       foreach ($presup_datos as $row) {
+           // Calcular el total para cada empleado en datos
+           if ($this->tipo == 'mens') {
+               $row->Total = (int) $row->Datos_Costo_Renta_Mensual + (int) $row->Datos_Costo_Fianza + (int) $row->Datos_Monto_Renovacion;
+               $totalDatos += $row->Total;
+           } else {
+               $row->Total = (int) $row->Datos_Costo_Renta_Anual + (int) $row->Datos_Costo_Fianza_Anual + (int) $row->Datos_Monto_Renovacion_Anual;
+               $totalDatos += $row->Total;
+           }
+       }
+
+       $totalGPS = 0;
+       foreach ($presup_gps as $row) {
+           // Calcular el total para cada empleado en GPS
+           if ($this->tipo == 'mens') {
+               $row->Total = (int) $row->GPS_Costo_Renta_Mensual + (int) $row->GPS_Costo_Fianza + (int) $row->GPS_Monto_Renovacion;
+               $totalGPS += $row->Total;
+           } else {
+               $row->Total = (int) $row->GPS_Costo_Renta_Anual + (int) $row->GPS_Costo_Fianza_Anual + (int) $row->GPS_Monto_Renovacion_Anual;
+               $totalGPS += $row->Total;
+           }
+       }
+
+       $totalImpresoras = 0;
+       foreach ($presup_impresoras as $row) {
+          
+           // Calcular el total para impresoras
+           $totalImpresoras += (int) $row->CostoTotal;
+       }
+    
+       $totalInternetFijo = 0;
+       foreach ($presup_internet_fijo as $row) {
+           // Calcular el total para internet fijo
+           $totalInternetFijo += (int) $row->CostoTotal;
+       }
+       
+       $totalCalculadoReal = $totalHardware + $totalOtrosInsumos + $totalLicencias + $totalTelefonia + $totalDatos + $totalGPS + $totalImpresoras + $totalInternetFijo;
+
+       // Crear el array de datos del header con los totales reales calculados desde las consultas
+       $datosheader = [
+           (object) [
+               'Categoria' => 'Costo Licenciamiento',
+               'TotalCosto' => $totalLicencias
+           ],
+           (object) [
+               'Categoria' => 'Costo Inversiones',
+               'TotalCosto' => $totalHardware
+           ],
+           (object) [
+               'Categoria' => 'Costo Otros Insumos',
+               'TotalCosto' => $totalOtrosInsumos
+           ],
+           (object) [
+               'Categoria' => 'Costo Telefonía, Internet y GPS',
+               'TotalCosto' => $totalTelefonia + $totalDatos + $totalGPS
+           ],
+           (object) [
+               'Categoria' => 'Costo Renta de Impresoras',
+               'TotalCosto' => $totalImpresoras
+           ],
+           (object) [
+               'Categoria' => 'Costo Internet fijo',
+               'TotalCosto' => $totalInternetFijo
+           ],
+           (object) [
+               'Categoria' => 'Total Presupuestado',
+               'TotalCosto' => $totalCalculadoReal
+           ]
+       ];                   
 
 
         $presup_cal_pagos = DB::select('call ObtenerInsumosAnualesPorGerencia(?)', [$numerogerencia]);
@@ -610,7 +675,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
         // TABLA ACCESORIOS
         // TITULO
-        $sheet->getStyle("A{$tituloAccesorios}:E{$tituloAccesorios}")->applyFromArray([
+        $sheet->getStyle("A{$tituloAccesorios}:M{$tituloAccesorios}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -627,7 +692,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // ENCABEZADOS
-        $sheet->getStyle("A{$encabezadoAccesorios}:E{$encabezadoAccesorios}")->applyFromArray([
+        $sheet->getStyle("A{$encabezadoAccesorios}:M{$encabezadoAccesorios}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -644,7 +709,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         ]);
 
         // TOTALES
-        $sheet->getStyle("A{$totalAccesorios}:E{$totalAccesorios}")->applyFromArray([
+        $sheet->getStyle("A{$totalAccesorios}:M{$totalAccesorios}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
