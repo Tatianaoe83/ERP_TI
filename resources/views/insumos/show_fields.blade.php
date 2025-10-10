@@ -10,16 +10,68 @@
     <p>{{ $insumos->categoriaid->Categoria }}</p>
 </div>
 
-<!-- Costomensual Field -->
+<!-- Importe Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
-    {!! Form::label('CostoMensual', 'Costo mensual:') !!}
-    <p>{{ $insumos->CostoMensual }}</p>
+    {!! Form::label('Importe', 'Inflación (%):') !!}
+    <p>{{ number_format($insumos->Importe, 2) }}%</p>
 </div>
 
-<!-- Costoanual Field -->
-<div class="col-sm-12 text-[#101D49] dark:text-white">
-    {!! Form::label('CostoAnual', 'Costo anual:') !!}
-    <p>{{ $insumos->CostoAnual }}</p>
+<!-- Costos Sin Inflación -->
+<div class="col-sm-12">
+    <div class="card mt-3">
+        <div class="card-header bg-info">
+            <h6 class="card-title mb-0 text-white">
+                <i class="fas fa-dollar-sign me-2"></i>Costos Sin Inflación (Base)
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label class="text-[#101D49] dark:text-white">Costo Mensual:</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control" value="{{ $insumos->Importe > 0 ? number_format(round($insumos->CostoMensual / (1 + $insumos->Importe/100)), 2) : number_format($insumos->CostoMensual, 2) }}" readonly style="background-color: #e3f2fd;">
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <label class="text-[#101D49] dark:text-white">Costo Anual:</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control" value="{{ $insumos->Importe > 0 ? number_format(round($insumos->CostoAnual / (1 + $insumos->Importe/100)), 2) : number_format($insumos->CostoAnual, 2) }}" readonly style="background-color: #e3f2fd;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Costos Con Inflación -->
+<div class="col-sm-12">
+    <div class="card mt-3">
+        <div class="card-header bg-success">
+            <h6 class="card-title mb-0 text-white">
+                <i class="fas fa-calculator me-2"></i>Costos Con Inflación Aplicada
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-6">
+                    <label class="text-[#101D49] dark:text-white">Costo Mensual con Inflación:</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control" value="{{ number_format(round($insumos->CostoMensual), 2) }}" readonly style="background-color: #d4edda;">
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <label class="text-[#101D49] dark:text-white">Costo Anual con Inflación:</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="text" class="form-control" value="{{ number_format(round($insumos->CostoAnual), 2) }}" readonly style="background-color: #d4edda;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Frecuenciadepago Field -->
