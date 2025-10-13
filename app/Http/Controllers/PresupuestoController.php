@@ -154,7 +154,7 @@ class PresupuestoController extends Controller
                     $presup_impresoras = DB::select("
                         SELECT 
                 'Costo Renta de Impresora' AS Categoria,
-                 ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
+                 ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
                 FROM inventarioinsumo ii
                 INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
                 INNER JOIN puestos p ON e.PuestoID = p.PuestoID
@@ -183,7 +183,7 @@ class PresupuestoController extends Controller
                     $presup_impresoras = DB::select("
                              SELECT 
                             'Costo Renta de Impresora' AS Categoria,
-                            ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
+                            ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual * 12, 0)), 0) AS CostoTotal
                             FROM inventarioinsumo ii
                             INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
                             INNER JOIN puestos p ON e.PuestoID = p.PuestoID
@@ -265,24 +265,17 @@ class PresupuestoController extends Controller
                 foreach ($presup_impresoras as $row) {
                    
                     // Calcular el total para impresoras
-                    $totalImpresoras += (int) $row->CostoTotal;
+                    $totalImpresoras += (int) $row->CostoTotal ?? 0;
                 }
                 
-                // Si no hay datos de impresoras, usar valor por defecto basado en la imagen
-                if (empty($presup_impresoras)) {
-                    $totalImpresoras = 2000; // Valor basado en la imagen proporcionada
-                }
-
+              
                 $totalInternetFijo = 0;
                 foreach ($presup_internet_fijo as $row) {
                     // Calcular el total para internet fijo
-                    $totalInternetFijo += (int) $row->CostoTotal;
+                    $totalInternetFijo += (int) $row->CostoTotal ?? 0;
                 }
                 
-                // Si no hay datos de internet fijo, usar valor por defecto
-                if (empty($presup_internet_fijo)) {
-                    $totalInternetFijo = 0; // Valor basado en la imagen proporcionada
-                }
+               
 
                 $totalCalculadoReal = $totalHardware + $totalOtrosInsumos + $totalLicencias + $totalTelefonia + $totalDatos + $totalGPS + $totalImpresoras + $totalInternetFijo;
 

@@ -86,7 +86,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             $presup_impresoras = DB::select("
                 SELECT 
         'Costo Renta de Impresora' AS Categoria,
-         ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
+         ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
         FROM inventarioinsumo ii
         INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
         INNER JOIN puestos p ON e.PuestoID = p.PuestoID
@@ -115,7 +115,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             $presup_impresoras = DB::select("
                      SELECT 
                     'Costo Renta de Impresora' AS Categoria,
-                    ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
+                    ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual * 12, 0)), 0) AS CostoTotal
                     FROM inventarioinsumo ii
                     INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
                     INNER JOIN puestos p ON e.PuestoID = p.PuestoID
@@ -560,7 +560,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $drawing->setWorksheet($sheet);
 
         // DATOS GENERALES
-        $sheet->getStyle("A1:K15")->applyFromArray([
+        $sheet->getStyle("A1:K14")->applyFromArray([
             'font' => [
                 'size' => 12,
                 'color' => ['argb' => '030404'],
@@ -932,8 +932,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
     private function applyNumberFormatting($sheet, $tituloLicenciamiento, $totalLicenciamiento, $titulohardware, $totalhardware, $tituloAccesorios, $totalAccesorios, $tituloTelefonia, $totalTelefonia, $tituloDatos, $totalDatos, $tituloGps, $totalGps, $tituloCalendario, $totalCalendario)
     {
-        // Formato de moneda para la sección de costos generales (filas 7-14)
-        $sheet->getStyle("B7:B14")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
+        // Formato numérico para la sección de costos generales (filas 7-14)
+        $sheet->getStyle("B5:B11")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
 
         // Formato de moneda para la tabla de licenciamiento (datos y totales)
         $encabezadoicenciamiento = $tituloLicenciamiento + 1;

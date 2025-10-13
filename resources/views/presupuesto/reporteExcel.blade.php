@@ -37,7 +37,7 @@
         {{$datosheade->Categoria}}:
 		</td>
 		<td >
-        $ {{number_format($datosheade->TotalCosto, 0)}}
+        {{$datosheade->TotalCosto, 0}}
 		</td>
 	</tr>
     @endforeach
