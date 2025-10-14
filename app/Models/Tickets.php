@@ -9,17 +9,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Class Tickets
  * @package App\Models
- * @version August 15, 2025, 5:08 pm UTC
+ * @version October 14, 2025, 5:38 pm UTC
  *
+ * @property \App\Models\Empleado $responsableti
  * @property \App\Models\Empleado $empleadoid
- * @property \App\Models\Tipoticket $tipoid
  * @property integer $CodeAnyDesk
  * @property string $Descripcion
- * @property string $Imagen
+ * @property string $imagen
  * @property integer $Numero
  * @property string $Prioridad
  * @property string $Estatus
- * @property string $ResponsableTI
+ * @property integer $ResponsableTI
  * @property integer $EmpleadoID
  * @property integer $TipoID
  */
@@ -29,8 +29,6 @@ class Tickets extends Model
 
 
     public $table = 'tickets';
-    
-    protected $primaryKey = 'TicketID';
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
@@ -61,11 +59,11 @@ class Tickets extends Model
         'TicketID' => 'integer',
         'CodeAnyDesk' => 'integer',
         'Descripcion' => 'string',
-        'imagen' => 'array',
+        'imagen' => 'string',
         'Numero' => 'integer',
         'Prioridad' => 'string',
         'Estatus' => 'string',
-        'ResponsableTI' => 'string',
+        'ResponsableTI' => 'integer',
         'EmpleadoID' => 'integer',
         'TipoID' => 'integer'
     ];
@@ -76,14 +74,13 @@ class Tickets extends Model
      * @var array
      */
     public static $rules = [
-        'CodeAnyDesk' => 'required|integer',
+        'CodeAnyDesk' => 'nullable',
         'Descripcion' => 'required|string',
-        'imagen' => 'required|array|max:4',
-        'imagen.*' => 'file|mimes:jpg,jpeg,png,pdf,xml,xls,xlsx,docx,doc,webp,ppt,pptx|max:2048',
-        'Numero' => 'required|integer',
+        'imagen' => 'nullable|string',
+        'Numero' => 'nullable',
         'Prioridad' => 'required|string',
         'Estatus' => 'nullable|string',
-        'ResponsableTI' => 'nullable|string|max:100',
+        'ResponsableTI' => 'nullable|integer',
         'EmpleadoID' => 'required|integer',
         'TipoID' => 'nullable|integer',
         'created_at' => 'nullable',
@@ -94,16 +91,16 @@ class Tickets extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function empleadoid()
+    public function empleado()
     {
-        return $this->belongsTo(\App\Models\Empleado::class, 'EmpleadoID');
+        return $this->belongsTo(Empleados::class, 'EmpleadoID', 'EmpleadoID');
     }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function tipoid()
+    public function responsableTI()
     {
-        return $this->belongsTo(\App\Models\Tipoticket::class, 'TipoID');
+        return $this->belongsTo(Empleados::class, 'ResponsableTI', 'EmpleadoID');
     }
 }

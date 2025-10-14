@@ -13,9 +13,9 @@
     },
     {
         "name": "CodeAnyDesk",
-        "dbType": "integer,false",
+        "dbType": "bigInteger,false",
         "htmlType": null,
-        "validations": "required|integer",
+        "validations": "nullable",
         "searchable": true,
         "fillable": true,
         "primary": false,
@@ -36,10 +36,10 @@
         "inView": true
     },
     {
-        "name": "Imagen",
-        "dbType": "string,255",
-        "htmlType": "text",
-        "validations": "required|string|max:255",
+        "name": "imagen",
+        "dbType": "text:nullable",
+        "htmlType": "textarea",
+        "validations": "nullable|string",
         "searchable": true,
         "fillable": true,
         "primary": false,
@@ -49,9 +49,9 @@
     },
     {
         "name": "Numero",
-        "dbType": "integer,false",
+        "dbType": "bigInteger,false",
         "htmlType": null,
-        "validations": "required|integer",
+        "validations": "nullable",
         "searchable": true,
         "fillable": true,
         "primary": false,
@@ -85,9 +85,9 @@
     },
     {
         "name": "ResponsableTI",
-        "dbType": "string,100:nullable",
-        "htmlType": "text",
-        "validations": "nullable|string|max:100",
+        "dbType": "integer,false",
+        "htmlType": null,
+        "validations": "nullable|integer",
         "searchable": true,
         "fillable": true,
         "primary": false,
@@ -157,10 +157,10 @@
     },
     {
         "type": "relation",
-        "relation": "mt1,Empleado,EmpleadoID"
+        "relation": "mt1,Empleado,ResponsableTI"
     },
     {
         "type": "relation",
-        "relation": "mt1,Tipoticket,TipoID"
+        "relation": "mt1,Empleado,EmpleadoID"
     }
 ]

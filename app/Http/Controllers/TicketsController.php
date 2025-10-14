@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Empleados;
 use App\Models\Solicitud;
 use App\Models\Tickets;
 use Illuminate\Http\Request;
@@ -10,11 +11,19 @@ class TicketsController extends Controller
 {
     public function index()
     {
-        $tickets = Tickets::orderBy('created_at', 'desc')
-            ->get()
-            ->groupBy('Estatus');
-        $solicitud = Solicitud::all();
-        return view('tickets.index', compact('tickets', /*'solicitudes'*/));
+        $tickets = Tickets::orderBy('created_at', 'desc')->get();
+
+        $ticketsStatus = [
+            'nuevos' => $tickets->where('Estatus', 'Pendiente'),
+            'proceso' => $tickets->where('Estatus', 'En progreso'),
+            'resueltos' => $tickets->where('Estatus', 'Cerrado'),
+        ];
+
+        $responsablesTI = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
+
+        //$solicitudes = Solicitud::all();
+
+        return view('tickets.index', compact('ticketsStatus', 'responsablesTI',/*'solicitudes'*/));
     }
 
     public function update(Request $request)
@@ -50,7 +59,6 @@ class TicketsController extends Controller
                 'message' => 'Ticket actualizado correctamente',
                 'ticket' => $ticket
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
