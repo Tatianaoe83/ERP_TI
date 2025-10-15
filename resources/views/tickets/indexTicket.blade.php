@@ -88,7 +88,7 @@
                         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
                             <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Detalles del Ticket</h3>
 
-                            <label class="text-md font-semibold text-gray-600 text-black">Prioridad</label>
+                            <label class="text-md font-semibold text-gray-600">Prioridad</label>
                             <select
                                 class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
                                 <option>Baja</option>
@@ -96,14 +96,14 @@
                                 <option>Alta</option>
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600 text-black">Estado</label>
+                            <label class="text-md font-semibold text-gray-600">Estado</label>
                             <select class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
                                 <option>Pendiente</option>
                                 <option>En progreso</option>
                                 <option>Cerrado</option>
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600 text-black">Responsable</label>
+                            <label class="text-md font-semibold text-gray-600">Responsable</label>
                             <select class="w-full mt-1 mb-2 0 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
                                 <option selected disabled>Selecciona</option>
                                 @foreach($responsablesTI as $responsable)
@@ -111,22 +111,22 @@
                                 @endforeach
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600 text-black">Tipo</label>
+                            <label class="text-md font-semibold text-gray-600">Tipo</label>
                             <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
                                 <option>Problema</option>
                                 <option>Solicitud</option>
                             </select>
-                            <label class="text-md font-semibold text-gray-600 text-black">Tipo1</label>
+                            <label class="text-md font-semibold text-gray-600">Tipo1</label>
                             <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
                                 <option>Problema</option>
                                 <option>Solicitud</option>
                             </select>
-                            <label class="text-md font-semibold text-gray-600 text-black">Tipo2</label>
+                            <label class="text-md font-semibold text-gray-600">Tipo2</label>
                             <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
                                 <option>Problema</option>
                                 <option>Solicitud</option>
                             </select>
-                            <label class="text-md font-semibold text-gray-600 text-black">Tipo3</label>
+                            <label class="text-md font-semibold text-gray-600">Tipo3</label>
                             <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
                                 <option>Problema</option>
                                 <option>Solicitud</option>
@@ -135,28 +135,119 @@
                     </div>
                 </aside>
 
-                <main class="p-8 flex flex-col overflow-y-auto">
-                    <div class="flex justify-between items-start mb-6 border-b border-gray-200 pb-4">
+                <main class="flex flex-col overflow-hidden">
+                    <!-- Header del Ticket -->
+                    <div class="flex justify-between items-start p-6 border-b border-gray-200">
                         <div>
                             <h1 class="text-2xl font-semibold text-gray-800 mb-1" x-text="selected.asunto"></h1>
                             <p class="text-sm text-gray-500">
                                 Ticket #<span x-text="selected.id"></span> — <span x-text="selected.fecha"></span>
                             </p>
                         </div>
-
-                        <button @click="cerrarModal" class="text-gray-400 hover:text-gray-600 transition">
-                            <span class="material-symbols-outlined text-xl">close</span>
-                        </button>
+                        <div class="flex items-center gap-3">
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                Responder A Todos
+                            </button>
+                            <button class="text-gray-400 hover:text-gray-600 transition p-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                </svg>
+                            </button>
+                            <button @click="cerrarModal" class="text-gray-400 hover:text-gray-600 transition p-2">
+                                <span class="material-symbols-outlined text-xl">close</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="flex-1 text-gray-700 text-sm leading-relaxed">
-                        <p x-text="selected.descripcion"></p>
+                  
+                    <!-- Área de Conversaciones -->
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                        <!-- Mensaje de Soporte (Respuesta) -->
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                    EX
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="font-semibold text-gray-800">Edward Xavier Franco Martin</span>
+                                    <span class="text-sm text-gray-500">09:33 AM</span>
+                                    <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">(respondido en 18 minutos)</span>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="text-sm text-gray-600 mb-2">
+                                        <div><span class="font-medium">Desde:</span> "ITProser" &lt;support@itproser.zohodesk.com&gt;</div>
+                                        <div><span class="font-medium">A:</span> "Rmay" &lt;rmay@proser.com.mx&gt;</div>
+                                        <div><span class="font-medium">Cc:</span> support@itproser.zohodesk.com, "marilu hernandez" &lt;m.hernandez@proser.com.mx&gt;</div>
+                                    </div>
+                                    <div class="text-gray-800 mt-3">
+                                        <p>Buen día,</p>
+                                        <p>Como nos indicó vía telefónica, quedamos al pendiente de que se encuentre disponible y nos pueda compartir el anydesk de su equipo.</p>
+                                        <p>Saludos.</p>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-gray-200">
+                                        <div class="text-xs text-gray-500">
+                                            --- en Vie, 10 Oct 2025 09:14:42 -0600 "Rmay"&lt;rmay@proser.com.mx&gt; escribió ---
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mensaje del Usuario (Consulta Original) -->
+                        <div class="flex gap-4">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                                    RM
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="font-semibold text-gray-800">Rmay</span>
+                                    <span class="text-sm text-gray-500">09:14 AM</span>
+                                    <span class="text-xs text-gray-500">(hace 1 hora)</span>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="text-sm text-gray-600 mb-2">
+                                        <div><span class="font-medium">Desde:</span> "Rmay" &lt;rmay@proser.com.mx&gt;</div>
+                                        <div><span class="font-medium">A:</span> "itproser" &lt;support@itproser.zohodesk.com&gt;</div>
+                                        <div><span class="font-medium">Cc:</span> "marilu hernandez" &lt;m.hernandez@proser.com.mx&gt;</div>
+                                    </div>
+                                    <div class="text-gray-800 mt-3">
+                                        <p>Buen día</p>
+                                        <p>Apoyen con mi correo es que no me llegan los correos en mi bandeja de entrada</p>
+                                        <p>Saludos.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Área para escribir nueva respuesta -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-sm font-medium text-gray-700">Responder:</span>
+                            </div>
+                            <textarea 
+                                class="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Escribe tu respuesta aquí..."></textarea>
+                            <div class="flex justify-between items-center mt-3">
+                                
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                                    Enviar Respuesta
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mt-8 flex justify-end">
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-lg flex items-center gap-2 transition">
-                            Cerrar Ticket
-                        </button>
+                    <!-- Barra de Acciones Inferior -->
+                    <div class="border-t border-gray-200 p-4 bg-gray-50">
+                        <div class="flex justify-between items-center">
+                           
+                            <button class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-5 rounded-lg flex items-center gap-2 transition">
+                                Cerrar Ticket
+                            </button>
+                        </div>
                     </div>
                 </main>
 
