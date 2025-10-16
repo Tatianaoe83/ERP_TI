@@ -35,7 +35,7 @@
             x-show="tab === 1"
             x-transition.opacity
             x-cloak>
-            @include('tickets.indexTicket')
+            @include('tickets.indexTicket', ['ticketsStatus' => $ticketsStatus, 'responsablesTI' => $responsablesTI])
         </div>
 
         <div

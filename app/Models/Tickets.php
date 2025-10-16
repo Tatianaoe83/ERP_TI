@@ -27,8 +27,11 @@ class Tickets extends Model
 {
     use SoftDeletes;
 
-
     public $table = 'tickets';
+    
+    protected $primaryKey = 'TicketID';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
@@ -102,5 +105,13 @@ class Tickets extends Model
     public function responsableTI()
     {
         return $this->belongsTo(Empleados::class, 'ResponsableTI', 'EmpleadoID');
+    }
+
+    /**
+     * Relación con los mensajes del chat
+     */
+    public function chat()
+    {
+        return $this->hasMany(TicketChat::class, 'ticket_id', 'TicketID')->orderBy('created_at', 'asc');
     }
 }

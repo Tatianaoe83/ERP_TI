@@ -163,7 +163,7 @@ class SoporteTIController extends Controller
                 'Numero' => $request->input('Numero'),
                 'CodeAnyDesk' => $request->input('CodeAnyDesk'),
                 'Descripcion' => $request->input('Descripcion'),
-                'imagen' => $names
+                'imagen' => json_encode($names)
             ]);
 
             return redirect()->back()->with(['success' => 'Ticket guardado correctamente']);

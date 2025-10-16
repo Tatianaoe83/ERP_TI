@@ -30,4 +30,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'outlook' => [
+        'tenant_id' => env('OUTLOOK_TENANT_ID'),
+        'client_id' => env('OUTLOOK_CLIENT_ID'),
+        'client_secret' => env('OUTLOOK_CLIENT_SECRET'),
+        'redirect_uri' => env('OUTLOOK_REDIRECT_URI', env('APP_URL') . '/auth/outlook/callback'),
+    ],
+
 ];

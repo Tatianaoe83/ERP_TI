@@ -119,6 +119,10 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
 
     Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index']);
     Route::post('/tickets/update', [App\Http\Controllers\TicketsController::class, 'update']);
+    Route::get('/tickets/chat-messages', [App\Http\Controllers\TicketsController::class, 'getChatMessages']);
+    Route::post('/tickets/enviar-respuesta', [App\Http\Controllers\TicketsController::class, 'enviarRespuesta']);
+    Route::post('/tickets/mensaje-interno', [App\Http\Controllers\TicketsController::class, 'agregarMensajeInterno']);
+    Route::post('/tickets/marcar-leidos', [App\Http\Controllers\TicketsController::class, 'marcarMensajesComoLeidos']);
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
