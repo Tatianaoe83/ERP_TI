@@ -30,6 +30,19 @@
 
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <!-- Alpine.js x-cloak styles -->
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* Estilos para el modal de tickets */
+        .ticket-description {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            max-width: 100%;
+        }
+    </style>
 
     @stack('styles')
 

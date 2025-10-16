@@ -6,6 +6,9 @@ use App\Models\Empleados;
 use App\Models\Solicitud;
 use App\Models\Tickets;
 use App\Models\TicketChat;
+use App\Models\Tertipos;
+use App\Models\Subtipos;
+use App\Models\Tipos;
 use App\Services\OutlookEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -247,4 +250,96 @@ class TicketsController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Obtener todos los tipos de tickets
+     */
+    public function getTipos()
+    {
+        try {
+            $tipos = Tipos::select('TipoID', 'NombreTipo')
+                ->orderBy('NombreTipo')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'tipos' => $tipos
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo tipos: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo tipos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener subtipos por tipo específico
+     */
+    public function getSubtiposByTipo(Request $request)
+    {
+        try {
+            $tipoId = $request->input('tipo_id');
+            
+            if (!$tipoId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID de tipo requerido'
+                ], 400);
+            }
+            
+            // Filtrar subtipos por el TipoID seleccionado
+            $subtipos = Subtipos::select('SubtipoID', 'NombreSubtipo', 'TipoID')
+                ->where('TipoID', $tipoId)
+                ->orderBy('NombreSubtipo')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'subtipos' => $subtipos
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo subtipos por tipo: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo subtipos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener tertipos por subtipo específico
+     */
+    public function getTertiposBySubtipo(Request $request)
+    {
+        try {
+            $subtipoId = $request->input('subtipo_id');
+            
+            if (!$subtipoId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID de subtipo requerido'
+                ], 400);
+            }
+            
+            // Filtrar tertipos por el SubtipoID seleccionado
+            $tertipos = Tertipos::select('TertipoID', 'NombreTertipo', 'SubtipoID')
+                ->where('SubtipoID', $subtipoId)
+                ->orderBy('NombreTertipo')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'tertipos' => $tertipos
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo tertipos por subtipo: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo tertipos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

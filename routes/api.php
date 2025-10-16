@@ -17,3 +17,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// Rutas para la cascada de tipos de tickets
+Route::get('/tertipos-by-subtipo', [App\Http\Controllers\TicketsController::class, 'getTertiposBySubtipo']);
+Route::get('/subtipos-by-tipo', [App\Http\Controllers\TicketsController::class, 'getSubtiposByTipo']);
+Route::get('/tipos', [App\Http\Controllers\TicketsController::class, 'getTipos']);

@@ -1,5 +1,6 @@
 <div
     x-data="ticketsModal()"
+    x-init="init()"
     class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
     @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
     <div class="p-4 text-center shadow-lg rounded-md bg-white border border-gray-100">
@@ -55,7 +56,7 @@
     @endforeach
 
     <div
-        x-show="mostrar"
+        x-show="mostrar && selected.id"
         x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="opacity-0 translate-y-10"
         x-transition:enter-end="opacity-100 translate-y-0"
@@ -79,7 +80,7 @@
 
                         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                             <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Descripcion de ticket</h3>
-                            <div class="font-medium text-gray-800 whitespace-pre-wrap" x-text="selected.descripcion"></div>
+                            <div class="font-medium text-gray-800 whitespace-pre-wrap ticket-description" x-text="selected.descripcion"></div>
                         </div>
 
                         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -108,33 +109,27 @@
                                 <option>Cerrado</option>
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600">Responsable</label>
+                            <label class="text-md font-semibold text-gray-600">Responsable <span class="text-red-500">*</span></label>
                             <select class="w-full mt-1 mb-2 0 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option selected disabled>Selecciona</option>
+                                <option required value="">Seleccione</option>
                                 @foreach($responsablesTI as $responsable)
                                 <option value="{{ $responsable->EmpleadoID }}">{{ $responsable->NombreEmpleado }}</option>
                                 @endforeach
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600">Tipo</label>
-                            <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option>Problema</option>
-                                <option>Solicitud</option>
+                            <label class="text-md font-semibold text-gray-600">Categoria <span class="text-red-500">*</span></label>
+                            <select id="tipo-select" class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
+                                <option required value="">Seleccione</option>
                             </select>
-                            <label class="text-md font-semibold text-gray-600">Tipo1</label>
-                            <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option>Problema</option>
-                                <option>Solicitud</option>
+                            
+                            <label class="text-md font-semibold text-gray-600">Grupo <span class="text-red-500">*</span></label>
+                            <select id="subtipo-select" class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black" disabled>
+                                <option required value="">Seleccione</option>
                             </select>
-                            <label class="text-md font-semibold text-gray-600">Tipo2</label>
-                            <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option>Problema</option>
-                                <option>Solicitud</option>
-                            </select>
-                            <label class="text-md font-semibold text-gray-600">Tipo3</label>
-                            <select class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option>Problema</option>
-                                <option>Solicitud</option>
+                            
+                            <label class="text-md font-semibold text-gray-600">Subgrupo</label>
+                            <select id="tertipo-select" class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black" disabled>
+                                <option value="">Seleccione</option>
                             </select>
                         </div>
                     </div>
@@ -259,6 +254,14 @@
             nuevoMensaje: '',
             cargando: false,
 
+            init() {
+             
+                this.mostrar = false;
+                this.selected = {};
+                this.mensajes = [];
+                this.nuevoMensaje = '';
+            },
+
             abrirModal(datos) {
                 this.selected = datos;
                 this.mostrar = true;
@@ -339,7 +342,7 @@
                        
                         this.mostrarNotificacion(data.message, 'success');
                         
-                        // Recargar mensajes
+                
                         await this.cargarMensajes();
                     } else {
                         this.mostrarNotificacion(data.message, 'error');
@@ -409,5 +412,123 @@
             }
         }
     }
+
+   
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoSelect = document.getElementById('tipo-select');
+        const subtipoSelect = document.getElementById('subtipo-select');
+        const tertipoSelect = document.getElementById('tertipo-select');
+
+        loadTipos();
+
+        tipoSelect.addEventListener('change', function() {
+            const tipoId = this.value;
+            
+            clearSelect(subtipoSelect);
+            clearSelect(tertipoSelect);
+            subtipoSelect.disabled = true;
+            tertipoSelect.disabled = true;
+
+            if (tipoId) {
+                loadSubtipos(tipoId);
+            }
+        });
+
+        subtipoSelect.addEventListener('change', function() {
+            const subtipoId = this.value;
+            
+            clearSelect(tertipoSelect);
+            tertipoSelect.disabled = true;
+
+            if (subtipoId) {
+                loadTertipos(subtipoId);
+            }
+        });
+
+        async function loadTipos() {
+            try {
+                const response = await fetch('/api/tipos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    data.tipos.forEach(tipo => {
+                        const option = document.createElement('option');
+                        option.value = tipo.TipoID;
+                        option.textContent = tipo.NombreTipo;
+                        tipoSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Error cargando tipos:', data.message);
+                }
+            } catch (error) {
+                console.error('Error en la petición de tipos:', error);
+            }
+        }
+
+        async function loadSubtipos(tipoId) {
+            try {
+                subtipoSelect.innerHTML = '<option value="">Seleccione un subtipo</option>';
+                subtipoSelect.disabled = true;
+                
+                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
+                tertipoSelect.disabled = true;
+                
+                if (!tipoId) {
+                    return;
+                }
+                
+                const response = await fetch(`/api/subtipos-by-tipo?tipo_id=${tipoId}`);
+                const data = await response.json();
+                
+                if (data.success && data.subtipos.length > 0) {
+                    data.subtipos.forEach(subtipo => {
+                        const option = document.createElement('option');
+                        option.value = subtipo.SubtipoID;
+                        option.textContent = subtipo.NombreSubtipo;
+                        subtipoSelect.appendChild(option);
+                    });
+                    subtipoSelect.disabled = false;
+                } else {
+                    console.log('No hay subtipos disponibles para este tipo');
+                }
+            } catch (error) {
+                console.error('Error en la petición de subtipos:', error);
+            }
+        }
+
+        async function loadTertipos(subtipoId) {
+            try {
+                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
+                tertipoSelect.disabled = true;
+                
+                if (!subtipoId) {
+                    return;
+                }
+                
+                const response = await fetch(`/api/tertipos-by-subtipo?subtipo_id=${subtipoId}`);
+                const data = await response.json();
+                
+                if (data.success && data.tertipos.length > 0) {
+                    data.tertipos.forEach(tertipo => {
+                        const option = document.createElement('option');
+                        option.value = tertipo.TertipoID;
+                        option.textContent = tertipo.NombreTertipo;
+                        tertipoSelect.appendChild(option);
+                    });
+                    tertipoSelect.disabled = false;
+                } else {
+                    console.log('No hay tertipos disponibles para este subtipo');
+                }
+            } catch (error) {
+                console.error('Error en la petición de tertipos:', error);
+            }
+        }
+
+        function clearSelect(selectElement) {
+            while (selectElement.children.length > 1) {
+                selectElement.removeChild(selectElement.lastChild);
+            }
+        }
+    });
 </script>
 </div>
