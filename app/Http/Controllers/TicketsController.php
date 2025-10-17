@@ -9,17 +9,17 @@ use App\Models\TicketChat;
 use App\Models\Tertipos;
 use App\Models\Subtipos;
 use App\Models\Tipos;
-use App\Services\OutlookEmailService;
+use App\Services\SimpleEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class TicketsController extends Controller
 {
-    protected $outlookService;
+    protected $emailService;
 
-    public function __construct(OutlookEmailService $outlookService)
+    public function __construct(SimpleEmailService $emailService)
     {
-        $this->outlookService = $outlookService;
+        $this->emailService = $emailService;
     }
 
     public function index()
@@ -151,19 +151,30 @@ class TicketsController extends Controller
                 }
             }
 
-            // Enviar correo usando el servicio
-            $resultado = $this->outlookService->enviarRespuestaTicket($ticketId, $mensaje, $adjuntosProcesados);
+            // Enviar correo usando el servicio SMTP
+            $resultado = $this->emailService->enviarRespuestaTicket($ticketId, $mensaje, $adjuntosProcesados);
 
-            if ($resultado['success']) {
+            if ($resultado) {
+                // Crear entrada en el chat
+                $chatMessage = TicketChat::create([
+                    'ticket_id' => $ticketId,
+                    'mensaje' => $mensaje,
+                    'remitente' => 'soporte',
+                    'nombre_remitente' => auth()->user()->name ?? 'Soporte TI',
+                    'correo_remitente' => auth()->user()->email ?? config('mail.from.address'),
+                    'es_correo' => true,
+                    'leido' => false
+                ]);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Respuesta enviada exitosamente',
-                    'chat_message_id' => $resultado['chat_message_id']
+                    'chat_message_id' => $chatMessage->id
                 ]);
             } else {
                 return response()->json([
                     'success' => false,
-                    'message' => $resultado['message']
+                    'message' => 'Error enviando respuesta por correo'
                 ], 500);
             }
 
@@ -338,6 +349,105 @@ class TicketsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error obteniendo tertipos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Sincronizar correos de Outlook para un ticket específico
+     */
+    public function sincronizarCorreos(Request $request)
+    {
+        try {
+            $ticketId = $request->input('ticket_id');
+            
+            if (!$ticketId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID de ticket requerido'
+                ], 400);
+            }
+
+            // Verificar que el ticket existe
+            $ticket = Tickets::find($ticketId);
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket no encontrado'
+                ], 404);
+            }
+
+            // Procesar correos entrantes usando IMAP
+            $imapService = new \App\Services\ImapEmailReceiver();
+            $resultado = $imapService->procesarCorreosEntrantes();
+
+            if ($resultado) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Correos sincronizados exitosamente',
+                    'sincronizados' => 'Correos procesados'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error sincronizando correos'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Error sincronizando correos: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error sincronizando correos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener estadísticas de correos para un ticket
+     */
+    public function obtenerEstadisticasCorreos(Request $request)
+    {
+        try {
+            $ticketId = $request->input('ticket_id');
+            
+            if (!$ticketId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID de ticket requerido'
+                ], 400);
+            }
+
+            $estadisticas = [
+                'total_correos' => TicketChat::where('ticket_id', $ticketId)->where('es_correo', true)->count(),
+                'correos_enviados' => TicketChat::where('ticket_id', $ticketId)
+                    ->where('es_correo', true)
+                    ->where('remitente', 'soporte')
+                    ->count(),
+                'correos_recibidos' => TicketChat::where('ticket_id', $ticketId)
+                    ->where('es_correo', true)
+                    ->where('remitente', 'usuario')
+                    ->count(),
+                'correos_no_leidos' => TicketChat::where('ticket_id', $ticketId)
+                    ->where('es_correo', true)
+                    ->where('leido', false)
+                    ->count(),
+                'ultimo_correo' => TicketChat::where('ticket_id', $ticketId)
+                    ->where('es_correo', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'estadisticas' => $estadisticas
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo estadísticas de correos: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo estadísticas: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -107,4 +107,21 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | IMAP Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for IMAP email receiving functionality
+    |
+    */
+
+    'imap' => [
+        'host' => env('MAIL_IMAP_HOST', 'imap-mail.outlook.com'),
+        'port' => env('MAIL_IMAP_PORT', 993),
+        'encryption' => env('MAIL_IMAP_ENCRYPTION', 'ssl'),
+        'username' => env('MAIL_USERNAME'),
+        'password' => env('MAIL_PASSWORD'),
+    ],
+
 ];

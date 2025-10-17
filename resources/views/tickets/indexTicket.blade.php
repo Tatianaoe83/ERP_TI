@@ -145,6 +145,19 @@
                             </p>
                         </div>
                         <div class="flex items-center gap-3">
+                            <button 
+                                @click="sincronizarCorreos()"
+                                :disabled="sincronizando"
+                                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg x-show="!sincronizando" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <svg x-show="sincronizando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="sincronizando ? 'Sincronizando...' : 'Sincronizar Correos'"></span>
+                            </button>
                             <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
                                 Responder A Todos
                             </button>
@@ -155,6 +168,32 @@
                     </div>
 
                   
+                    <!-- Estadísticas de Correos -->
+                    <div class="border-b border-gray-200 p-4 bg-gray-50">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4 text-sm">
+                                <span class="flex items-center gap-1">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                    <span class="text-gray-600">Correos Enviados:</span>
+                                    <span class="font-semibold" x-text="estadisticas?.correos_enviados || 0"></span>
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                    <span class="text-gray-600">Respuestas:</span>
+                                    <span class="font-semibold" x-text="estadisticas?.correos_recibidos || 0"></span>
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
+                                    <span class="text-gray-600">No Leídos:</span>
+                                    <span class="font-semibold" x-text="estadisticas?.correos_no_leidos || 0"></span>
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Total: <span class="font-semibold" x-text="estadisticas?.total_correos || 0"></span> correos
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Área de Conversaciones -->
                     <div class="flex-1 overflow-y-auto p-6 space-y-6" id="chat-container">
                         <!-- Mensajes dinámicos del chat -->
@@ -170,11 +209,17 @@
                                 <div class="flex items-center gap-2 mb-2">
                                         <span class="font-semibold text-gray-800" x-text="mensaje.nombre_remitente"></span>
                                         <span class="text-sm text-gray-500" x-text="mensaje.created_at"></span>
-                                        <span x-show="mensaje.es_correo" class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                            📧 Correo
+                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'soporte'" class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded flex items-center gap-1">
+                                            📤 Correo Enviado
                                         </span>
-                                        <span x-show="!mensaje.es_correo" class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'usuario'" class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-1">
+                                            📥 Respuesta Recibida
+                                        </span>
+                                        <span x-show="!mensaje.es_correo" class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded flex items-center gap-1">
                                             💬 Nota Interna
+                                        </span>
+                                        <span x-show="!mensaje.leido" class="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded flex items-center gap-1">
+                                            ⚠ No Leído
                                         </span>
                                     </div>
                                     <div class="rounded-lg p-4 border"
@@ -183,13 +228,18 @@
                                             <div x-show="mensaje.correo_remitente">
                                                 <span class="font-medium">Desde:</span> <span x-text="mensaje.correo_remitente"></span>
                                             </div>
+                                            <div x-show="mensaje.thread_id" class="text-xs text-gray-500 mt-1">
+                                                <span class="font-medium">Thread ID:</span> <span x-text="mensaje.thread_id"></span>
+                                            </div>
                                         </div>
                                         <div class="text-gray-800 mt-3" x-text="mensaje.mensaje"></div>
                                         <div x-show="mensaje.adjuntos && mensaje.adjuntos.length > 0" class="mt-3 pt-3 border-t border-gray-200">
                                             <div class="text-xs text-gray-500 mb-2">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="adjunto in mensaje.adjuntos" :key="adjunto.name">
-                                                    <span class="text-xs bg-gray-100 px-2 py-1 rounded" x-text="adjunto.name"></span>
+                                                    <span class="text-xs bg-gray-100 px-2 py-1 rounded flex items-center gap-1">
+                                                        📎 <span x-text="adjunto.name"></span>
+                                                    </span>
                                                 </template>
                                     </div>
                                         </div>
@@ -217,6 +267,24 @@
                                 x-model="nuevoMensaje"
                                 class="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 placeholder="Escribe tu respuesta aquí..."></textarea>
+                            
+                            <!-- Input para adjuntos -->
+                            <div class="mt-3">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Adjuntos (opcional):
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="adjuntos" 
+                                    name="adjuntos[]" 
+                                    multiple 
+                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Formatos permitidos: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG, GIF
+                                </p>
+                            </div>
+                            
                             <div class="flex justify-between items-center mt-3">
                               
                                 <button 
@@ -253,6 +321,8 @@
             mensajes: [],
             nuevoMensaje: '',
             cargando: false,
+            sincronizando: false,
+            estadisticas: null,
 
             init() {
              
@@ -302,6 +372,9 @@
                         this.marcarMensajesComoLeidos();
                         this.scrollToBottom();
                     }
+                    
+                    // Cargar estadísticas
+                    this.estadisticas = await this.obtenerEstadisticasCorreos();
                 } catch (error) {
                     console.error('Error cargando mensajes:', error);
                 }
@@ -319,7 +392,7 @@
 
                     
                     const adjuntosInput = document.getElementById('adjuntos');
-                    if (adjuntosInput.files.length > 0) {
+                    if (adjuntosInput && adjuntosInput.files && adjuntosInput.files.length > 0) {
                         for (let i = 0; i < adjuntosInput.files.length; i++) {
                             formData.append('adjuntos[]', adjuntosInput.files[i]);
                         }
@@ -337,7 +410,9 @@
 
                     if (data.success) {
                         this.nuevoMensaje = '';
-                        adjuntosInput.value = '';
+                        if (adjuntosInput) {
+                            adjuntosInput.value = '';
+                        }
                         
                        
                         this.mostrarNotificacion(data.message, 'success');
@@ -409,6 +484,58 @@
 
             getTipoMensaje(remitente) {
                 return remitente === 'soporte' ? 'soporte' : 'usuario';
+            },
+
+            async sincronizarCorreos() {
+                if (!this.selected.id) return;
+
+                this.sincronizando = true;
+
+                try {
+                    const response = await fetch('/tickets/sincronizar-correos', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ticket_id: this.selected.id
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.mostrarNotificacion(data.message, 'success');
+                        
+                        // Recargar mensajes después de la sincronización
+                        await this.cargarMensajes();
+                    } else {
+                        this.mostrarNotificacion(data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error sincronizando correos:', error);
+                    this.mostrarNotificacion('Error sincronizando correos', 'error');
+                } finally {
+                    this.sincronizando = false;
+                }
+            },
+
+            async obtenerEstadisticasCorreos() {
+                if (!this.selected.id) return;
+
+                try {
+                    const response = await fetch(`/tickets/estadisticas-correos?ticket_id=${this.selected.id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        return data.estadisticas;
+                    }
+                } catch (error) {
+                    console.error('Error obteniendo estadísticas:', error);
+                }
+                
+                return null;
             }
         }
     }

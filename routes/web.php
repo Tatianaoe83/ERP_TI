@@ -123,6 +123,19 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/tickets/enviar-respuesta', [App\Http\Controllers\TicketsController::class, 'enviarRespuesta']);
     Route::post('/tickets/mensaje-interno', [App\Http\Controllers\TicketsController::class, 'agregarMensajeInterno']);
     Route::post('/tickets/marcar-leidos', [App\Http\Controllers\TicketsController::class, 'marcarMensajesComoLeidos']);
+    Route::post('/tickets/sincronizar-correos', [App\Http\Controllers\TicketsController::class, 'sincronizarCorreos']);
+    Route::get('/tickets/estadisticas-correos', [App\Http\Controllers\TicketsController::class, 'obtenerEstadisticasCorreos']);
+    
+    // Rutas de correo (SMTP/IMAP)
+    Route::get('/email/verificar-configuracion', [App\Http\Controllers\EmailController::class, 'verificarConfiguracion']);
+    Route::post('/email/procesar-correos', [App\Http\Controllers\EmailController::class, 'procesarCorreos']);
+    Route::post('/email/enviar-prueba', [App\Http\Controllers\EmailController::class, 'enviarCorreoPrueba']);
+    Route::get('/email/estadisticas', [App\Http\Controllers\EmailController::class, 'obtenerEstadisticas']);
+    
+    // Rutas de autenticación de Outlook (mantener para compatibilidad)
+    Route::get('/auth/outlook', [App\Http\Controllers\OutlookAuthController::class, 'redirect']);
+    Route::get('/auth/outlook/callback', [App\Http\Controllers\OutlookAuthController::class, 'callback']);
+    Route::get('/auth/outlook/status', [App\Http\Controllers\OutlookAuthController::class, 'status']);
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])

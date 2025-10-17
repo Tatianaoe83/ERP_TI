@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Models\TicketChat;
 use App\Models\Tickets;
 use App\Models\Empleados;
+use App\Models\OutlookToken;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 
 class OutlookEmailService
@@ -16,6 +18,7 @@ class OutlookEmailService
     protected $clientId;
     protected $clientSecret;
     protected $redirectUri;
+    protected $authType;
 
     public function __construct()
     {
@@ -23,6 +26,7 @@ class OutlookEmailService
         $this->clientId = config('services.outlook.client_id');
         $this->clientSecret = config('services.outlook.client_secret');
         $this->redirectUri = config('services.outlook.redirect_uri');
+        $this->authType = config('services.outlook.auth_type', 'personal');
     }
 
     /**
@@ -43,7 +47,7 @@ class OutlookEmailService
             $nombreSoporte = config('mail.from.name');
 
             // Crear el asunto del correo
-            $asunto = "Re: Ticket #{$ticketId} - {$ticket->Descripcion}";
+            $asunto = "Re: Ticket #{$ticket->TicketID} - {$ticket->Descripcion}";
 
             // Preparar el contenido del correo
             $contenidoCorreo = $this->generarContenidoCorreo($ticket, $mensaje);
@@ -63,7 +67,7 @@ class OutlookEmailService
 
             // Enviar correo usando Laravel Mail
             Mail::send([], [], function ($message) use ($empleado, $asunto, $contenidoCorreo, $adjuntos) {
-                $message->to($empleado->Correo, $empleado->NombreEmpleado)
+                $message->to(strtolower($empleado->Correo), $empleado->NombreEmpleado)
                         ->subject($asunto)
                         ->setBody($contenidoCorreo, 'text/html');
 
@@ -205,7 +209,7 @@ class OutlookEmailService
                 
                 <p>Estimado/a {$ticket->empleado->NombreEmpleado},</p>
                 
-                <p>{$mensaje}</p>
+                <p>" . strtolower($mensaje) . "</p>
                 
                 <p>Si necesitas más asistencia, puedes responder a este correo o contactar directamente con el equipo de soporte.</p>
                 
@@ -284,6 +288,298 @@ class OutlookEmailService
     }
 
     /**
+     * Obtener correos enviados relacionados con un ticket específico
+     */
+    public function obtenerCorreosEnviados($ticketId, $accessToken = null)
+    {
+        try {
+            if (!$accessToken) {
+                $accessToken = $this->obtenerAccessToken();
+            }
+            
+            if (!$accessToken) {
+                throw new \Exception('No se pudo obtener el token de acceso');
+            }
+
+            // Buscar correos enviados que contengan el ID del ticket
+            $searchQuery = "Ticket #{$ticketId}";
+            
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json'
+            ])->get("https://graph.microsoft.com/v1.0/me/mailFolders/sentItems/messages", [
+                '$filter' => "contains(subject,'{$searchQuery}')",
+                '$top' => 50,
+                '$orderby' => 'sentDateTime desc',
+                '$select' => 'id,subject,toRecipients,body,sentDateTime,internetMessageId,conversationId,hasAttachments'
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['value'] ?? [];
+            }
+
+            Log::error('Error obteniendo correos enviados', [
+                'ticket_id' => $ticketId,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return [];
+
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo correos enviados para ticket #{$ticketId}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener correos recibidos relacionados con un ticket específico
+     */
+    public function obtenerCorreosRecibidos($ticketId, $accessToken = null)
+    {
+        try {
+            if (!$accessToken) {
+                $accessToken = $this->obtenerAccessToken();
+            }
+            
+            if (!$accessToken) {
+                throw new \Exception('No se pudo obtener el token de acceso');
+            }
+
+            // Buscar correos recibidos que contengan el ID del ticket
+            $searchQuery = "Ticket #{$ticketId}";
+            
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $accessToken,
+                'Content-Type' => 'application/json'
+            ])->get("https://graph.microsoft.com/v1.0/me/messages", [
+                '$filter' => "contains(subject,'{$searchQuery}')",
+                '$top' => 50,
+                '$orderby' => 'receivedDateTime desc',
+                '$select' => 'id,subject,from,body,receivedDateTime,internetMessageId,conversationId,hasAttachments'
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return $data['value'] ?? [];
+            }
+
+            Log::error('Error obteniendo correos recibidos', [
+                'ticket_id' => $ticketId,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return [];
+
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo correos recibidos para ticket #{$ticketId}: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Sincronizar todos los correos relacionados con un ticket
+     */
+    public function sincronizarCorreosTicket($ticketId)
+    {
+        try {
+            $accessToken = $this->obtenerAccessToken();
+            
+            if (!$accessToken) {
+                throw new \Exception('No se pudo obtener el token de acceso');
+            }
+
+            // Obtener correos enviados y recibidos
+            $correosEnviados = $this->obtenerCorreosEnviados($ticketId, $accessToken);
+            $correosRecibidos = $this->obtenerCorreosRecibidos($ticketId, $accessToken);
+
+            $sincronizados = 0;
+
+            // Procesar correos enviados
+            foreach ($correosEnviados as $correo) {
+                if (!$this->correoYaExiste($correo['internetMessageId'])) {
+                    $this->guardarCorreoEnviado($ticketId, $correo);
+                    $sincronizados++;
+                }
+            }
+
+            // Procesar correos recibidos
+            foreach ($correosRecibidos as $correo) {
+                if (!$this->correoYaExiste($correo['internetMessageId'])) {
+                    $this->procesarCorreoEntrante([
+                        'from' => $correo['from']['emailAddress']['address'],
+                        'subject' => $correo['subject'],
+                        'body' => $correo['body']['content'],
+                        'message_id' => $correo['internetMessageId'],
+                        'thread_id' => $correo['conversationId'],
+                        'attachments' => []
+                    ]);
+                    $sincronizados++;
+                }
+            }
+
+            Log::info("Sincronización completada para ticket #{$ticketId}", [
+                'ticket_id' => $ticketId,
+                'correos_sincronizados' => $sincronizados,
+                'enviados' => count($correosEnviados),
+                'recibidos' => count($correosRecibidos)
+            ]);
+
+            return [
+                'success' => true,
+                'message' => "Se sincronizaron {$sincronizados} correos",
+                'sincronizados' => $sincronizados
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Error sincronizando correos para ticket #{$ticketId}: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error sincronizando correos: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Guardar correo enviado en la base de datos
+     */
+    private function guardarCorreoEnviado($ticketId, $correo)
+    {
+        try {
+            $destinatarios = array_map(function($recipient) {
+                return $recipient['emailAddress']['address'];
+            }, $correo['toRecipients'] ?? []);
+
+            TicketChat::create([
+                'ticket_id' => $ticketId,
+                'mensaje' => $this->extraerTextoDelCorreo($correo['body']['content']),
+                'remitente' => 'soporte',
+                'correo_remitente' => config('mail.from.address'),
+                'nombre_remitente' => config('mail.from.name'),
+                'contenido_correo' => $correo['body']['content'],
+                'message_id' => $correo['internetMessageId'],
+                'thread_id' => $correo['conversationId'],
+                'adjuntos' => [],
+                'es_correo' => true,
+                'leido' => true, // Los correos enviados se marcan como leídos
+                'created_at' => \Carbon\Carbon::parse($correo['sentDateTime'])
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error guardando correo enviado: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verificar si un correo ya existe en la base de datos
+     */
+    private function correoYaExiste($messageId)
+    {
+        return TicketChat::where('message_id', $messageId)->exists();
+    }
+
+    /**
+     * Obtener token de acceso de Outlook
+     */
+    private function obtenerAccessToken()
+    {
+        try {
+            // Buscar token válido en la base de datos
+            $token = OutlookToken::getValidToken();
+            
+            if ($token) {
+                return $token->access_token;
+            }
+
+            // Si no hay token válido, intentar renovar con refresh token
+            $latestToken = OutlookToken::getLatestToken();
+            if ($latestToken && $latestToken->refresh_token) {
+                $newToken = $this->renovarToken($latestToken->refresh_token);
+                if ($newToken) {
+                    return $newToken;
+                }
+            }
+
+            // Si no se puede obtener token, retornar null
+            Log::warning('No se pudo obtener token de acceso de Outlook');
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo token de acceso: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Renovar token usando refresh token
+     */
+    private function renovarToken($refreshToken)
+    {
+        try {
+            // Para cuentas personales, usar 'common' como tenant
+            $tenantId = ($this->authType === 'personal') ? 'common' : $this->tenantId;
+            
+            $response = Http::asForm()->post("https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token", [
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+                'refresh_token' => $refreshToken,
+                'grant_type' => 'refresh_token'
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                // Guardar nuevo token en la base de datos
+                OutlookToken::create([
+                    'access_token' => $data['access_token'],
+                    'refresh_token' => $data['refresh_token'] ?? $refreshToken,
+                    'expires_at' => now()->addSeconds($data['expires_in']),
+                    'scope' => $data['scope'] ?? '',
+                    'token_type' => $data['token_type'] ?? 'Bearer'
+                ]);
+
+                return $data['access_token'];
+            }
+
+            Log::error('Error renovando token de Outlook', [
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error('Excepción renovando token: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Guardar token inicial (para configuración inicial)
+     */
+    public function guardarTokenInicial($accessToken, $refreshToken = null, $expiresIn = 3600)
+    {
+        try {
+            OutlookToken::create([
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'expires_at' => now()->addSeconds($expiresIn),
+                'scope' => 'https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send',
+                'token_type' => 'Bearer'
+            ]);
+
+            Log::info('Token de Outlook guardado exitosamente');
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Error guardando token de Outlook: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Obtener configuración de Outlook para autenticación
      */
     public function obtenerUrlAutenticacion()
@@ -296,7 +592,10 @@ class OutlookEmailService
             'response_mode' => 'query'
         ];
 
-        return 'https://login.microsoftonline.com/' . $this->tenantId . '/oauth2/v2.0/authorize?' . http_build_query($params);
+        // Para cuentas personales, usar 'common' como tenant
+        $tenantId = ($this->authType === 'personal') ? 'common' : $this->tenantId;
+        
+        return 'https://login.microsoftonline.com/' . $tenantId . '/oauth2/v2.0/authorize?' . http_build_query($params);
     }
 }
 
