@@ -222,8 +222,12 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                'TotalCosto' => $totalOtrosInsumos
            ],
            (object) [
-               'Categoria' => 'Costo Telefonía, Internet y GPS',
-               'TotalCosto' => $totalTelefonia + $totalDatos + $totalGPS
+               'Categoria' => 'Costo Telefonía e Internet',
+               'TotalCosto' => $totalTelefonia + $totalDatos
+           ],
+           (object) [
+               'Categoria' => 'Costo GPS',
+               'TotalCosto' => $totalGPS
            ],
            (object) [
                'Categoria' => 'Costo Renta de Impresoras',
