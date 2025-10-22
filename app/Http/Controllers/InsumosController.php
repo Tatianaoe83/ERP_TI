@@ -128,7 +128,13 @@ class InsumosController extends AppBaseController
      */
     public function create()
     {
-        return view('insumos.create');
+        // Inicializar las variables para los campos de costo
+        $costoMensual_fields = null;
+        $costoAnual_fields = null;
+
+        return view('insumos.create')
+            ->with('costoMensual_fields', $costoMensual_fields)
+            ->with('costoAnual_fields', $costoAnual_fields);
     }
 
     /**
