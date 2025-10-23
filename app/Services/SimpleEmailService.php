@@ -25,6 +25,17 @@ class SimpleEmailService
         $this->smtpUsername = config('mail.mailers.smtp.username');
         $this->smtpPassword = config('mail.mailers.smtp.password');
         $this->smtpEncryption = config('mail.mailers.smtp.encryption');
+        
+        // Para servidores personalizados como proser.com.mx, usar SSL en puerto 465
+        if (strpos($this->smtpHost, 'proser.com.mx') !== false) {
+            $this->smtpPort = 465;
+            $this->smtpEncryption = 'ssl';
+        }
+        
+        // Forzar configuración para proser.com.mx
+        $this->smtpHost = 'proser.com.mx';
+        $this->smtpPort = 465;
+        $this->smtpEncryption = 'ssl';
     }
 
     /**
@@ -44,7 +55,13 @@ class SimpleEmailService
             $correoSoporte = config('mail.from.address');
             $nombreSoporte = config('mail.from.name');
 
-            // Crear el asunto del correo
+            // Generar Message-ID único para este correo
+            $messageId = $this->generarMessageId();
+            
+            // Obtener Thread-ID del ticket (si existe) o crear uno nuevo
+            $threadId = $this->obtenerOGenerarThreadId($ticketId);
+
+            // Crear el asunto del correo con threading
             $asunto = "Re: Ticket #{$ticket->TicketID} - {$ticket->Descripcion}";
 
             // Preparar el contenido del correo
@@ -62,6 +79,12 @@ class SimpleEmailService
             $mail->SMTPSecure = $this->smtpEncryption;
             $mail->Port = $this->smtpPort;
             $mail->CharSet = 'UTF-8';
+
+            // Configurar headers para threading
+            $mail->addCustomHeader('Message-ID', $messageId);
+            $mail->addCustomHeader('In-Reply-To', $threadId);
+            $mail->addCustomHeader('References', $threadId);
+            $mail->addCustomHeader('Thread-Topic', "Ticket #{$ticket->TicketID}");
 
             // Remitente y destinatario
             $mail->setFrom($correoSoporte, $nombreSoporte);
@@ -82,7 +105,10 @@ class SimpleEmailService
             // Enviar
             $mail->send();
 
-            Log::info("Correo enviado exitosamente para ticket #{$ticketId}");
+            // Guardar información del correo enviado en la base de datos
+            $this->guardarCorreoEnviado($ticketId, $mensaje, $messageId, $threadId, $adjuntos);
+
+            Log::info("Correo enviado exitosamente para ticket #{$ticketId} con Message-ID: {$messageId}");
 
             return true;
 
@@ -369,5 +395,61 @@ class SimpleEmailService
         </html>";
 
         return $contenido;
+    }
+
+    /**
+     * Generar Message-ID único
+     */
+    private function generarMessageId()
+    {
+        // Forzar dominio proser.com.mx para evitar rechazo de correos
+        $domain = 'proser.com.mx';
+        $timestamp = time();
+        $random = uniqid();
+        return "<ticket-{$timestamp}-{$random}@{$domain}>";
+    }
+
+    /**
+     * Obtener o generar Thread-ID para el ticket
+     */
+    private function obtenerOGenerarThreadId($ticketId)
+    {
+        // Buscar si ya existe un Thread-ID para este ticket
+        $existingChat = \App\Models\TicketChat::where('ticket_id', $ticketId)
+            ->whereNotNull('thread_id')
+            ->first();
+
+        if ($existingChat) {
+            return $existingChat->thread_id;
+        }
+
+        // Generar nuevo Thread-ID con dominio proser.com.mx
+        $domain = 'proser.com.mx';
+        $threadId = "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
+        
+        return $threadId;
+    }
+
+    /**
+     * Guardar información del correo enviado en la base de datos
+     */
+    private function guardarCorreoEnviado($ticketId, $mensaje, $messageId, $threadId, $adjuntos = [])
+    {
+        try {
+            \App\Models\TicketChat::create([
+                'ticket_id' => $ticketId,
+                'mensaje' => $mensaje,
+                'remitente' => 'soporte',
+                'nombre_remitente' => auth()->user()->name ?? 'Soporte TI',
+                'correo_remitente' => auth()->user()->email ?? config('mail.from.address'),
+                'message_id' => $messageId,
+                'thread_id' => $threadId,
+                'adjuntos' => $adjuntos,
+                'es_correo' => true,
+                'leido' => false
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error guardando correo enviado: " . $e->getMessage());
+        }
     }
 }

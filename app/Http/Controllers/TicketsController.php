@@ -98,6 +98,8 @@ class TicketsController extends Controller
                         'remitente' => $message->remitente,
                         'nombre_remitente' => $message->nombre_remitente,
                         'correo_remitente' => $message->correo_remitente,
+                        'message_id' => $message->message_id,
+                        'thread_id' => $message->thread_id,
                         'es_correo' => $message->es_correo,
                         'adjuntos' => $message->adjuntos,
                         'created_at' => $message->created_at->format('d/m/Y H:i:s'),
@@ -151,25 +153,15 @@ class TicketsController extends Controller
                 }
             }
 
-            // Enviar correo usando el servicio SMTP
-            $resultado = $this->emailService->enviarRespuestaTicket($ticketId, $mensaje, $adjuntosProcesados);
+            // Enviar correo usando el servicio híbrido (SMTP + instrucciones)
+            $hybridService = new \App\Services\HybridEmailService();
+            $resultado = $hybridService->enviarRespuestaConInstrucciones($ticketId, $mensaje, $adjuntosProcesados);
 
             if ($resultado) {
-                // Crear entrada en el chat
-                $chatMessage = TicketChat::create([
-                    'ticket_id' => $ticketId,
-                    'mensaje' => $mensaje,
-                    'remitente' => 'soporte',
-                    'nombre_remitente' => auth()->user()->name ?? 'Soporte TI',
-                    'correo_remitente' => auth()->user()->email ?? config('mail.from.address'),
-                    'es_correo' => true,
-                    'leido' => false
-                ]);
-
+                // El servicio híbrido ya guarda el mensaje en el chat
                 return response()->json([
                     'success' => true,
-                    'message' => 'Respuesta enviada exitosamente',
-                    'chat_message_id' => $chatMessage->id
+                    'message' => 'Respuesta enviada exitosamente con instrucciones'
                 ]);
             } else {
                 return response()->json([
@@ -382,10 +374,31 @@ class TicketsController extends Controller
             $resultado = $imapService->procesarCorreosEntrantes();
 
             if ($resultado) {
+                // Recargar mensajes después de la sincronización
+                $mensajes = TicketChat::where('ticket_id', $ticketId)
+                    ->orderBy('created_at', 'asc')
+                    ->get()
+                    ->map(function($message) {
+                        return [
+                            'id' => $message->id,
+                            'mensaje' => $message->mensaje,
+                            'remitente' => $message->remitente,
+                            'nombre_remitente' => $message->nombre_remitente,
+                            'correo_remitente' => $message->correo_remitente,
+                            'message_id' => $message->message_id,
+                            'thread_id' => $message->thread_id,
+                            'es_correo' => $message->es_correo,
+                            'adjuntos' => $message->adjuntos,
+                            'created_at' => $message->created_at->format('d/m/Y H:i:s'),
+                            'leido' => $message->leido
+                        ];
+                    });
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Correos sincronizados exitosamente',
-                    'sincronizados' => 'Correos procesados'
+                    'mensajes' => $mensajes,
+                    'total_mensajes' => $mensajes->count()
                 ]);
             } else {
                 return response()->json([
@@ -419,7 +432,6 @@ class TicketsController extends Controller
             }
 
             $estadisticas = [
-                'total_correos' => TicketChat::where('ticket_id', $ticketId)->where('es_correo', true)->count(),
                 'correos_enviados' => TicketChat::where('ticket_id', $ticketId)
                     ->where('es_correo', true)
                     ->where('remitente', 'soporte')
@@ -432,10 +444,9 @@ class TicketsController extends Controller
                     ->where('es_correo', true)
                     ->where('leido', false)
                     ->count(),
-                'ultimo_correo' => TicketChat::where('ticket_id', $ticketId)
+                'total_correos' => TicketChat::where('ticket_id', $ticketId)
                     ->where('es_correo', true)
-                    ->orderBy('created_at', 'desc')
-                    ->first()
+                    ->count()
             ];
 
             return response()->json([
@@ -452,4 +463,222 @@ class TicketsController extends Controller
         }
     }
 
+    /**
+     * Diagnosticar configuración de correos
+     */
+    public function diagnosticarCorreos(Request $request)
+    {
+        try {
+            $diagnostico = [];
+            
+            // Verificar configuración SMTP
+            $smtpConfig = [
+                'host' => config('mail.mailers.smtp.host'),
+                'port' => config('mail.mailers.smtp.port'),
+                'username' => config('mail.mailers.smtp.username'),
+                'encryption' => config('mail.mailers.smtp.encryption'),
+            ];
+            $diagnostico['smtp'] = $smtpConfig;
+            
+            // Verificar configuración IMAP
+            $imapConfig = [
+                'host' => config('mail.imap.host', 'proser.com.mx'),
+                'port' => config('mail.imap.port', 993),
+                'encryption' => config('mail.imap.encryption', 'ssl'),
+                'username' => config('mail.mailers.smtp.username'),
+                'servidor' => 'proser.com.mx (Personalizado)',
+            ];
+            $diagnostico['imap'] = $imapConfig;
+            
+            // Probar conexión IMAP
+            try {
+                $imapService = new \App\Services\ImapEmailReceiver();
+                $connection = $imapService->conectarIMAP();
+                
+                if ($connection) {
+                    $diagnostico['imap_connection'] = 'success';
+                    
+                    // Probar obtener correos
+                    $emails = imap_search($connection, 'UNSEEN');
+                    $diagnostico['correos_no_leidos'] = $emails ? count($emails) : 0;
+                    
+                    imap_close($connection);
+                } else {
+                    $diagnostico['imap_connection'] = 'failed';
+                    $diagnostico['imap_error'] = imap_last_error();
+                }
+            } catch (\Exception $e) {
+                $diagnostico['imap_connection'] = 'error: ' . $e->getMessage();
+            }
+            
+            // Verificar correos en la base de datos
+            $ticketId = $request->input('ticket_id');
+            if ($ticketId) {
+                $mensajes = TicketChat::where('ticket_id', $ticketId)->get();
+                $diagnostico['mensajes_bd'] = [
+                    'total' => $mensajes->count(),
+                    'enviados' => $mensajes->where('remitente', 'soporte')->count(),
+                    'recibidos' => $mensajes->where('remitente', 'usuario')->count(),
+                    'correos' => $mensajes->where('es_correo', true)->count(),
+                ];
+            }
+            
+            return response()->json([
+                'success' => true,
+                'diagnostico' => $diagnostico
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error en diagnóstico: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en diagnóstico: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Agregar respuesta manual (simulando respuesta por correo)
+     */
+    public function agregarRespuestaManual(Request $request)
+    {
+        try {
+            $ticketId = $request->input('ticket_id');
+            $mensaje = $request->input('mensaje');
+            $nombreEmisor = $request->input('nombre_emisor');
+            $correoEmisor = $request->input('correo_emisor');
+
+            if (!$ticketId || !$mensaje) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket ID y mensaje son requeridos'
+                ], 400);
+            }
+
+            $ticket = Tickets::find($ticketId);
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket no encontrado'
+                ], 404);
+            }
+
+            // Usar el servicio híbrido para procesar la respuesta manual
+            $hybridService = new \App\Services\HybridEmailService();
+            $resultado = $hybridService->procesarRespuestaManual($ticketId, [
+                'mensaje' => $mensaje,
+                'nombre' => $nombreEmisor,
+                'correo' => $correoEmisor
+            ]);
+
+            if (!$resultado) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error procesando respuesta manual'
+                ], 500);
+            }
+
+            // Recargar mensajes
+            $mensajes = TicketChat::where('ticket_id', $ticketId)
+                ->orderBy('created_at', 'asc')
+                ->get()
+                ->map(function($message) {
+                    return [
+                        'id' => $message->id,
+                        'mensaje' => $message->mensaje,
+                        'remitente' => $message->remitente,
+                        'nombre_remitente' => $message->nombre_remitente,
+                        'correo_remitente' => $message->correo_remitente,
+                        'message_id' => $message->message_id,
+                        'thread_id' => $message->thread_id,
+                        'es_correo' => $message->es_correo,
+                        'adjuntos' => $message->adjuntos,
+                        'created_at' => $message->created_at->format('d/m/Y H:i:s'),
+                        'leido' => $message->leido
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Respuesta agregada exitosamente',
+                'mensajes' => $mensajes
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error agregando respuesta manual: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error agregando respuesta: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Enviar instrucciones de respuesta por correo
+     */
+    public function enviarInstruccionesRespuesta(Request $request)
+    {
+        try {
+            $ticketId = $request->input('ticket_id');
+            
+            if (!$ticketId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket ID requerido'
+                ], 400);
+            }
+
+            // Enviar instrucciones usando el servicio híbrido
+            $hybridService = new \App\Services\HybridEmailService();
+            $instrucciones = "Por favor, responde a este correo para continuar la conversación sobre tu ticket. Tu respuesta será procesada automáticamente.";
+            $resultado = $hybridService->enviarRespuestaConInstrucciones($ticketId, $instrucciones);
+
+            if ($resultado) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Instrucciones de respuesta enviadas por correo'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error enviando instrucciones'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Error enviando instrucciones: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error enviando instrucciones: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generar Message-ID único
+     */
+    private function generarMessageId()
+    {
+        $domain = parse_url(config('app.url'), PHP_URL_HOST) ?: 'localhost';
+        $timestamp = time();
+        $random = uniqid();
+        return "<ticket-{$timestamp}-{$random}@{$domain}>";
+    }
+
+    /**
+     * Obtener Thread-ID del ticket
+     */
+    private function obtenerThreadIdDelTicket($ticketId)
+    {
+        $existingChat = TicketChat::where('ticket_id', $ticketId)
+            ->whereNotNull('thread_id')
+            ->first();
+
+        if ($existingChat) {
+            return $existingChat->thread_id;
+        }
+
+        $domain = parse_url(config('app.url'), PHP_URL_HOST) ?: 'localhost';
+        return "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
+    }
 }

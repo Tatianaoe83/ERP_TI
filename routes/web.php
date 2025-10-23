@@ -125,6 +125,18 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/tickets/marcar-leidos', [App\Http\Controllers\TicketsController::class, 'marcarMensajesComoLeidos']);
     Route::post('/tickets/sincronizar-correos', [App\Http\Controllers\TicketsController::class, 'sincronizarCorreos']);
     Route::get('/tickets/estadisticas-correos', [App\Http\Controllers\TicketsController::class, 'obtenerEstadisticasCorreos']);
+    Route::get('/tickets/diagnosticar-correos', [App\Http\Controllers\TicketsController::class, 'diagnosticarCorreos']);
+    Route::post('/tickets/agregar-respuesta-manual', [App\Http\Controllers\TicketsController::class, 'agregarRespuestaManual']);
+    Route::post('/tickets/enviar-instrucciones', [App\Http\Controllers\TicketsController::class, 'enviarInstruccionesRespuesta']);
+    
+    // Rutas para procesamiento automático de correos
+    Route::post('/api/webhook/email-response', [App\Http\Controllers\EmailWebhookController::class, 'handleEmailResponse']);
+    Route::post('/api/process-manual-response', [App\Http\Controllers\EmailWebhookController::class, 'processManualResponse']);
+    
+    // Rutas para Webklex IMAP
+    Route::post('/api/test-webklex-connection', [App\Http\Controllers\WebklexApiController::class, 'testConnection']);
+    Route::post('/api/process-webklex-responses', [App\Http\Controllers\WebklexApiController::class, 'processResponses']);
+    Route::get('/api/webklex-mailbox-info', [App\Http\Controllers\WebklexApiController::class, 'getMailboxInfo']);
     
     // Rutas de correo (SMTP/IMAP)
     Route::get('/email/verificar-configuracion', [App\Http\Controllers\EmailController::class, 'verificarConfiguracion']);

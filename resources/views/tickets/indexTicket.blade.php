@@ -158,6 +158,47 @@
                                 </svg>
                                 <span x-text="sincronizando ? 'Sincronizando...' : 'Sincronizar Correos'"></span>
                             </button>
+                            <!--<button 
+                                @click="diagnosticarCorreos()"
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Diagnosticar Sistema</span>
+                            </button>  -->
+                            <!--<button 
+                                @click="enviarInstrucciones()"
+                                class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                                <span>Enviar Instrucciones</span>
+                            </button>   -->
+                            <button 
+                                @click="procesarRespuestasAutomaticas()"
+                                :disabled="procesandoAutomatico"
+                                class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span x-text="procesandoAutomatico ? 'Procesando...' : 'Procesar Automático'"></span>
+                            </button>
+                            <button 
+                                @click="mostrarProcesarRespuesta = !mostrarProcesarRespuesta"
+                                class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                </svg>
+                                <span>Procesar Manual</span>
+                            </button>
+                            <button 
+                                @click="probarConexionWebklex()"
+                                class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <span>Probar Conexión</span>
+                            </button>
                             <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
                                 Responder A Todos
                             </button>
@@ -218,6 +259,9 @@
                                         <span x-show="!mensaje.es_correo" class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded flex items-center gap-1">
                                             💬 Nota Interna
                                         </span>
+                                        <span x-show="mensaje.thread_id" class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded flex items-center gap-1">
+                                            🔗 En Hilo
+                                        </span>
                                         <span x-show="!mensaje.leido" class="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded flex items-center gap-1">
                                             ⚠ No Leído
                                         </span>
@@ -228,11 +272,14 @@
                                             <div x-show="mensaje.correo_remitente">
                                                 <span class="font-medium">Desde:</span> <span x-text="mensaje.correo_remitente"></span>
                                             </div>
+                                            <div x-show="mensaje.message_id" class="text-xs text-gray-500 mt-1">
+                                                <span class="font-medium">Message-ID:</span> <span x-text="mensaje.message_id"></span>
+                                            </div>
                                             <div x-show="mensaje.thread_id" class="text-xs text-gray-500 mt-1">
-                                                <span class="font-medium">Thread ID:</span> <span x-text="mensaje.thread_id"></span>
+                                                <span class="font-medium">Thread-ID:</span> <span x-text="mensaje.thread_id"></span>
                                             </div>
                                         </div>
-                                        <div class="text-gray-800 mt-3" x-text="mensaje.mensaje"></div>
+                                        <div class="text-gray-800 mt-3" x-html="formatearMensaje(mensaje.mensaje)"></div>
                                         <div x-show="mensaje.adjuntos && mensaje.adjuntos.length > 0" class="mt-3 pt-3 border-t border-gray-200">
                                             <div class="text-xs text-gray-500 mb-2">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">
@@ -295,6 +342,141 @@
                                 </button>
                             </div>
                         </div>
+
+                        <!-- Área para agregar respuesta manual (simulando respuesta del usuario) -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-sm font-medium text-gray-700">🔄 Sistema Híbrido:</span>
+                                <span class="text-xs text-gray-500">(SMTP + Procesamiento Manual)</span>
+                            </div>
+                            
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                <div class="flex items-start gap-2">
+                                    <div class="text-blue-600 mt-0.5">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="text-sm text-blue-800">
+                                        <p class="font-medium mb-1">¿Cómo funciona el sistema híbrido?</p>
+                                        <ul class="text-xs space-y-1">
+                                            <li>✅ <strong>Envío:</strong> Correos por SMTP (funciona perfectamente)</li>
+                                            <li>📧 <strong>Instrucciones:</strong> Cada correo incluye instrucciones claras</li>
+                                            <li>🔄 <strong>Procesamiento:</strong> Respuestas se procesan manualmente</li>
+                                            <li>🎯 <strong>Threading:</strong> Mantiene conversaciones organizadas</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-sm font-medium text-gray-700">Simular respuesta del usuario:</span>
+                                <span class="text-xs text-gray-500">(Para probar sin IMAP)</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Nombre del emisor:</label>
+                                    <input 
+                                        x-model="respuestaManual.nombre"
+                                        type="text" 
+                                        class="w-full p-2 border border-gray-300 rounded text-sm"
+                                        placeholder="Nombre del usuario">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Correo del emisor:</label>
+                                    <input 
+                                        x-model="respuestaManual.correo"
+                                        type="email" 
+                                        class="w-full p-2 border border-gray-300 rounded text-sm"
+                                        placeholder="correo@empresa.com">
+                                </div>
+                            </div>
+                            
+                            <textarea 
+                                x-model="respuestaManual.mensaje"
+                                class="w-full h-20 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                                placeholder="Escribe la respuesta del usuario aquí..."></textarea>
+                            
+                            <div class="flex justify-end mt-3">
+                                <button 
+                                    @click="agregarRespuestaManual()"
+                                    :disabled="!respuestaManual.mensaje.trim()"
+                                    class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition text-sm">
+                                    Agregar Respuesta Manual
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Área para Procesar Respuesta de Correo -->
+                    <div x-show="mostrarProcesarRespuesta" 
+                         x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform scale-95"
+                         x-transition:enter-end="opacity-100 transform scale-100"
+                         x-transition:leave="transition ease-in duration-200"
+                         x-transition:leave-start="opacity-100 transform scale-100"
+                         x-transition:leave-end="opacity-0 transform scale-95"
+                         class="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                        
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-sm font-medium text-green-700">📧 Procesar Respuesta de Correo:</span>
+                            <span class="text-xs text-green-600">(Procesamiento manual cuando Webklex no funciona)</span>
+                        </div>
+                        
+                        <div class="bg-green-100 border border-green-300 rounded-lg p-3 mb-3">
+                            <div class="flex items-start gap-2">
+                                <div class="text-green-600 mt-0.5">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="text-sm text-green-800">
+                                    <p class="font-medium mb-1">¿Cómo procesar respuestas de correo?</p>
+                                    <ol class="text-xs space-y-1 list-decimal list-inside">
+                                        <li><strong>Automático:</strong> Usa "Procesar Automático" para Webklex IMAP</li>
+                                        <li><strong>Manual:</strong> Si el automático falla, usa esta área</li>
+                                        <li>El usuario recibe tu correo con instrucciones</li>
+                                        <li>El usuario responde por correo</li>
+                                        <li>Copia y pega su respuesta aquí</li>
+                                        <li>La respuesta aparecerá en el chat del ticket</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-xs font-medium text-green-600 mb-1">Nombre del usuario:</label>
+                                <input 
+                                    x-model="respuestaManual.nombre"
+                                    type="text" 
+                                    class="w-full p-2 border border-green-300 rounded text-sm"
+                                    placeholder="Nombre del usuario">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-green-600 mb-1">Correo del usuario:</label>
+                                <input 
+                                    x-model="respuestaManual.correo"
+                                    type="email" 
+                                    class="w-full p-2 border border-green-300 rounded text-sm"
+                                    placeholder="correo@usuario.com">
+                            </div>
+                        </div>
+                        
+                        <textarea 
+                            x-model="respuestaManual.mensaje"
+                            class="w-full h-20 p-3 border border-green-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                            placeholder="Copia y pega aquí la respuesta que recibiste por correo..."></textarea>
+                        
+                        <div class="flex justify-end mt-3">
+                            <button 
+                                @click="agregarRespuestaManual()"
+                                :disabled="!respuestaManual.mensaje.trim()"
+                                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition text-sm">
+                                Procesar Respuesta de Correo
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Barra de Acciones Inferior -->
@@ -322,7 +504,14 @@
             nuevoMensaje: '',
             cargando: false,
             sincronizando: false,
+            procesandoAutomatico: false,
             estadisticas: null,
+            respuestaManual: {
+                nombre: '',
+                correo: '',
+                mensaje: ''
+            },
+            mostrarProcesarRespuesta: false,
 
             init() {
              
@@ -330,6 +519,17 @@
                 this.selected = {};
                 this.mensajes = [];
                 this.nuevoMensaje = '';
+                
+                // Configurar actualización automática cada 30 segundos
+                this.configurarActualizacionAutomatica();
+            },
+
+            configurarActualizacionAutomatica() {
+                setInterval(() => {
+                    if (this.mostrar && this.selected.id) {
+                        this.cargarMensajes();
+                    }
+                }, 30000); // 30 segundos
             },
 
             abrirModal(datos) {
@@ -364,19 +564,25 @@
                 if (!this.selected.id) return;
 
                 try {
+                    console.log('🔄 Cargando mensajes para ticket:', this.selected.id);
                     const response = await fetch(`/tickets/chat-messages?ticket_id=${this.selected.id}`);
                     const data = await response.json();
                     
+                    console.log('📊 Respuesta de la API:', data);
+                    
                     if (data.success) {
+                        console.log('✅ Mensajes cargados:', data.messages.length);
                         this.mensajes = data.messages;
                         this.marcarMensajesComoLeidos();
                         this.scrollToBottom();
-                    }
                     
-                    // Cargar estadísticas
+                        // Actualizar estadísticas después de cargar mensajes
                     this.estadisticas = await this.obtenerEstadisticasCorreos();
+                    } else {
+                        console.error('❌ Error en la API:', data.message);
+                    }
                 } catch (error) {
-                    console.error('Error cargando mensajes:', error);
+                    console.error('❌ Error cargando mensajes:', error);
                 }
             },
 
@@ -482,6 +688,21 @@
                 return nombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
             },
 
+            formatearMensaje(mensaje) {
+                if (!mensaje) return '';
+                
+                // Convertir saltos de línea a <br>
+                let mensajeFormateado = mensaje.replace(/\n/g, '<br>');
+                
+                // Detectar URLs y convertirlas en enlaces
+                mensajeFormateado = mensajeFormateado.replace(
+                    /(https?:\/\/[^\s]+)/g, 
+                    '<a href="$1" target="_blank" class="text-blue-600 hover:underline">$1</a>'
+                );
+                
+                return mensajeFormateado;
+            },
+
             getTipoMensaje(remitente) {
                 return remitente === 'soporte' ? 'soporte' : 'usuario';
             },
@@ -508,8 +729,14 @@
                     if (data.success) {
                         this.mostrarNotificacion(data.message, 'success');
                         
+                        // Si hay mensajes en la respuesta, actualizarlos directamente
+                        if (data.mensajes) {
+                            this.mensajes = data.mensajes;
+                            this.scrollToBottom();
+                        } else {
                         // Recargar mensajes después de la sincronización
                         await this.cargarMensajes();
+                        }
                     } else {
                         this.mostrarNotificacion(data.message, 'error');
                     }
@@ -536,6 +763,185 @@
                 }
                 
                 return null;
+            },
+
+            async diagnosticarCorreos() {
+                if (!this.selected.id) return;
+
+                try {
+                    const response = await fetch(`/tickets/diagnosticar-correos?ticket_id=${this.selected.id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        console.log('Diagnóstico de correos:', data.diagnostico);
+                        
+                        // Mostrar diagnóstico en una ventana emergente
+                        let mensaje = 'Diagnóstico de Correos:\n\n';
+                        mensaje += `SMTP Host: ${data.diagnostico.smtp.host}\n`;
+                        mensaje += `SMTP Port: ${data.diagnostico.smtp.port}\n`;
+                        mensaje += `IMAP Host: ${data.diagnostico.imap.host}\n`;
+                        mensaje += `IMAP Port: ${data.diagnostico.imap.port}\n`;
+                        mensaje += `Conexión IMAP: ${data.diagnostico.imap_connection}\n\n`;
+                        
+                        if (data.diagnostico.mensajes_bd) {
+                            mensaje += `Mensajes en BD:\n`;
+                            mensaje += `- Total: ${data.diagnostico.mensajes_bd.total}\n`;
+                            mensaje += `- Enviados: ${data.diagnostico.mensajes_bd.enviados}\n`;
+                            mensaje += `- Recibidos: ${data.diagnostico.mensajes_bd.recibidos}\n`;
+                            mensaje += `- Correos: ${data.diagnostico.mensajes_bd.correos}\n`;
+                        }
+                        
+                        alert(mensaje);
+                    } else {
+                        this.mostrarNotificacion('Error en diagnóstico: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error en diagnóstico:', error);
+                    this.mostrarNotificacion('Error ejecutando diagnóstico', 'error');
+                }
+            },
+
+            async enviarInstrucciones() {
+                if (!this.selected.id) return;
+
+                try {
+                    const response = await fetch('/tickets/enviar-instrucciones', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ticket_id: this.selected.id
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.mostrarNotificacion(data.message, 'success');
+                    } else {
+                        this.mostrarNotificacion(data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error enviando instrucciones:', error);
+                    this.mostrarNotificacion('Error enviando instrucciones', 'error');
+                }
+            },
+
+            async agregarRespuestaManual() {
+                if (!this.selected.id || !this.respuestaManual.mensaje.trim()) return;
+
+                try {
+                    const response = await fetch('/tickets/agregar-respuesta-manual', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ticket_id: this.selected.id,
+                            mensaje: this.respuestaManual.mensaje,
+                            nombre_emisor: this.respuestaManual.nombre || this.selected.empleado,
+                            correo_emisor: this.respuestaManual.correo || this.selected.correo
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.mostrarNotificacion(data.message, 'success');
+                        
+                        // Actualizar mensajes
+                        if (data.mensajes) {
+                            this.mensajes = data.mensajes;
+                            this.scrollToBottom();
+                        }
+                        
+                        // Limpiar formulario
+                        this.respuestaManual = {
+                            nombre: '',
+                            correo: '',
+                            mensaje: ''
+                        };
+                    } else {
+                        this.mostrarNotificacion(data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error agregando respuesta manual:', error);
+                    this.mostrarNotificacion('Error agregando respuesta manual', 'error');
+                }
+            },
+
+            async procesarRespuestasAutomaticas() {
+                this.procesandoAutomatico = true;
+
+                try {
+                    console.log('🔄 Iniciando procesamiento automático de respuestas...');
+                    
+                    const response = await fetch('/api/process-webklex-responses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ticket_id: this.selected.id
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.mostrarNotificacion(data.message, 'success');
+                        
+                        // Mostrar estadísticas si están disponibles
+                        if (data.estadisticas) {
+                            console.log('📊 Estadísticas del procesamiento:', data.estadisticas);
+                        }
+                        
+                        // Recargar mensajes para mostrar las nuevas respuestas
+                        await this.cargarMensajes();
+                        
+                        // Actualizar estadísticas
+                        this.estadisticas = await this.obtenerEstadisticasCorreos();
+                        
+                    } else {
+                        this.mostrarNotificacion(data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error procesando respuestas automáticas:', error);
+                    this.mostrarNotificacion('Error procesando respuestas automáticas', 'error');
+                } finally {
+                    this.procesandoAutomatico = false;
+                }
+            },
+
+            async probarConexionWebklex() {
+                try {
+                    console.log('🔌 Probando conexión Webklex IMAP...');
+                    
+                    const response = await fetch('/api/test-webklex-connection', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.mostrarNotificacion(data.message, 'success');
+                        console.log('✅ Conexión Webklex exitosa:', data);
+                    } else {
+                        this.mostrarNotificacion(data.message, 'error');
+                        console.error('❌ Error de conexión Webklex:', data);
+                    }
+                } catch (error) {
+                    console.error('Error probando conexión Webklex:', error);
+                    this.mostrarNotificacion('Error probando conexión Webklex', 'error');
+                }
             }
         }
     }
