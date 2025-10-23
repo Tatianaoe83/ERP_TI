@@ -297,6 +297,7 @@ class ReportesEspecificosController extends AppBaseController
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+                'empleados.Correo as empleado_correo',
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
                 'obras.NombreObra as obra_nombre',
@@ -329,6 +330,7 @@ class ReportesEspecificosController extends AppBaseController
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+                'empleados.Correo as empleado_correo',
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
                 'obras.NombreObra as obra_nombre',

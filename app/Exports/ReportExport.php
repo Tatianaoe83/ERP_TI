@@ -481,7 +481,10 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $this->presup_gpsCount = count($presup_gps);
         $this->presup_cal_pagosCount = count($presup_cal_pagos);
         $this->tablaencbezadoCount = count($datosheader);
-        $this->presup_hardware = count($presup_hardware);
+
+        //dd($columnashardware,$tablahardware,$totaleshardware,$granTotalhardware);
+        //dd($columnashardware);
+        $this->presup_hardware = count($tablahardware);
 
 
         $data = [
@@ -937,7 +940,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     private function applyNumberFormatting($sheet, $tituloLicenciamiento, $totalLicenciamiento, $titulohardware, $totalhardware, $tituloAccesorios, $totalAccesorios, $tituloTelefonia, $totalTelefonia, $tituloDatos, $totalDatos, $tituloGps, $totalGps, $tituloCalendario, $totalCalendario)
     {
         // Formato numérico para la sección de costos generales (filas 7-14)
-        $sheet->getStyle("B5:B11")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
+        $sheet->getStyle("B5:B12")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
+        $sheet->getStyle("B5:B12")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
 
         // Formato de moneda para la tabla de licenciamiento (datos y totales)
         $encabezadoicenciamiento = $tituloLicenciamiento + 1;

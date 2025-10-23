@@ -20,7 +20,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $CuentaHija
  * @property string $TipoLinea
  * @property integer $ObraID
- * @property string $FechaFianza
  * @property number $CostoFianza
  * @property boolean $Activo
  * @property boolean $Disponible
@@ -50,7 +49,6 @@ class LineasTelefonicas extends Model implements Auditable
         'CuentaHija',
         'TipoLinea',
         'ObraID',
-        'FechaFianza',
         'CostoFianza',
         'Activo',
         'Disponible',
@@ -88,7 +86,6 @@ class LineasTelefonicas extends Model implements Auditable
         'CuentaHija' => 'required|string|max:100',
         'TipoLinea' => 'required|string|max:50',
         'ObraID' => 'required|integer',
-        'FechaFianza' => 'required',
         'CostoFianza' => 'required|integer|min:0',
         'Activo' => 'required|boolean',
         'Disponible' => 'required|boolean',

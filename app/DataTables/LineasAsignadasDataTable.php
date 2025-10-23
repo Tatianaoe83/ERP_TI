@@ -38,6 +38,7 @@ class LineasAsignadasDataTable extends DataTable
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
+                'empleados.Correo as empleado_correo',
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
                 'obras.NombreObra as obra_nombre',
@@ -148,6 +149,12 @@ class LineasAsignadasDataTable extends DataTable
                 'title' => 'Empleado',
                 'data' => 'empleado_nombre',
                 'name' => 'empleados.NombreEmpleado',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'empleado_correo' => [
+                'title' => 'Correo del Empleado',
+                'data' => 'empleado_correo',
+                'name' => 'empleados.Correo',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'linea_numero' => [
