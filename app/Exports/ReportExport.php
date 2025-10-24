@@ -113,17 +113,22 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         } else {
             // Consulta para costo anual
             $presup_impresoras = DB::select("
-                     SELECT 
-                    'Costo Renta de Impresora' AS Categoria,
-                    ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual * 12, 0)), 0) AS CostoTotal
-                    FROM inventarioinsumo ii
-                    INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-                    INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-                    INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-                    INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-                    WHERE g.GerenciaID = ?
-                        AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
-            ", [$numerogerencia]);
+            SELECT 
+           'Costo Renta de Impresora' AS Categoria,
+           ROUND(SUM(CostoAnual * CantidadMeses), 0) AS CostoTotal
+           FROM (
+               SELECT ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual,
+                      COUNT(*) as CantidadMeses
+               FROM inventarioinsumo ii
+               INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+               INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+               INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+               INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+               WHERE g.GerenciaID = ?
+                   AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
+               GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual
+           ) as impresoras_unicas
+   ", [$numerogerencia]);
 
             $presup_internet_fijo = DB::select("
             SELECT 
