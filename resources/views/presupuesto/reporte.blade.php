@@ -60,7 +60,15 @@
             <td style="padding: 0; width: 70%; vertical-align: top;">
                 <div style="margin: 0; padding: 0;">
                   
-                    <h3 style="margin: 0; padding: 1px;">PRESUPUESTO DE TECNOLOGIAS {{ $title }} 2025</h3>
+                    @php
+
+                    $nombreDB = DB::connection()->getDatabaseName();
+
+                    $año = (strpos($nombreDB, '2026') !== false) ? '2026' : '2025';
+
+                    @endphp
+
+                    <h3 style="margin: 0; padding: 1px;">PRESUPUESTO DE TECNOLOGIAS {{ $title }} {{ $año }}</h3>
                     <h5 style="margin: 0; padding: 1px;">Gerencia: {{$GerenciaTb->NombreGerencia ?? ''}}</h5>
                     <h5 style="margin: 0; padding: 1px;">Nombre del Gerente: {{$GerenciaTb->NombreGerente ?? ''}}</h5>
                     <h5 style="margin: 0; padding: 1px;">Número de empleados: {{$GerenciaTb->CantidadEmpleados ?? ''}}</h5>

@@ -9,10 +9,17 @@
 <body>
 
 
+    @php
+
+                    $nombreDB = DB::connection()->getDatabaseName();
+
+                    $año = (strpos($nombreDB, '2026') !== false) ? '2026' : '2025';
+
+                    @endphp
     <table >
 	<tr>
 		<td >
-            PRESUPUESTO DE TECNOLOGIAS {{ $title }} 2025
+            PRESUPUESTO DE TECNOLOGIAS {{ $title }} {{ $año }}
 		</td>
 		
 	</tr>
