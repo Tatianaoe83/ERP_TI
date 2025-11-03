@@ -28,4 +28,17 @@ class UpdateLineasTelefonicasRequest extends FormRequest
         
         return $rules;
     }
+
+    /**
+     * Prepare the data for validation.
+     *
+     * @return void
+     */
+    protected function prepareForValidation()
+    {
+        // Asegurar que Disponible siempre tenga un valor si no está presente
+        if (!$this->has('Disponible')) {
+            $this->merge(['Disponible' => 0]);
+        }
+    }
 }

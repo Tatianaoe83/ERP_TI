@@ -67,8 +67,11 @@
 <!-- Disponible Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white mt-3">
     <div class="form-check">
-        {!! Form::hidden('Disponible', isset($lineasTelefonicas) ? $lineasTelefonicas->Disponible : 1, ['class' => 'form-check-input']) !!}
-        {!! Form::checkbox('Disponible', '1', old('Disponible', isset($lineasTelefonicas) ? $lineasTelefonicas->Disponible : 1), ['class' => 'form-check-input', 'disabled' => true]) !!}
+        @php
+            $disponibleValue = isset($lineasTelefonicas) ? ($lineasTelefonicas->Disponible ? 1 : 0) : 1;
+        @endphp
+        {!! Form::hidden('Disponible', $disponibleValue) !!}
+        <input type="checkbox" class="form-check-input" disabled readonly @if($disponibleValue) checked @endif>
         {!! Form::label('Disponible', 'Disponible', ['class' => 'form-check-label']) !!}
     </div>
 </div>
