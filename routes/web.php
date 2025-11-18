@@ -10,7 +10,11 @@ use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\CortesController;
+use App\Http\Controllers\FacturasController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\SoporteTIController;
+use App\Http\Controllers\TicketsController;
 use App\Http\Livewire\ReportesLista;
 
 /*
@@ -78,8 +82,6 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::POST('pdffile/{id}', [InventarioController::class, 'pdffile'])->name('inventarios.pdffile');
     Route::POST('mantenimiento/{id}', [InventarioController::class, 'mantenimiento'])->name('inventarios.mantenimiento');
 
-
-
     Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
@@ -107,12 +109,62 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     });
 
     Route::resource('facturas', App\Http\Controllers\FacturasController::class);
+    Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
+
     Route::resource('cortes', App\Http\Controllers\CortesController::class);
+    Route::get('/verInsumos', [CortesController::class, 'obtenerInsumos'])->name('cortes.ver');
+    Route::get('indexVista', [App\Http\Controllers\CortesController::class, 'indexVista'])->name('cortes.indexVista');
+    Route::post('/cortes/saveXML', [CortesController::class, 'saveXML'])->name('cortes.saveXML');
+    Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
+
+    Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index']);
+    Route::post('/tickets/update', [App\Http\Controllers\TicketsController::class, 'update']);
+    Route::get('/tickets/chat-messages', [App\Http\Controllers\TicketsController::class, 'getChatMessages']);
+    Route::post('/tickets/enviar-respuesta', [App\Http\Controllers\TicketsController::class, 'enviarRespuesta']);
+    Route::post('/tickets/mensaje-interno', [App\Http\Controllers\TicketsController::class, 'agregarMensajeInterno']);
+    Route::post('/tickets/marcar-leidos', [App\Http\Controllers\TicketsController::class, 'marcarMensajesComoLeidos']);
+    Route::post('/tickets/sincronizar-correos', [App\Http\Controllers\TicketsController::class, 'sincronizarCorreos']);
+    Route::get('/tickets/estadisticas-correos', [App\Http\Controllers\TicketsController::class, 'obtenerEstadisticasCorreos']);
+    Route::get('/tickets/diagnosticar-correos', [App\Http\Controllers\TicketsController::class, 'diagnosticarCorreos']);
+    Route::post('/tickets/agregar-respuesta-manual', [App\Http\Controllers\TicketsController::class, 'agregarRespuestaManual']);
+    Route::post('/tickets/enviar-instrucciones', [App\Http\Controllers\TicketsController::class, 'enviarInstruccionesRespuesta']);
+    
+    // Rutas para procesamiento automático de correos
+    Route::post('/api/webhook/email-response', [App\Http\Controllers\EmailWebhookController::class, 'handleEmailResponse']);
+    Route::post('/api/process-manual-response', [App\Http\Controllers\EmailWebhookController::class, 'processManualResponse']);
+    
+    // Rutas para Webklex IMAP
+    Route::post('/api/test-webklex-connection', [App\Http\Controllers\WebklexApiController::class, 'testConnection']);
+    Route::post('/api/process-webklex-responses', [App\Http\Controllers\WebklexApiController::class, 'processResponses']);
+    Route::get('/api/webklex-mailbox-info', [App\Http\Controllers\WebklexApiController::class, 'getMailboxInfo']);
+    
+    // Rutas de correo (SMTP/IMAP)
+    Route::get('/email/verificar-configuracion', [App\Http\Controllers\EmailController::class, 'verificarConfiguracion']);
+    Route::post('/email/procesar-correos', [App\Http\Controllers\EmailController::class, 'procesarCorreos']);
+    Route::post('/email/enviar-prueba', [App\Http\Controllers\EmailController::class, 'enviarCorreoPrueba']);
+    Route::get('/email/estadisticas', [App\Http\Controllers\EmailController::class, 'obtenerEstadisticas']);
+    
+    // Rutas de autenticación de Outlook (mantener para compatibilidad)
+    Route::get('/auth/outlook', [App\Http\Controllers\OutlookAuthController::class, 'redirect']);
+    Route::get('/auth/outlook/callback', [App\Http\Controllers\OutlookAuthController::class, 'callback']);
+    Route::get('/auth/outlook/status', [App\Http\Controllers\OutlookAuthController::class, 'status']);
 });
 
 Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
     ->name('update.database')
     ->withoutMiddleware(['auth']);
+
+
+//Rutas para soporte de ticket y solicitudes    
+Route::get('/SoporteTI', [App\Http\Controllers\SoporteTIController::class, 'index']);
+Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
+Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
+Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmpleadoPorCorreo']);
+Route::POST('/crearTickets', [SoporteTIController::class, 'crearTickets'])
+    ->name('soporte.ticket')
+    ->withoutMiddleware(['auth']);
+Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
+
 
 // Ruta de fallback para redirigir al dashboard
 Route::fallback(function () {

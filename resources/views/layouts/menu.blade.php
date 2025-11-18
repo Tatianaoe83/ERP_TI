@@ -1,8 +1,14 @@
-
 <script src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 <ul x-data="{ open: null }" class="flex flex-col gap-3 mr-9 {{ Request::is('*') ? 'active' : '' }}">
+    <li>
+        <a href="/tickets"
+            class="flex items-center gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-2 py-1 rounded-lg transition dark:text-white">
+            <i class="fas fa-desktop text-center"></i>
+            <span>Soporte</span>
+        </a>
+    </li>
     <li class="rounded-xl overflow-hidden">
         <button @click="open === 1 ? open = null : open = 1"
             class="w-full flex items-center justify-between px-3 py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white">
@@ -231,4 +237,3 @@
         @endif
     </li>
 </ul>
-
