@@ -87,7 +87,7 @@
         "name": "FechaFianza",
         "dbType": "date",
         "htmlType": "date",
-        "validations": "required",
+        "validations": "nullable|date",
         "searchable": true,
         "fillable": true,
         "primary": false,

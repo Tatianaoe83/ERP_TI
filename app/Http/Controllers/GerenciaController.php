@@ -43,14 +43,22 @@ class GerenciaController extends AppBaseController
                 'gerencia.GerenciaID',
                 'gerencia.NombreGerencia',
                 'gerencia.NombreGerente',
-                'unidadesdenegocio.NombreEmpresa as nombre_empresa'
+                'unidadesdenegocio.NombreEmpresa as nombre_empresa',
+                'gerencia.estado'
             ]);
             
             return DataTables::of($unidades)
+                ->addColumn('estado_formatted', function ($row) {
+                    if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
+                        return '<span class="badge badge-success">Si</span>';
+                    } else {
+                        return '<span class="badge badge-danger">No</span>';
+                    }
+                })
                 ->addColumn('action', function($row){
                     return view('gerencias.datatables_actions', ['id' => $row->GerenciaID])->render();
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action', 'estado_formatted'])
                 ->make(true);
         }
 

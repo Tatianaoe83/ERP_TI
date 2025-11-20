@@ -38,7 +38,8 @@ class UnidadesDeNegocio extends Model
         'NombreEmpresa',
         'RFC',
         'Direccion',
-        'NumTelefono'
+        'NumTelefono',
+        'estado'
     ];
 
     /**
@@ -51,7 +52,8 @@ class UnidadesDeNegocio extends Model
         'NombreEmpresa' => 'string',
         'RFC' => 'string',
         'Direccion' => 'string',
-        'NumTelefono' => 'string'
+        'NumTelefono' => 'string',
+        'estado' => 'boolean'
     ];
 
     /**
@@ -63,7 +65,8 @@ class UnidadesDeNegocio extends Model
         'NombreEmpresa' => 'required|string|max:100',
         'RFC' => 'required|string|max:100',
         'Direccion' => 'required|string|max:150',
-        'NumTelefono' => 'required|string|max:100'
+        'NumTelefono' => 'required|string|max:100',
+        'estado' => 'boolean'
        
     ];
 

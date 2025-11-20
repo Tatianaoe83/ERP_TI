@@ -43,6 +43,7 @@ class Insumos extends Model implements Auditable
         'CategoriaID',
         'CostoMensual',
         'CostoAnual',
+        'Importe',
         'FrecuenciaDePago',
         'Observaciones',
         'created_at',
@@ -58,8 +59,9 @@ class Insumos extends Model implements Auditable
         'ID' => 'integer',
         'NombreInsumo' => 'string',
         'CategoriaID' => 'integer',
-        'CostoMensual' => 'integer',
-        'CostoAnual' => 'integer',
+        'CostoMensual' => 'decimal:2',
+        'CostoAnual' => 'decimal:2',
+        'Importe' => 'decimal:2',
         'FrecuenciaDePago' => 'string',
         'Observaciones' => 'string',
         'created_at' => 'datetime',
@@ -76,6 +78,7 @@ class Insumos extends Model implements Auditable
         'CategoriaID' => 'required|integer',
         'CostoMensual' => 'required|numeric',
         'CostoAnual' => 'required|numeric',
+        'Importe' => 'nullable|numeric',
         'FrecuenciaDePago' => 'required|string|max:50',
         'Observaciones' => 'nullable|string|max:255'
     ];

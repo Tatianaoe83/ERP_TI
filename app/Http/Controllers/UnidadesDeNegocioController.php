@@ -44,14 +44,22 @@ class UnidadesDeNegocioController extends AppBaseController
                 'NombreEmpresa',
                 'RFC',
                 'Direccion',
-                'NumTelefono'
+                'NumTelefono',
+                'estado'
             ]);
             
             return DataTables::of($unidades)
                 ->addColumn('action', function($row){
                     return view('unidades_de_negocios.datatables_actions', ['id' => $row->UnidadNegocioID])->render();
                 })
-                ->rawColumns(['action'])
+                ->addColumn('estado_formatted', function ($row) {
+                    if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
+                        return '<span class="badge badge-success">Si</span>';
+                    } else {
+                        return '<span class="badge badge-danger">No</span>';
+                    }
+                })
+                ->rawColumns(['action', 'estado_formatted'])
                 ->make(true);
         }
 

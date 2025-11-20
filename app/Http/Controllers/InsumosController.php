@@ -48,6 +48,7 @@ class InsumosController extends AppBaseController
                 'categorias.Categoria as nombre_categoria',
                 'insumos.CostoMensual',
                 'insumos.CostoAnual',
+                'insumos.Importe',
                 'insumos.FrecuenciaDePago',
                 'insumos.Observaciones'
             ]);
@@ -127,7 +128,13 @@ class InsumosController extends AppBaseController
      */
     public function create()
     {
-        return view('insumos.create');
+        // Inicializar las variables para los campos de costo
+        $costoMensual_fields = null;
+        $costoAnual_fields = null;
+
+        return view('insumos.create')
+            ->with('costoMensual_fields', $costoMensual_fields)
+            ->with('costoAnual_fields', $costoAnual_fields);
     }
 
     /**
@@ -178,14 +185,21 @@ class InsumosController extends AppBaseController
     public function edit($id)
     {
         $insumos = $this->insumosRepository->find($id);
-
+        
         if (empty($insumos)) {
             Flash::error('Insumos not found');
 
             return redirect(route('insumos.index'));
         }
 
-        return view('insumos.edit')->with('insumos', $insumos);
+        // Pasar los campos con nombres diferentes al blade
+        $costoMensual_fields = $insumos->CostoMensual;
+        $costoAnual_fields = $insumos->CostoAnual;
+
+        return view('insumos.edit')
+            ->with('insumos', $insumos)
+            ->with('costoMensual_fields', $costoMensual_fields)
+            ->with('costoAnual_fields', $costoAnual_fields);
     }
 
     /**
@@ -210,7 +224,7 @@ class InsumosController extends AppBaseController
         $datosOriginales = $insumos->toArray();
 
         // Verificar si hay cambios en los campos que se sincronizan con inventario
-        $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'Observaciones'];
+        $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'Importe', 'FrecuenciaDePago', 'Observaciones'];
         $hayCambios = false;
         $camposModificados = [];
 
@@ -269,10 +283,11 @@ class InsumosController extends AppBaseController
         // Actualizar cada registro encontrado con los datos NUEVOS del equipo
         foreach ($registrosInventario as $registro) {
             $registro->update([
-                'CategoriaInsumo' => $nombreCategoria,
+                'CateogoriaInsumo' => $nombreCategoria,
                 'NombreInsumo' => $insumoActualizado->NombreInsumo,
                 'CostoMensual' => $insumoActualizado->CostoMensual,
                 'CostoAnual' => $insumoActualizado->CostoAnual,
+                'Importe' => $insumoActualizado->Importe,
                 'FrecuenciaDePago' => $insumoActualizado->FrecuenciaDePago,
                 'Observaciones' => $insumoActualizado->Observaciones
             ]);

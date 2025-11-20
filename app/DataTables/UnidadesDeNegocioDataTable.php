@@ -27,6 +27,13 @@ class UnidadesDeNegocioDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 return view('unidades_de_negocios.datatables_actions', ['id' => $row->UnidadNegocioID])->render();
             })
+            ->addColumn('estado_formatted', function ($row) {
+                if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
+                    return '<span class="badge badge-success">Si</span>';
+                } else {
+                    return '<span class="badge badge-danger">No</span>';
+                }
+            })
             ->rawColumns(['action'])
             ->setRowId('UnidadNegocioID');
     }
@@ -44,7 +51,8 @@ class UnidadesDeNegocioDataTable extends DataTable
             'NombreEmpresa',
             'RFC',
             'Direccion',
-            'NumTelefono'
+            'NumTelefono',
+            'estado'
         ]);
     }
 
@@ -161,6 +169,14 @@ class UnidadesDeNegocioDataTable extends DataTable
                 'data' => 'NumTelefono',
                 'name' => 'NumTelefono',
                 'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'estado' => [
+                'title' => 'Es unidad de negocio',
+                'data' => 'estado_formatted',
+                'name' => 'estado',
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'orderable' => true,
+                'searchable' => false
             ],
             Column::computed('action')
                 ->exportable(false)

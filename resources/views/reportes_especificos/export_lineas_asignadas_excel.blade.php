@@ -2,6 +2,7 @@
     <thead>
         <tr>
             <th>Empleado</th>
+            <th>Correo del Empleado</th>
             <th>Número de Línea</th>
             <th>Tipo</th>
             <th>Obra</th>
@@ -16,6 +17,7 @@
         @foreach($datos as $item)
             <tr>
                 <td>{{ $item->empleado_nombre }}</td>
+                <td>{{ $item->empleado_correo ?? 'N/A' }}</td>
                 <td>{{ $item->linea_numero }}</td>
                 <td>{{ $item->linea_tipo }}</td>
                 <td>{{ $item->obra_nombre }}</td>

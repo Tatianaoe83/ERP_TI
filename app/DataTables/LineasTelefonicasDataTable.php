@@ -31,6 +31,13 @@ class LineasTelefonicasDataTable extends DataTable
                 return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
             }
         })
+        ->addColumn('estado_activo', function ($row) {
+            if ($row->Activo == 1) {
+                return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
+            } else {
+                return '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
+            }
+        })
         ->filterColumn('estado_disponibilidad', function($query, $keyword) {
             if ($keyword === 'Disponible' || $keyword === 'disponible') {
                 $query->where('lineastelefonicas.Disponible', 1);
@@ -40,7 +47,16 @@ class LineasTelefonicasDataTable extends DataTable
                 $query->where('lineastelefonicas.Disponible', $keyword);
             }
         })
-        ->rawColumns(['action', 'estado_disponibilidad'])
+        ->filterColumn('estado_activo', function($query, $keyword) {
+            if ($keyword === 'Activo' || $keyword === 'activo') {
+                $query->where('lineastelefonicas.Activo', 1);
+            } elseif ($keyword === 'Inactivo' || $keyword === 'inactivo') {
+                $query->where('lineastelefonicas.Activo', 0);
+            } else {
+                $query->where('lineastelefonicas.Activo', $keyword);
+            }
+        })
+        ->rawColumns(['action', 'estado_disponibilidad', 'estado_activo'])
         ->setRowId('LineaID');
 
     }
@@ -68,6 +84,7 @@ class LineasTelefonicasDataTable extends DataTable
                 'lineastelefonicas.FechaFianza',
                 'lineastelefonicas.CostoFianza',
                 'lineastelefonicas.Disponible',
+                'lineastelefonicas.Activo',
                 'lineastelefonicas.MontoRenovacionFianza'
 
             ]);
@@ -200,7 +217,7 @@ class LineasTelefonicasDataTable extends DataTable
                 'title' => 'Costo Fianza',
                 'data' => 'CostoFianza',
                 'name' => 'CostoFianza',
-                'class' => 'dark:bg-[#101010] dark:text-white'
+                'class' => 'dark:bg-[#101010] dark:text-white text-center'
             ],
             'MontoRenovacionFianza' => [
                 'title' => 'Monto Renovacion Fianza',
@@ -208,15 +225,18 @@ class LineasTelefonicasDataTable extends DataTable
                 'name' => 'MontoRenovacionFianza',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'estado_disponibilidad' => [
-                'title' => 'Estado Disponibilidad',
-                'data' => 'estado_disponibilidad',
-                'name' => 'Disponible',
-                'class' => 'text-center dark:bg-[#101010] dark:text-white',
-                'width' => '120px',
-                'searchable' => true,
-                'orderable' => true,
-            ],
+            Column::computed('estado_disponibilidad')
+                ->title('Estado Disponibilidad')
+                ->width('120px')
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
+                ->searchable(true)
+                ->orderable(true),
+            Column::computed('estado_activo')
+                ->title('Estado Activo')
+                ->width('120px')
+                ->addClass('text-center dark:bg-[#101010] dark:text-white')
+                ->searchable(true)
+                ->orderable(true),
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)

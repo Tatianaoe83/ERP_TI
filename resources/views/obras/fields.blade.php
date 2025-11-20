@@ -21,6 +21,13 @@
     {!! Form::label('UnidadNegocioID', 'Unidad negocio:') !!}
 
     {!!Form::select('UnidadNegocioID',App\Models\UnidadesDeNegocio::all()->
-    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control'])!!}
+    pluck('NombreEmpresa','UnidadNegocioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%'])!!}
 
+</div>
+
+
+<!-- Estado Field -->
+<div class="col-sm-6 text-[#101D49] dark:text-white">
+    {!! Form::label('estado', 'Es obra:') !!}
+    {!! Form::select('estado', [1 => 'Si', 0 => 'No'], null, ['class' => 'form-control','style' => 'width: 100%']) !!}
 </div>

@@ -9,10 +9,17 @@
 <body>
 
 
+    @php
+
+                    $nombreDB = DB::connection()->getDatabaseName();
+
+                    $año = (strpos($nombreDB, '2026') !== false) ? '2026' : '2025';
+
+                    @endphp
     <table >
 	<tr>
 		<td >
-            PRESUPUESTO DE TECNOLOGIAS {{ $title }} 2025
+            PRESUPUESTO DE TECNOLOGIAS {{ $title }} {{ $año }}
 		</td>
 		
 	</tr>
@@ -37,7 +44,7 @@
         {{$datosheade->Categoria}}:
 		</td>
 		<td >
-        {{$datosheade->TotalCosto}}
+        {{$datosheade->TotalCosto, 0}}
 		</td>
 	</tr>
     @endforeach
@@ -185,6 +192,7 @@
                 <th scope="col">Voz Costo Renta {{$dato}}</th>
                 <th scope="col">Voz Costo Fianza {{$dato == 'Anual' ? $dato : ''}}</th>
                 <th scope="col">Voz Monto Renovacion {{$dato == 'Anual' ? $dato : ''}}</th>
+                
             </tr>
         </thead>
         <tbody>
@@ -195,8 +203,19 @@
                     <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Costo_Renta_Anual : $presup_acce->Voz_Costo_Renta_Mensual }}</td>
                     <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Costo_Fianza_Anual : $presup_acce->Voz_Costo_Fianza }}  </td>
                     <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Monto_Renovacion_Anual : $presup_acce->Voz_Monto_Renovacion }}</td>
+                   
                 </tr>
             @endforeach
+            
+            <!-- Fila de totales verticales -->
+            <tr class="highlight-row">
+                <td><strong>TOTAL</strong></td>
+                <td></td>
+                <td><strong>{{ number_format(collect($presup_acces)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Voz_Costo_Renta_Anual : $item->Voz_Costo_Renta_Mensual; }), 0) }}</strong></td>
+                <td><strong>{{ number_format(collect($presup_acces)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Voz_Costo_Fianza_Anual : $item->Voz_Costo_Fianza; }), 0) }}</strong></td>
+                <td><strong>{{ number_format(collect($presup_acces)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Voz_Monto_Renovacion_Anual : $item->Voz_Monto_Renovacion; }), 0) }}</strong></td>
+               
+            </tr>
         </tbody>
     </table>
 
@@ -210,6 +229,7 @@
                 <th scope="col">Datos Costo Renta {{$dato}} </th>
                 <th scope="col">Datos Costo Fianza {{$dato == 'Anual' ? $dato : ''}}</th>
                 <th scope="col">Datos Monto Renovacion {{$dato == 'Anual' ? $dato : ''}}</th>
+               
             </tr>
         </thead>
         <tbody>
@@ -221,8 +241,19 @@
                     <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Costo_Renta_Anual : $presup_dato->Datos_Costo_Renta_Mensual }} </td>
                     <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Costo_Fianza_Anual : $presup_dato->Datos_Costo_Fianza }}  </td>
                     <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Monto_Renovacion_Anual : $presup_dato->Datos_Monto_Renovacion }} </td>
+                    
                 </tr>
             @endforeach
+            
+            <!-- Fila de totales verticales -->
+            <tr class="highlight-row">
+                <td><strong>TOTAL</strong></td>
+                <td></td>
+                <td><strong>{{ number_format(collect($presup_datos)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Datos_Costo_Renta_Anual : $item->Datos_Costo_Renta_Mensual; }), 0) }}</strong></td>
+                <td><strong>{{ number_format(collect($presup_datos)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Datos_Costo_Fianza_Anual : $item->Datos_Costo_Fianza; }), 0) }}</strong></td>
+                <td><strong>{{ number_format(collect($presup_datos)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Datos_Monto_Renovacion_Anual : $item->Datos_Monto_Renovacion; }), 0) }}</strong></td>
+                
+            </tr>
         </tbody>
     </table>
 
@@ -233,9 +264,10 @@
             <tr >
                 <th scope="col">NombreEmpleado</th>
                 <th scope="col">NombrePuesto</th>
-                <th scope="col">Datos Costo Renta {{$dato}} </th>
-                <th scope="col">Datos Costo Fianza  {{$dato == 'Anual' ? $dato : ''}}</th>
-                <th scope="col">Datos Monto Renovacion  {{$dato == 'Anual' ? $dato : ''}}</th>
+                <th scope="col">GPS Costo Renta {{$dato}} </th>
+                <th scope="col">GPS Costo Fianza  {{$dato == 'Anual' ? $dato : ''}}</th>
+                <th scope="col">GPS Monto Renovacion  {{$dato == 'Anual' ? $dato : ''}}</th>
+                
             </tr>
         </thead>
         <tbody>
@@ -246,8 +278,19 @@
                     <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Costo_Renta_Anual : $presup_gp->GPS_Costo_Renta_Mensual }} </td>
                     <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Costo_Fianza_Anual : $presup_gp->GPS_Costo_Fianza }} </td>
                     <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Monto_Renovacion_Anual : $presup_gp->GPS_Monto_Renovacion }} </td>
+                    
                 </tr>
             @endforeach
+            
+            <!-- Fila de totales verticales -->
+            <tr class="highlight-row">
+                <td><strong>TOTAL</strong></td>
+                <td></td>
+                <td><strong>{{ number_format(collect($presup_gps)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->GPS_Costo_Renta_Anual : $item->GPS_Costo_Renta_Mensual; }), 0) }}</strong></td>
+                <td><strong>{{ number_format(collect($presup_gps)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->GPS_Costo_Fianza_Anual : $item->GPS_Costo_Fianza; }), 0) }}</strong></td>
+                <td><strong>{{ number_format(collect($presup_gps)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->GPS_Monto_Renovacion_Anual : $item->GPS_Monto_Renovacion; }), 0) }}</strong></td>
+                
+            </tr>
         </tbody>
     </table>
 
@@ -269,6 +312,7 @@
             <th scope="col">Octubre</th>
             <th scope="col">Noviembre</th>
             <th scope="col">Diciembre</th>
+            
 
         </tr>
     </thead>
@@ -288,6 +332,7 @@
                 <td>{{ $presup_cal_pago->Octubre }}</td>
                 <td>{{ $presup_cal_pago->Noviembre }}</td>
                 <td>{{ $presup_cal_pago->Diciembre }}</td>
+                
 
             </tr>
         @endforeach

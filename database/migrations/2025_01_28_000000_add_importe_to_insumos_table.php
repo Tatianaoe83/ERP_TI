@@ -4,9 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateUnidadesDeNegociosTable extends Migration
+class AddImporteToInsumosTable extends Migration
 {
-
     /**
      * Run the migrations.
      *
@@ -14,10 +13,8 @@ class CreateUnidadesDeNegociosTable extends Migration
      */
     public function up()
     {
-        Schema::create('unidades_de_negocios', function (Blueprint $table) {
-            $table->id('UnidadNegocioID');
-            $table->timestamps();
-            $table->softDeletes();
+        Schema::table('insumos', function (Blueprint $table) {
+            $table->decimal('Importe', 10, 4)->default(0.00)->after('CostoAnual');
         });
     }
 
@@ -28,6 +25,8 @@ class CreateUnidadesDeNegociosTable extends Migration
      */
     public function down()
     {
-        Schema::drop('unidades_de_negocios');
+        Schema::table('insumos', function (Blueprint $table) {
+            $table->dropColumn('Importe');
+        });
     }
 }

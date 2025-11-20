@@ -56,6 +56,7 @@ class LineasTelefonicasController extends AppBaseController
                     'lineastelefonicas.FechaFianza',
                     'lineastelefonicas.CostoFianza',
                     'lineastelefonicas.Disponible',
+                    'lineastelefonicas.Activo',
                     'lineastelefonicas.MontoRenovacionFianza'
 
                 ]);
@@ -71,7 +72,14 @@ class LineasTelefonicasController extends AppBaseController
                         return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
                     }
                 })
-                ->rawColumns(['action', 'estado_disponibilidad'])
+                ->addColumn('estado_activo', function ($row) {
+                    if ($row->Activo == 1) {
+                        return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
+                    } else {
+                        return '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
+                    }
+                })
+                ->rawColumns(['action', 'estado_disponibilidad', 'estado_activo'])
                 ->make(true);
         }
 

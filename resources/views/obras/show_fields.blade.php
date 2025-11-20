@@ -21,3 +21,15 @@
     {!! Form::label('UnidadNegocioID', 'Unidad negocio:') !!}
     <p>{{ $obras->unidadesdenegocio->NombreEmpresa }}</p>
 </div>
+
+<!-- Estado Field -->
+<div class="col-sm-12 text-[#101D49] dark:text-white">
+    {!! Form::label('Estado', 'Es obra:') !!}
+    <p>
+        @if($obras->estado)
+            <span class="badge badge-success">Si</span>
+        @else
+            <span class="badge badge-danger">No</span>
+        @endif
+    </p>
+</div>

@@ -2,14 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\DataTables\FacturasDataTable;
-use App\Http\Requests;
 use App\Http\Requests\CreateFacturasRequest;
 use App\Http\Requests\UpdateFacturasRequest;
 use App\Repositories\FacturasRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
+use App\Models\Gerencia;
+use Carbon\Carbon;
+use App\Http\Requests;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Response;
+use Yajra\DataTables\Facades\DataTables;
 
 class FacturasController extends AppBaseController
 {
@@ -23,14 +27,57 @@ class FacturasController extends AppBaseController
 
     /**
      * Display a listing of the Facturas.
-     *
-     * @param FacturasDataTable $facturasDataTable
-     *
+     * 
      * @return Response
      */
-    public function index(FacturasDataTable $facturasDataTable)
+    public function index()
     {
-        return $facturasDataTable->render('facturas.index');
+        $meses = [
+            'Enero',
+            'Febrero',
+            'Marzo',
+            'Abril',
+            'Mayo',
+            'Junio',
+            'Julio',
+            'Agosto',
+            'Septiembre',
+            'Octubre',
+            'Noviembre',
+            'Diciembre'
+        ];
+
+        $currentDate = Carbon::now()->format('Y') + 1;
+        $years = range($currentDate, $currentDate + 8);
+
+        return view('facturas.index', compact('meses', 'years'));
+    }
+
+    public function indexVista(Request $request)
+    {
+        $gerenciaID = $request->input('gerenci_id');
+        $mes = $request->input('mes');
+        $año = $request->input('año');
+
+        if ($request->ajax()) {
+            if ($gerenciaID && $mes) {
+                $query = DB::table('cortes')
+                    ->where('GerenciaID', $gerenciaID)
+                    ->where('Mes', $mes)
+                    ->where('Año', $año);
+
+                return DataTables::of($query)
+                    ->addColumn('action', function ($row) {
+                        return view('cortes.datatables_actions', ['id' => $row->CortesID])->render();
+                    })
+                    ->rawColumns(['action'])
+                    ->make(true);
+            } else {
+                return DataTables::of(collect([]))->make(true);
+            }
+        }
+
+        return view('cortes.index');
     }
 
     /**
