@@ -116,7 +116,7 @@ class ReporteService
     {
         $nameDB = \DB::getDatabaseName();
 
-        $ignorar = ['audits', 'blog', 'gerencias_usuarios', 'query_forms', 'users', 'tiposdecategorias'];
+        $ignorar = ['audits', 'blog', 'gerencias_usuarios', 'query_forms', 'users', 'tiposdecategorias', 'cortes', 'facturas', 'ticket_chats', 'outlook_tokens', 'tipotickets', 'subtipo', 'tertipo'];
 
         return collect(\DB::select("SHOW TABLES"))
             ->map(fn($obj) => $obj->{"Tables_in_{$nameDB}"})

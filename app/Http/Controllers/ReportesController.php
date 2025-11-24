@@ -105,17 +105,13 @@ class ReportesController extends AppBaseController
             'inventariolineas' => ['inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID']
         ],
         'equipos' => [
-            'categorias' => ['categorias.CategoriaID', '=', 'equipos.CategoriaID'],
+            'categorias' => ['categorias.ID', '=', 'equipos.CategoriaID'],
         ],
         'gerencia' => [
             'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID'],
         ],
-        'gerencias_usuarios' => [
-            'gerencia' => ['gerencia.GerenciaID', '=', 'gerencias_usuarios.GerenciaID'],
-            'users' => ['users.id', '=', 'gerencias_usuarios.user_id'],
-        ],
         'insumos' => [
-            'categorias' => ['categorias.CategoriaID', '=', 'insumos.CategoriaID'],
+            'categorias' => ['categorias.ID', '=', 'insumos.CategoriaID'],
         ],
         'inventarioequipo' => [
             'empleados' => ['empleados.EmpleadoID', '=', 'inventarioequipo.EmpleadoID'],
@@ -128,9 +124,11 @@ class ReportesController extends AppBaseController
             'empleados' => ['empleados.EmpleadoID', '=', 'inventariolineas.EmpleadoID'],
             'lineastelefonicas' => ['lineastelefonicas.LineaID', '=', 'inventariolineas.LineaID'],
             'obras' => ['obras.ObraID', '=', 'inventariolineas.ObraID'],
+
         ],
         'lineastelefonicas' => [
             'obras' => ['obras.ObraID', '=', 'lineastelefonicas.ObraID'],
+            'planes' => ['planes.ID', '=', 'lineastelefonicas.PlanID']
         ],
         'obras' => [
             'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID'],
@@ -138,6 +136,12 @@ class ReportesController extends AppBaseController
         'puestos' => [
             'departamentos' => ['departamentos.DepartamentoID', '=', 'puestos.DepartamentoID'],
         ],
+        'planes' => [
+            'companiaslineastelefonicas' => ['companiaslineastelefonicas.ID', '=', 'planes.CompaniaID'],
+        ],
+        'unidadesdenegocio' => [
+            'gerencia' => ['gerencia.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID'],
+        ]
     ];
 
     /**
@@ -176,6 +180,7 @@ class ReportesController extends AppBaseController
             return redirect()->route('reportes.index')
                 ->with('error', 'No se encontraron resultados para el reporte.');
         }
+
 
         if (request()->ajax()) {
             return view('reportes.preview', compact('resultado'));
@@ -312,7 +317,7 @@ class ReportesController extends AppBaseController
 
     public function exportPdf($id)
     {
-       
+
         set_time_limit(600);
         ini_set('memory_limit', '2048M');
 

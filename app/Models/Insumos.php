@@ -23,12 +23,12 @@ use OwenIt\Auditing\Contracts\Auditable;
  */
 class Insumos extends Model implements Auditable
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
     use \OwenIt\Auditing\Auditable;
 
 
     public $table = 'insumos';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -86,7 +86,7 @@ class Insumos extends Model implements Auditable
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function categoriaid()
+    public function categorias()
     {
         return $this->belongsTo(\App\Models\Categorias::class, 'CategoriaID');
     }

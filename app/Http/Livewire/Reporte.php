@@ -65,6 +65,15 @@ class Reporte extends Component
     {
         if (!$this->modelo) return;
 
+        $this->relacionesSeleccionadas = [];
+        $this->relacionActual = '';
+        $this->columnasSeleccionadas = [];
+        $this->columnasPorRelacion = [];
+        $this->filtros = [];
+        $this->ordenColumna = '';
+        $this->ordenDireccion = 'asc';
+        $this->limite = null;
+
         $this->modeloClase = ReporteService::modeloDesdeTabla($this->modelo);
 
         if ($this->modeloClase) {
@@ -96,17 +105,13 @@ class Reporte extends Component
             'inventariolineas' => ['inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID']
         ],
         'equipos' => [
-            'categorias' => ['categorias.ID', '=', 'equipos.ID'],
+            'categorias' => ['categorias.ID', '=', 'equipos.CategoriaID'],
         ],
         'gerencia' => [
             'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID'],
         ],
-        'gerencias_usuarios' => [
-            'gerencia' => ['gerencia.GerenciaID', '=', 'gerencias_usuarios.GerencialID'],
-            'users' => ['users.id', '=', 'gerencias_usuarios.user_id'],
-        ],
         'insumos' => [
-            'categorias' => ['categorias.CategoriaID', '=', 'insumos.CategoriaID'],
+            'categorias' => ['categorias.ID', '=', 'insumos.CategoriaID'],
         ],
         'inventarioequipo' => [
             'empleados' => ['empleados.EmpleadoID', '=', 'inventarioequipo.EmpleadoID'],
@@ -132,6 +137,9 @@ class Reporte extends Component
         ],
         'planes' => [
             'companiaslineastelefonicas' => ['companiaslineastelefonicas.ID', '=', 'planes.CompaniaID'],
+        ],
+        'unidadesdenegocio' => [
+            'gerencia' => ['gerencia.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID'],
         ]
     ];
 
@@ -255,19 +263,32 @@ class Reporte extends Component
 
     public function updatedRelacionActual($relacion)
     {
+        if (!$relacion) return;
+
         if (in_array($relacion, $this->relacionesSeleccionadas)) {
-            $this->relacionesSeleccionadas = array_filter(
-                $this->relacionesSeleccionadas,
-                fn($r) => $r !== $relacion
+            if (isset($this->columnasPorRelacion[$relacion])) {
+
+                $columnasARemover = $this->columnasPorRelacion[$relacion];
+
+                $this->columnasSeleccionadas = array_values(
+                    array_diff($this->columnasSeleccionadas, $columnasARemover)
+                );
+            }
+
+            $this->relacionesSeleccionadas = array_values(
+                array_filter($this->relacionesSeleccionadas, fn($r) => $r !== $relacion)
             );
+
             unset($this->columnasPorRelacion[$relacion]);
         } else {
             $this->relacionesSeleccionadas[] = $relacion;
-            $this->columnasPorRelacion[$relacion] = ReporteService::obtenerColumnasRelacion($this->modeloClase, $relacion);
+            $this->columnasPorRelacion[$relacion] =
+                ReporteService::obtenerColumnasRelacion($this->modeloClase, $relacion);
         }
 
         $this->relacionActual = '';
     }
+
 
     private function resetEstado()
     {

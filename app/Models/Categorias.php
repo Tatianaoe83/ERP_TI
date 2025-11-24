@@ -20,11 +20,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Categorias extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
 
     public $table = 'categorias';
-    
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -63,7 +63,7 @@ class Categorias extends Model
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
-    public function tipoid()
+    public function tiposdecategorias()
     {
         return $this->belongsTo(\App\Models\TiposDeCategorias::class, 'TipoID');
     }
@@ -73,7 +73,7 @@ class Categorias extends Model
      **/
     public function equipos()
     {
-        return $this->hasMany(\App\Models\Equipo::class, 'CategoriaID');
+        return $this->hasMany(\App\Models\Equipo::class, 'ID');
     }
 
     /**
