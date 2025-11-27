@@ -14,6 +14,12 @@ class SimpleWebklexImapService
     protected $client;
     protected $clientManager;
     
+    // Constantes de configuración
+    private const DIAS_BUSQUEDA = 7;
+    private const LIMITE_MENSAJES = 100;
+    private const TIEMPO_MAX_SEGUNDOS = 120;
+    private const MEMORIA_MAX_MB = 800;
+    
     public function __construct()
     {
         $this->clientManager = new ClientManager([
@@ -35,278 +41,540 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Probar conexión básica con manejo mejorado de errores
-     */
-    public function probarConexion()
-    {
-        try {
-            Log::info('Probando conexión IMAP básica...');
-            
-            $this->client->connect();
-            
-            // Solo obtener información básica del buzón
-            $folder = $this->client->getFolder('INBOX');
-            
-            Log::info("Conexión exitosa al buzón INBOX");
-            
-            return [
-                'success' => true,
-                'message' => "Conexión exitosa al buzón INBOX",
-                'folder_name' => 'INBOX'
-            ];
-            
-        } catch (\Exception $e) {
-            Log::error('Error probando conexión: ' . $e->getMessage());
-            
-            return [
-                'success' => false,
-                'message' => 'Error de conexión: ' . $e->getMessage()
-            ];
-        }
-    }
-    
-    /**
-     * Probar procesamiento de correos sin errores
-     */
-    public function probarProcesamiento()
-    {
-        try {
-            Log::info('Probando procesamiento de correos...');
-            
-            if (!$this->conectar()) {
-                return [
-                    'success' => false,
-                    'message' => 'No se pudo conectar al servidor IMAP'
-                ];
-            }
-            
-            $folder = $this->client->getFolder('INBOX');
-            
-            // Probar obtención de mensajes de manera segura
-            $messages = $this->obtenerMensajesSeguro($folder);
-            
-            return [
-                'success' => true,
-                'message' => "Procesamiento exitoso. Encontrados {$messages->count()} mensajes",
-                'mensajes_encontrados' => $messages->count()
-            ];
-            
-        } catch (\Exception $e) {
-            Log::error('Error probando procesamiento: ' . $e->getMessage());
-            
-            return [
-                'success' => false,
-                'message' => 'Error en procesamiento: ' . $e->getMessage()
-            ];
-        }
-    }
-    
-    /**
-     * Obtener información básica del buzón
-     */
-    public function obtenerInfoBasica()
-    {
-        try {
-            if (!$this->conectar()) {
-                return null;
-            }
-            
-            $folder = $this->client->getFolder('INBOX');
-            
-            return [
-                'folder_name' => 'INBOX',
-                'connection_status' => 'connected',
-                'message' => 'Conexión exitosa'
-            ];
-            
-        } catch (\Exception $e) {
-            Log::error('Error obteniendo información básica: ' . $e->getMessage());
-            return [
-                'folder_name' => 'INBOX',
-                'connection_status' => 'error',
-                'error' => $e->getMessage()
-            ];
-        }
-    }
-    
-    /**
      * Conectar al servidor IMAP
      */
     public function conectar()
     {
         try {
-            Log::info('Conectando a IMAP con Webklex...');
-            
+            Log::info('Conectando a IMAP...');
             $this->client->connect();
-            
-            Log::info('Conexión IMAP exitosa con Webklex');
+            Log::info('Conexión IMAP exitosa');
             return true;
-            
         } catch (\Exception $e) {
-            Log::error('Error conectando a IMAP con Webklex: ' . $e->getMessage());
+            Log::error('Error conectando a IMAP: ' . $e->getMessage());
             return false;
         }
     }
     
     /**
-     * Procesar correos usando método simple
+     * Procesar correos - Método principal optimizado
      */
     public function procesarCorreosSimples()
     {
         try {
+            // Configurar límites
+            set_time_limit(180);
+            $originalMemoryLimit = ini_get('memory_limit');
+            ini_set('memory_limit', '1024M');
+            
             if (!$this->conectar()) {
                 return false;
             }
             
-            Log::info('Procesando correos con método simple...');
+            Log::info('=== INICIANDO PROCESAMIENTO DE CORREOS ===');
+            Log::info('Fecha/Hora actual: ' . now()->format('Y-m-d H:i:s'));
+            Log::info('Timezone: ' . config('app.timezone'));
             
             $folder = $this->client->getFolder('INBOX');
+            $messages = $this->obtenerMensajesRecientes($folder);
             
-            // Usar método más seguro para obtener mensajes
-            $messages = $this->obtenerMensajesSeguro($folder);
-            
-            Log::info("Encontrados {$messages->count()} mensajes");
-            
-            $procesados = 0;
-            
-            foreach ($messages as $message) {
-                if ($this->procesarMensajeSimple($message)) {
-                    $procesados++;
-                }
+            if ($messages->isEmpty()) {
+                Log::warning('No se encontraron mensajes para procesar');
+                return false;
             }
             
-            Log::info("Procesados {$procesados} mensajes exitosamente");
+            Log::info("Mensajes a procesar: {$messages->count()}");
             
-            return $procesados > 0;
+            // Procesar mensajes
+            $resultado = $this->procesarMensajes($messages);
+            
+            // Restaurar configuración
+            ini_set('memory_limit', $originalMemoryLimit);
+            
+            Log::info("=== PROCESAMIENTO COMPLETADO ===");
+            Log::info("Procesados: {$resultado['procesados']}");
+            Log::info("Descartados: {$resultado['descartados']}");
+            Log::info("Tiempo total: {$resultado['tiempo']}s");
+            
+            return $resultado['procesados'] > 0;
             
         } catch (\Exception $e) {
-            Log::error('Error procesando correos simples: ' . $e->getMessage());
+            Log::error('Error en procesamiento: ' . $e->getMessage());
+            if (isset($originalMemoryLimit)) {
+                ini_set('memory_limit', $originalMemoryLimit);
+            }
             return false;
         }
     }
     
     /**
-     * Obtener mensajes de manera segura filtrando solo respuestas de tickets
+     * Obtener mensajes recientes (hoy hasta 7 días atrás)
      */
-    protected function obtenerMensajesSeguro($folder)
+    protected function obtenerMensajesRecientes($folder)
     {
         try {
-            // Método 1: Intentar obtener mensajes recientes con fecha específica
-            $messages = $folder->messages()->since(now()->subDays(7))->limit(50)->get();
-            if ($messages->count() > 0) {
-                Log::info("Método 1 exitoso: encontrados {$messages->count()} mensajes de los últimos 7 días");
-                return $this->filtrarRespuestasTickets($messages);
-            }
+            Log::info('Obteniendo mensajes de los últimos ' . self::DIAS_BUSQUEDA . ' días hasta mañana');
+            
+            // Estrategia 1: Intentar obtener últimos N mensajes directamente
+            $mensajes = $this->obtenerUltimosMensajes($folder, self::LIMITE_MENSAJES);
+            
+            // Estrategia 2: Usar since() como método principal (más confiable)
+            $mensajesSince = $this->obtenerMensajesConSince($folder);
+            
+            // Combinar ambos métodos y eliminar duplicados
+            $mensajes = $this->combinarYDeduplicar($mensajes, $mensajesSince);
+            
+            Log::info("Total de mensajes obtenidos antes del filtro: {$mensajes->count()}");
+            
+            // Filtrar por fecha (últimos 7 días hasta mañana)
+            $mensajesFiltrados = $this->filtrarPorFecha($mensajes);
+            
+            // Ordenar por fecha descendente
+            $mensajesFiltrados = $this->ordenarPorFecha($mensajesFiltrados);
+            
+            // Log de estadísticas
+            $this->logearEstadisticas($mensajesFiltrados);
+            
+            return $mensajesFiltrados;
+            
         } catch (\Exception $e) {
-            Log::warning("Método 1 falló: " . $e->getMessage());
+            Log::error('Error obteniendo mensajes: ' . $e->getMessage());
+            return collect();
         }
-        
-        try {
-            // Método 2: Intentar obtener mensajes con ALL (todos los mensajes)
-            $messages = $folder->messages()->all()->limit(50)->get();
-            if ($messages->count() > 0) {
-                Log::info("Método 2 exitoso: encontrados {$messages->count()} mensajes");
-                return $this->filtrarRespuestasTickets($messages);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Método 2 falló: " . $e->getMessage());
-        }
-        
-        try {
-            // Método 3: Usar query básica sin parámetros complejos
-            $messages = $folder->query()->limit(50)->get();
-            if ($messages->count() > 0) {
-                Log::info("Método 3 exitoso: encontrados {$messages->count()} mensajes");
-                return $this->filtrarRespuestasTickets($messages);
-            }
-        } catch (\Exception $e) {
-            Log::warning("Método 3 falló: " . $e->getMessage());
-        }
-        
-        // Método 4: Fallback - retornar colección vacía
-        Log::warning("Todos los métodos de obtención de mensajes fallaron, retornando colección vacía");
-        return collect();
     }
     
     /**
-     * Filtrar solo los mensajes que son respuestas de tickets
+     * Obtener últimos N mensajes del buzón
      */
-    protected function filtrarRespuestasTickets($messages)
+    private function obtenerUltimosMensajes($folder, $limite)
     {
-        $respuestasTickets = collect();
+        try {
+            Log::info("Obteniendo últimos {$limite} mensajes del buzón");
+            
+            $mensajes = $folder->messages()
+                ->leaveUnread()
+                ->limit($limite, 1)
+                ->get();
+            
+            Log::info("Mensajes obtenidos: {$mensajes->count()}");
+            return $mensajes;
+            
+        } catch (\Exception $e) {
+            Log::warning("Error obteniendo últimos mensajes: " . $e->getMessage());
+            return collect();
+        }
+    }
+    
+    /**
+     * Obtener mensajes con since()
+     */
+    private function obtenerMensajesConSince($folder)
+    {
+        try {
+            // Traer correos de los últimos 7 días (el filtro de fecha se encargará del límite superior)
+            $fechaInicio = now()->subDays(self::DIAS_BUSQUEDA)->startOfDay();
+            
+            Log::info("Obteniendo mensajes desde: {$fechaInicio->format('Y-m-d H:i:s')}");
+            
+            $mensajes = $folder->messages()
+                ->since($fechaInicio)
+                ->leaveUnread()
+                ->get();
+            
+            Log::info("Mensajes con since(): {$mensajes->count()}");
+            return $mensajes;
+            
+        } catch (\Exception $e) {
+            Log::warning("Error con since(): " . $e->getMessage());
+            return collect();
+        }
+    }
+    
+    /**
+     * Combinar colecciones y eliminar duplicados
+     */
+    private function combinarYDeduplicar($coleccion1, $coleccion2)
+    {
+        $messageIds = [];
+        $combinados = collect();
         
-        foreach ($messages as $message) {
+        foreach ([$coleccion1, $coleccion2] as $coleccion) {
+            foreach ($coleccion as $mensaje) {
+                try {
+                    $msgId = $mensaje->getMessageId();
+                    
+                    if (!in_array($msgId, $messageIds)) {
+                        $messageIds[] = $msgId;
+                        $combinados->push($mensaje);
+                    }
+                } catch (\Exception $e) {
+                    // Si no tiene Message-ID, agregarlo de todas formas
+                    $combinados->push($mensaje);
+                }
+            }
+        }
+        
+        Log::info("Mensajes combinados (sin duplicados): {$combinados->count()}");
+        return $combinados;
+    }
+    
+    /**
+     * Filtrar mensajes por fecha (últimos 7 días)
+     */
+    private function filtrarPorFecha($mensajes)
+    {
+        $fechaLimiteInferior = now()->subDays(self::DIAS_BUSQUEDA)->startOfDay();
+        $fechaLimiteSuperior = now()->addDay()->endOfDay(); // Hasta mañana (día 28)
+        
+        Log::info("Filtro de fechas: Desde {$fechaLimiteInferior->format('Y-m-d H:i:s')} hasta {$fechaLimiteSuperior->format('Y-m-d H:i:s')}");
+        
+        $filtrados = $mensajes->filter(function($mensaje) use ($fechaLimiteInferior, $fechaLimiteSuperior) {
             try {
-                $subject = $message->getSubject();
+                $fechaMensaje = $mensaje->getDate();
                 
-                // Solo procesar si contiene "Ticket #" en el asunto
-                if ($this->esRespuestaTicket($subject)) {
-                    $respuestasTickets->push($message);
-                    Log::info("Mensaje de ticket encontrado: {$subject}");
+                if (!$fechaMensaje) {
+                    return true; // Incluir si no tiene fecha
+                }
+                
+                // Parsear fecha y convertir correctamente de UTC a zona horaria local
+                // Asumir que las fechas de email vienen en UTC y convertir a zona horaria local
+                $fechaCarbon = \Carbon\Carbon::parse($fechaMensaje, 'UTC')->setTimezone(config('app.timezone'));
+                
+                // Comparar solo por fecha (sin hora) para evitar problemas de zona horaria
+                $fechaMensajeSolo = $fechaCarbon->format('Y-m-d');
+                $fechaLimiteInferiorSolo = $fechaLimiteInferior->format('Y-m-d');
+                $fechaLimiteSuperiorSolo = $fechaLimiteSuperior->format('Y-m-d');
+                
+                $incluido = $fechaMensajeSolo >= $fechaLimiteInferiorSolo && $fechaMensajeSolo <= $fechaLimiteSuperiorSolo;
+                
+                // Log para diagnóstico de correos filtrados
+                if (!$incluido) {
+                    $subject = substr($mensaje->getSubject(), 0, 50);
+                    Log::debug("Correo filtrado por fecha: {$subject} | Fecha: {$fechaMensajeSolo} | Rango: {$fechaLimiteInferiorSolo} - {$fechaLimiteSuperiorSolo}");
+                }
+                
+                return $incluido;
+                
+            } catch (\Exception $e) {
+                Log::warning("Error filtrando fecha del mensaje: " . $e->getMessage());
+                return true; // Incluir en caso de error
+            }
+        });
+        
+        Log::info("Mensajes filtrados (últimos " . self::DIAS_BUSQUEDA . " días): {$filtrados->count()}");
+        return $filtrados;
+    }
+    
+    /**
+     * Ordenar mensajes por fecha (más recientes primero)
+     */
+    private function ordenarPorFecha($mensajes)
+    {
+        return $mensajes->sortByDesc(function($msg) {
+            try {
+                $fecha = $msg->getDate();
+                return $fecha ? \Carbon\Carbon::parse($fecha) : now()->subYears(10);
+            } catch (\Exception $e) {
+                return now()->subYears(10);
+            }
+        });
+    }
+    
+    /**
+     * Loguear estadísticas de mensajes
+     */
+    private function logearEstadisticas($mensajes)
+    {
+        $estadisticas = [
+            'hoy' => 0,
+            'ayer' => 0,
+            'hace2' => 0,
+            'hace3' => 0,
+            'estaSemana' => 0,
+            'otros' => 0
+        ];
+        
+        $estadisticasPorDominio = [];
+        
+        foreach ($mensajes as $msg) {
+            try {
+                // Parsear fecha y convertir correctamente de UTC a zona horaria local
+                // Las fechas de email generalmente vienen en UTC
+                $fechaRaw = $msg->getDate();
+                $fecha = \Carbon\Carbon::parse($fechaRaw, 'UTC')->setTimezone(config('app.timezone'));
+                
+                $from = $msg->getFrom();
+                $fromEmail = $from ? $from->first()->mail : 'desconocido@email.com';
+                $dominio = $this->extraerDominio($fromEmail);
+                
+                // Contar por dominio
+                if (!isset($estadisticasPorDominio[$dominio])) {
+                    $estadisticasPorDominio[$dominio] = 0;
+                }
+                $estadisticasPorDominio[$dominio]++;
+                
+                if ($fecha->isToday()) {
+                    $estadisticas['hoy']++;
+                } elseif ($fecha->isYesterday()) {
+                    $estadisticas['ayer']++;
+                } elseif ($fecha->gte(now()->subDays(2)->startOfDay())) {
+                    $estadisticas['hace2']++;
+                } elseif ($fecha->gte(now()->subDays(3)->startOfDay())) {
+                    $estadisticas['hace3']++;
+                } elseif ($fecha->isCurrentWeek()) {
+                    $estadisticas['estaSemana']++;
+                } else {
+                    $estadisticas['otros']++;
                 }
             } catch (\Exception $e) {
-                Log::warning("Error procesando mensaje para filtro: " . $e->getMessage());
+                $estadisticas['otros']++;
+            }
+        }
+        
+        Log::info("=== ESTADÍSTICAS DE MENSAJES ===");
+        Log::info("Hoy: {$estadisticas['hoy']}");
+        Log::info("Ayer: {$estadisticas['ayer']}");
+        Log::info("Hace 2 días: {$estadisticas['hace2']}");
+        Log::info("Hace 3 días: {$estadisticas['hace3']}");
+        Log::info("Esta semana: {$estadisticas['estaSemana']}");
+        Log::info("Otros: {$estadisticas['otros']}");
+        
+        // Mostrar estadísticas por dominio
+        if (!empty($estadisticasPorDominio)) {
+            Log::info("=== ESTADÍSTICAS POR DOMINIO ===");
+            foreach ($estadisticasPorDominio as $dominio => $cantidad) {
+                Log::info("{$dominio}: {$cantidad} mensajes");
+            }
+            Log::info("=================================");
+        }
+        
+        Log::info("================================");
+        
+        // Log de algunos ejemplos
+        $this->logearEjemplosMensajes($mensajes, $estadisticas);
+    }
+    
+    /**
+     * Loguear ejemplos de mensajes
+     */
+    private function logearEjemplosMensajes($mensajes, $estadisticas)
+    {
+        Log::info("=== EJEMPLOS DE MENSAJES ===");
+        
+        $contadores = ['hoy' => 0, 'ayer' => 0];
+        
+        foreach ($mensajes as $msg) {
+            try {
+                // Parsear fecha y convertir correctamente de UTC a zona horaria local
+                // Las fechas de email generalmente vienen en UTC
+                $fechaRaw = $msg->getDate();
+                $fecha = \Carbon\Carbon::parse($fechaRaw, 'UTC')->setTimezone(config('app.timezone'));
+                
+                $subject = substr($msg->getSubject(), 0, 60);
+                $from = $msg->getFrom();
+                $fromEmail = $from ? $from->first()->mail : 'N/A';
+                
+                if ($fecha->isToday() && $contadores['hoy'] < 3) {
+                    Log::info("HOY: {$subject} | {$fromEmail} | {$fecha->format('Y-m-d H:i:s')}");
+                    $contadores['hoy']++;
+                } elseif ($fecha->isYesterday() && $contadores['ayer'] < 3) {
+                    Log::info("AYER: {$subject} | {$fromEmail} | {$fecha->format('Y-m-d H:i:s')}");
+                    $contadores['ayer']++;
+                }
+                
+                if ($contadores['hoy'] >= 3 && $contadores['ayer'] >= 3) {
+                    break;
+                }
+            } catch (\Exception $e) {
                 continue;
             }
         }
         
-        Log::info("Filtrados {$respuestasTickets->count()} mensajes de respuestas de tickets de {$messages->count()} mensajes totales");
-        
-        return $respuestasTickets;
+        Log::info("============================");
     }
     
     /**
-     * Procesar un mensaje de manera simple
+     * Procesar colección de mensajes
+     */
+    private function procesarMensajes($mensajes)
+    {
+        $procesados = 0;
+        $descartados = 0;
+        $inicioTiempo = microtime(true);
+        
+        foreach ($mensajes as $index => $mensaje) {
+            // Control de tiempo
+            if ($this->deberDetenerPorTiempo($inicioTiempo)) {
+                break;
+            }
+            
+            // Control de memoria
+            if ($this->deberDetenerPorMemoria($index)) {
+                break;
+            }
+            
+            // Procesar mensaje
+            try {
+                if ($this->procesarMensajeSimple($mensaje)) {
+                    $procesados++;
+                } else {
+                    $descartados++;
+                }
+                
+                // Log de progreso cada 10 mensajes
+                if ($index > 0 && $index % 10 == 0) {
+                    $this->logearProgreso($index, $mensajes->count(), $inicioTiempo);
+                }
+                
+            } catch (\Exception $e) {
+                Log::error("Error procesando mensaje #{$index}: " . $e->getMessage());
+                $descartados++;
+            } finally {
+                unset($mensaje);
+                
+                // Liberar memoria cada 20 mensajes
+                if ($index % 20 == 0) {
+                    gc_collect_cycles();
+                }
+            }
+        }
+        
+        $tiempoTotal = round(microtime(true) - $inicioTiempo, 2);
+        
+        return [
+            'procesados' => $procesados,
+            'descartados' => $descartados,
+            'tiempo' => $tiempoTotal
+        ];
+    }
+    
+    /**
+     * Verificar si se debe detener por tiempo
+     */
+    private function deberDetenerPorTiempo($inicioTiempo)
+    {
+        $tiempoTranscurrido = microtime(true) - $inicioTiempo;
+        
+        if ($tiempoTranscurrido > self::TIEMPO_MAX_SEGUNDOS) {
+            Log::warning("Tiempo máximo alcanzado ({$tiempoTranscurrido}s), deteniendo");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Verificar si se debe detener por memoria
+     */
+    private function deberDetenerPorMemoria($index)
+    {
+        if ($index > 0 && $index % 10 == 0) {
+            $memoriaUsada = memory_get_usage(true);
+            $memoriaMB = round($memoriaUsada / 1024 / 1024, 2);
+            
+            if ($memoriaUsada > self::MEMORIA_MAX_MB * 1024 * 1024) {
+                Log::warning("Memoria alta ({$memoriaMB} MB), deteniendo");
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Loguear progreso del procesamiento
+     */
+    private function logearProgreso($indice, $total, $inicioTiempo)
+    {
+        $tiempoTranscurrido = round(microtime(true) - $inicioTiempo, 2);
+        $memoriaMB = round(memory_get_usage(true) / 1024 / 1024, 2);
+        
+        Log::info("Progreso: {$indice}/{$total} | Tiempo: {$tiempoTranscurrido}s | Memoria: {$memoriaMB}MB");
+    }
+    
+    /**
+     * Procesar un mensaje individual
      */
     protected function procesarMensajeSimple($message)
     {
         try {
-            // Obtener información básica del mensaje
             $subject = $message->getSubject();
             $from = $message->getFrom();
             $body = $message->getTextBody();
             $fromEmail = $from ? $from->first()->mail : 'desconocido@email.com';
+            $fromName = $from ? $from->first()->personal : null;
+            $threadId = $this->extraerThreadId($message);
+            $messageId = $message->getMessageId();
+            $dominio = $this->extraerDominio($fromEmail);
             
-            Log::info("Procesando mensaje: {$subject}");
-            Log::info("De: {$fromEmail}");
+            // Log del dominio del correo para diagnóstico
+            Log::debug("Procesando correo de dominio: {$dominio} | Email: {$fromEmail}");
             
-            // Solo procesar si es una respuesta a un ticket
-            if (!$this->esRespuestaTicket($subject)) {
-                Log::info("No es respuesta de ticket: {$subject}");
-                return false;
-            }
-            
-            // Verificar que no sea un correo del sistema
+            // Verificar si es correo del sistema
             if ($this->esCorreoSistema($fromEmail)) {
-                Log::info("Correo del sistema ignorado: {$fromEmail}");
+                Log::debug("Correo descartado - Es correo del sistema: {$fromEmail}");
                 return false;
             }
             
-            // Buscar ticket por asunto
-            $ticket = $this->buscarTicketPorAsunto($subject);
+            // Buscar ticket existente
+            $ticket = $this->buscarTicketPorMensaje($subject, $messageId, $threadId, $fromEmail);
             
-            if (!$ticket) {
-                Log::info("No se encontró ticket para: {$subject}");
-                return false;
+            if ($ticket) {
+                // Respuesta a ticket existente
+                if ($this->correoYaProcesado($ticket->TicketID, $fromEmail, $subject)) {
+                    Log::debug("Correo descartado - Ya procesado: {$fromEmail} | Ticket #{$ticket->TicketID}");
+                    return false;
+                }
+                
+                $this->crearRespuestaUsuario($ticket, $body, $from, $messageId, $threadId);
+                return true;
+            } else {
+                // Intentar crear nuevo ticket
+                return $this->intentarCrearNuevoTicket($fromEmail, $subject, $body, $messageId, $threadId, $fromName);
             }
-            
-            // Verificar que el correo no haya sido procesado antes
-            if ($this->correoYaProcesado($ticket->TicketID, $fromEmail, $subject)) {
-                Log::info("Correo ya procesado anteriormente: {$subject}");
-                return false;
-            }
-            
-            // Crear respuesta del usuario
-            $this->crearRespuestaUsuario($ticket, $body, $from);
-            
-            Log::info("Respuesta procesada para ticket #{$ticket->TicketID}");
-            
-            return true;
             
         } catch (\Exception $e) {
-            Log::error('Error procesando mensaje simple: ' . $e->getMessage());
+            Log::error('Error procesando mensaje: ' . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Intentar crear nuevo ticket desde correo
+     */
+    private function intentarCrearNuevoTicket($fromEmail, $subject, $body, $messageId, $threadId, $fromName)
+    {
+        // Buscar empleado por correo (sin importar mayúsculas/minúsculas)
+        $empleado = Empleados::whereRaw('LOWER(Correo) = ?', [strtolower($fromEmail)])->first();
+        
+        if (!$empleado) {
+            // Log para diagnóstico: correo descartado porque el empleado no existe
+            Log::info("Correo descartado - Empleado no encontrado: {$fromEmail} | Asunto: {$subject}");
+            return false;
+        }
+        
+        if ($this->esCorreoComunicado($subject, $fromEmail)) {
+            Log::info("Correo descartado - Es comunicado: {$fromEmail} | Asunto: {$subject}");
+            return false;
+        }
+        
+        $nuevoTicket = $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId, $fromName);
+        
+        if ($nuevoTicket) {
+            Log::info("Nuevo ticket #{$nuevoTicket->TicketID} creado desde correo de {$fromEmail} (dominio: " . $this->extraerDominio($fromEmail) . ")");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Extraer dominio de un correo electrónico
+     */
+    private function extraerDominio($email)
+    {
+        $parts = explode('@', $email);
+        return count($parts) > 1 ? $parts[1] : 'desconocido';
     }
     
     /**
@@ -315,10 +583,16 @@ class SimpleWebklexImapService
     protected function esCorreoSistema($fromEmail)
     {
         $correosSistema = [
+            // Correos del sistema de proser.com.mx
             'tordonez@proser.com.mx',
             'sistema@proser.com.mx',
             'noreply@proser.com.mx',
-            'tickets@proser.com.mx'
+            'tickets@proser.com.mx',
+            // Correos del sistema de konkret.mx
+            'sistema@konkret.mx',
+            'noreply@konkret.mx',
+            'tickets@konkret.mx',
+            'tordonez@konkret.mx'
         ];
         
         return in_array(strtolower($fromEmail), $correosSistema);
@@ -329,98 +603,142 @@ class SimpleWebklexImapService
      */
     protected function correoYaProcesado($ticketId, $fromEmail, $subject)
     {
-        $existingChat = TicketChat::where('ticket_id', $ticketId)
-            ->where('correo_remitente', $fromEmail)
+        return TicketChat::where('ticket_id', $ticketId)
+            ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
             ->where('es_correo', true)
             ->where('mensaje', 'LIKE', '%' . substr($subject, 0, 50) . '%')
-            ->first();
-            
-        return $existingChat !== null;
+            ->exists();
     }
     
     /**
-     * Verificar si es una respuesta a un ticket (más específico)
+     * Buscar ticket por mensaje
      */
-    protected function esRespuestaTicket($subject)
+    protected function buscarTicketPorMensaje($subject, $messageId = null, $threadId = null, $fromEmail = null)
     {
-        // Limpiar el asunto para mejor comparación
-        $subject = trim($subject);
-        
-        // Patrones específicos para respuestas de tickets
-        $patrones = [
-            // Respuestas directas: "Re: Ticket #32"
-            '/^Re:\s*Ticket\s*#\d+/i',
-            // Respuestas con espacios: "Re:  Ticket #32"
-            '/^Re:\s+Ticket\s*#\d+/i',
-            // Respuestas sin "Re:": "Ticket #32"
-            '/^Ticket\s*#\d+/i',
-            // Respuestas con texto adicional: "Re: Ticket #32 - Problema"
-            '/^Re:\s*Ticket\s*#\d+\s*-/i',
-            // Respuestas con texto adicional sin "Re:": "Ticket #32 - Problema"
-            '/^Ticket\s*#\d+\s*-/i',
-            // Respuestas con texto en el medio: "Respuesta Ticket #32"
-            '/Ticket\s*#\d+/i'
-        ];
-        
-        foreach ($patrones as $patron) {
-            if (preg_match($patron, $subject)) {
-                Log::info("Asunto coincide con patrón de ticket: {$subject}");
-                return true;
-            }
+        // 1. Buscar por Thread-ID
+        if ($threadId) {
+            $ticket = $this->buscarPorThreadId($threadId);
+            if ($ticket) return $ticket;
         }
         
-        Log::info("Asunto NO coincide con patrones de ticket: {$subject}");
-        return false;
+        // 2. Buscar por Message-ID
+        if ($messageId) {
+            $ticket = $this->buscarPorMessageId($messageId);
+            if ($ticket) return $ticket;
+        }
+        
+        // 3. Buscar por número de ticket en asunto
+        $ticket = $this->buscarPorNumeroTicket($subject);
+        if ($ticket) return $ticket;
+        
+        // 4. Buscar por asunto original (solo si hay empleado)
+        if ($fromEmail) {
+            $ticket = $this->buscarPorAsuntoOriginal($subject, $fromEmail);
+            if ($ticket) return $ticket;
+        }
+        
+        return null;
     }
     
     /**
-     * Buscar ticket por asunto (mejorado)
+     * Buscar ticket por Thread-ID
      */
-    protected function buscarTicketPorAsunto($subject)
+    private function buscarPorThreadId($threadId)
     {
-        // Limpiar el asunto
-        $subject = trim($subject);
+        $chat = TicketChat::where('thread_id', $threadId)
+            ->orWhere('message_id', $threadId)
+            ->first();
         
-        // Patrones para extraer el número de ticket
+        return $chat ? Tickets::find($chat->ticket_id) : null;
+    }
+    
+    /**
+     * Buscar ticket por Message-ID
+     */
+    private function buscarPorMessageId($messageId)
+    {
+        $chat = TicketChat::where('message_id', $messageId)->first();
+        return $chat ? Tickets::find($chat->ticket_id) : null;
+    }
+    
+    /**
+     * Buscar ticket por número en asunto
+     */
+    private function buscarPorNumeroTicket($subject)
+    {
         $patrones = [
-            // "Re: Ticket #32" o "Re:  Ticket #32"
-            '/Re:\s*Ticket\s*#(\d+)/i',
-            // "Ticket #32"
             '/Ticket\s*#(\d+)/i',
-            // "Re: Ticket #32 - Descripción"
-            '/Re:\s*Ticket\s*#(\d+)\s*-/i',
-            // "Ticket #32 - Descripción"
-            '/Ticket\s*#(\d+)\s*-/i',
-            // "Respuesta Ticket #32"
-            '/Ticket\s*#(\d+)/i'
+            '/Re:\s*Ticket\s*#(\d+)/i',
         ];
         
         foreach ($patrones as $patron) {
             if (preg_match($patron, $subject, $matches)) {
                 $ticketId = (int) $matches[1];
-                Log::info("Extraído Ticket ID: {$ticketId} del asunto: {$subject}");
-                
                 $ticket = Tickets::find($ticketId);
+                
                 if ($ticket) {
-                    Log::info("Ticket encontrado: #{$ticketId} - {$ticket->Titulo}");
+                    Log::info("Ticket encontrado por número: #{$ticketId}");
                     return $ticket;
-                } else {
-                    Log::warning("Ticket #{$ticketId} no encontrado en la base de datos");
                 }
             }
         }
         
-        Log::warning("No se pudo extraer número de ticket del asunto: {$subject}");
         return null;
+    }
+    
+    /**
+     * Buscar ticket por asunto original
+     */
+    private function buscarPorAsuntoOriginal($subject, $fromEmail)
+    {
+        $subjectLimpio = preg_replace('/^(Re:|RE:|Fwd:|FWD:)\s*/i', '', trim($subject));
+        
+        if (empty($subjectLimpio)) {
+            return null;
+        }
+        
+        $empleado = Empleados::whereRaw('LOWER(Correo) = ?', [strtolower($fromEmail)])->first();
+        
+        if (!$empleado) {
+            return null;
+        }
+        
+        // Buscar exacto primero
+        $ticket = Tickets::where('Descripcion', $subjectLimpio)
+            ->where('EmpleadoID', $empleado->EmpleadoID)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        if ($ticket) {
+            Log::info("Ticket encontrado por asunto exacto: #{$ticket->TicketID}");
+            return $ticket;
+        }
+        
+        // Buscar con LIKE
+        $ticket = Tickets::where('Descripcion', 'LIKE', '%' . $subjectLimpio . '%')
+            ->where('EmpleadoID', $empleado->EmpleadoID)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->orderBy('created_at', 'desc')
+            ->first();
+        
+        if ($ticket) {
+            Log::info("Ticket encontrado por asunto similar: #{$ticket->TicketID}");
+        }
+        
+        return $ticket;
     }
     
     /**
      * Crear respuesta del usuario
      */
-    protected function crearRespuestaUsuario($ticket, $body, $from)
+    protected function crearRespuestaUsuario($ticket, $body, $from, $messageId = null, $threadId = null)
     {
         $fromEmail = $from ? $from->first()->mail : $ticket->empleado->Correo;
         $fromName = $from ? $from->first()->personal : $ticket->empleado->NombreEmpleado;
+        
+        $finalThreadId = $threadId ?: $this->obtenerThreadIdDelTicket($ticket->TicketID);
+        $finalMessageId = $messageId ?: $this->generarMessageId();
         
         TicketChat::create([
             'ticket_id' => $ticket->TicketID,
@@ -428,11 +746,114 @@ class SimpleWebklexImapService
             'remitente' => 'usuario',
             'nombre_remitente' => $fromName,
             'correo_remitente' => $fromEmail,
-            'message_id' => $this->generarMessageId(),
-            'thread_id' => $this->obtenerThreadIdDelTicket($ticket->TicketID),
+            'message_id' => $finalMessageId,
+            'thread_id' => $finalThreadId,
             'es_correo' => true,
             'leido' => false
         ]);
+    }
+    
+    /**
+     * Crear nuevo ticket desde correo
+     */
+    protected function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null, $fromName = null)
+    {
+        try {
+            $ticket = Tickets::create([
+                'EmpleadoID' => $empleado->EmpleadoID,
+                'Descripcion' => $subject,
+                'Estatus' => 'Pendiente',
+                'Prioridad' => 'Media',
+                'created_at' => now()
+            ]);
+
+            TicketChat::create([
+                'ticket_id' => $ticket->TicketID,
+                'mensaje' => "Ticket creado automáticamente desde correo:\n\n" . ($body ?: 'Sin contenido'),
+                'remitente' => 'usuario',
+                'nombre_remitente' => $fromName ?: $empleado->NombreEmpleado,
+                'correo_remitente' => $empleado->Correo,
+                'message_id' => $messageId,
+                'thread_id' => $threadId,
+                'es_correo' => true,
+                'leido' => false
+            ]);
+
+            return $ticket;
+
+        } catch (\Exception $e) {
+            Log::error("Error creando ticket: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Verificar si es correo de comunicado
+     */
+    protected function esCorreoComunicado($subject, $fromEmail)
+    {
+        $correosComunicados = [
+            // Correos de comunicados de proser.com.mx
+            'comunicacion@proser.com.mx',
+            'noreply@proser.com.mx',
+            'no-reply@proser.com.mx',
+            // Correos de comunicados de konkret.mx
+            'comunicacion@konkret.mx',
+            'noreply@konkret.mx',
+            'no-reply@konkret.mx'
+        ];
+        
+        if (in_array(strtolower($fromEmail), $correosComunicados)) {
+            return true;
+        }
+        
+        $patronesComunicados = [
+            '/^\[Corporativo\]/i',
+            '/^COMUNICADO/i',
+            '/^HOY ES ÚLTIMO DÍA/i',
+            '/^ÚNETE A LA JORNADA/i',
+            '/^USO DEL COMEDOR/i',
+            '/^CAJA DE AHORRO/i',
+            '/^RECORDATORIO IMPORTANTE/i',
+            '/^PLÁTICA INFORMATIVA/i',
+        ];
+        
+        foreach ($patronesComunicados as $patron) {
+            if (preg_match($patron, $subject)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Extraer Thread-ID del mensaje
+     */
+    protected function extraerThreadId($message)
+    {
+        try {
+            $headers = $message->getHeaders();
+            
+            if (isset($headers->in_reply_to)) {
+                $inReplyTo = $headers->in_reply_to;
+                return is_array($inReplyTo) ? ($inReplyTo[0] ?? null) : $inReplyTo;
+            }
+            
+            if (isset($headers->references)) {
+                $references = $headers->references;
+                if (is_array($references)) {
+                    return end($references) ?: null;
+                } else {
+                    $refs = explode(' ', $references);
+                    return trim(end($refs)) ?: null;
+                }
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
     
     /**
@@ -461,5 +882,120 @@ class SimpleWebklexImapService
 
         $domain = 'proser.com.mx';
         return "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
+    }
+    
+    /**
+     * Método de diagnóstico
+     */
+    public function diagnosticar()
+    {
+        try {
+            if (!$this->conectar()) {
+                return ['success' => false, 'message' => 'Error de conexión'];
+            }
+            
+            $folder = $this->client->getFolder('INBOX');
+            $mensajes = $this->obtenerMensajesRecientes($folder);
+            
+            return [
+                'success' => true,
+                'total' => $mensajes->count(),
+                'message' => 'Diagnóstico completado. Revisa los logs.'
+            ];
+            
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Obtener información básica del buzón
+     */
+    public function obtenerInfoBasica()
+    {
+        try {
+            if (!$this->conectar()) {
+                return [
+                    'success' => false,
+                    'message' => 'Error de conexión',
+                    'total' => 0,
+                    'unseen' => 0,
+                    'seen' => 0,
+                    'connection_status' => 'disconnected'
+                ];
+            }
+            
+            $folder = $this->client->getFolder('INBOX');
+            
+            // Obtener estadísticas de manera segura
+            try {
+                $total = $folder->messages()->limit(1000)->count();
+            } catch (\Exception $e) {
+                Log::warning("Error contando mensajes totales: " . $e->getMessage());
+                $total = 0;
+            }
+            
+            try {
+                $unseenMessages = $folder->messages()->unseen()->limit(100)->get();
+                $unseen = $unseenMessages->count();
+            } catch (\Exception $e) {
+                Log::warning("Error contando mensajes no leídos: " . $e->getMessage());
+                $unseen = 0;
+            }
+            
+            $seen = max(0, $total - $unseen);
+            
+            return [
+                'success' => true,
+                'total' => $total,
+                'unseen' => $unseen,
+                'seen' => $seen,
+                'connection_status' => 'connected',
+                'message' => "Total: {$total}, No leídos: {$unseen}, Leídos: {$seen}"
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo información básica: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'total' => 0,
+                'unseen' => 0,
+                'seen' => 0,
+                'connection_status' => 'error',
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Probar conexión IMAP
+     */
+    public function probarConexion()
+    {
+        try {
+            Log::info('Probando conexión IMAP...');
+            
+            $this->client->connect();
+            
+            $folder = $this->client->getFolder('INBOX');
+            $messageCount = $folder->messages()->limit(100)->count();
+            
+            Log::info("Conexión exitosa. Mensajes en INBOX: {$messageCount}");
+            
+            return [
+                'success' => true,
+                'message' => "Conexión exitosa. Mensajes en INBOX: {$messageCount}",
+                'message_count' => $messageCount
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Error probando conexión: ' . $e->getMessage());
+            
+            return [
+                'success' => false,
+                'message' => 'Error de conexión: ' . $e->getMessage()
+            ];
+        }
     }
 }

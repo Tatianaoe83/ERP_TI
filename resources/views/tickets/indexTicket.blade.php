@@ -145,19 +145,7 @@
                             </p>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button 
-                                @click="sincronizarCorreos()"
-                                :disabled="sincronizando"
-                                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                                <svg x-show="!sincronizando" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                <svg x-show="sincronizando" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span x-text="sincronizando ? 'Sincronizando...' : 'Sincronizar Correos'"></span>
-                            </button>
+                           
                             <!--<button 
                                 @click="diagnosticarCorreos()"
                                 class="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
@@ -183,14 +171,7 @@
                                 </svg>
                                 <span x-text="procesandoAutomatico ? 'Procesando...' : 'Procesar Automático'"></span>
                             </button>
-                            <button 
-                                @click="mostrarProcesarRespuesta = !mostrarProcesarRespuesta"
-                                class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                                </svg>
-                                <span>Procesar Manual</span>
-                            </button>
+                           
                             <button 
                                 @click="probarConexionWebklex()"
                                 class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
@@ -310,6 +291,21 @@
                             <div class="flex items-center gap-2 mb-3">
                                 <span class="text-sm font-medium text-gray-700">Responder por correo:</span>
                             </div>
+                            
+                            <!-- Información del ticket y destinatario -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                        <span class="text-xs font-semibold text-blue-600 uppercase">Número de Ticket:</span>
+                                        <p class="text-gray-800 font-medium" x-text="'Ticket #' + selected.id"></p>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs font-semibold text-blue-600 uppercase">Enviar a:</span>
+                                        <p class="text-gray-800 font-medium" x-text="selected.correo || 'No disponible'"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <textarea 
                                 x-model="nuevoMensaje"
                                 class="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
