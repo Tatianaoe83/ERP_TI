@@ -16,7 +16,6 @@ class SimpleWebklexImapService
     
     // Constantes de configuración
     private const DIAS_BUSQUEDA = 7;
-    private const LIMITE_MENSAJES = 100;
     private const TIEMPO_MAX_SEGUNDOS = 120;
     private const MEMORIA_MAX_MB = 800;
     
@@ -26,12 +25,12 @@ class SimpleWebklexImapService
             'default' => 'default',
             'accounts' => [
                 'default' => [
-                    'host'          => env('IMAP_HOST', 'proser.com.mx'),
-                    'port'          => env('IMAP_PORT', 993),
-                    'encryption'    => env('IMAP_ENCRYPTION', 'ssl'),
-                    'validate_cert' => env('IMAP_VALIDATE_CERT', false),
-                    'username'      => env('IMAP_USERNAME', 'tordonez@proser.com.mx'),
-                    'password'      => env('IMAP_PASSWORD'),
+                    'host'          => config('email_tickets.imap.host'),
+                    'port'          => config('email_tickets.imap.port', 993),
+                    'encryption'    => config('email_tickets.imap.encryption', 'ssl'),
+                    'validate_cert' => config('email_tickets.imap.validate_cert', false),
+                    'username'      => config('email_tickets.imap.username'),
+                    'password'      => config('email_tickets.imap.password'),
                     'protocol'      => 'imap',
                 ]
             ]
@@ -71,9 +70,7 @@ class SimpleWebklexImapService
                 return false;
             }
             
-            Log::info('=== INICIANDO PROCESAMIENTO DE CORREOS ===');
-            Log::info('Fecha/Hora actual: ' . now()->format('Y-m-d H:i:s'));
-            Log::info('Timezone: ' . config('app.timezone'));
+            Log::info('Iniciando procesamiento de correos');
             
             $folder = $this->client->getFolder('INBOX');
             $messages = $this->obtenerMensajesRecientes($folder);
@@ -91,10 +88,7 @@ class SimpleWebklexImapService
             // Restaurar configuración
             ini_set('memory_limit', $originalMemoryLimit);
             
-            Log::info("=== PROCESAMIENTO COMPLETADO ===");
-            Log::info("Procesados: {$resultado['procesados']}");
-            Log::info("Descartados: {$resultado['descartados']}");
-            Log::info("Tiempo total: {$resultado['tiempo']}s");
+            Log::info("Procesamiento completado - Procesados: {$resultado['procesados']}, Descartados: {$resultado['descartados']}, Tiempo: {$resultado['tiempo']}s");
             
             return $resultado['procesados'] > 0;
             
@@ -108,23 +102,18 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Obtener mensajes recientes (hoy hasta 7 días atrás)
+     * Obtener mensajes recientes (últimos 7 días)
      */
     protected function obtenerMensajesRecientes($folder)
     {
         try {
-            Log::info('Obteniendo mensajes de los últimos ' . self::DIAS_BUSQUEDA . ' días hasta mañana');
+            $fechaInicio = now()->subDays(self::DIAS_BUSQUEDA)->startOfDay();
+            Log::info("Obteniendo mensajes desde: {$fechaInicio->format('Y-m-d H:i:s')}");
             
-            // Estrategia 1: Intentar obtener últimos N mensajes directamente
-            $mensajes = $this->obtenerUltimosMensajes($folder, self::LIMITE_MENSAJES);
-            
-            // Estrategia 2: Usar since() como método principal (más confiable)
-            $mensajesSince = $this->obtenerMensajesConSince($folder);
-            
-            // Combinar ambos métodos y eliminar duplicados
-            $mensajes = $this->combinarYDeduplicar($mensajes, $mensajesSince);
-            
-            Log::info("Total de mensajes obtenidos antes del filtro: {$mensajes->count()}");
+            $mensajes = $folder->messages()
+                ->since($fechaInicio)
+                ->leaveUnread()
+                ->get();
             
             // Filtrar por fecha (últimos 7 días hasta mañana)
             $mensajesFiltrados = $this->filtrarPorFecha($mensajes);
@@ -132,8 +121,7 @@ class SimpleWebklexImapService
             // Ordenar por fecha descendente
             $mensajesFiltrados = $this->ordenarPorFecha($mensajesFiltrados);
             
-            // Log de estadísticas
-            $this->logearEstadisticas($mensajesFiltrados);
+            Log::info("Mensajes obtenidos: {$mensajesFiltrados->count()}");
             
             return $mensajesFiltrados;
             
@@ -144,89 +132,12 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Obtener últimos N mensajes del buzón
-     */
-    private function obtenerUltimosMensajes($folder, $limite)
-    {
-        try {
-            Log::info("Obteniendo últimos {$limite} mensajes del buzón");
-            
-            $mensajes = $folder->messages()
-                ->leaveUnread()
-                ->limit($limite, 1)
-                ->get();
-            
-            Log::info("Mensajes obtenidos: {$mensajes->count()}");
-            return $mensajes;
-            
-        } catch (\Exception $e) {
-            Log::warning("Error obteniendo últimos mensajes: " . $e->getMessage());
-            return collect();
-        }
-    }
-    
-    /**
-     * Obtener mensajes con since()
-     */
-    private function obtenerMensajesConSince($folder)
-    {
-        try {
-            // Traer correos de los últimos 7 días (el filtro de fecha se encargará del límite superior)
-            $fechaInicio = now()->subDays(self::DIAS_BUSQUEDA)->startOfDay();
-            
-            Log::info("Obteniendo mensajes desde: {$fechaInicio->format('Y-m-d H:i:s')}");
-            
-            $mensajes = $folder->messages()
-                ->since($fechaInicio)
-                ->leaveUnread()
-                ->get();
-            
-            Log::info("Mensajes con since(): {$mensajes->count()}");
-            return $mensajes;
-            
-        } catch (\Exception $e) {
-            Log::warning("Error con since(): " . $e->getMessage());
-            return collect();
-        }
-    }
-    
-    /**
-     * Combinar colecciones y eliminar duplicados
-     */
-    private function combinarYDeduplicar($coleccion1, $coleccion2)
-    {
-        $messageIds = [];
-        $combinados = collect();
-        
-        foreach ([$coleccion1, $coleccion2] as $coleccion) {
-            foreach ($coleccion as $mensaje) {
-                try {
-                    $msgId = $mensaje->getMessageId();
-                    
-                    if (!in_array($msgId, $messageIds)) {
-                        $messageIds[] = $msgId;
-                        $combinados->push($mensaje);
-                    }
-                } catch (\Exception $e) {
-                    // Si no tiene Message-ID, agregarlo de todas formas
-                    $combinados->push($mensaje);
-                }
-            }
-        }
-        
-        Log::info("Mensajes combinados (sin duplicados): {$combinados->count()}");
-        return $combinados;
-    }
-    
-    /**
      * Filtrar mensajes por fecha (últimos 7 días)
      */
     private function filtrarPorFecha($mensajes)
     {
         $fechaLimiteInferior = now()->subDays(self::DIAS_BUSQUEDA)->startOfDay();
-        $fechaLimiteSuperior = now()->addDay()->endOfDay(); // Hasta mañana (día 28)
-        
-        Log::info("Filtro de fechas: Desde {$fechaLimiteInferior->format('Y-m-d H:i:s')} hasta {$fechaLimiteSuperior->format('Y-m-d H:i:s')}");
+        $fechaLimiteSuperior = now()->addDay()->endOfDay();
         
         $filtrados = $mensajes->filter(function($mensaje) use ($fechaLimiteInferior, $fechaLimiteSuperior) {
             try {
@@ -245,15 +156,7 @@ class SimpleWebklexImapService
                 $fechaLimiteInferiorSolo = $fechaLimiteInferior->format('Y-m-d');
                 $fechaLimiteSuperiorSolo = $fechaLimiteSuperior->format('Y-m-d');
                 
-                $incluido = $fechaMensajeSolo >= $fechaLimiteInferiorSolo && $fechaMensajeSolo <= $fechaLimiteSuperiorSolo;
-                
-                // Log para diagnóstico de correos filtrados
-                if (!$incluido) {
-                    $subject = substr($mensaje->getSubject(), 0, 50);
-                    Log::debug("Correo filtrado por fecha: {$subject} | Fecha: {$fechaMensajeSolo} | Rango: {$fechaLimiteInferiorSolo} - {$fechaLimiteSuperiorSolo}");
-                }
-                
-                return $incluido;
+                return $fechaMensajeSolo >= $fechaLimiteInferiorSolo && $fechaMensajeSolo <= $fechaLimiteSuperiorSolo;
                 
             } catch (\Exception $e) {
                 Log::warning("Error filtrando fecha del mensaje: " . $e->getMessage());
@@ -261,7 +164,6 @@ class SimpleWebklexImapService
             }
         });
         
-        Log::info("Mensajes filtrados (últimos " . self::DIAS_BUSQUEDA . " días): {$filtrados->count()}");
         return $filtrados;
     }
     
@@ -278,119 +180,6 @@ class SimpleWebklexImapService
                 return now()->subYears(10);
             }
         });
-    }
-    
-    /**
-     * Loguear estadísticas de mensajes
-     */
-    private function logearEstadisticas($mensajes)
-    {
-        $estadisticas = [
-            'hoy' => 0,
-            'ayer' => 0,
-            'hace2' => 0,
-            'hace3' => 0,
-            'estaSemana' => 0,
-            'otros' => 0
-        ];
-        
-        $estadisticasPorDominio = [];
-        
-        foreach ($mensajes as $msg) {
-            try {
-                // Parsear fecha y convertir correctamente de UTC a zona horaria local
-                // Las fechas de email generalmente vienen en UTC
-                $fechaRaw = $msg->getDate();
-                $fecha = \Carbon\Carbon::parse($fechaRaw, 'UTC')->setTimezone(config('app.timezone'));
-                
-                $from = $msg->getFrom();
-                $fromEmail = $from ? $from->first()->mail : 'desconocido@email.com';
-                $dominio = $this->extraerDominio($fromEmail);
-                
-                // Contar por dominio
-                if (!isset($estadisticasPorDominio[$dominio])) {
-                    $estadisticasPorDominio[$dominio] = 0;
-                }
-                $estadisticasPorDominio[$dominio]++;
-                
-                if ($fecha->isToday()) {
-                    $estadisticas['hoy']++;
-                } elseif ($fecha->isYesterday()) {
-                    $estadisticas['ayer']++;
-                } elseif ($fecha->gte(now()->subDays(2)->startOfDay())) {
-                    $estadisticas['hace2']++;
-                } elseif ($fecha->gte(now()->subDays(3)->startOfDay())) {
-                    $estadisticas['hace3']++;
-                } elseif ($fecha->isCurrentWeek()) {
-                    $estadisticas['estaSemana']++;
-                } else {
-                    $estadisticas['otros']++;
-                }
-            } catch (\Exception $e) {
-                $estadisticas['otros']++;
-            }
-        }
-        
-        Log::info("=== ESTADÍSTICAS DE MENSAJES ===");
-        Log::info("Hoy: {$estadisticas['hoy']}");
-        Log::info("Ayer: {$estadisticas['ayer']}");
-        Log::info("Hace 2 días: {$estadisticas['hace2']}");
-        Log::info("Hace 3 días: {$estadisticas['hace3']}");
-        Log::info("Esta semana: {$estadisticas['estaSemana']}");
-        Log::info("Otros: {$estadisticas['otros']}");
-        
-        // Mostrar estadísticas por dominio
-        if (!empty($estadisticasPorDominio)) {
-            Log::info("=== ESTADÍSTICAS POR DOMINIO ===");
-            foreach ($estadisticasPorDominio as $dominio => $cantidad) {
-                Log::info("{$dominio}: {$cantidad} mensajes");
-            }
-            Log::info("=================================");
-        }
-        
-        Log::info("================================");
-        
-        // Log de algunos ejemplos
-        $this->logearEjemplosMensajes($mensajes, $estadisticas);
-    }
-    
-    /**
-     * Loguear ejemplos de mensajes
-     */
-    private function logearEjemplosMensajes($mensajes, $estadisticas)
-    {
-        Log::info("=== EJEMPLOS DE MENSAJES ===");
-        
-        $contadores = ['hoy' => 0, 'ayer' => 0];
-        
-        foreach ($mensajes as $msg) {
-            try {
-                // Parsear fecha y convertir correctamente de UTC a zona horaria local
-                // Las fechas de email generalmente vienen en UTC
-                $fechaRaw = $msg->getDate();
-                $fecha = \Carbon\Carbon::parse($fechaRaw, 'UTC')->setTimezone(config('app.timezone'));
-                
-                $subject = substr($msg->getSubject(), 0, 60);
-                $from = $msg->getFrom();
-                $fromEmail = $from ? $from->first()->mail : 'N/A';
-                
-                if ($fecha->isToday() && $contadores['hoy'] < 3) {
-                    Log::info("HOY: {$subject} | {$fromEmail} | {$fecha->format('Y-m-d H:i:s')}");
-                    $contadores['hoy']++;
-                } elseif ($fecha->isYesterday() && $contadores['ayer'] < 3) {
-                    Log::info("AYER: {$subject} | {$fromEmail} | {$fecha->format('Y-m-d H:i:s')}");
-                    $contadores['ayer']++;
-                }
-                
-                if ($contadores['hoy'] >= 3 && $contadores['ayer'] >= 3) {
-                    break;
-                }
-            } catch (\Exception $e) {
-                continue;
-            }
-        }
-        
-        Log::info("============================");
     }
     
     /**
@@ -421,8 +210,8 @@ class SimpleWebklexImapService
                     $descartados++;
                 }
                 
-                // Log de progreso cada 10 mensajes
-                if ($index > 0 && $index % 10 == 0) {
+                // Log de progreso cada 20 mensajes
+                if ($index > 0 && $index % 20 == 0) {
                     $this->logearProgreso($index, $mensajes->count(), $inicioTiempo);
                 }
                 
@@ -432,8 +221,8 @@ class SimpleWebklexImapService
             } finally {
                 unset($mensaje);
                 
-                // Liberar memoria cada 20 mensajes
-                if ($index % 20 == 0) {
+                // Liberar memoria cada 30 mensajes
+                if ($index % 30 == 0) {
                     gc_collect_cycles();
                 }
             }
@@ -468,7 +257,7 @@ class SimpleWebklexImapService
      */
     private function deberDetenerPorMemoria($index)
     {
-        if ($index > 0 && $index % 10 == 0) {
+        if ($index > 0 && $index % 20 == 0) {
             $memoriaUsada = memory_get_usage(true);
             $memoriaMB = round($memoriaUsada / 1024 / 1024, 2);
             
@@ -507,12 +296,13 @@ class SimpleWebklexImapService
             $messageId = $message->getMessageId();
             $dominio = $this->extraerDominio($fromEmail);
             
-            // Log del dominio del correo para diagnóstico
-            Log::debug("Procesando correo de dominio: {$dominio} | Email: {$fromEmail}");
+            // Filtrar solo correos de dominios permitidos (proser y konkret)
+            if (!$this->esDominioPermitido($dominio)) {
+                return false;
+            }
             
             // Verificar si es correo del sistema
             if ($this->esCorreoSistema($fromEmail)) {
-                Log::debug("Correo descartado - Es correo del sistema: {$fromEmail}");
                 return false;
             }
             
@@ -522,7 +312,6 @@ class SimpleWebklexImapService
             if ($ticket) {
                 // Respuesta a ticket existente
                 if ($this->correoYaProcesado($ticket->TicketID, $fromEmail, $subject)) {
-                    Log::debug("Correo descartado - Ya procesado: {$fromEmail} | Ticket #{$ticket->TicketID}");
                     return false;
                 }
                 
@@ -548,13 +337,10 @@ class SimpleWebklexImapService
         $empleado = Empleados::whereRaw('LOWER(Correo) = ?', [strtolower($fromEmail)])->first();
         
         if (!$empleado) {
-            // Log para diagnóstico: correo descartado porque el empleado no existe
-            Log::info("Correo descartado - Empleado no encontrado: {$fromEmail} | Asunto: {$subject}");
             return false;
         }
         
         if ($this->esCorreoComunicado($subject, $fromEmail)) {
-            Log::info("Correo descartado - Es comunicado: {$fromEmail} | Asunto: {$subject}");
             return false;
         }
         
@@ -574,7 +360,16 @@ class SimpleWebklexImapService
     private function extraerDominio($email)
     {
         $parts = explode('@', $email);
-        return count($parts) > 1 ? $parts[1] : 'desconocido';
+        return count($parts) > 1 ? strtolower($parts[1]) : 'desconocido';
+    }
+    
+    /**
+     * Verificar si el dominio está permitido (solo proser y konkret)
+     */
+    private function esDominioPermitido($dominio)
+    {
+        $dominiosPermitidos = ['proser.com.mx', 'konkret.mx'];
+        return in_array(strtolower($dominio), $dominiosPermitidos);
     }
     
     /**

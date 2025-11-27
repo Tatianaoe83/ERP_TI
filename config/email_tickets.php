@@ -16,6 +16,8 @@ return [
         'port' => env('IMAP_PORT', 993),
         'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
         'validate_cert' => env('IMAP_VALIDATE_CERT', false),
+        'username' => env('IMAP_USERNAME'),
+        'password' => env('IMAP_PASSWORD'),
     ],
 
     /*
@@ -62,5 +64,29 @@ return [
         'send_confirmations' => env('EMAIL_SEND_CONFIRMATIONS', true),
         'send_updates' => env('EMAIL_SEND_UPDATES', true),
         'send_reminders' => env('EMAIL_SEND_REMINDERS', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Configuración SMTP para correos salientes
+    |--------------------------------------------------------------------------
+    |
+    | Configuración para el envío de correos salientes mediante SMTP.
+    | Toma las variables directamente del .env, con fallback a config/mail.php
+    |
+    */
+
+    'smtp' => [
+        'host' => env('MAIL_HOST', config('mail.mailers.smtp.host')),
+        'port' => env('MAIL_PORT', config('mail.mailers.smtp.port')),
+        'encryption' => env('MAIL_ENCRYPTION', config('mail.mailers.smtp.encryption')),
+        'username' => env('MAIL_USERNAME', config('mail.mailers.smtp.username')),
+        'password' => env('MAIL_PASSWORD', config('mail.mailers.smtp.password')),
+        'from_address' => env('MAIL_FROM_ADDRESS', config('mail.from.address')),
+        'from_name' => env('MAIL_FROM_NAME', config('mail.from.name')),
+        'domain' => env('MAIL_HOST', config('mail.mailers.smtp.host')),
+        'x_originating_ip' => env('EMAIL_X_ORIGINATING_IP', '127.0.0.1'),
+        'x_remote_ip' => env('EMAIL_X_REMOTE_IP', '127.0.0.1'),
+        'timeout' => env('MAIL_TIMEOUT', config('mail.mailers.smtp.timeout', 30)),
     ],
 ];

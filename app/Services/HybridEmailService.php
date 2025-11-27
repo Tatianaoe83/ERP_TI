@@ -20,23 +20,11 @@ class HybridEmailService
 
     public function __construct()
     {
-        $this->smtpHost = config('mail.mailers.smtp.host');
-        $this->smtpPort = config('mail.mailers.smtp.port');
-        $this->smtpUsername = config('mail.mailers.smtp.username');
-        $this->smtpPassword = config('mail.mailers.smtp.password');
-        $this->smtpEncryption = config('mail.mailers.smtp.encryption');
-        
-        
-        // Para servidores personalizados como proser.com.mx
-        if (strpos($this->smtpHost, 'proser.com.mx') !== false) {
-            $this->smtpPort = 465;
-            $this->smtpEncryption = 'ssl';
-        }
-        
-        // Forzar configuración para proser.com.mx
-        $this->smtpHost = 'proser.com.mx';
-        $this->smtpPort = 465;
-        $this->smtpEncryption = 'ssl';
+        $this->smtpHost = config('email_tickets.smtp.host');
+        $this->smtpPort = config('email_tickets.smtp.port');
+        $this->smtpUsername = config('email_tickets.smtp.username');
+        $this->smtpPassword = config('email_tickets.smtp.password');
+        $this->smtpEncryption = config('email_tickets.smtp.encryption');
     }
 
     /**
@@ -75,12 +63,15 @@ class HybridEmailService
             $mail->addCustomHeader('Reply-To', $correoSoporte);
             
             // Headers adicionales para evitar interceptación
-            $mail->addCustomHeader('X-Originating-IP', '[127.0.0.1]');
-            $mail->addCustomHeader('X-Remote-IP', '[127.0.0.1]');
+            $xOriginatingIp = config('email_tickets.smtp.x_originating_ip');
+            $xRemoteIp = config('email_tickets.smtp.x_remote_ip');
+            $mail->addCustomHeader('X-Originating-IP', "[{$xOriginatingIp}]");
+            $mail->addCustomHeader('X-Remote-IP', "[{$xRemoteIp}]");
             $mail->addCustomHeader('X-Sender', $correoSoporte);
 
-            // Forzar FROM desde proser.com.mx
-            $mail->setFrom('tordonez@proser.com.mx', $nombreSoporte);
+            // FROM desde configuración
+            $fromAddress = config('email_tickets.smtp.from_address');
+            $mail->setFrom($fromAddress, $nombreSoporte);
             $mail->addAddress($empleado->Correo, $empleado->NombreEmpleado);
             
             $mail->isHTML(true);
@@ -227,17 +218,17 @@ class HybridEmailService
     {
         $mail->isSMTP();
         
-        // Forzar configuración específica para proser.com.mx
-        $mail->Host = 'proser.com.mx';
-        $mail->Port = 465;
-        $mail->SMTPSecure = 'ssl';
+        // Configuración desde variables de entorno
+        $mail->Host = $this->smtpHost;
+        $mail->Port = $this->smtpPort;
+        $mail->SMTPSecure = $this->smtpEncryption;
         $mail->SMTPAuth = true;
-        $mail->Username = 'tordonez@proser.com.mx';
+        $mail->Username = $this->smtpUsername;
         $mail->Password = $this->smtpPassword;
         
         // Configuraciones adicionales para evitar interceptación
         $mail->CharSet = 'UTF-8';
-        $mail->Timeout = 30;
+        $mail->Timeout = config('email_tickets.smtp.timeout', 30);
         $mail->SMTPKeepAlive = false;
         $mail->SMTPOptions = [
             'ssl' => [
@@ -246,10 +237,6 @@ class HybridEmailService
                 'allow_self_signed' => true,
             ],
         ];
-        
-        // Configuración básica sin headers duplicados
-        $mail->CharSet = 'UTF-8';
-        $mail->Timeout = 30;
     }
 
     /**
@@ -257,8 +244,7 @@ class HybridEmailService
      */
     private function generarMessageId()
     {
-        // Forzar dominio proser.com.mx para evitar rechazo de correos
-        $domain = 'proser.com.mx';
+        $domain = config('email_tickets.smtp.domain');
         $timestamp = time();
         $random = uniqid();
         return "<ticket-{$timestamp}-{$random}@{$domain}>";
@@ -277,8 +263,7 @@ class HybridEmailService
             return $existingChat->thread_id;
         }
 
-        // Forzar dominio proser.com.mx para evitar rechazo de correos
-        $domain = 'proser.com.mx';
+        $domain = config('email_tickets.smtp.domain');
         return "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
     }
 
