@@ -15,7 +15,7 @@ class SimpleWebklexImapService
     protected $clientManager;
     
     // Constantes de configuración
-    private const DIAS_BUSQUEDA = 7;
+    private const DIAS_BUSQUEDA = 15; // Aumentado de 7 a 15 días para buscar tickets más antiguos
     private const TIEMPO_MAX_SEGUNDOS = 120;
     private const MEMORIA_MAX_MB = 800;
     
@@ -289,7 +289,13 @@ class SimpleWebklexImapService
         try {
             $subject = $message->getSubject();
             $from = $message->getFrom();
-            $body = $message->getTextBody();
+            
+            // Extraer información completa del correo
+            $bodyTexto = $message->getTextBody();
+            $bodyHtml = $message->getHTMLBody();
+            $adjuntos = $this->extraerAdjuntos($message);
+            $fechaCorreo = $message->getDate();
+            
             $fromEmail = $from ? $from->first()->mail : 'desconocido@email.com';
             $fromName = $from ? $from->first()->personal : null;
             $threadId = $this->extraerThreadId($message);
@@ -315,11 +321,11 @@ class SimpleWebklexImapService
                     return false;
                 }
                 
-                $this->crearRespuestaUsuario($ticket, $body, $from, $messageId, $threadId);
+                $this->crearRespuestaUsuario($ticket, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $from, $messageId, $threadId);
                 return true;
             } else {
                 // Intentar crear nuevo ticket
-                return $this->intentarCrearNuevoTicket($fromEmail, $subject, $body, $messageId, $threadId, $fromName);
+                return $this->intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
             }
             
         } catch (\Exception $e) {
@@ -331,7 +337,7 @@ class SimpleWebklexImapService
     /**
      * Intentar crear nuevo ticket desde correo
      */
-    private function intentarCrearNuevoTicket($fromEmail, $subject, $body, $messageId, $threadId, $fromName)
+    private function intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName)
     {
         // Buscar empleado por correo (sin importar mayúsculas/minúsculas)
         $empleado = Empleados::whereRaw('LOWER(Correo) = ?', [strtolower($fromEmail)])->first();
@@ -344,7 +350,7 @@ class SimpleWebklexImapService
             return false;
         }
         
-        $nuevoTicket = $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId, $fromName);
+        $nuevoTicket = $this->crearTicketDesdeCorreo($empleado, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
         
         if ($nuevoTicket) {
             Log::info("Nuevo ticket #{$nuevoTicket->TicketID} creado desde correo de {$fromEmail} (dominio: " . $this->extraerDominio($fromEmail) . ")");
@@ -406,32 +412,46 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Buscar ticket por mensaje
+     * Buscar ticket por mensaje - Prioriza búsqueda por número de ticket
      */
     protected function buscarTicketPorMensaje($subject, $messageId = null, $threadId = null, $fromEmail = null)
     {
-        // 1. Buscar por Thread-ID
+        // 1. PRIMERO: Buscar por número de ticket en asunto (más confiable)
+        // Esto mapea correctamente con el TicketID de la BD
+        $ticket = $this->buscarPorNumeroTicket($subject);
+        if ($ticket) {
+            Log::info("Ticket mapeado por número en asunto: #{$ticket->TicketID}");
+            return $ticket;
+        }
+        
+        // 2. Buscar por Thread-ID
         if ($threadId) {
             $ticket = $this->buscarPorThreadId($threadId);
-            if ($ticket) return $ticket;
+            if ($ticket) {
+                Log::info("Ticket mapeado por Thread-ID: #{$ticket->TicketID}");
+                return $ticket;
+            }
         }
         
-        // 2. Buscar por Message-ID
+        // 3. Buscar por Message-ID
         if ($messageId) {
             $ticket = $this->buscarPorMessageId($messageId);
-            if ($ticket) return $ticket;
+            if ($ticket) {
+                Log::info("Ticket mapeado por Message-ID: #{$ticket->TicketID}");
+                return $ticket;
+            }
         }
-        
-        // 3. Buscar por número de ticket en asunto
-        $ticket = $this->buscarPorNumeroTicket($subject);
-        if ($ticket) return $ticket;
         
         // 4. Buscar por asunto original (solo si hay empleado)
         if ($fromEmail) {
             $ticket = $this->buscarPorAsuntoOriginal($subject, $fromEmail);
-            if ($ticket) return $ticket;
+            if ($ticket) {
+                Log::info("Ticket mapeado por asunto original: #{$ticket->TicketID}");
+                return $ticket;
+            }
         }
         
+        Log::info("No se encontró ticket para mapear | Asunto: {$subject}");
         return null;
     }
     
@@ -457,23 +477,34 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Buscar ticket por número en asunto
+     * Buscar ticket por número en asunto - Mejorado para mapear correctamente
      */
     private function buscarPorNumeroTicket($subject)
     {
+        // Patrones mejorados para buscar "Ticket #42" en diferentes formatos
         $patrones = [
-            '/Ticket\s*#(\d+)/i',
-            '/Re:\s*Ticket\s*#(\d+)/i',
+            '/Ticket\s*#\s*(\d+)/i',                    // "Ticket #42"
+            '/Re:\s*Ticket\s*#\s*(\d+)/i',              // "Re: Ticket #42"
+            '/RE:\s*Ticket\s*#\s*(\d+)/i',             // "RE: Ticket #42"
+            '/Ticket\s*#\s*(\d+)\s*-/i',                // "Ticket #42 -"
+            '/Re:\s*Ticket\s*#\s*(\d+)\s*-/i',         // "Re: Ticket #42 -"
+            '/\[Ticket\s*#(\d+)\]/i',                  // "[Ticket #42]"
+            '/Ticket\s*N[úu]mero\s*(\d+)/i',           // "Ticket Número 42"
+            '/Ticket\s*ID\s*(\d+)/i',                   // "Ticket ID 42"
         ];
         
         foreach ($patrones as $patron) {
             if (preg_match($patron, $subject, $matches)) {
                 $ticketId = (int) $matches[1];
+                
+                // Buscar ticket en la BD por TicketID
                 $ticket = Tickets::find($ticketId);
                 
                 if ($ticket) {
-                    Log::info("Ticket encontrado por número: #{$ticketId}");
+                    Log::info("Ticket encontrado por número en asunto: #{$ticketId} | Asunto: {$subject}");
                     return $ticket;
+                } else {
+                    Log::warning("Ticket #{$ticketId} mencionado en asunto pero no existe en BD | Asunto: {$subject}");
                 }
             }
         }
@@ -482,7 +513,7 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Buscar ticket por asunto original
+     * Buscar ticket por asunto original - Busca también por formato "Ticket #ID"
      */
     private function buscarPorAsuntoOriginal($subject, $fromEmail)
     {
@@ -498,10 +529,22 @@ class SimpleWebklexImapService
             return null;
         }
         
-        // Buscar exacto primero
+        // Primero intentar extraer número de ticket del asunto limpio
+        // Si encontramos el número, no limitamos por fecha (puede ser un ticket antiguo)
+        if (preg_match('/Ticket\s*#\s*(\d+)/i', $subjectLimpio, $matches)) {
+            $ticketId = (int) $matches[1];
+            $ticket = Tickets::find($ticketId);
+            if ($ticket && $ticket->EmpleadoID == $empleado->EmpleadoID) {
+                Log::info("Ticket encontrado por número en asunto limpio: #{$ticketId}");
+                return $ticket;
+            }
+        }
+        
+        // Buscar exacto primero (incluyendo formato "Ticket #ID")
+        // Aumentado a 15 días para buscar tickets más antiguos
         $ticket = Tickets::where('Descripcion', $subjectLimpio)
             ->where('EmpleadoID', $empleado->EmpleadoID)
-            ->where('created_at', '>=', now()->subDays(7))
+            ->where('created_at', '>=', now()->subDays(15))
             ->orderBy('created_at', 'desc')
             ->first();
         
@@ -510,10 +553,11 @@ class SimpleWebklexImapService
             return $ticket;
         }
         
-        // Buscar con LIKE
+        // Buscar con LIKE (incluyendo formato "Ticket #ID")
+        // Aumentado a 15 días para buscar tickets más antiguos
         $ticket = Tickets::where('Descripcion', 'LIKE', '%' . $subjectLimpio . '%')
             ->where('EmpleadoID', $empleado->EmpleadoID)
-            ->where('created_at', '>=', now()->subDays(7))
+            ->where('created_at', '>=', now()->subDays(15))
             ->orderBy('created_at', 'desc')
             ->first();
         
@@ -525,61 +569,224 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Crear respuesta del usuario
+     * Crear respuesta del usuario - Mapeo mejorado para BD con TicketID
      */
-    protected function crearRespuestaUsuario($ticket, $body, $from, $messageId = null, $threadId = null)
+    protected function crearRespuestaUsuario($ticket, $bodyTexto, $bodyHtml = null, $adjuntos = [], $fechaCorreo = null, $from, $messageId = null, $threadId = null)
     {
-        $fromEmail = $from ? $from->first()->mail : $ticket->empleado->Correo;
-        $fromName = $from ? $from->first()->personal : $ticket->empleado->NombreEmpleado;
-        
-        $finalThreadId = $threadId ?: $this->obtenerThreadIdDelTicket($ticket->TicketID);
-        $finalMessageId = $messageId ?: $this->generarMessageId();
-        
-        TicketChat::create([
-            'ticket_id' => $ticket->TicketID,
-            'mensaje' => $body,
-            'remitente' => 'usuario',
-            'nombre_remitente' => $fromName,
-            'correo_remitente' => $fromEmail,
-            'message_id' => $finalMessageId,
-            'thread_id' => $finalThreadId,
-            'es_correo' => true,
-            'leido' => false
-        ]);
+        try {
+            // Validar que el ticket existe y tiene TicketID
+            if (!$ticket || !isset($ticket->TicketID)) {
+                Log::error("Error: Ticket inválido al crear respuesta");
+                return null;
+            }
+            
+            $ticketId = (int) $ticket->TicketID;
+            Log::info("Mapeando respuesta para Ticket #{$ticketId}");
+            
+            // Extraer información del remitente
+            $fromEmail = $from ? $from->first()->mail : $ticket->empleado->Correo;
+            $fromName = $from ? $from->first()->personal : $ticket->empleado->NombreEmpleado;
+            
+            // Limpiar y normalizar email y nombre
+            $fromEmail = $this->limpiarEmail($fromEmail);
+            $fromName = $this->limpiarNombre($fromName);
+            
+            // Obtener Thread-ID y Message-ID
+            $finalThreadId = $threadId ?: $this->obtenerThreadIdDelTicket($ticketId);
+            $finalMessageId = $messageId ?: $this->generarMessageId();
+            
+            // Limpiar y procesar el contenido del mensaje
+            $mensajeLimpio = $this->limpiarContenidoMensaje($bodyTexto, $bodyHtml);
+            $contenidoHtmlLimpio = $this->limpiarContenidoHtml($bodyHtml);
+            
+            // Preparar datos mapeados para la base de datos - Usar TicketID del ticket encontrado
+            $datosChat = [
+                'ticket_id' => $ticketId, // Mapeado correctamente con el número de ticket de la BD
+                'mensaje' => $mensajeLimpio,
+                'remitente' => 'usuario',
+                'nombre_remitente' => $fromName,
+                'correo_remitente' => $fromEmail,
+                'message_id' => $this->normalizarMessageId($finalMessageId),
+                'thread_id' => $this->normalizarThreadId($finalThreadId),
+                'es_correo' => true,
+                'leido' => false
+            ];
+            
+            // Agregar contenido HTML si existe y está limpio
+            if (!empty($contenidoHtmlLimpio)) {
+                $datosChat['contenido_correo'] = $contenidoHtmlLimpio;
+            }
+            
+            // Agregar adjuntos si existen (validar estructura)
+            if (!empty($adjuntos) && is_array($adjuntos)) {
+                $adjuntosValidados = $this->validarAdjuntos($adjuntos);
+                if (!empty($adjuntosValidados)) {
+                    $datosChat['adjuntos'] = $adjuntosValidados;
+                }
+            }
+            
+            // Usar fecha del correo si está disponible
+            if ($fechaCorreo) {
+                try {
+                    $fechaCarbon = \Carbon\Carbon::parse($fechaCorreo);
+                    // Asegurar que la fecha esté en la zona horaria correcta
+                    $fechaCarbon->setTimezone(config('app.timezone'));
+                    $datosChat['created_at'] = $fechaCarbon;
+                    $datosChat['updated_at'] = $fechaCarbon;
+                } catch (\Exception $e) {
+                    Log::warning("Error parseando fecha del correo: " . $e->getMessage());
+                }
+            }
+            
+            // Validar datos antes de guardar
+            $datosChat = $this->validarDatosChat($datosChat);
+            
+            // Guardar en la base de datos
+            $ticketChat = TicketChat::create($datosChat);
+            
+            Log::info("✅ Respuesta mapeada y guardada | Ticket #{$ticketId} | Chat ID: {$ticketChat->id} | Desde: {$fromEmail}" . 
+                      (!empty($adjuntos) ? " | Adjuntos: " . count($adjuntos) : ""));
+            
+            return $ticketChat;
+            
+        } catch (\Exception $e) {
+            Log::error("Error creando respuesta de usuario: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            return null;
+        }
     }
     
     /**
-     * Crear nuevo ticket desde correo
+     * Crear nuevo ticket desde correo - Mapeo mejorado para BD con formato "Ticket #ID"
      */
-    protected function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null, $fromName = null)
+    protected function crearTicketDesdeCorreo($empleado, $subject, $bodyTexto, $bodyHtml = null, $adjuntos = [], $fechaCorreo = null, $messageId = null, $threadId = null, $fromName = null)
     {
         try {
+            // Limpiar y normalizar datos
+            $subjectLimpio = $this->limpiarAsunto($subject);
+            $fromNameLimpio = $this->limpiarNombre($fromName ?: $empleado->NombreEmpleado);
+            $fromEmailLimpio = $this->limpiarEmail($empleado->Correo);
+            
+            // Usar fecha del correo si está disponible, sino usar ahora
+            $fechaCreacion = $fechaCorreo ? 
+                \Carbon\Carbon::parse($fechaCorreo)->setTimezone(config('app.timezone')) : 
+                now();
+            
+            // Crear ticket - El asunto se guardará sin el formato "Ticket #ID" inicialmente
             $ticket = Tickets::create([
-                'EmpleadoID' => $empleado->EmpleadoID,
-                'Descripcion' => $subject,
+                'EmpleadoID' => (int) $empleado->EmpleadoID,
+                'Descripcion' => $subjectLimpio,
                 'Estatus' => 'Pendiente',
                 'Prioridad' => 'Media',
-                'created_at' => now()
+                'created_at' => $fechaCreacion
             ]);
+            
+            // Actualizar la descripción con el formato "Ticket #ID - [asunto original]"
+            $descripcionConFormato = "Ticket #{$ticket->TicketID} - {$subjectLimpio}";
+            
+            // Verificar que no exceda la longitud máxima
+            if (strlen($descripcionConFormato) > 500) {
+                $maxLength = 500 - strlen("Ticket #{$ticket->TicketID} - ");
+                $descripcionConFormato = "Ticket #{$ticket->TicketID} - " . substr($subjectLimpio, 0, $maxLength) . '...';
+            }
+            
+            $ticket->Descripcion = $descripcionConFormato;
+            $ticket->save();
 
-            TicketChat::create([
-                'ticket_id' => $ticket->TicketID,
-                'mensaje' => "Ticket creado automáticamente desde correo:\n\n" . ($body ?: 'Sin contenido'),
+            // Limpiar y procesar el contenido del mensaje
+            $mensajeLimpio = $this->limpiarContenidoMensaje($bodyTexto, $bodyHtml);
+            $contenidoHtmlLimpio = $this->limpiarContenidoHtml($bodyHtml);
+            
+            // Preparar mensaje inicial
+            $mensajeCompleto = "Ticket creado automáticamente desde correo:\n\n" . $mensajeLimpio;
+            
+            // Obtener Thread-ID y Message-ID
+            $finalThreadId = $threadId ?: $this->generarThreadId($ticket->TicketID);
+            $finalMessageId = $messageId ?: $this->generarMessageId();
+            
+            // Preparar datos mapeados para el chat
+            $datosChat = [
+                'ticket_id' => (int) $ticket->TicketID,
+                'mensaje' => $mensajeCompleto,
                 'remitente' => 'usuario',
-                'nombre_remitente' => $fromName ?: $empleado->NombreEmpleado,
-                'correo_remitente' => $empleado->Correo,
-                'message_id' => $messageId,
-                'thread_id' => $threadId,
+                'nombre_remitente' => $fromNameLimpio,
+                'correo_remitente' => $fromEmailLimpio,
+                'message_id' => $this->normalizarMessageId($finalMessageId),
+                'thread_id' => $this->normalizarThreadId($finalThreadId),
                 'es_correo' => true,
                 'leido' => false
-            ]);
+            ];
+            
+            // Agregar contenido HTML si existe
+            if (!empty($contenidoHtmlLimpio)) {
+                $datosChat['contenido_correo'] = $contenidoHtmlLimpio;
+            }
+            
+            // Agregar adjuntos si existen (validar estructura)
+            if (!empty($adjuntos) && is_array($adjuntos)) {
+                $adjuntosValidados = $this->validarAdjuntos($adjuntos);
+                if (!empty($adjuntosValidados)) {
+                    $datosChat['adjuntos'] = $adjuntosValidados;
+                }
+            }
+            
+            // Usar fecha del correo si está disponible
+            if ($fechaCorreo) {
+                try {
+                    $fechaCarbon = \Carbon\Carbon::parse($fechaCorreo)->setTimezone(config('app.timezone'));
+                    $datosChat['created_at'] = $fechaCarbon;
+                    $datosChat['updated_at'] = $fechaCarbon;
+                } catch (\Exception $e) {
+                    Log::warning("Error parseando fecha del correo: " . $e->getMessage());
+                }
+            }
+            
+            // Validar datos antes de guardar
+            $datosChat = $this->validarDatosChat($datosChat);
+            
+            // Guardar en la base de datos
+            TicketChat::create($datosChat);
+
+            Log::info("✅ Nuevo ticket creado y guardado | Ticket #{$ticket->TicketID} | Asunto: {$descripcionConFormato} | Desde: {$fromEmailLimpio}");
 
             return $ticket;
 
         } catch (\Exception $e) {
             Log::error("Error creando ticket: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             return null;
         }
+    }
+    
+    /**
+     * Limpiar asunto del correo
+     */
+    private function limpiarAsunto($subject)
+    {
+        if (empty($subject)) {
+            return 'Nuevo ticket desde correo';
+        }
+        
+        $subject = trim($subject);
+        
+        // Remover prefijos comunes de respuestas
+        $subject = preg_replace('/^(Re:|RE:|Fwd:|FWD:|Fw:|FW:)\s*/i', '', $subject);
+        
+        // Limitar longitud
+        if (strlen($subject) > 500) {
+            $subject = substr($subject, 0, 497) . '...';
+        }
+        
+        return $subject;
+    }
+    
+    /**
+     * Generar Thread-ID para nuevo ticket
+     */
+    private function generarThreadId($ticketId)
+    {
+        $domain = 'proser.com.mx';
+        return "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
     }
     
     /**
@@ -663,7 +870,7 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Obtener Thread-ID del ticket
+     * Obtener Thread-ID del ticket (busca existente o genera uno nuevo)
      */
     private function obtenerThreadIdDelTicket($ticketId)
     {
@@ -672,11 +879,46 @@ class SimpleWebklexImapService
             ->first();
 
         if ($existingChat) {
-            return $existingChat->thread_id;
+            return $this->normalizarThreadId($existingChat->thread_id);
         }
 
-        $domain = 'proser.com.mx';
-        return "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
+        // Generar nuevo thread_id si no existe
+        return $this->generarThreadId($ticketId);
+    }
+    
+    /**
+     * Extraer adjuntos del mensaje
+     */
+    protected function extraerAdjuntos($message)
+    {
+        try {
+            $attachments = $message->getAttachments();
+            
+            if (!$attachments || $attachments->isEmpty()) {
+                return [];
+            }
+            
+            $adjuntos = [];
+            
+            foreach ($attachments as $attachment) {
+                try {
+                    $adjuntos[] = [
+                        'nombre' => $attachment->getName(),
+                        'tipo' => $attachment->getContentType(),
+                        'tamaño' => $attachment->getSize(),
+                        'id' => $attachment->getId()
+                    ];
+                } catch (\Exception $e) {
+                    Log::warning("Error extrayendo adjunto: " . $e->getMessage());
+                }
+            }
+            
+            return $adjuntos;
+            
+        } catch (\Exception $e) {
+            Log::warning("Error extrayendo adjuntos del mensaje: " . $e->getMessage());
+            return [];
+        }
     }
     
     /**
@@ -792,5 +1034,276 @@ class SimpleWebklexImapService
                 'message' => 'Error de conexión: ' . $e->getMessage()
             ];
         }
+    }
+    
+    /**
+     * Limpiar y normalizar email
+     */
+    private function limpiarEmail($email)
+    {
+        if (empty($email)) {
+            return 'desconocido@email.com';
+        }
+        
+        $email = trim(strtolower($email));
+        
+        // Validar formato básico de email
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Log::warning("Email inválido detectado: {$email}");
+            return 'desconocido@email.com';
+        }
+        
+        return $email;
+    }
+    
+    /**
+     * Limpiar y normalizar nombre
+     */
+    private function limpiarNombre($nombre)
+    {
+        if (empty($nombre)) {
+            return 'Usuario';
+        }
+        
+        $nombre = trim($nombre);
+        
+        // Remover comillas y caracteres especiales
+        $nombre = str_replace(['"', "'", '<', '>'], '', $nombre);
+        
+        // Limitar longitud
+        if (strlen($nombre) > 255) {
+            $nombre = substr($nombre, 0, 252) . '...';
+        }
+        
+        return $nombre;
+    }
+    
+    /**
+     * Limpiar contenido del mensaje (texto plano)
+     */
+    private function limpiarContenidoMensaje($bodyTexto, $bodyHtml = null)
+    {
+        // Priorizar texto plano
+        $contenido = !empty($bodyTexto) ? $bodyTexto : strip_tags($bodyHtml ?: '');
+        
+        if (empty($contenido)) {
+            return 'Sin contenido';
+        }
+        
+        // Remover respuestas anteriores (líneas que empiezan con ">", "On", "From:", etc.)
+        $lineas = explode("\n", $contenido);
+        $lineasLimpias = [];
+        $enRespuesta = false;
+        
+        $patronesRespuesta = [
+            '/^>\s*/',
+            '/^On\s+\w+,\s+\d+/i',
+            '/^From:\s*/i',
+            '/^Sent:\s*/i',
+            '/^To:\s*/i',
+            '/^Subject:\s*/i',
+            '/^Date:\s*/i',
+            '/^---\s*Original Message/i',
+            '/^De:\s*/i',
+            '/^Enviado:\s*/i',
+            '/^Para:\s*/i',
+            '/^Asunto:\s*/i',
+        ];
+        
+        foreach ($lineas as $linea) {
+            $lineaTrim = trim($linea);
+            
+            // Detectar inicio de respuesta
+            if (!$enRespuesta) {
+                foreach ($patronesRespuesta as $patron) {
+                    if (preg_match($patron, $lineaTrim)) {
+                        $enRespuesta = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Si no estamos en una respuesta, agregar la línea
+            if (!$enRespuesta && !empty($lineaTrim)) {
+                $lineasLimpias[] = $linea;
+            }
+        }
+        
+        $contenidoLimpio = implode("\n", $lineasLimpias);
+        
+        // Remover espacios en blanco excesivos
+        $contenidoLimpio = preg_replace('/\n{3,}/', "\n\n", $contenidoLimpio);
+        $contenidoLimpio = trim($contenidoLimpio);
+        
+        // Si después de limpiar está vacío, usar el original
+        if (empty($contenidoLimpio)) {
+            $contenidoLimpio = substr(trim($contenido), 0, 5000);
+        }
+        
+        // Limitar longitud
+        if (strlen($contenidoLimpio) > 10000) {
+            $contenidoLimpio = substr($contenidoLimpio, 0, 9997) . '...';
+        }
+        
+        return $contenidoLimpio;
+    }
+    
+    /**
+     * Limpiar contenido HTML
+     */
+    private function limpiarContenidoHtml($bodyHtml)
+    {
+        if (empty($bodyHtml)) {
+            return null;
+        }
+        
+        // Remover scripts y estilos peligrosos
+        $bodyHtml = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $bodyHtml);
+        $bodyHtml = preg_replace('/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/mi', '', $bodyHtml);
+        
+        // Remover respuestas anteriores en HTML
+        $patronesHtml = [
+            '/<div[^>]*class="[^"]*gmail_quote[^"]*"[^>]*>.*?<\/div>/is',
+            '/<blockquote[^>]*>.*?<\/blockquote>/is',
+            '/<div[^>]*style="[^"]*border-left[^"]*"[^>]*>.*?<\/div>/is',
+        ];
+        
+        foreach ($patronesHtml as $patron) {
+            $bodyHtml = preg_replace($patron, '', $bodyHtml);
+        }
+        
+        // Limitar longitud
+        if (strlen($bodyHtml) > 50000) {
+            $bodyHtml = substr($bodyHtml, 0, 49997) . '...';
+        }
+        
+        return trim($bodyHtml);
+    }
+    
+    /**
+     * Normalizar Message-ID
+     */
+    private function normalizarMessageId($messageId)
+    {
+        if (empty($messageId)) {
+            return $this->generarMessageId();
+        }
+        
+        $messageId = trim($messageId);
+        
+        // Asegurar formato correcto
+        if (!preg_match('/^<.*>$/', $messageId)) {
+            $messageId = '<' . trim($messageId, '<>') . '>';
+        }
+        
+        // Limitar longitud
+        if (strlen($messageId) > 255) {
+            $messageId = substr($messageId, 0, 252) . '...';
+        }
+        
+        return $messageId;
+    }
+    
+    /**
+     * Normalizar Thread-ID
+     */
+    private function normalizarThreadId($threadId)
+    {
+        if (empty($threadId)) {
+            return null;
+        }
+        
+        $threadId = trim($threadId);
+        
+        // Asegurar formato correcto si tiene < >
+        if (preg_match('/^<.*>$/', $threadId)) {
+            // Ya está en formato correcto
+        } elseif (!empty($threadId)) {
+            $threadId = '<' . trim($threadId, '<>') . '>';
+        }
+        
+        // Limitar longitud
+        if (strlen($threadId) > 255) {
+            $threadId = substr($threadId, 0, 252) . '...';
+        }
+        
+        return $threadId;
+    }
+    
+    /**
+     * Validar estructura de adjuntos
+     */
+    private function validarAdjuntos($adjuntos)
+    {
+        if (!is_array($adjuntos)) {
+            return [];
+        }
+        
+        $adjuntosValidados = [];
+        
+        foreach ($adjuntos as $adjunto) {
+            if (is_array($adjunto)) {
+                $adjuntoValido = [
+                    'nombre' => isset($adjunto['nombre']) ? substr(trim($adjunto['nombre']), 0, 255) : 'archivo',
+                    'tipo' => isset($adjunto['tipo']) ? substr(trim($adjunto['tipo']), 0, 100) : 'application/octet-stream',
+                    'tamaño' => isset($adjunto['tamaño']) ? (int) $adjunto['tamaño'] : 0,
+                    'id' => isset($adjunto['id']) ? substr(trim($adjunto['id']), 0, 255) : null
+                ];
+                
+                $adjuntosValidados[] = $adjuntoValido;
+            }
+        }
+        
+        return $adjuntosValidados;
+    }
+    
+    /**
+     * Validar datos antes de guardar en BD
+     */
+    private function validarDatosChat($datosChat)
+    {
+        // Validar ticket_id
+        if (!isset($datosChat['ticket_id']) || !is_numeric($datosChat['ticket_id'])) {
+            throw new \Exception('ticket_id inválido');
+        }
+        
+        // Validar mensaje (requerido)
+        if (empty($datosChat['mensaje'])) {
+            $datosChat['mensaje'] = 'Sin contenido';
+        }
+        
+        // Validar remitente
+        if (!in_array($datosChat['remitente'], ['usuario', 'soporte'])) {
+            $datosChat['remitente'] = 'usuario';
+        }
+        
+        // Validar correo_remitente
+        if (empty($datosChat['correo_remitente']) || !filter_var($datosChat['correo_remitente'], FILTER_VALIDATE_EMAIL)) {
+            $datosChat['correo_remitente'] = 'desconocido@email.com';
+        }
+        
+        // Validar nombre_remitente
+        if (empty($datosChat['nombre_remitente'])) {
+            $datosChat['nombre_remitente'] = 'Usuario';
+        }
+        
+        // Validar booleanos
+        $datosChat['es_correo'] = (bool) ($datosChat['es_correo'] ?? true);
+        $datosChat['leido'] = (bool) ($datosChat['leido'] ?? false);
+        
+        // Limitar longitudes de strings
+        if (isset($datosChat['mensaje']) && strlen($datosChat['mensaje']) > 10000) {
+            $datosChat['mensaje'] = substr($datosChat['mensaje'], 0, 9997) . '...';
+        }
+        
+        if (isset($datosChat['nombre_remitente']) && strlen($datosChat['nombre_remitente']) > 255) {
+            $datosChat['nombre_remitente'] = substr($datosChat['nombre_remitente'], 0, 252) . '...';
+        }
+        
+        if (isset($datosChat['correo_remitente']) && strlen($datosChat['correo_remitente']) > 255) {
+            $datosChat['correo_remitente'] = substr($datosChat['correo_remitente'], 0, 252) . '...';
+        }
+        
+        return $datosChat;
     }
 }

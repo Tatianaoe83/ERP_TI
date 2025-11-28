@@ -12,12 +12,12 @@ return [
     */
 
     'imap' => [
-        'host' => env('IMAP_HOST', 'imap-mail.outlook.com'),
+        'host' => env('MAIL_HOST', 'imap-mail.outlook.com'),
         'port' => env('IMAP_PORT', 993),
         'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
         'validate_cert' => env('IMAP_VALIDATE_CERT', false),
-        'username' => env('IMAP_USERNAME'),
-        'password' => env('IMAP_PASSWORD'),
+        'username' => env('MAIL_USERNAME'),
+        'password' => env('MAIL_PASSWORD'),
     ],
 
     /*
