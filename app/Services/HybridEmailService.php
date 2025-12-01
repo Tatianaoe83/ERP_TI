@@ -47,7 +47,7 @@ class HybridEmailService
             $threadId = $this->obtenerThreadIdDelTicket($ticketId);
 
             // Crear asunto con formato específico para threading
-            $asunto = "Re: Ticket #{$ticket->TicketID} - {$ticket->Descripcion}";
+            $asunto = "Ticket #{$ticket->TicketID} - {$ticket->Descripcion}";
 
             // Construir contenido con instrucciones claras
             $contenido = $this->construirContenidoConInstrucciones($ticket, $empleado, $mensaje, $threadId);

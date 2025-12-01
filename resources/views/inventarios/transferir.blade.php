@@ -184,6 +184,7 @@
     $(document).ready(function() {
 
         let table = $('#equiposAsignadosTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,
@@ -194,6 +195,7 @@
         });
 
         let table2 = $('#insumosAsignadosTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,
@@ -204,6 +206,7 @@
         });
 
         let table3 = $('#lineasAsignadosTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,

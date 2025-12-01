@@ -65,6 +65,7 @@
 
         const table = $('#tabla').DataTable({
             destroy: true,
+            responsive: true,
             searching: true,
             processing: true,
             serverSide: true,

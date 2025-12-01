@@ -107,6 +107,7 @@
     $(document).ready(function() {
         var table = $('#facturasTable').DataTable({
             destroy: true,
+            responsive: true,
             searching: true,
             processing: true,
             serverSide: true,

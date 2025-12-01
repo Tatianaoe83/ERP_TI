@@ -98,6 +98,7 @@
     $(document).ready(function() {
         var table = $('#cortesTable').DataTable({
             destroy: true,
+            responsive: true,
             searching: true,
             processing: true,
             serverSide: true,

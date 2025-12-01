@@ -461,6 +461,7 @@
 <script>
     $(document).ready(function() {
         let table1_1 = $('#equiposTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,
@@ -470,6 +471,7 @@
         });
 
         let table2_1 = $('#insumosTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,
@@ -479,6 +481,7 @@
         });
 
         let table3_1 = $('#lineasTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,
@@ -489,6 +492,7 @@
         });
 
         let table = $('#equiposAsignadosTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,
@@ -499,6 +503,7 @@
         });
 
         let table2 = $('#insumosAsignadosTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,
@@ -509,6 +514,7 @@
         });
 
         let table3 = $('#lineasAsignadosTable').DataTable({
+            "responsive": true,
             "paging": true,
             "lengthMenu": [5, 10, 25, 50],
             "pageLength": 5,

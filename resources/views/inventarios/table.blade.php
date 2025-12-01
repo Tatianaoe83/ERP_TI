@@ -97,6 +97,7 @@
     <script>
         $(document).ready(function() {
             var table = $('#tabla-empleados').DataTable({
+                responsive: true,
                 searching: false,
                 pageLength: 7,
                 ajax: {

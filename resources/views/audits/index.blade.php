@@ -86,6 +86,7 @@
         $(document).ready(function() {
 
             table = $('#auditsTable').DataTable({
+                responsive: true,
                 processing: true,
                 serverSide: true,
                 searching: false,

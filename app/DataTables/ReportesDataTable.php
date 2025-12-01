@@ -50,6 +50,7 @@ class ReportesDataTable extends DataTable
             ->addAction(['width' => '120px', 'printable' => false, 'class' => 'dark:bg-[#101010] dark:text-white'])
             ->parameters([
                 'dom'       => 'Bfrtip',
+                'responsive' => true,
                 'stateSave' => true,
                 'order'     => [[0, 'desc']],
             ]);

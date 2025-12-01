@@ -34,7 +34,7 @@ class UnidadesDeNegocioDataTable extends DataTable
                     return '<span class="badge badge-danger">No</span>';
                 }
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'estado_formatted'])
             ->setRowId('UnidadNegocioID');
     }
 
@@ -110,7 +110,12 @@ class UnidadesDeNegocioDataTable extends DataTable
             ->parameters([
                 'processing' => true,
                 'serverSide' => true,
-                'responsive' => true,
+                'responsive' => [
+                    'details' => [
+                        'type' => 'column',
+                        'target' => 'tr'
+                    ]
+                ],
                 'pageLength' => 7,
                 'searching' => true,
                 'language' => [
@@ -144,31 +149,36 @@ class UnidadesDeNegocioDataTable extends DataTable
                 'title' => 'ID',
                 'data' => 'UnidadNegocioID',
                 'name' => 'UnidadNegocioID',
-                'class' => 'dark:bg-[#101010] dark:text-white'
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'responsivePriority' => 1
             ],
             'NombreEmpresa' => [
                 'title' => 'Nombre Empresa',
                 'data' => 'NombreEmpresa',
                 'name' => 'NombreEmpresa',
-                'class' => 'dark:bg-[#101010] dark:text-white'
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'responsivePriority' => 1
             ],
             'RFC' => [
                 'title' => 'RFC',
                 'data' => 'RFC',
                 'name' => 'RFC',
-                'class' => 'dark:bg-[#101010] dark:text-white'
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'responsivePriority' => 2
             ],
             'Direccion' => [
                 'title' => 'Dirección',
                 'data' => 'Direccion',
                 'name' => 'Direccion',
-                'class' => 'dark:bg-[#101010] dark:text-white'
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'responsivePriority' => 3
             ],
             'NumTelefono' => [
                 'title' => 'Teléfono',
                 'data' => 'NumTelefono',
                 'name' => 'NumTelefono',
-                'class' => 'dark:bg-[#101010] dark:text-white'
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'responsivePriority' => 3
             ],
             'estado' => [
                 'title' => 'Es unidad de negocio',
@@ -176,12 +186,14 @@ class UnidadesDeNegocioDataTable extends DataTable
                 'name' => 'estado',
                 'class' => 'dark:bg-[#101010] dark:text-white',
                 'orderable' => true,
-                'searchable' => false
+                'searchable' => false,
+                'responsivePriority' => 4
             ],
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)
                 ->width(60)
+                ->responsivePriority(1)
                 ->addClass('text-center dark:bg-[#101010] dark:text-white')
         ];
     }
