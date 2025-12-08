@@ -59,23 +59,42 @@ class WebklexApiController extends Controller
             
             Log::info("Procesando respuestas Webklex para ticket: {$ticketId}");
             
+            // Procesar correos y obtener resultado detallado
             $resultado = $this->imapService->procesarCorreosSimples();
             
-            if ($resultado) {
-                // Obtener estadísticas básicas
-                $estadisticas = $this->imapService->obtenerInfoBasica();
-                
+            // Obtener estadísticas básicas del buzón
+            $estadisticas = $this->imapService->obtenerInfoBasica();
+            
+            // Si hay un ticket_id, obtener estadísticas específicas del ticket después del procesamiento
+            $estadisticasTicket = null;
+            if ($ticketId) {
+                $estadisticasTicket = \App\Models\TicketChat::where('ticket_id', $ticketId)
+                    ->where('es_correo', true)
+                    ->where('remitente', 'usuario')
+                    ->count();
+            }
+            
+            // Verificar si se procesaron correos
+            $procesados = is_array($resultado) ? ($resultado['procesados'] ?? 0) : ($resultado ? 1 : 0);
+            $descartados = is_array($resultado) ? ($resultado['descartados'] ?? 0) : 0;
+            
+            if ($procesados > 0) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Respuestas procesadas exitosamente con Webklex IMAP',
+                    'message' => "Se procesaron {$procesados} correo(s) exitosamente. " . ($descartados > 0 ? "Se descartaron {$descartados} correo(s)." : ""),
                     'estadisticas' => $estadisticas,
-                    'procesados' => true
+                    'procesados' => $procesados,
+                    'descartados' => $descartados,
+                    'correos_usuarios' => $estadisticasTicket
                 ]);
             } else {
                 return response()->json([
                     'success' => true,
-                    'message' => 'No se encontraron correos nuevos para procesar',
-                    'procesados' => false
+                    'message' => 'No se encontraron correos nuevos para procesar' . ($descartados > 0 ? " (se descartaron {$descartados} correo(s))" : ""),
+                    'estadisticas' => $estadisticas,
+                    'procesados' => 0,
+                    'descartados' => $descartados,
+                    'correos_usuarios' => $estadisticasTicket
                 ]);
             }
             

@@ -171,6 +171,26 @@
                                 </svg>
                                 <span x-text="procesandoAutomatico ? 'Procesando...' : 'Procesar Automático'"></span>
                             </button>
+                            
+                            <button 
+                                @click="buscarCorreosUsuarios()"
+                                :disabled="buscandoCorreos || !selected.id"
+                                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                <span x-text="buscandoCorreos ? 'Buscando...' : 'Buscar Correos de Usuarios'"></span>
+                            </button>
+                            
+                            <button 
+                                @click="guardarCorreosEncontrados()"
+                                :disabled="guardandoCorreos || !selected.id"
+                                class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                                </svg>
+                                <span x-text="guardandoCorreos ? 'Guardando...' : 'Guardar Correos en Historial'"></span>
+                            </button>
                            
                             <button 
                                 @click="probarConexionWebklex()"
@@ -648,6 +668,8 @@
             cargando: false,
             sincronizando: false,
             procesandoAutomatico: false,
+            buscandoCorreos: false,
+            guardandoCorreos: false,
             estadisticas: null,
             respuestaManual: {
                 nombre: '',
@@ -1186,6 +1208,109 @@
                 } catch (error) {
                     console.error('Error probando conexión Webklex:', error);
                     this.mostrarNotificacion('Error probando conexión Webklex', 'error');
+                }
+            },
+
+            async buscarCorreosUsuarios() {
+                if (!this.selected.id) {
+                    this.mostrarNotificacion('Selecciona un ticket primero', 'error');
+                    return;
+                }
+
+                this.buscandoCorreos = true;
+
+                try {
+                    console.log('🔍 Buscando correos de usuarios para ticket:', this.selected.id);
+                    
+                    // Procesar correos entrantes desde IMAP
+                    const response = await fetch('/api/process-webklex-responses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ticket_id: this.selected.id
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const mensaje = data.procesados > 0 
+                            ? `✅ Se encontraron y procesaron ${data.procesados} correo(s)` + (data.descartados > 0 ? `. Se descartaron ${data.descartados} correo(s).` : '')
+                            : data.message || 'Búsqueda completada';
+                        
+                        this.mostrarNotificacion(mensaje, data.procesados > 0 ? 'success' : 'error');
+                        
+                        // Recargar mensajes para mostrar los correos encontrados
+                        await this.cargarMensajes();
+                        
+                        // Actualizar estadísticas
+                        this.estadisticas = await this.obtenerEstadisticasCorreos();
+                        
+                        console.log('✅ Correos buscados y procesados exitosamente', {
+                            procesados: data.procesados,
+                            descartados: data.descartados,
+                            correos_usuarios: data.correos_usuarios
+                        });
+                    } else {
+                        this.mostrarNotificacion(data.message || 'No se encontraron correos nuevos', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error buscando correos de usuarios:', error);
+                    this.mostrarNotificacion('Error buscando correos de usuarios', 'error');
+                } finally {
+                    this.buscandoCorreos = false;
+                }
+            },
+
+            async guardarCorreosEncontrados() {
+                if (!this.selected.id) {
+                    this.mostrarNotificacion('Selecciona un ticket primero', 'error');
+                    return;
+                }
+
+                this.guardandoCorreos = true;
+
+                try {
+                    console.log('💾 Guardando correos en historial para ticket:', this.selected.id);
+                    
+                    // Sincronizar correos y guardarlos en el historial
+                    const response = await fetch('/tickets/sincronizar-correos', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ticket_id: this.selected.id
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.mostrarNotificacion(
+                            data.message || 'Correos guardados en historial exitosamente',
+                            'success'
+                        );
+                        
+                        // Recargar mensajes para mostrar el historial completo
+                        await this.cargarMensajes();
+                        
+                        // Actualizar estadísticas
+                        this.estadisticas = await this.obtenerEstadisticasCorreos();
+                        
+                        console.log('✅ Correos guardados en historial exitosamente');
+                    } else {
+                        this.mostrarNotificacion(data.message || 'Error guardando correos', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error guardando correos en historial:', error);
+                    this.mostrarNotificacion('Error guardando correos en historial', 'error');
+                } finally {
+                    this.guardandoCorreos = false;
                 }
             }
         }

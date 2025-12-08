@@ -90,7 +90,8 @@ class SimpleWebklexImapService
             
             Log::info("Procesamiento completado - Procesados: {$resultado['procesados']}, Descartados: {$resultado['descartados']}, Tiempo: {$resultado['tiempo']}s");
             
-            return $resultado['procesados'] > 0;
+            // Retornar el resultado completo para tener más información
+            return $resultado;
             
         } catch (\Exception $e) {
             Log::error('Error en procesamiento: ' . $e->getMessage());
@@ -337,7 +338,13 @@ class SimpleWebklexImapService
             
             if ($ticket) {
                 // Respuesta a ticket existente
-                $yaProcesado = $this->correoYaProcesado($ticket->TicketID, $fromEmail, $subject, $messageId, $threadId);
+                // Verificar si ya fue procesado SOLO si tiene message_id válido
+                // Si no tiene message_id, procesarlo para mantener historial completo
+                $yaProcesado = false;
+                if ($messageId) {
+                    $yaProcesado = $this->correoYaProcesado($ticket->TicketID, $fromEmail, $subject, $messageId, $threadId);
+                }
+                
                 if ($yaProcesado) {
                     Log::info("⚠️ Correo descartado - ya procesado | Ticket #{$ticket->TicketID} | From: {$fromEmail} | Subject: {$subject}");
                     return false;
@@ -345,11 +352,12 @@ class SimpleWebklexImapService
                 
                 Log::info("✅ Procesando respuesta para ticket existente | Ticket #{$ticket->TicketID} | From: {$fromEmail} | Subject: {$subject}");
                 Log::info("Body texto length: " . strlen($bodyTexto ?? '') . " | Body HTML length: " . strlen($bodyHtml ?? ''));
+                Log::info("Message-ID: " . ($messageId ?? 'N/A') . " | Thread-ID: " . ($threadId ?? 'N/A'));
                 
                 $resultado = $this->crearRespuestaUsuario($ticket, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $from, $messageId, $threadId);
                 
                 if ($resultado) {
-                    Log::info("✅✅ Respuesta guardada exitosamente | Ticket #{$ticket->TicketID} | Chat ID: {$resultado->id}");
+                    Log::info("✅✅ Respuesta guardada exitosamente en historial | Ticket #{$ticket->TicketID} | Chat ID: {$resultado->id}");
                     return true;
                 } else {
                     Log::error("❌❌ Error guardando respuesta - crearRespuestaUsuario retornó null | Ticket #{$ticket->TicketID}");
@@ -359,11 +367,13 @@ class SimpleWebklexImapService
                 // Intentar crear nuevo ticket
                 Log::info("⚠️ No se encontró ticket existente, intentando crear nuevo ticket | From: {$fromEmail} | Subject: {$subject}");
                 $nuevoTicket = $this->intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
-                if ($nuevoTicket) {
+                if ($nuevoTicket && is_object($nuevoTicket) && isset($nuevoTicket->TicketID)) {
                     Log::info("✅ Nuevo ticket creado: #{$nuevoTicket->TicketID}");
                     return true;
+                } else {
+                    Log::info("⚠️ No se pudo crear nuevo ticket o no es válido");
+                    return false;
                 }
-                return false;
             }
             
         } catch (\Exception $e) {
@@ -451,40 +461,34 @@ class SimpleWebklexImapService
                 ->exists();
             
             if ($existe) {
-                Log::info("Correo ya procesado detectado por message_id: {$normalizedMessageId} | Ticket #{$ticketId}");
+                Log::info("⚠️ Correo ya procesado detectado por message_id: {$normalizedMessageId} | Ticket #{$ticketId}");
                 return true;
             }
         }
         
         // Verificar por thread_id si no se encontró por message_id
+        // PERO solo si hay thread_id válido y el correo es del mismo remitente
         if ($threadId) {
             $normalizedThreadId = $this->normalizarThreadId($threadId);
             $existe = TicketChat::where('ticket_id', $ticketId)
                 ->where('thread_id', $normalizedThreadId)
                 ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
                 ->where('es_correo', true)
+                ->where('created_at', '>=', now()->subDays(30)) // Ampliar a 30 días para historial
                 ->exists();
             
             if ($existe) {
-                Log::info("Correo ya procesado detectado por thread_id: {$normalizedThreadId} | Ticket #{$ticketId}");
+                Log::info("⚠️ Correo ya procesado detectado por thread_id: {$normalizedThreadId} | Ticket #{$ticketId}");
                 return true;
             }
         }
         
-        // Fallback: verificar por email y asunto (solo si no hay message_id ni thread_id)
-        // Pero con un rango de tiempo más corto para evitar falsos positivos
-        $existe = TicketChat::where('ticket_id', $ticketId)
-            ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
-            ->where('es_correo', true)
-            ->where('created_at', '>=', now()->subHours(1)) // Solo últimas horas
-            ->where('mensaje', 'LIKE', '%' . substr($subject, 0, 50) . '%')
-            ->exists();
+        // NO usar el fallback por asunto y email porque puede causar falsos positivos
+        // Si no hay message_id ni thread_id válido, permitir procesar el correo
+        // para mantener el historial completo
         
-        if ($existe) {
-            Log::info("Correo ya procesado detectado por asunto y email (última hora) | Ticket #{$ticketId}");
-        }
-        
-        return $existe;
+        Log::info("✅ Correo NO procesado anteriormente | Ticket #{$ticketId} | From: {$fromEmail}");
+        return false;
     }
     
     /**
@@ -577,18 +581,18 @@ class SimpleWebklexImapService
             '/#\s*(\d+)/i',                             // "#42" (fallback genérico)
         ];
         
-        Log::info("Buscando ticket por número en asunto: {$subject}");
+        Log::info("🔍 Buscando ticket por número en asunto: {$subject}");
         
         foreach ($patrones as $index => $patron) {
             if (preg_match($patron, $subject, $matches)) {
                 $ticketId = (int) $matches[1];
-                Log::info("Patrón #{$index} coincidió - Ticket ID extraído: {$ticketId}");
+                Log::info("✅ Patrón #{$index} coincidió - Ticket ID extraído: {$ticketId} | Patrón: {$patron}");
                 
                 // Buscar ticket en la BD por TicketID
                 $ticket = Tickets::find($ticketId);
                 
                 if ($ticket) {
-                    Log::info("✅ Ticket encontrado por número en asunto: #{$ticketId} | Asunto: {$subject}");
+                    Log::info("✅✅ Ticket encontrado por número en asunto: #{$ticketId} | Asunto: {$subject}");
                     return $ticket;
                 } else {
                     Log::warning("⚠️ Ticket #{$ticketId} mencionado en asunto pero no existe en BD | Asunto: {$subject}");
@@ -596,7 +600,7 @@ class SimpleWebklexImapService
             }
         }
         
-        Log::info("No se encontró número de ticket en asunto: {$subject}");
+        Log::info("❌ No se encontró número de ticket en asunto: {$subject}");
         return null;
     }
     
@@ -770,7 +774,8 @@ class SimpleWebklexImapService
             }
             
         } catch (\Exception $e) {
-            Log::error("❌ Error creando respuesta de usuario: " . $e->getMessage() . " | Ticket #{$ticketId ?? 'N/A'}");
+            $ticketIdLog = isset($ticketId) ? $ticketId : 'N/A';
+            Log::error("❌ Error creando respuesta de usuario: " . $e->getMessage() . " | Ticket #{$ticketIdLog}");
             Log::error("Stack trace: " . $e->getTraceAsString());
             return null;
         }

@@ -324,8 +324,8 @@ class ImapEmailReceiver
 
             Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo} | Asunto: {$descripcionConFormato}");
             
-            // Enviar notificación de confirmación (opcional)
-            $this->enviarConfirmacionTicket($ticket, $empleado);
+            // Enviar notificación de confirmación (opcional) - DESACTIVADO
+            // $this->enviarConfirmacionTicket($ticket, $empleado);
             
             return $ticket;
 
