@@ -286,123 +286,270 @@
                             </div>
                         </div>
 
-                        <!-- Área para escribir nueva respuesta -->
-                        <div class="bg-white border border-gray-200 rounded-lg p-4">
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="text-sm font-medium text-gray-700">Responder por correo:</span>
-                            </div>
-                            
-                            <!-- Información del ticket y destinatario -->
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                    <div>
-                                        <span class="text-xs font-semibold text-blue-600 uppercase">Número de Ticket:</span>
-                                        <p class="text-gray-800 font-medium" x-text="'Ticket #' + selected.id"></p>
+                        <!-- Área para escribir nueva respuesta - Estilo Cliente de Correo -->
+                        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <!-- Encabezado de Composición -->
+                            <div class="border-b border-gray-200 p-4 bg-gray-50">
+                                <div class="space-y-3">
+                                    <!-- Campo Para -->
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Para:</label>
+                                        <input 
+                                            type="email"
+                                            :value="selected.correo || ''"
+                                            readonly
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <div class="flex items-center gap-2">
+                                            <button 
+                                                type="button"
+                                                @click="mostrarCc = !mostrarCc"
+                                                class="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100 transition">
+                                                Copia
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                @click="mostrarBcc = !mostrarBcc"
+                                                class="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100 transition">
+                                                Copia Oculta
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span class="text-xs font-semibold text-blue-600 uppercase">Enviar a:</span>
-                                        <p class="text-gray-800 font-medium" x-text="selected.correo || 'No disponible'"></p>
+                                    
+                                    <!-- Campo Copia (oculto por defecto) -->
+                                    <div x-show="mostrarCc" x-transition class="flex items-center gap-2">
+                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Copia:</label>
+                                        <input 
+                                            type="email"
+                                            x-model="correoCc"
+                                            placeholder="correo@ejemplo.com"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                    
+                                    <!-- Campo Copia Oculta (oculto por defecto) -->
+                                    <div x-show="mostrarBcc" x-transition class="flex items-center gap-2">
+                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Copia Oculta:</label>
+                                        <input 
+                                            type="email"
+                                            x-model="correoBcc"
+                                            placeholder="correo@ejemplo.com"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                    
+                                    <!-- Campo Asunto -->
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Asunto: <span class="text-red-500">*</span></label>
+                                        <input 
+                                            type="text"
+                                            x-model="asuntoCorreo"
+                                            required
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Asunto del correo">
                                     </div>
                                 </div>
                             </div>
                             
-                            <textarea 
-                                x-model="nuevoMensaje"
-                                class="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Escribe tu respuesta aquí..."></textarea>
-                            
-                            <!-- Input para adjuntos -->
-                            <div class="mt-3">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Adjuntos (opcional):
-                                </label>
-                                <input 
-                                    type="file" 
-                                    id="adjuntos" 
-                                    name="adjuntos[]" 
-                                    multiple 
-                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                <p class="text-xs text-gray-500 mt-1">
-                                    Formatos permitidos: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG, GIF
-                                </p>
+                            <!-- Barra de Herramientas de Formato -->
+                            <div class="border-b border-gray-200 p-2 bg-white flex items-center gap-2 flex-wrap">
+                                <!-- Botones de formato básico -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        @click="aplicarFormato('bold')"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Negrita">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        @click="aplicarFormato('italic')"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Cursiva">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        @click="aplicarFormato('underline')"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Subrayado">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Selector de fuente y tamaño -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <select class="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none">
+                                        <option>Calibri</option>
+                                        <option>Arial</option>
+                                        <option>Times New Roman</option>
+                                        <option>Courier New</option>
+                                    </select>
+                                    <select class="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none">
+                                        <option>11</option>
+                                        <option>10</option>
+                                        <option>12</option>
+                                        <option>14</option>
+                                        <option>16</option>
+                                        <option>18</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Colores y alineación -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Color de texto">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Resaltar">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M6 14l3 3v5h6v-5l3-3V9H6v5zm5-12h2v3h-2V2zM3.5 5.88L4.88 4.5 7.05 6.67 5.67 8.05 3.5 5.88zm13.45.79l2.58-2.59L21.5 5.88l-2.58 2.59-1.97-1.97zM11 16h2v2h-2v-2z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Alineación -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Alinear izquierda">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Centrar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Alinear derecha">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Listas -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Lista con viñetas">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Lista numerada">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Adjuntar archivo -->
+                                <div class="flex items-center gap-1">
+                                    <label 
+                                        for="adjuntos"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition cursor-pointer"
+                                        title="Adjuntar archivo">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                        </svg>
+                                    </label>
+                                    <input 
+                                        type="file" 
+                                        id="adjuntos" 
+                                        name="adjuntos[]" 
+                                        multiple 
+                                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                                        class="hidden">
+                                </div>
+                                
+                                <!-- Más opciones -->
+                                <button 
+                                    type="button"
+                                    class="p-1.5 hover:bg-gray-100 rounded transition ml-auto"
+                                    title="Más opciones">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                    </svg>
+                                </button>
                             </div>
                             
-                            <div class="flex justify-between items-center mt-3">
-                              
-                                <button 
-                                    @click="enviarRespuesta()"
-                                    :disabled="!nuevoMensaje.trim()"
-                                    class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition">
-                                    Enviar por Correo
-                                </button>
+                            <!-- Área de Composición del Mensaje -->
+                            <div class="p-4">
+                                <textarea 
+                                    id="editor-mensaje"
+                                    x-model="nuevoMensaje"
+                                    class="w-full min-h-[200px] p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-sans"
+                                    placeholder="Escribe tu mensaje aquí..."></textarea>
+                                
+                                <!-- Información del ticket (mostrada como correo citado) -->
+                                <div class="mt-4 pt-4 border-t border-gray-200">
+                                    <div class="text-xs text-gray-500 space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-gray-600">De:</span>
+                                            <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded">Soporte TI</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-gray-600">Fecha:</span>
+                                            <span x-text="new Date().toLocaleString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-gray-600">Para:</span>
+                                            <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded" x-text="selected.correo || 'No disponible'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-gray-600">Asunto:</span>
+                                            <span x-text="'Ticket #' + (selected.id || '')"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Botón de envío -->
+                                <div class="flex justify-end items-center gap-3 mt-4 pt-4 border-t border-gray-200">
+                                    <button 
+                                        type="button"
+                                        @click="nuevoMensaje = ''"
+                                        class="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition text-sm">
+                                        Descartar
+                                    </button>
+                                    <button 
+                                        @click="enviarRespuesta()"
+                                        :disabled="!nuevoMensaje.trim() || !asuntoCorreo.trim()"
+                                        class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                        Enviar
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Área para agregar respuesta manual (simulando respuesta del usuario) -->
-                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="text-sm font-medium text-gray-700">🔄 Sistema Híbrido:</span>
-                                <span class="text-xs text-gray-500">(SMTP + Procesamiento Manual)</span>
-                            </div>
-                            
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                                <div class="flex items-start gap-2">
-                                    <div class="text-blue-600 mt-0.5">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="text-sm text-blue-800">
-                                        <p class="font-medium mb-1">¿Cómo funciona el sistema híbrido?</p>
-                                        <ul class="text-xs space-y-1">
-                                            <li>✅ <strong>Envío:</strong> Correos por SMTP (funciona perfectamente)</li>
-                                            <li>📧 <strong>Instrucciones:</strong> Cada correo incluye instrucciones claras</li>
-                                            <li>🔄 <strong>Procesamiento:</strong> Respuestas se procesan manualmente</li>
-                                            <li>🎯 <strong>Threading:</strong> Mantiene conversaciones organizadas</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="text-sm font-medium text-gray-700">Simular respuesta del usuario:</span>
-                                <span class="text-xs text-gray-500">(Para probar sin IMAP)</span>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">Nombre del emisor:</label>
-                                    <input 
-                                        x-model="respuestaManual.nombre"
-                                        type="text" 
-                                        class="w-full p-2 border border-gray-300 rounded text-sm"
-                                        placeholder="Nombre del usuario">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">Correo del emisor:</label>
-                                    <input 
-                                        x-model="respuestaManual.correo"
-                                        type="email" 
-                                        class="w-full p-2 border border-gray-300 rounded text-sm"
-                                        placeholder="correo@empresa.com">
-                                </div>
-                            </div>
-                            
-                            <textarea 
-                                x-model="respuestaManual.mensaje"
-                                class="w-full h-20 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                                placeholder="Escribe la respuesta del usuario aquí..."></textarea>
-                            
-                            <div class="flex justify-end mt-3">
-                                <button 
-                                    @click="agregarRespuestaManual()"
-                                    :disabled="!respuestaManual.mensaje.trim()"
-                                    class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition text-sm">
-                                    Agregar Respuesta Manual
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Área para Procesar Respuesta de Correo -->
@@ -508,6 +655,13 @@
                 mensaje: ''
             },
             mostrarProcesarRespuesta: false,
+            // Variables para el editor de correo
+            mostrarCc: false,
+            mostrarBcc: false,
+            prioridadCorreo: 'normal',
+            asuntoCorreo: '',
+            correoCc: '',
+            correoBcc: '',
 
             init() {
              
@@ -515,6 +669,12 @@
                 this.selected = {};
                 this.mensajes = [];
                 this.nuevoMensaje = '';
+                this.asuntoCorreo = '';
+                this.mostrarCc = false;
+                this.mostrarBcc = false;
+                this.prioridadCorreo = 'normal';
+                this.correoCc = '';
+                this.correoBcc = '';
                 
                 // Configurar actualización automática cada 30 segundos
                 this.configurarActualizacionAutomatica();
@@ -531,6 +691,12 @@
             abrirModal(datos) {
                 this.selected = datos;
                 this.mostrar = true;
+                this.asuntoCorreo = `Re: Ticket #${datos.id}`;
+                this.mostrarCc = false;
+                this.mostrarBcc = false;
+                this.prioridadCorreo = 'normal';
+                this.correoCc = '';
+                this.correoBcc = '';
                 this.cargarMensajes();
             },
 
@@ -553,6 +719,12 @@
                 this.mostrar = false;
                 this.mensajes = [];
                 this.nuevoMensaje = '';
+                this.asuntoCorreo = '';
+                this.mostrarCc = false;
+                this.mostrarBcc = false;
+                this.prioridadCorreo = 'normal';
+                this.correoCc = '';
+                this.correoBcc = '';
                 setTimeout(() => this.selected = {}, 200);
             },
 
@@ -582,15 +754,42 @@
                 }
             },
 
+            normalizarAsunto(asunto) {
+                // Asegurar que el asunto siempre tenga la nomenclatura con el ID del ticket
+                const ticketId = this.selected.id;
+                const patronTicket = new RegExp(`Ticket\\s*#?\\s*${ticketId}`, 'i');
+                
+                if (!patronTicket.test(asunto)) {
+                    // Si no tiene el ID del ticket, agregarlo
+                    if (asunto.trim().startsWith('Re:')) {
+                        return `Re: Ticket #${ticketId} ${asunto.replace(/^Re:\s*/i, '').trim()}`;
+                    } else {
+                        return `Re: Ticket #${ticketId} ${asunto.trim()}`;
+                    }
+                }
+                // Si ya tiene el ID, mantenerlo pero asegurar formato consistente
+                return asunto.replace(/Ticket\s*#?\s*(\d+)/i, `Ticket #${ticketId}`);
+            },
+
             async enviarRespuesta() {
                 if (!this.nuevoMensaje.trim()) return;
+                if (!this.asuntoCorreo.trim()) {
+                    this.mostrarNotificacion('El asunto es requerido', 'error');
+                    return;
+                }
 
                 this.cargando = true;
 
                 try {
+                    // Normalizar el asunto para mantener la nomenclatura con el ID
+                    const asuntoNormalizado = this.normalizarAsunto(this.asuntoCorreo);
+                    // Actualizar el campo con el asunto normalizado
+                    this.asuntoCorreo = asuntoNormalizado;
+                    
                     const formData = new FormData();
                     formData.append('ticket_id', this.selected.id);
                     formData.append('mensaje', this.nuevoMensaje);
+                    formData.append('asunto', asuntoNormalizado);
 
                     
                     const adjuntosInput = document.getElementById('adjuntos');
@@ -697,6 +896,47 @@
                 );
                 
                 return mensajeFormateado;
+            },
+
+            aplicarFormato(tipo) {
+                const textarea = document.getElementById('editor-mensaje');
+                if (!textarea) return;
+                
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const texto = textarea.value;
+                const textoSeleccionado = texto.substring(start, end);
+                
+                let textoFormateado = '';
+                let nuevoInicio = start;
+                let nuevoFin = end;
+                
+                switch(tipo) {
+                    case 'bold':
+                        textoFormateado = textoSeleccionado ? `**${textoSeleccionado}**` : '****';
+                        nuevoInicio = start + 2;
+                        nuevoFin = end + 2;
+                        break;
+                    case 'italic':
+                        textoFormateado = textoSeleccionado ? `*${textoSeleccionado}*` : '**';
+                        nuevoInicio = start + 1;
+                        nuevoFin = end + 1;
+                        break;
+                    case 'underline':
+                        textoFormateado = textoSeleccionado ? `<u>${textoSeleccionado}</u>` : '<u></u>';
+                        nuevoInicio = start + 3;
+                        nuevoFin = end + 3;
+                        break;
+                }
+                
+                const nuevoTexto = texto.substring(0, start) + textoFormateado + texto.substring(end);
+                this.nuevoMensaje = nuevoTexto;
+                
+                // Restaurar el foco y la selección
+                this.$nextTick(() => {
+                    textarea.focus();
+                    textarea.setSelectionRange(nuevoInicio, nuevoFin);
+                });
             },
 
             getTipoMensaje(remitente) {
@@ -870,10 +1110,18 @@
             },
 
             async procesarRespuestasAutomaticas() {
+                if (!this.asuntoCorreo.trim()) {
+                    this.mostrarNotificacion('El asunto es requerido para procesar automáticamente', 'error');
+                    return;
+                }
+
                 this.procesandoAutomatico = true;
 
                 try {
                     console.log('🔄 Iniciando procesamiento automático de respuestas...');
+                    
+                    // Normalizar el asunto para mantener la nomenclatura con el ID
+                    const asuntoNormalizado = this.normalizarAsunto(this.asuntoCorreo);
                     
                     const response = await fetch('/api/process-webklex-responses', {
                         method: 'POST',
@@ -882,7 +1130,8 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
                         body: JSON.stringify({
-                            ticket_id: this.selected.id
+                            ticket_id: this.selected.id,
+                            asunto: asuntoNormalizado
                         })
                     });
 
