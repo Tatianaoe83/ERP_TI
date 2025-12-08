@@ -327,14 +327,21 @@ class SimpleWebklexImapService
                 return false;
             }
             
-            // Verificar si es correo del sistema
-            if ($this->esCorreoSistema($fromEmail)) {
-                Log::info("❌ Correo descartado - correo del sistema: {$fromEmail}");
+            // PRIMERO: Buscar ticket existente (antes de verificar si es correo del sistema)
+            // Esto permite procesar respuestas de correos del sistema si son respuestas a tickets
+            $ticket = $this->buscarTicketPorMensaje($subject, $messageId, $threadId, $fromEmail);
+            
+            // Si NO es una respuesta a un ticket existente, verificar si es correo del sistema
+            // Si es correo del sistema y no es respuesta a ticket, descartarlo
+            if (!$ticket && $this->esCorreoSistema($fromEmail)) {
+                Log::info("❌ Correo descartado - correo del sistema y no es respuesta a ticket: {$fromEmail}");
                 return false;
             }
             
-            // Buscar ticket existente
-            $ticket = $this->buscarTicketPorMensaje($subject, $messageId, $threadId, $fromEmail);
+            // Si es correo del sistema PERO es respuesta a un ticket, permitirlo
+            if ($ticket && $this->esCorreoSistema($fromEmail)) {
+                Log::info("✅ Permitiendo correo del sistema porque es respuesta a ticket #{$ticket->TicketID} | From: {$fromEmail}");
+            }
             
             if ($ticket) {
                 // Respuesta a ticket existente
@@ -678,6 +685,14 @@ class SimpleWebklexImapService
             // Extraer información del remitente
             $fromEmail = $from ? $from->first()->mail : $ticket->empleado->Correo;
             $fromName = $from ? $from->first()->personal : $ticket->empleado->NombreEmpleado;
+            
+            // Si el correo es del sistema pero es una respuesta a un ticket,
+            // usar el empleado del ticket en lugar del remitente del correo
+            if ($this->esCorreoSistema($fromEmail) && $ticket->empleado) {
+                Log::info("Correo del sistema detectado, usando empleado del ticket | Ticket #{$ticketId} | Empleado: {$ticket->empleado->NombreEmpleado}");
+                $fromEmail = $ticket->empleado->Correo;
+                $fromName = $ticket->empleado->NombreEmpleado;
+            }
             
             // Limpiar y normalizar email y nombre
             $fromEmail = $this->limpiarEmail($fromEmail);
