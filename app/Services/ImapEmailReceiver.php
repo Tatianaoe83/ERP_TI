@@ -18,7 +18,7 @@ class ImapEmailReceiver
 
     public function __construct()
     {
-        $this->imapHost = config('mail.imap.host', 'proser.com.mx');
+        $this->imapHost = config('mail.imap.host', 'mail.obras-mex.com');
         $this->imapPort = config('mail.imap.port', 993);
         $this->imapUsername = config('mail.mailers.smtp.username');
         $this->imapPassword = config('mail.mailers.smtp.password');
@@ -64,13 +64,14 @@ class ImapEmailReceiver
             // Configurar opciones para servidor proser.com.mx
             $options = OP_READONLY | OP_HALFOPEN;
             
-            // Para servidores personalizados como proser.com.mx
-            if (strpos($this->imapHost, 'proser.com.mx') !== false) {
+            // Para servidores HostGator (mail.obras-mex.com, mail.proser.com.mx, etc.)
+            if (strpos($this->imapHost, 'mail.') !== false || strpos($this->imapHost, 'obras-mex.com') !== false || strpos($this->imapHost, 'proser.com.mx') !== false) {
                 $server = "{{$this->imapHost}:{$this->imapPort}/imap/ssl/novalidate-cert}INBOX";
             } elseif (strpos($this->imapHost, 'office365.com') !== false || strpos($this->imapHost, 'outlook.com') !== false) {
                 $server = "{{$this->imapHost}:{$this->imapPort}/imap/ssl/novalidate-cert}INBOX";
             } else {
-                $server = "{{$this->imapHost}:{$this->imapPort}/imap/{$this->imapEncryption}/notls}INBOX";
+                // Para otros servidores HostGator o genéricos
+                $server = "{{$this->imapHost}:{$this->imapPort}/imap/ssl/novalidate-cert}INBOX";
             }
             
             Log::info("Intentando conectar a IMAP: {$server}");

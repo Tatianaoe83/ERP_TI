@@ -20,11 +20,11 @@ class WebklexImapService
             'default' => 'default',
             'accounts' => [
                 'default' => [
-                    'host'          => env('IMAP_HOST', 'proser.com.mx'),
+                    'host'          => env('IMAP_HOST', 'mail.obras-mex.com'),
                     'port'          => env('IMAP_PORT', 993),
                     'encryption'    => env('IMAP_ENCRYPTION', 'ssl'),
                     'validate_cert' => env('IMAP_VALIDATE_CERT', false),
-                    'username'      => env('IMAP_USERNAME', 'tordonez@proser.com.mx'),
+                    'username'      => env('IMAP_USERNAME', 'soporte_ti@obras-mex.com'),
                     'password'      => env('IMAP_PASSWORD'),
                     'protocol'      => 'imap',
                 ]
