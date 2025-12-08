@@ -285,14 +285,29 @@ class ImapEmailReceiver
     private function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null)
     {
         try {
+            // Limpiar asunto: remover prefijos y formato "Ticket #ID" si existe
+            $subjectLimpio = $this->limpiarAsunto($subject);
+            
             // Crear nuevo ticket
             $ticket = Tickets::create([
                 'EmpleadoID' => $empleado->EmpleadoID,
-                'Descripcion' => $subject,
+                'Descripcion' => $subjectLimpio,
                 'Estatus' => 'Pendiente',
                 'Prioridad' => 'Media',
                 'created_at' => now()
             ]);
+
+            // Actualizar la descripción con el formato "Ticket #ID - [asunto original]"
+            $descripcionConFormato = "Ticket #{$ticket->TicketID} - {$subjectLimpio}";
+            
+            // Verificar que no exceda la longitud máxima
+            if (strlen($descripcionConFormato) > 500) {
+                $maxLength = 500 - strlen("Ticket #{$ticket->TicketID} - ");
+                $descripcionConFormato = "Ticket #{$ticket->TicketID} - " . substr($subjectLimpio, 0, $maxLength) . '...';
+            }
+            
+            $ticket->Descripcion = $descripcionConFormato;
+            $ticket->save();
 
             // Crear primera entrada en el chat
             TicketChat::create([
@@ -307,7 +322,7 @@ class ImapEmailReceiver
                 'leido' => false
             ]);
 
-            Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo}");
+            Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo} | Asunto: {$descripcionConFormato}");
             
             // Enviar notificación de confirmación (opcional)
             $this->enviarConfirmacionTicket($ticket, $empleado);
@@ -318,6 +333,31 @@ class ImapEmailReceiver
             Log::error("Error creando ticket desde correo: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Limpiar asunto del correo
+     */
+    private function limpiarAsunto($subject)
+    {
+        if (empty($subject)) {
+            return 'Nuevo ticket desde correo';
+        }
+        
+        $subject = trim($subject);
+        
+        // Remover prefijos comunes de respuestas
+        $subject = preg_replace('/^(Re:|RE:|Fwd:|FWD:|Fw:|FW:)\s*/i', '', $subject);
+        
+        // Remover formato "Ticket #ID" si existe (para evitar duplicados al crear nuevo ticket)
+        $subject = preg_replace('/^Ticket\s*#\s*\d+\s*-\s*/i', '', $subject);
+        
+        // Limitar longitud
+        if (strlen($subject) > 500) {
+            $subject = substr($subject, 0, 497) . '...';
+        }
+        
+        return trim($subject);
     }
 
     /**

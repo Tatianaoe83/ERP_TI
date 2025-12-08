@@ -110,18 +110,22 @@ class SimpleWebklexImapService
             $fechaInicio = now()->subDays(self::DIAS_BUSQUEDA)->startOfDay();
             Log::info("Obteniendo mensajes desde: {$fechaInicio->format('Y-m-d H:i:s')}");
             
+            // Obtener TODOS los mensajes (leídos y no leídos) para asegurar que no se pierdan correos
             $mensajes = $folder->messages()
                 ->since($fechaInicio)
-                ->leaveUnread()
                 ->get();
             
-            // Filtrar por fecha (últimos 7 días hasta mañana)
+            Log::info("Mensajes obtenidos desde IMAP (sin filtrar): {$mensajes->count()}");
+            
+            // Filtrar por fecha (últimos 15 días hasta mañana)
             $mensajesFiltrados = $this->filtrarPorFecha($mensajes);
+            
+            Log::info("Mensajes después de filtrar por fecha: {$mensajesFiltrados->count()}");
             
             // Ordenar por fecha descendente
             $mensajesFiltrados = $this->ordenarPorFecha($mensajesFiltrados);
             
-            Log::info("Mensajes obtenidos: {$mensajesFiltrados->count()}");
+            Log::info("Mensajes finales a procesar: {$mensajesFiltrados->count()}");
             
             return $mensajesFiltrados;
             
@@ -191,32 +195,40 @@ class SimpleWebklexImapService
         $descartados = 0;
         $inicioTiempo = microtime(true);
         
+        Log::info("🔄 Iniciando procesamiento de {$mensajes->count()} mensajes");
+        
         foreach ($mensajes as $index => $mensaje) {
             // Control de tiempo
             if ($this->deberDetenerPorTiempo($inicioTiempo)) {
+                Log::warning("⏱️ Tiempo máximo alcanzado, deteniendo procesamiento");
                 break;
             }
             
             // Control de memoria
             if ($this->deberDetenerPorMemoria($index)) {
+                Log::warning("💾 Memoria máxima alcanzada, deteniendo procesamiento");
                 break;
             }
             
             // Procesar mensaje
             try {
-                if ($this->procesarMensajeSimple($mensaje)) {
+                $resultado = $this->procesarMensajeSimple($mensaje);
+                if ($resultado) {
                     $procesados++;
+                    Log::info("✅ Mensaje #{$index} procesado exitosamente");
                 } else {
                     $descartados++;
+                    Log::info("⚠️ Mensaje #{$index} descartado");
                 }
                 
-                // Log de progreso cada 20 mensajes
-                if ($index > 0 && $index % 20 == 0) {
-                    $this->logearProgreso($index, $mensajes->count(), $inicioTiempo);
+                // Log de progreso cada 10 mensajes
+                if ($index > 0 && ($index + 1) % 10 == 0) {
+                    $this->logearProgreso($index + 1, $mensajes->count(), $inicioTiempo);
                 }
                 
             } catch (\Exception $e) {
-                Log::error("Error procesando mensaje #{$index}: " . $e->getMessage());
+                Log::error("❌ Error procesando mensaje #{$index}: " . $e->getMessage());
+                Log::error("Stack trace: " . $e->getTraceAsString());
                 $descartados++;
             } finally {
                 unset($mensaje);
@@ -229,6 +241,8 @@ class SimpleWebklexImapService
         }
         
         $tiempoTotal = round(microtime(true) - $inicioTiempo, 2);
+        
+        Log::info("📊 Procesamiento completado | Procesados: {$procesados} | Descartados: {$descartados} | Tiempo: {$tiempoTotal}s");
         
         return [
             'procesados' => $procesados,
@@ -290,6 +304,8 @@ class SimpleWebklexImapService
             $subject = $message->getSubject();
             $from = $message->getFrom();
             
+            Log::info("📧 Procesando mensaje | Subject: {$subject}");
+            
             // Extraer información completa del correo
             $bodyTexto = $message->getTextBody();
             $bodyHtml = $message->getHTMLBody();
@@ -302,13 +318,17 @@ class SimpleWebklexImapService
             $messageId = $message->getMessageId();
             $dominio = $this->extraerDominio($fromEmail);
             
+            Log::info("📧 Datos extraídos | From: {$fromEmail} | Message-ID: {$messageId} | Thread-ID: " . ($threadId ?? 'N/A'));
+            
             // Filtrar solo correos de dominios permitidos (proser y konkret)
             if (!$this->esDominioPermitido($dominio)) {
+                Log::info("❌ Correo descartado - dominio no permitido: {$dominio}");
                 return false;
             }
             
             // Verificar si es correo del sistema
             if ($this->esCorreoSistema($fromEmail)) {
+                Log::info("❌ Correo descartado - correo del sistema: {$fromEmail}");
                 return false;
             }
             
@@ -317,15 +337,33 @@ class SimpleWebklexImapService
             
             if ($ticket) {
                 // Respuesta a ticket existente
-                if ($this->correoYaProcesado($ticket->TicketID, $fromEmail, $subject)) {
+                $yaProcesado = $this->correoYaProcesado($ticket->TicketID, $fromEmail, $subject, $messageId, $threadId);
+                if ($yaProcesado) {
+                    Log::info("⚠️ Correo descartado - ya procesado | Ticket #{$ticket->TicketID} | From: {$fromEmail} | Subject: {$subject}");
                     return false;
                 }
                 
-                $this->crearRespuestaUsuario($ticket, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $from, $messageId, $threadId);
-                return true;
+                Log::info("✅ Procesando respuesta para ticket existente | Ticket #{$ticket->TicketID} | From: {$fromEmail} | Subject: {$subject}");
+                Log::info("Body texto length: " . strlen($bodyTexto ?? '') . " | Body HTML length: " . strlen($bodyHtml ?? ''));
+                
+                $resultado = $this->crearRespuestaUsuario($ticket, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $from, $messageId, $threadId);
+                
+                if ($resultado) {
+                    Log::info("✅✅ Respuesta guardada exitosamente | Ticket #{$ticket->TicketID} | Chat ID: {$resultado->id}");
+                    return true;
+                } else {
+                    Log::error("❌❌ Error guardando respuesta - crearRespuestaUsuario retornó null | Ticket #{$ticket->TicketID}");
+                    return false;
+                }
             } else {
                 // Intentar crear nuevo ticket
-                return $this->intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
+                Log::info("⚠️ No se encontró ticket existente, intentando crear nuevo ticket | From: {$fromEmail} | Subject: {$subject}");
+                $nuevoTicket = $this->intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
+                if ($nuevoTicket) {
+                    Log::info("✅ Nuevo ticket creado: #{$nuevoTicket->TicketID}");
+                    return true;
+                }
+                return false;
             }
             
         } catch (\Exception $e) {
@@ -401,14 +439,52 @@ class SimpleWebklexImapService
     
     /**
      * Verificar si el correo ya fue procesado
+     * Mejorado para usar message_id y thread_id en lugar de buscar asunto en mensaje
      */
-    protected function correoYaProcesado($ticketId, $fromEmail, $subject)
+    protected function correoYaProcesado($ticketId, $fromEmail, $subject, $messageId = null, $threadId = null)
     {
-        return TicketChat::where('ticket_id', $ticketId)
+        // Primero verificar por message_id (más confiable)
+        if ($messageId) {
+            $normalizedMessageId = $this->normalizarMessageId($messageId);
+            $existe = TicketChat::where('ticket_id', $ticketId)
+                ->where('message_id', $normalizedMessageId)
+                ->exists();
+            
+            if ($existe) {
+                Log::info("Correo ya procesado detectado por message_id: {$normalizedMessageId} | Ticket #{$ticketId}");
+                return true;
+            }
+        }
+        
+        // Verificar por thread_id si no se encontró por message_id
+        if ($threadId) {
+            $normalizedThreadId = $this->normalizarThreadId($threadId);
+            $existe = TicketChat::where('ticket_id', $ticketId)
+                ->where('thread_id', $normalizedThreadId)
+                ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
+                ->where('es_correo', true)
+                ->exists();
+            
+            if ($existe) {
+                Log::info("Correo ya procesado detectado por thread_id: {$normalizedThreadId} | Ticket #{$ticketId}");
+                return true;
+            }
+        }
+        
+        // Fallback: verificar por email y asunto (solo si no hay message_id ni thread_id)
+        // Pero con un rango de tiempo más corto para evitar falsos positivos
+        $existe = TicketChat::where('ticket_id', $ticketId)
             ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
             ->where('es_correo', true)
+            ->where('created_at', '>=', now()->subHours(1)) // Solo últimas horas
             ->where('mensaje', 'LIKE', '%' . substr($subject, 0, 50) . '%')
             ->exists();
+        
+        if ($existe) {
+            Log::info("Correo ya procesado detectado por asunto y email (última hora) | Ticket #{$ticketId}");
+        }
+        
+        return $existe;
     }
     
     /**
@@ -481,34 +557,46 @@ class SimpleWebklexImapService
      */
     private function buscarPorNumeroTicket($subject)
     {
+        if (empty($subject)) {
+            Log::warning("Asunto vacío al buscar ticket por número");
+            return null;
+        }
+        
         // Patrones mejorados para buscar "Ticket #42" en diferentes formatos
+        // Ordenados por especificidad (más específicos primero)
         $patrones = [
-            '/Ticket\s*#\s*(\d+)/i',                    // "Ticket #42"
+            '/Re:\s*Ticket\s*#\s*(\d+)\s*-/i',         // "Re: Ticket #42 -"
+            '/RE:\s*Ticket\s*#\s*(\d+)\s*-/i',         // "RE: Ticket #42 -"
             '/Re:\s*Ticket\s*#\s*(\d+)/i',              // "Re: Ticket #42"
             '/RE:\s*Ticket\s*#\s*(\d+)/i',             // "RE: Ticket #42"
             '/Ticket\s*#\s*(\d+)\s*-/i',                // "Ticket #42 -"
-            '/Re:\s*Ticket\s*#\s*(\d+)\s*-/i',         // "Re: Ticket #42 -"
+            '/Ticket\s*#\s*(\d+)/i',                    // "Ticket #42"
             '/\[Ticket\s*#(\d+)\]/i',                  // "[Ticket #42]"
             '/Ticket\s*N[úu]mero\s*(\d+)/i',           // "Ticket Número 42"
             '/Ticket\s*ID\s*(\d+)/i',                   // "Ticket ID 42"
+            '/#\s*(\d+)/i',                             // "#42" (fallback genérico)
         ];
         
-        foreach ($patrones as $patron) {
+        Log::info("Buscando ticket por número en asunto: {$subject}");
+        
+        foreach ($patrones as $index => $patron) {
             if (preg_match($patron, $subject, $matches)) {
                 $ticketId = (int) $matches[1];
+                Log::info("Patrón #{$index} coincidió - Ticket ID extraído: {$ticketId}");
                 
                 // Buscar ticket en la BD por TicketID
                 $ticket = Tickets::find($ticketId);
                 
                 if ($ticket) {
-                    Log::info("Ticket encontrado por número en asunto: #{$ticketId} | Asunto: {$subject}");
+                    Log::info("✅ Ticket encontrado por número en asunto: #{$ticketId} | Asunto: {$subject}");
                     return $ticket;
                 } else {
-                    Log::warning("Ticket #{$ticketId} mencionado en asunto pero no existe en BD | Asunto: {$subject}");
+                    Log::warning("⚠️ Ticket #{$ticketId} mencionado en asunto pero no existe en BD | Asunto: {$subject}");
                 }
             }
         }
         
+        Log::info("No se encontró número de ticket en asunto: {$subject}");
         return null;
     }
     
@@ -622,7 +710,11 @@ class SimpleWebklexImapService
                 $adjuntosValidados = $this->validarAdjuntos($adjuntos);
                 if (!empty($adjuntosValidados)) {
                     $datosChat['adjuntos'] = $adjuntosValidados;
+                    Log::info("Adjuntos validados: " . count($adjuntosValidados) . " | Ticket #{$ticketId}");
                 }
+            } else {
+                // Asegurar que adjuntos sea null o array vacío si no hay adjuntos
+                $datosChat['adjuntos'] = [];
             }
             
             // Usar fecha del correo si está disponible
@@ -639,18 +731,46 @@ class SimpleWebklexImapService
             }
             
             // Validar datos antes de guardar
-            $datosChat = $this->validarDatosChat($datosChat);
+            Log::info("Validando datos antes de guardar | Ticket #{$ticketId}");
+            try {
+                $datosChat = $this->validarDatosChat($datosChat);
+                Log::info("Datos validados correctamente | Ticket #{$ticketId}");
+            } catch (\Exception $e) {
+                Log::error("Error validando datos: " . $e->getMessage() . " | Ticket #{$ticketId}");
+                throw $e;
+            }
             
             // Guardar en la base de datos
-            $ticketChat = TicketChat::create($datosChat);
+            Log::info("Intentando guardar en BD | Ticket #{$ticketId} | From: {$fromEmail}");
+            Log::info("Datos a guardar: " . json_encode([
+                'ticket_id' => $datosChat['ticket_id'],
+                'remitente' => $datosChat['remitente'],
+                'es_correo' => $datosChat['es_correo'],
+                'mensaje_length' => strlen($datosChat['mensaje'] ?? ''),
+                'tiene_adjuntos' => !empty($datosChat['adjuntos'])
+            ], JSON_UNESCAPED_UNICODE));
             
-            Log::info("✅ Respuesta mapeada y guardada | Ticket #{$ticketId} | Chat ID: {$ticketChat->id} | Desde: {$fromEmail}" . 
-                      (!empty($adjuntos) ? " | Adjuntos: " . count($adjuntos) : ""));
-            
-            return $ticketChat;
+            try {
+                $ticketChat = TicketChat::create($datosChat);
+                Log::info("✅ Respuesta mapeada y guardada exitosamente | Ticket #{$ticketId} | Chat ID: {$ticketChat->id} | Desde: {$fromEmail}" . 
+                          (!empty($adjuntos) ? " | Adjuntos: " . count($adjuntos) : ""));
+                
+                return $ticketChat;
+            } catch (\Illuminate\Database\QueryException $e) {
+                Log::error("❌ Error de BD al crear respuesta: " . $e->getMessage() . " | Ticket #{$ticketId}");
+                Log::error("Código de error SQL: " . $e->getCode());
+                Log::error("SQL State: " . ($e->errorInfo[0] ?? 'N/A'));
+                Log::error("SQL Error: " . ($e->errorInfo[2] ?? 'N/A'));
+                Log::error("Datos que se intentaron guardar: " . json_encode($datosChat, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR));
+                throw $e;
+            } catch (\Exception $e) {
+                Log::error("❌ Error inesperado al guardar: " . $e->getMessage() . " | Ticket #{$ticketId}");
+                Log::error("Tipo de error: " . get_class($e));
+                throw $e;
+            }
             
         } catch (\Exception $e) {
-            Log::error("Error creando respuesta de usuario: " . $e->getMessage());
+            Log::error("❌ Error creando respuesta de usuario: " . $e->getMessage() . " | Ticket #{$ticketId ?? 'N/A'}");
             Log::error("Stack trace: " . $e->getTraceAsString());
             return null;
         }
@@ -727,7 +847,11 @@ class SimpleWebklexImapService
                 $adjuntosValidados = $this->validarAdjuntos($adjuntos);
                 if (!empty($adjuntosValidados)) {
                     $datosChat['adjuntos'] = $adjuntosValidados;
+                    Log::info("Adjuntos validados para nuevo ticket: " . count($adjuntosValidados) . " | Ticket #{$ticket->TicketID}");
                 }
+            } else {
+                // Asegurar que adjuntos sea null o array vacío si no hay adjuntos
+                $datosChat['adjuntos'] = [];
             }
             
             // Usar fecha del correo si está disponible
@@ -742,10 +866,25 @@ class SimpleWebklexImapService
             }
             
             // Validar datos antes de guardar
-            $datosChat = $this->validarDatosChat($datosChat);
+            Log::info("Validando datos para nuevo ticket | Ticket #{$ticket->TicketID}");
+            try {
+                $datosChat = $this->validarDatosChat($datosChat);
+                Log::info("Datos validados correctamente para nuevo ticket | Ticket #{$ticket->TicketID}");
+            } catch (\Exception $e) {
+                Log::error("Error validando datos para nuevo ticket: " . $e->getMessage() . " | Ticket #{$ticket->TicketID}");
+                throw $e;
+            }
             
             // Guardar en la base de datos
-            TicketChat::create($datosChat);
+            Log::info("Intentando guardar chat para nuevo ticket | Ticket #{$ticket->TicketID}");
+            try {
+                $ticketChat = TicketChat::create($datosChat);
+                Log::info("✅ Chat guardado exitosamente para nuevo ticket | Ticket #{$ticket->TicketID} | Chat ID: {$ticketChat->id}");
+            } catch (\Exception $e) {
+                Log::error("❌ Error guardando chat para nuevo ticket: " . $e->getMessage() . " | Ticket #{$ticket->TicketID}");
+                Log::error("Datos: " . json_encode($datosChat, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR));
+                throw $e;
+            }
 
             Log::info("✅ Nuevo ticket creado y guardado | Ticket #{$ticket->TicketID} | Asunto: {$descripcionConFormato} | Desde: {$fromEmailLimpio}");
 
@@ -772,12 +911,16 @@ class SimpleWebklexImapService
         // Remover prefijos comunes de respuestas
         $subject = preg_replace('/^(Re:|RE:|Fwd:|FWD:|Fw:|FW:)\s*/i', '', $subject);
         
+        // Remover formato "Ticket #ID" si existe (para evitar duplicados al crear nuevo ticket)
+        // Esto asegura que cuando se cree un ticket nuevo, no tenga el formato "Ticket #ID" previo
+        $subject = preg_replace('/^Ticket\s*#\s*\d+\s*-\s*/i', '', $subject);
+        
         // Limitar longitud
         if (strlen($subject) > 500) {
             $subject = substr($subject, 0, 497) . '...';
         }
         
-        return $subject;
+        return trim($subject);
     }
     
     /**
@@ -1302,6 +1445,24 @@ class SimpleWebklexImapService
         
         if (isset($datosChat['correo_remitente']) && strlen($datosChat['correo_remitente']) > 255) {
             $datosChat['correo_remitente'] = substr($datosChat['correo_remitente'], 0, 252) . '...';
+        }
+        
+        // Asegurar que adjuntos sea un array válido (null o array)
+        if (isset($datosChat['adjuntos'])) {
+            if (!is_array($datosChat['adjuntos'])) {
+                $datosChat['adjuntos'] = [];
+            }
+        } else {
+            $datosChat['adjuntos'] = [];
+        }
+        
+        // Asegurar que message_id y thread_id sean strings o null
+        if (isset($datosChat['message_id']) && !is_string($datosChat['message_id']) && !is_null($datosChat['message_id'])) {
+            $datosChat['message_id'] = (string) $datosChat['message_id'];
+        }
+        
+        if (isset($datosChat['thread_id']) && !is_string($datosChat['thread_id']) && !is_null($datosChat['thread_id'])) {
+            $datosChat['thread_id'] = (string) $datosChat['thread_id'];
         }
         
         return $datosChat;
