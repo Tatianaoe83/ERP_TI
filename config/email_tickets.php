@@ -12,7 +12,7 @@ return [
     */
 
     'imap' => [
-        'host' => env('MAIL_HOST', 'imap-mail.outlook.com'),
+        'host' => env('MAIL_HOST'),
         'port' => env('IMAP_PORT', 993),
         'encryption' => env('IMAP_ENCRYPTION', 'ssl'),
         'validate_cert' => env('IMAP_VALIDATE_CERT', false),

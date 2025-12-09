@@ -331,16 +331,9 @@ class SimpleWebklexImapService
             // Esto permite procesar respuestas de correos del sistema si son respuestas a tickets
             $ticket = $this->buscarTicketPorMensaje($subject, $messageId, $threadId, $fromEmail);
             
-            // Si NO es una respuesta a un ticket existente, verificar si es correo del sistema
-            // Si es correo del sistema y no es respuesta a ticket, descartarlo
-            if (!$ticket && $this->esCorreoSistema($fromEmail)) {
-                Log::info("❌ Correo descartado - correo del sistema y no es respuesta a ticket: {$fromEmail}");
-                return false;
-            }
-            
-            // Si es correo del sistema PERO es respuesta a un ticket, permitirlo
-            if ($ticket && $this->esCorreoSistema($fromEmail)) {
-                Log::info("✅ Permitiendo correo del sistema porque es respuesta a ticket #{$ticket->TicketID} | From: {$fromEmail}");
+            // Si se encontró un ticket, procesarlo
+            if ($ticket) {
+                // Continuar con el procesamiento del ticket (no retornar aquí)
             }
             
             if ($ticket) {
@@ -434,27 +427,6 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Verificar si el correo es del sistema
-     */
-    protected function esCorreoSistema($fromEmail)
-    {
-        $correosSistema = [
-            // Correos del sistema de proser.com.mx
-            'tordonez@proser.com.mx',
-            'sistema@proser.com.mx',
-            'noreply@proser.com.mx',
-            'tickets@proser.com.mx',
-            // Correos del sistema de konkret.mx
-            'sistema@konkret.mx',
-            'noreply@konkret.mx',
-            'tickets@konkret.mx',
-            'tordonez@konkret.mx'
-        ];
-        
-        return in_array(strtolower($fromEmail), $correosSistema);
-    }
-    
-    /**
      * Verificar si el correo ya fue procesado
      * Mejorado para usar message_id y thread_id en lugar de buscar asunto en mensaje
      */
@@ -503,11 +475,13 @@ class SimpleWebklexImapService
      */
     protected function buscarTicketPorMensaje($subject, $messageId = null, $threadId = null, $fromEmail = null)
     {
+        Log::info("🔍 Iniciando búsqueda de ticket | Asunto: {$subject} | Message-ID: " . ($messageId ?? 'N/A') . " | Thread-ID: " . ($threadId ?? 'N/A') . " | From: " . ($fromEmail ?? 'N/A'));
+        
         // 1. PRIMERO: Buscar por número de ticket en asunto (más confiable)
         // Esto mapea correctamente con el TicketID de la BD
         $ticket = $this->buscarPorNumeroTicket($subject);
         if ($ticket) {
-            Log::info("Ticket mapeado por número en asunto: #{$ticket->TicketID}");
+            Log::info("✅ Ticket mapeado por número en asunto: #{$ticket->TicketID}");
             return $ticket;
         }
         
@@ -515,7 +489,7 @@ class SimpleWebklexImapService
         if ($threadId) {
             $ticket = $this->buscarPorThreadId($threadId);
             if ($ticket) {
-                Log::info("Ticket mapeado por Thread-ID: #{$ticket->TicketID}");
+                Log::info("✅ Ticket mapeado por Thread-ID: #{$ticket->TicketID}");
                 return $ticket;
             }
         }
@@ -524,7 +498,7 @@ class SimpleWebklexImapService
         if ($messageId) {
             $ticket = $this->buscarPorMessageId($messageId);
             if ($ticket) {
-                Log::info("Ticket mapeado por Message-ID: #{$ticket->TicketID}");
+                Log::info("✅ Ticket mapeado por Message-ID: #{$ticket->TicketID}");
                 return $ticket;
             }
         }
@@ -533,12 +507,12 @@ class SimpleWebklexImapService
         if ($fromEmail) {
             $ticket = $this->buscarPorAsuntoOriginal($subject, $fromEmail);
             if ($ticket) {
-                Log::info("Ticket mapeado por asunto original: #{$ticket->TicketID}");
+                Log::info("✅ Ticket mapeado por asunto original: #{$ticket->TicketID}");
                 return $ticket;
             }
         }
         
-        Log::info("No se encontró ticket para mapear | Asunto: {$subject}");
+        Log::info("❌ No se encontró ticket para mapear | Asunto: {$subject}");
         return null;
     }
     
@@ -569,8 +543,11 @@ class SimpleWebklexImapService
     private function buscarPorNumeroTicket($subject)
     {
         if (empty($subject)) {
+            Log::info("⚠️ Asunto vacío al buscar ticket por número");
             return null;
         }
+        
+        Log::info("🔍 Buscando ticket por número en asunto: {$subject}");
         
         // Patrones mejorados para buscar "Ticket #42" en diferentes formatos
         // Ordenados por especificidad (más específicos primero)
@@ -587,9 +564,10 @@ class SimpleWebklexImapService
             '/#\s*(\d+)/i',                             // "#42" (fallback genérico)
         ];
         
-        foreach ($patrones as $patron) {
+        foreach ($patrones as $index => $patron) {
             if (preg_match($patron, $subject, $matches)) {
                 $ticketId = (int) $matches[1];
+                Log::info("🔍 Patrón #{$index} coincidió - Ticket ID encontrado: #{$ticketId} | Asunto: {$subject}");
                 
                 // Buscar ticket en la BD por TicketID
                 $ticket = Tickets::find($ticketId);
@@ -603,6 +581,7 @@ class SimpleWebklexImapService
             }
         }
         
+        Log::info("⚠️ No se encontró número de ticket en asunto: {$subject}");
         return null;
     }
     
@@ -680,14 +659,6 @@ class SimpleWebklexImapService
             // Extraer información del remitente
             $fromEmail = $from ? $from->first()->mail : $ticket->empleado->Correo;
             $fromName = $from ? $from->first()->personal : $ticket->empleado->NombreEmpleado;
-            
-            // Si el correo es del sistema pero es una respuesta a un ticket,
-            // usar el empleado del ticket en lugar del remitente del correo
-            if ($this->esCorreoSistema($fromEmail) && $ticket->empleado) {
-                Log::info("Correo del sistema detectado, usando empleado del ticket | Ticket #{$ticketId} | Empleado: {$ticket->empleado->NombreEmpleado}");
-                $fromEmail = $ticket->empleado->Correo;
-                $fromName = $ticket->empleado->NombreEmpleado;
-            }
             
             // Limpiar y normalizar email y nombre
             $fromEmail = $this->limpiarEmail($fromEmail);
