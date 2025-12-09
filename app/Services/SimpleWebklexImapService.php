@@ -569,7 +569,6 @@ class SimpleWebklexImapService
     private function buscarPorNumeroTicket($subject)
     {
         if (empty($subject)) {
-            Log::warning("Asunto vacío al buscar ticket por número");
             return null;
         }
         
@@ -588,18 +587,15 @@ class SimpleWebklexImapService
             '/#\s*(\d+)/i',                             // "#42" (fallback genérico)
         ];
         
-        Log::info("🔍 Buscando ticket por número en asunto: {$subject}");
-        
-        foreach ($patrones as $index => $patron) {
+        foreach ($patrones as $patron) {
             if (preg_match($patron, $subject, $matches)) {
                 $ticketId = (int) $matches[1];
-                Log::info("✅ Patrón #{$index} coincidió - Ticket ID extraído: {$ticketId} | Patrón: {$patron}");
                 
                 // Buscar ticket en la BD por TicketID
                 $ticket = Tickets::find($ticketId);
                 
                 if ($ticket) {
-                    Log::info("✅✅ Ticket encontrado por número en asunto: #{$ticketId} | Asunto: {$subject}");
+                    Log::info("✅ Ticket encontrado por número en asunto: #{$ticketId} | Asunto: {$subject}");
                     return $ticket;
                 } else {
                     Log::warning("⚠️ Ticket #{$ticketId} mencionado en asunto pero no existe en BD | Asunto: {$subject}");
@@ -607,7 +603,6 @@ class SimpleWebklexImapService
             }
         }
         
-        Log::info("❌ No se encontró número de ticket en asunto: {$subject}");
         return null;
     }
     
