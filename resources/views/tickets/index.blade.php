@@ -11,7 +11,7 @@
                 class="absolute top-1 bottom-1 rounded-md bg-gradient-to-r from-blue-500 to-blue-700 shadow-md transition-all duration-300 ease-in-out"
                 :style="`left:${(tab-1)*100/3}%; width:${100/3}%`"></div>
 
-            <template x-for="(label, index) in ['Tickets', 'Solicitudes', 'Productividad']" :key="index">
+            <template x-for="(label, index) in ['Tickets', 'Productividad', 'Solicitudes']" :key="index">
                 <button
                     @click="tab = index + 1"
                     :class="tab === index + 1 ? 'text-white' : 'text-gray-600 hover:text-gray-800'"
@@ -19,7 +19,7 @@
                     <span class="flex items-center justify-center gap-2">
                         <i :class="[
                             index === 0 ? 'fas fa-ticket-alt' :
-                            index === 1 ? 'fas fa-clipboard-list' :
+                            index === 1 ? 'fas fa-chart-line' :
                             'fas fa-chart-line',
                             'text-xs'
                         ]"></i>
@@ -43,15 +43,14 @@
             x-transition.opacity
             x-cloak
             class="text-gray-500 text-center py-10">
-            Contenido de solicitudes
+            @include('tickets.productividad', ['metricasProductividad' => $metricasProductividad])
         </div>
-
         <div
             x-show="tab === 3"
             x-transition.opacity
             x-cloak
             class="text-gray-500 text-center py-10">
-            Dashboard de productividad
+            Contenido de solicitudes
         </div>
     </div>
 </div>

@@ -1,7 +1,48 @@
 <div
     x-data="ticketsModal()"
-    x-init="init()"
-    class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+    x-init="init(); vista = localStorage.getItem('ticketsVista') || 'kanban'"
+    class="space-y-4">
+    
+    <!-- Selector de Vista -->
+    <div class="flex justify-between items-center gap-2 mb-4">
+        @can('tickets.ajustar-metricas')
+        <button
+            @click="mostrarModalMetricas = true; cargarMetricas()"
+            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm">
+            <i class="fas fa-cog text-sm"></i>
+            <span>Ajustar Métricas</span>
+        </button>
+        @endcan
+        <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 font-medium">Vista:</span>
+            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <button
+                    @click="vista = 'kanban'; localStorage.setItem('ticketsVista', 'kanban')"
+                    :class="vista === 'kanban' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    <i class="fas fa-columns text-xs"></i>
+                    <span>Kanban</span>
+                </button>
+                <button
+                    @click="vista = 'lista'; localStorage.setItem('ticketsVista', 'lista'); prepararDatosLista()"
+                    :class="vista === 'lista' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    <i class="fas fa-list text-xs"></i>
+                    <span>Lista</span>
+                </button>
+                <button
+                    @click="vista = 'tabla'; localStorage.setItem('ticketsVista', 'tabla'); prepararDatosTabla()"
+                    :class="vista === 'tabla' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    <i class="fas fa-table text-xs"></i>
+                    <span>Tabla</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista Kanban -->
+    <div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
     @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
     <div class="p-4 text-center shadow-lg rounded-md bg-white border border-gray-100">
         <div class="border-b font-semibold text-gray-700 mb-2">{{ $titulo }}</div>
@@ -17,6 +58,7 @@
 
                 <div
                     class="bg-white rounded-xl border border-gray-100 hover:shadow-md transition p-4 text-left cursor-pointer"
+                    data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
@@ -54,6 +96,276 @@
         </div>
     </div>
     @endforeach
+    </div>
+
+    <!-- Vista Lista -->
+    <div x-show="vista === 'lista'" x-transition class="space-y-3">
+        @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 flex justify-between items-center">
+                <h3 class="text-white font-semibold text-sm">{{ $titulo }}</h3>
+                <span class="text-white text-xs" x-text="`Total: ${ticketsLista['{{ $key }}'] || 0}`"></span>
+            </div>
+            <div class="divide-y divide-gray-200">
+                @forelse ($ticketsStatus[$key] as $ticket)
+                @php
+                $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
+                if (count($partes) >= 3) array_splice($partes, 1, 1);
+                $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
+                @endphp
+                <div
+                    class="p-4 hover:bg-gray-50 transition cursor-pointer"
+                    data-ticket-id="{{ $ticket->TicketID }}"
+                    data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
+                    data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
+                    data-ticket-prioridad="{{ $ticket->Prioridad }}"
+                    data-ticket-empleado="{{ $nombreFormateado }}"
+                    data-ticket-anydesk="{{ $ticket->CodeAnyDesk }}"
+                    data-ticket-numero="{{ $ticket->Numero }}"
+                    data-ticket-correo="{{ $ticket->empleado->Correo }}"
+                    data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
+                    x-show="estaEnPaginaLista('{{ $key }}', {{ $loop->index }})"
+                    @click="abrirModalDesdeElemento($el)">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h4 class="text-base font-semibold text-gray-800">Ticket #{{ $ticket->TicketID }}</h4>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'bg-green-200 text-green-600' : ($ticket->Prioridad == 'Media' ? 'bg-yellow-200 text-yellow-600' : 'bg-red-200 text-red-600') }}">
+                                    {{ $ticket->Prioridad }}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3 line-clamp-2">
+                                {{ Str::limit($ticket->Descripcion, 150, '...') }}
+                            </p>
+                            <div class="flex items-center gap-4 text-xs text-gray-500">
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                    <span class="font-semibold text-gray-700">{{ $nombreFormateado }}</span>
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-calendar text-gray-400"></i>
+                                    <span>{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
+                                </span>
+                                @if($ticket->CodeAnyDesk)
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-desktop text-gray-400"></i>
+                                    <span>{{ $ticket->CodeAnyDesk }}</span>
+                                </span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="p-8 text-center">
+                    <p class="text-sm text-gray-400">No hay tickets en esta categoría.</p>
+                </div>
+                @endforelse
+            </div>
+            <!-- Paginación Lista - Cada sección tiene su propia paginación independiente -->
+            <div x-show="ticketsLista && ticketsLista['{{ $key }}'] !== undefined && ticketsLista['{{ $key }}'] > 0" class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600">
+                        <span x-text="`Mostrando ${((paginaLista['{{ $key }}'] - 1) * elementosPorPagina) + 1} - ${Math.min(paginaLista['{{ $key }}'] * elementosPorPagina, ticketsLista['{{ $key }}'] || 0)} de ${ticketsLista['{{ $key }}'] || 0} tickets`"></span>
+                        <span x-show="obtenerTotalPaginasLista('{{ $key }}') > 1" class="ml-2" x-text="`(Página ${paginaLista['{{ $key }}']} de ${obtenerTotalPaginasLista('{{ $key }}')})`"></span>
+                    </div>
+                    <div x-show="obtenerTotalPaginasLista('{{ $key }}') > 1" class="flex items-center gap-2">
+                        <button
+                            @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] - 1)"
+                            :disabled="paginaLista['{{ $key }}'] === 1"
+                            :class="paginaLista['{{ $key }}'] === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
+                            class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                            <i class="fas fa-chevron-left text-xs"></i> Anterior
+                        </button>
+                        <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasLista('{{ $key }}'), 10)}, (_, i) => {
+                            const total = obtenerTotalPaginasLista('{{ $key }}');
+                            const current = paginaLista['{{ $key }}'];
+                            let start = Math.max(1, current - 4);
+                            let end = Math.min(total, start + 9);
+                            if (end - start < 9) start = Math.max(1, end - 9);
+                            return start + i;
+                        }).filter((p, i, arr) => p <= obtenerTotalPaginasLista('{{ $key }}') && (i === 0 || p !== arr[i-1]))" :key="pagina">
+                            <button
+                                @click="cambiarPaginaLista('{{ $key }}', pagina)"
+                                :class="paginaLista['{{ $key }}'] === pagina ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                                class="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-md transition">
+                                <span x-text="pagina"></span>
+                            </button>
+                        </template>
+                        <button
+                            @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] + 1)"
+                            :disabled="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}')"
+                            :class="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
+                            class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                            Siguiente <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+
+    <!-- Vista Tabla -->
+    <div x-show="vista === 'tabla'" x-transition class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <div class="text-sm text-gray-600">
+                <span x-text="`Mostrando ${(paginaTabla - 1) * elementosPorPagina + 1} - ${Math.min(paginaTabla * elementosPorPagina, ticketsTabla.length)} de ${ticketsTabla.length} tickets`"></span>
+            </div>
+            <div class="text-sm text-gray-600">
+                <span>Elementos por página:</span>
+                <select x-model="elementosPorPagina" @change="paginaTabla = 1" class="ml-2 px-2 py-1 border border-gray-300 rounded text-sm">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                            @click="cambiarOrden('id')">
+                            <div class="flex items-center gap-2">
+                                <span>ID</span>
+                                <i class="fas fa-sort text-gray-400 text-xs"
+                                   :class="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                            @click="cambiarOrden('descripcion')">
+                            <div class="flex items-center gap-2">
+                                <span>Descripción</span>
+                                <i class="fas fa-sort text-gray-400 text-xs"
+                                   :class="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                            @click="cambiarOrden('empleado')">
+                            <div class="flex items-center gap-2">
+                                <span>Empleado</span>
+                                <i class="fas fa-sort text-gray-400 text-xs"
+                                   :class="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                            @click="cambiarOrden('prioridad')">
+                            <div class="flex items-center gap-2">
+                                <span>Prioridad</span>
+                                <i class="fas fa-sort text-gray-400 text-xs"
+                                   :class="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                            @click="cambiarOrden('estado')">
+                            <div class="flex items-center gap-2">
+                                <span>Estado</span>
+                                <i class="fas fa-sort text-gray-400 text-xs"
+                                   :class="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                            @click="cambiarOrden('fecha')">
+                            <div class="flex items-center gap-2">
+                                <span>Fecha</span>
+                                <i class="fas fa-sort text-gray-400 text-xs"
+                                   :class="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                            </div>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <template x-for="ticket in obtenerTicketsTablaPagina()" :key="ticket.id">
+                        <tr
+                            class="hover:bg-gray-50 transition cursor-pointer"
+                            :data-ticket-id="ticket.id"
+                            :data-ticket-asunto="ticket.asunto"
+                            :data-ticket-descripcion="ticket.descripcion"
+                            :data-ticket-prioridad="ticket.prioridad"
+                            :data-ticket-empleado="ticket.empleado"
+                            :data-ticket-anydesk="ticket.anydesk"
+                            :data-ticket-numero="ticket.numero"
+                            :data-ticket-correo="ticket.correo"
+                            :data-ticket-fecha="ticket.fecha"
+                            @click="abrirModalDesdeElemento($el)">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-gray-900" x-text="'#' + ticket.id"></div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900 max-w-md truncate" x-text="ticket.descripcion.substring(0, 80) + (ticket.descripcion.length > 80 ? '...' : '')"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900" x-text="ticket.empleado"></div>
+                                <div class="text-xs text-gray-500" x-text="ticket.correo"></div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-xs font-semibold px-2 py-1 rounded-full"
+                                      :class="ticket.prioridad == 'Baja' ? 'bg-green-200 text-green-600' : (ticket.prioridad == 'Media' ? 'bg-yellow-200 text-yellow-600' : 'bg-red-200 text-red-600')"
+                                      x-text="ticket.prioridad"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-xs font-semibold px-2 py-1 rounded-full"
+                                      :class="ticket.estatus == 'Pendiente' ? 'bg-yellow-100 text-yellow-800' : (ticket.estatus == 'En progreso' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800')"
+                                      x-text="ticket.estatus"></span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="ticket.fecha.split(' ')[0] + ' ' + ticket.fecha.split(' ')[1]"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <i class="fas fa-eye text-blue-500"></i>
+                            </td>
+                        </tr>
+                    </template>
+                    <tr x-show="ticketsTabla.length === 0">
+                        <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-400">
+                            No hay tickets disponibles.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- Paginación Tabla -->
+        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+            <div class="text-sm text-gray-600">
+                <span x-text="`Página ${paginaTabla} de ${obtenerTotalPaginasTabla()}`"></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button
+                    @click="cambiarPaginaTabla(paginaTabla - 1)"
+                    :disabled="paginaTabla === 1"
+                    :class="paginaTabla === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
+                    class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                    <i class="fas fa-chevron-left text-xs"></i> Anterior
+                </button>
+                <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasTabla(), 10)}, (_, i) => {
+                    const total = obtenerTotalPaginasTabla();
+                    const current = paginaTabla;
+                    let start = Math.max(1, current - 4);
+                    let end = Math.min(total, start + 9);
+                    if (end - start < 9) start = Math.max(1, end - 9);
+                    return start + i;
+                }).filter((p, i, arr) => p <= obtenerTotalPaginasTabla() && (i === 0 || p !== arr[i-1]))" :key="pagina">
+                    <button
+                        @click="cambiarPaginaTabla(pagina)"
+                        :class="paginaTabla === pagina ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                        class="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-md transition">
+                        <span x-text="pagina"></span>
+                    </button>
+                </template>
+                <button
+                    @click="cambiarPaginaTabla(paginaTabla + 1)"
+                    :disabled="paginaTabla === obtenerTotalPaginasTabla()"
+                    :class="paginaTabla === obtenerTotalPaginasTabla() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
+                    class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                    Siguiente <i class="fas fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div
         x-show="mostrar && selected.id"
@@ -96,41 +408,80 @@
 
                             <label class="text-md font-semibold text-gray-600">Prioridad</label>
                             <select
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option>Baja</option>
-                                <option>Media</option>
-                                <option>Alta</option>
+                                x-model="ticketPrioridad"
+                                :disabled="selected.estatus === 'Cerrado'"
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="Baja">Baja</option>
+                                <option value="Media">Media</option>
+                                <option value="Alta">Alta</option>
                             </select>
 
                             <label class="text-md font-semibold text-gray-600">Estado</label>
-                            <select class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option>Pendiente</option>
-                                <option>En progreso</option>
-                                <option>Cerrado</option>
+                            <select 
+                                x-model="ticketEstatus"
+                                :disabled="selected.estatus === 'Cerrado'"
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="En progreso">En progreso</option>
+                                <option value="Cerrado">Cerrado</option>
                             </select>
+                            
+                            <!-- Mensaje informativo cuando está en "En progreso" -->
+                            <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'" class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                El Responsable no se puede modificar cuando el ticket está en "En progreso"
+                            </div>
 
                             <label class="text-md font-semibold text-gray-600">Responsable <span class="text-red-500">*</span></label>
-                            <select class="w-full mt-1 mb-2 0 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option required value="">Seleccione</option>
+                            <select 
+                                x-model="ticketResponsableTI"
+                                :disabled="selected.estatus === 'Cerrado' || (selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado')"
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="">Seleccione</option>
                                 @foreach($responsablesTI as $responsable)
                                 <option value="{{ $responsable->EmpleadoID }}">{{ $responsable->NombreEmpleado }}</option>
                                 @endforeach
                             </select>
 
                             <label class="text-md font-semibold text-gray-600">Categoria <span class="text-red-500">*</span></label>
-                            <select id="tipo-select" class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black">
-                                <option required value="">Seleccione</option>
+                            <select 
+                                id="tipo-select"
+                                x-model="ticketTipoID"
+                                :disabled="selected.estatus === 'Cerrado'"
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="">Seleccione</option>
                             </select>
                             
                             <label class="text-md font-semibold text-gray-600">Grupo <span class="text-red-500">*</span></label>
-                            <select id="subtipo-select" class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black" disabled>
-                                <option required value="">Seleccione</option>
+                            <select 
+                                id="subtipo-select"
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
+                                :disabled="!ticketTipoID || selected.estatus === 'Cerrado'">
+                                <option value="">Seleccione</option>
                             </select>
                             
                             <label class="text-md font-semibold text-gray-600">Subgrupo</label>
-                            <select id="tertipo-select" class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black" disabled>
+                            <select 
+                                id="tertipo-select"
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
+                                :disabled="true || selected.estatus === 'Cerrado'">
                                 <option value="">Seleccione</option>
                             </select>
+
+                            <!-- Botón Guardar Cambios -->
+                            <button
+                                @click="guardarCambiosTicket()"
+                                :disabled="guardandoTicket"
+                                class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                                <svg x-show="!guardandoTicket" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <svg x-show="guardandoTicket" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="guardandoTicket ? 'Guardando...' : 'Guardar Cambios'"></span>
+                            </button>
                         </div>
                     </div>
                 </aside>
@@ -642,17 +993,124 @@
                         </div>
                     </div>
 
-                    <!-- Barra de Acciones Inferior -->
-                    <div class="border-t border-gray-200 p-4 bg-gray-50">
-                        <div class="flex justify-between items-center">
-                           
-                            <button class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-5 rounded-lg flex items-center gap-2 transition">
-                                Cerrar Ticket
-                            </button>
-                        </div>
-                    </div>
                 </main>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Métricas -->
+    <div
+        x-show="mostrarModalMetricas"
+        x-cloak
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        @click.self="mostrarModalMetricas = false">
+        <div
+            class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            @click.stop>
+            <!-- Header del Modal -->
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex justify-between items-center">
+                <h2 class="text-white text-xl font-semibold flex items-center gap-2">
+                    <i class="fas fa-chart-line"></i>
+                    Ajustar Métricas de Tiempo Estimado
+                </h2>
+                <button
+                    @click="mostrarModalMetricas = false"
+                    class="text-white hover:text-gray-200 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Contenido del Modal -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="mb-4 text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                    Configure el tiempo estimado en minutos para cada tipo de ticket. Este tiempo es utilizado para las alertas de la resolución de tickets.
+                </div>
+
+                <!-- Tabla de Métricas -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                    Tipo de Ticket
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                    Tiempo Estimado (Minutos)
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                    Equivalente
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-if="cargandoMetricas">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-8 text-center">
+                                        <div class="flex items-center justify-center gap-2 text-gray-500">
+                                            <i class="fas fa-spinner fa-spin"></i>
+                                            <span>Cargando métricas...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="!cargandoMetricas && metricasTipos && metricasTipos.length > 0">
+                                <template x-for="(tipo, index) in metricasTipos" :key="tipo.TipoID">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <span class="text-sm font-medium text-gray-900" x-text="tipo.NombreTipo"></span>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                :value="tipo.TiempoEstimadoMinutos || ''"
+                                                @input="tipo.TiempoEstimadoMinutos = $event.target.value ? parseInt($event.target.value) : null; tipo.cambiado = true"
+                                                placeholder="0"
+                                                class="w-32 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <span class="text-sm text-gray-600" x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </template>
+                            <template x-if="!cargandoMetricas && (!metricasTipos || metricasTipos.length === 0)">
+                                <tr>
+                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <i class="fas fa-info-circle text-2xl"></i>
+                                            <span>No hay tipos de tickets disponibles</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer del Modal -->
+            <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200">
+                <div class="text-sm text-gray-600">
+                    <span x-text="`${metricasTipos.filter(t => t.cambiado).length} cambios pendientes`"></span>
+                </div>
+                <div class="flex gap-3">
+                    <button
+                        @click="mostrarModalMetricas = false"
+                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition">
+                        Cancelar
+                    </button>
+                    <button
+                        @click="guardarMetricas()"
+                        :disabled="guardandoMetricas || metricasTipos.filter(t => t.cambiado).length === 0"
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-save" :class="{'fa-spin': guardandoMetricas}"></i>
+                        <span x-text="guardandoMetricas ? 'Guardando...' : 'Guardar Cambios'"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -661,6 +1119,7 @@
 <script>
     function ticketsModal() {
         return {
+            vista: 'kanban',
             mostrar: false,
             selected: {},
             mensajes: [],
@@ -684,8 +1143,39 @@
             asuntoCorreo: '',
             correoCc: '',
             correoBcc: '',
+            // Variables para detalles del ticket
+            ticketPrioridad: '',
+            ticketEstatus: '',
+            ticketResponsableTI: '',
+            ticketTipoID: '',
+            guardandoTicket: false,
+            // Variables de paginación
+            paginaLista: {
+                'nuevos': 1,
+                'proceso': 1,
+                'resueltos': 1
+            },
+            paginaTabla: 1,
+            elementosPorPagina: 10,
+            // Variables de ordenamiento
+            ordenColumna: 'fecha',
+            ordenDireccion: 'desc',
+            ticketsLista: {
+                'nuevos': {{ count($ticketsStatus['nuevos']) }},
+                'proceso': {{ count($ticketsStatus['proceso']) }},
+                'resueltos': {{ count($ticketsStatus['resueltos']) }}
+            },
+            ticketsTabla: [],
+            // Variables para métricas
+            mostrarModalMetricas: false,
+            metricasTipos: [],
+            cargandoMetricas: false,
+            guardandoMetricas: false,
 
             init() {
+                // Los datos de ticketsLista ya están inicializados desde el servidor
+                // Preparar datos para tabla
+                this.prepararDatosTabla();
              
                 this.mostrar = false;
                 this.selected = {};
@@ -700,6 +1190,133 @@
                 
                 // Configurar actualización automática cada 30 segundos
                 this.configurarActualizacionAutomatica();
+            },
+
+            prepararDatosLista() {
+                // Los contadores ya están inicializados desde el servidor
+                // Esta función solo se usa para recalcular si es necesario
+                // No necesita hacer nada ya que los datos vienen del servidor
+            },
+
+            prepararDatosTabla() {
+                // Preparar todos los tickets para la tabla desde los elementos del DOM
+                this.$nextTick(() => {
+                    const todosTickets = [];
+                    ['nuevos', 'proceso', 'resueltos'].forEach(categoria => {
+                        const elementos = document.querySelectorAll(`[data-categoria="${categoria}"]`);
+                        elementos.forEach(el => {
+                            todosTickets.push({
+                                id: el.dataset.ticketId,
+                                asunto: el.dataset.ticketAsunto,
+                                descripcion: el.dataset.ticketDescripcion,
+                                prioridad: el.dataset.ticketPrioridad,
+                                empleado: el.dataset.ticketEmpleado,
+                                anydesk: el.dataset.ticketAnydesk || '',
+                                numero: el.dataset.ticketNumero || '',
+                                correo: el.dataset.ticketCorreo,
+                                fecha: el.dataset.ticketFecha,
+                                estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
+                                elemento: el
+                            });
+                        });
+                    });
+                    this.ticketsTabla = todosTickets;
+                    this.ordenarTabla();
+                });
+            },
+
+            obtenerTicketsListaPagina(categoria) {
+                const tickets = this.ticketsLista[categoria] || [];
+                const inicio = (this.paginaLista[categoria] - 1) * this.elementosPorPagina;
+                const fin = inicio + this.elementosPorPagina;
+                return tickets.slice(inicio, fin);
+            },
+
+            estaEnPaginaLista(categoria, indice) {
+                const inicio = (this.paginaLista[categoria] - 1) * this.elementosPorPagina;
+                const fin = inicio + this.elementosPorPagina;
+                return indice >= inicio && indice < fin;
+            },
+
+            obtenerTotalPaginasLista(categoria) {
+                const totalTickets = this.ticketsLista[categoria] || 0;
+                return Math.ceil(totalTickets / this.elementosPorPagina);
+            },
+
+            cambiarPaginaLista(categoria, pagina) {
+                const totalPaginas = this.obtenerTotalPaginasLista(categoria);
+                if (pagina >= 1 && pagina <= totalPaginas) {
+                    this.paginaLista[categoria] = pagina;
+                }
+            },
+
+            obtenerTicketsTablaPagina() {
+                const inicio = (this.paginaTabla - 1) * this.elementosPorPagina;
+                const fin = inicio + this.elementosPorPagina;
+                return this.ticketsTabla.slice(inicio, fin);
+            },
+
+            obtenerTotalPaginasTabla() {
+                return Math.ceil(this.ticketsTabla.length / this.elementosPorPagina);
+            },
+
+            cambiarPaginaTabla(pagina) {
+                const totalPaginas = this.obtenerTotalPaginasTabla();
+                if (pagina >= 1 && pagina <= totalPaginas) {
+                    this.paginaTabla = pagina;
+                }
+            },
+
+            ordenarTabla() {
+                this.ticketsTabla.sort((a, b) => {
+                    let valorA, valorB;
+                    
+                    switch(this.ordenColumna) {
+                        case 'id':
+                            valorA = parseInt(a.id);
+                            valorB = parseInt(b.id);
+                            break;
+                        case 'descripcion':
+                            valorA = a.descripcion.toLowerCase();
+                            valorB = b.descripcion.toLowerCase();
+                            break;
+                        case 'empleado':
+                            valorA = a.empleado.toLowerCase();
+                            valorB = b.empleado.toLowerCase();
+                            break;
+                        case 'prioridad':
+                            const prioridades = { 'Alta': 3, 'Media': 2, 'Baja': 1 };
+                            valorA = prioridades[a.prioridad] || 0;
+                            valorB = prioridades[b.prioridad] || 0;
+                            break;
+                        case 'estado':
+                            valorA = a.estatus.toLowerCase();
+                            valorB = b.estatus.toLowerCase();
+                            break;
+                        case 'fecha':
+                        default:
+                            valorA = new Date(a.fecha.split(' ')[0].split('/').reverse().join('-'));
+                            valorB = new Date(b.fecha.split(' ')[0].split('/').reverse().join('-'));
+                            break;
+                    }
+                    
+                    if (valorA < valorB) return this.ordenDireccion === 'asc' ? -1 : 1;
+                    if (valorA > valorB) return this.ordenDireccion === 'asc' ? 1 : -1;
+                    return 0;
+                });
+                
+                // Resetear a página 1 después de ordenar
+                this.paginaTabla = 1;
+            },
+
+            cambiarOrden(columna) {
+                if (this.ordenColumna === columna) {
+                    this.ordenDireccion = this.ordenDireccion === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.ordenColumna = columna;
+                    this.ordenDireccion = 'asc';
+                }
+                this.ordenarTabla();
             },
 
             configurarActualizacionAutomatica() {
@@ -719,21 +1336,132 @@
                 this.prioridadCorreo = 'normal';
                 this.correoCc = '';
                 this.correoBcc = '';
+                // Cargar datos del ticket para el formulario
+                this.cargarDatosTicket(datos.id);
                 this.cargarMensajes();
             },
 
+            async cargarDatosTicket(ticketId) {
+                try {
+                    const response = await fetch(`/tickets/${ticketId}`, {
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.ticket) {
+                            this.ticketPrioridad = data.ticket.Prioridad || '';
+                            this.ticketEstatus = data.ticket.Estatus || '';
+                            this.ticketResponsableTI = data.ticket.ResponsableTI ? String(data.ticket.ResponsableTI) : '';
+                            this.ticketTipoID = data.ticket.TipoID ? String(data.ticket.TipoID) : '';
+                            
+                            // Actualizar también el estatus en selected para el bloqueo visual
+                            if (this.selected) {
+                                this.selected.estatus = data.ticket.Estatus || '';
+                            }
+                            
+                            // Esperar a que los selects estén cargados y luego establecer valores
+                            this.$nextTick(() => {
+                                setTimeout(() => {
+                                    const tipoSelect = document.getElementById('tipo-select');
+                                    if (tipoSelect && this.ticketTipoID) {
+                                        tipoSelect.value = this.ticketTipoID;
+                                        const changeEvent = new Event('change', { bubbles: true });
+                                        tipoSelect.dispatchEvent(changeEvent);
+                                    }
+                                }, 300);
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error cargando datos del ticket:', error);
+                }
+            },
+
+            async guardarCambiosTicket() {
+                if (!this.selected.id) {
+                    this.mostrarNotificacion('No hay ticket seleccionado', 'error');
+                    return;
+                }
+
+                this.guardandoTicket = true;
+
+                try {
+                    const formData = {
+                        ticketId: this.selected.id,
+                        prioridad: this.ticketPrioridad,
+                        estatus: this.ticketEstatus,
+                        responsableTI: this.ticketResponsableTI || null,
+                        tipoID: this.ticketTipoID || null
+                    };
+
+                    const response = await fetch('/tickets/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.mostrarNotificacion('Cambios guardados correctamente', 'success');
+                        // Actualizar los datos seleccionados
+                        if (data.ticket) {
+                            this.selected.prioridad = data.ticket.Prioridad;
+                            this.selected.estatus = data.ticket.Estatus;
+                        }
+                        // Recargar la página después de un breve delay para ver los cambios
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        this.mostrarNotificacion(data.message || 'Error al guardar los cambios', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error guardando cambios:', error);
+                    this.mostrarNotificacion('Error al guardar los cambios', 'error');
+                } finally {
+                    this.guardandoTicket = false;
+                }
+            },
+
             abrirModalDesdeElemento(elemento) {
+                // Buscar el elemento padre que tenga los atributos data-ticket-*
+                // Esto es necesario porque el clic puede ser en un elemento hijo
+                let elementoConDatos = elemento;
+                if (!elemento.dataset || !elemento.dataset.ticketId) {
+                    elementoConDatos = elemento.closest('[data-ticket-id]');
+                }
+                
+                if (!elementoConDatos) {
+                    console.error('No se encontró el elemento con datos del ticket');
+                    return;
+                }
+                
+                // Usar getAttribute para asegurar que obtenemos los valores correctos
                 const datos = {
-                    id: elemento.dataset.ticketId,
-                    asunto: elemento.dataset.ticketAsunto,
-                    descripcion: elemento.dataset.ticketDescripcion,
-                    prioridad: elemento.dataset.ticketPrioridad,
-                    empleado: elemento.dataset.ticketEmpleado,
-                    anydesk: elemento.dataset.ticketAnydesk,
-                    numero: elemento.dataset.ticketNumero,
-                    correo: elemento.dataset.ticketCorreo,
-                    fecha: elemento.dataset.ticketFecha
+                    id: elementoConDatos.getAttribute('data-ticket-id') || elementoConDatos.dataset.ticketId,
+                    asunto: elementoConDatos.getAttribute('data-ticket-asunto') || elementoConDatos.dataset.ticketAsunto || `Ticket #${elementoConDatos.getAttribute('data-ticket-id')}`,
+                    descripcion: elementoConDatos.getAttribute('data-ticket-descripcion') || elementoConDatos.dataset.ticketDescripcion || '',
+                    prioridad: elementoConDatos.getAttribute('data-ticket-prioridad') || elementoConDatos.dataset.ticketPrioridad || 'Media',
+                    empleado: elementoConDatos.getAttribute('data-ticket-empleado') || elementoConDatos.dataset.ticketEmpleado || '',
+                    anydesk: elementoConDatos.getAttribute('data-ticket-anydesk') || elementoConDatos.dataset.ticketAnydesk || '',
+                    numero: elementoConDatos.getAttribute('data-ticket-numero') || elementoConDatos.dataset.ticketNumero || '',
+                    correo: elementoConDatos.getAttribute('data-ticket-correo') || elementoConDatos.dataset.ticketCorreo || '',
+                    fecha: elementoConDatos.getAttribute('data-ticket-fecha') || elementoConDatos.dataset.ticketFecha || new Date().toLocaleString('es-ES')
                 };
+                
+                // Decodificar HTML entities en la descripción
+                if (datos.descripcion) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = datos.descripcion;
+                    datos.descripcion = tempDiv.textContent || tempDiv.innerText || datos.descripcion;
+                }
+                
                 this.abrirModal(datos);
             },
 
@@ -882,18 +1610,55 @@
             },
 
             mostrarNotificacion(mensaje, tipo) {
+                // Remover notificaciones anteriores si existen
+                const notificacionesAnteriores = document.querySelectorAll('.ticket-notification');
+                notificacionesAnteriores.forEach(n => n.remove());
+                
+                let bgColor = 'bg-red-500';
+                if (tipo === 'success') bgColor = 'bg-green-500';
+                else if (tipo === 'info') bgColor = 'bg-blue-500';
                 
                 const notification = document.createElement('div');
-                notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-                    tipo === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                }`;
-                notification.textContent = mensaje;
+                notification.className = `ticket-notification fixed top-4 right-4 z-[9999] p-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px] max-w-md ${bgColor} text-white`;
+                
+                // Estilos iniciales para animación
+                notification.style.transform = 'translateX(400px)';
+                notification.style.opacity = '0';
+                notification.style.transition = 'all 0.3s ease-in-out';
+                
+                // Icono según el tipo
+                let icono = '';
+                if (tipo === 'success') {
+                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                } else if (tipo === 'info') {
+                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                } else {
+                    icono = '<svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                }
+                
+                notification.innerHTML = `
+                    ${icono}
+                    <span class="flex-1 font-medium">${mensaje}</span>
+                `;
                 
                 document.body.appendChild(notification);
                 
+                // Animación de entrada
                 setTimeout(() => {
-                    notification.remove();
-                }, 3000);
+                    notification.style.transform = 'translateX(0)';
+                    notification.style.opacity = '1';
+                }, 10);
+                
+                // Remover después de 4 segundos con animación
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(400px)';
+                    notification.style.opacity = '0';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }, 4000);
             },
 
             formatearFecha(fecha) {
@@ -1311,6 +2076,110 @@
                     this.mostrarNotificacion('Error guardando correos en historial', 'error');
                 } finally {
                     this.guardandoCorreos = false;
+                }
+            },
+
+            // Funciones para métricas
+            async cargarMetricas() {
+                this.cargandoMetricas = true;
+                this.metricasTipos = [];
+                try {
+                    const response = await fetch('/tickets/tipos-con-metricas');
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Datos recibidos:', data);
+                    
+                    if (data.success && data.tipos && Array.isArray(data.tipos)) {
+                        this.metricasTipos = data.tipos.map(tipo => ({
+                            TipoID: tipo.TipoID,
+                            NombreTipo: tipo.NombreTipo,
+                            TiempoEstimadoMinutos: tipo.TiempoEstimadoMinutos || null,
+                            cambiado: false
+                        }));
+                        console.log('Métricas cargadas:', this.metricasTipos);
+                    } else {
+                        console.error('Respuesta inválida:', data);
+                        this.mostrarNotificacion(data.message || 'Error cargando métricas', 'error');
+                        this.metricasTipos = [];
+                    }
+                } catch (error) {
+                    console.error('Error cargando métricas:', error);
+                    this.mostrarNotificacion('Error cargando métricas: ' + error.message, 'error');
+                    this.metricasTipos = [];
+                } finally {
+                    this.cargandoMetricas = false;
+                }
+            },
+
+            async guardarMetricas() {
+                const cambios = this.metricasTipos.filter(t => t.cambiado);
+                
+                if (cambios.length === 0) {
+                    this.mostrarNotificacion('No hay cambios para guardar', 'info');
+                    return;
+                }
+
+                this.guardandoMetricas = true;
+                
+                try {
+                    const metricas = cambios.map(tipo => ({
+                        tipo_id: tipo.TipoID,
+                        tiempo_estimado_minutos: tipo.TiempoEstimadoMinutos ? parseInt(tipo.TiempoEstimadoMinutos) : null
+                    }));
+
+                    const response = await fetch('/tickets/actualizar-metricas-masivo', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        },
+                        body: JSON.stringify({
+                            metricas: metricas
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Marcar todos los cambios como guardados
+                        cambios.forEach(tipo => {
+                            tipo.cambiado = false;
+                        });
+                        
+                        this.mostrarNotificacion(
+                            data.message || `Se actualizaron ${data.actualizados || cambios.length} tipos de tickets`,
+                            'success'
+                        );
+                        
+                        // Recargar métricas para asegurar sincronización
+                        await this.cargarMetricas();
+                    } else {
+                        this.mostrarNotificacion(data.message || 'Error guardando métricas', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error guardando métricas:', error);
+                    this.mostrarNotificacion('Error guardando métricas', 'error');
+                } finally {
+                    this.guardandoMetricas = false;
+                }
+            },
+
+            formatearTiempo(minutos) {
+                if (!minutos || minutos === 0) return '-';
+                
+                const horas = Math.floor(minutos / 60);
+                const mins = minutos % 60;
+                
+                if (horas > 0 && mins > 0) {
+                    return `${horas}h ${mins}m`;
+                } else if (horas > 0) {
+                    return `${horas}h`;
+                } else {
+                    return `${mins}m`;
                 }
             }
         }

@@ -118,16 +118,22 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
 
     Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index']);
-    Route::post('/tickets/update', [App\Http\Controllers\TicketsController::class, 'update']);
+    // Rutas específicas deben ir ANTES de las rutas con parámetros dinámicos
     Route::get('/tickets/chat-messages', [App\Http\Controllers\TicketsController::class, 'getChatMessages']);
+    Route::get('/tickets/estadisticas-correos', [App\Http\Controllers\TicketsController::class, 'obtenerEstadisticasCorreos']);
+    Route::get('/tickets/diagnosticar-correos', [App\Http\Controllers\TicketsController::class, 'diagnosticarCorreos']);
+    Route::get('/tickets/tipos-con-metricas', [App\Http\Controllers\TicketsController::class, 'getTiposConMetricas']);
+    Route::post('/tickets/update', [App\Http\Controllers\TicketsController::class, 'update']);
     Route::post('/tickets/enviar-respuesta', [App\Http\Controllers\TicketsController::class, 'enviarRespuesta']);
     Route::post('/tickets/mensaje-interno', [App\Http\Controllers\TicketsController::class, 'agregarMensajeInterno']);
     Route::post('/tickets/marcar-leidos', [App\Http\Controllers\TicketsController::class, 'marcarMensajesComoLeidos']);
     Route::post('/tickets/sincronizar-correos', [App\Http\Controllers\TicketsController::class, 'sincronizarCorreos']);
-    Route::get('/tickets/estadisticas-correos', [App\Http\Controllers\TicketsController::class, 'obtenerEstadisticasCorreos']);
-    Route::get('/tickets/diagnosticar-correos', [App\Http\Controllers\TicketsController::class, 'diagnosticarCorreos']);
     Route::post('/tickets/agregar-respuesta-manual', [App\Http\Controllers\TicketsController::class, 'agregarRespuestaManual']);
     Route::post('/tickets/enviar-instrucciones', [App\Http\Controllers\TicketsController::class, 'enviarInstruccionesRespuesta']);
+    Route::post('/tickets/actualizar-tiempo-estimado', [App\Http\Controllers\TicketsController::class, 'actualizarTiempoEstimado']);
+    Route::post('/tickets/actualizar-metricas-masivo', [App\Http\Controllers\TicketsController::class, 'actualizarMetricasMasivo']);
+    // Ruta con parámetro dinámico debe ir AL FINAL
+    Route::get('/tickets/{id}', [App\Http\Controllers\TicketsController::class, 'show']);
     
     // Rutas para procesamiento automático de correos
     Route::post('/api/webhook/email-response', [App\Http\Controllers\EmailWebhookController::class, 'handleEmailResponse']);

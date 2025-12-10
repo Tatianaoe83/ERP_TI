@@ -8,7 +8,7 @@ use App\Models\Tickets;
 use App\Models\TicketChat;
 use App\Models\Tertipos;
 use App\Models\Subtipos;
-use App\Models\Tipos;
+use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +24,7 @@ class TicketsController extends Controller
 
     public function index()
     {
-        $tickets = Tickets::with(['empleado', 'chat' => function($query) {
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'chat' => function($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
@@ -36,7 +36,243 @@ class TicketsController extends Controller
 
         $responsablesTI = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
 
-        return view('tickets.index', compact('ticketsStatus', 'responsablesTI'));
+        // Métricas de productividad
+        $metricasProductividad = $this->obtenerMetricasProductividad($tickets);
+
+        return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad'));
+    }
+
+    /**
+     * Obtener métricas de productividad para el dashboard
+     */
+    private function obtenerMetricasProductividad($tickets)
+    {
+        // Tickets resueltos en los últimos 30 días
+        $fechaInicio = now()->subDays(30);
+        $ticketsUltimos30Dias = $tickets->filter(function($ticket) use ($fechaInicio) {
+            return $ticket->created_at >= $fechaInicio;
+        });
+
+        // Distribución por estado
+        $distribucionEstado = [
+            'Pendiente' => $tickets->where('Estatus', 'Pendiente')->count(),
+            'En progreso' => $tickets->where('Estatus', 'En progreso')->count(),
+            'Cerrado' => $tickets->where('Estatus', 'Cerrado')->count(),
+        ];
+
+        // Tickets resueltos por día (últimos 30 días)
+        $resueltosPorDia = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $fecha = now()->subDays($i)->format('Y-m-d');
+            $resueltosPorDia[$fecha] = $tickets->filter(function($ticket) use ($fecha) {
+                return $ticket->Estatus === 'Cerrado' && 
+                       $ticket->FechaFinProgreso && 
+                       $ticket->FechaFinProgreso->format('Y-m-d') === $fecha;
+            })->count();
+        }
+
+        // Tiempo promedio de resolución (solo tickets cerrados)
+        $ticketsCerrados = $tickets->filter(function($ticket) {
+            return $ticket->Estatus === 'Cerrado' && $ticket->FechaInicioProgreso && $ticket->FechaFinProgreso;
+        });
+        
+        $tiempoPromedioResolucion = 0;
+        if ($ticketsCerrados->count() > 0) {
+            $sumaTiempos = $ticketsCerrados->sum(function($ticket) {
+                return $ticket->tiempo_resolucion ?? 0;
+            });
+            $tiempoPromedioResolucion = round($sumaTiempos / $ticketsCerrados->count(), 2);
+        }
+
+        // Tiempo promedio de respuesta (tickets en progreso)
+        $ticketsEnProgreso = $tickets->filter(function($ticket) {
+            return $ticket->Estatus === 'En progreso' && $ticket->FechaInicioProgreso;
+        });
+        
+        $tiempoPromedioRespuesta = 0;
+        if ($ticketsEnProgreso->count() > 0) {
+            $sumaTiempos = $ticketsEnProgreso->sum(function($ticket) {
+                return $ticket->tiempo_respuesta ?? 0;
+            });
+            $tiempoPromedioRespuesta = round($sumaTiempos / $ticketsEnProgreso->count(), 2);
+        }
+
+        // Tickets por responsable TI
+        $ticketsPorResponsable = $tickets->filter(function($ticket) {
+            return $ticket->ResponsableTI !== null;
+        })->groupBy('ResponsableTI')->map(function($grupo) {
+            $responsable = $grupo->first()->responsableTI;
+            return [
+                'nombre' => $responsable ? $responsable->NombreEmpleado : 'Sin asignar',
+                'total' => $grupo->count(),
+                'cerrados' => $grupo->where('Estatus', 'Cerrado')->count(),
+                'en_progreso' => $grupo->where('Estatus', 'En progreso')->count(),
+                'pendientes' => $grupo->where('Estatus', 'Pendiente')->count(),
+            ];
+        })->sortByDesc('total')->take(10);
+
+        // Métricas detalladas por empleado (responsable TI)
+        $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($tickets);
+
+        // Tickets por prioridad
+        $ticketsPorPrioridad = $tickets->groupBy('Prioridad')->map(function($grupo) {
+            return $grupo->count();
+        });
+
+        // Tendencias semanales (últimas 8 semanas)
+        $tendenciasSemanales = [];
+        for ($i = 7; $i >= 0; $i--) {
+            $semanaInicio = now()->subWeeks($i)->startOfWeek();
+            $semanaFin = now()->subWeeks($i)->endOfWeek();
+            $semanaLabel = $semanaInicio->format('d/m') . ' - ' . $semanaFin->format('d/m');
+            
+            $tendenciasSemanales[$semanaLabel] = [
+                'creados' => $tickets->filter(function($ticket) use ($semanaInicio, $semanaFin) {
+                    return $ticket->created_at >= $semanaInicio && $ticket->created_at <= $semanaFin;
+                })->count(),
+                'resueltos' => $tickets->filter(function($ticket) use ($semanaInicio, $semanaFin) {
+                    return $ticket->Estatus === 'Cerrado' && 
+                           $ticket->FechaFinProgreso && 
+                           $ticket->FechaFinProgreso >= $semanaInicio && 
+                           $ticket->FechaFinProgreso <= $semanaFin;
+                })->count(),
+            ];
+        }
+
+        return [
+            'total_tickets' => $tickets->count(),
+            'tickets_ultimos_30_dias' => $ticketsUltimos30Dias->count(),
+            'distribucion_estado' => $distribucionEstado,
+            'resueltos_por_dia' => $resueltosPorDia,
+            'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
+            'tiempo_promedio_respuesta' => $tiempoPromedioRespuesta,
+            'tickets_por_responsable' => $ticketsPorResponsable,
+            'tickets_por_prioridad' => $ticketsPorPrioridad,
+            'tendencias_semanales' => $tendenciasSemanales,
+            'tickets_cerrados' => $ticketsCerrados->count(),
+            'tickets_en_progreso' => $ticketsEnProgreso->count(),
+            'metricas_por_empleado' => $metricasPorEmpleado,
+        ];
+    }
+
+    /**
+     * Obtener métricas detalladas por empleado (responsable TI)
+     */
+    private function obtenerMetricasPorEmpleado($tickets)
+    {
+        $empleados = Empleados::where('ObraID', 46)
+            ->where('tipo_persona', 'FISICA')
+            ->get();
+
+        $metricas = [];
+
+        foreach ($empleados as $empleado) {
+            $ticketsEmpleado = $tickets->filter(function($ticket) use ($empleado) {
+                return $ticket->ResponsableTI == $empleado->EmpleadoID;
+            });
+
+            if ($ticketsEmpleado->count() == 0) {
+                continue; // Saltar empleados sin tickets
+            }
+
+            // Tickets por estado
+            $cerrados = $ticketsEmpleado->where('Estatus', 'Cerrado');
+            $enProgreso = $ticketsEmpleado->where('Estatus', 'En progreso');
+            $pendientes = $ticketsEmpleado->where('Estatus', 'Pendiente');
+
+            // Tiempo promedio de resolución (solo tickets cerrados con fechas)
+            $ticketsConResolucion = $cerrados->filter(function($ticket) {
+                return $ticket->FechaInicioProgreso && $ticket->FechaFinProgreso;
+            });
+
+            $tiempoPromedioResolucion = 0;
+            if ($ticketsConResolucion->count() > 0) {
+                $sumaTiempos = $ticketsConResolucion->sum(function($ticket) {
+                    return $ticket->tiempo_resolucion ?? 0;
+                });
+                $tiempoPromedioResolucion = round($sumaTiempos / $ticketsConResolucion->count(), 2);
+            }
+
+            // Tasa de cierre
+            $tasaCierre = $ticketsEmpleado->count() > 0 
+                ? round(($cerrados->count() / $ticketsEmpleado->count()) * 100, 1) 
+                : 0;
+
+            // Tickets por mes (últimos 6 meses)
+            $ticketsPorMes = [];
+            for ($i = 5; $i >= 0; $i--) {
+                $mesInicio = now()->subMonths($i)->startOfMonth();
+                $mesFin = now()->subMonths($i)->endOfMonth();
+                $mesLabel = $mesInicio->format('M Y');
+                
+                $ticketsPorMes[$mesLabel] = [
+                    'total' => $ticketsEmpleado->filter(function($ticket) use ($mesInicio, $mesFin) {
+                        return $ticket->created_at >= $mesInicio && $ticket->created_at <= $mesFin;
+                    })->count(),
+                    'cerrados' => $ticketsEmpleado->filter(function($ticket) use ($mesInicio, $mesFin) {
+                        return $ticket->Estatus === 'Cerrado' && 
+                               $ticket->FechaFinProgreso && 
+                               $ticket->FechaFinProgreso >= $mesInicio && 
+                               $ticket->FechaFinProgreso <= $mesFin;
+                    })->count(),
+                ];
+            }
+
+            // Tickets por prioridad
+            $ticketsPorPrioridad = $ticketsEmpleado->groupBy('Prioridad')->map(function($grupo) {
+                return $grupo->count();
+            });
+
+            $metricas[] = [
+                'empleado_id' => $empleado->EmpleadoID,
+                'nombre' => $empleado->NombreEmpleado,
+                'total' => $ticketsEmpleado->count(),
+                'cerrados' => $cerrados->count(),
+                'en_progreso' => $enProgreso->count(),
+                'pendientes' => $pendientes->count(),
+                'tasa_cierre' => $tasaCierre,
+                'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
+                'tickets_por_mes' => $ticketsPorMes,
+                'tickets_por_prioridad' => $ticketsPorPrioridad,
+            ];
+        }
+
+        // Ordenar por total de tickets descendente
+        usort($metricas, function($a, $b) {
+            return $b['total'] <=> $a['total'];
+        });
+
+        return $metricas;
+    }
+
+    public function show($id)
+    {
+        try {
+            $ticket = Tickets::find($id);
+
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket no encontrado'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'ticket' => [
+                    'TicketID' => $ticket->TicketID,
+                    'Prioridad' => $ticket->Prioridad,
+                    'Estatus' => $ticket->Estatus,
+                    'ResponsableTI' => $ticket->ResponsableTI,
+                    'TipoID' => $ticket->TipoID,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener el ticket: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function update(Request $request)
@@ -52,25 +288,93 @@ class TicketsController extends Controller
                 ], 404);
             }
 
+            $estatusAnterior = $ticket->Estatus;
+            $nuevoEstatus = $request->input('estatus', $estatusAnterior);
+
+            // REGLA 4: Si está Cerrado, bloquear todos los cambios
+            if ($estatusAnterior === 'Cerrado') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pueden realizar modificaciones en un ticket cerrado'
+                ], 400);
+            }
+
+            // REGLA 4: Validar transiciones de estado (solo Pendiente->En progreso->Cerrado)
+            $transicionesValidas = [
+                'Pendiente' => ['En progreso'],
+                'En progreso' => ['Cerrado'],
+                'Cerrado' => [] // No se puede cambiar desde Cerrado
+            ];
+
+            if ($nuevoEstatus !== $estatusAnterior) {
+                // Validar que la transición sea válida
+                if (!in_array($nuevoEstatus, $transicionesValidas[$estatusAnterior] ?? [])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "No se puede cambiar el estado de '{$estatusAnterior}' a '{$nuevoEstatus}'. Las transiciones válidas son: " . implode(', ', $transicionesValidas[$estatusAnterior] ?? ['ninguna'])
+                    ], 400);
+                }
+            }
+
+            // REGLA 1: Si pasa de "Pendiente" a "En progreso", se requieren ResponsableTI y TipoID
+            if ($estatusAnterior === 'Pendiente' && $nuevoEstatus === 'En progreso') {
+                $responsableTI = $request->input('responsableTI');
+                $tipoID = $request->input('tipoID');
+
+                if (empty($responsableTI) || empty($tipoID)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Para cambiar el ticket a "En progreso" es necesario asignar un Responsable y una Categoría'
+                    ], 400);
+                }
+            }
+
+            // REGLA 2: Si está en "En progreso", no se puede modificar el ResponsableTI
+            if ($estatusAnterior === 'En progreso') {
+                if ($request->has('responsableTI')) {
+                    $nuevoResponsable = $request->input('responsableTI');
+                    // Solo permitir si el nuevo responsable es el mismo o si está pasando a Cerrado
+                    if ($nuevoEstatus !== 'Cerrado' && $nuevoResponsable != $ticket->ResponsableTI) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'No se puede modificar el Responsable cuando el ticket está en "En progreso"'
+                        ], 400);
+                    }
+                }
+            }
+
             // Actualizar los campos permitidos
             if ($request->has('prioridad')) {
                 $ticket->Prioridad = $request->input('prioridad');
             }
 
             if ($request->has('responsableTI')) {
-                $ticket->ResponsableTI = $request->input('responsableTI');
+                // Solo actualizar si no está en "En progreso" o si está pasando a Cerrado
+                if ($estatusAnterior !== 'En progreso' || $nuevoEstatus === 'Cerrado') {
+                    $ticket->ResponsableTI = $request->input('responsableTI') ?: null;
+                }
             }
 
             if ($request->has('estatus')) {
                 $ticket->Estatus = $request->input('estatus');
             }
 
+            if ($request->has('tipoID')) {
+                $ticket->TipoID = $request->input('tipoID') ? (int)$request->input('tipoID') : null;
+            }
+
             $ticket->save();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Ticket actualizado correctamente',
-                'ticket' => $ticket
+                'message' => 'Cambios guardados correctamente',
+                'ticket' => [
+                    'TicketID' => $ticket->TicketID,
+                    'Prioridad' => $ticket->Prioridad,
+                    'Estatus' => $ticket->Estatus,
+                    'ResponsableTI' => $ticket->ResponsableTI,
+                    'TipoID' => $ticket->TipoID,
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -260,7 +564,7 @@ class TicketsController extends Controller
     public function getTipos()
     {
         try {
-            $tipos = Tipos::select('TipoID', 'NombreTipo')
+            $tipos = Tipoticket::select('TipoID', 'NombreTipo')
                 ->orderBy('NombreTipo')
                 ->get();
 
@@ -680,5 +984,138 @@ class TicketsController extends Controller
 
         $domain = parse_url(config('app.url'), PHP_URL_HOST) ?: 'localhost';
         return "<thread-ticket-{$ticketId}-" . time() . "@{$domain}>";
+    }
+
+    /**
+     * Obtener todos los tipos de tickets con sus métricas
+     */
+    public function getTiposConMetricas()
+    {
+        try {
+            $tipos = Tipoticket::select('TipoID', 'NombreTipo', 'TiempoEstimadoMinutos')
+                ->orderBy('NombreTipo')
+                ->get()
+                ->map(function($tipo) {
+                    return [
+                        'TipoID' => $tipo->TipoID,
+                        'NombreTipo' => $tipo->NombreTipo,
+                        'TiempoEstimadoMinutos' => $tipo->TiempoEstimadoMinutos
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'tipos' => $tipos
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo tipos con métricas: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo tipos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar tiempo estimado en minutos para un tipo de ticket
+     */
+    public function actualizarTiempoEstimado(Request $request)
+    {
+        try {
+            $request->validate([
+                'tipo_id' => 'required|integer|exists:tipotickets,TipoID',
+                'tiempo_estimado_minutos' => 'nullable|integer|min:0'
+            ]);
+
+            $tipo = Tipoticket::where('TipoID', $request->input('tipo_id'))->first();
+            
+            if (!$tipo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipo de ticket no encontrado'
+                ], 404);
+            }
+
+            $tipo->TiempoEstimadoMinutos = $request->input('tiempo_estimado_minutos');
+            $tipo->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tiempo estimado actualizado correctamente',
+                'tipo' => [
+                    'TipoID' => $tipo->TipoID,
+                    'NombreTipo' => $tipo->NombreTipo,
+                    'TiempoEstimadoMinutos' => $tipo->TiempoEstimadoMinutos
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error actualizando tiempo estimado: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error actualizando tiempo estimado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar múltiples tiempos estimados a la vez
+     */
+    public function actualizarMetricasMasivo(Request $request)
+    {
+        try {
+            $request->validate([
+                'metricas' => 'required|array',
+                'metricas.*.tipo_id' => 'required|integer|exists:tipotickets,TipoID',
+                'metricas.*.tiempo_estimado_minutos' => 'nullable|integer|min:0'
+            ]);
+
+            $actualizados = 0;
+            $errores = [];
+
+            foreach ($request->input('metricas') as $metrica) {
+                try {
+                    $tipoId = $metrica['tipo_id'];
+                    $tiempoEstimado = isset($metrica['tiempo_estimado_minutos']) && $metrica['tiempo_estimado_minutos'] !== '' 
+                        ? (int)$metrica['tiempo_estimado_minutos'] 
+                        : null;
+                    
+                    $tipo = Tipoticket::where('TipoID', $tipoId)->first();
+                    if (!$tipo) {
+                        $errores[] = [
+                            'tipo_id' => $tipoId,
+                            'error' => 'Tipo de ticket no encontrado'
+                        ];
+                        continue;
+                    }
+                    
+                    // Usar update() para forzar la actualización en la base de datos
+                    $filasAfectadas = Tipoticket::where('TipoID', $tipoId)
+                        ->update(['TiempoEstimadoMinutos' => $tiempoEstimado]);
+                    
+                    // Si update() se ejecutó sin excepciones, la operación fue exitosa
+                    // Incluso si retorna 0 (valor ya era el mismo), la operación fue correcta
+                    $actualizados++;
+                } catch (\Exception $e) {
+                    Log::error("Error actualizando tipo {$metrica['tipo_id']}: " . $e->getMessage());
+                    $errores[] = [
+                        'tipo_id' => $metrica['tipo_id'],
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Se actualizaron {$actualizados} tipos de tickets",
+                'actualizados' => $actualizados,
+                'errores' => $errores
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error actualizando métricas masivas: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error actualizando métricas: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
