@@ -12,6 +12,7 @@ use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TicketsController extends Controller
 {
@@ -22,11 +23,24 @@ class TicketsController extends Controller
         $this->emailService = $emailService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'chat' => function($query) {
+        $mes = $request->input('mes', now()->month);
+        $anio = $request->input('anio', now()->year);
+
+        // Si se solicita un mes específico para productividad, filtrar tickets
+        $ticketsQuery = Tickets::with(['empleado', 'responsableTI', 'chat' => function($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
-        }])->orderBy('created_at', 'desc')->get();
+        }]);
+
+        // Filtrar por mes si se especifica
+        if ($request->has('mes') && $request->has('anio')) {
+            $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+            $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+            $ticketsQuery->whereBetween('created_at', [$fechaInicio, $fechaFin]);
+        }
+
+        $tickets = $ticketsQuery->orderBy('created_at', 'desc')->get();
 
         $ticketsStatus = [
             'nuevos' => $tickets->where('Estatus', 'Pendiente'),
@@ -39,7 +53,7 @@ class TicketsController extends Controller
         // Métricas de productividad
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets);
 
-        return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad'));
+        return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad', 'mes', 'anio'));
     }
 
     /**
@@ -1117,5 +1131,222 @@ class TicketsController extends Controller
                 'message' => 'Error actualizando métricas: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Obtener datos de productividad vía AJAX
+     */
+    public function obtenerProductividadAjax(Request $request)
+    {
+        $mes = $request->input('mes', now()->month);
+        $anio = $request->input('anio', now()->year);
+
+        // Fechas del mes seleccionado
+        $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+        $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+
+        // Obtener tickets del mes
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'chat' => function($query) {
+            $query->orderBy('created_at', 'desc')->limit(1);
+        }])
+        ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        // Métricas de productividad
+        $metricasProductividad = $this->obtenerMetricasProductividad($tickets);
+
+        $html = view('tickets.productividad', [
+            'metricasProductividad' => $metricasProductividad,
+            'mes' => $mes,
+            'anio' => $anio
+        ])->render();
+
+        return response()->json([
+            'success' => true,
+            'html' => $html,
+            'mes' => $mes,
+            'anio' => $anio
+        ]);
+    }
+
+    /**
+     * Mostrar reporte mensual de tickets
+     */
+    public function reporteMensual(Request $request)
+    {
+        $mes = $request->input('mes', now()->month);
+        $anio = $request->input('anio', now()->year);
+
+        // Fechas del mes seleccionado
+        $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+        $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+
+        // Obtener tickets del mes
+        $tickets = Tickets::with([
+            'empleado.gerencia',
+            'responsableTI.gerencia',
+            'tipoticket.subtipoid.tertipoid'
+        ])
+        ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+        ->get();
+
+        // Calcular datos para el resumen
+        $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
+
+        return view('tickets.reporte-mensual', [
+            'tickets' => $tickets,
+            'resumen' => $resumen,
+            'mes' => $mes,
+            'anio' => $anio,
+            'fechaInicio' => $fechaInicio,
+            'fechaFin' => $fechaFin
+        ]);
+    }
+
+    /**
+     * Exportar reporte mensual a Excel
+     */
+    public function exportarReporteMensualExcel(Request $request)
+    {
+        $mes = $request->input('mes', now()->month);
+        $anio = $request->input('anio', now()->year);
+
+        // Fechas del mes seleccionado
+        $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+        $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+
+        // Obtener tickets del mes
+        $tickets = Tickets::with([
+            'empleado.gerencia',
+            'responsableTI.gerencia',
+            'tipoticket.subtipoid.tertipoid'
+        ])
+        ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+        ->get();
+
+        // Calcular datos para el resumen
+        $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
+
+        $nombreArchivo = 'reporte_tickets_' . $mes . '_' . $anio . '_' . date('YmdHis') . '.xlsx';
+
+        return Excel::download(
+            new \App\Exports\ReporteMensualTicketsExport($tickets, $resumen, $mes, $anio),
+            $nombreArchivo
+        );
+    }
+
+    /**
+     * Calcular resumen mensual de tickets
+     */
+    private function calcularResumenMensual($tickets, $fechaInicio, $fechaFin)
+    {
+        // Incidencias por gerencia
+        $incidenciasPorGerencia = [];
+        foreach ($tickets as $ticket) {
+            $gerenciaNombre = 'Sin gerencia';
+            if ($ticket->empleado && $ticket->empleado->gerencia) {
+                $gerenciaNombre = $ticket->empleado->gerencia->NombreGerencia ?? 'Sin gerencia';
+            }
+
+            if (!isset($incidenciasPorGerencia[$gerenciaNombre])) {
+                $incidenciasPorGerencia[$gerenciaNombre] = [
+                    'gerencia' => $gerenciaNombre,
+                    'total' => 0,
+                    'resueltos' => 0,
+                    'en_progreso' => 0,
+                    'pendientes' => 0,
+                    'por_responsable' => []
+                ];
+            }
+
+            $incidenciasPorGerencia[$gerenciaNombre]['total']++;
+
+            if ($ticket->Estatus === 'Cerrado') {
+                $incidenciasPorGerencia[$gerenciaNombre]['resueltos']++;
+
+                $responsableNombre = 'Sin responsable';
+                if ($ticket->responsableTI && $ticket->responsableTI->NombreEmpleado) {
+                    $responsableNombre = $ticket->responsableTI->NombreEmpleado;
+                }
+
+                if (!isset($incidenciasPorGerencia[$gerenciaNombre]['por_responsable'][$responsableNombre])) {
+                    $incidenciasPorGerencia[$gerenciaNombre]['por_responsable'][$responsableNombre] = 0;
+                }
+                $incidenciasPorGerencia[$gerenciaNombre]['por_responsable'][$responsableNombre]++;
+            } elseif ($ticket->Estatus === 'En progreso') {
+                $incidenciasPorGerencia[$gerenciaNombre]['en_progreso']++;
+            } else {
+                $incidenciasPorGerencia[$gerenciaNombre]['pendientes']++;
+            }
+        }
+
+        // Promedios de tiempos
+        $ticketsConRespuesta = $tickets->filter(function($t) {
+            return $t->FechaInicioProgreso && $t->tiempo_respuesta !== null;
+        });
+
+        $ticketsConResolucion = $tickets->filter(function($t) {
+            return $t->FechaInicioProgreso && $t->FechaFinProgreso && $t->tiempo_resolucion !== null;
+        });
+
+        $promedioRespuesta = 0;
+        if ($ticketsConRespuesta->count() > 0) {
+            $promedioRespuesta = $ticketsConRespuesta->avg(function($t) {
+                return $t->tiempo_respuesta ?? 0;
+            });
+        }
+
+        $promedioResolucion = 0;
+        if ($ticketsConResolucion->count() > 0) {
+            $promedioResolucion = $ticketsConResolucion->avg(function($t) {
+                return $t->tiempo_resolucion ?? 0;
+            });
+        }
+
+        // Porcentaje de cumplimiento (tickets cerrados vs total)
+        $ticketsCerrados = $tickets->where('Estatus', 'Cerrado')->count();
+        $porcentajeCumplimiento = $tickets->count() > 0 
+            ? round(($ticketsCerrados / $tickets->count()) * 100, 2) 
+            : 0;
+
+        // Totales por empleado
+        $totalesPorEmpleado = [];
+        foreach ($tickets as $ticket) {
+            $empleadoNombre = 'Sin empleado';
+            if ($ticket->responsableTI && $ticket->responsableTI->NombreEmpleado) {
+                $empleadoNombre = $ticket->responsableTI->NombreEmpleado;
+            }
+
+            if (!isset($totalesPorEmpleado[$empleadoNombre])) {
+                $totalesPorEmpleado[$empleadoNombre] = [
+                    'empleado' => $empleadoNombre,
+                    'total' => 0,
+                    'cerrados' => 0,
+                    'en_progreso' => 0,
+                    'pendientes' => 0
+                ];
+            }
+
+            $totalesPorEmpleado[$empleadoNombre]['total']++;
+
+            if ($ticket->Estatus === 'Cerrado') {
+                $totalesPorEmpleado[$empleadoNombre]['cerrados']++;
+            } elseif ($ticket->Estatus === 'En progreso') {
+                $totalesPorEmpleado[$empleadoNombre]['en_progreso']++;
+            } else {
+                $totalesPorEmpleado[$empleadoNombre]['pendientes']++;
+            }
+        }
+
+        return [
+            'incidencias_por_gerencia' => $incidenciasPorGerencia,
+            'promedio_tiempo_respuesta' => round($promedioRespuesta, 2),
+            'promedio_tiempo_resolucion' => round($promedioResolucion, 2),
+            'porcentaje_cumplimiento' => $porcentajeCumplimiento,
+            'totales_por_empleado' => array_values($totalesPorEmpleado),
+            'total_tickets' => $tickets->count(),
+            'tickets_cerrados' => $ticketsCerrados
+        ];
     }
 }

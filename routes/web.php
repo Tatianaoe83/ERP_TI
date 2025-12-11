@@ -117,7 +117,8 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/cortes/saveXML', [CortesController::class, 'saveXML'])->name('cortes.saveXML');
     Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
 
-    Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index']);
+    Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index'])->name('tickets.index');
+    Route::get('/tickets/productividad-ajax', [App\Http\Controllers\TicketsController::class, 'obtenerProductividadAjax'])->name('tickets.productividad-ajax');
     // Rutas específicas deben ir ANTES de las rutas con parámetros dinámicos
     Route::get('/tickets/chat-messages', [App\Http\Controllers\TicketsController::class, 'getChatMessages']);
     Route::get('/tickets/estadisticas-correos', [App\Http\Controllers\TicketsController::class, 'obtenerEstadisticasCorreos']);
@@ -132,6 +133,8 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::post('/tickets/enviar-instrucciones', [App\Http\Controllers\TicketsController::class, 'enviarInstruccionesRespuesta']);
     Route::post('/tickets/actualizar-tiempo-estimado', [App\Http\Controllers\TicketsController::class, 'actualizarTiempoEstimado']);
     Route::post('/tickets/actualizar-metricas-masivo', [App\Http\Controllers\TicketsController::class, 'actualizarMetricasMasivo']);
+    Route::get('/tickets/reporte-mensual', [App\Http\Controllers\TicketsController::class, 'reporteMensual'])->name('tickets.reporte-mensual');
+    Route::get('/tickets/exportar-reporte-mensual-excel', [App\Http\Controllers\TicketsController::class, 'exportarReporteMensualExcel'])->name('tickets.exportar-reporte-mensual-excel');
     // Ruta con parámetro dinámico debe ir AL FINAL
     Route::get('/tickets/{id}', [App\Http\Controllers\TicketsController::class, 'show']);
     

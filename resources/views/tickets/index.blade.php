@@ -42,8 +42,8 @@
             x-show="tab === 2"
             x-transition.opacity
             x-cloak
-            class="text-gray-500 text-center py-10">
-            @include('tickets.productividad', ['metricasProductividad' => $metricasProductividad])
+            id="productividad-tab">
+            @include('tickets.productividad', ['metricasProductividad' => $metricasProductividad, 'mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year])
         </div>
         <div
             x-show="tab === 3"

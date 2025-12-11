@@ -62,7 +62,7 @@ class Subtipos extends Model
      **/
     public function tertipoid()
     {
-        return $this->belongsTo(\App\Models\Tertipo::class, 'TertipoID');
+        return $this->belongsTo(Tertipos::class, 'TertipoID', 'TertipoID');
     }
 
     /**

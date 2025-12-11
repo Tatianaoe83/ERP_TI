@@ -120,6 +120,14 @@ class Tickets extends Model
     }
 
     /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+    public function tipoticket()
+    {
+        return $this->belongsTo(Tipoticket::class, 'TipoID', 'TipoID');
+    }
+
+    /**
      * Boot del modelo para manejar eventos
      */
     protected static function boot()

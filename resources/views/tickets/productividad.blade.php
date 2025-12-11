@@ -1,4 +1,73 @@
-<div class="space-y-6">
+<div class="space-y-6" id="productividad-container">
+    <!-- Encabezado con selector de mes/año y botón de exportar -->
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Reporte de Productividad</h2>
+        
+        <div class="flex items-center gap-4" 
+             x-data="{ 
+                 mes: {{ $mes ?? now()->month }}, 
+                 anio: {{ $anio ?? now()->year }}, 
+                 cargando: false,
+                 cargarProductividad() {
+                     this.cargando = true;
+                     const mes = this.mes;
+                     const anio = this.anio;
+                     const productividadContainer = document.getElementById('productividad-container');
+                     
+                     fetch(`{{ route('tickets.productividad-ajax') }}?mes=${mes}&anio=${anio}`)
+                         .then(response => response.json())
+                         .then(data => {
+                             if (data.success && productividadContainer) {
+                                 productividadContainer.innerHTML = data.html;
+                                 // Reinicializar Alpine.js
+                                 if (window.Alpine) {
+                                     window.Alpine.initTree(productividadContainer);
+                                 }
+                                 // Reinicializar gráficas después de un breve delay
+                                 setTimeout(() => {
+                                     if (typeof inicializarGraficas === 'function') {
+                                         inicializarGraficas();
+                                     }
+                                     if (typeof inicializarGraficasEmpleados === 'function') {
+                                         inicializarGraficasEmpleados();
+                                     }
+                                 }, 300);
+                             }
+                             this.cargando = false;
+                         })
+                         .catch(error => {
+                             console.error('Error:', error);
+                             this.cargando = false;
+                         });
+                 }
+             }">
+            <!-- Selector de mes y año -->
+            <div class="flex items-center gap-2">
+                <select x-model="mes" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    @for($i = 1; $i <= 12; $i++)
+                        <option value="{{ $i }}">{{ \Carbon\Carbon::create(now()->year, $i, 1)->locale('es')->isoFormat('MMMM') }}</option>
+                    @endfor
+                </select>
+                
+                <select x-model="anio" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    @for($i = now()->year; $i >= now()->year - 5; $i--)
+                        <option value="{{ $i }}">{{ $i }}</option>
+                    @endfor
+                </select>
+                
+                <div x-show="cargando" class="ml-2">
+                    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                </div>
+            </div>
+            
+            <!-- Botón de exportar a Excel -->
+            <a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year]) }}" 
+               class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+                <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
+            </a>
+        </div>
+    </div>
+
     <!-- Tarjetas de resumen -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total de tickets -->

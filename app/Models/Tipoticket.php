@@ -67,7 +67,7 @@ class Tipoticket extends Model
      **/
     public function subtipoid()
     {
-        return $this->belongsTo(\App\Models\Subtipo::class, 'SubtipoID');
+        return $this->belongsTo(Subtipos::class, 'SubtipoID', 'SubtipoID');
     }
 
     /**
