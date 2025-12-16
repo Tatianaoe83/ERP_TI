@@ -10,6 +10,7 @@ use App\Models\Tertipos;
 use App\Models\Subtipos;
 use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
+use App\Services\TicketNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
@@ -279,6 +280,8 @@ class TicketsController extends Controller
                     'Estatus' => $ticket->Estatus,
                     'ResponsableTI' => $ticket->ResponsableTI,
                     'TipoID' => $ticket->TipoID,
+                    'SubtipoID' => $ticket->SubtipoID,
+                    'TertipoID' => $ticket->TertipoID,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -374,10 +377,64 @@ class TicketsController extends Controller
             }
 
             if ($request->has('tipoID')) {
-                $ticket->TipoID = $request->input('tipoID') ? (int)$request->input('tipoID') : null;
+                $tipoID = $request->input('tipoID') ? (int)$request->input('tipoID') : null;
+                $ticket->TipoID = $tipoID;
+                
+                // Si no se proporciona subtipoID, obtenerlo automáticamente de la relación con Tipoticket
+                if (!$request->has('subtipoID') || !$request->input('subtipoID')) {
+                    if ($tipoID) {
+                        $tipoticket = Tipoticket::find($tipoID);
+                        if ($tipoticket && $tipoticket->SubtipoID) {
+                            $ticket->SubtipoID = $tipoticket->SubtipoID;
+                            // Si no se proporciona tertipoID, obtenerlo automáticamente de la relación con Subtipo
+                            if (!$request->has('tertipoID') || !$request->input('tertipoID')) {
+                                $subtipo = Subtipos::find($tipoticket->SubtipoID);
+                                if ($subtipo && $subtipo->TertipoID) {
+                                    $ticket->TertipoID = $subtipo->TertipoID;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Guardar SubtipoID si se proporciona directamente
+            if ($request->has('subtipoID')) {
+                $ticket->SubtipoID = $request->input('subtipoID') ? (int)$request->input('subtipoID') : null;
+                
+                // Si se cambia el subtipoID y no se proporciona tertipoID, obtenerlo automáticamente
+                if ($ticket->SubtipoID && (!$request->has('tertipoID') || !$request->input('tertipoID'))) {
+                    $subtipo = Subtipos::find($ticket->SubtipoID);
+                    if ($subtipo && $subtipo->TertipoID) {
+                        $ticket->TertipoID = $subtipo->TertipoID;
+                    }
+                }
+            }
+
+            // Guardar TertipoID si se proporciona directamente
+            if ($request->has('tertipoID')) {
+                $ticket->TertipoID = $request->input('tertipoID') ? (int)$request->input('tertipoID') : null;
             }
 
             $ticket->save();
+
+            // Si el ticket está o cambió a "En progreso", verificar si excede el tiempo de respuesta
+            if ($nuevoEstatus === 'En progreso') {
+                // Recargar el ticket con relaciones para calcular tiempos
+                $ticket->refresh();
+                $ticket->load(['tipoticket', 'responsableTI']);
+                
+                // Verificar y enviar notificación si excede el tiempo
+                // Nota: Esto verificará después de que se haya actualizado FechaInicioProgreso en el modelo
+                try {
+                    $notificationService = new TicketNotificationService();
+                    // El modelo Tickets tiene un boot() que actualiza FechaInicioProgreso cuando cambia a "En progreso"
+                    // Verificar si excede el tiempo estimado según la métrica de la categoría
+                    $notificationService->verificarYNotificarExceso($ticket);
+                } catch (\Exception $e) {
+                    Log::error("Error verificando exceso de tiempo al cambiar a En progreso: " . $e->getMessage());
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -388,6 +445,8 @@ class TicketsController extends Controller
                     'Estatus' => $ticket->Estatus,
                     'ResponsableTI' => $ticket->ResponsableTI,
                     'TipoID' => $ticket->TipoID,
+                    'SubtipoID' => $ticket->SubtipoID,
+                    'TertipoID' => $ticket->TertipoID,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -1228,7 +1287,7 @@ class TicketsController extends Controller
         // Calcular datos para el resumen
         $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
 
-        $nombreArchivo = 'reporte_tickets_' . $mes . '_' . $anio . '_' . date('YmdHis') . '.xlsx';
+        $nombreArchivo = 'reporte_tickets_' . date('d-m-Y-H-i') . '.xlsx';
 
         return Excel::download(
             new \App\Exports\ReporteMensualTicketsExport($tickets, $resumen, $mes, $anio),

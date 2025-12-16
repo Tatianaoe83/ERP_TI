@@ -51,8 +51,12 @@ class Tickets extends Model
         'ResponsableTI',
         'EmpleadoID',
         'TipoID',
+        'SubtipoID',
+        'TertipoID',
         'FechaInicioProgreso',
-        'FechaFinProgreso'
+        'FechaFinProgreso',
+        'fecha_ultima_notificacion_exceso',
+        'intervalo_verificacion_minutos'
     ];
 
     /**
@@ -71,8 +75,12 @@ class Tickets extends Model
         'ResponsableTI' => 'integer',
         'EmpleadoID' => 'integer',
         'TipoID' => 'integer',
+        'SubtipoID' => 'integer',
+        'TertipoID' => 'integer',
         'FechaInicioProgreso' => 'datetime',
-        'FechaFinProgreso' => 'datetime'
+        'FechaFinProgreso' => 'datetime',
+        'fecha_ultima_notificacion_exceso' => 'datetime',
+        'intervalo_verificacion_minutos' => 'integer'
     ];
 
     /**
@@ -143,11 +151,15 @@ class Tickets extends Model
                 // Si cambia a "En progreso" y no tiene fecha de inicio
                 if ($nuevoEstatus === 'En progreso' && !$ticket->FechaInicioProgreso) {
                     $ticket->FechaInicioProgreso = now();
+                    // Resetear la fecha de última notificación cuando inicia progreso
+                    $ticket->fecha_ultima_notificacion_exceso = null;
                 }
 
                 // Si cambia a "Cerrado" y tiene fecha de inicio pero no de fin
                 if ($nuevoEstatus === 'Cerrado' && $ticket->FechaInicioProgreso && !$ticket->FechaFinProgreso) {
                     $ticket->FechaFinProgreso = now();
+                    // Resetear la fecha de última notificación cuando se cierra
+                    $ticket->fecha_ultima_notificacion_exceso = null;
                 }
             }
         });

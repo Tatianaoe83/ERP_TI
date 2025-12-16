@@ -455,6 +455,7 @@
                             <label class="text-md font-semibold text-gray-600">Grupo <span class="text-red-500">*</span></label>
                             <select 
                                 id="subtipo-select"
+                                x-model="ticketSubtipoID"
                                 class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
                                 :disabled="!ticketTipoID || selected.estatus === 'Cerrado'">
                                 <option value="">Seleccione</option>
@@ -463,8 +464,9 @@
                             <label class="text-md font-semibold text-gray-600">Subgrupo</label>
                             <select 
                                 id="tertipo-select"
+                                x-model="ticketTertipoID"
                                 class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
-                                :disabled="true || selected.estatus === 'Cerrado'">
+                                :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'">
                                 <option value="">Seleccione</option>
                             </select>
 
@@ -1148,6 +1150,8 @@
             ticketEstatus: '',
             ticketResponsableTI: '',
             ticketTipoID: '',
+            ticketSubtipoID: '',
+            ticketTertipoID: '',
             guardandoTicket: false,
             // Variables de paginación
             paginaLista: {
@@ -1355,6 +1359,8 @@
                             this.ticketEstatus = data.ticket.Estatus || '';
                             this.ticketResponsableTI = data.ticket.ResponsableTI ? String(data.ticket.ResponsableTI) : '';
                             this.ticketTipoID = data.ticket.TipoID ? String(data.ticket.TipoID) : '';
+                            this.ticketSubtipoID = data.ticket.SubtipoID ? String(data.ticket.SubtipoID) : '';
+                            this.ticketTertipoID = data.ticket.TertipoID ? String(data.ticket.TertipoID) : '';
                             
                             // Actualizar también el estatus en selected para el bloqueo visual
                             if (this.selected) {
@@ -1369,6 +1375,24 @@
                                         tipoSelect.value = this.ticketTipoID;
                                         const changeEvent = new Event('change', { bubbles: true });
                                         tipoSelect.dispatchEvent(changeEvent);
+                                        
+                                        // Esperar a que se carguen los subtipos y establecer el valor
+                                        setTimeout(() => {
+                                            const subtipoSelect = document.getElementById('subtipo-select');
+                                            if (subtipoSelect && this.ticketSubtipoID) {
+                                                subtipoSelect.value = this.ticketSubtipoID;
+                                                const subtipoChangeEvent = new Event('change', { bubbles: true });
+                                                subtipoSelect.dispatchEvent(subtipoChangeEvent);
+                                                
+                                                // Esperar a que se carguen los tertipos y establecer el valor
+                                                setTimeout(() => {
+                                                    const tertipoSelect = document.getElementById('tertipo-select');
+                                                    if (tertipoSelect && this.ticketTertipoID) {
+                                                        tertipoSelect.value = this.ticketTertipoID;
+                                                    }
+                                                }, 300);
+                                            }
+                                        }, 500);
                                     }
                                 }, 300);
                             });
@@ -1393,7 +1417,9 @@
                         prioridad: this.ticketPrioridad,
                         estatus: this.ticketEstatus,
                         responsableTI: this.ticketResponsableTI || null,
-                        tipoID: this.ticketTipoID || null
+                        tipoID: this.ticketTipoID || null,
+                        subtipoID: this.ticketSubtipoID || null,
+                        tertipoID: this.ticketTertipoID || null
                     };
 
                     const response = await fetch('/tickets/update', {

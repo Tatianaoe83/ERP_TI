@@ -756,7 +756,6 @@ function inicializarGraficasEmpleados() {
         const metricasEmpleados = @json($metricasProductividad['metricas_por_empleado']);
         
         if (!metricasEmpleados || metricasEmpleados.length === 0) {
-            console.log('No hay métricas de empleados disponibles');
             return;
         }
         
@@ -771,16 +770,9 @@ function inicializarGraficasEmpleados() {
             const canvasId = 'chartEmpleado' + empleado.empleado_id;
             const canvas = document.getElementById(canvasId);
             
-            if (!canvas) {
-                console.log('Canvas no encontrado:', canvasId);
-                return;
-            }
+         
             
-            // Verificar si el canvas está visible
-            if (!isElementVisible(canvas)) {
-                console.log('Canvas no visible:', canvasId);
-                return;
-            }
+
             
             // Verificar si ya existe una gráfica para este canvas
             const chartKey = 'chartEmpleado' + empleado.empleado_id;
@@ -790,7 +782,6 @@ function inicializarGraficasEmpleados() {
                     try {
                         window[chartKey].destroy();
                     } catch (e) {
-                        console.log('Error al destruir gráfica anterior:', e);
                     }
                 }
                 window[chartKey] = null;
@@ -798,7 +789,6 @@ function inicializarGraficasEmpleados() {
             
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-                console.log('No se pudo obtener el contexto del canvas:', canvasId);
                 return;
             }
     
@@ -896,7 +886,6 @@ function inicializarGraficasEmpleados() {
                         }
                     }
                 });
-                console.log('Gráfica inicializada para empleado:', empleado.empleado_id);
             } catch (error) {
                 console.error('Error creando gráfica para empleado ' + empleado.empleado_id + ':', error);
                 window[chartKey] = null;
