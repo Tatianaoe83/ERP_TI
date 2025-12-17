@@ -282,6 +282,7 @@ class TicketsController extends Controller
                     'TipoID' => $ticket->TipoID,
                     'SubtipoID' => $ticket->SubtipoID,
                     'TertipoID' => $ticket->TertipoID,
+                    'imagen' => $ticket->imagen,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -523,9 +524,14 @@ class TicketsController extends Controller
                 foreach ($adjuntos as $adjunto) {
                     $fileName = uniqid() . '_' . $adjunto->getClientOriginalName();
                     $path = $adjunto->storeAs('tickets/adjuntos', $fileName, 'public');
+                    $storagePath = storage_path('app/public/' . $path);
                     $adjuntosProcesados[] = [
                         'name' => $adjunto->getClientOriginalName(),
-                        'path' => storage_path('app/public/' . $path)
+                        'path' => $storagePath,
+                        'storage_path' => $path, // Ruta relativa para acceso web
+                        'url' => asset('storage/' . $path), // URL pública
+                        'size' => $adjunto->getSize(),
+                        'mime_type' => $adjunto->getMimeType()
                     ];
                 }
             }

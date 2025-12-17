@@ -64,7 +64,7 @@
     <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 fade-in">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-lg mb-4 p-2">
-                <img src="{{ asset('img/LogoAzul2.png') }}" alt="Logo Proser" class="w-full h-full object-contain">
+                <img src="{{ asset('img/LogoAzul.png') }}" alt="Logo Proser" class="w-full h-full object-contain">
             </div>
             <h1 class="text-3xl font-bold text-white mb-2" id="title">Selecciona una opción</h1>
             <p class="text-indigo-100">Selecciona una opción para continuar</p>

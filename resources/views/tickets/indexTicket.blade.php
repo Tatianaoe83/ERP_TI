@@ -1,3 +1,14 @@
+<!-- TinyMCE Editor - Rich Text Editor Gratuito y Open Source -->
+<style>
+    .tox-tinymce {
+        border: 1px solid #e5e7eb !important;
+        border-radius: 0.5rem !important;
+    }
+    #editor-mensaje {
+        min-height: 300px;
+    }
+</style>
+
 <div
     x-data="ticketsModal()"
     x-init="init(); vista = localStorage.getItem('ticketsVista') || 'kanban'"
@@ -68,6 +79,7 @@
                     data-ticket-numero="{{ $ticket->Numero }}"
                     data-ticket-correo="{{ $ticket->empleado->Correo }}"
                     data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
+                    data-ticket-imagen="{{ htmlspecialchars($ticket->imagen ?? '', ENT_QUOTES, 'UTF-8') }}"
                     @click="abrirModalDesdeElemento($el)">
                     <div class="flex justify-between items-start">
                         <h3 class="text-sm font-semibold text-gray-800 truncate">
@@ -124,6 +136,7 @@
                     data-ticket-numero="{{ $ticket->Numero }}"
                     data-ticket-correo="{{ $ticket->empleado->Correo }}"
                     data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
+                    data-ticket-imagen="{{ htmlspecialchars($ticket->imagen ?? '', ENT_QUOTES, 'UTF-8') }}"
                     x-show="estaEnPaginaLista('{{ $key }}', {{ $loop->index }})"
                     @click="abrirModalDesdeElemento($el)">
                     <div class="flex items-start justify-between gap-4">
@@ -395,6 +408,49 @@
                             <div class="font-medium text-gray-800 whitespace-pre-wrap ticket-description" x-text="selected.descripcion"></div>
                         </div>
 
+                        <!-- Documentos Adjuntos -->
+                        <div x-show="obtenerAdjuntos().length > 0" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                            <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Documentos Adjuntos</h3>
+                            <div class="space-y-2">
+                                <template x-for="(adjunto, index) in obtenerAdjuntos()" :key="index">
+                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                                            <div class="flex-shrink-0">
+                                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-gray-800 truncate" x-text="obtenerNombreArchivo(adjunto)"></p>
+                                                <p class="text-xs text-gray-500" x-text="obtenerExtensionArchivo(adjunto)"></p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2 flex-shrink-0">
+                                            <a 
+                                                :href="obtenerUrlArchivo(adjunto)" 
+                                                target="_blank"
+                                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
+                                                title="Ver archivo">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                                </svg>
+                                            </a>
+                                            <a 
+                                                :href="obtenerUrlArchivo(adjunto)" 
+                                                download
+                                                class="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
+                                                title="Descargar archivo">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
                         <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                             <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Información de Contacto</h3>
                             <p class="font-medium text-gray-800" x-text="selected.empleado"></p>
@@ -637,6 +693,7 @@
                                             :value="selected.correo || ''"
                                             readonly
                                             class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        {{-- Botones de Copia y Copia Oculta comentados
                                         <div class="flex items-center gap-2">
                                             <button 
                                                 type="button"
@@ -651,8 +708,10 @@
                                                 Copia Oculta
                                             </button>
                                         </div>
+                                        --}}
                                     </div>
                                     
+                                    {{-- Campos de Copia y Copia Oculta comentados
                                     <!-- Campo Copia (oculto por defecto) -->
                                     <div x-show="mostrarCc" x-transition class="flex items-center gap-2">
                                         <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Copia:</label>
@@ -672,6 +731,7 @@
                                             placeholder="correo@ejemplo.com"
                                             class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </div>
+                                    --}}
                                     
                                     <!-- Campo Asunto -->
                                     <div class="flex items-center gap-2">
@@ -680,12 +740,14 @@
                                             type="text"
                                             x-model="asuntoCorreo"
                                             required
-                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            readonly
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm focus:outline-none cursor-not-allowed"
                                             placeholder="Asunto del correo">
                                     </div>
                                 </div>
                             </div>
                             
+                            {{-- Barra de herramientas personalizada comentada - Quill.js tiene su propia barra de herramientas integrada
                             <!-- Barra de Herramientas de Formato -->
                             <div class="border-b border-gray-200 p-2 bg-white flex items-center gap-2 flex-wrap">
                                 <!-- Botones de formato básico -->
@@ -807,25 +869,6 @@
                                     </button>
                                 </div>
                                 
-                                <!-- Adjuntar archivo -->
-                                <div class="flex items-center gap-1">
-                                    <label 
-                                        for="adjuntos"
-                                        class="p-1.5 hover:bg-gray-100 rounded transition cursor-pointer"
-                                        title="Adjuntar archivo">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
-                                        </svg>
-                                    </label>
-                                    <input 
-                                        type="file" 
-                                        id="adjuntos" 
-                                        name="adjuntos[]" 
-                                        multiple 
-                                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                                        class="hidden">
-                                </div>
-                                
                                 <!-- Más opciones -->
                                 <button 
                                     type="button"
@@ -836,13 +879,115 @@
                                     </svg>
                                 </button>
                             </div>
+                            --}}
+                            
+                            <!-- Sección de Adjuntos -->
+                            <div class="border-b border-gray-200 p-3 bg-white">
+                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <p class="text-xs text-yellow-800 flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                        </svg>
+                                        <span>Este ticket está cerrado. No se pueden agregar nuevos mensajes o adjuntos.</span>
+                                    </p>
+                                </div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label 
+                                        for="adjuntos"
+                                        :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+                                        class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition text-sm font-medium"
+                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : 'Adjuntar archivo'">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                        </svg>
+                                        <span>Elegir archivos</span>
+                                    </label>
+                                    <span x-show="archivosAdjuntos.length > 0" class="text-sm text-gray-600 font-medium">
+                                        <span x-text="archivosAdjuntos.length"></span> archivo<span x-show="archivosAdjuntos.length !== 1">s</span>
+                                    </span>
+                                </div>
+                                
+                                <!-- Lista visual de archivos adjuntos -->
+                                <div x-show="archivosAdjuntos.length > 0" class="mt-3 space-y-2">
+                                    <template x-for="(archivo, index) in archivosAdjuntos" :key="index">
+                                        <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
+                                            <!-- Icono según tipo de archivo -->
+                                            <div class="flex-shrink-0">
+                                                <!-- Imagen -->
+                                                <svg x-show="archivo.type && archivo.type.startsWith('image/')" 
+                                                     class="w-6 h-6 text-green-600" 
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24"
+                                                     style="display: none;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <!-- PDF -->
+                                                <svg x-show="archivo.type && archivo.type === 'application/pdf'" 
+                                                     class="w-6 h-6 text-red-600" 
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24"
+                                                     style="display: none;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <!-- Word/Document -->
+                                                <svg x-show="archivo.type && (archivo.type.includes('word') || archivo.type.includes('document') || archivo.name.endsWith('.doc') || archivo.name.endsWith('.docx'))" 
+                                                     class="w-6 h-6 text-blue-600" 
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24"
+                                                     style="display: none;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <!-- Genérico -->
+                                                <svg x-show="!archivo.type || (!archivo.type.startsWith('image/') && archivo.type !== 'application/pdf' && !archivo.type.includes('word') && !archivo.type.includes('document') && !archivo.name.endsWith('.doc') && !archivo.name.endsWith('.docx'))" 
+                                                     class="w-6 h-6 text-gray-600" 
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                            
+                                            <!-- Información del archivo -->
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-gray-900 truncate" x-text="archivo.name"></p>
+                                                <p class="text-xs text-gray-500" x-text="formatearTamañoArchivo(archivo.size)"></p>
+                                            </div>
+                                            
+                                            <!-- Botón para eliminar -->
+                                            <button 
+                                                type="button"
+                                                @click="eliminarArchivo(index)"
+                                                :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                                class="flex-shrink-0 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title="Eliminar archivo">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                                
+                                <input 
+                                    type="file" 
+                                    id="adjuntos" 
+                                    name="adjuntos[]" 
+                                    multiple 
+                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                                    class="hidden"
+                                    :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                    @change="manejarArchivosSeleccionados($event)">
+                            </div>
                             
                             <!-- Área de Composición del Mensaje -->
                             <div class="p-4">
                                 <textarea 
                                     id="editor-mensaje"
                                     x-model="nuevoMensaje"
-                                    class="w-full min-h-[200px] p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-sans"
+                                    class="w-full"
                                     placeholder="Escribe tu mensaje aquí..."></textarea>
                                 
                                 <!-- Información del ticket (mostrada como correo citado) -->
@@ -871,14 +1016,16 @@
                                 <div class="flex justify-end items-center gap-3 mt-4 pt-4 border-t border-gray-200">
                                     <button 
                                         type="button"
-                                        @click="nuevoMensaje = ''"
-                                        class="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition text-sm">
+                                        @click="limpiarEditor()"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                        class="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                         Descartar
                                     </button>
                                     <button 
                                         @click="enviarRespuesta()"
-                                        :disabled="!nuevoMensaje.trim() || !asuntoCorreo.trim()"
-                                        class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2">
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
+                                        class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2"
+                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : 'El botón se activará cuando haya contenido en el mensaje y un asunto'">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                         </svg>
@@ -1083,6 +1230,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js" defer></script>
 <script>
     function ticketsModal() {
         return {
@@ -1110,6 +1258,8 @@
             asuntoCorreo: '',
             correoCc: '',
             correoBcc: '',
+            tinyMCEInstance: null, // Instancia del editor TinyMCE
+            archivosAdjuntos: [], // Array para almacenar los archivos seleccionados
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
@@ -1157,8 +1307,108 @@
                 this.correoCc = '';
                 this.correoBcc = '';
                 
-                // Configurar actualización automática cada 30 segundos
-                this.configurarActualizacionAutomatica();
+                // Inicializar TinyMCE Editor
+                this.$nextTick(() => {
+                    this.inicializarTinyMCE();
+                });
+                
+                // La actualización de mensajes se manejará mediante cron job
+                // No se configura recarga automática
+            },
+
+            inicializarTinyMCE() {
+                const editorElement = document.getElementById('editor-mensaje');
+                
+                if (!editorElement || this.tinyMCEInstance) return;
+
+                // Esperar a que TinyMCE esté disponible
+                if (typeof tinymce === 'undefined') {
+                    setTimeout(() => this.inicializarTinyMCE(), 100);
+                    return;
+                }
+
+                // Destruir instancia anterior si existe
+                if (tinymce.get('editor-mensaje')) {
+                    tinymce.remove('editor-mensaje');
+                }
+
+                // Inicializar TinyMCE
+                tinymce.init({
+                    selector: '#editor-mensaje',
+                    height: 300,
+                    menubar: false,
+                    plugins: [
+                        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                        'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+                    ],
+                    toolbar: 'undo redo | formatselect | ' +
+                        'bold italic underline strikethrough | forecolor backcolor | ' +
+                        'alignleft aligncenter alignright alignjustify | ' +
+                        'bullist numlist | outdent indent | ' +
+                        'removeformat | link image | code | help',
+                    content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }',
+                    language: 'es',
+                    placeholder: 'Escribe tu mensaje aquí...',
+                    setup: (editor) => {
+                        this.tinyMCEInstance = editor;
+                        
+                        // Sincronizar contenido con Alpine.js en tiempo real
+                        editor.on('input', () => {
+                            const contenido = editor.getContent();
+                            this.nuevoMensaje = contenido;
+                            // Forzar actualización de Alpine.js
+                            this.$nextTick(() => {
+                                // Trigger para que Alpine detecte el cambio
+                            });
+                        });
+                        
+                        editor.on('change', () => {
+                            const contenido = editor.getContent();
+                            this.nuevoMensaje = contenido;
+                            // Forzar actualización de Alpine.js
+                            this.$nextTick(() => {
+                                // Trigger para que Alpine detecte el cambio
+                            });
+                        });
+                        
+                        editor.on('keyup', () => {
+                            const contenido = editor.getContent();
+                            this.nuevoMensaje = contenido;
+                        });
+                        
+                        editor.on('NodeChange', () => {
+                            const contenido = editor.getContent();
+                            this.nuevoMensaje = contenido;
+                        });
+                    },
+                    init_instance_callback: (editor) => {
+                        // Verificar estado al inicializar y deshabilitar si está cerrado
+                        this.$nextTick(() => {
+                            this.actualizarEstadoEditor();
+                        });
+                    },
+                    file_picker_types: 'file',
+                    file_picker_callback: (callback, value, meta) => {
+                        // Abrir el input de archivos existente
+                        const fileInput = document.getElementById('adjuntos');
+                        if (fileInput) {
+                            fileInput.click();
+                            fileInput.onchange = (e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                    // Mostrar el archivo como enlace en el editor
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                        const fileUrl = reader.result;
+                                        callback(fileUrl, { text: file.name });
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            };
+                        }
+                    }
+                });
             },
 
             prepararDatosLista() {
@@ -1288,13 +1538,14 @@
                 this.ordenarTabla();
             },
 
-            configurarActualizacionAutomatica() {
-                setInterval(() => {
-                    if (this.mostrar && this.selected.id) {
-                        this.cargarMensajes();
-                    }
-                }, 30000); // 30 segundos
-            },
+            // Función eliminada: La actualización de mensajes se manejará mediante cron job
+            // configurarActualizacionAutomatica() {
+            //     setInterval(() => {
+            //         if (this.mostrar && this.selected.id) {
+            //             this.cargarMensajes();
+            //         }
+            //     }, 30000); // 30 segundos
+            // },
 
             abrirModal(datos) {
                 this.selected = datos;
@@ -1305,9 +1556,24 @@
                 this.prioridadCorreo = 'normal';
                 this.correoCc = '';
                 this.correoBcc = '';
+                // Limpiar archivos adjuntos al abrir un nuevo modal
+                this.archivosAdjuntos = [];
+                const adjuntosInput = document.getElementById('adjuntos');
+                if (adjuntosInput) {
+                    adjuntosInput.value = '';
+                }
                 // Cargar datos del ticket para el formulario
                 this.cargarDatosTicket(datos.id);
                 this.cargarMensajes();
+                // Inicializar TinyMCE si no está inicializado
+                this.$nextTick(() => {
+                    if (!this.tinyMCEInstance) {
+                        this.inicializarTinyMCE();
+                    } else {
+                        // Si ya está inicializado, actualizar su estado
+                        this.actualizarEstadoEditor();
+                    }
+                });
             },
 
             async cargarDatosTicket(ticketId) {
@@ -1327,10 +1593,16 @@
                             this.ticketSubtipoID = data.ticket.SubtipoID ? String(data.ticket.SubtipoID) : '';
                             this.ticketTertipoID = data.ticket.TertipoID ? String(data.ticket.TertipoID) : '';
                             
-                            // Actualizar también el estatus en selected para el bloqueo visual
+                            // Actualizar también el estatus e imagen en selected para el bloqueo visual
                             if (this.selected) {
                                 this.selected.estatus = data.ticket.Estatus || '';
+                                this.selected.imagen = data.ticket.imagen || '';
                             }
+                            
+                            // Deshabilitar/habilitar editor según el estado
+                            this.$nextTick(() => {
+                                this.actualizarEstadoEditor();
+                            });
                             
                             // Esperar a que los selects estén cargados y luego establecer valores
                             this.$nextTick(() => {
@@ -1345,15 +1617,40 @@
                                         setTimeout(() => {
                                             const subtipoSelect = document.getElementById('subtipo-select');
                                             if (subtipoSelect && this.ticketSubtipoID) {
-                                                subtipoSelect.value = this.ticketSubtipoID;
-                                                const subtipoChangeEvent = new Event('change', { bubbles: true });
-                                                subtipoSelect.dispatchEvent(subtipoChangeEvent);
+                                                // Cargar las opciones si no están cargadas (importante para tickets cerrados)
+                                                if (subtipoSelect.options.length <= 1) {
+                                                    // Forzar la carga de subtipos
+                                                    if (typeof loadSubtipos === 'function') {
+                                                        loadSubtipos(this.ticketTipoID);
+                                                    }
+                                                }
                                                 
-                                                // Esperar a que se carguen los tertipos y establecer el valor
+                                                // Esperar un poco más para que se carguen las opciones
                                                 setTimeout(() => {
-                                                    const tertipoSelect = document.getElementById('tertipo-select');
-                                                    if (tertipoSelect && this.ticketTertipoID) {
-                                                        tertipoSelect.value = this.ticketTertipoID;
+                                                    if (subtipoSelect.options.length > 1) {
+                                                        subtipoSelect.value = this.ticketSubtipoID;
+                                                        const subtipoChangeEvent = new Event('change', { bubbles: true });
+                                                        subtipoSelect.dispatchEvent(subtipoChangeEvent);
+                                                        
+                                                        // Esperar a que se carguen los tertipos y establecer el valor
+                                                        setTimeout(() => {
+                                                            const tertipoSelect = document.getElementById('tertipo-select');
+                                                            if (tertipoSelect && this.ticketTertipoID) {
+                                                                // Cargar las opciones si no están cargadas
+                                                                if (tertipoSelect.options.length <= 1) {
+                                                                    // Forzar la carga de tertipos
+                                                                    if (typeof loadTertipos === 'function') {
+                                                                        loadTertipos(this.ticketSubtipoID);
+                                                                    }
+                                                                }
+                                                                
+                                                                setTimeout(() => {
+                                                                    if (tertipoSelect.options.length > 1) {
+                                                                        tertipoSelect.value = this.ticketTertipoID;
+                                                                    }
+                                                                }, 300);
+                                                            }
+                                                        }, 500);
                                                     }
                                                 }, 300);
                                             }
@@ -1404,7 +1701,12 @@
                         if (data.ticket) {
                             this.selected.prioridad = data.ticket.Prioridad;
                             this.selected.estatus = data.ticket.Estatus;
+                            this.ticketEstatus = data.ticket.Estatus;
                         }
+                        // Actualizar estado del editor antes de recargar
+                        this.$nextTick(() => {
+                            this.actualizarEstadoEditor();
+                        });
                         // Recargar la página después de un breve delay para ver los cambios
                         setTimeout(() => {
                             window.location.reload();
@@ -1443,7 +1745,8 @@
                     anydesk: elementoConDatos.getAttribute('data-ticket-anydesk') || elementoConDatos.dataset.ticketAnydesk || '',
                     numero: elementoConDatos.getAttribute('data-ticket-numero') || elementoConDatos.dataset.ticketNumero || '',
                     correo: elementoConDatos.getAttribute('data-ticket-correo') || elementoConDatos.dataset.ticketCorreo || '',
-                    fecha: elementoConDatos.getAttribute('data-ticket-fecha') || elementoConDatos.dataset.ticketFecha || new Date().toLocaleString('es-ES')
+                    fecha: elementoConDatos.getAttribute('data-ticket-fecha') || elementoConDatos.dataset.ticketFecha || new Date().toLocaleString('es-ES'),
+                    imagen: elementoConDatos.getAttribute('data-ticket-imagen') || elementoConDatos.dataset.ticketImagen || ''
                 };
                 
                 // Decodificar HTML entities en la descripción
@@ -1466,21 +1769,180 @@
                 this.prioridadCorreo = 'normal';
                 this.correoCc = '';
                 this.correoBcc = '';
+                // Limpiar el editor TinyMCE
+                if (this.tinyMCEInstance) {
+                    this.tinyMCEInstance.setContent('');
+                }
+                // Limpiar archivos adjuntos
+                this.archivosAdjuntos = [];
+                const adjuntosInput = document.getElementById('adjuntos');
+                if (adjuntosInput) {
+                    adjuntosInput.value = '';
+                }
                 setTimeout(() => this.selected = {}, 200);
+            },
+
+            obtenerContenidoEditor() {
+                // Intentar obtener contenido de TinyMCE primero
+                if (this.tinyMCEInstance) {
+                    try {
+                        const contenido = this.tinyMCEInstance.getContent();
+                        // Remover etiquetas vacías y espacios HTML
+                        const textoLimpio = contenido
+                            .replace(/<p><\/p>/g, '')
+                            .replace(/<p>\s*<\/p>/g, '')
+                            .replace(/<br\s*\/?>/gi, '')
+                            .replace(/&nbsp;/g, ' ')
+                            .trim();
+                        // Si después de limpiar hay contenido, retornar el contenido original
+                        if (textoLimpio.length > 0) {
+                            return contenido;
+                        }
+                    } catch (e) {
+                        console.warn('Error obteniendo contenido de TinyMCE:', e);
+                    }
+                }
+                // Fallback: usar nuevoMensaje si está disponible
+                if (this.nuevoMensaje && this.nuevoMensaje.trim().length > 0) {
+                    return this.nuevoMensaje;
+                }
+                return '';
+            },
+            
+            tieneContenido() {
+                // Verificar primero si TinyMCE está inicializado y tiene contenido
+                if (this.tinyMCEInstance) {
+                    try {
+                        const contenido = this.tinyMCEInstance.getContent();
+                        if (contenido) {
+                            // Remover etiquetas HTML y espacios
+                            const textoLimpio = contenido
+                                .replace(/<[^>]*>/g, '') // Remover todas las etiquetas HTML
+                                .replace(/&nbsp;/g, ' ')
+                                .replace(/&amp;/g, '&')
+                                .replace(/&lt;/g, '<')
+                                .replace(/&gt;/g, '>')
+                                .replace(/\s+/g, ' ')
+                                .trim();
+                            if (textoLimpio.length > 0) {
+                                return true;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Error verificando contenido de TinyMCE:', e);
+                    }
+                }
+                
+                // Fallback: verificar nuevoMensaje
+                if (this.nuevoMensaje) {
+                    const textoLimpio = this.nuevoMensaje
+                        .replace(/<[^>]*>/g, '')
+                        .replace(/&nbsp;/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    return textoLimpio.length > 0;
+                }
+                
+                return false;
+            },
+
+            limpiarEditor() {
+                this.nuevoMensaje = '';
+                if (this.tinyMCEInstance) {
+                    this.tinyMCEInstance.setContent('');
+                }
+                this.archivosAdjuntos = [];
+                const adjuntosInput = document.getElementById('adjuntos');
+                if (adjuntosInput) {
+                    adjuntosInput.value = '';
+                }
+            },
+
+            manejarArchivosSeleccionados(event) {
+                const input = event.target;
+                const files = Array.from(input.files || []);
+                
+                if (files.length === 0) {
+                    this.archivosAdjuntos = [];
+                    return;
+                }
+                
+                // Limpiar y agregar todos los archivos seleccionados
+                this.archivosAdjuntos = [];
+                files.forEach(file => {
+                    this.archivosAdjuntos.push(file);
+                });
+                
+                // Forzar actualización de Alpine.js
+                this.$nextTick(() => {
+                    console.log('Archivos adjuntos actualizados:', this.archivosAdjuntos.length);
+                });
+            },
+
+            eliminarArchivo(index) {
+                if (index >= 0 && index < this.archivosAdjuntos.length) {
+                    this.archivosAdjuntos.splice(index, 1);
+                    
+                    // Actualizar el input file para reflejar los cambios
+                    const adjuntosInput = document.getElementById('adjuntos');
+                    if (adjuntosInput) {
+                        // Crear un nuevo DataTransfer para actualizar el input
+                        const dataTransfer = new DataTransfer();
+                        this.archivosAdjuntos.forEach(archivo => {
+                            dataTransfer.items.add(archivo);
+                        });
+                        adjuntosInput.files = dataTransfer.files;
+                    }
+                }
+            },
+
+            formatearTamañoArchivo(bytes) {
+                if (!bytes || bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+            },
+
+            actualizarEstadoEditor() {
+                const estaCerrado = this.selected.estatus === 'Cerrado' || this.ticketEstatus === 'Cerrado';
+                
+                if (this.tinyMCEInstance) {
+                    try {
+                        // Cambiar el modo del editor a readonly si está cerrado
+                        if (estaCerrado) {
+                            this.tinyMCEInstance.mode.set('readonly');
+                        } else {
+                            this.tinyMCEInstance.mode.set('design');
+                        }
+                    } catch (e) {
+                        console.warn('Error actualizando estado del editor:', e);
+                    }
+                }
+                
+                // También deshabilitar el textarea si TinyMCE no está inicializado
+                const textarea = document.getElementById('editor-mensaje');
+                if (textarea) {
+                    textarea.disabled = estaCerrado;
+                    if (estaCerrado) {
+                        textarea.style.cursor = 'not-allowed';
+                        textarea.style.backgroundColor = '#f3f4f6';
+                    } else {
+                        textarea.style.cursor = 'text';
+                        textarea.style.backgroundColor = 'white';
+                    }
+                }
             },
 
             async cargarMensajes() {
                 if (!this.selected.id) return;
 
                 try {
-                    console.log('🔄 Cargando mensajes para ticket:', this.selected.id);
                     const response = await fetch(`/tickets/chat-messages?ticket_id=${this.selected.id}`);
                     const data = await response.json();
                     
-                    console.log('📊 Respuesta de la API:', data);
                     
                     if (data.success) {
-                        console.log('✅ Mensajes cargados:', data.messages.length);
                         this.mensajes = data.messages;
                         this.marcarMensajesComoLeidos();
                         this.scrollToBottom();
@@ -1488,10 +1950,10 @@
                         // Actualizar estadísticas después de cargar mensajes
                     this.estadisticas = await this.obtenerEstadisticasCorreos();
                     } else {
-                        console.error('❌ Error en la API:', data.message);
+                        console.error('Error en la API:', data.message);
                     }
                 } catch (error) {
-                    console.error('❌ Error cargando mensajes:', error);
+                    console.error('Error cargando mensajes:', error);
                 }
             },
 
@@ -1513,7 +1975,19 @@
             },
 
             async enviarRespuesta() {
-                if (!this.nuevoMensaje.trim()) return;
+                // Obtener el contenido HTML de TinyMCE
+                let contenidoMensaje = '';
+                if (this.tinyMCEInstance) {
+                    contenidoMensaje = this.tinyMCEInstance.getContent();
+                    // Limpiar contenido vacío
+                    if (contenidoMensaje === '<p><br></p>' || contenidoMensaje.trim() === '') {
+                        contenidoMensaje = '';
+                    }
+                } else {
+                    contenidoMensaje = this.nuevoMensaje;
+                }
+
+                if (!contenidoMensaje.trim()) return;
                 if (!this.asuntoCorreo.trim()) {
                     this.mostrarNotificacion('El asunto es requerido', 'error');
                     return;
@@ -1529,7 +2003,7 @@
                     
                     const formData = new FormData();
                     formData.append('ticket_id', this.selected.id);
-                    formData.append('mensaje', this.nuevoMensaje);
+                    formData.append('mensaje', contenidoMensaje);
                     formData.append('asunto', asuntoNormalizado);
 
                     
@@ -1552,6 +2026,12 @@
 
                     if (data.success) {
                         this.nuevoMensaje = '';
+                        // Limpiar el editor TinyMCE
+                        if (this.tinyMCEInstance) {
+                            this.tinyMCEInstance.setContent('');
+                        }
+                        // Limpiar archivos adjuntos
+                        this.archivosAdjuntos = [];
                         if (adjuntosInput) {
                             adjuntosInput.value = '';
                         }
@@ -1676,45 +2156,74 @@
                 return mensajeFormateado;
             },
 
+            obtenerAdjuntos() {
+                if (!this.selected || !this.selected.imagen) return [];
+                
+                try {
+                    // Intentar parsear el JSON
+                    const adjuntos = typeof this.selected.imagen === 'string' 
+                        ? JSON.parse(this.selected.imagen) 
+                        : this.selected.imagen;
+                    
+                    // Asegurarse de que sea un array
+                    return Array.isArray(adjuntos) ? adjuntos : [];
+                } catch (e) {
+                    // Si no es JSON válido, intentar como string simple
+                    if (typeof this.selected.imagen === 'string' && this.selected.imagen.trim() !== '') {
+                        return [this.selected.imagen];
+                    }
+                    return [];
+                }
+            },
+
+            obtenerNombreArchivo(ruta) {
+                if (!ruta) return 'Archivo sin nombre';
+                // Extraer el nombre del archivo de la ruta
+                const partes = ruta.split('/');
+                let nombre = partes[partes.length - 1];
+                // Remover el prefijo uniqid_ si existe
+                if (nombre.includes('_')) {
+                    nombre = nombre.substring(nombre.indexOf('_') + 1);
+                }
+                return nombre;
+            },
+
+            obtenerExtensionArchivo(ruta) {
+                if (!ruta) return '';
+                const nombre = this.obtenerNombreArchivo(ruta);
+                const punto = nombre.lastIndexOf('.');
+                if (punto === -1) return 'Sin extensión';
+                return nombre.substring(punto + 1).toUpperCase();
+            },
+
+            obtenerUrlArchivo(ruta) {
+                if (!ruta) return '#';
+                // Si la ruta ya es una URL completa, retornarla
+                if (ruta.startsWith('http://') || ruta.startsWith('https://')) {
+                    return ruta;
+                }
+                // Construir la URL relativa al storage público
+                const rutaLimpia = ruta.startsWith('tickets/') ? ruta : `tickets/${ruta}`;
+                return `/storage/${rutaLimpia}`;
+            },
+
             aplicarFormato(tipo) {
-                const textarea = document.getElementById('editor-mensaje');
-                if (!textarea) return;
-                
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const texto = textarea.value;
-                const textoSeleccionado = texto.substring(start, end);
-                
-                let textoFormateado = '';
-                let nuevoInicio = start;
-                let nuevoFin = end;
+                if (!this.tinyMCEInstance) {
+                    this.inicializarTinyMCE();
+                    return;
+                }
                 
                 switch(tipo) {
                     case 'bold':
-                        textoFormateado = textoSeleccionado ? `**${textoSeleccionado}**` : '****';
-                        nuevoInicio = start + 2;
-                        nuevoFin = end + 2;
+                        this.tinyMCEInstance.execCommand('mceToggleFormat', false, 'bold');
                         break;
                     case 'italic':
-                        textoFormateado = textoSeleccionado ? `*${textoSeleccionado}*` : '**';
-                        nuevoInicio = start + 1;
-                        nuevoFin = end + 1;
+                        this.tinyMCEInstance.execCommand('mceToggleFormat', false, 'italic');
                         break;
                     case 'underline':
-                        textoFormateado = textoSeleccionado ? `<u>${textoSeleccionado}</u>` : '<u></u>';
-                        nuevoInicio = start + 3;
-                        nuevoFin = end + 3;
+                        this.tinyMCEInstance.execCommand('mceToggleFormat', false, 'underline');
                         break;
                 }
-                
-                const nuevoTexto = texto.substring(0, start) + textoFormateado + texto.substring(end);
-                this.nuevoMensaje = nuevoTexto;
-                
-                // Restaurar el foco y la selección
-                this.$nextTick(() => {
-                    textarea.focus();
-                    textarea.setSelectionRange(nuevoInicio, nuevoFin);
-                });
             },
 
             getTipoMensaje(remitente) {
@@ -2177,6 +2686,10 @@
     }
 
    
+    // Hacer las funciones accesibles globalmente para que puedan ser llamadas desde Alpine.js
+    window.loadSubtipos = null;
+    window.loadTertipos = null;
+
     document.addEventListener('DOMContentLoaded', function() {
         const tipoSelect = document.getElementById('tipo-select');
         const subtipoSelect = document.getElementById('subtipo-select');
@@ -2230,6 +2743,9 @@
 
         async function loadSubtipos(tipoId) {
             try {
+                // Guardar el estado disabled actual antes de modificar
+                const wasDisabled = subtipoSelect.disabled;
+                
                 subtipoSelect.innerHTML = '<option value="">Seleccione un subtipo</option>';
                 subtipoSelect.disabled = true;
                 
@@ -2250,7 +2766,11 @@
                         option.textContent = subtipo.NombreSubtipo;
                         subtipoSelect.appendChild(option);
                     });
-                    subtipoSelect.disabled = false;
+                    // Solo habilitar si no estaba deshabilitado por Alpine.js (ticket cerrado)
+                    // Si el ticket está cerrado, Alpine.js lo mantendrá deshabilitado
+                    if (!wasDisabled) {
+                        subtipoSelect.disabled = false;
+                    }
                 } else {
                     console.log('No hay subtipos disponibles para este tipo');
                 }
@@ -2259,8 +2779,11 @@
             }
         }
 
-        async function loadTertipos(subtipoId) {
+        window.loadTertipos = async function loadTertipos(subtipoId) {
             try {
+                // Guardar el estado disabled actual antes de modificar
+                const wasDisabled = tertipoSelect.disabled;
+                
                 tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
                 tertipoSelect.disabled = true;
                 
@@ -2278,7 +2801,11 @@
                         option.textContent = tertipo.NombreTertipo;
                         tertipoSelect.appendChild(option);
                     });
-                    tertipoSelect.disabled = false;
+                    // Solo habilitar si no estaba deshabilitado por Alpine.js (ticket cerrado)
+                    // Si el ticket está cerrado, Alpine.js lo mantendrá deshabilitado
+                    if (!wasDisabled) {
+                        tertipoSelect.disabled = false;
+                    }
                 } else {
                     console.log('No hay tertipos disponibles para este subtipo');
                 }

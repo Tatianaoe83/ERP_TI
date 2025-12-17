@@ -119,10 +119,6 @@ class HybridEmailService
             </style>
         </head>
         <body>
-            <div class='header'>
-                <h2>📧 Respuesta a tu Ticket #{$ticket->TicketID}</h2>
-            </div>
-            
             <div class='content'>
                 <p>Hola <strong>{$empleado->NombreEmpleado}</strong>,</p>
                 
@@ -130,19 +126,9 @@ class HybridEmailService
                 
                 <div class='response'>
                     <h3>💬 Respuesta del Soporte:</h3>
-                    " . nl2br(htmlspecialchars($mensaje)) . "
+                    " . $mensaje . "
                 </div>
                 
-                <div class='instructions'>
-                    <h3>📝 ¿Necesitas responder?</h3>
-                    <p>Si necesitas enviar más información o tienes preguntas adicionales:</p>
-                    <ol>
-                        <li><strong>Responde directamente a este correo</strong></li>
-                        <li><strong>Mantén el asunto exacto:</strong> <span class='code'>Re: Ticket #{$ticket->TicketID} - {$ticket->Descripcion}</span></li>
-                        <li><strong>Escribe tu mensaje</strong> en el cuerpo del correo</li>
-                        <li><strong>Envía normalmente</strong></li>
-                    </ol>
-                </div>
                 
                 <div class='important'>
                     <h3>⚠️ Importante:</h3>
@@ -153,19 +139,7 @@ class HybridEmailService
                         <li>Tu respuesta será procesada automáticamente</li>
                     </ul>
                 </div>
-                
-                <div class='ticket-info'>
-                    <h3>📋 Información del Ticket:</h3>
-                    <table style='width: 100%; border-collapse: collapse;'>
-                        <tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>ID:</strong></td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>#{$ticket->TicketID}</td></tr>
-                        <tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>Descripción:</strong></td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{$ticket->Descripcion}</td></tr>
-                        <tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>Fecha:</strong></td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{$ticket->created_at->format('d/m/Y H:i')}</td></tr>
-                        <tr><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'><strong>Estado:</strong></td><td style='padding: 8px; border-bottom: 1px solid #dee2e6;'>{$ticket->Estatus}</td></tr>
-                        <tr><td style='padding: 8px;'><strong>Thread ID:</strong></td><td style='padding: 8px;'><span class='code'>{$threadId}</span></td></tr>
-                    </table>
-                </div>
-                
-                <p>Gracias por usar nuestro sistema de tickets.</p>
+            
             </div>
             
             <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d;'>
@@ -273,8 +247,44 @@ class HybridEmailService
     private function guardarCorreoEnviado($ticketId, $mensaje, $messageId, $threadId, $adjuntos = [])
     {
         try {
-            // Truncar mensaje si es muy largo
-            $mensajeTruncado = strlen($mensaje) > 1000 ? substr($mensaje, 0, 1000) . '...' : $mensaje;
+            // Obtener el ticket para construir el contenido completo
+            $ticket = Tickets::with('empleado')->find($ticketId);
+            $empleado = $ticket ? $ticket->empleado : null;
+            
+            // Construir el contenido HTML completo del correo
+            $contenidoCompleto = $this->construirContenidoConInstrucciones($ticket, $empleado, $mensaje, $threadId);
+            
+            // Extraer texto plano del HTML para el campo mensaje (sin truncar tanto)
+            $mensajeTexto = strip_tags($mensaje);
+            $mensajeTexto = html_entity_decode($mensajeTexto, ENT_QUOTES, 'UTF-8');
+            // Truncar solo si es extremadamente largo (para el campo mensaje que es string)
+            $mensajeTruncado = strlen($mensajeTexto) > 500 ? substr($mensajeTexto, 0, 500) . '...' : $mensajeTexto;
+            
+            // Los adjuntos ya vienen procesados desde el controlador con toda la información
+            // Solo asegurarnos de que tengan el formato correcto
+            $adjuntosProcesados = [];
+            foreach ($adjuntos as $adjunto) {
+                $adjuntoData = [
+                    'name' => $adjunto['name'] ?? basename($adjunto['path'] ?? ''),
+                    'path' => $adjunto['path'] ?? '',
+                ];
+                
+                // Agregar información adicional si está disponible
+                if (isset($adjunto['storage_path'])) {
+                    $adjuntoData['storage_path'] = $adjunto['storage_path'];
+                }
+                if (isset($adjunto['url'])) {
+                    $adjuntoData['url'] = $adjunto['url'];
+                }
+                if (isset($adjunto['size'])) {
+                    $adjuntoData['size'] = $adjunto['size'];
+                }
+                if (isset($adjunto['mime_type'])) {
+                    $adjuntoData['mime_type'] = $adjunto['mime_type'];
+                }
+                
+                $adjuntosProcesados[] = $adjuntoData;
+            }
             
             TicketChat::create([
                 'ticket_id' => $ticketId,
@@ -282,14 +292,18 @@ class HybridEmailService
                 'remitente' => 'soporte',
                 'nombre_remitente' => config('mail.from.name'),
                 'correo_remitente' => config('mail.from.address'),
+                'contenido_correo' => $contenidoCompleto, // Guardar el HTML completo aquí
                 'message_id' => $messageId,
                 'thread_id' => $threadId,
-                'adjuntos' => $adjuntos,
+                'adjuntos' => $adjuntosProcesados, // Guardar adjuntos con más información
                 'es_correo' => true,
                 'leido' => false
             ]);
+            
+            Log::info("Correo guardado en BD | Ticket #{$ticketId} | Adjuntos: " . count($adjuntosProcesados));
         } catch (\Exception $e) {
             Log::error("Error guardando correo enviado: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
         }
     }
 }

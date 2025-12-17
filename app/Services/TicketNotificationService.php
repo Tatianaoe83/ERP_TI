@@ -8,6 +8,7 @@ use App\Models\Empleados;
 use Illuminate\Support\Facades\Log;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use Illuminate\Support\Str;
 
 class TicketNotificationService
 {
@@ -176,10 +177,7 @@ class TicketNotificationService
             </style>
         </head>
         <body>
-            <div class='header'>
-                <h2>⚠️ ALERTA: Ticket Excediendo Tiempo de Respuesta</h2>
-            </div>
-            
+           
             <div class='content'>
                 <div class='alert'>
                     <h3>🚨 Atención Requerida</h3>
@@ -195,7 +193,7 @@ class TicketNotificationService
                         </tr>
                         <tr>
                             <td><strong>Descripción:</strong></td>
-                            <td>{$ticket->Descripcion}</td>
+                            <td>".Str::limit($ticket->Descripcion, 50)." ...</td>
                         </tr>
                         <tr>
                             <td><strong>Responsable:</strong></td>
@@ -226,10 +224,6 @@ class TicketNotificationService
                         <tr>
                             <td><strong>Tiempo de Respuesta Actual:</strong></td>
                             <td class='highlight'>{$tiempoRespuesta}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Tiempo hasta Cierre:</strong></td>
-                            <td>{$tiempoHastaCierre}</td>
                         </tr>
                     </table>
                 </div>
