@@ -525,39 +525,9 @@
                                 <span x-text="procesandoAutomatico ? 'Procesando...' : 'Procesar Automático'"></span>
                             </button>
                             
-                            <button 
-                                @click="buscarCorreosUsuarios()"
-                                :disabled="buscandoCorreos || !selected.id"
-                                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
-                                <span x-text="buscandoCorreos ? 'Buscando...' : 'Buscar Correos de Usuarios'"></span>
-                            </button>
-                            
-                            <button 
-                                @click="guardarCorreosEncontrados()"
-                                :disabled="guardandoCorreos || !selected.id"
-                                class="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
-                                </svg>
-                                <span x-text="guardandoCorreos ? 'Guardando...' : 'Guardar Correos en Historial'"></span>
-                            </button>
-                           
-                            <button 
-                                @click="probarConexionWebklex()"
-                                class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                </svg>
-                                <span>Probar Conexión</span>
-                            </button>
-                            <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                                Responder A Todos
-                            </button>
+                          
                             <button @click="cerrarModal" class="text-gray-400 hover:text-gray-600 transition p-2">
-                                <span class="text-xl">Cerrar</span>
+                                <span class="text-xl">x</span>
                             </button>
                         </div>
                     </div>
@@ -576,11 +546,6 @@
                                     <span class="w-2 h-2 bg-green-500 rounded-full"></span>
                                     <span class="text-gray-600">Respuestas:</span>
                                     <span class="font-semibold" x-text="estadisticas?.correos_recibidos || 0"></span>
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
-                                    <span class="text-gray-600">No Leídos:</span>
-                                    <span class="font-semibold" x-text="estadisticas?.correos_no_leidos || 0"></span>
                                 </span>
                             </div>
                             <div class="text-xs text-gray-500">

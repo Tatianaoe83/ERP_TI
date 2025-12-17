@@ -224,22 +224,60 @@
     <script>
         Swal.fire({
             icon: 'success',
-            title: '¡Éxito!',
-            text: '{{ session('
-            success ') }}',
-            timer: 3000,
-            timerProgressBar: true
+            title: '¡Ticket Enviado Exitosamente! 🎉',
+            html: `
+                <div style="text-align: center; padding: 10px;">
+                    <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
+                        <strong>¡Gracias por contactarnos!</strong>
+                    </p>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                        Hemos recibido tu solicitud y nuestro equipo de soporte técnico la revisará pronto.
+                    </p>
+                    <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <i class="fas fa-clock"></i> Te contactaremos a la brevedad posible
+                    </p>
+                </div>
+            `,
+            confirmButtonText: '¡Entendido!',
+            confirmButtonColor: '#10b981',
+            timer: 5000,
+            timerProgressBar: true,
+            showClass: {
+                popup: 'animate__animated animate__fadeInDown'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp'
+            }
         });
     </script>
     @elseif (session('error'))
     <script>
         Swal.fire({
             icon: 'error',
-            title: '¡Error!',
-            text: '{{ session('
-            error ') }}',
-            timer: 3000,
-            timerProgressBar: true
+            title: 'Oops, algo salió mal 😔',
+            html: `
+                <div style="text-align: center; padding: 10px;">
+                    <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
+                        <strong>No pudimos procesar tu solicitud</strong>
+                    </p>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                        {{ session('error') }}
+                    </p>
+                    <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <i class="fas fa-info-circle"></i> Por favor, intenta nuevamente o contacta a soporte
+                    </p>
+                </div>
+            `,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#ef4444',
+            timer: 5000,
+            timerProgressBar: true,
+            showClass: {
+                popup: 'animate__animated animate__fadeInDown'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp'
+            }
         });
     </script>
     @endif
@@ -352,15 +390,77 @@
                 return p >= 0 ? name.slice(p + 1).toLowerCase() : "";
             };
 
-            const getFileIconClass = (file) => {
+            const getFileIconInfo = (file) => {
                 const ext = getExt(file.name);
-                if (file.type === "application/pdf" || ext === "pdf") return "fa-file-pdf";
-                if (/msword|vnd.openxmlformats-officedocument.wordprocessingml/.test(file.type) || ["doc", "docx"].includes(ext)) return "fa-file-word";
-                if (/vnd.ms-excel|spreadsheetml|csv/.test(file.type) || ["xls", "xlsx", "csv"].includes(ext)) return "fa-file-excel";
-                if (/vnd.ms-powerpoint|presentationml/.test(file.type) || ["ppt", "pptx"].includes(ext)) return "fa-file-powerpoint";
-                if (/zip|x-7z-compressed|x-rar-compressed|x-zip-compressed/.test(file.type) || ["zip", "rar", "7z"].includes(ext)) return "fa-file-archive";
-                if (/text\/plain|md|json|xml/.test(file.type) || ["txt", "md", "json", "xml"].includes(ext)) return "fa-file-lines";
-                return "fa-file";
+                // Intentar usar iconos específicos primero, con fallback a iconos básicos
+                if (file.type === "application/pdf" || ext === "pdf") {
+                    return { 
+                        icon: "fa-file-pdf", 
+                        fallbackIcon: "fa-file",
+                        style: "fas", 
+                        color: "text-red-600", 
+                        bgColor: "bg-red-50",
+                        emoji: "📄"
+                    };
+                }
+                if (/msword|vnd.openxmlformats-officedocument.wordprocessingml/.test(file.type) || ["doc", "docx"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-word", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-blue-600", 
+                        bgColor: "bg-blue-50",
+                        emoji: "📝"
+                    };
+                }
+                if (/vnd.ms-excel|spreadsheetml|csv/.test(file.type) || ["xls", "xlsx", "csv"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-excel", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-green-600", 
+                        bgColor: "bg-green-50",
+                        emoji: "📊"
+                    };
+                }
+                if (/vnd.ms-powerpoint|presentationml/.test(file.type) || ["ppt", "pptx"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-powerpoint", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-orange-600", 
+                        bgColor: "bg-orange-50",
+                        emoji: "📽️"
+                    };
+                }
+                if (/zip|x-7z-compressed|x-rar-compressed|x-zip-compressed/.test(file.type) || ["zip", "rar", "7z"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-archive", 
+                        fallbackIcon: "fa-file",
+                        style: "fas", 
+                        color: "text-yellow-600", 
+                        bgColor: "bg-yellow-50",
+                        emoji: "📦"
+                    };
+                }
+                if (/text\/plain|md|json|xml/.test(file.type) || ["txt", "md", "json", "xml"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-alt", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-gray-600", 
+                        bgColor: "bg-gray-50",
+                        emoji: "📄"
+                    };
+                }
+                return { 
+                    icon: "fa-file", 
+                    fallbackIcon: "fa-file",
+                    style: "fas", 
+                    color: "text-gray-600", 
+                    bgColor: "bg-gray-50",
+                    emoji: "📄"
+                };
             };
 
             const renderPreviews = () => {
@@ -381,9 +481,24 @@
                         img.onload = () => URL.revokeObjectURL(url);
                         visual.appendChild(img);
                     } else {
-                        const icon = document.createElement("i");
-                        icon.className = `fa-regular ${getFileIconClass(file)} text-4xl text-gray-600`;
-                        visual.appendChild(icon);
+                        const fileInfo = getFileIconInfo(file);
+                        visual.className = `w-full h-32 flex flex-col items-center justify-center ${fileInfo.bgColor}`;
+                        
+                        // Usar emoji como icono principal (más confiable y universal)
+                        const emoji = document.createElement("div");
+                        emoji.className = "text-6xl mb-2";
+                        emoji.textContent = fileInfo.emoji;
+                        emoji.style.fontSize = "3.5rem";
+                        visual.appendChild(emoji);
+                        
+                        // Agregar extensión como texto
+                        const ext = getExt(file.name);
+                        if (ext) {
+                            const extText = document.createElement("span");
+                            extText.className = "text-xs font-bold uppercase " + fileInfo.color.replace('text-', 'text-').replace('-600', '-700');
+                            extText.textContent = "." + ext;
+                            visual.appendChild(extText);
+                        }
                     }
 
                     const meta = document.createElement("div");
