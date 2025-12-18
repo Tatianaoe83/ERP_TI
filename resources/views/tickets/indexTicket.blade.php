@@ -2271,9 +2271,19 @@
                 if (ruta.startsWith('http://') || ruta.startsWith('https://')) {
                     return ruta;
                 }
-                // Construir la URL relativa al storage público
-                const rutaLimpia = ruta.startsWith('tickets/') ? ruta : `tickets/${ruta}`;
-                return `/storage/${rutaLimpia}`;
+                // Limpiar la ruta: remover 'storage/app/public/' si existe
+                let rutaLimpia = ruta.replace(/^storage\/app\/public\//, '');
+                // Remover 'storage/' si ya está al inicio
+                rutaLimpia = rutaLimpia.replace(/^storage\//, '');
+                // Asegurar que tenga el prefijo 'tickets/' si no lo tiene
+                if (!rutaLimpia.startsWith('tickets/')) {
+                    rutaLimpia = `tickets/${rutaLimpia}`;
+                }
+                // Usar asset() de Laravel para construir la URL completa dinámica
+                // Formato: http://127.0.0.1:8082/storage/tickets/6942ffdd84d33_Libro1 - copia.xlsx
+                // asset('storage/...') genera la URL completa con el dominio y puerto
+                const baseUrl = '{{ asset("") }}';
+                return `${baseUrl}storage/${rutaLimpia}`;
             },
 
             aplicarFormato(tipo) {
