@@ -1260,6 +1260,9 @@
             correoBcc: '',
             tinyMCEInstance: null, // Instancia del editor TinyMCE
             archivosAdjuntos: [], // Array para almacenar los archivos seleccionados
+            // URL base para archivos de storage
+            // Usar url() que se resuelve automáticamente basado en la petición actual
+            storageBaseUrl: '{{ url("/storage") }}',
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
@@ -2271,28 +2274,66 @@
                 if (ruta.startsWith('http://') || ruta.startsWith('https://')) {
                     return ruta;
                 }
-                // Limpiar la ruta: remover prefijos comunes
-                let rutaLimpia = ruta.replace(/^storage\/app\/public\//, '');
-                rutaLimpia = rutaLimpia.replace(/^storage\//, '');
-                rutaLimpia = rutaLimpia.replace(/^public\//, '');
                 
-                // Si la ruta ya incluye 'tickets/', mantenerla; si no, agregarla
-                if (!rutaLimpia.startsWith('tickets/')) {
-                    // Si es solo el nombre del archivo, agregar 'tickets/'
-                    if (!rutaLimpia.includes('/')) {
-                        rutaLimpia = `tickets/${rutaLimpia}`;
-                    } else {
-                        // Si tiene subcarpetas, extraer solo el nombre del archivo
-                        const partes = rutaLimpia.split('/');
-                        const nombreArchivo = partes[partes.length - 1];
-                        rutaLimpia = `tickets/${nombreArchivo}`;
+                // Si la ruta es un objeto con propiedades (como los adjuntos del chat)
+                if (typeof ruta === 'object' && ruta !== null) {
+                    // Si tiene una propiedad 'url', usarla directamente
+                    if (ruta.url) {
+                        return ruta.url;
+                    }
+                    // Si tiene 'storage_path', construir la URL desde ahí
+                    if (ruta.storage_path) {
+                        ruta = ruta.storage_path;
+                    }
+                    // Si tiene 'path', intentar extraer la ruta relativa
+                    else if (ruta.path) {
+                        // Si path es una ruta absoluta del sistema, extraer solo el nombre del archivo
+                        const pathParts = ruta.path.split(/[\\/]/);
+                        const fileName = pathParts[pathParts.length - 1];
+                        // Buscar si hay un nombre de archivo en el objeto
+                        ruta = ruta.name || fileName;
+                    }
+                    // Si tiene 'name', usarlo como nombre de archivo
+                    else if (ruta.name) {
+                        ruta = ruta.name;
                     }
                 }
                 
-                // Usar asset() de Laravel para construir la URL completa
-                // Similar a asset('storage/tickets/archivo.xlsx') en PHP
-                // Formato: http://127.0.0.1:8082/storage/tickets/6942ffdd84d33_Libro1 - copia.xlsx
-                return `{{ asset('storage/') }}/${rutaLimpia}`;
+                // Limpiar la ruta: remover prefijos comunes de storage
+                let rutaLimpia = ruta.toString();
+                rutaLimpia = rutaLimpia.replace(/^storage\/app\/public\//, '');
+                rutaLimpia = rutaLimpia.replace(/^storage\//, '');
+                rutaLimpia = rutaLimpia.replace(/^public\//, '');
+                
+                // Si la ruta ya incluye 'tickets/', mantenerla tal cual (puede ser tickets/ o tickets/adjuntos/)
+                if (!rutaLimpia.startsWith('tickets/')) {
+                    // Si es solo el nombre del archivo, agregar 'tickets/' (archivos antiguos)
+                    if (!rutaLimpia.includes('/')) {
+                        rutaLimpia = `tickets/${rutaLimpia}`;
+                    } else {
+                        // Si tiene subcarpetas pero no incluye 'tickets', agregarlo
+                        if (!rutaLimpia.includes('tickets/')) {
+                            rutaLimpia = `tickets/${rutaLimpia}`;
+                        }
+                    }
+                }
+                
+                // Construir la URL completa usando la URL base de storage
+                // Asegurarse de que no haya dobles barras
+                const baseUrl = this.storageBaseUrl.endsWith('/') 
+                    ? this.storageBaseUrl.slice(0, -1) 
+                    : this.storageBaseUrl;
+                
+                // Asegurar que la ruta empiece con /
+                const rutaFinal = rutaLimpia.startsWith('/') 
+                    ? rutaLimpia 
+                    : `/${rutaLimpia}`;
+                
+                // Construir la URL final: baseUrl + rutaFinal
+                // Ejemplo: http://dominio.com/storage/tickets/archivo.xlsx
+                const urlFinal = `${baseUrl}${rutaFinal}`;
+                
+                return urlFinal;
             },
 
             aplicarFormato(tipo) {
