@@ -957,16 +957,16 @@
                                             </div>
                                             
                                             <!-- Botón para eliminar -->
-                                            <button 
-                                                type="button"
+                                <button 
+                                    type="button"
                                                 @click="eliminarArchivo(index)"
                                                 :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
                                                 class="flex-shrink-0 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Eliminar archivo">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
+                                    </svg>
+                                </button>
                                         </div>
                                     </template>
                                 </div>
@@ -1628,14 +1628,14 @@
                                                 // Esperar un poco más para que se carguen las opciones
                                                 setTimeout(() => {
                                                     if (subtipoSelect.options.length > 1) {
-                                                        subtipoSelect.value = this.ticketSubtipoID;
-                                                        const subtipoChangeEvent = new Event('change', { bubbles: true });
-                                                        subtipoSelect.dispatchEvent(subtipoChangeEvent);
-                                                        
-                                                        // Esperar a que se carguen los tertipos y establecer el valor
-                                                        setTimeout(() => {
-                                                            const tertipoSelect = document.getElementById('tertipo-select');
-                                                            if (tertipoSelect && this.ticketTertipoID) {
+                                                subtipoSelect.value = this.ticketSubtipoID;
+                                                const subtipoChangeEvent = new Event('change', { bubbles: true });
+                                                subtipoSelect.dispatchEvent(subtipoChangeEvent);
+                                                
+                                                // Esperar a que se carguen los tertipos y establecer el valor
+                                                setTimeout(() => {
+                                                    const tertipoSelect = document.getElementById('tertipo-select');
+                                                    if (tertipoSelect && this.ticketTertipoID) {
                                                                 // Cargar las opciones si no están cargadas
                                                                 if (tertipoSelect.options.length <= 1) {
                                                                     // Forzar la carga de tertipos
@@ -1646,7 +1646,7 @@
                                                                 
                                                                 setTimeout(() => {
                                                                     if (tertipoSelect.options.length > 1) {
-                                                                        tertipoSelect.value = this.ticketTertipoID;
+                                                        tertipoSelect.value = this.ticketTertipoID;
                                                                     }
                                                                 }, 300);
                                                             }
@@ -1766,7 +1766,7 @@
                                 
                                 // Esperar un momento para que prepararDatosTabla termine y luego actualizar manualmente
                                 // el estatus en ticketsTabla para asegurar que se refleje correctamente
-                                setTimeout(() => {
+                        setTimeout(() => {
                                     if (this.ticketsTabla && this.ticketsTabla.length > 0) {
                                         const ticketEnTabla = this.ticketsTabla.find(t => t.id == this.selected.id);
                                         if (ticketEnTabla && nuevoEstatusTexto) {
@@ -2758,7 +2758,7 @@
     // Hacer las funciones accesibles globalmente para que puedan ser llamadas desde Alpine.js
     window.loadSubtipos = null;
     window.loadTertipos = null;
-
+   
     document.addEventListener('DOMContentLoaded', function() {
         const tipoSelect = document.getElementById('tipo-select');
         const subtipoSelect = document.getElementById('subtipo-select');
@@ -2839,7 +2839,7 @@
                     // Solo habilitar si el ticket NO está cerrado
                     // Alpine.js manejará el disabled basado en su lógica (:disabled="!ticketTipoID || selected.estatus === 'Cerrado'")
                     if (!estaCerrado) {
-                        subtipoSelect.disabled = false;
+                    subtipoSelect.disabled = false;
                     }
                 } else {
                     console.log('No hay subtipos disponibles para este tipo');

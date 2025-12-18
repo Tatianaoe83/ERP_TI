@@ -136,6 +136,22 @@ class Tickets extends Model
     }
 
     /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+    public function subtipo()
+    {
+        return $this->belongsTo(Subtipos::class, 'SubtipoID', 'SubtipoID');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     **/
+    public function tertipo()
+    {
+        return $this->belongsTo(Tertipos::class, 'TertipoID', 'TertipoID');
+    }
+
+    /**
      * Boot del modelo para manejar eventos
      */
     protected static function boot()

@@ -23,7 +23,7 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
     {
         return [
             new ResumenSheetExport($this->resumen, $this->mes, $this->anio),
-            new TicketsSheetExport($this->tickets, $this->mes, $this->anio),
+            new TicketsSheetExport($this->tickets, $this->resumen, $this->mes, $this->anio),
         ];
     }
 }

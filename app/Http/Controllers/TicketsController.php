@@ -1247,11 +1247,14 @@ class TicketsController extends Controller
         $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
         $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
 
-        // Obtener tickets del mes
+        // Obtener tickets del mes con todas las relaciones necesarias
         $tickets = Tickets::with([
-            'empleado.gerencia',
+            'empleado.puestos.departamentos.gerencia',
+            'empleado.gerencia', // Fallback por si la relación directa funciona
             'responsableTI.gerencia',
-            'tipoticket.subtipoid.tertipoid'
+            'tipoticket',
+            'subtipo',
+            'tertipo'
         ])
         ->whereBetween('created_at', [$fechaInicio, $fechaFin])
         ->get();
@@ -1281,11 +1284,14 @@ class TicketsController extends Controller
         $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
         $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
 
-        // Obtener tickets del mes
+        // Obtener tickets del mes con todas las relaciones necesarias
         $tickets = Tickets::with([
-            'empleado.gerencia',
+            'empleado.puestos.departamentos.gerencia',
+            'empleado.gerencia', // Fallback por si la relación directa funciona
             'responsableTI.gerencia',
-            'tipoticket.subtipoid.tertipoid'
+            'tipoticket',
+            'subtipo',
+            'tertipo'
         ])
         ->whereBetween('created_at', [$fechaInicio, $fechaFin])
         ->get();
@@ -1404,12 +1410,64 @@ class TicketsController extends Controller
             }
         }
 
+        // Tickets por gerencia y responsable
+        $ticketsPorGerenciaResponsable = [];
+        foreach ($tickets as $ticket) {
+            // Obtener gerencia
+            $gerenciaNombre = 'Sin gerencia';
+            if ($ticket->empleado) {
+                if ($ticket->empleado->puestos && $ticket->empleado->puestos->departamentos && $ticket->empleado->puestos->departamentos->gerencia) {
+                    $gerenciaNombre = $ticket->empleado->puestos->departamentos->gerencia->NombreGerencia ?? 'Sin gerencia';
+                } elseif ($ticket->empleado->gerencia) {
+                    $gerenciaNombre = $ticket->empleado->gerencia->NombreGerencia ?? 'Sin gerencia';
+                }
+            }
+
+            // Obtener responsable
+            $responsableNombre = 'Sin responsable';
+            if ($ticket->responsableTI && $ticket->responsableTI->NombreEmpleado) {
+                $responsableNombre = $ticket->responsableTI->NombreEmpleado;
+            }
+
+            $key = $gerenciaNombre . '|' . $responsableNombre;
+            
+            if (!isset($ticketsPorGerenciaResponsable[$key])) {
+                $ticketsPorGerenciaResponsable[$key] = [
+                    'gerencia' => $gerenciaNombre,
+                    'responsable' => $responsableNombre,
+                    'total' => 0,
+                    'cerrados' => 0,
+                    'en_progreso' => 0,
+                    'pendientes' => 0
+                ];
+            }
+
+            $ticketsPorGerenciaResponsable[$key]['total']++;
+
+            if ($ticket->Estatus === 'Cerrado') {
+                $ticketsPorGerenciaResponsable[$key]['cerrados']++;
+            } elseif ($ticket->Estatus === 'En progreso') {
+                $ticketsPorGerenciaResponsable[$key]['en_progreso']++;
+            } else {
+                $ticketsPorGerenciaResponsable[$key]['pendientes']++;
+            }
+        }
+
+        // Ordenar por gerencia y luego por responsable
+        usort($ticketsPorGerenciaResponsable, function($a, $b) {
+            if ($a['gerencia'] === $b['gerencia']) {
+                return strcmp($a['responsable'], $b['responsable']);
+            }
+            return strcmp($a['gerencia'], $b['gerencia']);
+        });
+
         return [
             'incidencias_por_gerencia' => $incidenciasPorGerencia,
             'promedio_tiempo_respuesta' => round($promedioRespuesta, 2),
             'promedio_tiempo_resolucion' => round($promedioResolucion, 2),
             'porcentaje_cumplimiento' => $porcentajeCumplimiento,
             'totales_por_empleado' => array_values($totalesPorEmpleado),
+            'tickets_por_gerencia_responsable' => $ticketsPorGerenciaResponsable,
             'total_tickets' => $tickets->count(),
             'tickets_cerrados' => $ticketsCerrados
         ];
