@@ -1697,20 +1697,89 @@
 
                     if (data.success) {
                         this.mostrarNotificacion('Cambios guardados correctamente', 'success');
+                        
                         // Actualizar los datos seleccionados
                         if (data.ticket) {
+                            const estatusAnterior = this.selected.estatus;
+                            
                             this.selected.prioridad = data.ticket.Prioridad;
                             this.selected.estatus = data.ticket.Estatus;
                             this.ticketEstatus = data.ticket.Estatus;
+                            
+                            // Determinar la nueva categoría basada en el estatus
+                            let nuevaCategoria = '';
+                            let nuevoEstatusTexto = '';
+                            if (data.ticket.Estatus === 'Pendiente' || data.ticket.Estatus === 'Nuevo') {
+                                nuevaCategoria = 'nuevos';
+                                nuevoEstatusTexto = 'Pendiente';
+                            } else if (data.ticket.Estatus === 'En progreso' || data.ticket.Estatus === 'Proceso') {
+                                nuevaCategoria = 'proceso';
+                                nuevoEstatusTexto = 'En progreso';
+                            } else if (data.ticket.Estatus === 'Cerrado' || data.ticket.Estatus === 'Resuelto') {
+                                nuevaCategoria = 'resueltos';
+                                nuevoEstatusTexto = 'Cerrado';
+                            }
+                            
+                            // Actualizar los atributos data-* de todos los elementos del ticket en el DOM
+                            this.$nextTick(() => {
+                                // Buscar todos los elementos con el mismo ticket-id (puede haber múltiples en diferentes vistas)
+                                const ticketElements = document.querySelectorAll(`[data-ticket-id="${this.selected.id}"]`);
+                                
+                                ticketElements.forEach(ticketElement => {
+                                    // Actualizar atributos data-* del elemento
+                                    ticketElement.setAttribute('data-ticket-prioridad', data.ticket.Prioridad);
+                                    
+                                    // Si el estatus cambió, actualizar la categoría del elemento (vista kanban)
+                                    if (estatusAnterior !== data.ticket.Estatus && nuevaCategoria) {
+                                        // Solo actualizar si el elemento tiene data-categoria (vista kanban)
+                                        if (ticketElement.hasAttribute('data-categoria')) {
+                                            ticketElement.setAttribute('data-categoria', nuevaCategoria);
+                                        }
+                                    }
+                                    
+                                    // Actualizar el badge de prioridad visualmente (todas las vistas)
+                                    const badgesPrioridad = ticketElement.querySelectorAll('.text-xs.font-semibold.px-2, .text-xs.font-semibold.px-2.py-0\\.5, .text-xs.font-semibold.px-2.py-1');
+                                    badgesPrioridad.forEach(badge => {
+                                        // Verificar si es un badge de prioridad (no de estatus)
+                                        const texto = badge.textContent.trim();
+                                        if (texto === 'Baja' || texto === 'Media' || texto === 'Alta' || 
+                                            texto === this.selected.prioridad || 
+                                            badge.classList.contains('rounded-full')) {
+                                            badge.textContent = data.ticket.Prioridad;
+                                            // Actualizar clases de color según prioridad
+                                            const clasesBase = badge.className.split(' ').filter(c => 
+                                                !c.startsWith('bg-') && !c.startsWith('text-')
+                                            ).join(' ');
+                                            const clasesColor = data.ticket.Prioridad === 'Baja' 
+                                                ? 'bg-green-200 text-green-600' 
+                                                : data.ticket.Prioridad === 'Media' 
+                                                ? 'bg-yellow-200 text-yellow-600' 
+                                                : 'bg-red-200 text-red-600';
+                                            badge.className = clasesBase + ' ' + clasesColor;
+                                        }
+                                    });
+                                });
+                                
+                                // Actualizar los datos de la tabla (siempre, para que se refleje en todas las vistas)
+                                // Esto actualizará los datos desde el DOM con los nuevos valores
+                                this.prepararDatosTabla();
+                                
+                                // Esperar un momento para que prepararDatosTabla termine y luego actualizar manualmente
+                                // el estatus en ticketsTabla para asegurar que se refleje correctamente
+                                setTimeout(() => {
+                                    if (this.ticketsTabla && this.ticketsTabla.length > 0) {
+                                        const ticketEnTabla = this.ticketsTabla.find(t => t.id == this.selected.id);
+                                        if (ticketEnTabla && nuevoEstatusTexto) {
+                                            ticketEnTabla.prioridad = data.ticket.Prioridad;
+                                            ticketEnTabla.estatus = nuevoEstatusTexto;
+                                        }
+                                    }
+                                }, 100);
+                                
+                                // Actualizar estado del editor
+                                this.actualizarEstadoEditor();
+                            });
                         }
-                        // Actualizar estado del editor antes de recargar
-                        this.$nextTick(() => {
-                            this.actualizarEstadoEditor();
-                        });
-                        // Recargar la página después de un breve delay para ver los cambios
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
                     } else {
                         this.mostrarNotificacion(data.message || 'Error al guardar los cambios', 'error');
                     }
@@ -2741,10 +2810,11 @@
             }
         }
 
-        async function loadSubtipos(tipoId) {
+        window.loadSubtipos = async function loadSubtipos(tipoId) {
             try {
-                // Guardar el estado disabled actual antes de modificar
-                const wasDisabled = subtipoSelect.disabled;
+                // Verificar si el ticket está cerrado consultando Alpine.js
+                const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+                const estaCerrado = alpineData && (alpineData.selected?.estatus === 'Cerrado' || alpineData.ticketEstatus === 'Cerrado');
                 
                 subtipoSelect.innerHTML = '<option value="">Seleccione un subtipo</option>';
                 subtipoSelect.disabled = true;
@@ -2766,9 +2836,9 @@
                         option.textContent = subtipo.NombreSubtipo;
                         subtipoSelect.appendChild(option);
                     });
-                    // Solo habilitar si no estaba deshabilitado por Alpine.js (ticket cerrado)
-                    // Si el ticket está cerrado, Alpine.js lo mantendrá deshabilitado
-                    if (!wasDisabled) {
+                    // Solo habilitar si el ticket NO está cerrado
+                    // Alpine.js manejará el disabled basado en su lógica (:disabled="!ticketTipoID || selected.estatus === 'Cerrado'")
+                    if (!estaCerrado) {
                         subtipoSelect.disabled = false;
                     }
                 } else {
@@ -2781,9 +2851,6 @@
 
         window.loadTertipos = async function loadTertipos(subtipoId) {
             try {
-                // Guardar el estado disabled actual antes de modificar
-                const wasDisabled = tertipoSelect.disabled;
-                
                 tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
                 tertipoSelect.disabled = true;
                 
@@ -2801,11 +2868,9 @@
                         option.textContent = tertipo.NombreTertipo;
                         tertipoSelect.appendChild(option);
                     });
-                    // Solo habilitar si no estaba deshabilitado por Alpine.js (ticket cerrado)
-                    // Si el ticket está cerrado, Alpine.js lo mantendrá deshabilitado
-                    if (!wasDisabled) {
-                        tertipoSelect.disabled = false;
-                    }
+                    // Habilitar el campo - Alpine.js lo deshabilitará automáticamente si el ticket está cerrado
+                    // mediante su directiva :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
+                    tertipoSelect.disabled = false;
                 } else {
                     console.log('No hay tertipos disponibles para este subtipo');
                 }

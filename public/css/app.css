@@ -2098,6 +2098,10 @@ video {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
 }
+.py-0 {
+  padding-top: 0px;
+  padding-bottom: 0px;
+}
 .py-0\.5 {
   padding-top: 0.125rem;
   padding-bottom: 0.125rem;
@@ -2719,6 +2723,9 @@ video {
 .disabled\:bg-gray-400:disabled {
   --tw-bg-opacity: 1;
   background-color: rgb(156 163 175 / var(--tw-bg-opacity, 1));
+}
+.disabled\:opacity-50:disabled {
+  opacity: 0.5;
 }
 .group:hover .group-hover\:translate-x-1 {
   --tw-translate-x: 0.25rem;
