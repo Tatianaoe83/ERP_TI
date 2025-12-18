@@ -2318,9 +2318,10 @@
                     }
                 }
                 
-                // Generar URL relativa que empiece con /storage/ (igual que en el blade)
-                // Formato: /storage/tickets/archivo.xlsx o /storage/archivos/elementos/archivo.pdf
-                return `/storage/${rutaLimpia}`;
+                // Generar URL con la ruta completa /storage/app/public/tickets/...
+                // Formato: /storage/app/public/tickets/archivo.xlsx
+                // Esta es la ruta que funciona según el usuario
+                return `/storage/app/public/${rutaLimpia}`;
             },
 
             aplicarFormato(tipo) {
