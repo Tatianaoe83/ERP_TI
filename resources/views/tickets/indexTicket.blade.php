@@ -2271,19 +2271,28 @@
                 if (ruta.startsWith('http://') || ruta.startsWith('https://')) {
                     return ruta;
                 }
-                // Limpiar la ruta: remover 'storage/app/public/' si existe
+                // Limpiar la ruta: remover prefijos comunes
                 let rutaLimpia = ruta.replace(/^storage\/app\/public\//, '');
-                // Remover 'storage/' si ya está al inicio
                 rutaLimpia = rutaLimpia.replace(/^storage\//, '');
-                // Asegurar que tenga el prefijo 'tickets/' si no lo tiene
+                rutaLimpia = rutaLimpia.replace(/^public\//, '');
+                
+                // Si la ruta ya incluye 'tickets/', mantenerla; si no, agregarla
                 if (!rutaLimpia.startsWith('tickets/')) {
-                    rutaLimpia = `tickets/${rutaLimpia}`;
+                    // Si es solo el nombre del archivo, agregar 'tickets/'
+                    if (!rutaLimpia.includes('/')) {
+                        rutaLimpia = `tickets/${rutaLimpia}`;
+                    } else {
+                        // Si tiene subcarpetas, extraer solo el nombre del archivo
+                        const partes = rutaLimpia.split('/');
+                        const nombreArchivo = partes[partes.length - 1];
+                        rutaLimpia = `tickets/${nombreArchivo}`;
+                    }
                 }
-                // Usar asset() de Laravel para construir la URL completa dinámica
+                
+                // Usar asset() de Laravel para construir la URL completa
+                // Similar a asset('storage/tickets/archivo.xlsx') en PHP
                 // Formato: http://127.0.0.1:8082/storage/tickets/6942ffdd84d33_Libro1 - copia.xlsx
-                // asset('storage/...') genera la URL completa con el dominio y puerto
-                const baseUrl = '{{ asset("") }}';
-                return `${baseUrl}storage/${rutaLimpia}`;
+                return `{{ asset('storage/') }}/${rutaLimpia}`;
             },
 
             aplicarFormato(tipo) {
