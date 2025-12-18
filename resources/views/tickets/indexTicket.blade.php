@@ -1261,7 +1261,7 @@
             tinyMCEInstance: null, // Instancia del editor TinyMCE
             archivosAdjuntos: [], // Array para almacenar los archivos seleccionados
             // URL base para archivos de storage
-            // Usar url() que se resuelve automáticamente basado en la petición actual
+            // Usar la ruta de Laravel que sirve archivos sin enlace simbólico (útil para HostGator)
             storageBaseUrl: '{{ url("/storage") }}',
             // Variables para detalles del ticket
             ticketPrioridad: '',
@@ -2318,22 +2318,9 @@
                     }
                 }
                 
-                // Construir la URL completa usando la URL base de storage
-                // Asegurarse de que no haya dobles barras
-                const baseUrl = this.storageBaseUrl.endsWith('/') 
-                    ? this.storageBaseUrl.slice(0, -1) 
-                    : this.storageBaseUrl;
-                
-                // Asegurar que la ruta empiece con /
-                const rutaFinal = rutaLimpia.startsWith('/') 
-                    ? rutaLimpia 
-                    : `/${rutaLimpia}`;
-                
-                // Construir la URL final: baseUrl + rutaFinal
-                // Ejemplo: http://dominio.com/storage/tickets/archivo.xlsx
-                const urlFinal = `${baseUrl}${rutaFinal}`;
-                
-                return urlFinal;
+                // Generar URL relativa que empiece con /storage/ (igual que en el blade)
+                // Formato: /storage/tickets/archivo.xlsx o /storage/archivos/elementos/archivo.pdf
+                return `/storage/${rutaLimpia}`;
             },
 
             aplicarFormato(tipo) {
