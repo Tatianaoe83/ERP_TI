@@ -7,53 +7,78 @@
     #editor-mensaje {
         min-height: 300px;
     }
+    
+    /* Prevenir overflow horizontal en móvil */
+    @media (max-width: 640px) {
+        .tickets-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+        
+        .tickets-container * {
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+    }
 </style>
 
 <div
     x-data="ticketsModal()"
-    x-init="init(); vista = localStorage.getItem('ticketsVista') || 'kanban'"
-    class="space-y-4">
+    x-init="
+        init(); 
+        const vistaGuardada = localStorage.getItem('ticketsVista') || 'kanban';
+        vista = vistaGuardada;
+        // Si la vista inicial es tabla, asegurar que se preparen los datos después de que el DOM esté listo
+        if (vistaGuardada === 'tabla') {
+            setTimeout(() => {
+                prepararDatosTabla();
+            }, 800);
+        }
+    "
+    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden">
     
     <!-- Selector de Vista -->
-    <div class="flex justify-between items-center gap-2 mb-4">
+    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 mb-4 w-full">
         @can('tickets.ajustar-metricas')
         <button
             @click="mostrarModalMetricas = true; cargarMetricas()"
-            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm">
+            class="px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm text-sm sm:text-base whitespace-nowrap">
             <i class="fas fa-cog text-sm"></i>
-            <span>Ajustar Métricas</span>
+            <span class="hidden sm:inline">Ajustar Métricas</span>
+            <span class="sm:hidden">Métricas</span>
         </button>
         @endcan
-        <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-600 font-medium">Vista:</span>
-            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
+            <span class="text-xs sm:text-sm text-gray-600 font-medium hidden sm:inline">Vista:</span>
+            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-full sm:w-auto justify-center">
                 <button
                     @click="vista = 'kanban'; localStorage.setItem('ticketsVista', 'kanban')"
                     :class="vista === 'kanban' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
-                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-columns text-xs"></i>
-                    <span>Kanban</span>
+                    <span class="hidden sm:inline">Kanban</span>
                 </button>
                 <button
                     @click="vista = 'lista'; localStorage.setItem('ticketsVista', 'lista'); prepararDatosLista()"
                     :class="vista === 'lista' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
-                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-list text-xs"></i>
-                    <span>Lista</span>
+                    <span class="hidden sm:inline">Lista</span>
                 </button>
                 <button
-                    @click="vista = 'tabla'; localStorage.setItem('ticketsVista', 'tabla'); prepararDatosTabla()"
+                    @click="vista = 'tabla'; localStorage.setItem('ticketsVista', 'tabla'); $nextTick(() => { prepararDatosTabla(); })"
                     :class="vista === 'tabla' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
-                    class="px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2">
+                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-table text-xs"></i>
-                    <span>Tabla</span>
+                    <span class="hidden sm:inline">Tabla</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Vista Kanban -->
-    <div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
+    <div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
     @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
     <div class="p-4 text-center shadow-lg rounded-md bg-white border border-gray-100">
         <div class="border-b font-semibold text-gray-700 mb-2">{{ $titulo }}</div>
@@ -111,7 +136,7 @@
     </div>
 
     <!-- Vista Lista -->
-    <div x-show="vista === 'lista'" x-transition class="space-y-3">
+    <div x-show="vista === 'lista'" x-transition class="space-y-3 w-full max-w-full overflow-x-hidden">
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 flex justify-between items-center">
@@ -224,7 +249,7 @@
     </div>
 
     <!-- Vista Tabla -->
-    <div x-show="vista === 'tabla'" x-transition class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div x-show="vista === 'tabla'" x-transition class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden w-full max-w-full">
         <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
             <div class="text-sm text-gray-600">
                 <span x-text="`Mostrando ${(paginaTabla - 1) * elementosPorPagina + 1} - ${Math.min(paginaTabla * elementosPorPagina, ticketsTabla.length)} de ${ticketsTabla.length} tickets`"></span>
@@ -295,7 +320,7 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <template x-for="ticket in obtenerTicketsTablaPagina()" :key="ticket.id">
+                    <template x-for="(ticket, index) in obtenerTicketsTablaPagina()" :key="`ticket-${paginaTabla}-${index}-${ticket.id || index}`">
                         <tr
                             class="hover:bg-gray-50 transition cursor-pointer"
                             :data-ticket-id="ticket.id"
@@ -312,29 +337,29 @@
                                 <div class="text-sm font-semibold text-gray-900" x-text="'#' + ticket.id"></div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 max-w-md truncate" x-text="ticket.descripcion.substring(0, 80) + (ticket.descripcion.length > 80 ? '...' : '')"></div>
+                                <div class="text-sm text-gray-900 max-w-md truncate" x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900" x-text="ticket.empleado"></div>
-                                <div class="text-xs text-gray-500" x-text="ticket.correo"></div>
+                                <div class="text-sm text-gray-900" x-text="ticket.empleado || ''"></div>
+                                <div class="text-xs text-gray-500" x-text="ticket.correo || ''"></div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
                                       :class="ticket.prioridad == 'Baja' ? 'bg-green-200 text-green-600' : (ticket.prioridad == 'Media' ? 'bg-yellow-200 text-yellow-600' : 'bg-red-200 text-red-600')"
-                                      x-text="ticket.prioridad"></span>
+                                      x-text="ticket.prioridad || 'Media'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
                                       :class="ticket.estatus == 'Pendiente' ? 'bg-yellow-100 text-yellow-800' : (ticket.estatus == 'En progreso' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800')"
-                                      x-text="ticket.estatus"></span>
+                                      x-text="ticket.estatus || 'Pendiente'"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="ticket.fecha.split(' ')[0] + ' ' + ticket.fecha.split(' ')[1]"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <i class="fas fa-eye text-blue-500"></i>
                             </td>
                         </tr>
                     </template>
-                    <tr x-show="ticketsTabla.length === 0">
+                    <tr x-show="!ticketsTabla || ticketsTabla.length === 0">
                         <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-400">
                             No hay tickets disponibles.
                         </td>
@@ -1299,12 +1324,35 @@
                 // Los datos de ticketsLista ya están inicializados desde el servidor
                 // Preparar datos para tabla
                 this.prepararDatosTabla();
-             
+            
                 this.mostrar = false;
                 this.selected = {};
                 this.mensajes = [];
                 this.nuevoMensaje = '';
                 this.asuntoCorreo = '';
+                
+                // Watcher para ejecutar prepararDatosTabla cuando se cambie a vista tabla
+                this.$watch('vista', (newValue) => {
+                    if (newValue === 'tabla') {
+                        // Esperar un momento para que el DOM se actualice y los elementos estén disponibles
+                        setTimeout(() => {
+                            this.prepararDatosTabla();
+                        }, 200);
+                    }
+                });
+                
+                // Watcher para forzar actualización cuando cambie paginaTabla o elementosPorPagina
+                this.$watch('paginaTabla', () => {
+                    this.$nextTick(() => {
+                        // Forzar actualización de la vista
+                    });
+                });
+                
+                this.$watch('elementosPorPagina', () => {
+                    this.$nextTick(() => {
+                        // Forzar actualización de la vista
+                    });
+                });
                 this.mostrarCc = false;
                 this.mostrarBcc = false;
                 this.prioridadCorreo = 'normal';
@@ -1423,28 +1471,88 @@
 
             prepararDatosTabla() {
                 // Preparar todos los tickets para la tabla desde los elementos del DOM
-                this.$nextTick(() => {
+                // Usar getAttribute en lugar de dataset para asegurar que funcione incluso con elementos ocultos
+                const preparar = () => {
                     const todosTickets = [];
+                    let totalElementosEncontrados = 0;
+                    
                     ['nuevos', 'proceso', 'resueltos'].forEach(categoria => {
+                        // Buscar todos los elementos con data-categoria, incluso si están ocultos
+                        // Usar querySelectorAll que encuentra elementos incluso si están dentro de x-show="false"
                         const elementos = document.querySelectorAll(`[data-categoria="${categoria}"]`);
+                        totalElementosEncontrados += elementos.length;
+                        
                         elementos.forEach(el => {
-                            todosTickets.push({
-                                id: el.dataset.ticketId,
-                                asunto: el.dataset.ticketAsunto,
-                                descripcion: el.dataset.ticketDescripcion,
-                                prioridad: el.dataset.ticketPrioridad,
-                                empleado: el.dataset.ticketEmpleado,
-                                anydesk: el.dataset.ticketAnydesk || '',
-                                numero: el.dataset.ticketNumero || '',
-                                correo: el.dataset.ticketCorreo,
-                                fecha: el.dataset.ticketFecha,
-                                estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
-                                elemento: el
-                            });
+                            // Usar getAttribute para obtener los valores incluso si el elemento está oculto
+                            const ticketId = el.getAttribute('data-ticket-id') || el.dataset.ticketId;
+                            const ticketAsunto = el.getAttribute('data-ticket-asunto') || el.dataset.ticketAsunto;
+                            const ticketDescripcion = el.getAttribute('data-ticket-descripcion') || el.dataset.ticketDescripcion;
+                            const ticketPrioridad = el.getAttribute('data-ticket-prioridad') || el.dataset.ticketPrioridad;
+                            const ticketEmpleado = el.getAttribute('data-ticket-empleado') || el.dataset.ticketEmpleado;
+                            const ticketAnydesk = el.getAttribute('data-ticket-anydesk') || el.dataset.ticketAnydesk || '';
+                            const ticketNumero = el.getAttribute('data-ticket-numero') || el.dataset.ticketNumero || '';
+                            const ticketCorreo = el.getAttribute('data-ticket-correo') || el.dataset.ticketCorreo;
+                            const ticketFecha = el.getAttribute('data-ticket-fecha') || el.dataset.ticketFecha;
+                            
+                            if (ticketId) {
+                                todosTickets.push({
+                                    id: ticketId,
+                                    asunto: ticketAsunto || `Ticket #${ticketId}`,
+                                    descripcion: ticketDescripcion || '',
+                                    prioridad: ticketPrioridad || 'Media',
+                                    empleado: ticketEmpleado || '',
+                                    anydesk: ticketAnydesk,
+                                    numero: ticketNumero,
+                                    correo: ticketCorreo || '',
+                                    fecha: ticketFecha || '',
+                                    estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
+                                    elemento: el
+                                });
+                            }
                         });
                     });
-                    this.ticketsTabla = todosTickets;
+                    
+                    // Si no se encontraron elementos, intentar nuevamente después de un breve delay
+                    if (totalElementosEncontrados === 0 && this.vista === 'tabla') {
+                        setTimeout(() => {
+                            this.prepararDatosTabla();
+                        }, 500);
+                        return;
+                    }
+                    
+                    // Eliminar duplicados basados en el ID del ticket
+                    const ticketsUnicos = [];
+                    const idsVistos = new Set();
+                    
+                    todosTickets.forEach(ticket => {
+                        const idUnico = ticket.id ? `ticket-${ticket.id}` : `ticket-${Date.now()}-${Math.random()}`;
+                        if (!idsVistos.has(ticket.id)) {
+                            idsVistos.add(ticket.id);
+                            ticketsUnicos.push(ticket);
+                        }
+                    });
+                    
+                    // Asignar los tickets únicos y ordenar
+                    // Crear un nuevo array para asegurar que Alpine.js detecte el cambio
+                    this.ticketsTabla = [...ticketsUnicos];
                     this.ordenarTabla();
+                    
+                    // Forzar actualización de Alpine.js
+                    this.$nextTick(() => {
+                        // Asegurar que Alpine detecte el cambio
+                        if (this.ticketsTabla.length > 0) {
+                            console.log('Tickets cargados en tabla:', this.ticketsTabla.length);
+                            // Forzar actualización reactiva
+                            this.ticketsTabla = [...this.ticketsTabla];
+                        } else {
+                            console.warn('No se encontraron tickets para la tabla');
+                        }
+                    });
+                };
+                
+                // Ejecutar después de que Alpine.js haya procesado el DOM
+                this.$nextTick(() => {
+                    preparar();
                 });
             },
 

@@ -213,10 +213,10 @@
 <body class="transition-colors duration-500 ease-in-out">
 
     <div id="app">
-        <nav class="bg-white h-[70px] md:h-[80px] text-white text-white border-b border-b-gray-300 rounded-md">
+        <nav class="bg-white h-[60px] md:h-[60px] text-white text-white border-b border-b-gray-300 rounded-md">
             @include('layouts.header')
         </nav>
-        <div class="flex flex-1 min-h-[calc(100vh-70px)] md:min-h-[calc(100vh-80px)]">
+        <div class="flex flex-1 min-h-[calc(100vh-60px)] md:min-h-[calc(100vh-60px)]">
             <!-- Overlay para móvil -->
             <div id="mobile-overlay" 
                 class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 lg:hidden"

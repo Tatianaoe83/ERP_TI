@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div x-data="{ tab: 1 }" class="px-2">
+<div x-data="{ tab: 1 }" class="px-2 w-full max-w-full overflow-x-hidden">
 
     <div class="flex justify-start mb-2">
         <div
@@ -30,11 +30,12 @@
         </div>
     </div>
 
-    <div class="mt-2">
+    <div class="mt-2 w-full max-w-full overflow-x-hidden">
         <div
             x-show="tab === 1"
             x-transition.opacity
-            x-cloak>
+            x-cloak
+            class="w-full max-w-full overflow-x-hidden">
             @include('tickets.indexTicket', ['ticketsStatus' => $ticketsStatus, 'responsablesTI' => $responsablesTI])
         </div>
 
