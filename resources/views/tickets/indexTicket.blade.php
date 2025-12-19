@@ -127,6 +127,7 @@
                 @endphp
                 <div
                     class="p-4 hover:bg-gray-50 transition cursor-pointer"
+                    data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
@@ -137,7 +138,7 @@
                     data-ticket-correo="{{ $ticket->empleado->Correo }}"
                     data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
                     data-ticket-imagen="{{ htmlspecialchars($ticket->imagen ?? '', ENT_QUOTES, 'UTF-8') }}"
-                    x-show="estaEnPaginaLista('{{ $key }}', {{ $loop->index }})"
+                    x-show="estaEnPaginaListaPorElemento('{{ $key }}', $el)"
                     @click="abrirModalDesdeElemento($el)">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 min-w-0">
@@ -1460,6 +1461,17 @@
                 return indice >= inicio && indice < fin;
             },
 
+            estaEnPaginaListaPorElemento(categoria, elemento) {
+                // Calcular el índice del elemento dentro de su contenedor padre
+                const contenedor = elemento?.parentElement;
+                if (!contenedor) return false;
+                
+                const elementosEnSeccion = Array.from(contenedor.children);
+                const indice = elementosEnSeccion.indexOf(elemento);
+                
+                return this.estaEnPaginaLista(categoria, indice);
+            },
+
             obtenerTotalPaginasLista(categoria) {
                 const totalTickets = this.ticketsLista[categoria] || 0;
                 return Math.ceil(totalTickets / this.elementosPorPagina);
@@ -1723,65 +1735,8 @@
                                 nuevoEstatusTexto = 'Cerrado';
                             }
                             
-                            // Actualizar los atributos data-* de todos los elementos del ticket en el DOM
-                            this.$nextTick(() => {
-                                // Buscar todos los elementos con el mismo ticket-id (puede haber múltiples en diferentes vistas)
-                                const ticketElements = document.querySelectorAll(`[data-ticket-id="${this.selected.id}"]`);
-                                
-                                ticketElements.forEach(ticketElement => {
-                                    // Actualizar atributos data-* del elemento
-                                    ticketElement.setAttribute('data-ticket-prioridad', data.ticket.Prioridad);
-                                    
-                                    // Si el estatus cambió, actualizar la categoría del elemento (vista kanban)
-                                    if (estatusAnterior !== data.ticket.Estatus && nuevaCategoria) {
-                                        // Solo actualizar si el elemento tiene data-categoria (vista kanban)
-                                        if (ticketElement.hasAttribute('data-categoria')) {
-                                            ticketElement.setAttribute('data-categoria', nuevaCategoria);
-                                        }
-                                    }
-                                    
-                                    // Actualizar el badge de prioridad visualmente (todas las vistas)
-                                    const badgesPrioridad = ticketElement.querySelectorAll('.text-xs.font-semibold.px-2, .text-xs.font-semibold.px-2.py-0\\.5, .text-xs.font-semibold.px-2.py-1');
-                                    badgesPrioridad.forEach(badge => {
-                                        // Verificar si es un badge de prioridad (no de estatus)
-                                        const texto = badge.textContent.trim();
-                                        if (texto === 'Baja' || texto === 'Media' || texto === 'Alta' || 
-                                            texto === this.selected.prioridad || 
-                                            badge.classList.contains('rounded-full')) {
-                                            badge.textContent = data.ticket.Prioridad;
-                                            // Actualizar clases de color según prioridad
-                                            const clasesBase = badge.className.split(' ').filter(c => 
-                                                !c.startsWith('bg-') && !c.startsWith('text-')
-                                            ).join(' ');
-                                            const clasesColor = data.ticket.Prioridad === 'Baja' 
-                                                ? 'bg-green-200 text-green-600' 
-                                                : data.ticket.Prioridad === 'Media' 
-                                                ? 'bg-yellow-200 text-yellow-600' 
-                                                : 'bg-red-200 text-red-600';
-                                            badge.className = clasesBase + ' ' + clasesColor;
-                                        }
-                                    });
-                                });
-                                
-                                // Actualizar los datos de la tabla (siempre, para que se refleje en todas las vistas)
-                                // Esto actualizará los datos desde el DOM con los nuevos valores
-                                this.prepararDatosTabla();
-                                
-                                // Esperar un momento para que prepararDatosTabla termine y luego actualizar manualmente
-                                // el estatus en ticketsTabla para asegurar que se refleje correctamente
-                        setTimeout(() => {
-                                    if (this.ticketsTabla && this.ticketsTabla.length > 0) {
-                                        const ticketEnTabla = this.ticketsTabla.find(t => t.id == this.selected.id);
-                                        if (ticketEnTabla && nuevoEstatusTexto) {
-                                            ticketEnTabla.prioridad = data.ticket.Prioridad;
-                                            ticketEnTabla.estatus = nuevoEstatusTexto;
-                                        }
-                                    }
-                                }, 100);
-                                
-                                // Actualizar estado del editor
-                                this.actualizarEstadoEditor();
-                            });
+                            // Actualizar todas las vistas sin recargar la página
+                            this.actualizarVistasDespuesDeGuardar(data.ticket, estatusAnterior, nuevaCategoria, nuevoEstatusTexto);
                         }
                     } else {
                         this.mostrarNotificacion(data.message || 'Error al guardar los cambios', 'error');
@@ -1792,6 +1747,143 @@
                 } finally {
                     this.guardandoTicket = false;
                 }
+            },
+
+            actualizarVistasDespuesDeGuardar(ticketData, estatusAnterior, nuevaCategoria, nuevoEstatusTexto) {
+                // Esta función actualiza todas las vistas sin recargar la página
+                this.$nextTick(() => {
+                    // Buscar todos los elementos con el mismo ticket-id (puede haber múltiples en diferentes vistas)
+                    const ticketElements = document.querySelectorAll(`[data-ticket-id="${this.selected.id}"]`);
+                    
+                    // Determinar la categoría anterior
+                    let categoriaAnterior = '';
+                    if (estatusAnterior === 'Pendiente' || estatusAnterior === 'Nuevo') {
+                        categoriaAnterior = 'nuevos';
+                    } else if (estatusAnterior === 'En progreso' || estatusAnterior === 'Proceso') {
+                        categoriaAnterior = 'proceso';
+                    } else if (estatusAnterior === 'Cerrado' || estatusAnterior === 'Resuelto') {
+                        categoriaAnterior = 'resueltos';
+                    }
+                    
+                    const estatusCambio = estatusAnterior !== ticketData.Estatus;
+                    
+                    ticketElements.forEach(ticketElement => {
+                        // Actualizar atributos data-* del elemento
+                        ticketElement.setAttribute('data-ticket-prioridad', ticketData.Prioridad);
+                        
+                        // Si el estatus cambió, mover el ticket entre secciones (kanban y lista)
+                        if (estatusCambio && nuevaCategoria && categoriaAnterior) {
+                            // Solo mover si el elemento tiene data-categoria
+                            if (ticketElement.hasAttribute('data-categoria')) {
+                                const categoriaActual = ticketElement.getAttribute('data-categoria');
+                                
+                                // Si está en una categoría diferente, moverlo físicamente
+                                if (categoriaActual !== nuevaCategoria) {
+                                    // Determinar si es vista kanban o lista
+                                    const esVistaKanban = ticketElement.closest('[x-show*="kanban"]');
+                                    const esVistaLista = ticketElement.closest('[x-show*="lista"]');
+                                    
+                                    let contenedorNuevaSeccion = null;
+                                    
+                                    if (esVistaKanban) {
+                                        // Mover en vista kanban
+                                        const vistaKanban = document.querySelector('[x-show*="kanban"]');
+                                        if (vistaKanban && vistaKanban.offsetParent !== null) {
+                                            const todasLasColumnas = Array.from(vistaKanban.querySelectorAll('.shadow-lg.rounded-md'));
+                                            const indiceCategoria = {
+                                                'nuevos': 0,
+                                                'proceso': 1,
+                                                'resueltos': 2
+                                            };
+                                            const indiceNueva = indiceCategoria[nuevaCategoria];
+                                            contenedorNuevaSeccion = todasLasColumnas[indiceNueva]?.querySelector('.space-y-3');
+                                        }
+                                    } else if (esVistaLista) {
+                                        // Mover en vista lista
+                                        const vistaLista = document.querySelector('[x-show*="lista"]');
+                                        if (vistaLista && vistaLista.offsetParent !== null) {
+                                            // Buscar todas las secciones de lista (divs con bg-white rounded-lg)
+                                            const todasLasSecciones = Array.from(vistaLista.querySelectorAll('.bg-white.rounded-lg.shadow-sm'));
+                                            
+                                            // Mapeo de categorías a índices de sección (orden: nuevos, proceso, resueltos)
+                                            const indiceCategoria = {
+                                                'nuevos': 0,
+                                                'proceso': 1,
+                                                'resueltos': 2
+                                            };
+                                            
+                                            const indiceNueva = indiceCategoria[nuevaCategoria];
+                                            contenedorNuevaSeccion = todasLasSecciones[indiceNueva]?.querySelector('.divide-y.divide-gray-200');
+                                        }
+                                    }
+                                    
+                                    if (contenedorNuevaSeccion) {
+                                        // Actualizar el atributo antes de mover
+                                        ticketElement.setAttribute('data-categoria', nuevaCategoria);
+                                    
+                                        // Mover el elemento a la nueva sección
+                                        contenedorNuevaSeccion.appendChild(ticketElement);
+                                        
+                                        // Alpine.js recalculará automáticamente x-show usando estaEnPaginaListaPorElemento
+                                        
+                                        // Actualizar contadores
+                                        if (this.ticketsLista[categoriaAnterior] > 0) {
+                                            this.ticketsLista[categoriaAnterior]--;
+                                        }
+                                        if (!this.ticketsLista[nuevaCategoria]) {
+                                            this.ticketsLista[nuevaCategoria] = 0;
+                                        }
+                                        this.ticketsLista[nuevaCategoria]++;
+                                    } else {
+                                        // Si no se encuentra el contenedor, solo actualizar el atributo
+                                        ticketElement.setAttribute('data-categoria', nuevaCategoria);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Actualizar el badge de prioridad visualmente (todas las vistas)
+                        const badgesPrioridad = ticketElement.querySelectorAll('.text-xs.font-semibold.px-2, .text-xs.font-semibold.px-2.py-0\\.5, .text-xs.font-semibold.px-2.py-1');
+                        badgesPrioridad.forEach(badge => {
+                            // Verificar si es un badge de prioridad (no de estatus)
+                            const texto = badge.textContent.trim();
+                            if (texto === 'Baja' || texto === 'Media' || texto === 'Alta' || 
+                                texto === this.selected.prioridad || 
+                                (badge.classList.contains('rounded-full') && !badge.textContent.includes('Ticket'))) {
+                                badge.textContent = ticketData.Prioridad;
+                                // Actualizar clases de color según prioridad
+                                const clasesBase = badge.className.split(' ').filter(c => 
+                                    !c.startsWith('bg-') && !c.startsWith('text-')
+                                ).join(' ');
+                                const clasesColor = ticketData.Prioridad === 'Baja' 
+                                    ? 'bg-green-200 text-green-600' 
+                                    : ticketData.Prioridad === 'Media' 
+                                    ? 'bg-yellow-200 text-yellow-600' 
+                                    : 'bg-red-200 text-red-600';
+                                badge.className = clasesBase + ' ' + clasesColor;
+                            }
+                        });
+                    });
+                    
+                    // Actualizar los datos de la tabla (siempre, para que se refleje en todas las vistas)
+                    this.prepararDatosTabla();
+                    
+                    // Actualizar manualmente el estatus en ticketsTabla
+                    setTimeout(() => {
+                        if (this.ticketsTabla && this.ticketsTabla.length > 0) {
+                            const ticketEnTabla = this.ticketsTabla.find(t => t.id == this.selected.id);
+                            if (ticketEnTabla) {
+                                ticketEnTabla.prioridad = ticketData.Prioridad;
+                                if (nuevoEstatusTexto) {
+                                    ticketEnTabla.estatus = nuevoEstatusTexto;
+                                }
+                            }
+                        }
+                    }, 100);
+                    
+                    // Actualizar estado del editor
+                    this.actualizarEstadoEditor();
+                });
             },
 
             abrirModalDesdeElemento(elemento) {
@@ -2162,7 +2254,15 @@
                 else if (tipo === 'info') bgColor = 'bg-blue-500';
                 
                 const notification = document.createElement('div');
-                notification.className = `ticket-notification fixed top-4 right-4 z-[9999] p-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px] max-w-md ${bgColor} text-white`;
+                notification.className = `ticket-notification p-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px] max-w-md ${bgColor} text-white`;
+                
+                // Establecer estilos inline para asegurar que aparezca por encima del modal (z-50)
+                // Usar un z-index muy alto y position fixed
+                notification.style.position = 'fixed';
+                notification.style.top = '1rem';
+                notification.style.right = '1rem';
+                notification.style.zIndex = '999999'; // Mucho más alto que el modal (z-50)
+                notification.style.pointerEvents = 'auto';
                 
                 // Estilos iniciales para animación
                 notification.style.transform = 'translateX(400px)';
@@ -2184,7 +2284,14 @@
                     <span class="flex-1 font-medium">${mensaje}</span>
                 `;
                 
+                // Agregar directamente al body para evitar problemas de contexto de apilamiento
+                // Asegurarse de que esté fuera de cualquier contenedor del modal
                 document.body.appendChild(notification);
+                
+                // Forzar el z-index después de agregar al DOM para asegurar que se aplique
+                requestAnimationFrame(() => {
+                    notification.style.zIndex = '999999';
+                });
                 
                 // Animación de entrada
                 setTimeout(() => {

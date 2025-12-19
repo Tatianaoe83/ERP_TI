@@ -1109,9 +1109,6 @@ video {
 .right-1 {
   right: 0.25rem;
 }
-.right-4 {
-  right: 1rem;
-}
 .top-0 {
   top: 0px;
 }
@@ -1120,9 +1117,6 @@ video {
 }
 .top-2 {
   top: 0.5rem;
-}
-.top-4 {
-  top: 1rem;
 }
 .top-full {
   top: 100%;
@@ -1141,9 +1135,6 @@ video {
 }
 .z-\[60\] {
   z-index: 60;
-}
-.z-\[9999\] {
-  z-index: 9999;
 }
 .order-1 {
   order: 1;
@@ -1257,6 +1248,9 @@ video {
 }
 .inline-block {
   display: inline-block;
+}
+.inline {
+  display: inline;
 }
 .flex {
   display: flex;
