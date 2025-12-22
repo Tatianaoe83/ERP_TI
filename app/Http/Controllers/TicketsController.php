@@ -30,7 +30,7 @@ class TicketsController extends Controller
         $anio = $request->input('anio', now()->year);
 
         // Si se solicita un mes específico para productividad, filtrar tickets
-        $ticketsQuery = Tickets::with(['empleado', 'responsableTI', 'chat' => function($query) {
+        $ticketsQuery = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'chat' => function($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }]);
 
@@ -795,6 +795,51 @@ class TicketsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error sincronizando correos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener información de tiempo de tickets en progreso para actualización en tiempo real
+     */
+    public function obtenerTiempoProgreso(Request $request)
+    {
+        try {
+            $ticketsEnProgreso = Tickets::with(['tipoticket', 'responsableTI'])
+                ->where('Estatus', 'En progreso')
+                ->whereNotNull('FechaInicioProgreso')
+                ->get();
+
+            $tiempos = [];
+            
+            foreach ($ticketsEnProgreso as $ticket) {
+                $tiempoInfo = null;
+                
+                if ($ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
+                    $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                    $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
+                    $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
+                    
+                    $tiempoInfo = [
+                        'transcurrido' => round($tiempoTranscurrido, 1),
+                        'estimado' => round($tiempoEstimadoHoras, 1),
+                        'porcentaje' => round($porcentajeUsado, 1),
+                        'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
+                    ];
+                }
+                
+                $tiempos[$ticket->TicketID] = $tiempoInfo;
+            }
+
+            return response()->json([
+                'success' => true,
+                'tiempos' => $tiempos
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo tiempo de progreso: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo información de tiempo'
             ], 500);
         }
     }

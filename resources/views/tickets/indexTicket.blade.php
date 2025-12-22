@@ -90,6 +90,33 @@
                 $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
                 if (count($partes) >= 3) array_splice($partes, 1, 1);
                 $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
+                
+                // Calcular información de tiempo solo para tickets en proceso
+                $tiempoInfo = null;
+                $nombreResponsable = null;
+                
+                if ($key === 'proceso') {
+                    // Obtener nombre del responsable
+                    if ($ticket->responsableTI) {
+                        $partesResp = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
+                        if (count($partesResp) >= 3) array_splice($partesResp, 1, 1);
+                        $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $partesResp))->title();
+                    }
+                    
+                    // Calcular tiempo si tiene fecha de inicio y tiempo estimado
+                    if ($ticket->FechaInicioProgreso && $ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
+                        $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                        $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
+                        $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
+                        
+                        $tiempoInfo = [
+                            'transcurrido' => round($tiempoTranscurrido, 1),
+                            'estimado' => round($tiempoEstimadoHoras, 1),
+                            'porcentaje' => round($porcentajeUsado, 1),
+                            'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
+                        ];
+                    }
+                }
                 @endphp
 
                 <div
@@ -118,6 +145,44 @@
                     <p class="text-sm text-gray-600 mt-2 line-clamp-2">
                         {{ Str::limit($ticket->Descripcion, 100, '...') }}
                     </p>
+
+                    @if($key === 'proceso' && $nombreResponsable)
+                    <div class="mt-2 pt-2 border-t border-gray-200">
+                        <div class="flex items-center gap-2 text-xs text-gray-600">
+                            <i class="fas fa-user-tie text-blue-500"></i>
+                            <span class="font-semibold text-gray-700">Responsable:</span>
+                            <span class="text-gray-800">{{ $nombreResponsable }}</span>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($key === 'proceso' && $tiempoInfo)
+                    <div class="tiempo-indicador-container mt-2 pt-2 border-t border-gray-200">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-600">Tiempo:</span>
+                            <span class="badge-estado text-xs px-2 py-0.5 rounded-full font-semibold
+                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 text-red-700' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700') }}">
+                                @if($tiempoInfo['estado'] === 'agotado')
+                                    <i class="fas fa-exclamation-triangle"></i> Tiempo Agotado
+                                @elseif($tiempoInfo['estado'] === 'por_vencer')
+                                    <i class="fas fa-clock"></i> Por Vencer
+                                @else
+                                    <i class="fas fa-check-circle"></i> En Tiempo
+                                @endif
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            <span class="tiempo-texto">{{ $tiempoInfo['transcurrido'] }}h / {{ $tiempoInfo['estimado'] }}h</span>
+                        </div>
+                        <div class="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+                            <div class="barra-progreso h-1.5 rounded-full transition-all duration-300
+                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-500' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500') }}"
+                                style="width: {{ min($tiempoInfo['porcentaje'], 100) }}%"></div>
+                        </div>
+                    </div>
+                    @endif
 
                     <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
                         <span class="font-semibold text-gray-700">
@@ -1324,7 +1389,7 @@
                 // Los datos de ticketsLista ya están inicializados desde el servidor
                 // Preparar datos para tabla
                 this.prepararDatosTabla();
-            
+             
                 this.mostrar = false;
                 this.selected = {};
                 this.mensajes = [];
@@ -1338,8 +1403,16 @@
                         setTimeout(() => {
                             this.prepararDatosTabla();
                         }, 200);
+                    } else if (newValue === 'kanban') {
+                        // Iniciar actualización en tiempo real cuando se cambia a kanban
+                        this.iniciarActualizacionTiempoReal();
                     }
                 });
+                
+                // Iniciar actualización en tiempo real de indicadores de tiempo si la vista inicial es kanban
+                if (this.vista === 'kanban') {
+                    this.iniciarActualizacionTiempoReal();
+                }
                 
                 // Watcher para forzar actualización cuando cambie paginaTabla o elementosPorPagina
                 this.$watch('paginaTabla', () => {
@@ -1366,6 +1439,83 @@
                 
                 // La actualización de mensajes se manejará mediante cron job
                 // No se configura recarga automática
+            },
+
+            iniciarActualizacionTiempoReal() {
+                // Actualizar indicadores de tiempo cada 2 minutos cuando la vista es kanban
+                if (this.vista === 'kanban') {
+                    this.actualizarIndicadoresTiempo();
+                }
+                
+                // Configurar intervalo para actualizar cada 2 minutos
+                setInterval(() => {
+                    if (this.vista === 'kanban') {
+                        this.actualizarIndicadoresTiempo();
+                    }
+                }, 120000); // 2 minutos = 120000 ms
+            },
+
+            async actualizarIndicadoresTiempo() {
+                try {
+                    const response = await fetch('/tickets/tiempo-progreso', {
+                        method: 'GET',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success && data.tiempos) {
+                        // Actualizar cada ticket en el DOM
+                        Object.keys(data.tiempos).forEach(ticketId => {
+                            const tiempoInfo = data.tiempos[ticketId];
+                            if (!tiempoInfo) return;
+                            
+                            // Buscar el elemento del ticket en kanban
+                            const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"][data-categoria="proceso"]`);
+                            if (!ticketElement) return;
+                            
+                            // Buscar el contenedor de tiempo
+                            const tiempoContainer = ticketElement.querySelector('.tiempo-indicador-container');
+                            if (tiempoContainer) {
+                                // Actualizar el badge de estado
+                                const badgeEstado = tiempoContainer.querySelector('.badge-estado');
+                                if (badgeEstado) {
+                                    const estado = tiempoInfo.estado;
+                                    badgeEstado.className = `text-xs px-2 py-0.5 rounded-full font-semibold ${
+                                        estado === 'agotado' ? 'bg-red-100 text-red-700' : 
+                                        (estado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
+                                    }`;
+                                    badgeEstado.innerHTML = estado === 'agotado' 
+                                        ? '<i class="fas fa-exclamation-triangle"></i> Tiempo Agotado'
+                                        : (estado === 'por_vencer' 
+                                            ? '<i class="fas fa-clock"></i> Por Vencer'
+                                            : '<i class="fas fa-check-circle"></i> En Tiempo');
+                                }
+                                
+                                // Actualizar el texto de tiempo
+                                const tiempoTexto = tiempoContainer.querySelector('.tiempo-texto');
+                                if (tiempoTexto) {
+                                    tiempoTexto.textContent = `${tiempoInfo.transcurrido}h / ${tiempoInfo.estimado}h`;
+                                }
+                                
+                                // Actualizar la barra de progreso
+                                const barraProgreso = tiempoContainer.querySelector('.barra-progreso');
+                                if (barraProgreso) {
+                                    barraProgreso.style.width = `${Math.min(tiempoInfo.porcentaje, 100)}%`;
+                                    barraProgreso.className = `h-1.5 rounded-full transition-all duration-300 ${
+                                        tiempoInfo.estado === 'agotado' ? 'bg-red-500' : 
+                                        (tiempoInfo.estado === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500')
+                                    }`;
+                                }
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error actualizando indicadores de tiempo:', error);
+                }
             },
 
             inicializarTinyMCE() {
@@ -1495,7 +1645,7 @@
                             const ticketFecha = el.getAttribute('data-ticket-fecha') || el.dataset.ticketFecha;
                             
                             if (ticketId) {
-                                todosTickets.push({
+                            todosTickets.push({
                                     id: ticketId,
                                     asunto: ticketAsunto || `Ticket #${ticketId}`,
                                     descripcion: ticketDescripcion || '',
@@ -1505,9 +1655,9 @@
                                     numero: ticketNumero,
                                     correo: ticketCorreo || '',
                                     fecha: ticketFecha || '',
-                                    estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
-                                    elemento: el
-                                });
+                                estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
+                                elemento: el
+                            });
                             }
                         });
                     });
@@ -1859,9 +2009,9 @@
 
             actualizarVistasDespuesDeGuardar(ticketData, estatusAnterior, nuevaCategoria, nuevoEstatusTexto) {
                 // Esta función actualiza todas las vistas sin recargar la página
-                this.$nextTick(() => {
-                    // Buscar todos los elementos con el mismo ticket-id (puede haber múltiples en diferentes vistas)
-                    const ticketElements = document.querySelectorAll(`[data-ticket-id="${this.selected.id}"]`);
+                            this.$nextTick(() => {
+                                // Buscar todos los elementos con el mismo ticket-id (puede haber múltiples en diferentes vistas)
+                                const ticketElements = document.querySelectorAll(`[data-ticket-id="${this.selected.id}"]`);
                     
                     // Determinar la categoría anterior
                     let categoriaAnterior = '';
@@ -1874,15 +2024,15 @@
                     }
                     
                     const estatusCambio = estatusAnterior !== ticketData.Estatus;
-                    
-                    ticketElements.forEach(ticketElement => {
-                        // Actualizar atributos data-* del elemento
+                                
+                                ticketElements.forEach(ticketElement => {
+                                    // Actualizar atributos data-* del elemento
                         ticketElement.setAttribute('data-ticket-prioridad', ticketData.Prioridad);
-                        
+                                    
                         // Si el estatus cambió, mover el ticket entre secciones (kanban y lista)
                         if (estatusCambio && nuevaCategoria && categoriaAnterior) {
                             // Solo mover si el elemento tiene data-categoria
-                            if (ticketElement.hasAttribute('data-categoria')) {
+                                        if (ticketElement.hasAttribute('data-categoria')) {
                                 const categoriaActual = ticketElement.getAttribute('data-categoria');
                                 
                                 // Si está en una categoría diferente, moverlo físicamente
@@ -1927,7 +2077,7 @@
                                     
                                     if (contenedorNuevaSeccion) {
                                         // Actualizar el atributo antes de mover
-                                        ticketElement.setAttribute('data-categoria', nuevaCategoria);
+                                            ticketElement.setAttribute('data-categoria', nuevaCategoria);
                                     
                                         // Mover el elemento a la nueva sección
                                         contenedorNuevaSeccion.appendChild(ticketElement);
@@ -1947,51 +2097,51 @@
                                         ticketElement.setAttribute('data-categoria', nuevaCategoria);
                                     }
                                 }
-                            }
-                        }
-                        
-                        // Actualizar el badge de prioridad visualmente (todas las vistas)
-                        const badgesPrioridad = ticketElement.querySelectorAll('.text-xs.font-semibold.px-2, .text-xs.font-semibold.px-2.py-0\\.5, .text-xs.font-semibold.px-2.py-1');
-                        badgesPrioridad.forEach(badge => {
-                            // Verificar si es un badge de prioridad (no de estatus)
-                            const texto = badge.textContent.trim();
-                            if (texto === 'Baja' || texto === 'Media' || texto === 'Alta' || 
-                                texto === this.selected.prioridad || 
+                                        }
+                                    }
+                                    
+                                    // Actualizar el badge de prioridad visualmente (todas las vistas)
+                                    const badgesPrioridad = ticketElement.querySelectorAll('.text-xs.font-semibold.px-2, .text-xs.font-semibold.px-2.py-0\\.5, .text-xs.font-semibold.px-2.py-1');
+                                    badgesPrioridad.forEach(badge => {
+                                        // Verificar si es un badge de prioridad (no de estatus)
+                                        const texto = badge.textContent.trim();
+                                        if (texto === 'Baja' || texto === 'Media' || texto === 'Alta' || 
+                                            texto === this.selected.prioridad || 
                                 (badge.classList.contains('rounded-full') && !badge.textContent.includes('Ticket'))) {
                                 badge.textContent = ticketData.Prioridad;
-                                // Actualizar clases de color según prioridad
-                                const clasesBase = badge.className.split(' ').filter(c => 
-                                    !c.startsWith('bg-') && !c.startsWith('text-')
-                                ).join(' ');
+                                            // Actualizar clases de color según prioridad
+                                            const clasesBase = badge.className.split(' ').filter(c => 
+                                                !c.startsWith('bg-') && !c.startsWith('text-')
+                                            ).join(' ');
                                 const clasesColor = ticketData.Prioridad === 'Baja' 
-                                    ? 'bg-green-200 text-green-600' 
+                                                ? 'bg-green-200 text-green-600' 
                                     : ticketData.Prioridad === 'Media' 
-                                    ? 'bg-yellow-200 text-yellow-600' 
-                                    : 'bg-red-200 text-red-600';
-                                badge.className = clasesBase + ' ' + clasesColor;
-                            }
-                        });
-                    });
-                    
-                    // Actualizar los datos de la tabla (siempre, para que se refleje en todas las vistas)
-                    this.prepararDatosTabla();
-                    
+                                                ? 'bg-yellow-200 text-yellow-600' 
+                                                : 'bg-red-200 text-red-600';
+                                            badge.className = clasesBase + ' ' + clasesColor;
+                                        }
+                                    });
+                                });
+                                
+                                // Actualizar los datos de la tabla (siempre, para que se refleje en todas las vistas)
+                                this.prepararDatosTabla();
+                                
                     // Actualizar manualmente el estatus en ticketsTabla
-                    setTimeout(() => {
-                        if (this.ticketsTabla && this.ticketsTabla.length > 0) {
-                            const ticketEnTabla = this.ticketsTabla.find(t => t.id == this.selected.id);
+                        setTimeout(() => {
+                                    if (this.ticketsTabla && this.ticketsTabla.length > 0) {
+                                        const ticketEnTabla = this.ticketsTabla.find(t => t.id == this.selected.id);
                             if (ticketEnTabla) {
                                 ticketEnTabla.prioridad = ticketData.Prioridad;
                                 if (nuevoEstatusTexto) {
-                                    ticketEnTabla.estatus = nuevoEstatusTexto;
+                                            ticketEnTabla.estatus = nuevoEstatusTexto;
                                 }
-                            }
-                        }
-                    }, 100);
-                    
-                    // Actualizar estado del editor
-                    this.actualizarEstadoEditor();
-                });
+                                        }
+                                    }
+                                }, 100);
+                                
+                                // Actualizar estado del editor
+                                this.actualizarEstadoEditor();
+                            });
             },
 
             abrirModalDesdeElemento(elemento) {

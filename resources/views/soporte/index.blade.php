@@ -166,6 +166,34 @@
                 </div>
             </div>
         </form>
+
+        <!-- Sección de Extensiones de Soporte -->
+        <div class="glass-effect rounded-2xl shadow-2xl p-5 w-full fade-in mt-8">
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center text-white">
+                        <i class="fas fa-phone-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-black">¿Necesitas ayuda? Contacta a Soporte</h3>
+                </div>
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i class="fas fa-headset text-blue-600 text-xl"></i>
+                        <h4 class="font-semibold text-black">Soporte Técnico</h4>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-700">
+                        <i class="fas fa-phone text-blue-600"></i>
+                        <span class="font-medium text-lg">Ext. 211</span>
+                    </div>
+                </div>
+                <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-yellow-600"></i>
+                        <span>Horario de atención: Lunes a Viernes de 9:00 AM a 6:00 PM | Sábados de 9:00 AM a 2:00 PM</span>
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
 
@@ -240,7 +268,7 @@
             `,
             confirmButtonText: '¡Entendido!',
             confirmButtonColor: '#10b981',
-            timer: 5000,
+            timer: 10000,
             timerProgressBar: true,
             showClass: {
                 popup: 'animate__animated animate__fadeInDown'
@@ -266,6 +294,17 @@
                     <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
                         <i class="fas fa-info-circle"></i> Por favor, intenta nuevamente o contacta a soporte
                     </p>
+                    <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px; margin-top: 15px;">
+                        <p style="font-size: 12px; color: #0369a1; font-weight: 600; margin-bottom: 8px;">
+                            <i class="fas fa-phone-alt"></i> Extensión de Soporte:
+                        </p>
+                        <div style="font-size: 11px; color: #0c4a6e;">
+                            <span><strong>Soporte Técnico:</strong> Ext. 211</span>
+                        </div>
+                        <div style="font-size: 10px; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid #cbd5e1;">
+                            <i class="fas fa-clock"></i> Horario: Lunes a Viernes 9:00 AM - 6:00 PM | Sábados 9:00 AM - 2:00 PM
+                        </div>
+                    </div>
                 </div>
             `,
             confirmButtonText: 'Entendido',
