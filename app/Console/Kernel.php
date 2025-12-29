@@ -29,6 +29,12 @@ class Kernel extends ConsoleKernel
             ->everyFifteenMinutes()
             ->withoutOverlapping()
             ->runInBackground();
+        
+        // Procesar respuestas automáticas cada 5 minutos
+        $schedule->command('tickets:procesar-respuestas-automaticas')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

@@ -790,15 +790,6 @@
                                 </svg>
                                 <span>Enviar Instrucciones</span>
                             </button>   -->
-                            <button 
-                                @click="procesarRespuestasAutomaticas()"
-                                :disabled="procesandoAutomatico"
-                                class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                <span x-text="procesandoAutomatico ? 'Procesando...' : 'Procesar Automático'"></span>
-                            </button>
                             
                           
                             <button @click="cerrarModal" class="text-gray-400 hover:text-gray-600 transition p-2">
@@ -1281,7 +1272,7 @@
                                 <div class="text-sm text-green-800">
                                     <p class="font-medium mb-1">¿Cómo procesar respuestas de correo?</p>
                                     <ol class="text-xs space-y-1 list-decimal list-inside">
-                                        <li><strong>Automático:</strong> Usa "Procesar Automático" para Webklex IMAP</li>
+                                        <li><strong>Automático:</strong> El procesamiento automático se ejecuta cada 5 minutos mediante un job programado</li>
                                         <li><strong>Manual:</strong> Si el automático falla, usa esta área</li>
                                         <li>El usuario recibe tu correo con instrucciones</li>
                                         <li>El usuario responde por correo</li>
@@ -1460,7 +1451,6 @@
             nuevoMensaje: '',
             cargando: false,
             sincronizando: false,
-            procesandoAutomatico: false,
             buscandoCorreos: false,
             guardandoCorreos: false,
             estadisticas: null,
@@ -3087,56 +3077,6 @@
                     }
                 } catch (error) {
                     this.mostrarNotificacion('Error agregando respuesta manual', 'error');
-                }
-            },
-
-            async procesarRespuestasAutomaticas() {
-                if (!this.asuntoCorreo.trim()) {
-                    this.mostrarNotificacion('El asunto es requerido para procesar automáticamente', 'error');
-                    return;
-                }
-
-                this.procesandoAutomatico = true;
-
-                try {
-                    
-                    // Normalizar el asunto para mantener la nomenclatura con el ID
-                    const asuntoNormalizado = this.normalizarAsunto(this.asuntoCorreo);
-                    
-                    const response = await fetch('/api/process-webklex-responses', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            ticket_id: this.selected.id,
-                            asunto: asuntoNormalizado
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        this.mostrarNotificacion(data.message, 'success');
-                        
-                        // Mostrar estadísticas si están disponibles
-                        if (data.estadisticas) {
-                        }
-                        
-                        // Recargar mensajes para mostrar las nuevas respuestas
-                        await this.cargarMensajes();
-                        
-                        // Actualizar estadísticas
-                        this.estadisticas = await this.obtenerEstadisticasCorreos();
-                        
-                    } else {
-                        this.mostrarNotificacion(data.message, 'error');
-                    }
-                } catch (error) {
-                    this.mostrarNotificacion('Error procesando respuestas automáticas', 'error');
-                } finally {
-                    this.procesandoAutomatico = false;
                 }
             },
 

@@ -23,6 +23,8 @@ class Subtipos extends Model
 
     public $table = 'subtipo';
     
+    protected $primaryKey = 'SubtipoID';
+    
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
