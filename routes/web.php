@@ -125,6 +125,7 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::get('/tickets/diagnosticar-correos', [App\Http\Controllers\TicketsController::class, 'diagnosticarCorreos']);
     Route::get('/tickets/tiempo-progreso', [App\Http\Controllers\TicketsController::class, 'obtenerTiempoProgreso']);
     Route::get('/tickets/tipos-con-metricas', [App\Http\Controllers\TicketsController::class, 'getTiposConMetricas']);
+    Route::get('/tickets/excedidos', [App\Http\Controllers\TicketsController::class, 'obtenerTicketsExcedidos'])->name('tickets.excedidos');
     Route::post('/tickets/update', [App\Http\Controllers\TicketsController::class, 'update']);
     Route::post('/tickets/enviar-respuesta', [App\Http\Controllers\TicketsController::class, 'enviarRespuesta']);
     Route::post('/tickets/mensaje-interno', [App\Http\Controllers\TicketsController::class, 'agregarMensajeInterno']);

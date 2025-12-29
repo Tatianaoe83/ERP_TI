@@ -222,8 +222,6 @@ function initializeLineaEdit() {
     
     function loadInventarioCount(callback) {
         var lineaId = {{ $lineasTelefonicas->LineaID }};
-        console.log('Cargando inventario para línea ID:', lineaId);
-        console.log('URL de la petición:', '{{ route("lineas-telefonicas.inventario-records") }}');
         
         $.ajax({
             url: '{{ route("lineas-telefonicas.inventario-records") }}',
@@ -231,16 +229,9 @@ function initializeLineaEdit() {
             data: { linea_id: lineaId },
             dataType: 'json',
             beforeSend: function() {
-                console.log('Enviando petición AJAX...');
                 $('#count-inventario').text('Cargando...');
             },
             success: function(data) {
-                console.log('Respuesta del servidor recibida:', data);
-                console.log('Tipo de datos:', typeof data);
-                console.log('Tiene records:', data.hasOwnProperty('records'));
-                console.log('Records es array:', Array.isArray(data.records));
-                console.log('Cantidad de records:', data.records ? data.records.length : 'undefined');
-                
                 if (data && data.records && Array.isArray(data.records)) {
                     var count = data.records.length;
                     $('#count-inventario').text(count);
@@ -249,7 +240,6 @@ function initializeLineaEdit() {
                         callback(count);
                     }
                 } else {
-                    console.warn('Estructura de datos inesperada o sin registros:', data);
                     $('#count-inventario').text('0');
                     $('#error-inventario').hide();
                     if (callback) {
@@ -258,12 +248,6 @@ function initializeLineaEdit() {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error al cargar inventario:');
-                console.error('Status:', status);
-                console.error('Error:', error);
-                console.error('Response Text:', xhr.responseText);
-                console.error('Response JSON:', xhr.responseJSON);
-                
                 // Mostrar mensaje más amigable en lugar de "Error"
                 $('#count-inventario').text('No disponible');
                 $('#error-inventario').show();

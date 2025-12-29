@@ -38,6 +38,65 @@
     "
     class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden">
     
+    <!-- Alert de Tickets Excedidos -->
+    <div 
+        x-show="mostrarPopupExcedidos && ticketsExcedidos.length > 0"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform translate-y-[-10px]"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform translate-y-[-10px]"
+        x-cloak
+        class="fixed top-4 right-4 left-4 md:left-auto md:max-w-md z-50">
+        <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 shadow-lg">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-medium text-red-800 mb-1">
+                        <span x-text="ticketsExcedidos.length"></span> 
+                        <span x-text="ticketsExcedidos.length === 1 ? 'ticket excediendo tiempo' : 'tickets excediendo tiempo'"></span>
+                    </h3>
+                    <div class="mt-2 text-sm text-red-700 space-y-1">
+                        <template x-for="(ticket, index) in ticketsExcedidos.slice(0, 3)" :key="ticket.id">
+                            <div 
+                                @click="abrirTicketDesdePopup(ticket.id)"
+                                class="cursor-pointer hover:text-red-900 hover:underline">
+                                <span class="font-semibold" x-text="'Ticket #' + ticket.id"></span>
+                                <span x-text="' - ' + ticket.descripcion"></span>
+                            
+                            </div>
+                        </template>
+                        <template x-if="ticketsExcedidos.length > 3">
+                            <p class="text-xs text-red-600 italic">
+                                y <span x-text="ticketsExcedidos.length - 3"></span> más...
+                            </p>
+                        </template>
+                    </div>
+                    <div class="mt-2 text-xs text-red-600">
+                        <i class="fas fa-sync-alt mr-1" :class="{'animate-spin': cargandoExcedidos}"></i>
+                        <span x-text="cargandoExcedidos ? 'Verificando...' : 'Actualización automática cada 5 min'"></span>
+                    </div>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex flex-col gap-2">
+                    <button 
+                        @click="verificarTicketsExcedidos()"
+                        class="inline-flex text-red-400 hover:text-red-600 focus:outline-none transition"
+                        title="Actualizar ahora">
+                        <i class="fas fa-sync-alt" :class="{'animate-spin': cargandoExcedidos}"></i>
+                    </button>
+                    <button 
+                        @click="cerrarPopupExcedidos()"
+                        class="inline-flex text-red-400 hover:text-red-600 focus:outline-none transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Selector de Vista -->
     <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 mb-4 w-full">
         @can('tickets.ajustar-metricas')
@@ -1453,6 +1512,11 @@
             metricasTipos: [],
             cargandoMetricas: false,
             guardandoMetricas: false,
+            // Variables para tickets excedidos
+            mostrarPopupExcedidos: false,
+            ticketsExcedidos: [],
+            cargandoExcedidos: false,
+            intervaloVerificacionExcedidos: null,
 
             init() {
                 // Los datos de ticketsLista ya están inicializados desde el servidor
@@ -1504,6 +1568,34 @@
                 // Inicializar TinyMCE Editor
                 this.$nextTick(() => {
                     this.inicializarTinyMCE();
+                });
+                
+                // Verificar tickets excedidos al cargar
+                this.verificarTicketsExcedidos();
+                
+                // Configurar verificación periódica cada 2 minutos
+                // Usar arrow function para mantener el contexto de 'this'
+                const iniciarVerificacionPeriodica = () => {
+                    // Limpiar intervalo anterior si existe
+                    if (this.intervaloVerificacionExcedidos) {
+                        clearInterval(this.intervaloVerificacionExcedidos);
+                    }
+                    
+                    this.intervaloVerificacionExcedidos = setInterval(() => {
+                      
+                        this.verificarTicketsExcedidos();
+                    }, 300000); // 5 minutos = 300000 ms
+                    
+                };
+                
+                // Iniciar la verificación periódica
+                iniciarVerificacionPeriodica();
+                
+                // Reiniciar verificación si la página vuelve a estar visible (cuando el usuario regresa a la pestaña)
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) {
+                        this.verificarTicketsExcedidos();
+                    }
                 });
                 
                 // La actualización de mensajes se manejará mediante cron job
@@ -1718,11 +1810,6 @@
                             const ticketTiempoEstimado = el.getAttribute('data-ticket-tiempo-estimado') || '';
                             const ticketTiempoEstado = el.getAttribute('data-ticket-tiempo-estado') || '';
                             
-                            // Debug: solo para tickets en proceso
-                            if (categoria === 'proceso' && ticketId) {
-                                console.log(`Ticket ${ticketId} - Responsable: "${ticketResponsable}", Tiempo: ${ticketTiempoTranscurrido}/${ticketTiempoEstimado}, Estado: ${ticketTiempoEstado}`);
-                            }
-                            
                             if (ticketId) {
                             todosTickets.push({
                                     id: ticketId,
@@ -1774,11 +1861,9 @@
                     this.$nextTick(() => {
                         // Asegurar que Alpine detecte el cambio
                         if (this.ticketsTabla.length > 0) {
-                            console.log('Tickets cargados en tabla:', this.ticketsTabla.length);
                             // Forzar actualización reactiva
                             this.ticketsTabla = [...this.ticketsTabla];
                         } else {
-                            console.warn('No se encontraron tickets para la tabla');
                         }
                     });
                 };
@@ -2656,6 +2741,54 @@
                 return new Date(fecha).toLocaleString('es-ES');
             },
 
+            async verificarTicketsExcedidos() {
+                try {
+                    this.cargandoExcedidos = true;
+                    const response = await fetch('{{ route("tickets.excedidos") }}', {
+                        method: 'GET',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.tickets && data.tickets.length > 0) {
+                        this.ticketsExcedidos = data.tickets;
+                        
+                        // Mostrar popup si hay tickets excedidos
+                        // Si hay nuevos tickets o cambió la cantidad, mostrar/actualizar el popup
+                        if (this.ticketsExcedidos.length > 0) {
+                            this.mostrarPopupExcedidos = true;
+                
+                        }
+                    } else {
+                        // Si no hay tickets excedidos, ocultar el popup
+                        if (this.ticketsExcedidos.length > 0) {
+                        }
+                        this.ticketsExcedidos = [];
+                        this.mostrarPopupExcedidos = false;
+                    }
+                } catch (error) {
+                } finally {
+                    this.cargandoExcedidos = false;
+                }
+            },
+
+            cerrarPopupExcedidos() {
+                this.mostrarPopupExcedidos = false;
+            },
+
+            abrirTicketDesdePopup(ticketId) {
+                // Buscar el elemento del ticket y abrirlo
+                const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+                if (ticketElement) {
+                    this.abrirModalDesdeElemento(ticketElement);
+                    this.cerrarPopupExcedidos();
+                }
+            },
+
             obtenerIniciales(nombre) {
                 if (!nombre) return '??';
                 return nombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -2861,7 +2994,6 @@
                     const data = await response.json();
                     
                     if (data.success) {
-                        console.log('Diagnóstico de correos:', data.diagnostico);
                         
                         // Mostrar diagnóstico en una ventana emergente
                         let mensaje = 'Diagnóstico de Correos:\n\n';
@@ -2884,7 +3016,6 @@
                         this.mostrarNotificacion('Error en diagnóstico: ' + data.message, 'error');
                     }
                 } catch (error) {
-                    console.error('Error en diagnóstico:', error);
                     this.mostrarNotificacion('Error ejecutando diagnóstico', 'error');
                 }
             },
@@ -2912,7 +3043,6 @@
                         this.mostrarNotificacion(data.message, 'error');
                     }
                 } catch (error) {
-                    console.error('Error enviando instrucciones:', error);
                     this.mostrarNotificacion('Error enviando instrucciones', 'error');
                 }
             },
@@ -2956,7 +3086,6 @@
                         this.mostrarNotificacion(data.message, 'error');
                     }
                 } catch (error) {
-                    console.error('Error agregando respuesta manual:', error);
                     this.mostrarNotificacion('Error agregando respuesta manual', 'error');
                 }
             },
@@ -2970,7 +3099,6 @@
                 this.procesandoAutomatico = true;
 
                 try {
-                    console.log('🔄 Iniciando procesamiento automático de respuestas...');
                     
                     // Normalizar el asunto para mantener la nomenclatura con el ID
                     const asuntoNormalizado = this.normalizarAsunto(this.asuntoCorreo);
@@ -2994,7 +3122,6 @@
                         
                         // Mostrar estadísticas si están disponibles
                         if (data.estadisticas) {
-                            console.log('📊 Estadísticas del procesamiento:', data.estadisticas);
                         }
                         
                         // Recargar mensajes para mostrar las nuevas respuestas
@@ -3007,7 +3134,6 @@
                         this.mostrarNotificacion(data.message, 'error');
                     }
                 } catch (error) {
-                    console.error('Error procesando respuestas automáticas:', error);
                     this.mostrarNotificacion('Error procesando respuestas automáticas', 'error');
                 } finally {
                     this.procesandoAutomatico = false;
@@ -3016,7 +3142,6 @@
 
             async probarConexionWebklex() {
                 try {
-                    console.log('🔌 Probando conexión Webklex IMAP...');
                     
                     const response = await fetch('/api/test-webklex-connection', {
                         method: 'POST',
@@ -3030,13 +3155,10 @@
 
                     if (data.success) {
                         this.mostrarNotificacion(data.message, 'success');
-                        console.log('✅ Conexión Webklex exitosa:', data);
                     } else {
                         this.mostrarNotificacion(data.message, 'error');
-                        console.error('❌ Error de conexión Webklex:', data);
                     }
                 } catch (error) {
-                    console.error('Error probando conexión Webklex:', error);
                     this.mostrarNotificacion('Error probando conexión Webklex', 'error');
                 }
             },
@@ -3050,7 +3172,6 @@
                 this.buscandoCorreos = true;
 
                 try {
-                    console.log('🔍 Buscando correos de usuarios para ticket:', this.selected.id);
                     
                     // Procesar correos entrantes desde IMAP
                     const response = await fetch('/api/process-webklex-responses', {
@@ -3079,16 +3200,10 @@
                         // Actualizar estadísticas
                         this.estadisticas = await this.obtenerEstadisticasCorreos();
                         
-                        console.log('✅ Correos buscados y procesados exitosamente', {
-                            procesados: data.procesados,
-                            descartados: data.descartados,
-                            correos_usuarios: data.correos_usuarios
-                        });
                     } else {
                         this.mostrarNotificacion(data.message || 'No se encontraron correos nuevos', 'error');
                     }
                 } catch (error) {
-                    console.error('Error buscando correos de usuarios:', error);
                     this.mostrarNotificacion('Error buscando correos de usuarios', 'error');
                 } finally {
                     this.buscandoCorreos = false;
@@ -3104,7 +3219,6 @@
                 this.guardandoCorreos = true;
 
                 try {
-                    console.log('💾 Guardando correos en historial para ticket:', this.selected.id);
                     
                     // Sincronizar correos y guardarlos en el historial
                     const response = await fetch('/tickets/sincronizar-correos', {
@@ -3132,12 +3246,10 @@
                         // Actualizar estadísticas
                         this.estadisticas = await this.obtenerEstadisticasCorreos();
                         
-                        console.log('✅ Correos guardados en historial exitosamente');
                     } else {
                         this.mostrarNotificacion(data.message || 'Error guardando correos', 'error');
                     }
                 } catch (error) {
-                    console.error('Error guardando correos en historial:', error);
                     this.mostrarNotificacion('Error guardando correos en historial', 'error');
                 } finally {
                     this.guardandoCorreos = false;
@@ -3156,7 +3268,6 @@
                     }
                     
                     const data = await response.json();
-                    console.log('Datos recibidos:', data);
                     
                     if (data.success && data.tipos && Array.isArray(data.tipos)) {
                         this.metricasTipos = data.tipos.map(tipo => ({
@@ -3165,14 +3276,11 @@
                             TiempoEstimadoMinutos: tipo.TiempoEstimadoMinutos || null,
                             cambiado: false
                         }));
-                        console.log('Métricas cargadas:', this.metricasTipos);
                     } else {
-                        console.error('Respuesta inválida:', data);
                         this.mostrarNotificacion(data.message || 'Error cargando métricas', 'error');
                         this.metricasTipos = [];
                     }
                 } catch (error) {
-                    console.error('Error cargando métricas:', error);
                     this.mostrarNotificacion('Error cargando métricas: ' + error.message, 'error');
                     this.metricasTipos = [];
                 } finally {
@@ -3226,7 +3334,6 @@
                         this.mostrarNotificacion(data.message || 'Error guardando métricas', 'error');
                     }
                 } catch (error) {
-                    console.error('Error guardando métricas:', error);
                     this.mostrarNotificacion('Error guardando métricas', 'error');
                 } finally {
                     this.guardandoMetricas = false;
@@ -3299,10 +3406,8 @@
                         tipoSelect.appendChild(option);
                     });
                 } else {
-                    console.error('Error cargando tipos:', data.message);
                 }
             } catch (error) {
-                console.error('Error en la petición de tipos:', error);
             }
         }
 
@@ -3341,7 +3446,6 @@
                     console.log('No hay subtipos disponibles para este tipo');
                 }
             } catch (error) {
-                console.error('Error en la petición de subtipos:', error);
             }
         }
 
@@ -3368,10 +3472,8 @@
                     // mediante su directiva :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
                     tertipoSelect.disabled = false;
                 } else {
-                    console.log('No hay tertipos disponibles para este subtipo');
                 }
             } catch (error) {
-                console.error('Error en la petición de tertipos:', error);
             }
         }
 

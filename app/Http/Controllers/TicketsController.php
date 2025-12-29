@@ -1718,4 +1718,75 @@ class TicketsController extends Controller
         
         return $datos;
     }
+
+    /**
+     * Obtener tickets excedidos para mostrar en popup
+     */
+    public function obtenerTicketsExcedidos(Request $request)
+    {
+        try {
+            // Obtener todos los tickets en progreso con sus relaciones
+            $tickets = Tickets::with(['tipoticket', 'responsableTI', 'empleado'])
+                ->where('Estatus', 'En progreso')
+                ->whereNotNull('FechaInicioProgreso')
+                ->whereNotNull('TipoID')
+                ->get();
+
+            $ticketsExcedidos = [];
+
+            foreach ($tickets as $ticket) {
+                // Verificar si el ticket tiene métrica configurada
+                if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) {
+                    continue;
+                }
+
+                // Calcular tiempo de respuesta
+                $tiempoRespuesta = $ticket->tiempo_respuesta;
+                if ($tiempoRespuesta === null) {
+                    continue;
+                }
+
+                // Convertir tiempo estimado de minutos a horas
+                $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+
+                // Verificar si excede
+                if ($tiempoRespuesta > $tiempoEstimadoHoras) {
+                    $tiempoExcedido = round($tiempoRespuesta - $tiempoEstimadoHoras, 2);
+                    $porcentajeExcedido = round(($tiempoRespuesta / $tiempoEstimadoHoras) * 100, 1);
+                    
+                    $ticketsExcedidos[] = [
+                        'id' => $ticket->TicketID,
+                        'descripcion' => \Illuminate\Support\Str::limit($ticket->Descripcion, 80),
+                        'responsable' => $ticket->responsableTI ? $ticket->responsableTI->NombreEmpleado : 'Sin asignar',
+                        'empleado' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin empleado',
+                        'prioridad' => $ticket->Prioridad,
+                        'tiempo_estimado' => round($tiempoEstimadoHoras, 2),
+                        'tiempo_respuesta' => round($tiempoRespuesta, 2),
+                        'tiempo_excedido' => $tiempoExcedido,
+                        'porcentaje_excedido' => $porcentajeExcedido,
+                        'categoria' => $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'Sin categoría'
+                    ];
+                }
+            }
+
+            // Ordenar por tiempo excedido (mayor a menor)
+            usort($ticketsExcedidos, function($a, $b) {
+                return $b['tiempo_excedido'] <=> $a['tiempo_excedido'];
+            });
+
+            return response()->json([
+                'success' => true,
+                'tickets' => $ticketsExcedidos,
+                'total' => count($ticketsExcedidos)
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo tickets excedidos: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo tickets excedidos',
+                'tickets' => [],
+                'total' => 0
+            ], 500);
+        }
+    }
 }

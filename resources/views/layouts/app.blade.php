@@ -348,7 +348,6 @@
                             try {
                                 table.responsive.recalc();
                             } catch(e) {
-                                console.log('Error recalculating responsive table:', e);
                             }
                         }
                     }

@@ -201,7 +201,6 @@
                 });
 
                 const data = await response.json();
-                console.log(data.datos);
             } catch (error) {
                 console.error(error);
             }
