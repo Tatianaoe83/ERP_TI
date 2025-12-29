@@ -1343,11 +1343,17 @@ class TicketsController extends Controller
 
         // Calcular datos para el resumen
         $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
+        
+        // Calcular tiempo de resolución por empleado agrupado por responsable
+        $tiempoPorEmpleado = $this->calcularTiempoResolucionPorEmpleado($tickets);
+        
+        // Calcular tiempo por categoría y responsable
+        $tiempoPorCategoria = $this->calcularTiempoPorCategoriaResponsable($tickets);
 
         $nombreArchivo = 'reporte_tickets_' . date('d-m-Y-H-i') . '.xlsx';
 
         return Excel::download(
-            new \App\Exports\ReporteMensualTicketsExport($tickets, $resumen, $mes, $anio),
+            new \App\Exports\ReporteMensualTicketsExport($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio),
             $nombreArchivo
         );
     }
@@ -1516,5 +1522,200 @@ class TicketsController extends Controller
             'total_tickets' => $tickets->count(),
             'tickets_cerrados' => $ticketsCerrados
         ];
+    }
+
+    /**
+     * Calcular tiempo de resolución por empleado agrupado por responsable
+     */
+    private function calcularTiempoResolucionPorEmpleado($tickets)
+    {
+        $datos = [];
+        
+        // Filtrar solo tickets cerrados con tiempo de resolución
+        $ticketsCerrados = $tickets->filter(function($ticket) {
+            return $ticket->Estatus === 'Cerrado' 
+                && $ticket->FechaInicioProgreso 
+                && $ticket->FechaFinProgreso 
+                && $ticket->tiempo_resolucion !== null
+                && $ticket->responsableTI
+                && $ticket->empleado;
+        });
+        
+        // Agrupar por responsable y luego por empleado
+        $agrupados = [];
+        
+        foreach ($ticketsCerrados as $ticket) {
+            $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin responsable';
+            $empleadoNombre = $ticket->empleado->NombreEmpleado ?? 'Sin empleado';
+            $tiempoResolucion = $ticket->tiempo_resolucion ?? 0;
+            
+            if (!isset($agrupados[$responsableNombre])) {
+                $agrupados[$responsableNombre] = [];
+            }
+            
+            if (!isset($agrupados[$responsableNombre][$empleadoNombre])) {
+                $agrupados[$responsableNombre][$empleadoNombre] = [
+                    'responsable' => $responsableNombre,
+                    'empleado' => $empleadoNombre,
+                    'tickets' => [],
+                    'tiempos' => []
+                ];
+            }
+            
+            $agrupados[$responsableNombre][$empleadoNombre]['tickets'][] = $ticket;
+            $agrupados[$responsableNombre][$empleadoNombre]['tiempos'][] = $tiempoResolucion;
+        }
+        
+        // Calcular estadísticas para cada combinación responsable-empleado
+        foreach ($agrupados as $responsableNombre => $empleados) {
+            foreach ($empleados as $empleadoNombre => $datosEmpleado) {
+                $tiempos = $datosEmpleado['tiempos'];
+                $totalTickets = count($tiempos);
+                
+                if ($totalTickets > 0) {
+                    $tiempoPromedio = round(array_sum($tiempos) / $totalTickets, 2);
+                    $tiempoMinimo = round(min($tiempos), 2);
+                    $tiempoMaximo = round(max($tiempos), 2);
+                    $tiempoTotal = round(array_sum($tiempos), 2);
+                    
+                    $datos[] = [
+                        'responsable' => $responsableNombre,
+                        'empleado' => $empleadoNombre,
+                        'total_tickets' => $totalTickets,
+                        'tiempo_promedio' => $tiempoPromedio,
+                        'tiempo_minimo' => $tiempoMinimo,
+                        'tiempo_maximo' => $tiempoMaximo,
+                        'tiempo_total' => $tiempoTotal
+                    ];
+                }
+            }
+        }
+        
+        // Ordenar por responsable y luego por empleado
+        usort($datos, function($a, $b) {
+            $cmp = strcmp($a['responsable'], $b['responsable']);
+            if ($cmp === 0) {
+                return strcmp($a['empleado'], $b['empleado']);
+            }
+            return $cmp;
+        });
+        
+        return $datos;
+    }
+
+    /**
+     * Calcular tiempo de resolución por categoría y responsable
+     */
+    private function calcularTiempoPorCategoriaResponsable($tickets)
+    {
+        $datos = [];
+        
+        // Filtrar solo tickets cerrados con tiempo de resolución
+        $ticketsCerrados = $tickets->filter(function($ticket) {
+            return $ticket->Estatus === 'Cerrado' 
+                && $ticket->FechaInicioProgreso 
+                && $ticket->FechaFinProgreso 
+                && $ticket->tiempo_resolucion !== null
+                && $ticket->responsableTI;
+        });
+        
+        // Agrupar por TipoID, SubtipoID, TertipoID y luego por responsable
+        $agrupados = [];
+        
+        foreach ($ticketsCerrados as $ticket) {
+            // Obtener información de categoría completa
+            $tipoNombre = 'Sin tipo';
+            $subtipoNombre = 'Sin subtipo';
+            $tertipoNombre = 'Sin tertipo';
+            
+            if ($ticket->tipoticket && $ticket->tipoticket->NombreTipo) {
+                $tipoNombre = $ticket->tipoticket->NombreTipo;
+            }
+            
+            if ($ticket->subtipo && $ticket->subtipo->NombreSubtipo) {
+                $subtipoNombre = $ticket->subtipo->NombreSubtipo;
+            }
+            
+            if ($ticket->tertipo && $ticket->tertipo->NombreTertipo) {
+                $tertipoNombre = $ticket->tertipo->NombreTertipo;
+            }
+            
+            // Crear clave única para agrupar por TipoID, SubtipoID, TertipoID
+            $tipoID = $ticket->TipoID ?? 'null';
+            $subtipoID = $ticket->SubtipoID ?? 'null';
+            $tertipoID = $ticket->TertipoID ?? 'null';
+            $claveCategoria = $tipoID . '_' . $subtipoID . '_' . $tertipoID;
+            
+            $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin responsable';
+            $tiempoResolucion = $ticket->tiempo_resolucion ?? 0;
+            
+            if (!isset($agrupados[$claveCategoria])) {
+                $agrupados[$claveCategoria] = [];
+            }
+            
+            if (!isset($agrupados[$claveCategoria][$responsableNombre])) {
+                $agrupados[$claveCategoria][$responsableNombre] = [
+                    'tipo_id' => $tipoID,
+                    'tipo_nombre' => $tipoNombre,
+                    'subtipo_id' => $subtipoID,
+                    'subtipo_nombre' => $subtipoNombre,
+                    'tertipo_id' => $tertipoID,
+                    'tertipo_nombre' => $tertipoNombre,
+                    'responsable' => $responsableNombre,
+                    'tickets' => [],
+                    'tiempos' => []
+                ];
+            }
+            
+            $agrupados[$claveCategoria][$responsableNombre]['tickets'][] = $ticket;
+            $agrupados[$claveCategoria][$responsableNombre]['tiempos'][] = $tiempoResolucion;
+        }
+        
+        // Calcular estadísticas para cada combinación categoría-responsable
+        foreach ($agrupados as $claveCategoria => $responsables) {
+            foreach ($responsables as $responsableNombre => $datosResponsable) {
+                $tiempos = $datosResponsable['tiempos'];
+                $totalTickets = count($tiempos);
+                
+                if ($totalTickets > 0) {
+                    $tiempoPromedio = round(array_sum($tiempos) / $totalTickets, 2);
+                    $tiempoMinimo = round(min($tiempos), 2);
+                    $tiempoMaximo = round(max($tiempos), 2);
+                    $tiempoTotal = round(array_sum($tiempos), 2);
+                    
+                    $datos[] = [
+                        'tipo_id' => $datosResponsable['tipo_id'],
+                        'tipo_nombre' => $datosResponsable['tipo_nombre'],
+                        'subtipo_id' => $datosResponsable['subtipo_id'],
+                        'subtipo_nombre' => $datosResponsable['subtipo_nombre'],
+                        'tertipo_id' => $datosResponsable['tertipo_id'],
+                        'tertipo_nombre' => $datosResponsable['tertipo_nombre'],
+                        'responsable' => $responsableNombre,
+                        'total_tickets' => $totalTickets,
+                        'tiempo_promedio' => $tiempoPromedio,
+                        'tiempo_minimo' => $tiempoMinimo,
+                        'tiempo_maximo' => $tiempoMaximo,
+                        'tiempo_total' => $tiempoTotal
+                    ];
+                }
+            }
+        }
+        
+        // Ordenar por tipo, subtipo, tertipo y luego por responsable
+        usort($datos, function($a, $b) {
+            $cmp = strcmp($a['tipo_nombre'], $b['tipo_nombre']);
+            if ($cmp === 0) {
+                $cmp = strcmp($a['subtipo_nombre'], $b['subtipo_nombre']);
+                if ($cmp === 0) {
+                    $cmp = strcmp($a['tertipo_nombre'], $b['tertipo_nombre']);
+                    if ($cmp === 0) {
+                        return strcmp($a['responsable'], $b['responsable']);
+                    }
+                }
+            }
+            return $cmp;
+        });
+        
+        return $datos;
     }
 }

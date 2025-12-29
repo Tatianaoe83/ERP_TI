@@ -132,6 +132,10 @@
                     data-ticket-correo="{{ $ticket->empleado->Correo }}"
                     data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
                     data-ticket-imagen="{{ htmlspecialchars($ticket->imagen ?? '', ENT_QUOTES, 'UTF-8') }}"
+                    data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
+                    data-ticket-tiempo-transcurrido="{{ $tiempoInfo['transcurrido'] ?? '' }}"
+                    data-ticket-tiempo-estimado="{{ $tiempoInfo['estimado'] ?? '' }}"
+                    data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
                     @click="abrirModalDesdeElemento($el)">
                     <div class="flex justify-between items-start">
                         <h3 class="text-sm font-semibold text-gray-800 truncate">
@@ -214,6 +218,33 @@
                 $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
                 if (count($partes) >= 3) array_splice($partes, 1, 1);
                 $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
+                
+                // Calcular información de tiempo solo para tickets en proceso
+                $tiempoInfo = null;
+                $nombreResponsable = null;
+                
+                if ($key === 'proceso') {
+                    // Obtener nombre del responsable
+                    if ($ticket->responsableTI) {
+                        $partesResp = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
+                        if (count($partesResp) >= 3) array_splice($partesResp, 1, 1);
+                        $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $partesResp))->title();
+                    }
+                    
+                    // Calcular tiempo si tiene fecha de inicio y tiempo estimado
+                    if ($ticket->FechaInicioProgreso && $ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
+                        $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                        $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
+                        $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
+                        
+                        $tiempoInfo = [
+                            'transcurrido' => round($tiempoTranscurrido, 1),
+                            'estimado' => round($tiempoEstimadoHoras, 1),
+                            'porcentaje' => round($porcentajeUsado, 1),
+                            'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
+                        ];
+                    }
+                }
                 @endphp
                 <div
                     class="p-4 hover:bg-gray-50 transition cursor-pointer"
@@ -228,6 +259,10 @@
                     data-ticket-correo="{{ $ticket->empleado->Correo }}"
                     data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
                     data-ticket-imagen="{{ htmlspecialchars($ticket->imagen ?? '', ENT_QUOTES, 'UTF-8') }}"
+                    data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
+                    data-ticket-tiempo-transcurrido="{{ $tiempoInfo['transcurrido'] ?? '' }}"
+                    data-ticket-tiempo-estimado="{{ $tiempoInfo['estimado'] ?? '' }}"
+                    data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
                     x-show="estaEnPaginaListaPorElemento('{{ $key }}', $el)"
                     @click="abrirModalDesdeElemento($el)">
                     <div class="flex items-start justify-between gap-4">
@@ -241,7 +276,7 @@
                             <p class="text-sm text-gray-600 mb-3 line-clamp-2">
                                 {{ Str::limit($ticket->Descripcion, 150, '...') }}
                             </p>
-                            <div class="flex items-center gap-4 text-xs text-gray-500">
+                            <div class="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                                 <span class="flex items-center gap-1">
                                     <i class="fas fa-user text-gray-400"></i>
                                     <span class="font-semibold text-gray-700">{{ $nombreFormateado }}</span>
@@ -250,6 +285,24 @@
                                     <i class="fas fa-calendar text-gray-400"></i>
                                     <span>{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
                                 </span>
+                                @if($key === 'proceso' && $nombreResponsable)
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-user-tie text-blue-500"></i>
+                                    <span class="font-semibold text-gray-700">Responsable:</span>
+                                    <span class="text-gray-800">{{ $nombreResponsable }}</span>
+                                </span>
+                                @endif
+                                @if($key === 'proceso' && $tiempoInfo)
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-clock text-gray-400"></i>
+                                    <span class="font-semibold text-gray-700">Tiempo:</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold
+                                        {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 text-red-700' : 
+                                           ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700') }}">
+                                        {{ $tiempoInfo['transcurrido'] }}h / {{ $tiempoInfo['estimado'] }}h
+                                    </span>
+                                </span>
+                                @endif
                                 @if($ticket->CodeAnyDesk)
                                 <span class="flex items-center gap-1">
                                     <i class="fas fa-desktop text-gray-400"></i>
@@ -381,6 +434,8 @@
                                    :class="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
                             </div>
                         </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
@@ -419,13 +474,27 @@
                                       x-text="ticket.estatus || 'Pendiente'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div x-show="ticket.responsable && ticket.responsable.trim() !== ''" class="text-sm text-gray-900" x-text="ticket.responsable"></div>
+                                <div x-show="!ticket.responsable || ticket.responsable.trim() === ''" class="text-xs text-gray-400">-</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div x-show="ticket.tiempoTranscurrido && ticket.tiempoEstimado && ticket.tiempoTranscurrido !== '' && ticket.tiempoEstimado !== ''" class="flex flex-col gap-1">
+                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                          :class="ticket.tiempoEstado === 'agotado' ? 'bg-red-100 text-red-700' : 
+                                                 (ticket.tiempoEstado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 
+                                                 (ticket.tiempoEstado === 'normal' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'))"
+                                          x-text="ticket.tiempoTranscurrido + 'h / ' + ticket.tiempoEstimado + 'h'"></span>
+                                </div>
+                                <div x-show="!ticket.tiempoTranscurrido || !ticket.tiempoEstimado || ticket.tiempoTranscurrido === '' || ticket.tiempoEstimado === ''" class="text-xs text-gray-400">-</div>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <i class="fas fa-eye text-blue-500"></i>
                             </td>
                         </tr>
                     </template>
                     <tr x-show="!ticketsTabla || ticketsTabla.length === 0">
-                        <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-400">
+                        <td colspan="9" class="px-6 py-8 text-center text-sm text-gray-400">
                             No hay tickets disponibles.
                         </td>
                     </tr>
@@ -1643,6 +1712,16 @@
                             const ticketNumero = el.getAttribute('data-ticket-numero') || el.dataset.ticketNumero || '';
                             const ticketCorreo = el.getAttribute('data-ticket-correo') || el.dataset.ticketCorreo;
                             const ticketFecha = el.getAttribute('data-ticket-fecha') || el.dataset.ticketFecha;
+                            // Leer responsable y tiempo - usar getAttribute con el nombre completo del atributo
+                            const ticketResponsable = el.getAttribute('data-ticket-responsable') || '';
+                            const ticketTiempoTranscurrido = el.getAttribute('data-ticket-tiempo-transcurrido') || '';
+                            const ticketTiempoEstimado = el.getAttribute('data-ticket-tiempo-estimado') || '';
+                            const ticketTiempoEstado = el.getAttribute('data-ticket-tiempo-estado') || '';
+                            
+                            // Debug: solo para tickets en proceso
+                            if (categoria === 'proceso' && ticketId) {
+                                console.log(`Ticket ${ticketId} - Responsable: "${ticketResponsable}", Tiempo: ${ticketTiempoTranscurrido}/${ticketTiempoEstimado}, Estado: ${ticketTiempoEstado}`);
+                            }
                             
                             if (ticketId) {
                             todosTickets.push({
@@ -1656,6 +1735,10 @@
                                     correo: ticketCorreo || '',
                                     fecha: ticketFecha || '',
                                 estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
+                                responsable: ticketResponsable ? ticketResponsable.trim() : '',
+                                tiempoTranscurrido: ticketTiempoTranscurrido ? ticketTiempoTranscurrido.trim() : '',
+                                tiempoEstimado: ticketTiempoEstimado ? ticketTiempoEstimado.trim() : '',
+                                tiempoEstado: ticketTiempoEstado ? ticketTiempoEstado.trim() : '',
                                 elemento: el
                             });
                             }
