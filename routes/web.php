@@ -121,6 +121,7 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::get('/tickets/productividad-ajax', [App\Http\Controllers\TicketsController::class, 'obtenerProductividadAjax'])->name('tickets.productividad-ajax');
     // Rutas específicas deben ir ANTES de las rutas con parámetros dinámicos
     Route::get('/tickets/chat-messages', [App\Http\Controllers\TicketsController::class, 'getChatMessages']);
+    Route::get('/tickets/verificar-mensajes-nuevos', [App\Http\Controllers\TicketsController::class, 'verificarMensajesNuevos']);
     Route::get('/tickets/estadisticas-correos', [App\Http\Controllers\TicketsController::class, 'obtenerEstadisticasCorreos']);
     Route::get('/tickets/diagnosticar-correos', [App\Http\Controllers\TicketsController::class, 'diagnosticarCorreos']);
     Route::get('/tickets/tiempo-progreso', [App\Http\Controllers\TicketsController::class, 'obtenerTiempoProgreso']);

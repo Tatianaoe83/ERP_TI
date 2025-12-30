@@ -78,6 +78,9 @@
                     <div class="mt-2 text-xs text-red-600">
                         <i class="fas fa-sync-alt mr-1" :class="{'animate-spin': cargandoExcedidos}"></i>
                         <span x-text="cargandoExcedidos ? 'Verificando...' : 'Actualización automática cada 5 min'"></span>
+                        <span x-show="!cargandoExcedidos && mostrarPopupExcedidos" class="ml-2">
+                            • Se cerrará en <span x-text="tiempoRestantePopup" class="font-semibold"></span>s
+                        </span>
                     </div>
                 </div>
                 <div class="ml-4 flex-shrink-0 flex flex-col gap-2">
@@ -1505,8 +1508,14 @@
             // Variables para tickets excedidos
             mostrarPopupExcedidos: false,
             ticketsExcedidos: [],
+            timerPopupExcedidos: null,
+            intervaloContadorPopup: null,
+            tiempoRestantePopup: 10,
             cargandoExcedidos: false,
             intervaloVerificacionExcedidos: null,
+            // Variables para verificación automática de mensajes nuevos
+            intervaloVerificacionMensajes: null,
+            ultimoMensajeId: 0,
 
             init() {
                 // Los datos de ticketsLista ya están inicializados desde el servidor
@@ -1526,16 +1535,16 @@
                         setTimeout(() => {
                             this.prepararDatosTabla();
                         }, 200);
-                    } else if (newValue === 'kanban') {
-                        // Iniciar actualización en tiempo real cuando se cambia a kanban
+                        // Iniciar actualización en tiempo real también en vista tabla
+                        this.iniciarActualizacionTiempoReal();
+                    } else if (newValue === 'kanban' || newValue === 'lista') {
+                        // Iniciar actualización en tiempo real cuando se cambia a kanban o lista
                         this.iniciarActualizacionTiempoReal();
                     }
                 });
                 
-                // Iniciar actualización en tiempo real de indicadores de tiempo si la vista inicial es kanban
-                if (this.vista === 'kanban') {
-                    this.iniciarActualizacionTiempoReal();
-                }
+                // Iniciar actualización en tiempo real de indicadores de tiempo para todas las vistas
+                this.iniciarActualizacionTiempoReal();
                 
                 // Watcher para forzar actualización cuando cambie paginaTabla o elementosPorPagina
                 this.$watch('paginaTabla', () => {
@@ -1593,17 +1602,18 @@
             },
 
             iniciarActualizacionTiempoReal() {
-                // Actualizar indicadores de tiempo cada 2 minutos cuando la vista es kanban
-                if (this.vista === 'kanban') {
-                    this.actualizarIndicadoresTiempo();
+                // Limpiar intervalo anterior si existe
+                if (this.intervaloTiempoReal) {
+                    clearInterval(this.intervaloTiempoReal);
                 }
                 
-                // Configurar intervalo para actualizar cada 2 minutos
-                setInterval(() => {
-                    if (this.vista === 'kanban') {
-                        this.actualizarIndicadoresTiempo();
-                    }
-                }, 120000); // 2 minutos = 120000 ms
+                // Actualizar indicadores de tiempo inmediatamente
+                this.actualizarIndicadoresTiempo();
+                
+                // Configurar intervalo para actualizar cada 30 segundos (tiempo real)
+                this.intervaloTiempoReal = setInterval(() => {
+                    this.actualizarIndicadoresTiempo();
+                }, 30000); // 30 segundos = 30000 ms
             },
 
             async actualizarIndicadoresTiempo() {
@@ -1624,44 +1634,68 @@
                             const tiempoInfo = data.tiempos[ticketId];
                             if (!tiempoInfo) return;
                             
-                            // Buscar el elemento del ticket en kanban
-                            const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"][data-categoria="proceso"]`);
-                            if (!ticketElement) return;
-                            
-                            // Buscar el contenedor de tiempo
-                            const tiempoContainer = ticketElement.querySelector('.tiempo-indicador-container');
-                            if (tiempoContainer) {
-                                // Actualizar el badge de estado
-                                const badgeEstado = tiempoContainer.querySelector('.badge-estado');
-                                if (badgeEstado) {
-                                    const estado = tiempoInfo.estado;
-                                    badgeEstado.className = `text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                        estado === 'agotado' ? 'bg-red-100 text-red-700' : 
-                                        (estado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
-                                    }`;
-                                    badgeEstado.innerHTML = estado === 'agotado' 
-                                        ? '<i class="fas fa-exclamation-triangle"></i> Tiempo Agotado'
-                                        : (estado === 'por_vencer' 
-                                            ? '<i class="fas fa-clock"></i> Por Vencer'
-                                            : '<i class="fas fa-check-circle"></i> En Tiempo');
-                                }
-                                
-                                // Actualizar el texto de tiempo
-                                const tiempoTexto = tiempoContainer.querySelector('.tiempo-texto');
-                                if (tiempoTexto) {
-                                    tiempoTexto.textContent = `${tiempoInfo.transcurrido}h / ${tiempoInfo.estimado}h`;
-                                }
-                                
-                                // Actualizar la barra de progreso
-                                const barraProgreso = tiempoContainer.querySelector('.barra-progreso');
-                                if (barraProgreso) {
-                                    barraProgreso.style.width = `${Math.min(tiempoInfo.porcentaje, 100)}%`;
-                                    barraProgreso.className = `h-1.5 rounded-full transition-all duration-300 ${
-                                        tiempoInfo.estado === 'agotado' ? 'bg-red-500' : 
-                                        (tiempoInfo.estado === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500')
-                                    }`;
+                            // Actualizar vista Kanban
+                            const ticketElementKanban = document.querySelector(`[data-ticket-id="${ticketId}"][data-categoria="proceso"]`);
+                            if (ticketElementKanban) {
+                                const tiempoContainer = ticketElementKanban.querySelector('.tiempo-indicador-container');
+                                if (tiempoContainer) {
+                                    // Actualizar el badge de estado
+                                    const badgeEstado = tiempoContainer.querySelector('.badge-estado');
+                                    if (badgeEstado) {
+                                        const estado = tiempoInfo.estado;
+                                        badgeEstado.className = `text-xs px-2 py-0.5 rounded-full font-semibold ${
+                                            estado === 'agotado' ? 'bg-red-100 text-red-700' : 
+                                            (estado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
+                                        }`;
+                                        badgeEstado.innerHTML = estado === 'agotado' 
+                                            ? '<i class="fas fa-exclamation-triangle"></i> Tiempo Agotado'
+                                            : (estado === 'por_vencer' 
+                                                ? '<i class="fas fa-clock"></i> Por Vencer'
+                                                : '<i class="fas fa-check-circle"></i> En Tiempo');
+                                    }
+                                    
+                                    // Actualizar el texto de tiempo
+                                    const tiempoTexto = tiempoContainer.querySelector('.tiempo-texto');
+                                    if (tiempoTexto) {
+                                        tiempoTexto.textContent = `${tiempoInfo.transcurrido}h / ${tiempoInfo.estimado}h`;
+                                    }
+                                    
+                                    // Actualizar la barra de progreso
+                                    const barraProgreso = tiempoContainer.querySelector('.barra-progreso');
+                                    if (barraProgreso) {
+                                        barraProgreso.style.width = `${Math.min(tiempoInfo.porcentaje, 100)}%`;
+                                        barraProgreso.className = `h-1.5 rounded-full transition-all duration-300 ${
+                                            tiempoInfo.estado === 'agotado' ? 'bg-red-500' : 
+                                            (tiempoInfo.estado === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500')
+                                        }`;
+                                    }
                                 }
                             }
+                            
+                            // Actualizar vista Lista (usando Alpine.js)
+                            if (this.ticketsTabla && Array.isArray(this.ticketsTabla)) {
+                                const ticketEnLista = this.ticketsTabla.find(t => t.id == ticketId);
+                                if (ticketEnLista && ticketEnLista.tiempoTranscurrido !== undefined) {
+                                    ticketEnLista.tiempoTranscurrido = tiempoInfo.transcurrido.toString();
+                                    ticketEnLista.tiempoEstimado = tiempoInfo.estimado.toString();
+                                    ticketEnLista.tiempoEstado = tiempoInfo.estado;
+                                    
+                                    // Actualizar también los atributos data-* en el elemento DOM si existe
+                                    if (ticketEnLista.elemento) {
+                                        ticketEnLista.elemento.setAttribute('data-ticket-tiempo-transcurrido', tiempoInfo.transcurrido);
+                                        ticketEnLista.elemento.setAttribute('data-ticket-tiempo-estimado', tiempoInfo.estimado);
+                                        ticketEnLista.elemento.setAttribute('data-ticket-tiempo-estado', tiempoInfo.estado);
+                                    }
+                                }
+                            }
+                            
+                            // Actualizar atributos data-* en todos los elementos del ticket para mantener consistencia
+                            const todosLosElementosTicket = document.querySelectorAll(`[data-ticket-id="${ticketId}"]`);
+                            todosLosElementosTicket.forEach(elemento => {
+                                elemento.setAttribute('data-ticket-tiempo-transcurrido', tiempoInfo.transcurrido);
+                                elemento.setAttribute('data-ticket-tiempo-estimado', tiempoInfo.estimado);
+                                elemento.setAttribute('data-ticket-tiempo-estado', tiempoInfo.estado);
+                            });
                         });
                     }
                 } catch (error) {
@@ -1996,6 +2030,8 @@
                 // Cargar datos del ticket para el formulario
                 this.cargarDatosTicket(datos.id);
                 this.cargarMensajes();
+                // Iniciar verificación automática de mensajes nuevos
+                this.iniciarVerificacionMensajes();
                 // Inicializar TinyMCE si no está inicializado
                 this.$nextTick(() => {
                     if (!this.tinyMCEInstance) {
@@ -2349,6 +2385,8 @@
                 this.prioridadCorreo = 'normal';
                 this.correoCc = '';
                 this.correoBcc = '';
+                // Detener verificación automática de mensajes nuevos
+                this.detenerVerificacionMensajes();
                 // Limpiar el editor TinyMCE
                 if (this.tinyMCEInstance) {
                     this.tinyMCEInstance.setContent('');
@@ -2524,6 +2562,12 @@
                     
                     if (data.success) {
                         this.mensajes = data.messages;
+                        // Actualizar el último mensaje ID para la verificación automática
+                        if (this.mensajes && this.mensajes.length > 0) {
+                            this.ultimoMensajeId = Math.max(...this.mensajes.map(m => m.id));
+                        } else {
+                            this.ultimoMensajeId = 0;
+                        }
                         this.marcarMensajesComoLeidos();
                         this.scrollToBottom();
                     
@@ -2534,6 +2578,61 @@
                     }
                 } catch (error) {
                     console.error('Error cargando mensajes:', error);
+                }
+            },
+
+            iniciarVerificacionMensajes() {
+                // Limpiar intervalo anterior si existe
+                if (this.intervaloVerificacionMensajes) {
+                    clearInterval(this.intervaloVerificacionMensajes);
+                }
+                
+                // Verificar inmediatamente al iniciar
+                this.verificarMensajesNuevos();
+                
+                // Configurar intervalo para verificar cada 30 segundos
+                // Esto coincide con la frecuencia del job que se ejecuta cada 5 minutos
+                // pero verificamos más frecuentemente para mejor UX
+                this.intervaloVerificacionMensajes = setInterval(() => {
+                    if (this.mostrar && this.selected.id) {
+                        this.verificarMensajesNuevos();
+                    }
+                }, 30000); // 30 segundos
+            },
+
+            detenerVerificacionMensajes() {
+                if (this.intervaloVerificacionMensajes) {
+                    clearInterval(this.intervaloVerificacionMensajes);
+                    this.intervaloVerificacionMensajes = null;
+                }
+                this.ultimoMensajeId = 0;
+            },
+
+            async verificarMensajesNuevos() {
+                if (!this.selected.id || !this.mostrar) return;
+
+                try {
+                    const response = await fetch(
+                        `/tickets/verificar-mensajes-nuevos?ticket_id=${this.selected.id}&ultimo_mensaje_id=${this.ultimoMensajeId}`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                'Accept': 'application/json'
+                            }
+                        }
+                    );
+
+                    const data = await response.json();
+
+                    if (data.success && data.tiene_nuevos) {
+                        // Hay mensajes nuevos, recargar la lista de mensajes
+                        await this.cargarMensajes();
+                    }
+                } catch (error) {
+                    // Silenciar errores de verificación para no molestar al usuario
+                    // Solo loguear en consola para debugging
+                    console.debug('Error verificando mensajes nuevos:', error);
                 }
             },
 
@@ -2751,7 +2850,8 @@
                         // Si hay nuevos tickets o cambió la cantidad, mostrar/actualizar el popup
                         if (this.ticketsExcedidos.length > 0) {
                             this.mostrarPopupExcedidos = true;
-                
+                            // Iniciar timer para cerrar automáticamente
+                            this.iniciarTimerPopup();
                         }
                     } else {
                         // Si no hay tickets excedidos, ocultar el popup
@@ -2767,7 +2867,51 @@
             },
 
             cerrarPopupExcedidos() {
+                // Limpiar el timer si existe
+                if (this.timerPopupExcedidos) {
+                    clearTimeout(this.timerPopupExcedidos);
+                    this.timerPopupExcedidos = null;
+                }
+                // Limpiar el intervalo del contador si existe
+                if (this.intervaloContadorPopup) {
+                    clearInterval(this.intervaloContadorPopup);
+                    this.intervaloContadorPopup = null;
+                }
                 this.mostrarPopupExcedidos = false;
+            },
+            
+            iniciarTimerPopup() {
+                // Limpiar timer anterior si existe
+                if (this.timerPopupExcedidos) {
+                    clearTimeout(this.timerPopupExcedidos);
+                    this.timerPopupExcedidos = null;
+                }
+                // Limpiar intervalo del contador anterior si existe
+                if (this.intervaloContadorPopup) {
+                    clearInterval(this.intervaloContadorPopup);
+                    this.intervaloContadorPopup = null;
+                }
+                
+                // Reiniciar contador
+                this.tiempoRestantePopup = 10;
+                
+                // Actualizar contador cada segundo
+                this.intervaloContadorPopup = setInterval(() => {
+                    this.tiempoRestantePopup--;
+                    if (this.tiempoRestantePopup <= 0) {
+                        clearInterval(this.intervaloContadorPopup);
+                        this.intervaloContadorPopup = null;
+                    }
+                }, 1000);
+                
+                // Cerrar automáticamente después de 10 segundos
+                this.timerPopupExcedidos = setTimeout(() => {
+                    if (this.intervaloContadorPopup) {
+                        clearInterval(this.intervaloContadorPopup);
+                        this.intervaloContadorPopup = null;
+                    }
+                    this.cerrarPopupExcedidos();
+                }, 10000); // 10 segundos
             },
 
             abrirTicketDesdePopup(ticketId) {
@@ -2775,6 +2919,7 @@
                 const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
                 if (ticketElement) {
                     this.abrirModalDesdeElemento(ticketElement);
+                    // Cerrar el popup (esto también limpiará el timer)
                     this.cerrarPopupExcedidos();
                 }
             },

@@ -500,6 +500,54 @@ class TicketsController extends Controller
     }
 
     /**
+     * Verificar si hay mensajes nuevos en un ticket
+     */
+    public function verificarMensajesNuevos(Request $request)
+    {
+        try {
+            $ticketId = $request->input('ticket_id');
+            $ultimoMensajeId = $request->input('ultimo_mensaje_id', 0);
+            
+            if (!$ticketId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ticket ID es requerido'
+                ], 400);
+            }
+            
+            // Obtener el último mensaje del ticket
+            $ultimoMensaje = TicketChat::where('ticket_id', $ticketId)
+                ->orderBy('id', 'desc')
+                ->first();
+            
+            if (!$ultimoMensaje) {
+                return response()->json([
+                    'success' => true,
+                    'tiene_nuevos' => false,
+                    'ultimo_mensaje_id' => 0
+                ]);
+            }
+            
+            // Verificar si hay mensajes nuevos comparando IDs
+            $tieneNuevos = $ultimoMensaje->id > (int)$ultimoMensajeId;
+            
+            return response()->json([
+                'success' => true,
+                'tiene_nuevos' => $tieneNuevos,
+                'ultimo_mensaje_id' => $ultimoMensaje->id,
+                'total_mensajes' => TicketChat::where('ticket_id', $ticketId)->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error verificando mensajes nuevos: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error verificando mensajes: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Enviar respuesta por correo
      */
     public function enviarRespuesta(Request $request)
