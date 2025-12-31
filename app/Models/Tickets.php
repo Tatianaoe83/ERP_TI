@@ -55,8 +55,7 @@ class Tickets extends Model
         'TertipoID',
         'FechaInicioProgreso',
         'FechaFinProgreso',
-        'fecha_ultima_notificacion_exceso',
-        'intervalo_verificacion_minutos'
+        'fecha_ultima_notificacion_exceso'
     ];
 
     /**
@@ -79,8 +78,7 @@ class Tickets extends Model
         'TertipoID' => 'integer',
         'FechaInicioProgreso' => 'datetime',
         'FechaFinProgreso' => 'datetime',
-        'fecha_ultima_notificacion_exceso' => 'datetime',
-        'intervalo_verificacion_minutos' => 'integer'
+        'fecha_ultima_notificacion_exceso' => 'datetime'
     ];
 
     /**

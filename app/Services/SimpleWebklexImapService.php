@@ -337,6 +337,13 @@ class SimpleWebklexImapService
             }
             
             if ($ticket) {
+                // Verificar que el ticket esté en "En progreso"
+                // Solo procesar respuestas de tickets en estado "En progreso"
+                if ($ticket->Estatus !== 'En progreso') {
+                    Log::info("⚠️ Correo descartado - ticket en estado '{$ticket->Estatus}' (solo se procesan tickets en 'En progreso') | Ticket #{$ticket->TicketID} | From: {$fromEmail} | Subject: {$subject}");
+                    return false;
+                }
+                
                 // Respuesta a ticket existente
                 // Verificar si ya fue procesado SOLO si tiene message_id válido
                 // Si no tiene message_id, procesarlo para mantener historial completo
@@ -350,7 +357,7 @@ class SimpleWebklexImapService
                     return false;
                 }
                 
-                Log::info("✅ Procesando respuesta para ticket existente | Ticket #{$ticket->TicketID} | From: {$fromEmail} | Subject: {$subject}");
+                Log::info("✅ Procesando respuesta para ticket existente | Ticket #{$ticket->TicketID} | Estado: {$ticket->Estatus} | From: {$fromEmail} | Subject: {$subject}");
                 Log::info("Body texto length: " . strlen($bodyTexto ?? '') . " | Body HTML length: " . strlen($bodyHtml ?? ''));
                 Log::info("Message-ID: " . ($messageId ?? 'N/A') . " | Thread-ID: " . ($threadId ?? 'N/A'));
                 

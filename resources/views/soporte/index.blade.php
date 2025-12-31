@@ -105,7 +105,7 @@
                             <input type="number" id="numeroTelefono" placeholder="Número Telefónico" name="Numero" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
-                            <label for="">Código AnyDesk *</label>
+                            <label for="">Código AnyDesk</label>
                             <input type="number" placeholder="Código AnyDesk" name="CodeAnyDesk" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
@@ -774,7 +774,7 @@
                 
                 // Habilitar solo campos específicos y hacerlos requeridos
                 $('#numeroTelefono').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
-                $('input[name="CodeAnyDesk"]').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
+                $('input[name="CodeAnyDesk"]').prop('disabled', false).removeClass('bg-gray-100');
                 $('textarea[name="Descripcion"]').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
                 $('#fileInput').prop('disabled', false);
                 $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
@@ -954,11 +954,6 @@
                 // Validar número telefónico
                 if (numero.length !== 10) {
                     errores.push('El número telefónico debe tener exactamente 10 dígitos');
-                }
-                
-                // Validar código AnyDesk
-                if (!anyDesk) {
-                    errores.push('El código AnyDesk es requerido');
                 }
                 
                 // Validar descripción

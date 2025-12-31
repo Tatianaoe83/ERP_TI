@@ -1208,8 +1208,21 @@ class TicketsController extends Controller
                 ], 404);
             }
 
-            $tipo->TiempoEstimadoMinutos = $request->input('tiempo_estimado_minutos');
+            $tiempoAnterior = $tipo->TiempoEstimadoMinutos;
+            $nuevoTiempo = $request->input('tiempo_estimado_minutos');
+            
+            $tipo->TiempoEstimadoMinutos = $nuevoTiempo;
             $tipo->save();
+
+            // Recalcular fechas de notificación si cambió el intervalo
+            if ($tiempoAnterior != $nuevoTiempo) {
+                $notificationService = new \App\Services\TicketNotificationService();
+                $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo(
+                    $tipo->TipoID, 
+                    $nuevoTiempo
+                );
+                Log::info("Tipo {$tipo->TipoID}: Intervalo actualizado de {$tiempoAnterior} a {$nuevoTiempo} minutos. {$ticketsActualizados} tickets actualizados.");
+            }
 
             return response()->json([
                 'success' => true,
@@ -1260,9 +1273,22 @@ class TicketsController extends Controller
                         continue;
                     }
                     
+                    // Obtener el tiempo anterior antes de actualizar
+                    $tiempoAnterior = $tipo->TiempoEstimadoMinutos;
+                    
                     // Usar update() para forzar la actualización en la base de datos
                     $filasAfectadas = Tipoticket::where('TipoID', $tipoId)
                         ->update(['TiempoEstimadoMinutos' => $tiempoEstimado]);
+                    
+                    // Recalcular fechas de notificación si cambió el intervalo
+                    if ($tiempoAnterior != $tiempoEstimado) {
+                        $notificationService = new \App\Services\TicketNotificationService();
+                        $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo(
+                            $tipoId, 
+                            $tiempoEstimado
+                        );
+                        Log::info("Tipo {$tipoId}: Intervalo actualizado de {$tiempoAnterior} a {$tiempoEstimado} minutos. {$ticketsActualizados} tickets actualizados.");
+                    }
                     
                     // Si update() se ejecutó sin excepciones, la operación fue exitosa
                     // Incluso si retorna 0 (valor ya era el mismo), la operación fue correcta

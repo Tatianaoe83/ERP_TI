@@ -287,6 +287,84 @@ class TicketNotificationService
     }
 
     /**
+     * Recalcular fecha_ultima_notificacion_exceso para tickets de un tipo cuando se actualiza TiempoEstimadoMinutos
+     * 
+     * @param int $tipoId ID del tipo de ticket
+     * @param int|null $nuevoIntervaloMinutos Nuevo intervalo en minutos (null si se eliminó)
+     * @return int Número de tickets actualizados
+     */
+    public function recalcularFechasNotificacionPorTipo($tipoId, $nuevoIntervaloMinutos)
+    {
+        try {
+            // Si no hay nuevo intervalo, resetear todas las fechas de notificación
+            if ($nuevoIntervaloMinutos === null || $nuevoIntervaloMinutos <= 0) {
+                $ticketsActualizados = Tickets::where('TipoID', $tipoId)
+                    ->where('Estatus', 'En progreso')
+                    ->whereNotNull('fecha_ultima_notificacion_exceso')
+                    ->update(['fecha_ultima_notificacion_exceso' => null]);
+                
+                Log::info("Se resetearon {$ticketsActualizados} fechas de notificación para tipo {$tipoId} (intervalo eliminado)");
+                return $ticketsActualizados;
+            }
+
+            // Obtener todos los tickets del tipo que estén en progreso y tengan fecha de notificación
+            $tickets = Tickets::with('tipoticket')
+                ->where('TipoID', $tipoId)
+                ->where('Estatus', 'En progreso')
+                ->whereNotNull('FechaInicioProgreso')
+                ->whereNotNull('fecha_ultima_notificacion_exceso')
+                ->get();
+
+            $ticketsActualizados = 0;
+
+            foreach ($tickets as $ticket) {
+                // Verificar que el ticket esté excediendo el tiempo estimado
+                $tiempoRespuestaActual = $ticket->tiempo_respuesta;
+                if ($tiempoRespuestaActual === null) {
+                    continue;
+                }
+
+                $tiempoEstimadoHoras = $nuevoIntervaloMinutos / 60;
+                
+                // Solo recalcular si el ticket está excediendo el tiempo
+                if ($tiempoRespuestaActual > $tiempoEstimadoHoras) {
+                    // Calcular cuánto tiempo ha pasado desde la última notificación
+                    $fechaUltimaNotificacion = \Carbon\Carbon::parse($ticket->fecha_ultima_notificacion_exceso);
+                    $minutosDesdeUltimaNotificacion = now()->diffInMinutes($fechaUltimaNotificacion);
+                    
+                    // Ajustar la fecha para que la próxima notificación sea dentro del nuevo intervalo
+                    // Si ya pasó más tiempo que el nuevo intervalo, la próxima notificación será inmediata
+                    // Si aún no ha pasado el nuevo intervalo, ajustar proporcionalmente
+                    if ($minutosDesdeUltimaNotificacion >= $nuevoIntervaloMinutos) {
+                        // Ya pasó el nuevo intervalo, ajustar para que la próxima notificación sea dentro del nuevo intervalo desde ahora
+                        // Esto hará que la próxima verificación envíe la notificación inmediatamente
+                        $ticket->fecha_ultima_notificacion_exceso = now()->subMinutes($nuevoIntervaloMinutos);
+                    } else {
+                        // Aún no ha pasado el nuevo intervalo, ajustar la fecha para que la próxima notificación
+                        // sea dentro del nuevo intervalo desde ahora (manteniendo el tiempo transcurrido)
+                        // Esto asegura que la próxima notificación sea dentro del nuevo intervalo
+                        $ticket->fecha_ultima_notificacion_exceso = now()->subMinutes($minutosDesdeUltimaNotificacion);
+                    }
+                    
+                    $ticket->save();
+                    $ticketsActualizados++;
+                } else {
+                    // Si ya no excede el tiempo, resetear la fecha de notificación
+                    $ticket->fecha_ultima_notificacion_exceso = null;
+                    $ticket->save();
+                }
+            }
+
+            Log::info("Se recalcularon {$ticketsActualizados} fechas de notificación para tipo {$tipoId} con nuevo intervalo de {$nuevoIntervaloMinutos} minutos");
+            return $ticketsActualizados;
+
+        } catch (\Exception $e) {
+            Log::error("Error recalculando fechas de notificación para tipo {$tipoId}: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
      * Configurar PHPMailer
      */
     private function configurarMailer($mail)

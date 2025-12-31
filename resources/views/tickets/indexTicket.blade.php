@@ -895,8 +895,19 @@
 
                         <!-- Área para escribir nueva respuesta - Estilo Cliente de Correo -->
                         <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <!-- Mensaje informativo cuando está en Pendiente -->
+                            <div x-show="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'" 
+                                 class="p-4 bg-yellow-50 border-b border-yellow-200">
+                                <p class="text-sm text-yellow-800 flex items-center gap-2">
+                                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <span>El ticket está en estado "Pendiente". Para enviar mensajes, cambia el estado a "En progreso" en los detalles del ticket.</span>
+                                </p>
+                            </div>
                             <!-- Encabezado de Composición -->
-                            <div class="border-b border-gray-200 p-4 bg-gray-50">
+                            <div class="border-b border-gray-200 p-4 bg-gray-50" 
+                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
                                 <div class="space-y-3">
                                     <!-- Campo Para -->
                                     <div class="flex items-center gap-2">
@@ -905,7 +916,8 @@
                                             type="email"
                                             :value="selected.correo || ''"
                                             readonly
-                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
                                         {{-- Botones de Copia y Copia Oculta comentados
                                         <div class="flex items-center gap-2">
                                             <button 
@@ -954,7 +966,8 @@
                                             x-model="asuntoCorreo"
                                             required
                                             readonly
-                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm focus:outline-none cursor-not-allowed"
+                                            :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm focus:outline-none cursor-not-allowed disabled:bg-gray-100"
                                             placeholder="Asunto del correo">
                                     </div>
                                 </div>
@@ -1095,7 +1108,8 @@
                             --}}
                             
                             <!-- Sección de Adjuntos -->
-                            <div class="border-b border-gray-200 p-3 bg-white">
+                            <div class="border-b border-gray-200 p-3 bg-white"
+                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
                                 <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                                     <p class="text-xs text-yellow-800 flex items-center gap-2">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1107,9 +1121,9 @@
                                 <div class="flex items-center justify-between mb-2">
                                     <label 
                                         for="adjuntos"
-                                        :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+                                        :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
                                         class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition text-sm font-medium"
-                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : 'Adjuntar archivo'">
+                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'Adjuntar archivo')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
                                         </svg>
@@ -1170,10 +1184,10 @@
                                             </div>
                                             
                                             <!-- Botón para eliminar -->
-                                <button 
-                                    type="button"
+                                            <button 
+                                                type="button"
                                                 @click="eliminarArchivo(index)"
-                                                :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                                :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
                                                 class="flex-shrink-0 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title="Eliminar archivo">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1191,16 +1205,18 @@
                                     multiple 
                                     accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
                                     class="hidden"
-                                    :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                    :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
                                     @change="manejarArchivosSeleccionados($event)">
                             </div>
                             
                             <!-- Área de Composición del Mensaje -->
-                            <div class="p-4">
+                            <div class="p-4"
+                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
                                 <textarea 
                                     id="editor-mensaje"
                                     x-model="nuevoMensaje"
-                                    class="w-full"
+                                    :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                    class="w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     placeholder="Escribe tu mensaje aquí..."></textarea>
                                 
                                 <!-- Información del ticket (mostrada como correo citado) -->
@@ -1230,15 +1246,15 @@
                                     <button 
                                         type="button"
                                         @click="limpiarEditor()"
-                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
                                         class="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                         Descartar
                                     </button>
                                     <button 
                                         @click="enviarRespuesta()"
-                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
                                         class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2"
-                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : 'El botón se activará cuando haya contenido en el mensaje y un asunto'">
+                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'El botón se activará cuando haya contenido en el mensaje y un asunto')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                         </svg>
@@ -2524,11 +2540,12 @@
 
             actualizarEstadoEditor() {
                 const estaCerrado = this.selected.estatus === 'Cerrado' || this.ticketEstatus === 'Cerrado';
+                const estaPendiente = this.selected.estatus === 'Pendiente' || this.ticketEstatus === 'Pendiente';
                 
                 if (this.tinyMCEInstance) {
                     try {
-                        // Cambiar el modo del editor a readonly si está cerrado
-                        if (estaCerrado) {
+                        // Cambiar el modo del editor a readonly si está cerrado o pendiente
+                        if (estaCerrado || estaPendiente) {
                             this.tinyMCEInstance.mode.set('readonly');
                         } else {
                             this.tinyMCEInstance.mode.set('design');
@@ -2541,8 +2558,8 @@
                 // También deshabilitar el textarea si TinyMCE no está inicializado
                 const textarea = document.getElementById('editor-mensaje');
                 if (textarea) {
-                    textarea.disabled = estaCerrado;
-                    if (estaCerrado) {
+                    textarea.disabled = estaCerrado || estaPendiente;
+                    if (estaCerrado || estaPendiente) {
                         textarea.style.cursor = 'not-allowed';
                         textarea.style.backgroundColor = '#f3f4f6';
                     } else {
@@ -2654,6 +2671,12 @@
             },
 
             async enviarRespuesta() {
+                // Validar que el ticket no esté en Pendiente
+                if (this.selected.estatus === 'Pendiente' || this.ticketEstatus === 'Pendiente') {
+                    this.mostrarNotificacion('No se pueden enviar mensajes cuando el ticket está en estado "Pendiente". Cambia el estado a "En progreso" para enviar mensajes.', 'error');
+                    return;
+                }
+                
                 // Obtener el contenido HTML de TinyMCE
                 let contenidoMensaje = '';
                 if (this.tinyMCEInstance) {
