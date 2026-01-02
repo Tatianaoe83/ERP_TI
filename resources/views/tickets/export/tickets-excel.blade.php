@@ -1,11 +1,11 @@
 <table>
     <tr>
-        <td colspan="19" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #1E40AF;">
+        <td colspan="20" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #1E40AF;">
             REPORTE MENSUAL DE TICKETS - DETALLE
         </td>
     </tr>
     <tr>
-        <td colspan="19" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
+        <td colspan="20" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
             <strong>Período:</strong> {{ \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} | 
             <strong>Total de Tickets:</strong> <span style="color: #1E40AF; font-weight: bold;">{{ $tickets->count() }}</span> | 
             <strong>Cerrados:</strong> <span style="color: #059669; font-weight: bold;">{{ $resumen['tickets_cerrados'] ?? 0 }}</span> | 
@@ -29,6 +29,7 @@
         <th>Teléfono Creador</th>
         <th>Empleado Resolutor</th>
         <th>Clasificación</th>
+        <th>Categoría</th>
         <th>Subtipo</th>
         <th>Tertipo</th>
         <th>Código AnyDesk</th>
@@ -74,6 +75,10 @@
         <td style="padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->empleado && $ticket->empleado->Correo ? strip_tags($ticket->empleado->Correo) : '-' }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->empleado && $ticket->empleado->NumTelefono ? strip_tags($ticket->empleado->NumTelefono) : '-' }}</td>
         <td style="padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->responsableTI ? strip_tags($ticket->responsableTI->NombreEmpleado) : 'Sin responsable' }}</td>
+        <td style="padding: 8px; border: 1px solid #E5E7EB; font-weight: bold;
+            @if($ticket->Clasificacion == 'Problema') color: #DC2626; 
+            @elseif($ticket->Clasificacion == 'Servicio') color: #2563EB; 
+            @endif">{{ $ticket->Clasificacion ?? '-' }}</td>
         <td style="padding: 8px; border: 1px solid #E5E7EB;">
             @if($ticket->tipoticket && $ticket->tipoticket->NombreTipo)
                 {{ strip_tags($ticket->tipoticket->NombreTipo) }}

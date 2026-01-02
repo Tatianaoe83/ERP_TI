@@ -157,11 +157,31 @@ class ImapEmailReceiver
             // Determinar si es respuesta a un ticket existente o nuevo ticket
             $ticketId = $this->extraerTicketIdDelAsunto($subject);
             
+            // Si no se encontró ticket ID en el asunto, pero hay thread_id, intentar buscar por thread_id
+            if (!$ticketId && $threadId) {
+                $ticketId = $this->buscarTicketPorThreadId($threadId, $fromEmail);
+            }
+            
             if ($ticketId) {
                 // Es una respuesta a un ticket existente
-                $this->procesarRespuestaTicket($ticketId, $empleado->EmpleadoID, $body, $fromName, $messageId, $threadId);
+                $resultado = $this->procesarRespuestaTicket($ticketId, $empleado->EmpleadoID, $body, $fromName, $messageId, $threadId);
+                
+                // Si el ticket no existe, no crear uno nuevo
+                if (!$resultado) {
+                    Log::info("Ticket #{$ticketId} no existe, ignorando correo de respuesta");
+                    $this->marcarComoLeido($connection, $emailId);
+                    return false;
+                }
             } else {
-                // Es un nuevo ticket
+                // Verificar si es una respuesta (tiene thread_id o In-Reply-To) pero no se encontró el ticket
+                // En ese caso, NO crear un nuevo ticket
+                if ($threadId) {
+                    Log::info("Correo es respuesta (thread_id: {$threadId}) pero ticket no encontrado, ignorando correo");
+                    $this->marcarComoLeido($connection, $emailId);
+                    return false;
+                }
+                
+                // Es un nuevo ticket (no es respuesta)
                 $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId);
             }
 
@@ -236,6 +256,42 @@ class ImapEmailReceiver
         }
         
         return null;
+    }
+
+    /**
+     * Buscar ticket por thread_id en TicketChat
+     */
+    private function buscarTicketPorThreadId($threadId, $fromEmail)
+    {
+        try {
+            if (!$threadId) {
+                return null;
+            }
+
+            // Normalizar thread_id (remover < > si existen)
+            $threadIdNormalizado = trim($threadId, '<>');
+            
+            // Buscar en TicketChat por thread_id y correo del remitente
+            $ticketChat = TicketChat::where('thread_id', $threadIdNormalizado)
+                ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
+                ->where('es_correo', true)
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($ticketChat && $ticketChat->ticket_id) {
+                // Verificar que el ticket aún existe
+                $ticket = Tickets::find($ticketChat->ticket_id);
+                if ($ticket) {
+                    Log::info("Ticket #{$ticket->TicketID} encontrado por thread_id: {$threadIdNormalizado}");
+                    return $ticket->TicketID;
+                }
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            Log::error("Error buscando ticket por thread_id: " . $e->getMessage());
+            return null;
+        }
     }
 
     /**

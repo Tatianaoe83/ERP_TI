@@ -1,11 +1,11 @@
 <table>
     <tr>
-        <td colspan="6" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #1E40AF;">
+        <td colspan="8" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #1E40AF;">
             REPORTE MENSUAL DE TICKETS - RESUMEN
         </td>
     </tr>
     <tr>
-        <td colspan="6" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
+        <td colspan="8" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
             <strong>Período:</strong> {{ \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} | 
             <strong>Total de Tickets:</strong> <span style="color: #1E40AF; font-weight: bold;">{{ $resumen['total_tickets'] }}</span> | 
             <strong>Cerrados:</strong> <span style="color: #059669; font-weight: bold;">{{ $resumen['tickets_cerrados'] }}</span> | 
@@ -14,7 +14,7 @@
         </td>
     </tr>
     <tr>
-        <td colspan="6" style="background-color: #EFF6FF; padding: 12px; border: 1px solid #BFDBFE; font-weight: bold; text-align: center;">
+        <td colspan="8" style="background-color: #EFF6FF; padding: 12px; border: 1px solid #BFDBFE; font-weight: bold; text-align: center;">
             Total de Tickets: <span style="color: #1E40AF;">{{ $resumen['total_tickets'] }}</span> | 
             Tickets Cerrados: <span style="color: #059669;">{{ $resumen['tickets_cerrados'] }}</span> | 
             Promedio Tiempo Respuesta: <span style="color: #D97706;">{{ number_format($resumen['promedio_tiempo_respuesta'], 2) }} horas</span> | 
@@ -23,7 +23,7 @@
         </td>
     </tr>
     <tr>
-        <td colspan="6" style="height: 10px;"></td>
+        <td colspan="8" style="height: 10px;"></td>
     </tr>
     <tr>
         <th>Gerencia</th>
@@ -31,6 +31,8 @@
         <th>Resueltos</th>
         <th>En Progreso</th>
         <th>Pendientes</th>
+        <th>Problemas</th>
+        <th>Servicios</th>
         <th>Responsable de Resolución</th>
     </tr>
     @forelse($resumen['incidencias_por_gerencia'] as $gerenciaData)
@@ -40,6 +42,8 @@
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #059669; font-weight: bold;">{{ $gerenciaData['resueltos'] }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $gerenciaData['en_progreso'] ?? 0 }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #D97706; font-weight: bold;">{{ $gerenciaData['pendientes'] ?? 0 }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #DC2626; font-weight: bold;">{{ $gerenciaData['problemas'] ?? 0 }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $gerenciaData['servicios'] ?? 0 }}</td>
         <td style="padding: 10px; border: 1px solid #E5E7EB;">
             @if(!empty($gerenciaData['por_responsable']))
                 @foreach($gerenciaData['por_responsable'] as $responsable => $cantidad)
@@ -52,14 +56,14 @@
     </tr>
     @empty
     <tr>
-        <td colspan="6" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
+        <td colspan="8" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
     </tr>
     @endforelse
     <tr>
-        <td colspan="6" style="height: 20px;"></td>
+        <td colspan="8" style="height: 20px;"></td>
     </tr>
     <tr>
-        <td colspan="6" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 14px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid #1E40AF;">TICKETS POR GERENCIA Y RESPONSABLE</td>
+        <td colspan="8" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 14px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid #1E40AF;">TICKETS POR GERENCIA Y RESPONSABLE</td>
     </tr>
     <tr>
         <th>Gerencia</th>
@@ -68,6 +72,8 @@
         <th>Cerrados</th>
         <th>En Progreso</th>
         <th>Pendientes</th>
+        <th>Problemas</th>
+        <th>Servicios</th>
     </tr>
     @forelse($resumen['tickets_por_gerencia_responsable'] ?? [] as $item)
     <tr style="{{ $loop->even ? 'background-color: #F9FAFB;' : 'background-color: #FFFFFF;' }}">
@@ -77,17 +83,19 @@
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #059669; font-weight: bold;">{{ $item['cerrados'] }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $item['en_progreso'] }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #D97706; font-weight: bold;">{{ $item['pendientes'] }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #DC2626; font-weight: bold;">{{ $item['problemas'] ?? 0 }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $item['servicios'] ?? 0 }}</td>
     </tr>
     @empty
     <tr>
-        <td colspan="6" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
+        <td colspan="8" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
     </tr>
     @endforelse
     <tr>
-        <td colspan="6" style="height: 20px;"></td>
+        <td colspan="8" style="height: 20px;"></td>
     </tr>
     <tr>
-        <td colspan="6" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 14px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid #1E40AF;">TOTALES POR EMPLEADO</td>
+        <td colspan="8" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 14px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid #1E40AF;">TOTALES POR EMPLEADO</td>
     </tr>
     <tr>
         <th>Empleado</th>
@@ -95,6 +103,8 @@
         <th>Cerrados</th>
         <th>En Progreso</th>
         <th>Pendientes</th>
+        <th>Problemas</th>
+        <th>Servicios</th>
         <th>% Cierre</th>
     </tr>
     @forelse($resumen['totales_por_empleado'] as $empleado)
@@ -107,6 +117,8 @@
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #059669; font-weight: bold;">{{ $empleado['cerrados'] }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $empleado['en_progreso'] }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #D97706; font-weight: bold;">{{ $empleado['pendientes'] }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #DC2626; font-weight: bold;">{{ $empleado['problemas'] ?? 0 }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $empleado['servicios'] ?? 0 }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; font-weight: bold; 
             @if($porcentajeCierre >= 80) color: #059669; 
             @elseif($porcentajeCierre >= 50) color: #D97706; 
@@ -115,7 +127,7 @@
     </tr>
     @empty
     <tr>
-        <td colspan="6" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
+        <td colspan="8" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
     </tr>
     @endforelse
 </table>

@@ -51,10 +51,12 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                     'C' => 15,  // Resueltos
                     'D' => 18,  // En Progreso
                     'E' => 15,  // Pendientes
-                    'F' => 50,  // Responsable de Resolución (más ancha para mejor visualización)
+                    'F' => 15,  // Problemas
+                    'G' => 15,  // Servicios
+                    'H' => 50,  // Responsable de Resolución (más ancha para mejor visualización)
                 ];
                 
-                foreach (range('A', 'F') as $col) {
+                foreach (range('A', 'H') as $col) {
                     if (isset($columnWidths[$col])) {
                         $sheet->getColumnDimension($col)->setWidth($columnWidths[$col]);
                     } else {
@@ -85,8 +87,8 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                         ]
                     ]
                 ];
-                $sheet->getStyle('A1:F1')->applyFromArray($headerMainStyle);
-                $sheet->mergeCells('A1:F1');
+                $sheet->getStyle('A1:H1')->applyFromArray($headerMainStyle);
+                $sheet->mergeCells('A1:H1');
                 $sheet->getRowDimension(1)->setRowHeight(45);
                 
                 // Estilo para información general (fila 2)
@@ -113,8 +115,8 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                 ];
                 
                 if ($sheet->getCell('A2')->getValue() && stripos($sheet->getCell('A2')->getValue(), 'Período') !== false) {
-                    $sheet->getStyle('A2:F2')->applyFromArray($statsStyle);
-                    $sheet->mergeCells('A2:F2');
+                    $sheet->getStyle('A2:H2')->applyFromArray($statsStyle);
+                    $sheet->mergeCells('A2:H2');
                     $sheet->getRowDimension(2)->setRowHeight(35);
                 }
                 
@@ -169,7 +171,7 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                 // Buscar fila de encabezado de tabla (fila 4)
                 $highestRow = $sheet->getHighestRow();
                 if ($sheet->getCell('A4')->getValue() && stripos($sheet->getCell('A4')->getValue(), 'Gerencia') !== false) {
-                    $sheet->getStyle('A4:F4')->applyFromArray($headerStyle);
+                    $sheet->getStyle('A4:H4')->applyFromArray($headerStyle);
                     $sheet->getRowDimension(4)->setRowHeight(35);
                     
                     // Aplicar estilos a filas de datos
@@ -183,7 +185,7 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                         // Solo aplicar si la fila tiene datos
                         if ($sheet->getCell('A' . $dataRow)->getValue() !== null && $sheet->getCell('A' . $dataRow)->getValue() !== '') {
                             // Estilo general para toda la fila
-                            $sheet->getStyle('A' . $dataRow . ':F' . $dataRow)->applyFromArray([
+                            $sheet->getStyle('A' . $dataRow . ':H' . $dataRow)->applyFromArray([
                                 'borders' => [
                                     'allBorders' => [
                                         'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
@@ -196,11 +198,11 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                                 ]
                             ]);
                             
-                            // Columna F (Responsable) con estilo especial y formato mejorado
-                            $responsableValue = $sheet->getCell('F' . $dataRow)->getValue();
+                            // Columna H (Responsable) con estilo especial y formato mejorado
+                            $responsableValue = $sheet->getCell('H' . $dataRow)->getValue();
                             if ($responsableValue && $responsableValue !== '-' && stripos($responsableValue, 'Sin responsable') === false) {
                                 // Aplicar formato con texto enriquecido si es posible
-                                $sheet->getStyle('F' . $dataRow)->applyFromArray([
+                                $sheet->getStyle('H' . $dataRow)->applyFromArray([
                                     'alignment' => [
                                         'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
                                         'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
@@ -239,12 +241,12 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                                             }
                                         }
                                     }
-                                    $sheet->getCell('F' . $dataRow)->setValue($richText);
+                                    $sheet->getCell('H' . $dataRow)->setValue($richText);
                                 } catch (\Exception $e) {
                                     // Si falla, mantener el valor original
                                 }
                             } else {
-                                $sheet->getStyle('F' . $dataRow)->applyFromArray([
+                                $sheet->getStyle('H' . $dataRow)->applyFromArray([
                                     'alignment' => [
                                         'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP,
                                         'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
@@ -299,7 +301,7 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                             
                             // Filas alternadas
                             if (($dataRow - 4) % 2 == 0) {
-                                $sheet->getStyle('A' . $dataRow . ':F' . $dataRow)->applyFromArray([
+                                $sheet->getStyle('A' . $dataRow . ':H' . $dataRow)->applyFromArray([
                                     'fill' => [
                                         'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                                         'startColor' => ['rgb' => 'F9FAFB']
@@ -307,7 +309,7 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                                 ]);
                             }
                             
-                            // Ajustar altura de fila si tiene múltiples responsables (columna F)
+                            // Ajustar altura de fila si tiene múltiples responsables (columna H)
                             if ($responsableValue && stripos($responsableValue, 'ticket') !== false) {
                                 // Calcular altura basada en número de líneas
                                 $lineCount = substr_count($responsableValue, "\n") + 1;
@@ -323,14 +325,14 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                 for ($row = 1; $row <= $highestRow; $row++) {
                     $cellValue = $sheet->getCell('A' . $row)->getValue();
                     if (is_string($cellValue) && stripos($cellValue, 'TICKETS POR GERENCIA Y RESPONSABLE') !== false) {
-                        $sheet->getStyle('A' . $row . ':F' . $row)->applyFromArray($headerMainStyle);
-                        $sheet->mergeCells('A' . $row . ':F' . $row);
+                        $sheet->getStyle('A' . $row . ':H' . $row)->applyFromArray($headerMainStyle);
+                        $sheet->mergeCells('A' . $row . ':H' . $row);
                         $sheet->getRowDimension($row)->setRowHeight(30);
                         
                         // Estilizar encabezado de tabla (siguiente fila)
                         $nextRowValue = $sheet->getCell('A' . ($row + 1))->getValue();
                         if ($nextRowValue && stripos($nextRowValue, 'Gerencia') !== false) {
-                            $sheet->getStyle('A' . ($row + 1) . ':F' . ($row + 1))->applyFromArray($headerStyle);
+                            $sheet->getStyle('A' . ($row + 1) . ':H' . ($row + 1))->applyFromArray($headerStyle);
                             $sheet->getRowDimension($row + 1)->setRowHeight(25);
                             
                             // Aplicar estilos a filas de datos
@@ -357,7 +359,7 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                                     ]);
                                     
                                     if (($dataRow - ($row + 1)) % 2 == 0) {
-                                        $sheet->getStyle('A' . $dataRow . ':F' . $dataRow)->applyFromArray([
+                                        $sheet->getStyle('A' . $dataRow . ':H' . $dataRow)->applyFromArray([
                                             'fill' => [
                                                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                                                 'startColor' => ['rgb' => 'F9FAFB']
@@ -375,14 +377,14 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                 for ($row = 1; $row <= $highestRow; $row++) {
                     $cellValue = $sheet->getCell('A' . $row)->getValue();
                     if (is_string($cellValue) && stripos($cellValue, 'TOTALES POR EMPLEADO') !== false) {
-                        $sheet->getStyle('A' . $row . ':F' . $row)->applyFromArray($headerMainStyle);
-                        $sheet->mergeCells('A' . $row . ':F' . $row);
+                        $sheet->getStyle('A' . $row . ':H' . $row)->applyFromArray($headerMainStyle);
+                        $sheet->mergeCells('A' . $row . ':H' . $row);
                         $sheet->getRowDimension($row)->setRowHeight(30);
                         
                         // Estilizar encabezado de tabla de empleados (siguiente fila)
                         $nextRowValue = $sheet->getCell('A' . ($row + 1))->getValue();
                         if ($nextRowValue && stripos($nextRowValue, 'Empleado') !== false) {
-                            $sheet->getStyle('A' . ($row + 1) . ':F' . ($row + 1))->applyFromArray($headerStyle);
+                            $sheet->getStyle('A' . ($row + 1) . ':H' . ($row + 1))->applyFromArray($headerStyle);
                             $sheet->getRowDimension($row + 1)->setRowHeight(25);
                             
                             // Aplicar estilos a filas de empleados
@@ -399,7 +401,7 @@ class ResumenSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                                     ]);
                                     
                                     if (($dataRow - $row) % 2 == 0) {
-                                        $sheet->getStyle('A' . $dataRow . ':F' . $dataRow)->applyFromArray([
+                                        $sheet->getStyle('A' . $dataRow . ':H' . $dataRow)->applyFromArray([
                                             'fill' => [
                                                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                                                 'startColor' => ['rgb' => 'F9FAFB']

@@ -703,6 +703,16 @@
                                 <option value="En progreso">En progreso</option>
                                 <option value="Cerrado">Cerrado</option>
                             </select>
+
+                            <label class="text-md font-semibold text-gray-600">Clasificación <span class="text-red-500">*</span></label>
+                            <select
+                                x-model="ticketClasificacion"
+                                :disabled="selected.estatus === 'Cerrado'"
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                <option value="">Seleccione</option>
+                                <option value="Problema">Problema</option>
+                                <option value="Servicio">Servicio</option>
+                            </select>
                             
                             <!-- Mensaje informativo cuando está en "En progreso" -->
                             <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'" class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700">
@@ -1494,6 +1504,7 @@
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
+            ticketClasificacion: '',
             ticketResponsableTI: '',
             ticketTipoID: '',
             ticketSubtipoID: '',
@@ -2071,6 +2082,7 @@
                         if (data.success && data.ticket) {
                             this.ticketPrioridad = data.ticket.Prioridad || '';
                             this.ticketEstatus = data.ticket.Estatus || '';
+                            this.ticketClasificacion = data.ticket.Clasificacion || '';
                             this.ticketResponsableTI = data.ticket.ResponsableTI ? String(data.ticket.ResponsableTI) : '';
                             this.ticketTipoID = data.ticket.TipoID ? String(data.ticket.TipoID) : '';
                             this.ticketSubtipoID = data.ticket.SubtipoID ? String(data.ticket.SubtipoID) : '';
@@ -2161,6 +2173,7 @@
                         ticketId: this.selected.id,
                         prioridad: this.ticketPrioridad,
                         estatus: this.ticketEstatus,
+                        clasificacion: this.ticketClasificacion || null,
                         responsableTI: this.ticketResponsableTI || null,
                         tipoID: this.ticketTipoID || null,
                         subtipoID: this.ticketSubtipoID || null,

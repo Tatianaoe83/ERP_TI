@@ -123,6 +123,8 @@ class TicketsController extends Controller
                 'cerrados' => $grupo->where('Estatus', 'Cerrado')->count(),
                 'en_progreso' => $grupo->where('Estatus', 'En progreso')->count(),
                 'pendientes' => $grupo->where('Estatus', 'Pendiente')->count(),
+                'problemas' => $grupo->where('Clasificacion', 'Problema')->count(),
+                'servicios' => $grupo->where('Clasificacion', 'Servicio')->count(),
             ];
         })->sortByDesc('total')->take(10);
 
@@ -131,6 +133,14 @@ class TicketsController extends Controller
 
         // Tickets por prioridad
         $ticketsPorPrioridad = $tickets->groupBy('Prioridad')->map(function($grupo) {
+            return $grupo->count();
+        });
+
+        // Tickets por clasificación (solo los que están en progreso o cerrados)
+        $ticketsEnProgresoYCerrados = $tickets->filter(function($ticket) {
+            return $ticket->Estatus === 'En progreso' || $ticket->Estatus === 'Cerrado';
+        });
+        $ticketsPorClasificacion = $ticketsEnProgresoYCerrados->groupBy('Clasificacion')->map(function($grupo) {
             return $grupo->count();
         });
 
@@ -163,6 +173,7 @@ class TicketsController extends Controller
             'tiempo_promedio_respuesta' => $tiempoPromedioRespuesta,
             'tickets_por_responsable' => $ticketsPorResponsable,
             'tickets_por_prioridad' => $ticketsPorPrioridad,
+            'tickets_por_clasificacion' => $ticketsPorClasificacion,
             'tendencias_semanales' => $tendenciasSemanales,
             'tickets_cerrados' => $ticketsCerrados->count(),
             'tickets_en_progreso' => $ticketsEnProgreso->count(),
@@ -238,6 +249,11 @@ class TicketsController extends Controller
                 return $grupo->count();
             });
 
+            // Tickets por clasificación
+            $ticketsPorClasificacion = $ticketsEmpleado->groupBy('Clasificacion')->map(function($grupo) {
+                return $grupo->count();
+            });
+
             $metricas[] = [
                 'empleado_id' => $empleado->EmpleadoID,
                 'nombre' => $empleado->NombreEmpleado,
@@ -245,10 +261,13 @@ class TicketsController extends Controller
                 'cerrados' => $cerrados->count(),
                 'en_progreso' => $enProgreso->count(),
                 'pendientes' => $pendientes->count(),
+                'problemas' => $ticketsEmpleado->where('Clasificacion', 'Problema')->count(),
+                'servicios' => $ticketsEmpleado->where('Clasificacion', 'Servicio')->count(),
                 'tasa_cierre' => $tasaCierre,
                 'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
                 'tickets_por_mes' => $ticketsPorMes,
                 'tickets_por_prioridad' => $ticketsPorPrioridad,
+                'tickets_por_clasificacion' => $ticketsPorClasificacion,
             ];
         }
 
@@ -278,6 +297,7 @@ class TicketsController extends Controller
                     'TicketID' => $ticket->TicketID,
                     'Prioridad' => $ticket->Prioridad,
                     'Estatus' => $ticket->Estatus,
+                    'Clasificacion' => $ticket->Clasificacion,
                     'ResponsableTI' => $ticket->ResponsableTI,
                     'TipoID' => $ticket->TipoID,
                     'SubtipoID' => $ticket->SubtipoID,
@@ -334,15 +354,16 @@ class TicketsController extends Controller
                 }
             }
 
-            // REGLA 1: Si pasa de "Pendiente" a "En progreso", se requieren ResponsableTI y TipoID
+            // REGLA 1: Si pasa de "Pendiente" a "En progreso", se requieren ResponsableTI, TipoID y Clasificacion
             if ($estatusAnterior === 'Pendiente' && $nuevoEstatus === 'En progreso') {
                 $responsableTI = $request->input('responsableTI');
                 $tipoID = $request->input('tipoID');
+                $clasificacion = $request->input('clasificacion');
 
-                if (empty($responsableTI) || empty($tipoID)) {
+                if (empty($responsableTI) || empty($tipoID) || empty($clasificacion)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Para cambiar el ticket a "En progreso" es necesario asignar un Responsable y una Categoría'
+                        'message' => 'Para cambiar el ticket a "En progreso" es necesario asignar un Responsable, una Categoría y una Clasificación'
                     ], 400);
                 }
             }
@@ -364,6 +385,10 @@ class TicketsController extends Controller
             // Actualizar los campos permitidos
             if ($request->has('prioridad')) {
                 $ticket->Prioridad = $request->input('prioridad');
+            }
+
+            if ($request->has('clasificacion')) {
+                $ticket->Clasificacion = $request->input('clasificacion') ?: null;
             }
 
             if ($request->has('responsableTI')) {
@@ -444,6 +469,7 @@ class TicketsController extends Controller
                     'TicketID' => $ticket->TicketID,
                     'Prioridad' => $ticket->Prioridad,
                     'Estatus' => $ticket->Estatus,
+                    'Clasificacion' => $ticket->Clasificacion,
                     'ResponsableTI' => $ticket->ResponsableTI,
                     'TipoID' => $ticket->TipoID,
                     'SubtipoID' => $ticket->SubtipoID,
@@ -1452,11 +1478,20 @@ class TicketsController extends Controller
                     'resueltos' => 0,
                     'en_progreso' => 0,
                     'pendientes' => 0,
+                    'problemas' => 0,
+                    'servicios' => 0,
                     'por_responsable' => []
                 ];
             }
 
             $incidenciasPorGerencia[$gerenciaNombre]['total']++;
+
+            // Contar clasificaciones
+            if ($ticket->Clasificacion === 'Problema') {
+                $incidenciasPorGerencia[$gerenciaNombre]['problemas']++;
+            } elseif ($ticket->Clasificacion === 'Servicio') {
+                $incidenciasPorGerencia[$gerenciaNombre]['servicios']++;
+            }
 
             if ($ticket->Estatus === 'Cerrado') {
                 $incidenciasPorGerencia[$gerenciaNombre]['resueltos']++;
@@ -1520,11 +1555,20 @@ class TicketsController extends Controller
                     'total' => 0,
                     'cerrados' => 0,
                     'en_progreso' => 0,
-                    'pendientes' => 0
+                    'pendientes' => 0,
+                    'problemas' => 0,
+                    'servicios' => 0
                 ];
             }
 
             $totalesPorEmpleado[$empleadoNombre]['total']++;
+
+            // Contar clasificaciones
+            if ($ticket->Clasificacion === 'Problema') {
+                $totalesPorEmpleado[$empleadoNombre]['problemas']++;
+            } elseif ($ticket->Clasificacion === 'Servicio') {
+                $totalesPorEmpleado[$empleadoNombre]['servicios']++;
+            }
 
             if ($ticket->Estatus === 'Cerrado') {
                 $totalesPorEmpleado[$empleadoNombre]['cerrados']++;
@@ -1563,11 +1607,20 @@ class TicketsController extends Controller
                     'total' => 0,
                     'cerrados' => 0,
                     'en_progreso' => 0,
-                    'pendientes' => 0
+                    'pendientes' => 0,
+                    'problemas' => 0,
+                    'servicios' => 0
                 ];
             }
 
             $ticketsPorGerenciaResponsable[$key]['total']++;
+
+            // Contar clasificaciones
+            if ($ticket->Clasificacion === 'Problema') {
+                $ticketsPorGerenciaResponsable[$key]['problemas']++;
+            } elseif ($ticket->Clasificacion === 'Servicio') {
+                $ticketsPorGerenciaResponsable[$key]['servicios']++;
+            }
 
             if ($ticket->Estatus === 'Cerrado') {
                 $ticketsPorGerenciaResponsable[$key]['cerrados']++;

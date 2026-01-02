@@ -170,6 +170,14 @@
         </div>
     </div>
 
+    <!-- Gráfica de clasificaciones -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribución por Clasificación (En Progreso y Cerrados)</h3>
+        <div style="height: 300px; position: relative;">
+            <canvas id="chartClasificacion"></canvas>
+        </div>
+    </div>
+
     <!-- Tabla de tickets por responsable -->
     <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Rendimiento por Responsable TI</h3>
@@ -182,6 +190,8 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cerrados</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Progreso</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pendientes</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Problemas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Servicios</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasa de Cierre</th>
                     </tr>
                 </thead>
@@ -210,6 +220,16 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                                    {{ $responsable['problemas'] ?? 0 }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {{ $responsable['servicios'] ?? 0 }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 @if($responsable['total'] > 0)
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                         {{ round(($responsable['cerrados'] / $responsable['total']) * 100, 1) }}%
@@ -221,7 +241,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
                                 No hay datos disponibles
                             </td>
                         </tr>
@@ -422,7 +442,7 @@
 
 <script>
 // Variables globales para almacenar las instancias de gráficas
-let chartEstado, chartResueltos, chartTendencias, chartPrioridad;
+let chartEstado, chartResueltos, chartTendencias, chartPrioridad, chartClasificacion;
 
 function inicializarGraficas() {
     // Verificar que los elementos existan
@@ -435,12 +455,14 @@ function inicializarGraficas() {
     if (chartResueltos) chartResueltos.destroy();
     if (chartTendencias) chartTendencias.destroy();
     if (chartPrioridad) chartPrioridad.destroy();
+    if (chartClasificacion) chartClasificacion.destroy();
 
     // Datos para las gráficas
     const distribucionEstado = @json($metricasProductividad['distribucion_estado']);
     const resueltosPorDia = @json($metricasProductividad['resueltos_por_dia']);
     const tendenciasSemanales = @json($metricasProductividad['tendencias_semanales']);
     const ticketsPorPrioridad = @json($metricasProductividad['tickets_por_prioridad']);
+    const ticketsPorClasificacion = @json(isset($metricasProductividad['tickets_por_clasificacion']) ? $metricasProductividad['tickets_por_clasificacion'] : []);
 
     // Gráfica de distribución por estado (Doughnut)
     const ctxEstado = document.getElementById('chartEstado').getContext('2d');
@@ -619,6 +641,50 @@ function inicializarGraficas() {
             }
         }
     });
+
+    // Gráfica de tickets por clasificación (Doughnut)
+    const ctxClasificacion = document.getElementById('chartClasificacion');
+    if (ctxClasificacion) {
+        chartClasificacion = new Chart(ctxClasificacion.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(ticketsPorClasificacion),
+                datasets: [{
+                    data: Object.values(ticketsPorClasificacion),
+                    backgroundColor: [
+                        'rgba(220, 38, 38, 0.8)',  // Rojo para Problema
+                        'rgba(37, 99, 235, 0.8)'   // Azul para Servicio
+                    ],
+                    borderColor: [
+                        'rgba(220, 38, 38, 1)',
+                        'rgba(37, 99, 235, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed + ' tickets';
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // Función para verificar si el elemento está visible (no tiene x-cloak y está renderizado)
