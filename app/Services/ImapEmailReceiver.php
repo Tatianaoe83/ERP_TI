@@ -18,7 +18,7 @@ class ImapEmailReceiver
 
     public function __construct()
     {
-        $this->imapHost = config('mail.imap.host', 'proser.com.mx');
+        $this->imapHost = config('mail.imap.host', 'mail.obras-mex.com');
         $this->imapPort = config('mail.imap.port', 993);
         $this->imapUsername = config('mail.mailers.smtp.username');
         $this->imapPassword = config('mail.mailers.smtp.password');
@@ -64,13 +64,14 @@ class ImapEmailReceiver
             // Configurar opciones para servidor proser.com.mx
             $options = OP_READONLY | OP_HALFOPEN;
             
-            // Para servidores personalizados como proser.com.mx
-            if (strpos($this->imapHost, 'proser.com.mx') !== false) {
+            // Para servidores HostGator (mail.obras-mex.com, mail.proser.com.mx, etc.)
+            if (strpos($this->imapHost, 'mail.') !== false || strpos($this->imapHost, 'obras-mex.com') !== false || strpos($this->imapHost, 'proser.com.mx') !== false) {
                 $server = "{{$this->imapHost}:{$this->imapPort}/imap/ssl/novalidate-cert}INBOX";
             } elseif (strpos($this->imapHost, 'office365.com') !== false || strpos($this->imapHost, 'outlook.com') !== false) {
                 $server = "{{$this->imapHost}:{$this->imapPort}/imap/ssl/novalidate-cert}INBOX";
             } else {
-                $server = "{{$this->imapHost}:{$this->imapPort}/imap/{$this->imapEncryption}/notls}INBOX";
+                // Para otros servidores HostGator o genéricos
+                $server = "{{$this->imapHost}:{$this->imapPort}/imap/ssl/novalidate-cert}INBOX";
             }
             
             Log::info("Intentando conectar a IMAP: {$server}");
@@ -156,11 +157,31 @@ class ImapEmailReceiver
             // Determinar si es respuesta a un ticket existente o nuevo ticket
             $ticketId = $this->extraerTicketIdDelAsunto($subject);
             
+            // Si no se encontró ticket ID en el asunto, pero hay thread_id, intentar buscar por thread_id
+            if (!$ticketId && $threadId) {
+                $ticketId = $this->buscarTicketPorThreadId($threadId, $fromEmail);
+            }
+            
             if ($ticketId) {
                 // Es una respuesta a un ticket existente
-                $this->procesarRespuestaTicket($ticketId, $empleado->EmpleadoID, $body, $fromName, $messageId, $threadId);
+                $resultado = $this->procesarRespuestaTicket($ticketId, $empleado->EmpleadoID, $body, $fromName, $messageId, $threadId);
+                
+                // Si el ticket no existe, no crear uno nuevo
+                if (!$resultado) {
+                    Log::info("Ticket #{$ticketId} no existe, ignorando correo de respuesta");
+                    $this->marcarComoLeido($connection, $emailId);
+                    return false;
+                }
             } else {
-                // Es un nuevo ticket
+                // Verificar si es una respuesta (tiene thread_id o In-Reply-To) pero no se encontró el ticket
+                // En ese caso, NO crear un nuevo ticket
+                if ($threadId) {
+                    Log::info("Correo es respuesta (thread_id: {$threadId}) pero ticket no encontrado, ignorando correo");
+                    $this->marcarComoLeido($connection, $emailId);
+                    return false;
+                }
+                
+                // Es un nuevo ticket (no es respuesta)
                 $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId);
             }
 
@@ -238,6 +259,42 @@ class ImapEmailReceiver
     }
 
     /**
+     * Buscar ticket por thread_id en TicketChat
+     */
+    private function buscarTicketPorThreadId($threadId, $fromEmail)
+    {
+        try {
+            if (!$threadId) {
+                return null;
+            }
+
+            // Normalizar thread_id (remover < > si existen)
+            $threadIdNormalizado = trim($threadId, '<>');
+            
+            // Buscar en TicketChat por thread_id y correo del remitente
+            $ticketChat = TicketChat::where('thread_id', $threadIdNormalizado)
+                ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
+                ->where('es_correo', true)
+                ->orderBy('created_at', 'desc')
+                ->first();
+            
+            if ($ticketChat && $ticketChat->ticket_id) {
+                // Verificar que el ticket aún existe
+                $ticket = Tickets::find($ticketChat->ticket_id);
+                if ($ticket) {
+                    Log::info("Ticket #{$ticket->TicketID} encontrado por thread_id: {$threadIdNormalizado}");
+                    return $ticket->TicketID;
+                }
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            Log::error("Error buscando ticket por thread_id: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Procesar respuesta a ticket existente
      */
     private function procesarRespuestaTicket($ticketId, $empleadoId, $mensaje, $nombreEmisor, $messageId = null, $threadId = null)
@@ -285,14 +342,29 @@ class ImapEmailReceiver
     private function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null)
     {
         try {
+            // Limpiar asunto: remover prefijos y formato "Ticket #ID" si existe
+            $subjectLimpio = $this->limpiarAsunto($subject);
+            
             // Crear nuevo ticket
             $ticket = Tickets::create([
                 'EmpleadoID' => $empleado->EmpleadoID,
-                'Descripcion' => $subject,
+                'Descripcion' => $subjectLimpio,
                 'Estatus' => 'Pendiente',
                 'Prioridad' => 'Media',
                 'created_at' => now()
             ]);
+
+            // Actualizar la descripción con el formato "Ticket #ID - [asunto original]"
+            $descripcionConFormato = "Ticket #{$ticket->TicketID} - {$subjectLimpio}";
+            
+            // Verificar que no exceda la longitud máxima
+            if (strlen($descripcionConFormato) > 500) {
+                $maxLength = 500 - strlen("Ticket #{$ticket->TicketID} - ");
+                $descripcionConFormato = "Ticket #{$ticket->TicketID} - " . substr($subjectLimpio, 0, $maxLength) . '...';
+            }
+            
+            $ticket->Descripcion = $descripcionConFormato;
+            $ticket->save();
 
             // Crear primera entrada en el chat
             TicketChat::create([
@@ -307,10 +379,10 @@ class ImapEmailReceiver
                 'leido' => false
             ]);
 
-            Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo}");
+            Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo} | Asunto: {$descripcionConFormato}");
             
-            // Enviar notificación de confirmación (opcional)
-            $this->enviarConfirmacionTicket($ticket, $empleado);
+            // Enviar notificación de confirmación (opcional) - DESACTIVADO
+            // $this->enviarConfirmacionTicket($ticket, $empleado);
             
             return $ticket;
 
@@ -318,6 +390,31 @@ class ImapEmailReceiver
             Log::error("Error creando ticket desde correo: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Limpiar asunto del correo
+     */
+    private function limpiarAsunto($subject)
+    {
+        if (empty($subject)) {
+            return 'Nuevo ticket desde correo';
+        }
+        
+        $subject = trim($subject);
+        
+        // Remover prefijos comunes de respuestas
+        $subject = preg_replace('/^(Re:|RE:|Fwd:|FWD:|Fw:|FW:)\s*/i', '', $subject);
+        
+        // Remover formato "Ticket #ID" si existe (para evitar duplicados al crear nuevo ticket)
+        $subject = preg_replace('/^Ticket\s*#\s*\d+\s*-\s*/i', '', $subject);
+        
+        // Limitar longitud
+        if (strlen($subject) > 500) {
+            $subject = substr($subject, 0, 497) . '...';
+        }
+        
+        return trim($subject);
     }
 
     /**

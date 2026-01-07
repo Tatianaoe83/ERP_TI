@@ -61,6 +61,7 @@
 <script>
   $(document).ready(function() {
     let table1_1 = $('#tableUsu').DataTable({
+      "responsive": true,
       "paging": true,
       "lengthMenu": [5, 10, 25, 50],
       "pageLength": 5,

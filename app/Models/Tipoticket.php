@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Eloquent as Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 
 /**
@@ -16,12 +17,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $NombreTipo
  * @property integer $SubtipoID
  */
-class Tipos extends Model
+class Tipoticket extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
 
     public $table = 'tipotickets';
+    
+    protected $primaryKey = 'TipoID';
     
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
@@ -33,7 +36,8 @@ class Tipos extends Model
 
     public $fillable = [
         'NombreTipo',
-        'SubtipoID'
+        'SubtipoID',
+        'TiempoEstimadoMinutos'
     ];
 
     /**
@@ -44,7 +48,8 @@ class Tipos extends Model
     protected $casts = [
         'TipoID' => 'integer',
         'NombreTipo' => 'string',
-        'SubtipoID' => 'integer'
+        'SubtipoID' => 'integer',
+        'TiempoEstimadoMinutos' => 'integer'
     ];
 
     /**
@@ -62,7 +67,7 @@ class Tipos extends Model
      **/
     public function subtipoid()
     {
-        return $this->belongsTo(\App\Models\Subtipo::class, 'SubtipoID');
+        return $this->belongsTo(Subtipos::class, 'SubtipoID', 'SubtipoID');
     }
 
     /**

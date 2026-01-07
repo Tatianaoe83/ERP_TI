@@ -103,15 +103,21 @@ class ProcessEmailCommands extends Command
     private function probarConexionIMAP()
     {
         try {
-            $imapHost = config('mail.imap.host', 'imap-mail.outlook.com');
+            $imapHost = config('mail.imap.host', 'mail.obras-mex.com');
             $imapPort = config('mail.imap.port', 993);
             $imapUsername = config('mail.mailers.smtp.username');
             $imapPassword = config('mail.mailers.smtp.password');
             $imapEncryption = config('mail.imap.encryption', 'ssl');
 
-            // Configurar opciones para ignorar certificados SSL temporalmente
+            // Configurar opciones para HostGator
             $options = OP_READONLY | OP_HALFOPEN;
-            $server = "{{$imapHost}:{$imapPort}/imap/{$imapEncryption}/notls}INBOX";
+            
+            // Para servidores HostGator (mail.obras-mex.com, mail.proser.com.mx, etc.)
+            if (strpos($imapHost, 'mail.') !== false || strpos($imapHost, 'obras-mex.com') !== false || strpos($imapHost, 'proser.com.mx') !== false) {
+                $server = "{{$imapHost}:{$imapPort}/imap/ssl/novalidate-cert}INBOX";
+            } else {
+                $server = "{{$imapHost}:{$imapPort}/imap/{$imapEncryption}/novalidate-cert}INBOX";
+            }
             
             $connection = imap_open($server, $imapUsername, $imapPassword, $options);
             

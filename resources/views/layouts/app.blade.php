@@ -42,6 +42,157 @@
             hyphens: auto;
             max-width: 100%;
         }
+
+        /* Estilos responsivos para el sidebar móvil */
+        @media (max-width: 1023px) {
+            #sidebar {
+                box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+            }
+
+            #mobile-overlay {
+                backdrop-filter: blur(2px);
+            }
+
+            /* Scrollbar personalizado para el sidebar móvil */
+            #sidebar::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            #sidebar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            #sidebar::-webkit-scrollbar-thumb {
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 3px;
+            }
+
+            #sidebar::-webkit-scrollbar-thumb:hover {
+                background: rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        /* Mejoras para tablets */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            #sidebar {
+                width: 260px;
+            }
+        }
+
+        /* Asegurar que el contenido principal no se desborde */
+        main {
+            min-width: 0;
+        }
+
+        /* Mejoras de accesibilidad y touch targets en móvil */
+        @media (max-width: 767px) {
+            #sidebar a,
+            #sidebar button {
+                min-height: 44px;
+                touch-action: manipulation;
+            }
+        }
+
+        /* Estilos responsivos para DataTables */
+        @media (max-width: 767px) {
+            /* Hacer que las tablas se adapten mejor en móvil */
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                border: none;
+            }
+
+            .dataTables_wrapper {
+                overflow-x: auto;
+            }
+
+            /* Ajustar botones de DataTables en móvil */
+            .dataTables_wrapper .dt-buttons {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .dataTables_wrapper .dt-buttons .btn {
+                font-size: 0.75rem;
+                padding: 0.375rem 0.75rem;
+                margin: 0.25rem;
+            }
+
+            /* Ocultar algunos elementos en móvil */
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_info {
+                font-size: 0.875rem;
+            }
+
+            /* Ajustar paginación en móvil */
+            .dataTables_wrapper .dataTables_paginate {
+                font-size: 0.875rem;
+            }
+
+            .dataTables_wrapper .dataTables_paginate .paginate_button {
+                padding: 0.25rem 0.5rem;
+                margin: 0.125rem;
+            }
+
+            /* Mejorar la visualización de tablas responsive (modo tarjeta) */
+            table.dataTable.dtr-inline.collapsed > tbody > tr > td.child,
+            table.dataTable.dtr-inline.collapsed > tbody > tr > th.child,
+            table.dataTable.dtr-inline.collapsed > tbody > tr > td.dataTables_empty {
+                padding: 0.5rem !important;
+            }
+
+            table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"] > td:first-child:before,
+            table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"] > th:first-child:before {
+                top: 0.75rem;
+                left: 0.5rem;
+            }
+
+            /* Ajustar headers en móvil */
+            .table thead th {
+                font-size: 0.875rem;
+                padding: 0.5rem;
+                white-space: nowrap;
+            }
+
+            .table tbody td {
+                font-size: 0.875rem;
+                padding: 0.5rem;
+            }
+        }
+
+        /* Estilos para modo responsive de DataTables (tarjetas) */
+        table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"] > td:first-child:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"] > th:first-child:before {
+            background-color: #101D49;
+            border: 2px solid white;
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"].parent > td:first-child:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"].parent > th:first-child:before {
+            background-color: #dc3545;
+        }
+
+        /* Mejorar contraste en modo oscuro */
+        .dark table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"] > td:first-child:before,
+        .dark table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"] > th:first-child:before {
+            background-color: #4a5568;
+            border-color: #fff;
+        }
+
+        .dark table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"].parent > td:first-child:before,
+        .dark table.dataTable.dtr-inline.collapsed > tbody > tr[role="row"].parent > th:first-child:before {
+            background-color: #e53e3e;
+        }
+
+        /* Ajustar el contenedor de tablas */
+        @media (max-width: 991px) {
+            .table-responsive {
+                display: block;
+                width: 100%;
+                overflow-x: auto;
+            }
+        }
     </style>
 
     @stack('styles')
@@ -62,15 +213,22 @@
 <body class="transition-colors duration-500 ease-in-out">
 
     <div id="app">
-        <nav class="bg-white h-[80px] text-white text-white border-b border-b-gray-300 rounded-md">
+        <nav class="bg-white h-[60px] md:h-[60px] text-white text-white border-b border-b-gray-300 rounded-md">
             @include('layouts.header')
         </nav>
-        <div class="flex flex-1 min-h-[calc(100vh-80px)]">
-            <aside class="bg-white w-[300px] border-r border-gray-300 rounded-md dark:!bg-[#101010]">
+        <div class="flex flex-1 min-h-[calc(100vh-60px)] md:min-h-[calc(100vh-60px)]">
+            <!-- Overlay para móvil -->
+            <div id="mobile-overlay" 
+                class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 lg:hidden"
+                onclick="toggleMobileMenu()"></div>
+            
+            <!-- Sidebar responsivo -->
+            <aside id="sidebar" 
+                class="fixed lg:static inset-y-0 left-0 z-50 bg-white w-[280px] lg:w-[300px] border-r border-gray-300 rounded-md dark:!bg-[#101010] transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out h-[calc(100vh-70px)] md:h-[calc(100vh-80px)] lg:h-auto overflow-y-auto">
                 @include('layouts.sidebar')
             </aside>
 
-            <main class="flex-1 p-6 dark:bg-[#101010]">
+            <main class="flex-1 p-3 md:p-6 dark:bg-[#101010] w-full lg:w-auto">
                 @yield('content')
             </main>
         </div>
@@ -177,6 +335,90 @@
             }
         };
     }(jQuery));
+
+    // Script global para hacer todas las tablas DataTables responsivas
+    $(document).ready(function() {
+        // Función para reconfigurar tablas responsive
+        function recalcResponsiveTables() {
+            if (typeof $.fn.dataTable !== 'undefined' && $.fn.dataTable.isDataTable) {
+                $('.dataTable').each(function() {
+                    if ($.fn.DataTable.isDataTable(this)) {
+                        var table = $(this).DataTable();
+                        if (table.responsive && typeof table.responsive.recalc === 'function') {
+                            try {
+                                table.responsive.recalc();
+                            } catch(e) {
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Recalcular después de que se carguen las tablas
+        setTimeout(recalcResponsiveTables, 1000);
+
+        // Recalcular cuando se redimensiona la ventana
+        var resizeTimer;
+        $(window).on('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(recalcResponsiveTables, 250);
+        });
+
+        // Recalcular cuando cambia la orientación del dispositivo
+        window.addEventListener('orientationchange', function() {
+            setTimeout(recalcResponsiveTables, 500);
+        });
+    });
+</script>
+
+<!-- Script para menú móvil responsivo -->
+<script>
+    function toggleMobileMenu() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        
+        if (sidebar.classList.contains('-translate-x-full')) {
+            // Abrir menú
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        } else {
+            // Cerrar menú
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+    }
+
+    // Event listener para el botón hamburguesa
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuButton = document.getElementById('mobile-menu-button');
+        if (menuButton) {
+            menuButton.addEventListener('click', toggleMobileMenu);
+        }
+
+        // Cerrar menú al hacer clic en un enlace (solo en móvil)
+        const menuLinks = document.querySelectorAll('#sidebar a');
+        menuLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 1024) {
+                    setTimeout(toggleMobileMenu, 150);
+                }
+            });
+        });
+
+        // Cerrar menú al redimensionar ventana si es desktop
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('mobile-overlay');
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        });
+    });
 </script>
 
 </html>

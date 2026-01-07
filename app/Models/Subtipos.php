@@ -23,6 +23,8 @@ class Subtipos extends Model
 
     public $table = 'subtipo';
     
+    protected $primaryKey = 'SubtipoID';
+    
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -62,7 +64,7 @@ class Subtipos extends Model
      **/
     public function tertipoid()
     {
-        return $this->belongsTo(\App\Models\Tertipo::class, 'TertipoID');
+        return $this->belongsTo(Tertipos::class, 'TertipoID', 'TertipoID');
     }
 
     /**

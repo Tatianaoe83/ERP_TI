@@ -63,13 +63,11 @@
     <div id="tsparticles" class="absolute top-0 left-0 w-full h-full -z-10"></div>
     <div class="max-w-2xl mx-auto">
         <div class="text-center mb-8 fade-in">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-lg mb-4">
-                <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
-                </svg>
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-lg mb-4 p-2">
+                <img src="{{ asset('img/LogoAzul.png') }}" alt="Logo Proser" class="w-full h-full object-contain">
             </div>
-            <h1 class="text-3xl font-bold text-white mb-2" id="title">Selecciona un Proyecto porfavor</h1>
-            <p class="text-indigo-100">Describe tu problema y te ayudaremos lo antes posible</p>
+            <h1 class="text-3xl font-bold text-white mb-2" id="title">Selecciona una opción</h1>
+            <p class="text-indigo-100">Selecciona una opción para continuar</p>
         </div>
 
         <form action="{{ route('soporte.ticket') }}" method="POST" enctype="multipart/form-data">
@@ -107,7 +105,7 @@
                             <input type="number" id="numeroTelefono" placeholder="Número Telefónico" name="Numero" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
-                            <label for="">Código AnyDesk *</label>
+                            <label for="">Código AnyDesk</label>
                             <input type="number" placeholder="Código AnyDesk" name="CodeAnyDesk" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
@@ -168,6 +166,34 @@
                 </div>
             </div>
         </form>
+
+        <!-- Sección de Extensiones de Soporte -->
+        <div class="glass-effect rounded-2xl shadow-2xl p-5 w-full fade-in mt-8">
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center text-white">
+                        <i class="fas fa-phone-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-black">¿Necesitas ayuda? Contacta a Soporte</h3>
+                </div>
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center gap-3 mb-3">
+                        <i class="fas fa-headset text-blue-600 text-xl"></i>
+                        <h4 class="font-semibold text-black">Soporte Técnico</h4>
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-700">
+                        <i class="fas fa-phone text-blue-600"></i>
+                        <span class="font-medium text-lg">Ext. 211</span>
+                    </div>
+                </div>
+                <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-gray-700 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-yellow-600"></i>
+                        <span>Horario de atención: Lunes a Viernes de 9:00 AM a 6:00 PM | Sábados de 9:00 AM a 2:00 PM</span>
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 
 
@@ -226,22 +252,71 @@
     <script>
         Swal.fire({
             icon: 'success',
-            title: '¡Éxito!',
-            text: '{{ session('
-            success ') }}',
-            timer: 3000,
-            timerProgressBar: true
+            title: '¡Ticket Enviado Exitosamente! 🎉',
+            html: `
+                <div style="text-align: center; padding: 10px;">
+                    <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
+                        <strong>¡Gracias por contactarnos!</strong>
+                    </p>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                        Hemos recibido tu solicitud y nuestro equipo de soporte técnico la revisará pronto.
+                    </p>
+                    <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <i class="fas fa-clock"></i> Te contactaremos a la brevedad posible
+                    </p>
+                </div>
+            `,
+            confirmButtonText: '¡Entendido!',
+            confirmButtonColor: '#10b981',
+            timer: 10000,
+            timerProgressBar: true,
+            showClass: {
+                popup: 'animate__animated animate__fadeInDown'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp'
+            }
         });
     </script>
     @elseif (session('error'))
     <script>
         Swal.fire({
             icon: 'error',
-            title: '¡Error!',
-            text: '{{ session('
-            error ') }}',
-            timer: 3000,
-            timerProgressBar: true
+            title: 'Oops, algo salió mal 😔',
+            html: `
+                <div style="text-align: center; padding: 10px;">
+                    <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
+                        <strong>No pudimos procesar tu solicitud</strong>
+                    </p>
+                    <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                        {{ session('error') }}
+                    </p>
+                    <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <i class="fas fa-info-circle"></i> Por favor, intenta nuevamente o contacta a soporte
+                    </p>
+                    <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px; margin-top: 15px;">
+                        <p style="font-size: 12px; color: #0369a1; font-weight: 600; margin-bottom: 8px;">
+                            <i class="fas fa-phone-alt"></i> Extensión de Soporte:
+                        </p>
+                        <div style="font-size: 11px; color: #0c4a6e;">
+                            <span><strong>Soporte Técnico:</strong> Ext. 211</span>
+                        </div>
+                        <div style="font-size: 10px; color: #64748b; margin-top: 8px; padding-top: 8px; border-top: 1px solid #cbd5e1;">
+                            <i class="fas fa-clock"></i> Horario: Lunes a Viernes 9:00 AM - 6:00 PM | Sábados 9:00 AM - 2:00 PM
+                        </div>
+                    </div>
+                </div>
+            `,
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#ef4444',
+            timer: 5000,
+            timerProgressBar: true,
+            showClass: {
+                popup: 'animate__animated animate__fadeInDown'
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp'
+            }
         });
     </script>
     @endif
@@ -354,15 +429,77 @@
                 return p >= 0 ? name.slice(p + 1).toLowerCase() : "";
             };
 
-            const getFileIconClass = (file) => {
+            const getFileIconInfo = (file) => {
                 const ext = getExt(file.name);
-                if (file.type === "application/pdf" || ext === "pdf") return "fa-file-pdf";
-                if (/msword|vnd.openxmlformats-officedocument.wordprocessingml/.test(file.type) || ["doc", "docx"].includes(ext)) return "fa-file-word";
-                if (/vnd.ms-excel|spreadsheetml|csv/.test(file.type) || ["xls", "xlsx", "csv"].includes(ext)) return "fa-file-excel";
-                if (/vnd.ms-powerpoint|presentationml/.test(file.type) || ["ppt", "pptx"].includes(ext)) return "fa-file-powerpoint";
-                if (/zip|x-7z-compressed|x-rar-compressed|x-zip-compressed/.test(file.type) || ["zip", "rar", "7z"].includes(ext)) return "fa-file-archive";
-                if (/text\/plain|md|json|xml/.test(file.type) || ["txt", "md", "json", "xml"].includes(ext)) return "fa-file-lines";
-                return "fa-file";
+                // Intentar usar iconos específicos primero, con fallback a iconos básicos
+                if (file.type === "application/pdf" || ext === "pdf") {
+                    return { 
+                        icon: "fa-file-pdf", 
+                        fallbackIcon: "fa-file",
+                        style: "fas", 
+                        color: "text-red-600", 
+                        bgColor: "bg-red-50",
+                        emoji: "📄"
+                    };
+                }
+                if (/msword|vnd.openxmlformats-officedocument.wordprocessingml/.test(file.type) || ["doc", "docx"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-word", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-blue-600", 
+                        bgColor: "bg-blue-50",
+                        emoji: "📝"
+                    };
+                }
+                if (/vnd.ms-excel|spreadsheetml|csv/.test(file.type) || ["xls", "xlsx", "csv"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-excel", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-green-600", 
+                        bgColor: "bg-green-50",
+                        emoji: "📊"
+                    };
+                }
+                if (/vnd.ms-powerpoint|presentationml/.test(file.type) || ["ppt", "pptx"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-powerpoint", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-orange-600", 
+                        bgColor: "bg-orange-50",
+                        emoji: "📽️"
+                    };
+                }
+                if (/zip|x-7z-compressed|x-rar-compressed|x-zip-compressed/.test(file.type) || ["zip", "rar", "7z"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-archive", 
+                        fallbackIcon: "fa-file",
+                        style: "fas", 
+                        color: "text-yellow-600", 
+                        bgColor: "bg-yellow-50",
+                        emoji: "📦"
+                    };
+                }
+                if (/text\/plain|md|json|xml/.test(file.type) || ["txt", "md", "json", "xml"].includes(ext)) {
+                    return { 
+                        icon: "fa-file-alt", 
+                        fallbackIcon: "fa-file-alt",
+                        style: "fas", 
+                        color: "text-gray-600", 
+                        bgColor: "bg-gray-50",
+                        emoji: "📄"
+                    };
+                }
+                return { 
+                    icon: "fa-file", 
+                    fallbackIcon: "fa-file",
+                    style: "fas", 
+                    color: "text-gray-600", 
+                    bgColor: "bg-gray-50",
+                    emoji: "📄"
+                };
             };
 
             const renderPreviews = () => {
@@ -383,9 +520,24 @@
                         img.onload = () => URL.revokeObjectURL(url);
                         visual.appendChild(img);
                     } else {
-                        const icon = document.createElement("i");
-                        icon.className = `fa-regular ${getFileIconClass(file)} text-4xl text-gray-600`;
-                        visual.appendChild(icon);
+                        const fileInfo = getFileIconInfo(file);
+                        visual.className = `w-full h-32 flex flex-col items-center justify-center ${fileInfo.bgColor}`;
+                        
+                        // Usar emoji como icono principal (más confiable y universal)
+                        const emoji = document.createElement("div");
+                        emoji.className = "text-6xl mb-2";
+                        emoji.textContent = fileInfo.emoji;
+                        emoji.style.fontSize = "3.5rem";
+                        visual.appendChild(emoji);
+                        
+                        // Agregar extensión como texto
+                        const ext = getExt(file.name);
+                        if (ext) {
+                            const extText = document.createElement("span");
+                            extText.className = "text-xs font-bold uppercase " + fileInfo.color.replace('text-', 'text-').replace('-600', '-700');
+                            extText.textContent = "." + ext;
+                            visual.appendChild(extText);
+                        }
                     }
 
                     const meta = document.createElement("div");
@@ -622,7 +774,7 @@
                 
                 // Habilitar solo campos específicos y hacerlos requeridos
                 $('#numeroTelefono').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
-                $('input[name="CodeAnyDesk"]').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
+                $('input[name="CodeAnyDesk"]').prop('disabled', false).removeClass('bg-gray-100');
                 $('textarea[name="Descripcion"]').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
                 $('#fileInput').prop('disabled', false);
                 $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
@@ -802,11 +954,6 @@
                 // Validar número telefónico
                 if (numero.length !== 10) {
                     errores.push('El número telefónico debe tener exactamente 10 dígitos');
-                }
-                
-                // Validar código AnyDesk
-                if (!anyDesk) {
-                    errores.push('El código AnyDesk es requerido');
                 }
                 
                 // Validar descripción

@@ -1,6 +1,12 @@
-<div class="px-4 py-3 flex justify-between items-center dark:bg-[#101010]">
-    <div class="flex items-center gap-4">
-        <div class="relative h-11 w-40 block">
+<div class="px-3 md:px-4 py-2 md:py-3 flex justify-between items-center dark:bg-[#101010]">
+    <div class="flex items-center gap-2 md:gap-4">
+        <!-- Botón hamburguesa para móvil -->
+        <button id="mobile-menu-button" 
+            class="lg:hidden w-10 h-10 flex items-center justify-center text-[#101D49] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
+            <i class="fas fa-bars text-xl"></i>
+        </button>
+        
+        <div class="relative h-9 md:h-11 w-32 md:w-40 block">
             <a href="{{ url('/') }}">
                 <img src="{{ asset('img/LogoAzul2.png') }}"
                     alt="Logo claro"
@@ -16,7 +22,7 @@
 
     @auth
     <div class="relative inline-block text-left dark:bg-[#101010]">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 md:gap-4">
             <div class="hidden md:flex flex-col justify-center text-right leading-tight">
                 <span class="text-[15px] font-semibold text-[#101D49] dark:text-white">
                     {{ Auth::user()->name }}
@@ -29,14 +35,14 @@
             </div>
 
             <button onclick="toggleDropdown()" id="dropdownbutton"
-                class="w-[46px] h-[46px] flex items-center justify-center bg-[#f1f5f9] text-[#101D49] rounded-full transition ring-1 ring-gray-300 dark:bg-white dark:text-[#101010] hover:scale-125 transition">
-                <i class="fas fa-user text-[17px]"></i>
+                class="w-10 h-10 md:w-[46px] md:h-[46px] flex items-center justify-center bg-[#f1f5f9] text-[#101D49] rounded-full transition ring-1 ring-gray-300 dark:bg-white dark:text-[#101010] hover:scale-110 md:hover:scale-125 active:scale-95">
+                <i class="fas fa-user text-base md:text-[17px]"></i>
             </button>
         </div>
 
 
         <div id="dropdownmenu"
-            class="hidden absolute right-0 mt-2 bg-white border border-gray-200 rounded-md z-50 w-64 transition-all duration-300 opacity-0 dark:rounded-md">
+            class="hidden absolute right-0 mt-2 bg-white border border-gray-200 rounded-md z-[60] w-56 md:w-64 transition-all duration-300 opacity-0 dark:rounded-md dark:bg-[#1a1a1a] dark:border-gray-700">
             <div
                 class="flex items-center justify-between px-3 py-2 border-b border-gray-300 dark:bg-[#101010] dark:border-[#444]">
                 <button class="text-[#101D49] hover:scale-125 transition dark:text-white" onclick="setTheme('light')">

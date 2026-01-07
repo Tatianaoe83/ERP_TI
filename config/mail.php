@@ -117,7 +117,7 @@ return [
     */
 
     'imap' => [
-        'host' => env('MAIL_IMAP_HOST', 'imap-mail.outlook.com'),
+        'host' => env('MAIL_IMAP_HOST', 'mail.obras-mex.com'),
         'port' => env('MAIL_IMAP_PORT', 993),
         'encryption' => env('MAIL_IMAP_ENCRYPTION', 'ssl'),
         'username' => env('MAIL_USERNAME'),
