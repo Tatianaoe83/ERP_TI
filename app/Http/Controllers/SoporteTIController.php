@@ -37,6 +37,7 @@ class SoporteTIController extends Controller
     public function buscarEmpleadoPorCorreo(Request $request): JsonResponse
     {
         $correo = $request->input('correo');
+        $type = $request->input('type'); // 'Ticket' o 'Solicitud'
         
         if (empty($correo)) {
             return response()->json(['error' => 'Correo requerido'], 400);
@@ -48,14 +49,28 @@ class SoporteTIController extends Controller
             return response()->json(['error' => 'No se encontró correo, contacta a soporte'], 404);
         }
 
-        return response()->json([
+        $response = [
             'EmpleadoID' => $empleado->EmpleadoID,
             'NombreEmpleado' => $empleado->NombreEmpleado,
             'Correo' => $empleado->Correo,
             'NumTelefono' => $empleado->NumTelefono,
             'PuestoID' => $empleado->PuestoID,
             'ObraID' => $empleado->ObraID,
-        ]);
+        ];
+
+        // Si el tipo es Solicitud, incluir información completa de Gerencia, Puesto y Obra
+        if ($type === 'Solicitud') {
+            $empleado->load(['puestos.departamentos.gerencia', 'obras']);
+            
+            $response['GerenciaID'] = $empleado->puestos->departamentos->gerencia->GerenciaID ?? null;
+            $response['NombreGerencia'] = $empleado->puestos->departamentos->gerencia->NombreGerencia ?? null;
+            $response['PuestoID'] = $empleado->puestos->PuestoID ?? null;
+            $response['NombrePuesto'] = $empleado->puestos->NombrePuesto ?? null;
+            $response['ObraID'] = $empleado->obras->ObraID ?? null;
+            $response['NombreObra'] = $empleado->obras->NombreObra ?? null;
+        }
+
+        return response()->json($response);
     }
 
     public function getEmpleadoInfo(Request $request): JsonResponse

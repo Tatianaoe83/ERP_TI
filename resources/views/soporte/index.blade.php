@@ -135,15 +135,27 @@
                         <h3 class="text-xl font-bold text-black text-lg mb-2">Formulario de Solicitud</h3>
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-black">
+                        <div>
+                            <label for="">Correo Electrónico *</label>
+                            <input type="email" id="correoEmpleadoSolicitud" placeholder="Correo Electrónico" name="Correo" class="w-full p-2 border rounded mb-2" required />
+                            <div id="correo-solicitud-error" class="text-red-500 text-sm hidden mb-2"></div>
+                        </div>
                         <div class="relative w-full">
-                            <input type="text" id="autoEmpleadosSolicitud" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2">
-                            <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoID">
+                            <label for="">Empleado</label>
+                            <input type="text" id="autoEmpleadosSolicitud" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2 bg-gray-100" disabled>
+                            <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoIDSolicitud">
                             <div id="suggestionsEmpleados" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
                         </div>
-                        <input type="text" placeholder="Gerencia" name="NombreGerencia" id="NombreGerencia" class="w-full p-2 border rounded mb-2">
-                        <input type="hidden" name="GerenciaID" id="GerenciaID">
-                        <input type="text" placeholder="Obra" name="NombreObra" id="NombreObra" class="w-full p-2 border rounded mb-2">
-                        <input type="hidden" name="ObraID" id="ObraID">
+                        <div>
+                            <label for="">Gerencia</label>
+                            <input type="text" placeholder="Gerencia" name="NombreGerencia" id="NombreGerencia" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
+                            <input type="hidden" name="GerenciaID" id="GerenciaID">
+                        </div>
+                        <div>
+                            <label for="">Obra</label>
+                            <input type="text" placeholder="Obra" name="NombreObra" id="NombreObra" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
+                            <input type="hidden" name="ObraID" id="ObraID">
+                        </div>
                         <select name="Motivo" id="Motivo">
                             <option value="">Selecciona un motivo</option>
                             <option value="Nuevo Ingreso">Nuevo Ingreso</option>
@@ -151,8 +163,11 @@
                             <option value="Renovación">Renovación</option>
                         </select>
                         <textarea placeholder="Describe Motivo" name="DescripcionMotivo" id="DescripcionMotivo" class="w-full p-2 border rounded mb-2"></textarea>
-                        <input type="text" placeholder="Puesto" id="NombrePuesto" name="NombrePuesto" class="w-full p-2 border rounded mb-2">
-                        <input type="hidden" name="PuestoID" id="PuestoID">
+                        <div>
+                            <label for="">Puesto</label>
+                            <input type="text" placeholder="Puesto" id="NombrePuesto" name="NombrePuesto" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
+                            <input type="hidden" name="PuestoID" id="PuestoID">
+                        </div>
                         <div class="relative w-full">
                             <input type="text" id="SupervisorNombre" placeholder="Supervisor" autocomplete="off" class="autoSupervisor w-full p-2 border rounded mb-2">
                             <input type="hidden" name="SupervisorID" id="SupervisorID" class="SupervisorID">
@@ -661,12 +676,21 @@
                         $suggestions.children().on("click", function() {
                             const nombre = $(this).data("name");
                             const id = $(this).data("id");
-                            $input.val(nombre);
-                            $(".EmpleadoID").val(id);
+                            const $clickedInput = $(this).closest('.relative').find('.autoEmpleados');
+                            $clickedInput.val(nombre);
+                            
+                            let type = $('#type').val();
+                            
+                            // Asignar el ID según el formulario activo
+                            if (type === "Ticket") {
+                                $('#EmpleadoID').val(id);
+                            } else if (type === "Solicitud") {
+                                $('#EmpleadoIDSolicitud').val(id);
+                            } else {
+                                $(".EmpleadoID").val(id);
+                            }
 
                             $suggestions.empty().addClass("hidden");
-
-                            let type = $('#type').val();
 
                             $.ajax({
                                 url: "/getEmpleadoInfo",
@@ -971,6 +995,176 @@
                     return false;
                 }
             });
+        });
+    </script>
+    <script>
+        // Script para validar correo y llenar datos automáticamente en formulario de Solicitud
+        $(document).ready(function() {
+            let correoSolicitudTimeout;
+            
+            // Función para deshabilitar campos cuando no hay correo válido
+            function deshabilitarCamposSolicitud() {
+                $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
+                $('#NombreGerencia').prop('disabled', true).addClass('bg-gray-100');
+                $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
+                $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
+            }
+            
+            // Función para habilitar campos cuando el correo es válido
+            function habilitarCamposSolicitud() {
+                // Mantener empleado deshabilitado pero visible
+                $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
+                
+                // Habilitar campos de Gerencia, Obra y Puesto (solo lectura, ya están llenos)
+                $('#NombreGerencia').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
+                $('#NombreObra').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
+                $('#NombrePuesto').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
+            }
+            
+            // Deshabilitar campos inicialmente
+            deshabilitarCamposSolicitud();
+            
+            $('#correoEmpleadoSolicitud').on('input', function() {
+                const correo = $(this).val().trim();
+                const $errorDiv = $('#correo-solicitud-error');
+                const $empleadoInput = $('#autoEmpleadosSolicitud');
+                const $gerenciaInput = $('#NombreGerencia');
+                const $obraInput = $('#NombreObra');
+                const $puestoInput = $('#NombrePuesto');
+                const $empleadoIDInput = $('#EmpleadoIDSolicitud');
+                const $gerenciaIDInput = $('#GerenciaID');
+                const $obraIDInput = $('#ObraID');
+                const $puestoIDInput = $('#PuestoID');
+                
+                // Limpiar timeout anterior
+                clearTimeout(correoSolicitudTimeout);
+                
+                // Deshabilitar campos si el correo está vacío
+                if (correo === '') {
+                    deshabilitarCamposSolicitud();
+                    $empleadoInput.val('').removeClass('border-green-500').addClass('border-gray-300');
+                    $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
+                    $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
+                    $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
+                    $empleadoIDInput.val('');
+                    $gerenciaIDInput.val('');
+                    $obraIDInput.val('');
+                    $puestoIDInput.val('');
+                    $errorDiv.addClass('hidden').text('');
+                    return;
+                }
+                
+                // Validar formato de correo básico
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(correo)) {
+                    deshabilitarCamposSolicitud();
+                    $errorDiv.removeClass('hidden').text('Por favor ingresa un correo válido');
+                    $empleadoInput.val('').removeClass('border-green-500').addClass('border-red-500');
+                    $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
+                    $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
+                    $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
+                    $empleadoIDInput.val('');
+                    $gerenciaIDInput.val('');
+                    $obraIDInput.val('');
+                    $puestoIDInput.val('');
+                    return;
+                }
+                
+                // Esperar 500ms después de que el usuario deje de escribir
+                correoSolicitudTimeout = setTimeout(function() {
+                    buscarEmpleadoPorCorreoSolicitud(correo);
+                }, 500);
+            });
+            
+            function buscarEmpleadoPorCorreoSolicitud(correo) {
+                const $errorDiv = $('#correo-solicitud-error');
+                const $empleadoInput = $('#autoEmpleadosSolicitud');
+                const $gerenciaInput = $('#NombreGerencia');
+                const $obraInput = $('#NombreObra');
+                const $puestoInput = $('#NombrePuesto');
+                const $empleadoIDInput = $('#EmpleadoIDSolicitud');
+                const $gerenciaIDInput = $('#GerenciaID');
+                const $obraIDInput = $('#ObraID');
+                const $puestoIDInput = $('#PuestoID');
+                
+                // Mostrar indicador de carga
+                $empleadoInput.val('Buscando...').addClass('border-blue-500');
+                $gerenciaInput.val('Buscando...').addClass('border-blue-500');
+                $obraInput.val('Buscando...').addClass('border-blue-500');
+                $puestoInput.val('Buscando...').addClass('border-blue-500');
+                $errorDiv.addClass('hidden').text('');
+                
+                $.ajax({
+                    url: '/buscarEmpleadoPorCorreo',
+                    method: 'GET',
+                    data: { 
+                        correo: correo,
+                        type: 'Solicitud'
+                    },
+                    success: function(data) {
+                        // Empleado encontrado - habilitar campos y llenar datos
+                        habilitarCamposSolicitud();
+                        $empleadoInput.val(data.NombreEmpleado)
+                            .removeClass('border-blue-500 border-red-500')
+                            .addClass('border-green-500');
+                        $gerenciaInput.val(data.NombreGerencia || '')
+                            .removeClass('border-blue-500 border-red-500')
+                            .addClass('border-green-500');
+                        $obraInput.val(data.NombreObra || '')
+                            .removeClass('border-blue-500 border-red-500')
+                            .addClass('border-green-500');
+                        $puestoInput.val(data.NombrePuesto || '')
+                            .removeClass('border-blue-500 border-red-500')
+                            .addClass('border-green-500');
+                        $empleadoIDInput.val(data.EmpleadoID);
+                        $gerenciaIDInput.val(data.GerenciaID || '');
+                        $obraIDInput.val(data.ObraID || '');
+                        $puestoIDInput.val(data.PuestoID || '');
+                        $errorDiv.addClass('hidden').text('');
+                    },
+                    error: function(xhr) {
+                        // Error en la búsqueda - deshabilitar campos
+                        deshabilitarCamposSolicitud();
+                        if (xhr.status === 404) {
+                            $empleadoInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $gerenciaInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $obraInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $puestoInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $empleadoIDInput.val('');
+                            $gerenciaIDInput.val('');
+                            $obraIDInput.val('');
+                            $puestoIDInput.val('');
+                            $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró correo, contacta a soporte');
+                        } else {
+                            $empleadoInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $gerenciaInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $obraInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $puestoInput.val('')
+                                .removeClass('border-blue-500 border-green-500')
+                                .addClass('border-red-500');
+                            $empleadoIDInput.val('');
+                            $gerenciaIDInput.val('');
+                            $obraIDInput.val('');
+                            $puestoIDInput.val('');
+                            $errorDiv.removeClass('hidden').text('Error al buscar empleado. Intenta de nuevo.');
+                        }
+                    }
+                });
+            }
         });
     </script>
 </body>
