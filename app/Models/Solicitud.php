@@ -56,7 +56,19 @@ class Solicitud extends Model
         'GerenciaID',
         'PuestoID',
         'EmpleadoID',
-        'Proyecto'
+        'Proyecto',
+        'AprobacionSupervisor',
+        'FechaAprobacionSupervisor',
+        'SupervisorAprobadorID',
+        'ComentarioSupervisor',
+        'AprobacionGerencia',
+        'FechaAprobacionGerencia',
+        'GerenteAprobadorID',
+        'ComentarioGerencia',
+        'AprobacionAdministracion',
+        'FechaAprobacionAdministracion',
+        'AdministradorAprobadorID',
+        'ComentarioAdministracion'
     ];
 
     /**
@@ -76,7 +88,13 @@ class Solicitud extends Model
         'GerenciaID' => 'integer',
         'PuestoID' => 'integer',
         'EmpleadoID' => 'integer',
-        'Proyecto' => 'string'
+        'Proyecto' => 'string',
+        'FechaAprobacionSupervisor' => 'datetime',
+        'SupervisorAprobadorID' => 'integer',
+        'FechaAprobacionGerencia' => 'datetime',
+        'GerenteAprobadorID' => 'integer',
+        'FechaAprobacionAdministracion' => 'datetime',
+        'AdministradorAprobadorID' => 'integer'
     ];
 
     /**
@@ -107,7 +125,7 @@ class Solicitud extends Model
      **/
     public function obraid()
     {
-        return $this->belongsTo(\App\Models\Obra::class, 'ObraID');
+        return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
 
     /**
@@ -115,7 +133,7 @@ class Solicitud extends Model
      **/
     public function empleadoid()
     {
-        return $this->belongsTo(\App\Models\Empleado::class, 'EmpleadoID');
+        return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
     }
 
     /**
@@ -123,7 +141,7 @@ class Solicitud extends Model
      **/
     public function gerenciaid()
     {
-        return $this->belongsTo(\App\Models\Gerencium::class, 'GerenciaID');
+        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
     }
 
     /**
@@ -131,6 +149,38 @@ class Solicitud extends Model
      **/
     public function puestoid()
     {
-        return $this->belongsTo(\App\Models\Puesto::class, 'PuestoID');
+        return $this->belongsTo(\App\Models\Puestos::class, 'PuestoID');
+    }
+
+    /**
+     * Relación con cotizaciones
+     */
+    public function cotizaciones()
+    {
+        return $this->hasMany(\App\Models\Cotizacion::class, 'SolicitudID', 'SolicitudID');
+    }
+
+    /**
+     * Relación con supervisor aprobador
+     */
+    public function supervisorAprobador()
+    {
+        return $this->belongsTo(\App\Models\Empleados::class, 'SupervisorAprobadorID', 'EmpleadoID');
+    }
+
+    /**
+     * Relación con gerente aprobador
+     */
+    public function gerenteAprobador()
+    {
+        return $this->belongsTo(\App\Models\Empleados::class, 'GerenteAprobadorID', 'EmpleadoID');
+    }
+
+    /**
+     * Relación con administrador aprobador
+     */
+    public function administradorAprobador()
+    {
+        return $this->belongsTo(\App\Models\Empleados::class, 'AdministradorAprobadorID', 'EmpleadoID');
     }
 }

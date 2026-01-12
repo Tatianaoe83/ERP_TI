@@ -56,6 +56,108 @@
                 transform: translateY(0);
             }
         }
+
+        /* Estilos personalizados para Select2 más amigable */
+        .select2-container--default .select2-selection--single {
+            height: 42px !important;
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            padding: 0.5rem !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .select2-container--default .select2-selection--single:hover {
+            border-color: #9ca3af !important;
+        }
+
+        .select2-container--default.select2-container--focus .select2-selection--single {
+            border-color: #000 !important;
+            outline: 2px solid rgba(0, 0, 0, 0.1) !important;
+            outline-offset: 2px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 30px !important;
+            padding-left: 0 !important;
+            color: #1f2937 !important;
+            font-size: 1rem !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #9ca3af !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px !important;
+            right: 10px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #6b7280 transparent transparent transparent !important;
+            border-width: 6px 5px 0 5px !important;
+            margin-top: -3px !important;
+        }
+
+        .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+            border-color: transparent transparent #6b7280 transparent !important;
+            border-width: 0 5px 6px 5px !important;
+            margin-top: -3px !important;
+        }
+
+        .select2-dropdown {
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+            margin-top: 4px !important;
+        }
+
+        .select2-results__option {
+            padding: 12px 16px !important;
+            font-size: 0.95rem !important;
+            transition: all 0.15s ease !important;
+        }
+
+        .select2-results__option[aria-selected=true] {
+            background-color: #f3f4f6 !important;
+            color: #1f2937 !important;
+        }
+
+        .select2-results__option--highlighted {
+            background-color: #3b82f6 !important;
+            color: white !important;
+        }
+
+        .select2-results__group {
+            padding: 10px 16px !important;
+            font-weight: 600 !important;
+            font-size: 0.875rem !important;
+            color: #374151 !important;
+            background-color: #f9fafb !important;
+            border-bottom: 1px solid #e5e7eb !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+        }
+
+        .select2-search--dropdown .select2-search__field {
+            border: 1px solid #d1d5db !important;
+            border-radius: 0.375rem !important;
+            padding: 8px 12px !important;
+            margin: 8px !important;
+            width: calc(100% - 16px) !important;
+        }
+
+        .select2-search--dropdown .select2-search__field:focus {
+            border-color: #3b82f6 !important;
+            outline: 2px solid rgba(59, 130, 246, 0.1) !important;
+            outline-offset: 2px !important;
+        }
+
+        .select2-results__option .option-icon {
+            display: inline-block;
+            width: 20px;
+            margin-right: 8px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -90,27 +192,27 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label for="">Correo Electrónico *</label>
+                            <label for="correoEmpleado">Correo Electrónico *</label>
                             <input type="email" id="correoEmpleado" placeholder="Correo Electrónico" name="Correo" class="w-full p-2 border rounded mb-2" required />
                             <div id="correo-error" class="text-red-500 text-sm hidden mb-2"></div>
                         </div>
                         <div class="relative w-full">
-                            <label for="">Empleado</label>
+                            <label for="autoEmpleadosTicket">Empleado</label>
                             <input type="text" id="autoEmpleadosTicket" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2 bg-gray-100" disabled>
                             <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoID">
                             <div id="suggestions" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
                         </div>
                         <div>
-                            <label for="">Número Telefónico *</label>
+                            <label for="numeroTelefono">Número Telefónico *</label>
                             <input type="number" id="numeroTelefono" placeholder="Número Telefónico" name="Numero" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
-                            <label for="">Código AnyDesk</label>
-                            <input type="number" placeholder="Código AnyDesk" name="CodeAnyDesk" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
+                            <label for="codeAnyDesk">Código AnyDesk</label>
+                            <input type="number" id="codeAnyDesk" placeholder="Código AnyDesk" name="CodeAnyDesk" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
                         </div>
                         <div>
-                            <label for="">Descripción *</label>
-                            <textarea placeholder="Descripción" name="Descripcion" class="w-full p-2 border rounded bg-gray-100" disabled></textarea>
+                            <label for="descripcionTicket">Descripción *</label>
+                            <textarea id="descripcionTicket" placeholder="Descripción" name="Descripcion" class="w-full p-2 border rounded bg-gray-100" disabled></textarea>
                         </div>
                         <div
                             id="dropzone"
@@ -136,47 +238,70 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-black">
                         <div>
-                            <label for="">Correo Electrónico *</label>
+                            <label for="correoEmpleadoSolicitud">Correo Electrónico *</label>
                             <input type="email" id="correoEmpleadoSolicitud" placeholder="Correo Electrónico" name="Correo" class="w-full p-2 border rounded mb-2" required />
                             <div id="correo-solicitud-error" class="text-red-500 text-sm hidden mb-2"></div>
                         </div>
                         <div class="relative w-full">
-                            <label for="">Empleado</label>
+                            <label for="autoEmpleadosSolicitud">Empleado</label>
                             <input type="text" id="autoEmpleadosSolicitud" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2 bg-gray-100" disabled>
                             <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoIDSolicitud">
                             <div id="suggestionsEmpleados" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
                         </div>
                         <div>
-                            <label for="">Gerencia</label>
+                            <label for="NombreGerencia">Gerencia</label>
                             <input type="text" placeholder="Gerencia" name="NombreGerencia" id="NombreGerencia" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
                             <input type="hidden" name="GerenciaID" id="GerenciaID">
                         </div>
                         <div>
-                            <label for="">Obra</label>
+                            <label for="NombreObra">Obra</label>
                             <input type="text" placeholder="Obra" name="NombreObra" id="NombreObra" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
                             <input type="hidden" name="ObraID" id="ObraID">
                         </div>
-                        <select name="Motivo" id="Motivo">
-                            <option value="">Selecciona un motivo</option>
-                            <option value="Nuevo Ingreso">Nuevo Ingreso</option>
-                            <option value="Reemplazo por fallo o descompostura">Reemplazo por fallo o descompostura</option>
-                            <option value="Renovación">Renovación</option>
-                        </select>
-                        <textarea placeholder="Describe Motivo" name="DescripcionMotivo" id="DescripcionMotivo" class="w-full p-2 border rounded mb-2"></textarea>
                         <div>
-                            <label for="">Puesto</label>
+                            <label for="NombrePuesto">Puesto</label>
                             <input type="text" placeholder="Puesto" id="NombrePuesto" name="NombrePuesto" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
                             <input type="hidden" name="PuestoID" id="PuestoID">
                         </div>
                         <div class="relative w-full">
-                            <input type="text" id="SupervisorNombre" placeholder="Supervisor" autocomplete="off" class="autoSupervisor w-full p-2 border rounded mb-2">
+                            <label for="SupervisorNombre">Supervisor/Jefe Inmediato</label>
+                            <input type="text" id="SupervisorNombre" placeholder="Supervisor" autocomplete="off" class="autoSupervisor w-full p-2 border rounded mb-2 bg-gray-100" disabled>
                             <input type="hidden" name="SupervisorID" id="SupervisorID" class="SupervisorID">
                             <div id="suggestionsSupervisor" class="suggestionsSupervisor absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
                         </div>
-                        <select name="Proyecto" style="width:100%" id="Proyecto" class="cursor-pointer w-full p-2 border rounded mb-2 text-black js-example-basic-single">
-                        </select>
-                        <textarea name="Requerimientos" id="Requerimientos" placeholder="Requerimientos" class="w-full p-2 border rounded mb-2"></textarea>
-                        <button type="submit" class="w-20 h-10 bg-red-500 text-white rounded-md hover:scale-105 transition-all duration-300">Enviar</button>
+                        <div>
+                            <label for="Motivo">Selecciona el motivo de la solicitud</label>
+                            <select name="Motivo" id="Motivo" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
+                                <option value="">Selecciona el motivo de la solicitud</option>
+                                <option value="Nuevo Ingreso">Nuevo Ingreso</option>
+                                <option value="Reemplazo por fallo o descompostura">Reemplazo por fallo o descompostura</option>
+                                <option value="Renovación">Renovación</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="DescripcionMotivo">Describe el motivo de la solicitud</label>
+                            <textarea id="DescripcionMotivo" placeholder="Describe Motivo" name="DescripcionMotivo" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled></textarea>
+                        </div>
+                        <div>
+                            <label for="Proyecto">
+                                Selecciona Ubicación
+                                <span
+                                    class="d-inline-block ms-1"
+                                    tabindex="0"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="Selecciona la ubicación donde se ubicará el equipo">
+                                    <i class="fas fa-info-circle text-primary"></i>
+                                </span>
+                            </label>
+                            <select name="Proyecto" style="width:100%" id="Proyecto" class="cursor-pointer w-full text-black js-example-basic-single" disabled>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="Requerimientos">Requerimientos</label>
+                            <textarea name="Requerimientos" id="Requerimientos" placeholder="Requerimientos" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled></textarea>
+                        </div>
+                        <button type="submit" id="btnEnviarSolicitud" class="w-20 h-10 bg-gray-400 text-white rounded-md transition-all duration-300 cursor-not-allowed" disabled>Enviar</button>
                     </div>
                 </div>
             </div>
@@ -218,8 +343,56 @@
     <script>
         $(document).ready(function() {
             $('#Proyecto').select2({
-                placeholder: "Selecciona Ubicación",
-                allowClear: true
+                placeholder: "Busca y selecciona una ubicación...",
+                allowClear: true,
+                language: {
+                    noResults: function() {
+                        return "No se encontraron resultados";
+                    },
+                    searching: function() {
+                        return "Buscando...";
+                    }
+                },
+                templateResult: function(data) {
+                    if (!data.id) {
+                        return data.text;
+                    }
+                    
+                    var $result = $('<span></span>');
+                    var icon = '';
+                    var prefix = '';
+                    
+                    // Determinar icono según el tipo
+                    var optgroup = $(data.element).closest('optgroup');
+                    var groupLabel = optgroup.attr('label') || '';
+                    
+                    if (groupLabel.toLowerCase().includes("proyecto")) {
+                        icon = '<i class="fas fa-folder-open text-blue-500 mr-2"></i>';
+                        prefix = '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">PR</span>';
+                    } else if (groupLabel.toLowerCase().includes("obra")) {
+                        icon = '<i class="fas fa-building text-orange-500 mr-2"></i>';
+                        prefix = '<span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded mr-2">OB</span>';
+                    } else if (groupLabel.toLowerCase().includes("gerencia")) {
+                        icon = '<i class="fas fa-briefcase text-purple-500 mr-2"></i>';
+                        prefix = '<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded mr-2">GE</span>';
+                    } else {
+                        icon = '<i class="fas fa-map-marker-alt text-gray-500 mr-2"></i>';
+                    }
+                    
+                    $result.append(icon + prefix + '<span>' + data.text + '</span>');
+                    return $result;
+                },
+                templateSelection: function(data) {
+                    if (!data.id) {
+                        return data.text;
+                    }
+                    
+                    // Para la selección, mostrar solo el texto sin iconos
+                    return data.text;
+                },
+                escapeMarkup: function(markup) {
+                    return markup;
+                }
             });
 
             $.ajax({
@@ -258,23 +431,32 @@
                     });
 
                     $('#Proyecto').val(null).trigger('change');
+                    // Deshabilitar Select2 inicialmente
+                    $('#Proyecto').select2('enable', false);
                 }
             });
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @if (session('success'))
+    @php
+        $tipo = session('tipo', 'Ticket'); // Por defecto es Ticket si no se especifica
+        $titulo = $tipo === 'Solicitud' ? '¡Solicitud Enviada Exitosamente! 🎉' : '¡Ticket Enviado Exitosamente! 🎉';
+        $mensaje = $tipo === 'Solicitud' 
+            ? 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.' 
+            : 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.';
+    @endphp
     <script>
         Swal.fire({
             icon: 'success',
-            title: '¡Ticket Enviado Exitosamente! 🎉',
+            title: '{{ $titulo }}',
             html: `
                 <div style="text-align: center; padding: 10px;">
                     <p style="font-size: 16px; margin-bottom: 10px; color: #333;">
                         <strong>¡Gracias por contactarnos!</strong>
                     </p>
                     <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
-                        Hemos recibido tu solicitud y nuestro equipo de soporte técnico la revisará pronto.
+                        {{ $mensaje }}
                     </p>
                     <p style="font-size: 13px; color: #888; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
                         <i class="fas fa-clock"></i> Te contactaremos a la brevedad posible
@@ -380,6 +562,22 @@
             const select = document.getElementById("type");
             const ticket = document.getElementById("ticket-form");
             const solicitud = document.getElementById("solicitud-form");
+            
+            // Función para manejar atributos required según visibilidad
+            const manejarRequired = (form, visible) => {
+                const requiredFields = form.querySelectorAll('[required]');
+                requiredFields.forEach(field => {
+                    if (visible) {
+                        field.setAttribute('required', 'required');
+                    } else {
+                        field.removeAttribute('required');
+                    }
+                });
+            };
+            
+            // Remover required inicialmente ya que ambos formularios están ocultos
+            manejarRequired(ticket, false);
+            manejarRequired(solicitud, false);
 
             const resetForm = (form) => {
                 const inputs = form.querySelectorAll("input, textarea, select");
@@ -393,6 +591,10 @@
             select.addEventListener("change", function() {
                 const value = this.value;
 
+                // Remover required de ambos formularios antes de ocultarlos
+                manejarRequired(ticket, false);
+                manejarRequired(solicitud, false);
+
                 ticket.classList.add("hidden");
                 solicitud.classList.add("hidden");
 
@@ -401,10 +603,20 @@
 
                 if (value === "Ticket") {
                     ticket.classList.remove("hidden");
+                    manejarRequired(ticket, true); // Agregar required cuando se muestra
                     title.textContent = "Crear Nuevo Ticket";
+                    // Deshabilitar campos del formulario de Ticket
+                    if (typeof deshabilitarCampos === 'function') {
+                        deshabilitarCampos();
+                    }
                 } else if (value === "Solicitud") {
                     solicitud.classList.remove("hidden");
+                    manejarRequired(solicitud, true); // Agregar required cuando se muestra
                     title.textContent = "Crear Nueva Solicitud";
+                    // Deshabilitar campos del formulario de Solicitud
+                    if (typeof deshabilitarCamposSolicitud === 'function') {
+                        deshabilitarCamposSolicitud();
+                    }
                 }
 
                 title.classList.remove("fade-change");
@@ -776,16 +988,21 @@
         });
     </script>
     <script>
+        // Variables globales para rastrear validación de correos
+        let correoValido = false;
+        let correoSolicitudValido = false;
+        
         // Script para validar correo y llenar datos automáticamente
         $(document).ready(function() {
             let correoTimeout;
             
             // Función para deshabilitar todos los campos excepto el correo
             function deshabilitarCampos() {
+                correoValido = false; // Marcar correo como inválido
                 $('#autoEmpleadosTicket').prop('disabled', true).addClass('bg-gray-100');
                 $('#numeroTelefono').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
-                $('input[name="CodeAnyDesk"]').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
-                $('textarea[name="Descripcion"]').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
+                $('#codeAnyDesk').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
+                $('#descripcionTicket').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
                 $('#fileInput').prop('disabled', true);
                 $('#btnEnviar').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
                 $('#dropzone').addClass('bg-gray-100 opacity-50').removeClass('hover:bg-gray-100');
@@ -793,13 +1010,14 @@
             
             // Función para habilitar solo campos específicos
             function habilitarCamposEspecificos() {
+                correoValido = true; // Marcar correo como válido
                 // Mantener empleado deshabilitado pero visible
                 $('#autoEmpleadosTicket').prop('disabled', true).addClass('bg-gray-100');
                 
                 // Habilitar solo campos específicos y hacerlos requeridos
                 $('#numeroTelefono').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
-                $('input[name="CodeAnyDesk"]').prop('disabled', false).removeClass('bg-gray-100');
-                $('textarea[name="Descripcion"]').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
+                $('#codeAnyDesk').prop('disabled', false).removeClass('bg-gray-100');
+                $('#descripcionTicket').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
                 $('#fileInput').prop('disabled', false);
                 $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
                 $('#dropzone').removeClass('bg-gray-100 opacity-50').addClass('hover:bg-gray-100');
@@ -853,7 +1071,8 @@
                 
                 // Mostrar indicador de carga
                 $empleadoInput.val('Buscando...').addClass('border-blue-500');
-                $numeroInput.val('Buscando...').addClass('border-blue-500');
+                // No poner "Buscando..." en campos numéricos, solo mostrar indicador visual
+                $numeroInput.addClass('border-blue-500').prop('placeholder', 'Buscando...');
                 $errorDiv.addClass('hidden').text('');
                 
                 $.ajax({
@@ -924,7 +1143,7 @@
             });
             
             // Validación del código AnyDesk
-            $('input[name="CodeAnyDesk"]').on('input', function() {
+            $('#codeAnyDesk').on('input', function() {
                 const anyDesk = $(this).val().trim();
                 const $errorDiv = $('#anydesk-error');
                 
@@ -943,7 +1162,7 @@
             });
             
             // Validación de la descripción
-            $('textarea[name="Descripcion"]').on('input', function() {
+            $('#descripcionTicket').on('input', function() {
                 const descripcion = $(this).val().trim();
                 const $errorDiv = $('#descripcion-error');
                 
@@ -963,36 +1182,97 @@
             
             // Validar formulario antes de enviar
             $('form').on('submit', function(e) {
-                const numero = $('#numeroTelefono').val().replace(/\D/g, '');
-                const anyDesk = $('input[name="CodeAnyDesk"]').val().trim();
-                const descripcion = $('textarea[name="Descripcion"]').val().trim();
-                const correo = $('#correoEmpleado').val().trim();
-                
                 let errores = [];
                 
-                // Validar que el correo esté validado
-                if (!correo || !$('#EmpleadoID').val()) {
-                    errores.push('Debe validar un correo electrónico válido');
+                // Validar si es el formulario de Ticket
+                if ($('#ticket-form').is(':visible')) {
+                    const numero = $('#numeroTelefono').val().replace(/\D/g, '');
+                    const anyDesk = $('#codeAnyDesk').val().trim();
+                    const descripcion = $('#descripcionTicket').val().trim();
+                    const correo = $('#correoEmpleado').val().trim();
+                    const empleadoID = $('#EmpleadoID').val();
+                    
+                    // Asegurar que el campo de correo se envíe correctamente
+                    // Si el campo está deshabilitado, habilitarlo temporalmente para el envío
+                    const $correoInput = $('#correoEmpleado');
+                    const correoWasDisabled = $correoInput.prop('disabled');
+                    if (correoWasDisabled) {
+                        $correoInput.prop('disabled', false);
+                    }
+                    
+                    // Crear un campo hidden con el correo para asegurar que se envíe
+                    if (correo && !$('#correoHidden').length) {
+                        $('<input>').attr({
+                            type: 'hidden',
+                            id: 'correoHidden',
+                            name: 'Correo',
+                            value: correo
+                        }).appendTo('form');
+                    } else if (correo && $('#correoHidden').length) {
+                        $('#correoHidden').val(correo);
+                    }
+                    
+                    // Validar formato de correo
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!correo) {
+                        errores.push('El correo electrónico es requerido');
+                    } else if (!emailRegex.test(correo)) {
+                        errores.push('El formato del correo electrónico no es válido');
+                    } else if (!correoValido || !empleadoID) {
+                        errores.push('Debe validar un correo electrónico válido. Por favor, espera a que se valide el correo antes de enviar.');
+                        // Resaltar el campo de correo
+                        $('#correoEmpleado').addClass('border-red-500').focus();
+                        $('#correo-error').removeClass('hidden').text('Debe validar el correo electrónico antes de enviar');
+                    }
+                    
+                    // Validar número telefónico
+                    if (numero.length !== 10) {
+                        errores.push('El número telefónico debe tener exactamente 10 dígitos');
+                    }
+                    
+                    // Validar descripción
+                    if (!descripcion) {
+                        errores.push('La descripción es requerida');
+                    }
                 }
-                
-                // Validar número telefónico
-                if (numero.length !== 10) {
-                    errores.push('El número telefónico debe tener exactamente 10 dígitos');
-                }
-                
-                // Validar descripción
-                if (!descripcion) {
-                    errores.push('La descripción es requerida');
+                // Validar si es el formulario de Solicitud
+                else if ($('#solicitud-form').is(':visible')) {
+                    const correo = $('#correoEmpleadoSolicitud').val().trim();
+                    const empleadoID = $('#EmpleadoIDSolicitud').val();
+                    
+                    // Validar formato de correo
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!correo) {
+                        errores.push('El correo electrónico es requerido');
+                    } else if (!emailRegex.test(correo)) {
+                        errores.push('El formato del correo electrónico no es válido');
+                    } else if (!correoSolicitudValido || !empleadoID) {
+                        errores.push('Debe validar un correo electrónico válido. Por favor, espera a que se valide el correo antes de enviar.');
+                        // Resaltar el campo de correo
+                        $('#correoEmpleadoSolicitud').addClass('border-red-500').focus();
+                        $('#correo-solicitud-error').removeClass('hidden').text('Debe validar el correo electrónico antes de enviar');
+                    }
                 }
                 
                 if (errores.length > 0) {
                     e.preventDefault();
+                    // Restaurar estado del campo de correo si se modificó
+                    if (typeof correoWasDisabled !== 'undefined' && correoWasDisabled) {
+                        $('#correoEmpleado').prop('disabled', true);
+                    }
                     Swal.fire({
                         icon: 'error',
                         title: 'Error de validación',
-                        html: 'Por favor corrige los siguientes errores:<br><br>• ' + errores.join('<br>• ')
+                        html: 'Por favor corrige los siguientes errores:<br><br>• ' + errores.join('<br>• '),
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#ef4444'
                     });
                     return false;
+                }
+                
+                // Asegurar que el campo de correo esté habilitado antes de enviar
+                if ($('#ticket-form').is(':visible')) {
+                    $('#correoEmpleado').prop('disabled', false);
                 }
             });
         });
@@ -1001,17 +1281,196 @@
         // Script para validar correo y llenar datos automáticamente en formulario de Solicitud
         $(document).ready(function() {
             let correoSolicitudTimeout;
+            let intervaloHabilitacion = null;
             
             // Función para deshabilitar campos cuando no hay correo válido
             function deshabilitarCamposSolicitud() {
+             
+                correoSolicitudValido = false; // Marcar correo como inválido
                 $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombreGerencia').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
+                $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
+                $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
+                $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
+                // Deshabilitar campo Proyecto (Select2)
+                $('#Proyecto').prop('disabled', true);
+                $('#Proyecto').select2('enable', false);
+                // Agregar clase de deshabilitado al contenedor de Select2 si existe
+                var $select2Container = $('#Proyecto').next('.select2-container');
+                if ($select2Container.length) {
+                    $select2Container.addClass('select2-container--disabled');
+                }
+                $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
+                $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
+            }
+            
+            // Función para cargar datos en el campo de ubicación
+            function cargarDatosUbicacion(callback) {
+                var $proyecto = $('#Proyecto');
+                
+                // Verificar si el select ya tiene opciones
+                if ($proyecto.find('option').length > 0 && $proyecto.find('optgroup').length > 0) {
+                    // Ya tiene datos, ejecutar callback si existe con un pequeño delay
+                    if (typeof callback === 'function') {
+                        setTimeout(function() {
+                            callback();
+                        }, 100);
+                    }
+                    return;
+                }
+                
+                // Cargar datos desde el servidor
+                $.ajax({
+                    url: "/getTypes",
+                    method: "GET",
+                    success: function(data) {
+                        $proyecto.empty();
+
+                        $.each(data, function(index, group) {
+                            var $optgroup = $('<optgroup>', {
+                                label: group.text
+                            });
+
+                            var prefix = "";
+
+                            if (group.text.toLowerCase().includes("proyecto")) {
+                                prefix = "PR";
+                            } else if (group.text.toLowerCase().includes("obra")) {
+                                prefix = "OB";
+                            } else if (group.text.toLowerCase().includes("gerencia")) {
+                                prefix = "GE";
+                            }
+
+                            if (group.children) {
+                                $.each(group.children, function(i, item) {
+                                    $optgroup.append(
+                                        $('<option>', {
+                                            value: prefix + item.id,
+                                            text: item.text
+                                        })
+                                    );
+                                });
+                            }
+
+                            $proyecto.append($optgroup);
+                        });
+
+                        // Actualizar Select2 después de agregar las opciones
+                        if (typeof $.fn.select2 !== 'undefined' && $proyecto.hasClass('select2-hidden-accessible')) {
+                            $proyecto.trigger('change.select2');
+                        }
+                        
+                        $proyecto.val(null).trigger('change');
+                        
+                        // Ejecutar callback si existe (con un pequeño delay para asegurar que Select2 se actualice)
+                        if (typeof callback === 'function') {
+                            setTimeout(function() {
+                                callback();
+                            }, 100);
+                        }
+                    },
+                    error: function() {
+                      
+                        // Ejecutar callback incluso si hay error
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    }
+                });
+            }
+            
+            // Función para habilitar campo de ubicación
+            function habilitarCampoUbicacion() {
+               
+                
+                if (!correoSolicitudValido) {
+                    return;
+                }
+                
+                var $proyecto = $('#Proyecto');
+                
+                if (!$proyecto.length) {
+                  
+                    return;
+                }
+                
+                // Limpiar intervalo anterior si existe
+                if (intervaloHabilitacion) {
+                    clearInterval(intervaloHabilitacion);
+                    intervaloHabilitacion = null;
+                }
+                
+                // Función simple y directa para habilitar
+                function habilitarAhora() {
+                    if (!correoSolicitudValido) {
+                        return;
+                    }
+                    
+                    var $proyecto = $('#Proyecto');
+                    var $select2Container = $proyecto.next('.select2-container');
+                    
+                    if (!$select2Container.length) {
+                        $select2Container = $proyecto.parent().find('.select2-container');
+                    }
+                    
+                    // Forzar habilitación del select
+                    $proyecto.prop('disabled', false);
+                    $proyecto.removeAttr('disabled');
+                    
+                    // Habilitar Select2
+                    if (typeof $.fn.select2 !== 'undefined') {
+                        try {
+                            $proyecto.select2('enable', true);
+                        } catch(e) {
+                            
+                        }
+                    }
+                    
+                    // Habilitar contenedor
+                    if ($select2Container.length) {
+                        $select2Container.removeClass('select2-container--disabled');
+                        $select2Container.find('.select2-selection').css({
+                            'pointer-events': 'auto',
+                            'opacity': '1',
+                            'cursor': 'pointer'
+                        });
+                        $select2Container.find('input').prop('disabled', false);
+                    }
+                    
+                  
+                }
+                
+                // Cargar datos primero si es necesario
+                cargarDatosUbicacion(function() {
+                  
+                    
+                    // Habilitar inmediatamente
+                    habilitarAhora();
+                    
+                    // Habilitar después de delays para asegurar
+                    setTimeout(habilitarAhora, 50);
+                    setTimeout(habilitarAhora, 200);
+                    setTimeout(habilitarAhora, 500);
+                    
+                    // Crear intervalo para mantener habilitado
+                    intervaloHabilitacion = setInterval(function() {
+                        if (correoSolicitudValido) {
+                            habilitarAhora();
+                        } else {
+                            clearInterval(intervaloHabilitacion);
+                            intervaloHabilitacion = null;
+                        }
+                    }, 300);
+                    
+                    console.log('Intervalo de habilitación creado');
+                });
             }
             
             // Función para habilitar campos cuando el correo es válido
             function habilitarCamposSolicitud() {
+                correoSolicitudValido = true; // Marcar correo como válido
                 // Mantener empleado deshabilitado pero visible
                 $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
                 
@@ -1019,13 +1478,71 @@
                 $('#NombreGerencia').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
                 $('#NombreObra').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
                 $('#NombrePuesto').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
+                
+                // Habilitar todos los demás campos
+                $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
+                $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
+                $('#SupervisorNombre').prop('disabled', false).removeClass('bg-gray-100');
+                
+                // Habilitar campo Proyecto (Select2) usando la función específica
+                habilitarCampoUbicacion();
+                
+                $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+                $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
             }
             
             // Deshabilitar campos inicialmente
             deshabilitarCamposSolicitud();
             
-            $('#correoEmpleadoSolicitud').on('input', function() {
-                const correo = $(this).val().trim();
+            // Función para deshabilitar campo de ubicación
+            function deshabilitarCampoUbicacion() {
+                // No deshabilitar si el correo ya es válido
+              
+                
+                // Limpiar intervalo de habilitación si existe
+                if (intervaloHabilitacion) {
+                    clearInterval(intervaloHabilitacion);
+                    intervaloHabilitacion = null;
+                }
+                
+                var $proyecto = $('#Proyecto');
+                
+                // Verificar que el elemento exista
+                if (!$proyecto.length) {
+                    return;
+                }
+                
+                // Deshabilitar el elemento select primero
+                $proyecto.prop('disabled', true);
+                
+                // Deshabilitar Select2 si está inicializado
+                if (typeof $.fn.select2 !== 'undefined') {
+                    try {
+                        $proyecto.select2('enable', false);
+                    } catch(e) {
+                        // Si falla, continuar de todas formas
+                    }
+                }
+                
+                // Buscar y deshabilitar el contenedor de Select2
+                setTimeout(function() {
+                    var $select2Container = $proyecto.next('.select2-container');
+                    if ($select2Container.length) {
+                        $select2Container.addClass('select2-container--disabled');
+                        // Deshabilitar interacciones
+                        $select2Container.find('.select2-selection').css({
+                            'pointer-events': 'none',
+                            'opacity': '0.6',
+                            'cursor': 'not-allowed'
+                        });
+                        $select2Container.find('input').prop('disabled', true);
+                    }
+                }, 50);
+            }
+            
+            // Función para manejar cambios en el correo
+            function manejarCambioCorreo() {
+                const correo = $('#correoEmpleadoSolicitud').val().trim();
                 const $errorDiv = $('#correo-solicitud-error');
                 const $empleadoInput = $('#autoEmpleadosSolicitud');
                 const $gerenciaInput = $('#NombreGerencia');
@@ -1039,6 +1556,13 @@
                 // Limpiar timeout anterior
                 clearTimeout(correoSolicitudTimeout);
                 
+                // Solo deshabilitar campo de ubicación cuando hay texto pero el correo aún no es válido
+                // (se habilitará solo cuando el correo sea válido y se encuentre el empleado)
+                if (correo !== '' && !correoSolicitudValido) {
+                    // Deshabilitar inmediatamente solo si el correo no es válido aún
+                    deshabilitarCampoUbicacion();
+                }
+                
                 // Deshabilitar campos si el correo está vacío
                 if (correo === '') {
                     deshabilitarCamposSolicitud();
@@ -1046,10 +1570,16 @@
                     $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
                     $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
                     $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
+                    $('#Motivo').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
+                    $('#DescripcionMotivo').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
+                    $('#SupervisorNombre').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
+                    $('#Proyecto').val(null).trigger('change');
+                    $('#Requerimientos').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
                     $empleadoIDInput.val('');
                     $gerenciaIDInput.val('');
                     $obraIDInput.val('');
                     $puestoIDInput.val('');
+                    $('#SupervisorID').val('');
                     $errorDiv.addClass('hidden').text('');
                     return;
                 }
@@ -1058,15 +1588,22 @@
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(correo)) {
                     deshabilitarCamposSolicitud();
+                    deshabilitarCampoUbicacion(); // Asegurar que el campo de ubicación esté deshabilitado
                     $errorDiv.removeClass('hidden').text('Por favor ingresa un correo válido');
                     $empleadoInput.val('').removeClass('border-green-500').addClass('border-red-500');
                     $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
                     $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
                     $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
+                    $('#Motivo').val('').removeClass('border-green-500').addClass('border-red-500');
+                    $('#DescripcionMotivo').val('').removeClass('border-green-500').addClass('border-red-500');
+                    $('#SupervisorNombre').val('').removeClass('border-green-500').addClass('border-red-500');
+                    $('#Proyecto').val(null).trigger('change');
+                    $('#Requerimientos').val('').removeClass('border-green-500').addClass('border-red-500');
                     $empleadoIDInput.val('');
                     $gerenciaIDInput.val('');
                     $obraIDInput.val('');
                     $puestoIDInput.val('');
+                    $('#SupervisorID').val('');
                     return;
                 }
                 
@@ -1074,7 +1611,28 @@
                 correoSolicitudTimeout = setTimeout(function() {
                     buscarEmpleadoPorCorreoSolicitud(correo);
                 }, 500);
+            }
+            
+            // Agregar event listeners para capturar todos los cambios
+            $('#correoEmpleadoSolicitud').on('input', manejarCambioCorreo);
+            $('#correoEmpleadoSolicitud').on('keyup', manejarCambioCorreo);
+            $('#correoEmpleadoSolicitud').on('change', manejarCambioCorreo);
+            
+            // Para eventos de pegar, dar un pequeño delay para que el valor se pegue primero
+            $('#correoEmpleadoSolicitud').on('paste', function() {
+                var self = this;
+                setTimeout(function() {
+                    manejarCambioCorreo();
+                }, 10);
             });
+            
+            // Verificar si ya hay un correo al cargar la página (después de que Select2 se inicialice)
+            setTimeout(function() {
+                const correoInicial = $('#correoEmpleadoSolicitud').val().trim();
+                if (correoInicial !== '') {
+                    deshabilitarCampoUbicacion();
+                }
+            }, 1000);
             
             function buscarEmpleadoPorCorreoSolicitud(correo) {
                 const $errorDiv = $('#correo-solicitud-error');
@@ -1086,6 +1644,9 @@
                 const $gerenciaIDInput = $('#GerenciaID');
                 const $obraIDInput = $('#ObraID');
                 const $puestoIDInput = $('#PuestoID');
+                
+                // Asegurar que el campo de ubicación esté deshabilitado durante la búsqueda
+                deshabilitarCampoUbicacion();
                 
                 // Mostrar indicador de carga
                 $empleadoInput.val('Buscando...').addClass('border-blue-500');
@@ -1102,8 +1663,12 @@
                         type: 'Solicitud'
                     },
                     success: function(data) {
-                        // Empleado encontrado - habilitar campos y llenar datos
-                        habilitarCamposSolicitud();
+                    
+                        
+                        // Primero marcar correo como válido
+                        correoSolicitudValido = true;
+                        
+                        // Llenar datos primero
                         $empleadoInput.val(data.NombreEmpleado)
                             .removeClass('border-blue-500 border-red-500')
                             .addClass('border-green-500');
@@ -1121,10 +1686,27 @@
                         $obraIDInput.val(data.ObraID || '');
                         $puestoIDInput.val(data.PuestoID || '');
                         $errorDiv.addClass('hidden').text('');
+                        
+                        // Luego habilitar todos los campos
+                        habilitarCamposSolicitud();
+                        
+                        // Habilitar campo de ubicación con múltiples intentos
+                        setTimeout(function() {
+                            habilitarCampoUbicacion();
+                        }, 100);
+                        
+                        setTimeout(function() {
+                            habilitarCampoUbicacion();
+                        }, 300);
+                        
+                        setTimeout(function() {
+                            habilitarCampoUbicacion();
+                        }, 600);
                     },
                     error: function(xhr) {
                         // Error en la búsqueda - deshabilitar campos
                         deshabilitarCamposSolicitud();
+                        deshabilitarCampoUbicacion(); // Asegurar que el campo de ubicación esté deshabilitado
                         if (xhr.status === 404) {
                             $empleadoInput.val('')
                                 .removeClass('border-blue-500 border-green-500')
@@ -1138,10 +1720,16 @@
                             $puestoInput.val('')
                                 .removeClass('border-blue-500 border-green-500')
                                 .addClass('border-red-500');
+                            $('#Motivo').val('').removeClass('border-green-500').addClass('border-red-500');
+                            $('#DescripcionMotivo').val('').removeClass('border-green-500').addClass('border-red-500');
+                            $('#SupervisorNombre').val('').removeClass('border-green-500').addClass('border-red-500');
+                            $('#Proyecto').val(null).trigger('change');
+                            $('#Requerimientos').val('').removeClass('border-green-500').addClass('border-red-500');
                             $empleadoIDInput.val('');
                             $gerenciaIDInput.val('');
                             $obraIDInput.val('');
                             $puestoIDInput.val('');
+                            $('#SupervisorID').val('');
                             $errorDiv.removeClass('hidden').text(xhr.responseJSON?.error || 'No se encontró correo, contacta a soporte');
                         } else {
                             $empleadoInput.val('')
@@ -1156,10 +1744,16 @@
                             $puestoInput.val('')
                                 .removeClass('border-blue-500 border-green-500')
                                 .addClass('border-red-500');
+                            $('#Motivo').val('').removeClass('border-green-500').addClass('border-red-500');
+                            $('#DescripcionMotivo').val('').removeClass('border-green-500').addClass('border-red-500');
+                            $('#SupervisorNombre').val('').removeClass('border-green-500').addClass('border-red-500');
+                            $('#Proyecto').val(null).trigger('change');
+                            $('#Requerimientos').val('').removeClass('border-green-500').addClass('border-red-500');
                             $empleadoIDInput.val('');
                             $gerenciaIDInput.val('');
                             $obraIDInput.val('');
                             $puestoIDInput.val('');
+                            $('#SupervisorID').val('');
                             $errorDiv.removeClass('hidden').text('Error al buscar empleado. Intenta de nuevo.');
                         }
                     }

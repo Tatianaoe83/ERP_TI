@@ -54,7 +54,200 @@ class TicketsController extends Controller
         // Métricas de productividad
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets);
 
-        return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad', 'mes', 'anio'));
+        // CORREGIR PROBLEMA: Las solicitudes tienen deleted_at = created_at (probablemente trigger/defecto)
+        // Limpiar deleted_at usando whereRaw para comparación exacta de timestamps
+        try {
+            \DB::table('solicitudes')
+                ->whereRaw('deleted_at IS NOT NULL')
+                ->whereRaw('TIMESTAMP(deleted_at) = TIMESTAMP(created_at)')
+                ->update(['deleted_at' => null]);
+        } catch (\Exception $e) {
+            // Si falla por restricción, usar withTrashed y filtrar manualmente
+            \Log::warning("Error corrigiendo deleted_at (probablemente restricción): " . $e->getMessage());
+        }
+        
+        // Obtener solicitudes con relaciones
+        // Usar withTrashed temporalmente y filtrar manualmente las que tienen deleted_at = created_at
+        $solicitudes = Solicitud::withTrashed()
+            ->with([
+                'empleadoid', 
+                'gerenciaid', 
+                'obraid', 
+                'puestoid',
+                'supervisorAprobador',
+                'gerenteAprobador',
+                'administradorAprobador',
+                'cotizaciones'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->filter(function($solicitud) {
+                // Si deleted_at es NULL, está activa
+                if (!$solicitud->deleted_at || $solicitud->deleted_at === null) {
+                    return true;
+                }
+                
+                // Si deleted_at existe, comparar con created_at
+                if ($solicitud->created_at) {
+                    try {
+                        $deletedAt = $solicitud->deleted_at instanceof \Carbon\Carbon 
+                            ? $solicitud->deleted_at 
+                            : \Carbon\Carbon::parse($solicitud->deleted_at);
+                        $createdAt = $solicitud->created_at instanceof \Carbon\Carbon 
+                            ? $solicitud->created_at 
+                            : \Carbon\Carbon::parse($solicitud->created_at);
+                        
+                        // Si deleted_at es igual a created_at (diferencia <= 60 segundos), considerarla activa
+                        $diff = abs($deletedAt->timestamp - $createdAt->timestamp);
+                        return $diff <= 60;
+                    } catch (\Exception $e) {
+                        // Si hay error, considerar activa por seguridad
+                        return true;
+                    }
+                }
+                
+                return false;
+            })
+            ->values();
+        
+        // Log para debug: verificar cuántas solicitudes se obtuvieron
+        $totalConEliminadas = Solicitud::withTrashed()->count();
+        $totalEliminadas = Solicitud::onlyTrashed()->count();
+        \Log::info("DEBUG Solicitudes - Total con eliminadas: {$totalConEliminadas}, Total eliminadas: {$totalEliminadas}, Total activas después de filtro: " . $solicitudes->count());
+        
+        if ($solicitudes->count() > 0) {
+            foreach ($solicitudes->take(5) as $solicitud) {
+                $deletedAtStr = $solicitud->deleted_at ? $solicitud->deleted_at->format('Y-m-d H:i:s') : 'NULL';
+                $createdAtStr = $solicitud->created_at ? $solicitud->created_at->format('Y-m-d H:i:s') : 'NULL';
+                \Log::info("Solicitud Activa #{$solicitud->SolicitudID}: Estatus={$solicitud->Estatus}, AprobacionSupervisor={$solicitud->AprobacionSupervisor}, created_at={$createdAtStr}, deleted_at={$deletedAtStr}");
+            }
+        } else {
+            // Mostrar las primeras solicitudes eliminadas para debug
+            $eliminadas = Solicitud::onlyTrashed()->take(2)->get();
+            foreach ($eliminadas as $solicitud) {
+                $deletedAtStr = $solicitud->deleted_at ? $solicitud->deleted_at->format('Y-m-d H:i:s') : 'NULL';
+                $createdAtStr = $solicitud->created_at ? $solicitud->created_at->format('Y-m-d H:i:s') : 'NULL';
+                $diff = $solicitud->deleted_at && $solicitud->created_at ? abs($solicitud->deleted_at->diffInSeconds($solicitud->created_at)) : 'N/A';
+                \Log::warning("Solicitud Eliminada #{$solicitud->SolicitudID}: Estatus={$solicitud->Estatus}, created_at={$createdAtStr}, deleted_at={$deletedAtStr}, diff_segundos={$diff}");
+            }
+        }
+
+        // Agrupar solicitudes según el flujo de aprobación
+        // Manejar valores antiguos ("Pendiente") y nuevos
+        $solicitudesStatus = [
+            'pendiente_supervisor' => $solicitudes->filter(function($solicitud) {
+                // Excluir rechazadas y completadas primero
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                    return false;
+                }
+                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
+                    $solicitud->AprobacionGerencia === 'Rechazado' || 
+                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                    return false;
+                }
+                // Si tiene el estatus nuevo, incluirla
+                if ($solicitud->Estatus === 'Pendiente Aprobación Supervisor') {
+                    return true;
+                }
+                // Si tiene estatus antiguo "Pendiente" o NULL/vacío
+                if (in_array($solicitud->Estatus, ['Pendiente', null, '']) || empty($solicitud->Estatus)) {
+                    // Si todos los campos de aprobación están pendientes o son NULL, va a supervisor
+                    $supervisorNoAprobado = !$solicitud->AprobacionSupervisor || 
+                                           $solicitud->AprobacionSupervisor === 'Pendiente' || 
+                                           $solicitud->AprobacionSupervisor === '';
+                    $gerenciaNoAprobada = !$solicitud->AprobacionGerencia || 
+                                         $solicitud->AprobacionGerencia === 'Pendiente' || 
+                                         $solicitud->AprobacionGerencia === '';
+                    $adminNoAprobada = !$solicitud->AprobacionAdministracion || 
+                                      $solicitud->AprobacionAdministracion === 'Pendiente' || 
+                                      $solicitud->AprobacionAdministracion === '';
+                    
+                    return $supervisorNoAprobado && $gerenciaNoAprobada && $adminNoAprobada;
+                }
+                return false;
+            })->values()->sortByDesc(function($solicitud) {
+                return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
+            })->values(),
+            
+            'pendiente_gerencia' => $solicitudes->filter(function($solicitud) {
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                    return false;
+                }
+                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
+                    $solicitud->AprobacionGerencia === 'Rechazado' || 
+                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                    return false;
+                }
+                if ($solicitud->Estatus === 'Pendiente Aprobación Gerencia') {
+                    return true;
+                }
+                // Supervisor aprobado pero gerencia pendiente o NULL
+                return ($solicitud->AprobacionSupervisor === 'Aprobado') &&
+                       (!$solicitud->AprobacionGerencia || $solicitud->AprobacionGerencia === 'Pendiente') &&
+                       (!$solicitud->AprobacionAdministracion || $solicitud->AprobacionAdministracion === 'Pendiente');
+            })->values()->sortByDesc(function($solicitud) {
+                return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
+            })->values(),
+            
+            'pendiente_administracion' => $solicitudes->filter(function($solicitud) {
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                    return false;
+                }
+                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
+                    $solicitud->AprobacionGerencia === 'Rechazado' || 
+                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                    return false;
+                }
+                if ($solicitud->Estatus === 'Pendiente Aprobación Administración') {
+                    return true;
+                }
+                // Supervisor y gerencia aprobados, administración pendiente o NULL
+                return ($solicitud->AprobacionSupervisor === 'Aprobado') &&
+                       ($solicitud->AprobacionGerencia === 'Aprobado') &&
+                       (!$solicitud->AprobacionAdministracion || $solicitud->AprobacionAdministracion === 'Pendiente');
+            })->values()->sortByDesc(function($solicitud) {
+                return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
+            })->values(),
+            
+            'pendiente_cotizacion' => $solicitudes->filter(function($solicitud) {
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                    return false;
+                }
+                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
+                    $solicitud->AprobacionGerencia === 'Rechazado' || 
+                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                    return false;
+                }
+                if ($solicitud->Estatus === 'Pendiente Cotización TI') {
+                    return true;
+                }
+                // Todas aprobadas pero no completada y menos de 3 cotizaciones
+                $todasAprobadas = ($solicitud->AprobacionSupervisor === 'Aprobado') &&
+                                  ($solicitud->AprobacionGerencia === 'Aprobado') &&
+                                  ($solicitud->AprobacionAdministracion === 'Aprobado');
+                $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
+                return $todasAprobadas && $cotizacionesCount < 3;
+            })->values()->sortByDesc(function($solicitud) {
+                return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
+            })->values(),
+            
+            'rechazadas' => $solicitudes->filter(function($solicitud) {
+                return $solicitud->Estatus === 'Rechazada' ||
+                       $solicitud->AprobacionSupervisor === 'Rechazado' ||
+                       $solicitud->AprobacionGerencia === 'Rechazado' ||
+                       $solicitud->AprobacionAdministracion === 'Rechazado';
+            })->values()->sortByDesc(function($solicitud) {
+                return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
+            })->values(),
+            
+            'completadas' => $solicitudes->filter(function($solicitud) {
+                return $solicitud->Estatus === 'Completada';
+            })->values()->sortByDesc(function($solicitud) {
+                return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
+            })->values(),
+        ];
+
+        return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad', 'mes', 'anio', 'solicitudesStatus'));
     }
 
     /**

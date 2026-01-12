@@ -177,6 +177,14 @@ Route::POST('/crearTickets', [SoporteTIController::class, 'crearTickets'])
     ->withoutMiddleware(['auth']);
 Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
 
+// Rutas de aprobación de solicitudes
+Route::post('/solicitudes/{id}/aprobar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarSupervisor'])->name('solicitudes.aprobar-supervisor');
+Route::post('/solicitudes/{id}/rechazar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarSupervisor'])->name('solicitudes.rechazar-supervisor');
+Route::post('/solicitudes/{id}/aprobar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarGerencia'])->name('solicitudes.aprobar-gerencia');
+Route::post('/solicitudes/{id}/rechazar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarGerencia'])->name('solicitudes.rechazar-gerencia');
+Route::post('/solicitudes/{id}/aprobar-administracion', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarAdministracion'])->name('solicitudes.aprobar-administracion');
+Route::post('/solicitudes/{id}/rechazar-administracion', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarAdministracion'])->name('solicitudes.rechazar-administracion');
+
 
 // Ruta de fallback para redirigir al dashboard
 Route::fallback(function () {

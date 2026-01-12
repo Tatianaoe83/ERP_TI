@@ -316,7 +316,7 @@ class LineasTelefonicasController extends AppBaseController
 
         // Si hay cambios, sincronizar automáticamente con inventario usando datos originales
         if ($hayCambios) {
-            \Log::info("Cambios detectados en línea {$lineaActualizada->NumTelefonico}: " . implode(', ', $camposModificados));
+           
             $this->sincronizarConInventario($lineaActualizada, $datosOriginales);
             $mensaje = 'Línea telefónica actualizada exitosamente y sincronizada automáticamente con inventario.';
         } else {
@@ -395,7 +395,6 @@ class LineasTelefonicasController extends AppBaseController
                 $registrosActualizados++;
             }
             
-            \Log::info("Sincronización de línea completada: {$registrosActualizados} registros de inventario actualizados para línea {$lineaActualizada->NumTelefonico}. Plan: {$nombrePlan}, Compañía: {$nombreCompania}, Obra: {$nombreObra}");
             
         } catch (\Exception $e) {
             \Log::error('Error en sincronización de línea con inventario: ' . $e->getMessage());
