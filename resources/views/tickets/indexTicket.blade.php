@@ -4,8 +4,135 @@
         border: 1px solid #e5e7eb !important;
         border-radius: 0.5rem !important;
     }
+    
+    /* TinyMCE en modo oscuro */
+    .dark .tox-tinymce {
+        border: 1px solid #4b5563 !important;
+        background-color: #1f2937 !important;
+    }
+    
+    .dark .tox .tox-edit-area__iframe {
+        background-color: #1f2937 !important;
+    }
+    
+    .dark .tox .tox-editor-header {
+        background-color: #374151 !important;
+        border-bottom: 1px solid #4b5563 !important;
+    }
+    
+    .dark .tox .tox-toolbar {
+        background-color: #374151 !important;
+    }
+    
+    .dark .tox .tox-tbtn {
+        color: #ffffff !important;
+    }
+    
+    .dark .tox .tox-tbtn:hover {
+        background-color: #4b5563 !important;
+        color: #ffffff !important;
+    }
+    
+    .dark .tox .tox-tbtn--enabled {
+        background-color: #4b5563 !important;
+        color: #ffffff !important;
+    }
+    
+    .dark .tox .tox-split-button {
+        background-color: transparent !important;
+    }
+    
+    .dark .tox .tox-menu {
+        background-color: #374151 !important;
+        border: 1px solid #4b5563 !important;
+    }
+    
+    .dark .tox .tox-menu__label {
+        color: #ffffff !important;
+    }
+    
+    .dark .tox .tox-menu__label:hover {
+        background-color: #4b5563 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Contenido del iframe de TinyMCE en modo oscuro */
+    .dark .tox .tox-edit-area iframe {
+        background-color: #1f2937 !important;
+    }
+    
+    .dark .tox .tox-edit-area iframe body {
+        background-color: #1f2937 !important;
+        color: #ffffff !important;
+    }
+    
     #editor-mensaje {
         min-height: 300px;
+    }
+    
+    /* Estilos para selects en modo oscuro */
+    .dark select {
+        background-color: #374151 !important;
+        color: #ffffff !important;
+        border-color: #4b5563 !important;
+    }
+    
+    .dark select option {
+        background-color: #374151 !important;
+        color: #ffffff !important;
+    }
+    
+    .dark select:focus {
+        background-color: #374151 !important;
+        color: #ffffff !important;
+        border-color: #3b82f6 !important;
+    }
+    
+    /* Forzar fondos oscuros en tarjetas de Kanban y Lista */
+    .dark [data-categoria].rounded-xl,
+    .dark [data-categoria].rounded-lg,
+    .dark [data-categoria] {
+        background-color: #1f2937 !important;
+        border-color: #374151 !important;
+    }
+    
+    /* Textos en tarjetas - solo los que deberían ser blancos */
+    .dark [data-categoria] h3,
+    .dark [data-categoria] h4,
+    .dark [data-categoria] p,
+    .dark [data-categoria] span:not(.bg-green-200):not(.bg-yellow-200):not(.bg-red-200):not(.bg-red-100):not(.bg-yellow-100):not(.bg-green-100) {
+        color: #ffffff !important;
+    }
+    
+    /* Mantener colores de badges */
+    .dark [data-categoria] .bg-green-200 {
+        background-color: rgba(34, 197, 94, 0.3) !important;
+        color: #86efac !important;
+    }
+    
+    .dark [data-categoria] .bg-yellow-200 {
+        background-color: rgba(234, 179, 8, 0.3) !important;
+        color: #fde047 !important;
+    }
+    
+    .dark [data-categoria] .bg-red-200 {
+        background-color: rgba(239, 68, 68, 0.3) !important;
+        color: #fca5a5 !important;
+    }
+    
+    .dark [data-categoria] .bg-red-100 {
+        background-color: rgba(239, 68, 68, 0.2) !important;
+        color: #fca5a5 !important;
+    }
+    
+    .dark [data-categoria] .bg-yellow-100 {
+        background-color: rgba(234, 179, 8, 0.2) !important;
+        color: #fde047 !important;
+    }
+    
+    .dark [data-categoria] .bg-green-100 {
+        background-color: rgba(34, 197, 94, 0.2) !important;
+        color: #86efac !important;
     }
     
     /* Prevenir overflow horizontal en móvil */
@@ -49,13 +176,13 @@
         x-transition:leave-end="opacity-0 transform translate-y-[-10px]"
         x-cloak
         class="fixed top-4 right-4 left-4 md:left-auto md:max-w-md z-50">
-        <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 shadow-lg">
+        <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-700 rounded-lg p-4 shadow-lg">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
-                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                    <i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400 text-xl"></i>
                 </div>
                 <div class="ml-3 flex-1">
-                    <h3 class="text-sm font-medium text-red-800 mb-1">
+                    <h3 class="text-sm font-medium text-red-800 dark:text-red-300 mb-1">
                         <span x-text="ticketsExcedidos.length"></span> 
                         <span x-text="ticketsExcedidos.length === 1 ? 'ticket excediendo tiempo' : 'tickets excediendo tiempo'"></span>
                     </h3>
@@ -70,12 +197,12 @@
                             </div>
                         </template>
                         <template x-if="ticketsExcedidos.length > 3">
-                            <p class="text-xs text-red-600 italic">
+                            <p class="text-xs text-red-600 dark:text-red-400 italic">
                                 y <span x-text="ticketsExcedidos.length - 3"></span> más...
                             </p>
                         </template>
                     </div>
-                    <div class="mt-2 text-xs text-red-600">
+                    <div class="mt-2 text-xs text-red-600 dark:text-red-400">
                         <i class="fas fa-sync-alt mr-1" :class="{'animate-spin': cargandoExcedidos}"></i>
                         <span x-text="cargandoExcedidos ? 'Verificando...' : 'Actualización automática cada 5 min'"></span>
                         <span x-show="!cargandoExcedidos && mostrarPopupExcedidos" class="ml-2">
@@ -86,13 +213,13 @@
                 <div class="ml-4 flex-shrink-0 flex flex-col gap-2">
                     <button 
                         @click="verificarTicketsExcedidos()"
-                        class="inline-flex text-red-400 hover:text-red-600 focus:outline-none transition"
+                        class="inline-flex text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 focus:outline-none transition"
                         title="Actualizar ahora">
                         <i class="fas fa-sync-alt" :class="{'animate-spin': cargandoExcedidos}"></i>
                     </button>
                     <button 
                         @click="cerrarPopupExcedidos()"
-                        class="inline-flex text-red-400 hover:text-red-600 focus:outline-none transition">
+                        class="inline-flex text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 focus:outline-none transition">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -112,8 +239,8 @@
         </button>
         @endcan
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-            <span class="text-xs sm:text-sm text-gray-600 font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-full sm:w-auto justify-center">
+            <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-700 font-medium hidden sm:inline">Vista:</span>
+            <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-auto justify-center">
                 <button
                     @click="vista = 'kanban'; localStorage.setItem('ticketsVista', 'kanban')"
                     :class="vista === 'kanban' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
@@ -123,7 +250,7 @@
                 </button>
                 <button
                     @click="vista = 'lista'; localStorage.setItem('ticketsVista', 'lista'); prepararDatosLista()"
-                    :class="vista === 'lista' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+                   :class="vista === 'lista' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-list text-xs"></i>
                     <span class="hidden sm:inline">Lista</span>
@@ -142,8 +269,8 @@
     <!-- Vista Kanban -->
     <div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
     @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
-    <div class="p-4 text-center shadow-lg rounded-md bg-white border border-gray-100">
-        <div class="border-b font-semibold text-gray-700 mb-2">{{ $titulo }}</div>
+    <div class="p-4 text-center shadow-lg rounded-md bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+        <div class="border-b dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-900 dark:bg-gray-200 mb-2 p-2 rounded">{{ $titulo }}</div>
 
         <div class="relative w-full h-[505px]">
             <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
@@ -182,7 +309,7 @@
                 @endphp
 
                 <div
-                    class="bg-white rounded-xl border border-gray-100 hover:shadow-md transition p-4 text-left cursor-pointer"
+                    class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition p-4 text-left cursor-pointer"
                     data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
@@ -200,35 +327,35 @@
                     data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
                     @click="abrirModalDesdeElemento($el)">
                     <div class="flex justify-between items-start">
-                        <h3 class="text-sm font-semibold text-gray-800 truncate">
+                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-700 truncate">
                             Ticket #{{ $ticket->TicketID }} 
                         </h3>
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'bg-green-200 text-green-600' : ($ticket->Prioridad == 'Media' ? 'bg-yellow-200 text-yellow-600' : 'bg-red-200 text-red-600') }}">
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'bg-green-200 dark:bg-green-900/50 text-green-600 dark:text-green-300' : ($ticket->Prioridad == 'Media' ? 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300' : 'bg-red-200 dark:bg-red-900/50 text-red-600 dark:text-red-300') }}">
                             {{ $ticket->Prioridad  }}
                         </span>
                     </div>
 
-                    <p class="text-sm text-gray-600 mt-2 line-clamp-2">
+                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
                         {{ Str::limit($ticket->Descripcion, 100, '...') }}
                     </p>
 
                     @if($key === 'proceso' && $nombreResponsable)
-                    <div class="mt-2 pt-2 border-t border-gray-200">
-                        <div class="flex items-center gap-2 text-xs text-gray-600">
+                    <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                             <i class="fas fa-user-tie text-blue-500"></i>
-                            <span class="font-semibold text-gray-700">Responsable:</span>
-                            <span class="text-gray-800">{{ $nombreResponsable }}</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-700">Responsable:</span>
+                            <span class="text-gray-800 dark:text-gray-700">{{ $nombreResponsable }}</span>
                         </div>
                     </div>
                     @endif
 
                     @if($key === 'proceso' && $tiempoInfo)
-                    <div class="tiempo-indicador-container mt-2 pt-2 border-t border-gray-200">
+                    <div class="tiempo-indicador-container mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-gray-600">Tiempo:</span>
+                            <span class="text-xs font-semibold text-gray-600 dark:text-gray-700">Tiempo:</span>
                             <span class="badge-estado text-xs px-2 py-0.5 rounded-full font-semibold
-                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 text-red-700' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700') }}">
+                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300') }}">
                                 @if($tiempoInfo['estado'] === 'agotado')
                                     <i class="fas fa-exclamation-triangle"></i> Tiempo Agotado
                                 @elseif($tiempoInfo['estado'] === 'por_vencer')
@@ -238,10 +365,10 @@
                                 @endif
                             </span>
                         </div>
-                        <div class="text-xs text-gray-500">
+                        <div class="text-xs text-gray-500 dark:text-gray-700">
                             <span class="tiempo-texto">{{ $tiempoInfo['transcurrido'] }}h / {{ $tiempoInfo['estimado'] }}h</span>
                         </div>
-                        <div class="mt-1 w-full bg-gray-200 rounded-full h-1.5">
+                        <div class="mt-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                             <div class="barra-progreso h-1.5 rounded-full transition-all duration-300
                                 {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-500' : 
                                    ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500') }}"
@@ -250,15 +377,15 @@
                     </div>
                     @endif
 
-                    <div class="flex justify-between items-center mt-3 text-xs text-gray-500">
-                        <span class="font-semibold text-gray-700">
+                    <div class="flex justify-between items-center mt-3 text-xs text-gray-500 dark:text-gray-300">
+                        <span class="font-semibold text-gray-700 dark:text-gray-700">
                             {{ $nombreFormateado }}
                         </span>
-                        <span>{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
+                        <span class="dark:text-gray-300">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
                     </div>
                 </div>
                 @empty
-                <p class="text-sm text-gray-400 mt-10">No hay tickets en esta categoría.</p>
+                <p class="text-sm text-gray-400 dark:text-gray-700 mt-10">No hay tickets en esta categoría.</p>
                 @endforelse
             </div>
         </div>
@@ -269,12 +396,12 @@
     <!-- Vista Lista -->
     <div x-show="vista === 'lista'" x-transition class="space-y-3 w-full max-w-full overflow-x-hidden">
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 flex justify-between items-center">
                 <h3 class="text-white font-semibold text-sm">{{ $titulo }}</h3>
                 <span class="text-white text-xs" x-text="`Total: ${ticketsLista['{{ $key }}'] || 0}`"></span>
             </div>
-            <div class="divide-y divide-gray-200">
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse ($ticketsStatus[$key] as $ticket)
                 @php
                 $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
@@ -309,7 +436,7 @@
                 }
                 @endphp
                 <div
-                    class="p-4 hover:bg-gray-50 transition cursor-pointer"
+                    class="p-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
                     data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
@@ -330,45 +457,45 @@
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-3 mb-2">
-                                <h4 class="text-base font-semibold text-gray-800">Ticket #{{ $ticket->TicketID }}</h4>
+                                <h4 class="text-base font-semibold text-gray-800 dark:text-gray-700">Ticket #{{ $ticket->TicketID }}</h4>
                                 <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'bg-green-200 text-green-600' : ($ticket->Prioridad == 'Media' ? 'bg-yellow-200 text-yellow-600' : 'bg-red-200 text-red-600') }}">
                                     {{ $ticket->Prioridad }}
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-600 mb-3 line-clamp-2">
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
                                 {{ Str::limit($ticket->Descripcion, 150, '...') }}
                             </p>
-                            <div class="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+                            <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-300 flex-wrap">
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-user text-gray-400"></i>
-                                    <span class="font-semibold text-gray-700">{{ $nombreFormateado }}</span>
+                                    <i class="fas fa-user text-gray-400 dark:text-gray-700"></i>
+                                    <span class="font-semibold text-gray-700 dark:text-gray-700">{{ $nombreFormateado }}</span>
                                 </span>
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-calendar text-gray-400"></i>
-                                    <span>{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
+                                    <i class="fas fa-calendar text-gray-400 dark:text-gray-700"></i>
+                                    <span class="dark:text-gray-300">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
                                 </span>
                                 @if($key === 'proceso' && $nombreResponsable)
                                 <span class="flex items-center gap-1">
                                     <i class="fas fa-user-tie text-blue-500"></i>
-                                    <span class="font-semibold text-gray-700">Responsable:</span>
-                                    <span class="text-gray-800">{{ $nombreResponsable }}</span>
+                                    <span class="font-semibold text-gray-700 dark:text-gray-700">Responsable:</span>
+                                    <span class="text-gray-800 dark:text-gray-700">{{ $nombreResponsable }}</span>
                                 </span>
                                 @endif
                                 @if($key === 'proceso' && $tiempoInfo)
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-clock text-gray-400"></i>
-                                    <span class="font-semibold text-gray-700">Tiempo:</span>
+                                    <i class="fas fa-clock text-gray-400 dark:text-gray-700"></i>
+                                    <span class="font-semibold text-gray-700 dark:text-gray-700">Tiempo:</span>
                                     <span class="text-xs px-2 py-0.5 rounded-full font-semibold
-                                        {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 text-red-700' : 
-                                           ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700') }}">
+                                        {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 
+                                           ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300') }}">
                                         {{ $tiempoInfo['transcurrido'] }}h / {{ $tiempoInfo['estimado'] }}h
                                     </span>
                                 </span>
                                 @endif
                                 @if($ticket->CodeAnyDesk)
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-desktop text-gray-400"></i>
-                                    <span>{{ $ticket->CodeAnyDesk }}</span>
+                                    <i class="fas fa-desktop text-gray-400 dark:text-gray-700"></i>
+                                    <span class="dark:text-gray-300">{{ $ticket->CodeAnyDesk }}</span>
                                 </span>
                                 @endif
                             </div>
@@ -380,14 +507,14 @@
                 </div>
                 @empty
                 <div class="p-8 text-center">
-                    <p class="text-sm text-gray-400">No hay tickets en esta categoría.</p>
+                    <p class="text-sm text-gray-400 dark:text-gray-700">No hay tickets en esta categoría.</p>
                 </div>
                 @endforelse
             </div>
             <!-- Paginación Lista - Cada sección tiene su propia paginación independiente -->
-            <div x-show="ticketsLista && ticketsLista['{{ $key }}'] !== undefined && ticketsLista['{{ $key }}'] > 0" class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+            <div x-show="ticketsLista && ticketsLista['{{ $key }}'] !== undefined && ticketsLista['{{ $key }}'] > 0" class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
                 <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-600">
+                    <div class="text-sm text-gray-600 dark:text-gray-300">
                         <span x-text="`Mostrando ${((paginaLista['{{ $key }}'] - 1) * elementosPorPagina) + 1} - ${Math.min(paginaLista['{{ $key }}'] * elementosPorPagina, ticketsLista['{{ $key }}'] || 0)} de ${ticketsLista['{{ $key }}'] || 0} tickets`"></span>
                         <span x-show="obtenerTotalPaginasLista('{{ $key }}') > 1" class="ml-2" x-text="`(Página ${paginaLista['{{ $key }}']} de ${obtenerTotalPaginasLista('{{ $key }}')})`"></span>
                     </div>
@@ -395,8 +522,8 @@
                         <button
                             @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] - 1)"
                             :disabled="paginaLista['{{ $key }}'] === 1"
-                            :class="paginaLista['{{ $key }}'] === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
-                            class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                            :class="paginaLista['{{ $key }}'] === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
+                            class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
                             <i class="fas fa-chevron-left text-xs"></i> Anterior
                         </button>
                         <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasLista('{{ $key }}'), 10)}, (_, i) => {
@@ -409,16 +536,16 @@
                         }).filter((p, i, arr) => p <= obtenerTotalPaginasLista('{{ $key }}') && (i === 0 || p !== arr[i-1]))" :key="pagina">
                             <button
                                 @click="cambiarPaginaLista('{{ $key }}', pagina)"
-                                :class="paginaLista['{{ $key }}'] === pagina ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                                class="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-md transition">
+                                :class="paginaLista['{{ $key }}'] === pagina ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                                class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-md transition">
                                 <span x-text="pagina"></span>
                             </button>
                         </template>
                         <button
                             @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] + 1)"
                             :disabled="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}')"
-                            :class="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
-                            class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                            :class="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
+                            class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
                             Siguiente <i class="fas fa-chevron-right text-xs"></i>
                         </button>
                     </div>
@@ -429,14 +556,14 @@
     </div>
 
     <!-- Vista Tabla -->
-    <div x-show="vista === 'tabla'" x-transition class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden w-full max-w-full">
-        <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-            <div class="text-sm text-gray-600">
+    <div x-show="vista === 'tabla'" x-transition class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden w-full max-w-full">
+        <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between">
+            <div class="text-sm text-gray-600 dark:text-gray-300">
                 <span x-text="`Mostrando ${(paginaTabla - 1) * elementosPorPagina + 1} - ${Math.min(paginaTabla * elementosPorPagina, ticketsTabla.length)} de ${ticketsTabla.length} tickets`"></span>
             </div>
-            <div class="text-sm text-gray-600">
+            <div class="text-sm text-gray-600 dark:text-gray-300">
                 <span>Elementos por página:</span>
-                <select x-model="elementosPorPagina" @change="paginaTabla = 1" class="ml-2 px-2 py-1 border border-gray-300 rounded text-sm">
+                <select x-model="elementosPorPagina" @change="paginaTabla = 1" class="ml-2 px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 rounded text-sm">
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -445,10 +572,10 @@
             </div>
         </div>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                             @click="cambiarOrden('id')">
                             <div class="flex items-center gap-2">
                                 <span>ID</span>
@@ -456,7 +583,7 @@
                                    :class="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                             @click="cambiarOrden('descripcion')">
                             <div class="flex items-center gap-2">
                                 <span>Descripción</span>
@@ -464,7 +591,7 @@
                                    :class="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                             @click="cambiarOrden('empleado')">
                             <div class="flex items-center gap-2">
                                 <span>Empleado</span>
@@ -472,7 +599,7 @@
                                    :class="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                             @click="cambiarOrden('prioridad')">
                             <div class="flex items-center gap-2">
                                 <span>Prioridad</span>
@@ -480,7 +607,7 @@
                                    :class="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                             @click="cambiarOrden('estado')">
                             <div class="flex items-center gap-2">
                                 <span>Estado</span>
@@ -488,7 +615,7 @@
                                    :class="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                             @click="cambiarOrden('fecha')">
                             <div class="flex items-center gap-2">
                                 <span>Fecha</span>
@@ -496,15 +623,15 @@
                                    :class="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Responsable</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tiempo</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     <template x-for="(ticket, index) in obtenerTicketsTablaPagina()" :key="`ticket-${paginaTabla}-${index}-${ticket.id || index}`">
                         <tr
-                            class="hover:bg-gray-50 transition cursor-pointer"
+                            class="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
                             :data-ticket-id="ticket.id"
                             :data-ticket-asunto="ticket.asunto"
                             :data-ticket-descripcion="ticket.descripcion"
@@ -516,47 +643,47 @@
                             :data-ticket-fecha="ticket.fecha"
                             @click="abrirModalDesdeElemento($el)">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-gray-900" x-text="'#' + ticket.id"></div>
+                                <div class="text-sm font-semibold text-gray-900 dark:text-gray-700" x-text="'#' + ticket.id"></div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 max-w-md truncate" x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
+                                <div class="text-sm text-gray-900 dark:text-gray-700 max-w-md truncate" x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900" x-text="ticket.empleado || ''"></div>
-                                <div class="text-xs text-gray-500" x-text="ticket.correo || ''"></div>
+                                <div class="text-sm text-gray-900 dark:text-gray-700" x-text="ticket.empleado || ''"></div>
+                                <div class="text-xs text-gray-500 dark:text-gray-700" x-text="ticket.correo || ''"></div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
-                                      :class="ticket.prioridad == 'Baja' ? 'bg-green-200 text-green-600' : (ticket.prioridad == 'Media' ? 'bg-yellow-200 text-yellow-600' : 'bg-red-200 text-red-600')"
+                                      :class="ticket.prioridad == 'Baja' ? 'bg-green-200 dark:bg-green-900/50 text-green-600 dark:text-green-300' : (ticket.prioridad == 'Media' ? 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300' : 'bg-red-200 dark:bg-red-900/50 text-red-600 dark:text-red-300')"
                                       x-text="ticket.prioridad || 'Media'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
-                                      :class="ticket.estatus == 'Pendiente' ? 'bg-yellow-100 text-yellow-800' : (ticket.estatus == 'En progreso' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800')"
+                                      :class="ticket.estatus == 'Pendiente' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300' : (ticket.estatus == 'En progreso' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300')"
                                       x-text="ticket.estatus || 'Pendiente'"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-700" x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div x-show="ticket.responsable && ticket.responsable.trim() !== ''" class="text-sm text-gray-900" x-text="ticket.responsable"></div>
-                                <div x-show="!ticket.responsable || ticket.responsable.trim() === ''" class="text-xs text-gray-400">-</div>
+                                <div x-show="ticket.responsable && ticket.responsable.trim() !== ''" class="text-sm text-gray-900 dark:text-gray-700" x-text="ticket.responsable"></div>
+                                <div x-show="!ticket.responsable || ticket.responsable.trim() === ''" class="text-xs text-gray-400 dark:text-gray-700">-</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div x-show="ticket.tiempoTranscurrido && ticket.tiempoEstimado && ticket.tiempoTranscurrido !== '' && ticket.tiempoEstimado !== ''" class="flex flex-col gap-1">
                                     <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
-                                          :class="ticket.tiempoEstado === 'agotado' ? 'bg-red-100 text-red-700' : 
-                                                 (ticket.tiempoEstado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 
-                                                 (ticket.tiempoEstado === 'normal' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'))"
+                                          :class="ticket.tiempoEstado === 'agotado' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 
+                                                 (ticket.tiempoEstado === 'por_vencer' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 
+                                                 (ticket.tiempoEstado === 'normal' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'))"
                                           x-text="ticket.tiempoTranscurrido + 'h / ' + ticket.tiempoEstimado + 'h'"></span>
                                 </div>
-                                <div x-show="!ticket.tiempoTranscurrido || !ticket.tiempoEstimado || ticket.tiempoTranscurrido === '' || ticket.tiempoEstimado === ''" class="text-xs text-gray-400">-</div>
+                                <div x-show="!ticket.tiempoTranscurrido || !ticket.tiempoEstimado || ticket.tiempoTranscurrido === '' || ticket.tiempoEstimado === ''" class="text-xs text-gray-400 dark:text-gray-700">-</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-700">
                                 <i class="fas fa-eye text-blue-500"></i>
                             </td>
                         </tr>
                     </template>
                     <tr x-show="!ticketsTabla || ticketsTabla.length === 0">
-                        <td colspan="9" class="px-6 py-8 text-center text-sm text-gray-400">
+                        <td colspan="9" class="px-6 py-8 text-center text-sm text-gray-400 dark:text-gray-700">
                             No hay tickets disponibles.
                         </td>
                     </tr>
@@ -564,16 +691,16 @@
             </table>
         </div>
         <!-- Paginación Tabla -->
-        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-            <div class="text-sm text-gray-600">
+        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex items-center justify-between">
+            <div class="text-sm text-gray-600 dark:text-gray-300">
                 <span x-text="`Página ${paginaTabla} de ${obtenerTotalPaginasTabla()}`"></span>
             </div>
             <div class="flex items-center gap-2">
                 <button
                     @click="cambiarPaginaTabla(paginaTabla - 1)"
                     :disabled="paginaTabla === 1"
-                    :class="paginaTabla === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
-                    class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                    :class="paginaTabla === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
+                    class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
                     <i class="fas fa-chevron-left text-xs"></i> Anterior
                 </button>
                 <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasTabla(), 10)}, (_, i) => {
@@ -586,16 +713,16 @@
                 }).filter((p, i, arr) => p <= obtenerTotalPaginasTabla() && (i === 0 || p !== arr[i-1]))" :key="pagina">
                     <button
                         @click="cambiarPaginaTabla(pagina)"
-                        :class="paginaTabla === pagina ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
-                        class="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-md transition">
+                        :class="paginaTabla === pagina ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+                        class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-md transition">
                         <span x-text="pagina"></span>
                     </button>
                 </template>
                 <button
                     @click="cambiarPaginaTabla(paginaTabla + 1)"
                     :disabled="paginaTabla === obtenerTotalPaginasTabla()"
-                    :class="paginaTabla === obtenerTotalPaginasTabla() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'"
-                    class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md transition">
+                    :class="paginaTabla === obtenerTotalPaginasTabla() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
+                    class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
                     Siguiente <i class="fas fa-chevron-right text-xs"></i>
                 </button>
             </div>
@@ -614,37 +741,37 @@
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="bg-white w-11/12 md:w-4/5 lg:w-[1100px] xl:w-[1200px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 transition-all duration-300"
+            class="bg-white dark:bg-gray-800 w-11/12 md:w-4/5 lg:w-[1100px] xl:w-[1200px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300"
             @click.stop>
-            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[90vh] bg-white rounded-2xl overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[90vh] bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
 
-                <aside class="bg-gray-50 border-r border-gray-200 p-6 flex flex-col overflow-y-auto">
-                    <h2 class="text-gray-800 text-sm font-semibold mb-4 uppercase">
+                <aside class="bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col overflow-y-auto">
+                    <h2 class="text-gray-800 dark:text-gray-700 text-sm font-semibold mb-4 uppercase">
                         Propiedades del Ticket
                     </h2>
 
-                    <div class="space-y-5 text-sm text-gray-700 flex-1">
+                    <div class="space-y-5 text-sm text-gray-700 dark:text-gray-700 flex-1">
 
-                        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                            <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Descripcion de ticket</h3>
-                            <div class="font-medium text-gray-800 whitespace-pre-wrap ticket-description" x-text="selected.descripcion"></div>
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-2">Descripcion de ticket</h3>
+                            <div class="font-medium text-gray-800 dark:text-gray-700 whitespace-pre-wrap ticket-description" x-text="selected.descripcion"></div>
                         </div>
 
                         <!-- Documentos Adjuntos -->
-                        <div x-show="obtenerAdjuntos().length > 0" class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                            <h3 class="text-xs font-bold text-gray-500 uppercase mb-3">Documentos Adjuntos</h3>
+                        <div x-show="obtenerAdjuntos().length > 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-3">Documentos Adjuntos</h3>
                             <div class="space-y-2">
                                 <template x-for="(adjunto, index) in obtenerAdjuntos()" :key="index">
-                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
                                         <div class="flex items-center gap-3 flex-1 min-w-0">
                                             <div class="flex-shrink-0">
-                                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5 text-gray-600 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                 </svg>
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium text-gray-800 truncate" x-text="obtenerNombreArchivo(adjunto)"></p>
-                                                <p class="text-xs text-gray-500" x-text="obtenerExtensionArchivo(adjunto)"></p>
+                                                <p class="text-sm font-medium text-gray-800 dark:text-gray-700 truncate" x-text="obtenerNombreArchivo(adjunto)"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-700" x-text="obtenerExtensionArchivo(adjunto)"></p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2 flex-shrink-0">
@@ -661,7 +788,7 @@
                                             <a 
                                                 :href="obtenerUrlArchivo(adjunto)" 
                                                 download
-                                                class="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
+                                                class="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition"
                                                 title="Descargar archivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -673,87 +800,87 @@
                             </div>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                            <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Información de Contacto</h3>
-                            <p class="font-medium text-gray-800" x-text="selected.empleado"></p>
-                            <p class="text-gray-500 text-sm" x-text="selected.correo"></p>
-                            <p class="text-gray-500 text-sm" x-text="selected.numero"></p>
-                            <p class="text-gray-500 text-sm" x-text="selected.anydesk"></p>
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-2">Información de Contacto</h3>
+                            <p class="font-medium text-gray-800 dark:text-gray-700" x-text="selected.empleado"></p>
+                            <p class="text-gray-500 dark:text-gray-700 text-sm" x-text="selected.correo"></p>
+                            <p class="text-gray-500 dark:text-gray-700 text-sm" x-text="selected.numero"></p>
+                            <p class="text-gray-500 dark:text-gray-700 text-sm" x-text="selected.anydesk"></p>
                         </div>
 
-                        <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                            <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Detalles del Ticket</h3>
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-2">Detalles del Ticket</h3>
 
-                            <label class="text-md font-semibold text-gray-600">Prioridad</label>
+                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Prioridad</label>
                             <select
                                 x-model="ticketPrioridad"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 text-gray-900 dark:text-gray-500 dark:border-gray-600">
                                 <option value="Baja">Baja</option>
                                 <option value="Media">Media</option>
                                 <option value="Alta">Alta</option>
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600">Estado</label>
+                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Estado</label>
                             <select 
                                 x-model="ticketEstatus"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 text-gray-900 dark:text-gray-500 dark:border-gray-600">
                                 <option value="Pendiente">Pendiente</option>
                                 <option value="En progreso">En progreso</option>
                                 <option value="Cerrado">Cerrado</option>
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600">Clasificación <span class="text-red-500">*</span></label>
+                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Clasificación <span class="text-red-500">*</span></label>
                             <select
                                 x-model="ticketClasificacion"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-700 dark:border-gray-600">
                                 <option value="">Seleccione</option>
                                 <option value="Problema">Problema</option>
                                 <option value="Servicio">Servicio</option>
                             </select>
                             
                             <!-- Mensaje informativo cuando está en "En progreso" -->
-                            <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'" class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700">
+                            <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'" class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md text-xs text-blue-700 dark:text-blue-300">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 El Responsable no se puede modificar cuando el ticket está en "En progreso"
                             </div>
 
-                            <label class="text-md font-semibold text-gray-600">Responsable <span class="text-red-500">*</span></label>
+                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Responsable <span class="text-red-500">*</span></label>
                             <select 
                                 x-model="ticketResponsableTI"
                                 :disabled="selected.estatus === 'Cerrado' || (selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado')"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-700 dark:border-gray-600">
                                 <option value="">Seleccione</option>
                                 @foreach($responsablesTI as $responsable)
                                 <option value="{{ $responsable->EmpleadoID }}">{{ $responsable->NombreEmpleado }}</option>
                                 @endforeach
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600">Categoria <span class="text-red-500">*</span></label>
+                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Categoria <span class="text-red-500">*</span></label>
                             <select 
                                 id="tipo-select"
                                 x-model="ticketTipoID"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
                                 <option value="">Seleccione</option>
                             </select>
                             
-                            <label class="text-md font-semibold text-gray-600">Grupo <span class="text-red-500">*</span></label>
+                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Grupo <span class="text-red-500">*</span></label>
                             <select 
                                 id="subtipo-select"
                                 x-model="ticketSubtipoID"
-                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600" 
                                 :disabled="!ticketTipoID || selected.estatus === 'Cerrado'">
                                 <option value="">Seleccione</option>
                             </select>
                             
-                            <label class="text-md font-semibold text-gray-600">Subgrupo</label>
+                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Subgrupo</label>
                             <select 
                                 id="tertipo-select"
                                 x-model="ticketTertipoID"
-                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed" 
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600" 
                                 :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'">
                                 <option value="">Seleccione</option>
                             </select>
@@ -778,10 +905,10 @@
 
                 <main class="flex flex-col overflow-hidden">
                     <!-- Header del Ticket -->
-                    <div class="flex justify-between items-start p-6 border-b border-gray-200">
+                    <div class="flex justify-between items-start p-6 border-b border-gray-200 dark:border-gray-700">
                         <div>
-                            <h1 class="text-2xl font-semibold text-gray-800 mb-1" x-text="selected.asunto"></h1>
-                            <p class="text-sm text-gray-500">
+                            <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-700 mb-1" x-text="selected.asunto"></h1>
+                            <p class="text-sm text-gray-500 dark:text-gray-700">
                                 <span x-text="selected.fecha"></span>
                             </p>
                         </div>
@@ -805,7 +932,7 @@
                             </button>   -->
                             
                           
-                            <button @click="cerrarModal" class="text-gray-400 hover:text-gray-600 transition p-2">
+                            <button @click="cerrarModal" class="text-gray-400 dark:text-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition p-2">
                                 <span class="text-xl">x</span>
                             </button>
                         </div>
@@ -813,21 +940,21 @@
 
                   
                     <!-- Estadísticas de Correos -->
-                    <div class="border-b border-gray-200 p-4 bg-gray-50">
+                    <div class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-4 text-sm">
                                 <span class="flex items-center gap-1">
                                     <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                    <span class="text-gray-600">Correos Enviados:</span>
+                                    <span class="text-gray-600 dark:text-gray-300">Correos Enviados:</span>
                                     <span class="font-semibold" x-text="estadisticas?.correos_enviados || 0"></span>
                                 </span>
                                 <span class="flex items-center gap-1">
                                     <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                                    <span class="text-gray-600">Respuestas:</span>
+                                    <span class="text-gray-600 dark:text-gray-300">Respuestas:</span>
                                     <span class="font-semibold" x-text="estadisticas?.correos_recibidos || 0"></span>
                                 </span>
                             </div>
-                            <div class="text-xs text-gray-500">
+                            <div class="text-xs text-gray-500 dark:text-gray-700">
                                 Total: <span class="font-semibold" x-text="estadisticas?.total_correos || 0"></span> correos
                             </div>
                         </div>
@@ -846,40 +973,40 @@
                                 </div>
                                 <div class="flex-1" :class="mensaje.remitente === 'soporte' ? 'order-1' : 'order-2'">
                                 <div class="flex items-center gap-2 mb-2">
-                                        <span class="font-semibold text-gray-800" x-text="mensaje.nombre_remitente"></span>
-                                        <span class="text-sm text-gray-500" x-text="mensaje.created_at"></span>
-                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'soporte'" class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded flex items-center gap-1">
+                                        <span class="font-semibold text-gray-800 dark:text-gray-700" x-text="mensaje.nombre_remitente"></span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-700" x-text="mensaje.created_at"></span>
+                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'soporte'" class="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded flex items-center gap-1">
                                             📤 Correo Enviado
                                         </span>
-                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'usuario'" class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'usuario'" class="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded flex items-center gap-1">
                                             📥 Respuesta Recibida
                                         </span>
-                                        <span x-show="!mensaje.es_correo" class="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="!mensaje.es_correo" class="text-xs text-gray-600 dark:text-gray-700 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded flex items-center gap-1">
                                             💬 Nota Interna
                                         </span>
-                                        <span x-show="mensaje.thread_id" class="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="mensaje.thread_id" class="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded flex items-center gap-1">
                                             🔗 En Hilo
                                         </span>
-                                        <span x-show="!mensaje.leido" class="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="!mensaje.leido" class="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded flex items-center gap-1">
                                             ⚠ No Leído
                                         </span>
                                     </div>
                                     <div class="rounded-lg p-4 border"
-                                         :class="mensaje.remitente === 'soporte' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'">
-                                        <div x-show="mensaje.es_correo" class="text-sm text-gray-600 mb-2">
+                                         :class="mensaje.remitente === 'soporte' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'">
+                                        <div x-show="mensaje.es_correo" class="text-sm text-gray-600 dark:text-gray-300 mb-2">
                                             <div x-show="mensaje.correo_remitente">
                                                 <span class="font-medium">Desde:</span> <span x-text="mensaje.correo_remitente"></span>
                                             </div>
-                                            <div x-show="mensaje.message_id" class="text-xs text-gray-500 mt-1">
+                                            <div x-show="mensaje.message_id" class="text-xs text-gray-500 dark:text-gray-700 mt-1">
                                                 <span class="font-medium">Message-ID:</span> <span x-text="mensaje.message_id"></span>
                                             </div>
-                                            <div x-show="mensaje.thread_id" class="text-xs text-gray-500 mt-1">
+                                            <div x-show="mensaje.thread_id" class="text-xs text-gray-500 dark:text-gray-700 mt-1">
                                                 <span class="font-medium">Thread-ID:</span> <span x-text="mensaje.thread_id"></span>
                                             </div>
                                         </div>
-                                        <div class="text-gray-800 mt-3" x-html="formatearMensaje(mensaje.mensaje)"></div>
-                                        <div x-show="mensaje.adjuntos && mensaje.adjuntos.length > 0" class="mt-3 pt-3 border-t border-gray-200">
-                                            <div class="text-xs text-gray-500 mb-2">Adjuntos:</div>
+                                        <div class="text-gray-800 dark:text-gray-700 mt-3" x-html="formatearMensaje(mensaje.mensaje)"></div>
+                                        <div x-show="mensaje.adjuntos && mensaje.adjuntos.length > 0" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                            <div class="text-xs text-gray-500 dark:text-gray-700 mb-2">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="adjunto in mensaje.adjuntos" :key="adjunto.name">
                                                     <span class="text-xs bg-gray-100 px-2 py-1 rounded flex items-center gap-1">
@@ -895,7 +1022,7 @@
 
                         <!-- Mensaje cuando no hay conversaciones -->
                         <div x-show="mensajes.length === 0" class="text-center py-8">
-                            <div class="text-gray-400 text-sm">
+                            <div class="text-gray-400 dark:text-gray-700 text-sm">
                                 <svg class="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>
@@ -904,11 +1031,11 @@
                         </div>
 
                         <!-- Área para escribir nueva respuesta - Estilo Cliente de Correo -->
-                        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
                             <!-- Mensaje informativo cuando está en Pendiente -->
                             <div x-show="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'" 
-                                 class="p-4 bg-yellow-50 border-b border-yellow-200">
-                                <p class="text-sm text-yellow-800 flex items-center gap-2">
+                                 class="p-4 bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-800">
+                                <p class="text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
                                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                     </svg>
@@ -916,18 +1043,18 @@
                                 </p>
                             </div>
                             <!-- Encabezado de Composición -->
-                            <div class="border-b border-gray-200 p-4 bg-gray-50" 
+                            <div class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900" 
                                  :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
                                 <div class="space-y-3">
                                     <!-- Campo Para -->
                                     <div class="flex items-center gap-2">
-                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Para:</label>
+                                        <label class="text-sm font-medium text-gray-700 dark:text-gray-700 w-16 flex-shrink-0">Para:</label>
                                         <input 
                                             type="email"
                                             :value="selected.correo || ''"
                                             readonly
                                             :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
+                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed">
                                         {{-- Botones de Copia y Copia Oculta comentados
                                         <div class="flex items-center gap-2">
                                             <button 
@@ -970,14 +1097,14 @@
                                     
                                     <!-- Campo Asunto -->
                                     <div class="flex items-center gap-2">
-                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Asunto: <span class="text-red-500">*</span></label>
+                                        <label class="text-sm font-medium text-gray-700 dark:text-gray-700 w-16 flex-shrink-0">Asunto: <span class="text-red-500">*</span></label>
                                         <input 
                                             type="text"
                                             x-model="asuntoCorreo"
                                             required
                                             readonly
                                             :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm focus:outline-none cursor-not-allowed disabled:bg-gray-100"
+                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-sm dark:text-gray-300 focus:outline-none cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800"
                                             placeholder="Asunto del correo">
                                     </div>
                                 </div>
@@ -1118,10 +1245,10 @@
                             --}}
                             
                             <!-- Sección de Adjuntos -->
-                            <div class="border-b border-gray-200 p-3 bg-white"
+                            <div class="border-b border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800"
                                  :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
-                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <p class="text-xs text-yellow-800 flex items-center gap-2">
+                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                    <p class="text-xs text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                         </svg>
@@ -1139,7 +1266,7 @@
                                         </svg>
                                         <span>Elegir archivos</span>
                                     </label>
-                                    <span x-show="archivosAdjuntos.length > 0" class="text-sm text-gray-600 font-medium">
+                                    <span x-show="archivosAdjuntos.length > 0" class="text-sm text-gray-600 dark:text-gray-300 font-medium">
                                         <span x-text="archivosAdjuntos.length"></span> archivo<span x-show="archivosAdjuntos.length !== 1">s</span>
                                     </span>
                                 </div>
@@ -1147,7 +1274,7 @@
                                 <!-- Lista visual de archivos adjuntos -->
                                 <div x-show="archivosAdjuntos.length > 0" class="mt-3 space-y-2">
                                     <template x-for="(archivo, index) in archivosAdjuntos" :key="index">
-                                        <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
+                                        <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
                                             <!-- Icono según tipo de archivo -->
                                             <div class="flex-shrink-0">
                                                 <!-- Imagen -->
@@ -1276,7 +1403,7 @@
 
                     </div>
 
-                    <!-- Área para Procesar Respuesta de Correo -->
+                    <!-- Área para Procesar Respuesta de Correo -->image.png
                     <div x-show="mostrarProcesarRespuesta" 
                          x-transition:enter="transition ease-out duration-300"
                          x-transition:enter-start="opacity-0 transform scale-95"
@@ -1284,14 +1411,14 @@
                          x-transition:leave="transition ease-in duration-200"
                          x-transition:leave-start="opacity-100 transform scale-100"
                          x-transition:leave-end="opacity-0 transform scale-95"
-                         class="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
+                         class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 mt-4">
                         
                         <div class="flex items-center gap-2 mb-3">
-                            <span class="text-sm font-medium text-green-700">📧 Procesar Respuesta de Correo:</span>
-                            <span class="text-xs text-green-600">(Procesamiento manual cuando Webklex no funciona)</span>
+                            <span class="text-sm font-medium text-green-700 dark:text-green-300">📧 Procesar Respuesta de Correo:</span>
+                            <span class="text-xs text-green-600 dark:text-green-400">(Procesamiento manual cuando Webklex no funciona)</span>
                         </div>
                         
-                        <div class="bg-green-100 border border-green-300 rounded-lg p-3 mb-3">
+                        <div class="bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-3">
                             <div class="flex items-start gap-2">
                                 <div class="text-green-600 mt-0.5">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -1359,7 +1486,7 @@
         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
         @click.self="mostrarModalMetricas = false">
         <div
-            class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
             @click.stop>
             <!-- Header del Modal -->
             <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex justify-between items-center">
@@ -1376,32 +1503,32 @@
 
             <!-- Contenido del Modal -->
             <div class="flex-1 overflow-y-auto p-6">
-                <div class="mb-4 text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                <div class="mb-4 text-sm text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"></i>
                     Configure el tiempo estimado en minutos para cada tipo de ticket. Este tiempo es utilizado para las alertas de la resolución de tickets.
                 </div>
 
                 <!-- Tabla de Métricas -->
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                     Tipo de Ticket
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                     Tiempo Estimado (Minutos)
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                                     Equivalente
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             <template x-if="cargandoMetricas">
                                 <tr>
                                     <td colspan="3" class="px-4 py-8 text-center">
-                                        <div class="flex items-center justify-center gap-2 text-gray-500">
+                                        <div class="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-700">
                                             <i class="fas fa-spinner fa-spin"></i>
                                             <span>Cargando métricas...</span>
                                         </div>
@@ -1410,9 +1537,9 @@
                             </template>
                             <template x-if="!cargandoMetricas && metricasTipos && metricasTipos.length > 0">
                                 <template x-for="(tipo, index) in metricasTipos" :key="tipo.TipoID">
-                                    <tr class="hover:bg-gray-50">
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm font-medium text-gray-900" x-text="tipo.NombreTipo"></span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100" x-text="tipo.NombreTipo"></span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             <input
@@ -1422,17 +1549,17 @@
                                                 :value="tipo.TiempoEstimadoMinutos || ''"
                                                 @input="tipo.TiempoEstimadoMinutos = $event.target.value ? parseInt($event.target.value) : null; tipo.cambiado = true"
                                                 placeholder="0"
-                                                class="w-32 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                                class="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm text-gray-600" x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
+                                            <span class="text-sm text-gray-600 dark:text-gray-700" x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
                                         </td>
                                     </tr>
                                 </template>
                             </template>
                             <template x-if="!cargandoMetricas && (!metricasTipos || metricasTipos.length === 0)">
                                 <tr>
-                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500">
+                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-700">
                                         <div class="flex flex-col items-center gap-2">
                                             <i class="fas fa-info-circle text-2xl"></i>
                                             <span>No hay tipos de tickets disponibles</span>
@@ -1446,14 +1573,14 @@
             </div>
 
             <!-- Footer del Modal -->
-            <div class="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-200">
-                <div class="text-sm text-gray-600">
+            <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-between items-center border-t border-gray-200 dark:border-gray-600">
+                <div class="text-sm text-gray-600 dark:text-gray-300">
                     <span x-text="`${metricasTipos.filter(t => t.cambiado).length} cambios pendientes`"></span>
                 </div>
                 <div class="flex gap-3">
                     <button
                         @click="mostrarModalMetricas = false"
-                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition">
+                        class="px-4 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition">
                         Cancelar
                     </button>
                     <button
@@ -1746,6 +1873,9 @@
                     tinymce.remove('editor-mensaje');
                 }
 
+                // Detectar modo oscuro
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                
                 // Inicializar TinyMCE
                 tinymce.init({
                     selector: '#editor-mensaje',
@@ -1761,7 +1891,9 @@
                         'alignleft aligncenter alignright alignjustify | ' +
                         'bullist numlist | outdent indent | ' +
                         'removeformat | link image | code | help',
-                    content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }',
+                    content_style: isDarkMode 
+                        ? 'body { font-family: Arial, sans-serif; font-size: 14px; background-color: #1f2937 !important; color: #ffffff !important; } body * { color: #ffffff !important; }' 
+                        : 'body { font-family: Arial, sans-serif; font-size: 14px; }',
                     language: 'es',
                     placeholder: 'Escribe tu mensaje aquí...',
                     setup: (editor) => {
@@ -2571,13 +2703,15 @@
                 // También deshabilitar el textarea si TinyMCE no está inicializado
                 const textarea = document.getElementById('editor-mensaje');
                 if (textarea) {
+                    const isDarkMode = document.documentElement.classList.contains('dark');
                     textarea.disabled = estaCerrado || estaPendiente;
                     if (estaCerrado || estaPendiente) {
                         textarea.style.cursor = 'not-allowed';
-                        textarea.style.backgroundColor = '#f3f4f6';
+                        textarea.style.backgroundColor = isDarkMode ? '#374151' : '#f3f4f6';
                     } else {
                         textarea.style.cursor = 'text';
-                        textarea.style.backgroundColor = 'white';
+                        textarea.style.backgroundColor = isDarkMode ? '#374151' : 'white';
+                        textarea.style.color = isDarkMode ? '#f9fafb' : '#000000';
                     }
                 }
             },
