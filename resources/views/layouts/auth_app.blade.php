@@ -52,20 +52,6 @@
                     <form method="POST" action="{{ route('login') }}" class="space-y-4 sm:space-y-6 text-black">
                         @csrf
 
-                        <div class="relative">
-                            <select name="database" id="database"
-                                class="peer text-black w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border borderinput focus:outline-none focus:border-black cursor-pointer text-sm sm:text-base"
-                                onchange="updateEnvDatabase(this.value)" required>
-                                <option value="">Selecciona</option>
-                                <option value="unidplay_controlinventarioti">Control Inventario TI</option>
-                                <option value="unidplay_presupuestoscontrol">Presupuestos</option>
-                                <option value="unidplay_presupuestoscontrol2026">Presupuestos 2026</option>
-                            </select>
-                            <label for="database" class="absolute text-xs sm:text-sm text-gray-500 duration-300 transform -translate-y-3 scale-75 top-2 left-3 sm:left-4 z-10 origin-[0] bg-white px-1 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-2.5 peer-focus:scale-75 peer-focus:-translate-y-3">
-                                Base de datos
-                            </label>
-                        </div>
-
                         <div class="relative w-full">
                             <input type="username" id="username" name="username"
                                 value="{{ Cookie::get('username') ?? old('username') }}"
@@ -107,44 +93,6 @@
     </div>
 
     <script>
-        function updateEnvDatabase(value) {
-            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch('/update-database', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': token
-                    },
-                    body: JSON.stringify({
-                        database: value
-                    }),
-                    credentials: 'same-origin',
-                })
-                .then(res => res.json())
-                .then(data => {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: data.success ? 'success' : 'warning',
-                        title: data.success ? 'Base de datos actualizada correctamente' : (data.error || 'Error desconocido'),
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                    });
-                })
-                .catch(() => {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'error',
-                        title: 'Error al actualizar la base de datos',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                    });
-                });
-        }
-
         tsParticles.load("tsparticles", {
             preset: "links",
             fullScreen: {

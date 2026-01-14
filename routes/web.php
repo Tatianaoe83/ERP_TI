@@ -8,7 +8,6 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PresupuestoController;
-use App\Http\Controllers\DatabaseController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CortesController;
 use App\Http\Controllers\FacturasController;
@@ -36,7 +35,7 @@ Auth::routes(['register' => false]);
 
 
 //y creamos un grupo de rutas protegidas para los controladores
-Route::group(['middleware' => ['auth', 'usarConexion']], function () {
+Route::group(['middleware' => ['auth']], function () {
     // Dashboard principal
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
@@ -161,11 +160,6 @@ Route::group(['middleware' => ['auth', 'usarConexion']], function () {
     Route::get('/auth/outlook/callback', [App\Http\Controllers\OutlookAuthController::class, 'callback']);
     Route::get('/auth/outlook/status', [App\Http\Controllers\OutlookAuthController::class, 'status']);
 });
-
-Route::post('/update-database', [App\Http\Controllers\DatabaseController::class, 'updateDatabase'])
-    ->name('update.database')
-    ->withoutMiddleware(['auth']);
-
 
 //Rutas para soporte de ticket y solicitudes    
 Route::get('/SoporteTI', [App\Http\Controllers\SoporteTIController::class, 'index']);
