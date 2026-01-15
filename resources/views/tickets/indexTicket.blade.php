@@ -5,65 +5,70 @@
         border-radius: 0.5rem !important;
     }
     
-    /* TinyMCE en modo oscuro */
-    .dark .tox-tinymce {
-        border: 1px solid #4b5563 !important;
-        background-color: #1f2937 !important;
+    /* TinyMCE en modo oscuro - Estilo Productividad */
+    .tox-tinymce {
+        border: 1px solid #2A2F3A !important;
+        background-color: #0F1115 !important;
+        border-radius: 0.5rem !important;
     }
     
-    .dark .tox .tox-edit-area__iframe {
-        background-color: #1f2937 !important;
+    .tox .tox-edit-area__iframe {
+        background-color: #0F1115 !important;
     }
     
-    .dark .tox .tox-editor-header {
-        background-color: #374151 !important;
-        border-bottom: 1px solid #4b5563 !important;
+    .tox .tox-editor-header {
+        background-color: #1C1F26 !important;
+        border-bottom: 1px solid #2A2F3A !important;
     }
     
-    .dark .tox .tox-toolbar {
-        background-color: #374151 !important;
+    .tox .tox-toolbar {
+        background-color: #1C1F26 !important;
     }
     
-    .dark .tox .tox-tbtn {
-        color: #ffffff !important;
+    .tox .tox-tbtn {
+        color: #9CA3AF !important;
     }
     
-    .dark .tox .tox-tbtn:hover {
-        background-color: #4b5563 !important;
-        color: #ffffff !important;
+    .tox .tox-tbtn:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #F3F4F6 !important;
     }
     
-    .dark .tox .tox-tbtn--enabled {
-        background-color: #4b5563 !important;
-        color: #ffffff !important;
+    .tox .tox-tbtn--enabled {
+        background-color: rgba(59, 130, 246, 0.15) !important;
+        color: #3B82F6 !important;
     }
     
-    .dark .tox .tox-split-button {
+    .tox .tox-split-button {
         background-color: transparent !important;
     }
     
-    .dark .tox .tox-menu {
-        background-color: #374151 !important;
-        border: 1px solid #4b5563 !important;
+    .tox .tox-menu {
+        background-color: #1C1F26 !important;
+        border: 1px solid #2A2F3A !important;
     }
     
-    .dark .tox .tox-menu__label {
-        color: #ffffff !important;
+    .tox .tox-menu__label {
+        color: #E5E7EB !important;
     }
     
-    .dark .tox .tox-menu__label:hover {
-        background-color: #4b5563 !important;
-        color: #ffffff !important;
+    .tox .tox-menu__label:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #F3F4F6 !important;
     }
     
     /* Contenido del iframe de TinyMCE en modo oscuro */
-    .dark .tox .tox-edit-area iframe {
-        background-color: #1f2937 !important;
+    .tox .tox-edit-area iframe {
+        background-color: #0F1115 !important;
     }
     
-    .dark .tox .tox-edit-area iframe body {
-        background-color: #1f2937 !important;
-        color: #ffffff !important;
+    .tox .tox-edit-area iframe body {
+        background-color: #0F1115 !important;
+        color: #E5E7EB !important;
+    }
+    
+    .tox .tox-edit-area iframe body[contenteditable="true"] {
+        color: #E5E7EB !important;
     }
     
     #editor-mensaje {
@@ -341,7 +346,15 @@
                             </span>
                         </div>
                         <div class="text-xs text-[#6B7280]">
-                            <span class="tiempo-texto">{{ $tiempoInfo['transcurrido'] }}h / {{ $tiempoInfo['estimado'] }}h</span>
+                            @php
+                                $horasTrans = floor($tiempoInfo['transcurrido'] ?? 0);
+                                $minsTrans = round((($tiempoInfo['transcurrido'] ?? 0) - $horasTrans) * 60);
+                                $horasEst = floor($tiempoInfo['estimado'] ?? 0);
+                                $minsEst = round((($tiempoInfo['estimado'] ?? 0) - $horasEst) * 60);
+                                $textoTrans = ($horasTrans > 0 ? $horasTrans . 'h ' : '') . ($minsTrans > 0 ? $minsTrans . 'm' : ($horasTrans == 0 ? '0m' : ''));
+                                $textoEst = ($horasEst > 0 ? $horasEst . 'h ' : '') . ($minsEst > 0 ? $minsEst . 'm' : ($horasEst == 0 ? '0m' : ''));
+                            @endphp
+                            <span class="tiempo-texto">{{ $textoTrans }} / {{ $textoEst }}</span>
                         </div>
                         <div class="mt-1 w-full bg-[#2A2F3A] rounded-full h-1.5">
                             <div class="barra-progreso h-1.5 rounded-full transition-all duration-300
@@ -369,14 +382,14 @@
     </div>
 
     <!-- Vista Lista -->
-    <div x-show="vista === 'lista'" x-transition class="space-y-3 w-full max-w-full overflow-x-hidden">
+    <div x-show="vista === 'lista'" x-transition class="space-y-3 w-full max-w-full overflow-x-hidden" style="background-color: #0F1115;">
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
-        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2 flex justify-between items-center">
-                <h3 class="text-white font-semibold text-sm">{{ $titulo }}</h3>
-                <span class="text-white text-xs" x-text="`Total: ${ticketsLista['{{ $key }}'] || 0}`"></span>
+        <div class="rounded-lg overflow-hidden" style="background-color: #1C1F26; border: 1px solid #2A2F3A;">
+            <div class="px-4 py-2 flex justify-between items-center" style="background-color: #242933;">
+                <h3 class="font-semibold text-sm" style="color: #F3F4F6;">{{ $titulo }}</h3>
+                <span class="text-xs" style="color: #9CA3AF;" x-text="`Total: ${ticketsLista['{{ $key }}'] || 0}`"></span>
             </div>
-            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            <div style="border-top: 1px solid #2A2F3A;">
                 @forelse ($ticketsStatus[$key] as $ticket)
                 @php
                 $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
@@ -411,7 +424,10 @@
                 }
                 @endphp
                 <div
-                    class="p-4 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
+                    class="p-4 transition cursor-pointer"
+                    style="background-color: #1F2937; border-bottom: 1px solid #2A2F3A;"
+                    onmouseover="this.style.backgroundColor='#273244'"
+                    onmouseout="this.style.backgroundColor='#1F2937'"
                     data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
@@ -432,64 +448,71 @@
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-3 mb-2">
-                                <h4 class="text-base font-semibold text-gray-800 dark:text-gray-700">Ticket #{{ $ticket->TicketID }}</h4>
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'bg-green-200 text-green-600' : ($ticket->Prioridad == 'Media' ? 'bg-yellow-200 text-yellow-600' : 'bg-red-200 text-red-600') }}">
+                                <h4 class="text-base font-semibold" style="color: #F3F4F6;">Ticket #{{ $ticket->TicketID }}</h4>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="color: {{ $ticket->Prioridad == 'Baja' ? '#22C55E' : ($ticket->Prioridad == 'Media' ? '#FBBF24' : '#F87171') }}; background-color: {{ $ticket->Prioridad == 'Baja' ? 'rgba(34, 197, 94, 0.15)' : ($ticket->Prioridad == 'Media' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(248, 113, 113, 0.15)') }};">
                                     {{ $ticket->Prioridad }}
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+                            <p class="text-sm mb-3 line-clamp-2" style="color: #D1D5DB;">
                                 {{ Str::limit($ticket->Descripcion, 150, '...') }}
                             </p>
-                            <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-300 flex-wrap">
+                            <div class="flex items-center gap-4 text-xs flex-wrap" style="color: #9CA3AF;">
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-user text-gray-400 dark:text-gray-700"></i>
-                                    <span class="font-semibold text-gray-700 dark:text-gray-700">{{ $nombreFormateado }}</span>
+                                    <i class="fas fa-user" style="color: #6B7280;"></i>
+                                    <span class="font-semibold" style="color: #9CA3AF;">{{ $nombreFormateado }}</span>
                                 </span>
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-calendar text-gray-400 dark:text-gray-700"></i>
-                                    <span class="dark:text-gray-300">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
+                                    <i class="fas fa-calendar" style="color: #6B7280;"></i>
+                                    <span style="color: #9CA3AF;">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
                                 </span>
                                 @if($key === 'proceso' && $nombreResponsable)
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-user-tie text-blue-500"></i>
-                                    <span class="font-semibold text-gray-700 dark:text-gray-700">Responsable:</span>
-                                    <span class="text-gray-800 dark:text-gray-700">{{ $nombreResponsable }}</span>
+                                    <i class="fas fa-user-tie" style="color: #3B82F6;"></i>
+                                    <span class="font-semibold" style="color: #9CA3AF;">Responsable:</span>
+                                    <span style="color: #E5E7EB;">{{ $nombreResponsable }}</span>
                                 </span>
                                 @endif
                                 @if($key === 'proceso' && $tiempoInfo)
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-clock text-gray-400 dark:text-gray-700"></i>
-                                    <span class="font-semibold text-gray-700 dark:text-gray-700">Tiempo:</span>
-                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold
-                                        {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 
-                                           ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300') }}">
-                                        {{ $tiempoInfo['transcurrido'] }}h / {{ $tiempoInfo['estimado'] }}h
+                                    <i class="fas fa-clock" style="color: #6B7280;"></i>
+                                    <span class="font-semibold" style="color: #9CA3AF;">Tiempo:</span>
+                                    @php
+                                        $horasTrans = floor($tiempoInfo['transcurrido'] ?? 0);
+                                        $minsTrans = round((($tiempoInfo['transcurrido'] ?? 0) - $horasTrans) * 60);
+                                        $horasEst = floor($tiempoInfo['estimado'] ?? 0);
+                                        $minsEst = round((($tiempoInfo['estimado'] ?? 0) - $horasEst) * 60);
+                                        $textoTrans = ($horasTrans > 0 ? $horasTrans . 'h ' : '') . ($minsTrans > 0 ? $minsTrans . 'm' : ($horasTrans == 0 ? '0m' : ''));
+                                        $textoEst = ($horasEst > 0 ? $horasEst . 'h ' : '') . ($minsEst > 0 ? $minsEst . 'm' : ($horasEst == 0 ? '0m' : ''));
+                                    @endphp
+                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                        style="color: {{ $tiempoInfo['estado'] === 'agotado' ? '#F87171' : ($tiempoInfo['estado'] === 'por_vencer' ? '#FBBF24' : '#22C55E') }}; background-color: {{ $tiempoInfo['estado'] === 'agotado' ? 'rgba(248, 113, 113, 0.15)' : ($tiempoInfo['estado'] === 'por_vencer' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(34, 197, 94, 0.15)') }};">
+                                        {{ $textoTrans }} / {{ $textoEst }}
                                     </span>
                                 </span>
                                 @endif
                                 @if($ticket->CodeAnyDesk)
                                 <span class="flex items-center gap-1">
-                                    <i class="fas fa-desktop text-gray-400 dark:text-gray-700"></i>
-                                    <span class="dark:text-gray-300">{{ $ticket->CodeAnyDesk }}</span>
+                                    <i class="fas fa-desktop" style="color: #6B7280;"></i>
+                                    <span style="color: #9CA3AF;">{{ $ticket->CodeAnyDesk }}</span>
                                 </span>
                                 @endif
                             </div>
                         </div>
                         <div class="flex-shrink-0">
-                            <i class="fas fa-chevron-right text-gray-400"></i>
+                            <i class="fas fa-chevron-right" style="color: #6B7280;" onmouseover="this.style.color='#F3F4F6'" onmouseout="this.style.color='#6B7280'"></i>
                         </div>
                     </div>
                 </div>
                 @empty
                 <div class="p-8 text-center">
-                    <p class="text-sm text-gray-400 dark:text-gray-700">No hay tickets en esta categoría.</p>
+                    <p class="text-sm" style="color: #6B7280;">No hay tickets en esta categoría.</p>
                 </div>
                 @endforelse
             </div>
             <!-- Paginación Lista - Cada sección tiene su propia paginación independiente -->
-            <div x-show="ticketsLista && ticketsLista['{{ $key }}'] !== undefined && ticketsLista['{{ $key }}'] > 0" class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+            <div x-show="ticketsLista && ticketsLista['{{ $key }}'] !== undefined && ticketsLista['{{ $key }}'] > 0" class="px-4 py-3" style="background-color: #1C1F26; border-top: 1px solid #2A2F3A;">
                 <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-600 dark:text-gray-300">
+                    <div class="text-sm" style="color: #9CA3AF;">
                         <span x-text="`Mostrando ${((paginaLista['{{ $key }}'] - 1) * elementosPorPagina) + 1} - ${Math.min(paginaLista['{{ $key }}'] * elementosPorPagina, ticketsLista['{{ $key }}'] || 0)} de ${ticketsLista['{{ $key }}'] || 0} tickets`"></span>
                         <span x-show="obtenerTotalPaginasLista('{{ $key }}') > 1" class="ml-2" x-text="`(Página ${paginaLista['{{ $key }}']} de ${obtenerTotalPaginasLista('{{ $key }}')})`"></span>
                     </div>
@@ -497,8 +520,11 @@
                         <button
                             @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] - 1)"
                             :disabled="paginaLista['{{ $key }}'] === 1"
-                            :class="paginaLista['{{ $key }}'] === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
-                            class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
+                            class="px-3 py-1.5 text-sm font-medium rounded-md transition"
+                            style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                            onmouseover="if(paginaLista['{{ $key }}'] !== 1) this.style.backgroundColor='#242933'"
+                            onmouseout="this.style.backgroundColor='#1F2937'"
+                            :style="paginaLista['{{ $key }}'] === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">
                             <i class="fas fa-chevron-left text-xs"></i> Anterior
                         </button>
                         <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasLista('{{ $key }}'), 10)}, (_, i) => {
@@ -511,16 +537,21 @@
                         }).filter((p, i, arr) => p <= obtenerTotalPaginasLista('{{ $key }}') && (i === 0 || p !== arr[i-1]))" :key="pagina">
                             <button
                                 @click="cambiarPaginaLista('{{ $key }}', pagina)"
-                                :class="paginaLista['{{ $key }}'] === pagina ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-                                class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-md transition">
+                                class="px-3 py-1.5 text-sm font-medium border rounded-md transition"
+                                :style="paginaLista['{{ $key }}'] === pagina ? 'background-color: #3B82F6; color: white; border-color: #3B82F6;' : 'background-color: #1F2937; border-color: #2A2F3A; color: #E5E7EB;'"
+                                onmouseover="if(paginaLista['{{ $key }}'] !== pagina) this.style.backgroundColor='#242933'"
+                                onmouseout="if(paginaLista['{{ $key }}'] !== pagina) this.style.backgroundColor='#1F2937'">
                                 <span x-text="pagina"></span>
                             </button>
                         </template>
                         <button
                             @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] + 1)"
                             :disabled="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}')"
-                            :class="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}') ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
-                            class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
+                            class="px-3 py-1.5 text-sm font-medium rounded-md transition"
+                            style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                            onmouseover="if(paginaLista['{{ $key }}'] !== obtenerTotalPaginasLista('{{ $key }}')) this.style.backgroundColor='#242933'"
+                            onmouseout="this.style.backgroundColor='#1F2937'"
+                            :style="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}') ? 'opacity: 0.5; cursor: not-allowed;' : ''">
                             Siguiente <i class="fas fa-chevron-right text-xs"></i>
                         </button>
                     </div>
@@ -531,82 +562,130 @@
     </div>
 
     <!-- Vista Tabla -->
-    <div x-show="vista === 'tabla'" x-transition class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden w-full max-w-full">
-        <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between">
-            <div class="text-sm text-gray-600 dark:text-gray-300">
+    <div x-show="vista === 'tabla'" x-transition class="rounded-lg overflow-hidden w-full max-w-full" style="background-color: #1C1F26; border: 1px solid #2A2F3A;">
+        <div class="px-4 py-3 flex items-center justify-between" style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;">
+            <div class="text-sm" style="color: #9CA3AF;">
                 <span x-text="`Mostrando ${(paginaTabla - 1) * elementosPorPagina + 1} - ${Math.min(paginaTabla * elementosPorPagina, ticketsTabla.length)} de ${ticketsTabla.length} tickets`"></span>
             </div>
-            <div class="text-sm text-gray-600 dark:text-gray-300">
+            <div class="text-sm flex items-center gap-2" style="color: #9CA3AF;">
                 <span>Elementos por página:</span>
-                <select x-model="elementosPorPagina" @change="paginaTabla = 1" class="ml-2 px-2 py-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 rounded text-sm">
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
+                <select x-model="elementosPorPagina" @change="paginaTabla = 1" class="px-2 py-1 rounded text-sm"
+                    style="background-color: #1C1F26; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                    onfocus="this.style.borderColor='#2563EB'"
+                    onblur="this.style.borderColor='#2A2F3A'">
+                    <option value="5" style="background-color: #1C1F26; color: #E5E7EB;">5</option>
+                    <option value="10" style="background-color: #1C1F26; color: #E5E7EB;">10</option>
+                    <option value="25" style="background-color: #1C1F26; color: #E5E7EB;">25</option>
+                    <option value="50" style="background-color: #1C1F26; color: #E5E7EB;">50</option>
                 </select>
             </div>
         </div>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
+            <table class="min-w-full" style="border-collapse: separate; border-spacing: 0;">
+                <thead style="background-color: #242933;">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
+                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
+                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
+                            onmouseout="this.style.backgroundColor='transparent'"
                             @click="cambiarOrden('id')">
                             <div class="flex items-center gap-2">
                                 <span>ID</span>
-                                <i class="fas fa-sort text-gray-400 text-xs"
-                                   :class="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                                <i class="fas fa-sort text-xs"
+                                   style="color: #6B7280;"
+                                   :style="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
+                                   :class="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
+                                   onmouseover="this.style.color='#F3F4F6'"
+                                   onmouseout="this.style.color=ordenColumna === 'id' ? '#3B82F6' : '#6B7280'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
+                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
+                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
+                            onmouseout="this.style.backgroundColor='transparent'"
                             @click="cambiarOrden('descripcion')">
                             <div class="flex items-center gap-2">
                                 <span>Descripción</span>
-                                <i class="fas fa-sort text-gray-400 text-xs"
-                                   :class="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                                <i class="fas fa-sort text-xs"
+                                   style="color: #6B7280;"
+                                   :style="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
+                                   :class="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
+                                   onmouseover="this.style.color='#F3F4F6'"
+                                   onmouseout="this.style.color=ordenColumna === 'descripcion' ? '#3B82F6' : '#6B7280'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
+                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
+                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
+                            onmouseout="this.style.backgroundColor='transparent'"
                             @click="cambiarOrden('empleado')">
                             <div class="flex items-center gap-2">
                                 <span>Empleado</span>
-                                <i class="fas fa-sort text-gray-400 text-xs"
-                                   :class="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                                <i class="fas fa-sort text-xs"
+                                   style="color: #6B7280;"
+                                   :style="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
+                                   :class="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
+                                   onmouseover="this.style.color='#F3F4F6'"
+                                   onmouseout="this.style.color=ordenColumna === 'empleado' ? '#3B82F6' : '#6B7280'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
+                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
+                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
+                            onmouseout="this.style.backgroundColor='transparent'"
                             @click="cambiarOrden('prioridad')">
                             <div class="flex items-center gap-2">
                                 <span>Prioridad</span>
-                                <i class="fas fa-sort text-gray-400 text-xs"
-                                   :class="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                                <i class="fas fa-sort text-xs"
+                                   style="color: #6B7280;"
+                                   :style="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
+                                   :class="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
+                                   onmouseover="this.style.color='#F3F4F6'"
+                                   onmouseout="this.style.color=ordenColumna === 'prioridad' ? '#3B82F6' : '#6B7280'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
+                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
+                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
+                            onmouseout="this.style.backgroundColor='transparent'"
                             @click="cambiarOrden('estado')">
                             <div class="flex items-center gap-2">
                                 <span>Estado</span>
-                                <i class="fas fa-sort text-gray-400 text-xs"
-                                   :class="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                                <i class="fas fa-sort text-xs"
+                                   style="color: #6B7280;"
+                                   :style="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
+                                   :class="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
+                                   onmouseover="this.style.color='#F3F4F6'"
+                                   onmouseout="this.style.color=ordenColumna === 'estado' ? '#3B82F6' : '#6B7280'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
+                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
+                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
+                            onmouseout="this.style.backgroundColor='transparent'"
                             @click="cambiarOrden('fecha')">
                             <div class="flex items-center gap-2">
                                 <span>Fecha</span>
-                                <i class="fas fa-sort text-gray-400 text-xs"
-                                   :class="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600' : 'fa-sort-down text-blue-600') : ''"></i>
+                                <i class="fas fa-sort text-xs"
+                                   style="color: #6B7280;"
+                                   :style="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
+                                   :class="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
+                                   onmouseover="this.style.color='#F3F4F6'"
+                                   onmouseout="this.style.color=ordenColumna === 'fecha' ? '#3B82F6' : '#6B7280'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Responsable</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tiempo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;">Responsable</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;">Tiempo</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;">Acciones</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody style="background-color: #1C1F26;">
                     <template x-for="(ticket, index) in obtenerTicketsTablaPagina()" :key="`ticket-${paginaTabla}-${index}-${ticket.id || index}`">
                         <tr
-                            class="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
+                            class="transition cursor-pointer"
+                            style="background-color: #1F2937; border-bottom: 1px solid #2A2F3A;"
+                            onmouseover="this.style.backgroundColor='#273244'"
+                            onmouseout="this.style.backgroundColor='#1F2937'"
                             :data-ticket-id="ticket.id"
                             :data-ticket-asunto="ticket.asunto"
                             :data-ticket-descripcion="ticket.descripcion"
@@ -618,47 +697,47 @@
                             :data-ticket-fecha="ticket.fecha"
                             @click="abrirModalDesdeElemento($el)">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-gray-900 dark:text-gray-700" x-text="'#' + ticket.id"></div>
+                                <div class="text-sm font-semibold" style="color: #F3F4F6;" x-text="'#' + ticket.id"></div>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 dark:text-gray-700 max-w-md truncate" x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
+                                <div class="text-sm max-w-md truncate" style="color: #D1D5DB;" x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 dark:text-gray-700" x-text="ticket.empleado || ''"></div>
-                                <div class="text-xs text-gray-500 dark:text-gray-700" x-text="ticket.correo || ''"></div>
+                                <div class="text-sm" style="color: #E5E7EB;" x-text="ticket.empleado || ''"></div>
+                                <div class="text-xs" style="color: #9CA3AF;" x-text="ticket.correo || ''"></div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
-                                      :class="ticket.prioridad == 'Baja' ? 'bg-green-200 dark:bg-green-900/50 text-green-600 dark:text-green-300' : (ticket.prioridad == 'Media' ? 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300' : 'bg-red-200 dark:bg-red-900/50 text-red-600 dark:text-red-300')"
+                                      :style="ticket.prioridad == 'Baja' ? 'color: #22C55E; background-color: rgba(34, 197, 94, 0.15);' : (ticket.prioridad == 'Media' ? 'color: #FBBF24; background-color: rgba(251, 191, 36, 0.15);' : 'color: #F87171; background-color: rgba(248, 113, 113, 0.15);')"
                                       x-text="ticket.prioridad || 'Media'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
-                                      :class="ticket.estatus == 'Pendiente' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300' : (ticket.estatus == 'En progreso' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300')"
+                                      :style="ticket.estatus == 'Pendiente' ? 'color: #FBBF24; background-color: rgba(251, 191, 36, 0.15);' : (ticket.estatus == 'En progreso' ? 'color: #3B82F6; background-color: rgba(59, 130, 246, 0.15);' : 'color: #22C55E; background-color: rgba(34, 197, 94, 0.15);')"
                                       x-text="ticket.estatus || 'Pendiente'"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-700" x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #9CA3AF;" x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div x-show="ticket.responsable && ticket.responsable.trim() !== ''" class="text-sm text-gray-900 dark:text-gray-700" x-text="ticket.responsable"></div>
-                                <div x-show="!ticket.responsable || ticket.responsable.trim() === ''" class="text-xs text-gray-400 dark:text-gray-700">-</div>
+                                <div x-show="ticket.responsable && ticket.responsable.trim() !== ''" class="text-sm" style="color: #E5E7EB;" x-text="ticket.responsable"></div>
+                                <div x-show="!ticket.responsable || ticket.responsable.trim() === ''" class="text-xs" style="color: #6B7280;">-</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div x-show="ticket.tiempoTranscurrido && ticket.tiempoEstimado && ticket.tiempoTranscurrido !== '' && ticket.tiempoEstimado !== ''" class="flex flex-col gap-1">
                                     <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
-                                          :class="ticket.tiempoEstado === 'agotado' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 
-                                                 (ticket.tiempoEstado === 'por_vencer' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 
-                                                 (ticket.tiempoEstado === 'normal' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'))"
-                                          x-text="ticket.tiempoTranscurrido + 'h / ' + ticket.tiempoEstimado + 'h'"></span>
+                                          :style="ticket.tiempoEstado === 'agotado' ? 'color: #F87171; background-color: rgba(248, 113, 113, 0.15);' : 
+                                                 (ticket.tiempoEstado === 'por_vencer' ? 'color: #FBBF24; background-color: rgba(251, 191, 36, 0.15);' : 
+                                                 (ticket.tiempoEstado === 'normal' ? 'color: #22C55E; background-color: rgba(34, 197, 94, 0.15);' : 'color: #6B7280; background-color: #1C1F26;'))"
+                                          x-text="formatearHorasDecimales(ticket.tiempoTranscurrido) + ' / ' + formatearHorasDecimales(ticket.tiempoEstimado)"></span>
                                 </div>
-                                <div x-show="!ticket.tiempoTranscurrido || !ticket.tiempoEstimado || ticket.tiempoTranscurrido === '' || ticket.tiempoEstimado === ''" class="text-xs text-gray-400 dark:text-gray-700">-</div>
+                                <div x-show="!ticket.tiempoTranscurrido || !ticket.tiempoEstimado || ticket.tiempoTranscurrido === '' || ticket.tiempoEstimado === ''" class="text-xs" style="color: #6B7280;">-</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-700">
-                                <i class="fas fa-eye text-blue-500"></i>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <i class="fas fa-eye" style="color: #3B82F6;"></i>
                             </td>
                         </tr>
                     </template>
-                    <tr x-show="!ticketsTabla || ticketsTabla.length === 0">
-                        <td colspan="9" class="px-6 py-8 text-center text-sm text-gray-400 dark:text-gray-700">
+                    <tr x-show="!ticketsTabla || ticketsTabla.length === 0" style="background-color: #1F2937;">
+                        <td colspan="9" class="px-6 py-8 text-center text-sm" style="color: #6B7280;">
                             No hay tickets disponibles.
                         </td>
                     </tr>
@@ -666,16 +745,19 @@
             </table>
         </div>
         <!-- Paginación Tabla -->
-        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex items-center justify-between">
-            <div class="text-sm text-gray-600 dark:text-gray-300">
+        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 flex items-center justify-between" style="background-color: #1C1F26; border-top: 1px solid #2A2F3A;">
+            <div class="text-sm" style="color: #9CA3AF;">
                 <span x-text="`Página ${paginaTabla} de ${obtenerTotalPaginasTabla()}`"></span>
             </div>
             <div class="flex items-center gap-2">
                 <button
                     @click="cambiarPaginaTabla(paginaTabla - 1)"
                     :disabled="paginaTabla === 1"
-                    :class="paginaTabla === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
-                    class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition"
+                    style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                    onmouseover="if(paginaTabla !== 1) this.style.backgroundColor='#242933'"
+                    onmouseout="this.style.backgroundColor='#1F2937'"
+                    :style="paginaTabla === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">
                     <i class="fas fa-chevron-left text-xs"></i> Anterior
                 </button>
                 <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasTabla(), 10)}, (_, i) => {
@@ -688,16 +770,21 @@
                 }).filter((p, i, arr) => p <= obtenerTotalPaginasTabla() && (i === 0 || p !== arr[i-1]))" :key="pagina">
                     <button
                         @click="cambiarPaginaTabla(pagina)"
-                        :class="paginaTabla === pagina ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-                        class="px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded-md transition">
+                        class="px-3 py-1.5 text-sm font-medium border rounded-md transition"
+                        :style="paginaTabla === pagina ? 'background-color: #3B82F6; color: white; border-color: #3B82F6;' : 'background-color: #1F2937; border-color: #2A2F3A; color: #E5E7EB;'"
+                        onmouseover="if(paginaTabla !== pagina) this.style.backgroundColor='#242933'"
+                        onmouseout="if(paginaTabla !== pagina) this.style.backgroundColor='#1F2937'">
                         <span x-text="pagina"></span>
                     </button>
                 </template>
                 <button
                     @click="cambiarPaginaTabla(paginaTabla + 1)"
                     :disabled="paginaTabla === obtenerTotalPaginasTabla()"
-                    :class="paginaTabla === obtenerTotalPaginasTabla() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200 dark:hover:bg-gray-600'"
-                    class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md transition">
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition"
+                    style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                    onmouseover="if(paginaTabla !== obtenerTotalPaginasTabla()) this.style.backgroundColor='#242933'"
+                    onmouseout="this.style.backgroundColor='#1F2937'"
+                    :style="paginaTabla === obtenerTotalPaginasTabla() ? 'opacity: 0.5; cursor: not-allowed;' : ''">
                     Siguiente <i class="fas fa-chevron-right text-xs"></i>
                 </button>
             </div>
@@ -712,48 +799,53 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="opacity-100 translate-y-0"
         x-transition:leave-end="opacity-0 translate-y-10"
-        class="fixed inset-0 flex items-center justify-center bg-gray-900/40 backdrop-blur-md z-50"
+        class="fixed inset-0 flex items-center justify-center backdrop-blur-md z-50"
+        style="background-color: rgba(15, 17, 21, 0.85);"
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="bg-white dark:bg-gray-800 w-[95%] md:w-[90%] lg:w-[1400px] xl:w-[1600px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300"
+            class="w-[95%] md:w-[90%] lg:w-[1400px] xl:w-[1600px] rounded-2xl overflow-hidden border transition-all duration-300"
+            style="background-color: #1C1F26; border-color: #2A2F3A; border-width: 1px;"
             @click.stop>
-            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] rounded-2xl overflow-hidden" style="background-color: #1C1F26;">
 
-                <aside class="bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col overflow-y-auto">
-                    <h2 class="text-gray-800 dark:text-gray-700 text-sm font-semibold mb-4 uppercase">
+                <aside class="p-6 flex flex-col overflow-y-auto" style="background-color: #1F2937; border-right: 1px solid #2A2F3A;">
+                    <h2 class="text-sm font-semibold mb-4 uppercase" style="color: #F3F4F6;">
                         Propiedades del Ticket
                     </h2>
 
-                    <div class="space-y-5 text-sm text-gray-700 dark:text-gray-700 flex-1">
+                    <div class="space-y-5 text-sm flex-1" style="color: #E5E7EB;">
 
-                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
-                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-2">Descripcion de ticket</h3>
-                            <div class="font-medium text-gray-800 dark:text-gray-700 whitespace-pre-wrap ticket-description" x-text="selected.descripcion"></div>
+                        <div class="rounded-lg p-4" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
+                            <h3 class="text-xs font-semibold uppercase mb-2" style="color: #F3F4F6;">Descripcion de ticket</h3>
+                            <div class="font-medium whitespace-pre-wrap ticket-description" style="color: #E5E7EB;" x-text="selected.descripcion"></div>
                         </div>
 
                         <!-- Documentos Adjuntos -->
-                        <div x-show="obtenerAdjuntos().length > 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
-                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-3">Documentos Adjuntos</h3>
+                        <div x-show="obtenerAdjuntos().length > 0" class="rounded-lg p-4" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
+                            <h3 class="text-xs font-semibold uppercase mb-3" style="color: #F3F4F6;">Documentos Adjuntos</h3>
                             <div class="space-y-2">
                                 <template x-for="(adjunto, index) in obtenerAdjuntos()" :key="index">
-                                    <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                                    <div class="flex items-center justify-between p-2 rounded-lg transition" style="background-color: #1C1F26; border: 1px solid #2A2F3A;" onmouseover="this.style.backgroundColor='#242933'" onmouseout="this.style.backgroundColor='#1C1F26'">
                                         <div class="flex items-center gap-3 flex-1 min-w-0">
                                             <div class="flex-shrink-0">
-                                                <svg class="w-5 h-5 text-gray-600 dark:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5" style="color: #9CA3AF;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                 </svg>
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium text-gray-800 dark:text-gray-700 truncate" x-text="obtenerNombreArchivo(adjunto)"></p>
-                                                <p class="text-xs text-gray-500 dark:text-gray-700" x-text="obtenerExtensionArchivo(adjunto)"></p>
+                                                <p class="text-sm font-medium truncate" style="color: #E5E7EB;" x-text="obtenerNombreArchivo(adjunto)"></p>
+                                                <p class="text-xs" style="color: #6B7280;" x-text="obtenerExtensionArchivo(adjunto)"></p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2 flex-shrink-0">
                                             <a 
                                                 :href="obtenerUrlArchivo(adjunto)" 
                                                 target="_blank"
-                                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
+                                                class="p-1.5 rounded transition"
+                                                style="color: #3B82F6;"
+                                                onmouseover="this.style.backgroundColor='rgba(59, 130, 246, 0.15)'"
+                                                onmouseout="this.style.backgroundColor='transparent'"
                                                 title="Ver archivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -763,7 +855,10 @@
                                             <a 
                                                 :href="obtenerUrlArchivo(adjunto)" 
                                                 download
-                                                class="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition"
+                                                class="p-1.5 rounded transition"
+                                                style="color: #22C55E;"
+                                                onmouseover="this.style.backgroundColor='rgba(34, 197, 94, 0.15)'"
+                                                onmouseout="this.style.backgroundColor='transparent'"
                                                 title="Descargar archivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -775,96 +870,128 @@
                             </div>
                         </div>
 
-                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm">
-                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-2">Información de Contacto</h3>
-                            <p class="font-medium text-gray-800 dark:text-gray-700" x-text="selected.empleado"></p>
-                            <p class="text-gray-500 dark:text-gray-700 text-sm" x-text="selected.correo"></p>
-                            <p class="text-gray-500 dark:text-gray-700 text-sm" x-text="selected.numero"></p>
-                            <p class="text-gray-500 dark:text-gray-700 text-sm" x-text="selected.anydesk"></p>
+                        <div class="rounded-lg p-4" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
+                            <h3 class="text-xs font-semibold uppercase mb-2" style="color: #F3F4F6;">Información de Contacto</h3>
+                            <p class="font-medium" style="color: #E5E7EB;" x-text="selected.empleado"></p>
+                            <p class="text-sm" style="color: #9CA3AF;" x-text="selected.correo"></p>
+                            <p class="text-sm" style="color: #9CA3AF;" x-text="selected.numero"></p>
+                            <p class="text-sm" style="color: #9CA3AF;" x-text="selected.anydesk"></p>
                         </div>
 
-                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-                            <h3 class="text-xs font-bold text-gray-500 dark:text-gray-700 uppercase mb-2">Detalles del Ticket</h3>
+                        <div class="rounded-lg p-4 flex flex-col gap-3" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
+                            <h3 class="text-xs font-semibold uppercase mb-2" style="color: #F3F4F6;">Detalles del Ticket</h3>
 
-                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Prioridad</label>
+                            <label class="text-sm font-semibold" style="color: #6B7280;">Prioridad</label>
                             <select
                                 x-model="ticketPrioridad"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 text-gray-900 dark:text-gray-500 dark:border-gray-600">
-                                <option value="Baja">Baja</option>
-                                <option value="Media">Media</option>
-                                <option value="Alta">Alta</option>
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
+                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                :style="selected.estatus === 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
+                                <option value="Baja" style="background-color: #1F2937; color: #E5E7EB;">Baja</option>
+                                <option value="Media" style="background-color: #1F2937; color: #E5E7EB;">Media</option>
+                                <option value="Alta" style="background-color: #1F2937; color: #E5E7EB;">Alta</option>
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Estado</label>
+                            <label class="text-sm font-semibold" style="color: #6B7280;">Estado</label>
                             <select 
                                 x-model="ticketEstatus"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 text-gray-900 dark:text-gray-500 dark:border-gray-600">
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="En progreso">En progreso</option>
-                                <option value="Cerrado">Cerrado</option>
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
+                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                :style="selected.estatus === 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
+                                <option value="Pendiente" style="background-color: #1F2937; color: #E5E7EB;">Pendiente</option>
+                                <option value="En progreso" style="background-color: #1F2937; color: #E5E7EB;">En progreso</option>
+                                <option value="Cerrado" style="background-color: #1F2937; color: #E5E7EB;">Cerrado</option>
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Clasificación <span class="text-red-500">*</span></label>
+                            <label class="text-sm font-semibold" style="color: #6B7280;">Clasificación <span style="color: #F87171;">*</span></label>
                             <select
                                 x-model="ticketClasificacion"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-700 dark:border-gray-600">
-                                <option value="">Seleccione</option>
-                                <option value="Problema">Problema</option>
-                                <option value="Servicio">Servicio</option>
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
+                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                :style="selected.estatus === 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
+                                <option value="" style="background-color: #1F2937; color: #E5E7EB;">Seleccione</option>
+                                <option value="Problema" style="background-color: #1F2937; color: #E5E7EB;">Problema</option>
+                                <option value="Servicio" style="background-color: #1F2937; color: #E5E7EB;">Servicio</option>
                             </select>
                             
                             <!-- Mensaje informativo cuando está en "En progreso" -->
-                            <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'" class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md text-xs text-blue-700 dark:text-blue-300">
+                            <div x-show="selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado'" class="mt-2 p-2 rounded-md text-xs" style="background-color: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93C5FD;">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 El Responsable no se puede modificar cuando el ticket está en "En progreso"
                             </div>
 
-                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Responsable <span class="text-red-500">*</span></label>
+                            <label class="text-sm font-semibold" style="color: #6B7280;">Responsable <span style="color: #F87171;">*</span></label>
                             <select 
                                 x-model="ticketResponsableTI"
                                 :disabled="selected.estatus === 'Cerrado' || (selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado')"
-                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-700 dark:border-gray-600">
-                                <option value="">Seleccione</option>
+                                class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
+                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                :style="(selected.estatus === 'Cerrado' || (selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado')) ? 'background-color: #1C1F26; color: #6B7280;' : ''">
+                                <option value="" style="background-color: #1F2937; color: #E5E7EB;">Seleccione</option>
                                 @foreach($responsablesTI as $responsable)
-                                <option value="{{ $responsable->EmpleadoID }}">{{ $responsable->NombreEmpleado }}</option>
+                                <option value="{{ $responsable->EmpleadoID }}" style="background-color: #1F2937; color: #E5E7EB;">{{ $responsable->NombreEmpleado }}</option>
                                 @endforeach
                             </select>
 
-                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Categoria <span class="text-red-500">*</span></label>
+                            <label class="text-sm font-semibold" style="color: #6B7280;">Categoria <span style="color: #F87171;">*</span></label>
                             <select 
                                 id="tipo-select"
                                 x-model="ticketTipoID"
                                 :disabled="selected.estatus === 'Cerrado'"
-                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
-                                <option value="">Seleccione</option>
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
+                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                :style="selected.estatus === 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
+                                <option value="" style="background-color: #1F2937; color: #E5E7EB;">Seleccione</option>
                             </select>
                             
-                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Grupo <span class="text-red-500">*</span></label>
+                            <label class="text-sm font-semibold" style="color: #6B7280;">Grupo <span style="color: #F87171;">*</span></label>
                             <select 
                                 id="subtipo-select"
                                 x-model="ticketSubtipoID"
-                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600" 
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
+                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                :style="(!ticketTipoID || selected.estatus === 'Cerrado') ? 'background-color: #1C1F26; color: #6B7280;' : ''"
                                 :disabled="!ticketTipoID || selected.estatus === 'Cerrado'">
-                                <option value="">Seleccione</option>
+                                <option value="" style="background-color: #1F2937; color: #E5E7EB;">Seleccione</option>
                             </select>
                             
-                            <label class="text-md font-semibold text-gray-600 dark:text-gray-700">Subgrupo</label>
+                            <label class="text-sm font-semibold" style="color: #6B7280;">Subgrupo</label>
                             <select 
                                 id="tertipo-select"
                                 x-model="ticketTertipoID"
-                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out hover:border-black hover:ring-1 hover:ring-black disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600" 
+                                class="w-full mt-1 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
+                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                :style="(!ticketSubtipoID || selected.estatus === 'Cerrado') ? 'background-color: #1C1F26; color: #6B7280;' : ''"
                                 :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'">
-                                <option value="">Seleccione</option>
+                                <option value="" style="background-color: #1F2937; color: #E5E7EB;">Seleccione</option>
                             </select>
 
                             <!-- Botón Guardar Cambios -->
                             <button
                                 @click="guardarCambiosTicket()"
                                 :disabled="guardandoTicket"
-                                class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                                class="mt-4 w-full disabled:cursor-not-allowed font-medium py-2.5 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                                style="background-color: #3B82F6; color: white;"
+                                onmouseover="if(!guardandoTicket) this.style.backgroundColor='#2563EB'"
+                                onmouseout="if(!guardandoTicket) this.style.backgroundColor='#3B82F6'"
+                                :style="guardandoTicket ? 'background-color: #1C1F26; color: #6B7280;' : ''">
                                 <svg x-show="!guardandoTicket" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -878,12 +1005,12 @@
                     </div>
                 </aside>
 
-                <main class="flex flex-col overflow-hidden">
+                <main class="flex flex-col overflow-hidden" style="background-color: #1F2937;">
                     <!-- Header del Ticket -->
-                    <div class="flex justify-between items-start p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-start p-6" style="background-color: #242933; border-bottom: 1px solid #2A2F3A;">
                         <div>
-                            <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-700 mb-1" x-text="selected.asunto"></h1>
-                            <p class="text-sm text-gray-500 dark:text-gray-700">
+                            <h1 class="text-2xl font-semibold mb-1" style="color: #F3F4F6;" x-text="selected.asunto"></h1>
+                            <p class="text-sm" style="color: #9CA3AF;">
                                 <span x-text="selected.fecha"></span>
                             </p>
                         </div>
@@ -907,8 +1034,8 @@
                             </button>   -->
                             
                           
-                            <button @click="cerrarModal" class="text-gray-400 dark:text-gray-700 hover:text-gray-600 dark:hover:text-gray-300 transition p-2">
-                                <span class="text-xl">x</span>
+                            <button @click="cerrarModal" class="transition p-2" style="color: #9CA3AF;" onmouseover="this.style.color='#F3F4F6'" onmouseout="this.style.color='#9CA3AF'">
+                                <span class="text-xl">×</span>
                             </button>
                         </div>
                     </div>
@@ -936,55 +1063,55 @@
                     </div>
 
                     <!-- Área de Conversaciones -->
-                    <div class="flex-1 overflow-y-auto p-6 space-y-6" id="chat-container">
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6" id="chat-container" style="background-color: #1F2937;">
                         <!-- Mensajes dinámicos del chat -->
                         <template x-for="mensaje in mensajes" :key="mensaje.id">
                             <div class="flex gap-4" :class="mensaje.remitente === 'soporte' ? 'justify-end' : 'justify-start'">
                                 <div class="flex-shrink-0" :class="mensaje.remitente === 'soporte' ? 'order-2' : 'order-1'">
                                     <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm"
-                                         :class="mensaje.remitente === 'soporte' ? 'bg-blue-500' : 'bg-green-500'"
+                                         :style="mensaje.remitente === 'soporte' ? 'background-color: #3B82F6;' : 'background-color: #22C55E;'"
                                          x-text="obtenerIniciales(mensaje.nombre_remitente)">
                                     </div>
                                 </div>
                                 <div class="flex-1" :class="mensaje.remitente === 'soporte' ? 'order-1' : 'order-2'">
                                 <div class="flex items-center gap-2 mb-2">
-                                        <span class="font-semibold text-gray-800 dark:text-gray-700" x-text="mensaje.nombre_remitente"></span>
-                                        <span class="text-sm text-gray-500 dark:text-gray-700" x-text="mensaje.created_at"></span>
-                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'soporte'" class="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded flex items-center gap-1">
+                                        <span class="font-semibold" style="color: #E5E7EB;" x-text="mensaje.nombre_remitente"></span>
+                                        <span class="text-sm" style="color: #6B7280;" x-text="mensaje.created_at"></span>
+                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'soporte'" class="text-xs px-2 py-1 rounded flex items-center gap-1" style="color: #3B82F6; background-color: rgba(59, 130, 246, 0.15);">
                                             📤 Correo Enviado
                                         </span>
-                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'usuario'" class="text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="mensaje.es_correo && mensaje.remitente === 'usuario'" class="text-xs px-2 py-1 rounded flex items-center gap-1" style="color: #22C55E; background-color: rgba(34, 197, 94, 0.15);">
                                             📥 Respuesta Recibida
                                         </span>
-                                        <span x-show="!mensaje.es_correo" class="text-xs text-gray-600 dark:text-gray-700 bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="!mensaje.es_correo" class="text-xs px-2 py-1 rounded flex items-center gap-1" style="color: #9CA3AF; background-color: #1C1F26; border: 1px solid #2A2F3A;">
                                             💬 Nota Interna
                                         </span>
-                                        <span x-show="mensaje.thread_id" class="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="mensaje.thread_id" class="text-xs px-2 py-1 rounded flex items-center gap-1" style="color: #A855F7; background-color: rgba(168, 85, 247, 0.15);">
                                             🔗 En Hilo
                                         </span>
-                                        <span x-show="!mensaje.leido" class="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded flex items-center gap-1">
+                                        <span x-show="!mensaje.leido" class="text-xs px-2 py-1 rounded flex items-center gap-1" style="color: #F97316; background-color: rgba(249, 115, 22, 0.15);">
                                             ⚠ No Leído
                                         </span>
                                     </div>
                                     <div class="rounded-lg p-4 border"
-                                         :class="mensaje.remitente === 'soporte' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'">
-                                        <div x-show="mensaje.es_correo" class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                                         :style="mensaje.remitente === 'soporte' ? 'background-color: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);' : 'background-color: #1C1F26; border-color: #2A2F3A;'">
+                                        <div x-show="mensaje.es_correo" class="text-sm mb-2" style="color: #9CA3AF;">
                                             <div x-show="mensaje.correo_remitente">
                                                 <span class="font-medium">Desde:</span> <span x-text="mensaje.correo_remitente"></span>
                                             </div>
-                                            <div x-show="mensaje.message_id" class="text-xs text-gray-500 dark:text-gray-700 mt-1">
+                                            <div x-show="mensaje.message_id" class="text-xs mt-1" style="color: #6B7280;">
                                                 <span class="font-medium">Message-ID:</span> <span x-text="mensaje.message_id"></span>
                                             </div>
-                                            <div x-show="mensaje.thread_id" class="text-xs text-gray-500 dark:text-gray-700 mt-1">
+                                            <div x-show="mensaje.thread_id" class="text-xs mt-1" style="color: #6B7280;">
                                                 <span class="font-medium">Thread-ID:</span> <span x-text="mensaje.thread_id"></span>
                                             </div>
                                         </div>
-                                        <div class="text-gray-800 dark:text-gray-700 mt-3" x-html="formatearMensaje(mensaje.mensaje)"></div>
-                                        <div x-show="mensaje.adjuntos && mensaje.adjuntos.length > 0" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                                            <div class="text-xs text-gray-500 dark:text-gray-700 mb-2">Adjuntos:</div>
+                                        <div class="mt-3" style="color: #E5E7EB;" x-html="formatearMensaje(mensaje.mensaje)"></div>
+                                        <div x-show="mensaje.adjuntos && mensaje.adjuntos.length > 0" class="mt-3 pt-3" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                            <div class="text-xs mb-2" style="color: #6B7280;">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="adjunto in mensaje.adjuntos" :key="adjunto.name">
-                                                    <span class="text-xs bg-gray-100 px-2 py-1 rounded flex items-center gap-1">
+                                                    <span class="text-xs px-2 py-1 rounded flex items-center gap-1" style="background-color: #1C1F26; border: 1px solid #2A2F3A; color: #9CA3AF;">
                                                         📎 <span x-text="adjunto.name"></span>
                                                     </span>
                                                 </template>
@@ -997,8 +1124,8 @@
 
                         <!-- Mensaje cuando no hay conversaciones -->
                         <div x-show="mensajes.length === 0" class="text-center py-8">
-                            <div class="text-gray-400 dark:text-gray-700 text-sm">
-                                <svg class="mx-auto h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div class="text-sm" style="color: #6B7280;">
+                                <svg class="mx-auto h-12 w-12 mb-4" style="color: #6B7280;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>
                                 No hay mensajes aún. Envía una respuesta para iniciar la conversación.
@@ -1006,11 +1133,11 @@
                         </div>
 
                         <!-- Área para escribir nueva respuesta - Estilo Cliente de Correo -->
-                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                        <div class="rounded-lg" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
                             <!-- Mensaje informativo cuando está en Pendiente -->
                             <div x-show="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'" 
-                                 class="p-4 bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-800">
-                                <p class="text-sm text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                                 class="p-4" style="background-color: rgba(251, 191, 36, 0.15); border-bottom: 1px solid rgba(251, 191, 36, 0.3);">
+                                <p class="text-sm flex items-center gap-2" style="color: #FBBF24;">
                                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                     </svg>
@@ -1018,18 +1145,23 @@
                                 </p>
                             </div>
                             <!-- Encabezado de Composición -->
-                            <div class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900" 
-                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
+                            <div class="p-4" 
+                                 style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;"
+                                 :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
                                 <div class="space-y-3">
                                     <!-- Campo Para -->
                                     <div class="flex items-center gap-2">
-                                        <label class="text-sm font-medium text-gray-700 dark:text-gray-700 w-16 flex-shrink-0">Para:</label>
+                                        <label class="text-sm font-medium w-16 flex-shrink-0" style="color: #6B7280;">Para:</label>
                                         <input 
                                             type="email"
                                             :value="selected.correo || ''"
                                             readonly
                                             :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed">
+                                            class="flex-1 px-3 py-2 rounded-md text-sm focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
+                                            style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                                            onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                            onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                            :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
                                         {{-- Botones de Copia y Copia Oculta comentados
                                         <div class="flex items-center gap-2">
                                             <button 
@@ -1072,14 +1204,15 @@
                                     
                                     <!-- Campo Asunto -->
                                     <div class="flex items-center gap-2">
-                                        <label class="text-sm font-medium text-gray-700 dark:text-gray-700 w-16 flex-shrink-0">Asunto: <span class="text-red-500">*</span></label>
+                                        <label class="text-sm font-medium w-16 flex-shrink-0" style="color: #6B7280;">Asunto: <span style="color: #F87171;">*</span></label>
                                         <input 
                                             type="text"
                                             x-model="asuntoCorreo"
                                             required
                                             readonly
                                             :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-sm dark:text-gray-300 focus:outline-none cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800"
+                                            class="flex-1 px-3 py-2 rounded-md text-sm focus:outline-none cursor-not-allowed"
+                                            style="background-color: #1C1F26; border: 1px solid #2A2F3A; color: #9CA3AF;"
                                             placeholder="Asunto del correo">
                                     </div>
                                 </div>
@@ -1220,41 +1353,64 @@
                             --}}
                             
                             <!-- Sección de Adjuntos -->
-                            <div class="border-b border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-gray-800"
-                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
-                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                    <p class="text-xs text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                            <div class="p-3"
+                                 style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;"
+                                 :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
+                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 rounded-lg" style="background-color: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3);">
+                                    <p class="text-xs flex items-center gap-2" style="color: #FBBF24;">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                                         </svg>
                                         <span>Este ticket está cerrado. No se pueden agregar nuevos mensajes o adjuntos.</span>
                                     </p>
                                 </div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <label 
-                                        for="adjuntos"
-                                        :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
-                                        class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition text-sm font-medium"
-                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'Adjuntar archivo')">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                
+                                <!-- Área de Drag and Drop -->
+                                <div 
+                                    id="drag-drop-area"
+                                    :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+                                    class="border-2 border-dashed rounded-lg p-4 transition-all duration-200 mb-2"
+                                    style="background-color: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.3);"
+                                    @dragover.prevent="handleDragOver($event)"
+                                    @dragleave.prevent="handleDragLeave($event)"
+                                    @drop.prevent="handleDrop($event)"
+                                    @click="!((selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) && document.getElementById('adjuntos').click()"
+                                    :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'Arrastra archivos aquí o haz clic para seleccionar')">
+                                    <div class="flex flex-col items-center justify-center gap-2 text-center">
+                                        <svg class="w-8 h-8" style="color: #3B82F6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                         </svg>
-                                        <span>Elegir archivos</span>
-                                    </label>
-                                    <span x-show="archivosAdjuntos.length > 0" class="text-sm text-gray-600 dark:text-gray-300 font-medium">
-                                        <span x-text="archivosAdjuntos.length"></span> archivo<span x-show="archivosAdjuntos.length !== 1">s</span>
+                                        <div>
+                                            <span class="text-sm font-medium" style="color: #3B82F6;">Arrastra archivos aquí o </span>
+                                            <label 
+                                                for="adjuntos"
+                                                class="text-sm font-medium underline cursor-pointer"
+                                                style="color: #3B82F6;"
+                                                @click.stop
+                                                :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'cursor-not-allowed' : ''">
+                                                haz clic para seleccionar
+                                            </label>
+                                        </div>
+                                        <p class="text-xs" style="color: #6B7280;">PDF, DOC, DOCX, TXT, JPG, PNG, GIF (máx. 10MB por archivo)</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-end mb-2">
+                                    <span x-show="archivosAdjuntos.length > 0" class="text-sm font-medium" style="color: #9CA3AF;">
+                                        <span x-text="archivosAdjuntos.length"></span> archivo<span x-show="archivosAdjuntos.length !== 1">s</span> seleccionado<span x-show="archivosAdjuntos.length !== 1">s</span>
                                     </span>
                                 </div>
                                 
                                 <!-- Lista visual de archivos adjuntos -->
                                 <div x-show="archivosAdjuntos.length > 0" class="mt-3 space-y-2">
                                     <template x-for="(archivo, index) in archivosAdjuntos" :key="index">
-                                        <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                                        <div class="flex items-center gap-3 p-2 rounded-lg border transition" style="background-color: #1F2937; border-color: #2A2F3A;" onmouseover="this.style.backgroundColor='#242933'" onmouseout="this.style.backgroundColor='#1F2937'">
                                             <!-- Icono según tipo de archivo -->
                                             <div class="flex-shrink-0">
                                                 <!-- Imagen -->
                                                 <svg x-show="archivo.type && archivo.type.startsWith('image/')" 
-                                                     class="w-6 h-6 text-green-600" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #22C55E;"
                                                      fill="none" 
                                                      stroke="currentColor" 
                                                      viewBox="0 0 24 24"
@@ -1263,7 +1419,8 @@
                                                 </svg>
                                                 <!-- PDF -->
                                                 <svg x-show="archivo.type && archivo.type === 'application/pdf'" 
-                                                     class="w-6 h-6 text-red-600" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #F87171;"
                                                      fill="none" 
                                                      stroke="currentColor" 
                                                      viewBox="0 0 24 24"
@@ -1272,7 +1429,8 @@
                                                 </svg>
                                                 <!-- Word/Document -->
                                                 <svg x-show="archivo.type && (archivo.type.includes('word') || archivo.type.includes('document') || archivo.name.endsWith('.doc') || archivo.name.endsWith('.docx'))" 
-                                                     class="w-6 h-6 text-blue-600" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #3B82F6;"
                                                      fill="none" 
                                                      stroke="currentColor" 
                                                      viewBox="0 0 24 24"
@@ -1281,7 +1439,8 @@
                                                 </svg>
                                                 <!-- Genérico -->
                                                 <svg x-show="!archivo.type || (!archivo.type.startsWith('image/') && archivo.type !== 'application/pdf' && !archivo.type.includes('word') && !archivo.type.includes('document') && !archivo.name.endsWith('.doc') && !archivo.name.endsWith('.docx'))" 
-                                                     class="w-6 h-6 text-gray-600" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #9CA3AF;"
                                                      fill="none" 
                                                      stroke="currentColor" 
                                                      viewBox="0 0 24 24">
@@ -1291,8 +1450,8 @@
                                             
                                             <!-- Información del archivo -->
                                             <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium text-gray-900 truncate" x-text="archivo.name"></p>
-                                                <p class="text-xs text-gray-500" x-text="formatearTamañoArchivo(archivo.size)"></p>
+                                                <p class="text-sm font-medium truncate" style="color: #E5E7EB;" x-text="archivo.name"></p>
+                                                <p class="text-xs" style="color: #6B7280;" x-text="formatearTamañoArchivo(archivo.size)"></p>
                                             </div>
                                             
                                             <!-- Botón para eliminar -->
@@ -1300,7 +1459,10 @@
                                                 type="button"
                                                 @click="eliminarArchivo(index)"
                                                 :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
-                                                class="flex-shrink-0 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                class="flex-shrink-0 p-1.5 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                style="color: #F87171;"
+                                                onmouseover="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) this.style.backgroundColor='rgba(248, 113, 113, 0.15)'"
+                                                onmouseout="this.style.backgroundColor='transparent'"
                                                 title="Eliminar archivo">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1323,49 +1485,59 @@
                             
                             <!-- Área de Composición del Mensaje -->
                             <div class="p-4"
-                                 :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
+                                 style="background-color: #0F1115;"
+                                 :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
                                 <textarea 
                                     id="editor-mensaje"
                                     x-model="nuevoMensaje"
                                     :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                    class="w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                    placeholder="Escribe tu mensaje aquí..."></textarea>
+                                    class="w-full disabled:cursor-not-allowed rounded-md"
+                                    style="background-color: #0F1115; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.75rem; min-height: 300px;"
+                                    placeholder="Escribe tu mensaje aquí..."
+                                    :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''"></textarea>
                                 
                                 <!-- Información del ticket (mostrada como correo citado) -->
-                                <div class="mt-4 pt-4 border-t border-gray-200">
-                                    <div class="text-xs text-gray-500 space-y-1">
+                                <div class="mt-4 pt-4" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                    <div class="text-xs space-y-1" style="color: #9CA3AF;">
                                         <div class="flex items-center gap-2">
-                                            <span class="font-medium text-gray-600">De:</span>
-                                            <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded">Soporte TI</span>
+                                            <span class="font-medium">De:</span>
+                                            <span class="px-2 py-0.5 rounded" style="background-color: rgba(168, 85, 247, 0.15); color: #A855F7;">Soporte TI</span>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <span class="font-medium text-gray-600">Fecha:</span>
-                                            <span x-text="new Date().toLocaleString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
+                                            <span class="font-medium">Fecha:</span>
+                                            <span style="color: #E5E7EB;" x-text="new Date().toLocaleString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <span class="font-medium text-gray-600">Para:</span>
-                                            <span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded" x-text="selected.correo || 'No disponible'"></span>
+                                            <span class="font-medium">Para:</span>
+                                            <span class="px-2 py-0.5 rounded" style="background-color: rgba(168, 85, 247, 0.15); color: #A855F7;" x-text="selected.correo || 'No disponible'"></span>
                                         </div>
                                         <div class="flex items-center gap-2">
-                                            <span class="font-medium text-gray-600">Asunto:</span>
-                                            <span x-text="'Ticket #' + (selected.id || '')"></span>
+                                            <span class="font-medium">Asunto:</span>
+                                            <span style="color: #E5E7EB;" x-text="'Ticket #' + (selected.id || '')"></span>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Botón de envío -->
-                                <div class="flex justify-end items-center gap-3 mt-4 pt-4 border-t border-gray-200">
+                                <div class="flex justify-end items-center gap-3 mt-4 pt-4" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
                                     <button 
                                         type="button"
                                         @click="limpiarEditor()"
                                         :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
-                                        class="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-100 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                        class="px-4 py-2 rounded-lg transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style="background-color: transparent; color: #9CA3AF;"
+                                        onmouseover="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) this.style.color='#F3F4F6'"
+                                        onmouseout="this.style.color='#9CA3AF'">
                                         Descartar
                                     </button>
                                     <button 
                                         @click="enviarRespuesta()"
                                         :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
-                                        class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2"
+                                        class="font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2 disabled:cursor-not-allowed"
+                                        style="background-color: #3B82F6; color: white;"
+                                        onmouseover="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0)) this.style.backgroundColor='#2563EB'"
+                                        onmouseout="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0)) this.style.backgroundColor='#3B82F6'"
+                                        :style="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0) ? 'background-color: #1C1F26; color: #6B7280;' : ''"
                                         :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'El botón se activará cuando haya contenido en el mensaje y un asunto')">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
@@ -1378,7 +1550,7 @@
 
                     </div>
 
-                    <!-- Área para Procesar Respuesta de Correo -->image.png
+                    <!-- Área para Procesar Respuesta de Correo -->
                     <div x-show="mostrarProcesarRespuesta" 
                          x-transition:enter="transition ease-out duration-300"
                          x-transition:enter-start="opacity-0 transform scale-95"
@@ -1386,23 +1558,24 @@
                          x-transition:leave="transition ease-in duration-200"
                          x-transition:leave-start="opacity-100 transform scale-100"
                          x-transition:leave-end="opacity-0 transform scale-95"
-                         class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 mt-4">
+                         class="rounded-lg p-4 mt-4"
+                         style="background-color: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3);">
                         
                         <div class="flex items-center gap-2 mb-3">
-                            <span class="text-sm font-medium text-green-700 dark:text-green-300">📧 Procesar Respuesta de Correo:</span>
-                            <span class="text-xs text-green-600 dark:text-green-400">(Procesamiento manual cuando Webklex no funciona)</span>
+                            <span class="text-sm font-medium" style="color: #22C55E;">📧 Procesar Respuesta de Correo:</span>
+                            <span class="text-xs" style="color: #4ADE80;">(Procesamiento manual cuando Webklex no funciona)</span>
                         </div>
                         
-                        <div class="bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-3">
+                        <div class="rounded-lg p-3 mb-3" style="background-color: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3);">
                             <div class="flex items-start gap-2">
-                                <div class="text-green-600 mt-0.5">
+                                <div class="mt-0.5" style="color: #22C55E;">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                                     </svg>
                                 </div>
-                                <div class="text-sm text-green-800">
+                                <div class="text-sm" style="color: #4ADE80;">
                                     <p class="font-medium mb-1">¿Cómo procesar respuestas de correo?</p>
-                                    <ol class="text-xs space-y-1 list-decimal list-inside">
+                                    <ol class="text-xs space-y-1 list-decimal list-inside" style="color: #9CA3AF;">
                                         <li><strong>Automático:</strong> El procesamiento automático se ejecuta cada 5 minutos mediante un job programado</li>
                                         <li><strong>Manual:</strong> Si el automático falla, usa esta área</li>
                                         <li>El usuario recibe tu correo con instrucciones</li>
@@ -1416,33 +1589,42 @@
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                             <div>
-                                <label class="block text-xs font-medium text-green-600 mb-1">Nombre del usuario:</label>
+                                <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Nombre del usuario:</label>
                                 <input 
                                     x-model="respuestaManual.nombre"
                                     type="text" 
-                                    class="w-full p-2 border border-green-300 rounded text-sm"
+                                    class="w-full p-2 rounded text-sm"
+                                    style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
                                     placeholder="Nombre del usuario">
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-green-600 mb-1">Correo del usuario:</label>
+                                <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Correo del usuario:</label>
                                 <input 
                                     x-model="respuestaManual.correo"
                                     type="email" 
-                                    class="w-full p-2 border border-green-300 rounded text-sm"
+                                    class="w-full p-2 rounded text-sm"
+                                    style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
                                     placeholder="correo@usuario.com">
                             </div>
                         </div>
                         
                         <textarea 
                             x-model="respuestaManual.mensaje"
-                            class="w-full h-20 p-3 border border-green-300 rounded-lg resize-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                            class="w-full h-20 p-3 rounded-lg resize-none text-sm"
+                            style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                            onfocus="this.style.borderColor='#2563EB'"
+                            onblur="this.style.borderColor='#2A2F3A'"
                             placeholder="Copia y pega aquí la respuesta que recibiste por correo..."></textarea>
                         
                         <div class="flex justify-end mt-3">
                             <button 
                                 @click="agregarRespuestaManual()"
                                 :disabled="!respuestaManual.mensaje.trim()"
-                                class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition text-sm">
+                                class="font-medium py-2 px-4 rounded-lg transition text-sm"
+                                style="background-color: #22C55E; color: white;"
+                                onmouseover="if(respuestaManual.mensaje.trim()) this.style.backgroundColor='#16A34A'"
+                                onmouseout="if(respuestaManual.mensaje.trim()) this.style.backgroundColor='#22C55E'"
+                                :style="!respuestaManual.mensaje.trim() ? 'background-color: #1C1F26; color: #6B7280;' : ''">
                                 Procesar Respuesta de Correo
                             </button>
                         </div>
@@ -1458,52 +1640,53 @@
     <div
         x-show="mostrarModalMetricas"
         x-cloak
-        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/50 dark:bg-[rgba(15,17,21,0.85)]"
         @click.self="mostrarModalMetricas = false">
         <div
-            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            class="rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border bg-white dark:bg-[#1C1F26] border-gray-200 dark:border-[#2A2F3A]"
             @click.stop>
             <!-- Header del Modal -->
-            <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4 flex justify-between items-center">
-                <h2 class="text-white text-xl font-semibold flex items-center gap-2">
+            <div class="px-6 py-4 flex justify-between items-center bg-gradient-to-r from-purple-600 to-purple-700 dark:from-purple-600 dark:to-purple-700">
+                <h2 class="text-white dark:text-[#F3F4F6] text-xl font-semibold flex items-center gap-2">
                     <i class="fas fa-chart-line"></i>
                     Ajustar Métricas de Tiempo Estimado
                 </h2>
                 <button
                     @click="mostrarModalMetricas = false"
-                    class="text-white hover:text-gray-200 transition">
+                    class="text-white dark:text-[#E5E7EB] hover:text-gray-200 dark:hover:text-gray-300 transition">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
 
             <!-- Contenido del Modal -->
-            <div class="flex-1 overflow-y-auto p-6">
-                <div class="mb-4 text-sm text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"></i>
+            <div class="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#1C1F26]">
+                <!-- Bloque informativo -->
+                <div class="mb-4 text-sm rounded-lg p-3 border bg-blue-50 dark:bg-[#1F2937] border-blue-200 dark:border-[#2A2F3A] text-blue-600 dark:text-blue-400">
+                    <i class="fas fa-info-circle mr-2"></i>
                     Configure el tiempo estimado en minutos para cada tipo de ticket. Este tiempo es utilizado para las alertas de la resolución de tickets.
                 </div>
 
                 <!-- Tabla de Métricas -->
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-700">
+                    <table class="min-w-full border-collapse">
+                        <thead class="bg-gray-50 dark:bg-[#242933]">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-[#9CA3AF] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A]">
                                     Tipo de Ticket
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-[#9CA3AF] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A]">
                                     Tiempo Estimado (Minutos)
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-[#9CA3AF] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A]">
                                     Equivalente
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody class="bg-white dark:bg-[#1C1F26]">
                             <template x-if="cargandoMetricas">
                                 <tr>
                                     <td colspan="3" class="px-4 py-8 text-center">
-                                        <div class="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-700">
+                                        <div class="flex items-center justify-center gap-2 text-gray-500 dark:text-[#9CA3AF]">
                                             <i class="fas fa-spinner fa-spin"></i>
                                             <span>Cargando métricas...</span>
                                         </div>
@@ -1512,9 +1695,10 @@
                             </template>
                             <template x-if="!cargandoMetricas && metricasTipos && metricasTipos.length > 0">
                                 <template x-for="(tipo, index) in metricasTipos" :key="tipo.TipoID">
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <tr class="transition bg-white dark:bg-[#1F2937] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A] hover:bg-gray-50 dark:hover:bg-[#273244]">
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100" x-text="tipo.NombreTipo"></span>
+                                            <span class="text-sm font-medium text-gray-900 dark:text-[#E5E7EB]"
+                                                  x-text="tipo.NombreTipo"></span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             <input
@@ -1524,17 +1708,18 @@
                                                 :value="tipo.TiempoEstimadoMinutos || ''"
                                                 @input="tipo.TiempoEstimadoMinutos = $event.target.value ? parseInt($event.target.value) : null; tipo.cambiado = true"
                                                 placeholder="0"
-                                                class="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                                class="w-32 px-3 py-2 rounded-md text-sm border bg-white dark:bg-[#0F1115] border-gray-300 dark:border-[#2A2F3A] text-gray-900 dark:text-[#E5E7EB] placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition">
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm text-gray-600 dark:text-gray-700" x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
+                                            <span class="text-sm text-gray-600 dark:text-[#9CA3AF]"
+                                                  x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
                                         </td>
                                     </tr>
                                 </template>
                             </template>
                             <template x-if="!cargandoMetricas && (!metricasTipos || metricasTipos.length === 0)">
                                 <tr>
-                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-700">
+                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-[#6B7280]">
                                         <div class="flex flex-col items-center gap-2">
                                             <i class="fas fa-info-circle text-2xl"></i>
                                             <span>No hay tipos de tickets disponibles</span>
@@ -1548,20 +1733,22 @@
             </div>
 
             <!-- Footer del Modal -->
-            <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 flex justify-between items-center border-t border-gray-200 dark:border-gray-600">
-                <div class="text-sm text-gray-600 dark:text-gray-300">
+            <div class="px-6 py-4 flex justify-between items-center border-t bg-gray-50 dark:bg-[#1C1F26] border-gray-200 dark:border-[#2A2F3A]">
+                <div class="text-sm text-gray-600 dark:text-[#9CA3AF]">
                     <span x-text="`${metricasTipos.filter(t => t.cambiado).length} cambios pendientes`"></span>
                 </div>
                 <div class="flex gap-3">
+                    <!-- Botón Cancelar -->
                     <button
                         @click="mostrarModalMetricas = false"
-                        class="px-4 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition">
+                        class="px-4 py-2 font-medium rounded-lg transition bg-transparent dark:bg-transparent text-gray-700 dark:text-[#9CA3AF] border border-gray-300 dark:border-[#2A2F3A] hover:bg-gray-100 dark:hover:text-[#F3F4F6]">
                         Cancelar
                     </button>
+                    <!-- Botón Guardar Cambios -->
                     <button
                         @click="guardarMetricas()"
                         :disabled="guardandoMetricas || metricasTipos.filter(t => t.cambiado).length === 0"
-                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition flex items-center gap-2">
+                        class="px-4 py-2 font-medium rounded-lg transition flex items-center gap-2 disabled:cursor-not-allowed bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white disabled:from-gray-400 disabled:to-gray-500 disabled:opacity-50 dark:disabled:bg-[#1C1F26] dark:disabled:text-[#6B7280]">
                         <i class="fas fa-save" :class="{'fa-spin': guardandoMetricas}"></i>
                         <span x-text="guardandoMetricas ? 'Guardando...' : 'Guardar Cambios'"></span>
                     </button>
@@ -1619,7 +1806,7 @@
                 'resueltos': 1
             },
             paginaTabla: 1,
-            elementosPorPagina: 10,
+            elementosPorPagina: 5,
             // Variables de ordenamiento
             ordenColumna: 'fecha',
             ordenDireccion: 'desc',
@@ -1786,7 +1973,24 @@
                                     // Actualizar el texto de tiempo
                                     const tiempoTexto = tiempoContainer.querySelector('.tiempo-texto');
                                     if (tiempoTexto) {
-                                        tiempoTexto.textContent = `${tiempoInfo.transcurrido}h / ${tiempoInfo.estimado}h`;
+                                        // Convertir horas decimales a horas y minutos
+                                        const formatearHoras = (horas) => {
+                                            if (!horas || horas === 0 || horas === '') return '-';
+                                            const h = parseFloat(horas);
+                                            if (isNaN(h)) return '-';
+                                            const horasEnteras = Math.floor(h);
+                                            const minutos = Math.round((h - horasEnteras) * 60);
+                                            if (horasEnteras > 0 && minutos > 0) {
+                                                return `${horasEnteras}h ${minutos}m`;
+                                            } else if (horasEnteras > 0) {
+                                                return `${horasEnteras}h`;
+                                            } else if (minutos > 0) {
+                                                return `${minutos}m`;
+                                            } else {
+                                                return '0m';
+                                            }
+                                        };
+                                        tiempoTexto.textContent = `${formatearHoras(tiempoInfo.transcurrido)} / ${formatearHoras(tiempoInfo.estimado)}`;
                                     }
                                     
                                     // Actualizar la barra de progreso
@@ -2621,16 +2825,98 @@
                     return;
                 }
                 
-                // Limpiar y agregar todos los archivos seleccionados
-                this.archivosAdjuntos = [];
+                // Validar y agregar archivos
+                this.procesarArchivos(files);
+            },
+            
+            procesarArchivos(files) {
+                const archivosValidos = [];
+                const tiposPermitidos = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif'];
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                
                 files.forEach(file => {
+                    const extension = '.' + file.name.split('.').pop().toLowerCase();
+                    if (tiposPermitidos.includes(extension)) {
+                        if (file.size <= maxSize) {
+                            archivosValidos.push(file);
+                        } else {
+                            alert(`El archivo "${file.name}" excede el tamaño máximo de 10MB`);
+                        }
+                    } else {
+                        alert(`El archivo "${file.name}" no es un tipo permitido`);
+                    }
+                });
+                
+                // Agregar archivos válidos a la lista
+                archivosValidos.forEach(file => {
                     this.archivosAdjuntos.push(file);
                 });
+                
+                // Actualizar el input file
+                const adjuntosInput = document.getElementById('adjuntos');
+                if (adjuntosInput) {
+                    const dataTransfer = new DataTransfer();
+                    this.archivosAdjuntos.forEach(archivo => {
+                        dataTransfer.items.add(archivo);
+                    });
+                    adjuntosInput.files = dataTransfer.files;
+                }
                 
                 // Forzar actualización de Alpine.js
                 this.$nextTick(() => {
                     console.log('Archivos adjuntos actualizados:', this.archivosAdjuntos.length);
                 });
+            },
+            
+            handleDragOver(event) {
+                if (this.selected.estatus === 'Cerrado' || this.ticketEstatus === 'Cerrado' || 
+                    (this.selected.estatus === 'Pendiente' || this.ticketEstatus === 'Pendiente')) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                const dragArea = document.getElementById('drag-drop-area');
+                if (dragArea) {
+                    dragArea.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+                    dragArea.style.borderColor = '#3B82F6';
+                    dragArea.style.borderStyle = 'solid';
+                }
+            },
+            
+            handleDragLeave(event) {
+                if (this.selected.estatus === 'Cerrado' || this.ticketEstatus === 'Cerrado' || 
+                    (this.selected.estatus === 'Pendiente' || this.ticketEstatus === 'Pendiente')) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                const dragArea = document.getElementById('drag-drop-area');
+                if (dragArea && !dragArea.contains(event.relatedTarget)) {
+                    dragArea.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+                    dragArea.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                    dragArea.style.borderStyle = 'dashed';
+                }
+            },
+            
+            handleDrop(event) {
+                if (this.selected.estatus === 'Cerrado' || this.ticketEstatus === 'Cerrado' || 
+                    (this.selected.estatus === 'Pendiente' || this.ticketEstatus === 'Pendiente')) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                
+                const dragArea = document.getElementById('drag-drop-area');
+                if (dragArea) {
+                    dragArea.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+                    dragArea.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                    dragArea.style.borderStyle = 'dashed';
+                }
+                
+                const files = Array.from(event.dataTransfer.files || []);
+                if (files.length > 0) {
+                    this.procesarArchivos(files);
+                }
             },
 
             eliminarArchivo(index) {
@@ -3583,6 +3869,26 @@
                 } else {
                     return `${mins}m`;
                 }
+            },
+            
+            formatearHorasDecimales(horasDecimales) {
+                if (!horasDecimales || horasDecimales === 0 || horasDecimales === '') return '-';
+                
+                const horas = parseFloat(horasDecimales);
+                if (isNaN(horas)) return '-';
+                
+                const horasEnteras = Math.floor(horas);
+                const minutos = Math.round((horas - horasEnteras) * 60);
+                
+                if (horasEnteras > 0 && minutos > 0) {
+                    return `${horasEnteras}h ${minutos}m`;
+                } else if (horasEnteras > 0) {
+                    return `${horasEnteras}h`;
+                } else if (minutos > 0) {
+                    return `${minutos}m`;
+                } else {
+                    return '0m';
+                }
             }
         }
     }
@@ -3590,6 +3896,27 @@
    
     // Hacer las funciones accesibles globalmente para que puedan ser llamadas desde Alpine.js
     window.loadSubtipos = null;
+    
+    // Función global para formatear horas decimales a horas y minutos
+    window.formatearHorasDecimales = function(horasDecimales) {
+        if (!horasDecimales || horasDecimales === 0 || horasDecimales === '') return '-';
+        
+        const horas = parseFloat(horasDecimales);
+        if (isNaN(horas)) return '-';
+        
+        const horasEnteras = Math.floor(horas);
+        const minutos = Math.round((horas - horasEnteras) * 60);
+        
+        if (horasEnteras > 0 && minutos > 0) {
+            return `${horasEnteras}h ${minutos}m`;
+        } else if (horasEnteras > 0) {
+            return `${horasEnteras}h`;
+        } else if (minutos > 0) {
+            return `${minutos}m`;
+        } else {
+            return '0m';
+        }
+    };
     window.loadTertipos = null;
    
     document.addEventListener('DOMContentLoaded', function() {
