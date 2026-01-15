@@ -88,51 +88,24 @@
         border-color: #3b82f6 !important;
     }
     
-    /* Forzar fondos oscuros en tarjetas de Kanban y Lista */
-    .dark [data-categoria].rounded-xl,
-    .dark [data-categoria].rounded-lg,
-    .dark [data-categoria] {
-        background-color: #1f2937 !important;
-        border-color: #374151 !important;
+    /* Scrollbars personalizados para Kanban */
+    .tickets-container ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
     }
     
-    /* Textos en tarjetas - solo los que deberían ser blancos */
-    .dark [data-categoria] h3,
-    .dark [data-categoria] h4,
-    .dark [data-categoria] p,
-    .dark [data-categoria] span:not(.bg-green-200):not(.bg-yellow-200):not(.bg-red-200):not(.bg-red-100):not(.bg-yellow-100):not(.bg-green-100) {
-        color: #ffffff !important;
+    .tickets-container ::-webkit-scrollbar-track {
+        background: #1C1F26;
+        border-radius: 4px;
     }
     
-    /* Mantener colores de badges */
-    .dark [data-categoria] .bg-green-200 {
-        background-color: rgba(34, 197, 94, 0.3) !important;
-        color: #86efac !important;
+    .tickets-container ::-webkit-scrollbar-thumb {
+        background: #2A2F3A;
+        border-radius: 4px;
     }
     
-    .dark [data-categoria] .bg-yellow-200 {
-        background-color: rgba(234, 179, 8, 0.3) !important;
-        color: #fde047 !important;
-    }
-    
-    .dark [data-categoria] .bg-red-200 {
-        background-color: rgba(239, 68, 68, 0.3) !important;
-        color: #fca5a5 !important;
-    }
-    
-    .dark [data-categoria] .bg-red-100 {
-        background-color: rgba(239, 68, 68, 0.2) !important;
-        color: #fca5a5 !important;
-    }
-    
-    .dark [data-categoria] .bg-yellow-100 {
-        background-color: rgba(234, 179, 8, 0.2) !important;
-        color: #fde047 !important;
-    }
-    
-    .dark [data-categoria] .bg-green-100 {
-        background-color: rgba(34, 197, 94, 0.2) !important;
-        color: #86efac !important;
+    .tickets-container ::-webkit-scrollbar-thumb:hover {
+        background: #3A3F4A;
     }
     
     /* Prevenir overflow horizontal en móvil */
@@ -163,7 +136,7 @@
             }, 800);
         }
     "
-    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden">
+    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden bg-[#0F1115] min-h-screen p-6">
     
     <!-- Alert de Tickets Excedidos -->
     <div 
@@ -232,32 +205,32 @@
         @can('tickets.ajustar-metricas')
         <button
             @click="mostrarModalMetricas = true; cargarMetricas()"
-            class="px-3 sm:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm text-sm sm:text-base whitespace-nowrap">
+            class="px-3 sm:px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap">
             <i class="fas fa-cog text-sm"></i>
             <span class="hidden sm:inline">Ajustar Métricas</span>
             <span class="sm:hidden">Métricas</span>
         </button>
         @endcan
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-            <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-700 font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-auto justify-center">
+            <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
+            <div class="flex items-center gap-1 bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
                 <button
                     @click="vista = 'kanban'; localStorage.setItem('ticketsVista', 'kanban')"
-                    :class="vista === 'kanban' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+                    :class="vista === 'kanban' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-columns text-xs"></i>
                     <span class="hidden sm:inline">Kanban</span>
                 </button>
                 <button
                     @click="vista = 'lista'; localStorage.setItem('ticketsVista', 'lista'); prepararDatosLista()"
-                   :class="vista === 'lista' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+                   :class="vista === 'lista' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-list text-xs"></i>
                     <span class="hidden sm:inline">Lista</span>
                 </button>
                 <button
                     @click="vista = 'tabla'; localStorage.setItem('ticketsVista', 'tabla'); $nextTick(() => { prepararDatosTabla(); })"
-                    :class="vista === 'tabla' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-800'"
+                    :class="vista === 'tabla' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-table text-xs"></i>
                     <span class="hidden sm:inline">Tabla</span>
@@ -269,11 +242,11 @@
     <!-- Vista Kanban -->
     <div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
     @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
-    <div class="p-4 text-center shadow-lg rounded-md bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-        <div class="border-b dark:border-gray-700 font-semibold text-gray-700 dark:text-gray-900 dark:bg-gray-200 mb-2 p-2 rounded">{{ $titulo }}</div>
+    <div class="p-4 text-center rounded-lg bg-[#1C1F26] border border-[#2A2F3A]">
+        <div class="bg-[#242933] font-semibold text-[#F3F4F6] mb-2 p-2 rounded">{{ $titulo }}</div>
 
         <div class="relative w-full h-[505px]">
-            <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
+            <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2" style="scrollbar-width: thin; scrollbar-color: #2A2F3A #1C1F26;">
                 @forelse ($ticketsStatus[$key] as $ticket)
                 @php
                 $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
@@ -309,7 +282,7 @@
                 @endphp
 
                 <div
-                    class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-md transition p-4 text-left cursor-pointer"
+                    class="bg-[#1F2937] rounded-lg border border-[#2A2F3A] hover:bg-[#273244] transition-colors p-4 text-left cursor-pointer"
                     data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
@@ -327,35 +300,37 @@
                     data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
                     @click="abrirModalDesdeElemento($el)">
                     <div class="flex justify-between items-start">
-                        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-700 truncate">
+                        <h3 class="text-sm font-semibold text-[#F3F4F6] truncate">
                             Ticket #{{ $ticket->TicketID }} 
                         </h3>
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'bg-green-200 dark:bg-green-900/50 text-green-600 dark:text-green-300' : ($ticket->Prioridad == 'Media' ? 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300' : 'bg-red-200 dark:bg-red-900/50 text-red-600 dark:text-red-300') }}">
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'text-[#22C55E]' : ($ticket->Prioridad == 'Media' ? 'text-[#FBBF24]' : 'text-[#F87171]') }}" style="background-color: {{ $ticket->Prioridad == 'Baja' ? 'rgba(34, 197, 94, 0.15)' : ($ticket->Prioridad == 'Media' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(248, 113, 113, 0.15)') }};">
                             {{ $ticket->Prioridad  }}
                         </span>
                     </div>
 
-                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">
+                    <p class="text-sm text-[#D1D5DB] mt-2 line-clamp-2">
                         {{ Str::limit($ticket->Descripcion, 100, '...') }}
                     </p>
 
                     @if($key === 'proceso' && $nombreResponsable)
-                    <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                            <i class="fas fa-user-tie text-blue-500"></i>
-                            <span class="font-semibold text-gray-700 dark:text-gray-700">Responsable:</span>
-                            <span class="text-gray-800 dark:text-gray-700">{{ $nombreResponsable }}</span>
+                    <div class="mt-2 pt-2 border-t" style="border-color: rgba(255, 255, 255, 0.05);">
+                        <div class="flex items-center gap-2 text-xs text-[#9CA3AF]">
+                            <i class="fas fa-user-tie text-[#3B82F6]"></i>
+                            <span class="font-semibold text-[#9CA3AF]">Responsable:</span>
+                            <span class="text-[#E5E7EB]">{{ $nombreResponsable }}</span>
                         </div>
                     </div>
                     @endif
 
                     @if($key === 'proceso' && $tiempoInfo)
-                    <div class="tiempo-indicador-container mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div class="tiempo-indicador-container mt-2 pt-2 border-t" style="border-color: rgba(255, 255, 255, 0.05);">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-gray-600 dark:text-gray-700">Tiempo:</span>
-                            <span class="badge-estado text-xs px-2 py-0.5 rounded-full font-semibold
-                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300') }}">
+                            <span class="text-xs font-semibold text-[#9CA3AF]">Tiempo:</span>
+                            <span class="badge-estado text-xs px-2 py-0.5 rounded-full font-semibold text-white
+                                {{ $tiempoInfo['estado'] === 'agotado' ? '' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? '' : '') }}"
+                                style="background-color: {{ $tiempoInfo['estado'] === 'agotado' ? 'rgba(239, 68, 68, 0.3)' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(34, 197, 94, 0.3)') }};">
                                 @if($tiempoInfo['estado'] === 'agotado')
                                     <i class="fas fa-exclamation-triangle"></i> Tiempo Agotado
                                 @elseif($tiempoInfo['estado'] === 'por_vencer')
@@ -365,27 +340,27 @@
                                 @endif
                             </span>
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-700">
+                        <div class="text-xs text-[#6B7280]">
                             <span class="tiempo-texto">{{ $tiempoInfo['transcurrido'] }}h / {{ $tiempoInfo['estimado'] }}h</span>
                         </div>
-                        <div class="mt-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                        <div class="mt-1 w-full bg-[#2A2F3A] rounded-full h-1.5">
                             <div class="barra-progreso h-1.5 rounded-full transition-all duration-300
-                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-500' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500') }}"
+                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-[#EF4444]' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-[#FBBF24]' : 'bg-[#22C55E]') }}"
                                 style="width: {{ min($tiempoInfo['porcentaje'], 100) }}%"></div>
                         </div>
                     </div>
                     @endif
 
-                    <div class="flex justify-between items-center mt-3 text-xs text-gray-500 dark:text-gray-300">
-                        <span class="font-semibold text-gray-700 dark:text-gray-700">
+                    <div class="flex justify-between items-center mt-3 text-xs" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
+                        <span class="font-semibold text-[#9CA3AF]">
                             {{ $nombreFormateado }}
                         </span>
-                        <span class="dark:text-gray-300">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
+                        <span class="text-[#6B7280]">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
                     </div>
                 </div>
                 @empty
-                <p class="text-sm text-gray-400 dark:text-gray-700 mt-10">No hay tickets en esta categoría.</p>
+                <p class="text-sm text-[#6B7280] mt-10">No hay tickets en esta categoría.</p>
                 @endforelse
             </div>
         </div>
