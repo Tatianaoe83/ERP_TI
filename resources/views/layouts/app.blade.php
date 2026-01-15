@@ -43,7 +43,7 @@
             max-width: 100%;
         }
 
-        /* Estilos responsivos para el sidebar móvil */
+        /* Estilos responsivos para el sidebar m?vil */
         @media (max-width: 1023px) {
             #sidebar {
                 box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
@@ -53,7 +53,7 @@
                 backdrop-filter: blur(2px);
             }
 
-            /* Scrollbar personalizado para el sidebar móvil */
+            /* Scrollbar personalizado para el sidebar m?vil */
             #sidebar::-webkit-scrollbar {
                 width: 6px;
             }
@@ -84,7 +84,88 @@
             min-width: 0;
         }
 
-        /* Mejoras de accesibilidad y touch targets en móvil */
+        /* Estilos para sidebar colapsado */
+        #sidebar.sidebar-collapsed .sidebar-text {
+            opacity: 0;
+            width: 0;
+            max-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: opacity 0.3s ease, width 0.3s ease, max-width 0.3s ease;
+        }
+
+        #sidebar.sidebar-collapsed .fas,
+        #sidebar.sidebar-collapsed .fa {
+            margin: 0 auto;
+        }
+
+        #sidebar.sidebar-collapsed a,
+        #sidebar.sidebar-collapsed button {
+            justify-content: center !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+
+        #sidebar.sidebar-collapsed .flex.items-center {
+            justify-content: center !important;
+        }
+
+        #sidebar.sidebar-collapsed .flex.items-center.justify-between {
+            justify-content: center !important;
+        }
+
+        /* Ocultar chevron cuando est? colapsado */
+        #sidebar.sidebar-collapsed .fa-chevron-right {
+            display: none !important;
+        }
+
+        /* Ajustar submen?s cuando est? colapsado */
+        #sidebar.sidebar-collapsed ul[x-show] {
+            display: none !important;
+        }
+
+        /* Asegurar que los iconos se centren cuando est? colapsado */
+        #sidebar.sidebar-collapsed li > a,
+        #sidebar.sidebar-collapsed li > button {
+            position: relative;
+        }
+
+        /* Asegurar que los elementos li y botones principales sean visibles */
+        #sidebar.sidebar-collapsed li {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        #sidebar.sidebar-collapsed li.rounded-xl {
+            overflow: visible !important;
+        }
+
+        #sidebar.sidebar-collapsed li button {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        #sidebar.sidebar-collapsed li a {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* Asegurar que el contenedor del menú no oculte elementos */
+        #sidebar.sidebar-collapsed ul {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+        }
+
+        /* Ajustar el gap cuando está colapsado */
+        #sidebar.sidebar-collapsed .flex.flex-col.gap-2,
+        #sidebar.sidebar-collapsed .flex.flex-col.gap-3 {
+            gap: 0.5rem !important;
+        }
+
+        /* Mejoras de accesibilidad y touch targets en m?vil */
         @media (max-width: 767px) {
             #sidebar a,
             #sidebar button {
@@ -95,7 +176,7 @@
 
         /* Estilos responsivos para DataTables */
         @media (max-width: 767px) {
-            /* Hacer que las tablas se adapten mejor en móvil */
+            /* Hacer que las tablas se adapten mejor en m?vil */
             .table-responsive {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
@@ -106,7 +187,7 @@
                 overflow-x: auto;
             }
 
-            /* Ajustar botones de DataTables en móvil */
+            /* Ajustar botones de DataTables en m?vil */
             .dataTables_wrapper .dt-buttons {
                 flex-wrap: wrap;
                 gap: 0.5rem;
@@ -118,13 +199,13 @@
                 margin: 0.25rem;
             }
 
-            /* Ocultar algunos elementos en móvil */
+            /* Ocultar algunos elementos en m?vil */
             .dataTables_wrapper .dataTables_length,
             .dataTables_wrapper .dataTables_info {
                 font-size: 0.875rem;
             }
 
-            /* Ajustar paginación en móvil */
+            /* Ajustar paginaci?n en m?vil */
             .dataTables_wrapper .dataTables_paginate {
                 font-size: 0.875rem;
             }
@@ -134,7 +215,7 @@
                 margin: 0.125rem;
             }
 
-            /* Mejorar la visualización de tablas responsive (modo tarjeta) */
+            /* Mejorar la visualizaci?n de tablas responsive (modo tarjeta) */
             table.dataTable.dtr-inline.collapsed > tbody > tr > td.child,
             table.dataTable.dtr-inline.collapsed > tbody > tr > th.child,
             table.dataTable.dtr-inline.collapsed > tbody > tr > td.dataTables_empty {
@@ -147,7 +228,7 @@
                 left: 0.5rem;
             }
 
-            /* Ajustar headers en móvil */
+            /* Ajustar headers en m?vil */
             .table thead th {
                 font-size: 0.875rem;
                 padding: 0.5rem;
@@ -217,14 +298,14 @@
             @include('layouts.header')
         </nav>
         <div class="flex flex-1 min-h-[calc(100vh-60px)] md:min-h-[calc(100vh-60px)]">
-            <!-- Overlay para móvil -->
+            <!-- Overlay para m?vil -->
             <div id="mobile-overlay" 
                 class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 lg:hidden"
                 onclick="toggleMobileMenu()"></div>
             
             <!-- Sidebar responsivo -->
             <aside id="sidebar" 
-                class="fixed lg:static inset-y-0 left-0 z-50 bg-white w-[280px] lg:w-[300px] border-r border-gray-300 rounded-md dark:!bg-[#101010] transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out h-[calc(100vh-70px)] md:h-[calc(100vh-80px)] lg:h-auto overflow-y-auto">
+                class="fixed lg:static inset-y-0 left-0 z-50 bg-white w-[280px] lg:w-[300px] border-r border-gray-300 rounded-md dark:!bg-[#101010] transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-in-out h-[calc(100vh-70px)] md:h-[calc(100vh-80px)] lg:h-auto overflow-y-auto">
                 @include('layouts.sidebar')
             </aside>
 
@@ -281,10 +362,10 @@
 
 
 
-<!-- Script para inicializar los dropdowns en todas las páginas -->
+<!-- Script para inicializar los dropdowns en todas las p?ginas -->
 <script type="text/javascript">
     $(document).ready(function() {
-        // Delegación de eventos para manejar los dropdowns correctamente
+        // Delegaci?n de eventos para manejar los dropdowns correctamente
         $(document).on('click', '.dropdown-toggle', function(e) {
             e.preventDefault();
             var $parent = $(this).parent();
@@ -303,7 +384,7 @@
             }
         });
 
-        // Asegurar que Select2 también se inicialice correctamente
+        // Asegurar que Select2 tambi?n se inicialice correctamente
         $(document).ready(function() {
             $('.jz').select2();
             $('.jz1').select2({
@@ -338,7 +419,7 @@
 
     // Script global para hacer todas las tablas DataTables responsivas
     $(document).ready(function() {
-        // Función para reconfigurar tablas responsive
+        // Funci?n para reconfigurar tablas responsive
         function recalcResponsiveTables() {
             if (typeof $.fn.dataTable !== 'undefined' && $.fn.dataTable.isDataTable) {
                 $('.dataTable').each(function() {
@@ -355,7 +436,7 @@
             }
         }
 
-        // Recalcular después de que se carguen las tablas
+        // Recalcular despu?s de que se carguen las tablas
         setTimeout(recalcResponsiveTables, 1000);
 
         // Recalcular cuando se redimensiona la ventana
@@ -365,40 +446,85 @@
             resizeTimer = setTimeout(recalcResponsiveTables, 250);
         });
 
-        // Recalcular cuando cambia la orientación del dispositivo
+        // Recalcular cuando cambia la orientaci?n del dispositivo
         window.addEventListener('orientationchange', function() {
             setTimeout(recalcResponsiveTables, 500);
         });
     });
 </script>
 
-<!-- Script para menú móvil responsivo -->
+<!-- Script para men? m?vil responsivo y colapso de sidebar -->
 <script>
     function toggleMobileMenu() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('mobile-overlay');
         
         if (sidebar.classList.contains('-translate-x-full')) {
-            // Abrir menú
+            // Abrir men?
             sidebar.classList.remove('-translate-x-full');
             overlay.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         } else {
-            // Cerrar menú
+            // Cerrar men?
             sidebar.classList.add('-translate-x-full');
             overlay.classList.add('hidden');
             document.body.style.overflow = '';
         }
     }
 
-    // Event listener para el botón hamburguesa
+    // Funci?n para colapsar/expandir sidebar en desktop
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const toggleIcon = document.getElementById('sidebar-toggle-icon');
+        const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
+        
+        if (isCollapsed) {
+            // Expandir sidebar
+            sidebar.classList.remove('sidebar-collapsed');
+            sidebar.classList.remove('lg:w-[80px]');
+            sidebar.classList.add('lg:w-[300px]');
+            toggleIcon.classList.remove('fa-chevron-right');
+            toggleIcon.classList.add('fa-chevron-left');
+            // Guardar estado
+            localStorage.setItem('sidebarCollapsed', 'false');
+        } else {
+            // Colapsar sidebar
+            sidebar.classList.add('sidebar-collapsed');
+            sidebar.classList.remove('lg:w-[300px]');
+            sidebar.classList.add('lg:w-[80px]');
+            toggleIcon.classList.remove('fa-chevron-left');
+            toggleIcon.classList.add('fa-chevron-right');
+            // Guardar estado
+            localStorage.setItem('sidebarCollapsed', 'true');
+        }
+    }
+
+    // Event listener para el bot?n hamburguesa
     document.addEventListener('DOMContentLoaded', function() {
         const menuButton = document.getElementById('mobile-menu-button');
         if (menuButton) {
             menuButton.addEventListener('click', toggleMobileMenu);
         }
 
-        // Cerrar menú al hacer clic en un enlace (solo en móvil)
+        // Event listener para el bot?n de colapso en desktop
+        const sidebarToggleButton = document.getElementById('sidebar-toggle-button');
+        if (sidebarToggleButton) {
+            sidebarToggleButton.addEventListener('click', toggleSidebar);
+        }
+
+        // Restaurar estado del sidebar al cargar la p?gina
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed');
+        if (sidebarCollapsed === 'true' && window.innerWidth >= 1024) {
+            const sidebar = document.getElementById('sidebar');
+            const toggleIcon = document.getElementById('sidebar-toggle-icon');
+            sidebar.classList.add('sidebar-collapsed');
+            sidebar.classList.remove('lg:w-[300px]');
+            sidebar.classList.add('lg:w-[80px]');
+            toggleIcon.classList.remove('fa-chevron-left');
+            toggleIcon.classList.add('fa-chevron-right');
+        }
+
+        // Cerrar men? al hacer clic en un enlace (solo en m?vil)
         const menuLinks = document.querySelectorAll('#sidebar a');
         menuLinks.forEach(link => {
             link.addEventListener('click', function() {
@@ -408,14 +534,20 @@
             });
         });
 
-        // Cerrar menú al redimensionar ventana si es desktop
+        // Cerrar men? al redimensionar ventana si es desktop
         window.addEventListener('resize', function() {
             if (window.innerWidth >= 1024) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('mobile-overlay');
-                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('-translate-x-full');
                 overlay.classList.add('hidden');
                 document.body.style.overflow = '';
+            } else {
+                // En m?vil, restaurar ancho normal
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.remove('lg:w-[80px]');
+                sidebar.classList.add('lg:w-[300px]');
             }
         });
     });

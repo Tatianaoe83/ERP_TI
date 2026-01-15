@@ -6,7 +6,7 @@
         <a href="/tickets"
             class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
             <i class="fas fa-desktop text-center w-5 md:w-auto text-base"></i>
-            <span class="font-medium">Soporte</span>
+            <span class="font-medium sidebar-text">Soporte</span>
         </a>
     </li>
     <li class="rounded-xl overflow-hidden">
@@ -14,7 +14,7 @@
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
             <div class="flex items-center gap-2 md:gap-2">
                 <i class="fas fa-building text-center w-5 md:w-auto text-base"></i>
-                <span>Empresa</span>
+                <span class="sidebar-text">Empresa</span>
             </div>
             <i :class="{ 'rotate-90': open === 1 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
@@ -24,7 +24,7 @@
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/unidadesDeNegocios">
                     <i class="fas fa-city text-center w-4 md:w-auto text-sm"></i>
-                    <span>Unidades de negocio</span>
+                    <span class="sidebar-text">Unidades de negocio</span>
                 </a>
             </li>
             @endif
@@ -33,7 +33,7 @@
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/gerencias">
                     <i class="fas fa-user-tie text-center w-4 md:w-auto text-sm"></i>
-                    <span>Gerencias</span>
+                    <span class="sidebar-text">Gerencias</span>
                 </a>
             </li>
             @endif
@@ -42,7 +42,7 @@
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/obras">
                     <i class="fas fa-hard-hat text-center w-4 md:w-auto text-sm"></i>
-                    <span>Obras</span>
+                    <span class="sidebar-text">Obras</span>
                 </a>
             </li>
             @endif
@@ -51,7 +51,7 @@
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/departamentos">
                     <i class="fas fa-tags text-center w-4 md:w-auto text-sm"></i>
-                    <span>Departamentos</span>
+                    <span class="sidebar-text">Departamentos</span>
                 </a>
             </li>
             @endif
@@ -60,7 +60,7 @@
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/puestos">
                     <i class="fas fa-briefcase text-center w-4 md:w-auto text-sm"></i>
-                    <span>Puestos</span>
+                    <span class="sidebar-text">Puestos</span>
                 </a>
             </li>
             @endif
@@ -69,7 +69,7 @@
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/empleados">
                     <i class="fas fa-user text-center w-4 md:w-auto text-sm"></i>
-                    <span>Empleados</span>
+                    <span class="sidebar-text">Empleados</span>
                 </a>
             </li>
             @endif
@@ -81,7 +81,7 @@
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
             <div class="flex items-center gap-2 md:gap-2">
                 <i class="fas fa-boxes text-center w-5 md:w-auto text-base"></i>
-                <span>Activos</span>
+                <span class="sidebar-text">Activos</span>
             </div>
             <i :class="{ 'rotate-90': open === 2 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
@@ -91,7 +91,7 @@
                 <a href="/lineasTelefonicas"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-phone-alt text-center w-4 md:w-auto text-sm"></i>
-                    <span>Líneas</span>
+                    <span class="sidebar-text">Líneas</span>
                 </a>
             </li>
             @endif
@@ -100,7 +100,7 @@
                 <a href="/equipos"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-laptop text-center w-4 md:w-auto text-sm"></i>
-                    <span>Equipos</span>
+                    <span class="sidebar-text">Equipos</span>
                 </a>
             </li>
             @endif
@@ -109,7 +109,7 @@
                 <a href="/insumos"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-box text-center w-4 md:w-auto text-sm"></i>
-                    <span>Insumos</span>
+                    <span class="sidebar-text">Insumos</span>
                 </a>
             </li>
             @endif
@@ -118,7 +118,7 @@
                 <a href="/categorias"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-sitemap text-center w-4 md:w-auto text-sm"></i>
-                    <span>Categorías</span>
+                    <span class="sidebar-text">Categorías</span>
                 </a>
             </li>
             @endif
@@ -127,7 +127,7 @@
                 <a href="/planes"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-mobile-alt text-center w-4 md:w-auto text-sm"></i>
-                    <span>Planes</span>
+                    <span class="sidebar-text">Planes</span>
                 </a>
             </li>
             @endif
@@ -139,7 +139,7 @@
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
             <div class="flex items-center gap-2 md:gap-2">
                 <i class="fas fa-chart-line text-center w-5 md:w-auto text-base"></i>
-                <span>Movimientos</span>
+                <span class="sidebar-text">Movimientos</span>
             </div>
             <i :class="{ 'rotate-90': open === 3 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
@@ -149,7 +149,7 @@
                 <a href="/inventarios"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-clipboard-list text-center w-4 md:w-auto text-sm"></i>
-                    <span>Inventario</span>
+                    <span class="sidebar-text">Inventario</span>
                 </a>
             </li>
             @endif
@@ -161,7 +161,7 @@
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
             <div class="flex items-center gap-2 md:gap-2">
                 <i class="fas fa-file-alt text-center w-5 md:w-auto text-base"></i>
-                <span>Reportes</span>
+                <span class="sidebar-text">Reportes</span>
             </div>
             <i :class="{ 'rotate-90': open === 4 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
@@ -171,7 +171,7 @@
                 <a href="/presupuesto"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-file-invoice text-center w-4 md:w-auto text-sm"></i>
-                    <span>Presupuesto</span>
+                    <span class="sidebar-text">Presupuesto</span>
                 </a>
             </li>
             @endif
@@ -180,7 +180,7 @@
                 <a href="/reportes"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-book text-center w-4 md:w-auto text-sm"></i>
-                    <span>Reporteador</span>
+                    <span class="sidebar-text">Reporteador</span>
                 </a>
             </li>
             @endif
@@ -189,7 +189,7 @@
                 <a href="/informe"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-clipboard text-center w-4 md:w-auto text-sm"></i>
-                    <span>Informes</span>
+                    <span class="sidebar-text">Informes</span>
                 </a>
             </li>
             @endif
@@ -201,7 +201,7 @@
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
             <div class="flex items-center gap-2 md:gap-2">
                 <i class="fas fa-file-invoice-dollar text-center w-5 md:w-auto text-base"></i>
-                <span>Facturas</span>
+                <span class="sidebar-text">Facturas</span>
             </div>
             <i :class="{ 'rotate-90': open === 5 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
@@ -210,7 +210,7 @@
                 <a href="/cortes" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
                     @if(auth()->user()->can('ver-cortes'))
-                    <span>Cortes de Insumo</span>
+                    <span class="sidebar-text">Cortes de Insumo</span>
                     @endif
                 </a>
             </li>
@@ -222,7 +222,7 @@
         <a href="/usuarios"
             class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
             <i class="fas fa-users text-center w-5 md:w-auto text-base"></i>
-            <span class="font-medium">Usuarios</span>
+            <span class="font-medium sidebar-text">Usuarios</span>
         </a>
         @endif
     </li>
@@ -232,7 +232,7 @@
         <a href="/roles"
             class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
             <i class="fas fa-shield-alt text-center w-5 md:w-auto text-base"></i>
-            <span class="font-medium">Roles</span>
+            <span class="font-medium sidebar-text">Roles</span>
         </a>
         @endif
     </li>

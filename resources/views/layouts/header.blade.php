@@ -6,6 +6,12 @@
             <i class="fas fa-bars text-xl"></i>
         </button>
         
+        <!-- Botón para colapsar sidebar en desktop -->
+        <button id="sidebar-toggle-button" 
+            class="hidden lg:flex w-10 h-10 items-center justify-center text-[#101D49] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors active:scale-95">
+            <i id="sidebar-toggle-icon" class="fas fa-chevron-left text-xl"></i>
+        </button>
+        
         <div class="relative h-9 md:h-11 w-32 md:w-40 block">
             <a href="{{ url('/') }}">
                 <img src="{{ asset('img/LogoAzul2.png') }}"

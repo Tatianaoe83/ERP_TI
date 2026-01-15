@@ -1,7 +1,7 @@
-<div class="space-y-6" id="productividad-container">
+<div class="space-y-6 bg-[#0F1115] min-h-screen p-6" id="productividad-container">
     <!-- Encabezado con selector de mes/año y botón de exportar -->
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-gray-800">Reporte de Productividad</h2>
+        <h2 class="text-xl font-bold text-[#F3F4F6]">Reporte de Productividad</h2>
         
         <div class="flex items-center gap-4" 
              x-data="{ 
@@ -43,26 +43,26 @@
              }">
             <!-- Selector de mes y año -->
             <div class="flex items-center gap-2">
-                <select x-model="mes" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select x-model="mes" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 bg-[#1F2937] border border-[#2A2F3A] rounded-lg text-[#F3F4F6] focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] disabled:bg-[#1C1F26] disabled:text-[#6B7280] disabled:cursor-not-allowed">
                     @for($i = 1; $i <= 12; $i++)
                         <option value="{{ $i }}">{{ \Carbon\Carbon::create(now()->year, $i, 1)->locale('es')->isoFormat('MMMM') }}</option>
                     @endfor
                 </select>
                 
-                <select x-model="anio" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select x-model="anio" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 bg-[#1F2937] border border-[#2A2F3A] rounded-lg text-[#F3F4F6] focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] disabled:bg-[#1C1F26] disabled:text-[#6B7280] disabled:cursor-not-allowed">
                     @for($i = now()->year; $i >= now()->year - 5; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
                 </select>
                 
                 <div x-show="cargando" class="ml-2">
-                    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                    <i class="fas fa-spinner fa-spin text-[#2563EB]"></i>
                 </div>
             </div>
             
             <!-- Botón de exportar a Excel -->
             <a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year]) }}" 
-               class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+               class="px-4 py-2 bg-[#22C55E] hover:bg-[#16A34A] text-white font-medium rounded-lg transition-colors flex items-center gap-2">
                 <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
             </a>
         </div>
@@ -71,62 +71,62 @@
     <!-- Tarjetas de resumen -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total de tickets -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Total de Tickets</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">{{ $metricasProductividad['total_tickets'] }}</p>
+                    <p class="text-sm font-medium text-[#9CA3AF]">Total de Tickets</p>
+                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">{{ $metricasProductividad['total_tickets'] }}</p>
                 </div>
-                <div class="bg-blue-100 rounded-full p-4">
-                    <i class="fas fa-ticket-alt text-blue-600 text-2xl"></i>
+                <div class="rounded-full p-4" style="background-color: rgba(59, 130, 246, 0.15);">
+                    <i class="fas fa-ticket-alt text-[#3B82F6] text-2xl"></i>
                 </div>
             </div>
         </div>
 
         <!-- Tickets cerrados -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Tickets Cerrados</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">{{ $metricasProductividad['tickets_cerrados'] }}</p>
-                    <p class="text-xs text-gray-500 mt-1">
+                    <p class="text-sm font-medium text-[#9CA3AF]">Tickets Cerrados</p>
+                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">{{ $metricasProductividad['tickets_cerrados'] }}</p>
+                    <p class="text-xs text-[#6B7280] mt-1">
                         {{ $metricasProductividad['total_tickets'] > 0 ? round(($metricasProductividad['tickets_cerrados'] / $metricasProductividad['total_tickets']) * 100, 1) : 0 }}% del total
                     </p>
                 </div>
-                <div class="bg-green-100 rounded-full p-4">
-                    <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                <div class="rounded-full p-4" style="background-color: rgba(34, 197, 94, 0.15);">
+                    <i class="fas fa-check-circle text-[#22C55E] text-2xl"></i>
                 </div>
             </div>
         </div>
 
         <!-- Tiempo promedio de resolución -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Tiempo Promedio Resolución</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">
+                    <p class="text-sm font-medium text-[#9CA3AF]">Tiempo Promedio Resolución</p>
+                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">
                         {{ $metricasProductividad['tiempo_promedio_resolucion'] > 0 ? number_format($metricasProductividad['tiempo_promedio_resolucion'], 1) : '0' }}
                     </p>
-                    <p class="text-xs text-gray-500 mt-1">horas laborales</p>
+                    <p class="text-xs text-[#6B7280] mt-1">horas laborales</p>
                 </div>
-                <div class="bg-purple-100 rounded-full p-4">
-                    <i class="fas fa-clock text-purple-600 text-2xl"></i>
+                <div class="rounded-full p-4" style="background-color: rgba(168, 85, 247, 0.15);">
+                    <i class="fas fa-clock text-[#A855F7] text-2xl"></i>
                 </div>
             </div>
         </div>
 
         <!-- Tiempo promedio de respuesta -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Tiempo Promedio Respuesta</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">
+                    <p class="text-sm font-medium text-[#9CA3AF]">Tiempo Promedio Respuesta</p>
+                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">
                         {{ $metricasProductividad['tiempo_promedio_respuesta'] > 0 ? number_format($metricasProductividad['tiempo_promedio_respuesta'], 1) : '0' }}
                     </p>
-                    <p class="text-xs text-gray-500 mt-1">horas laborales</p>
+                    <p class="text-xs text-[#6B7280] mt-1">horas laborales</p>
                 </div>
-                <div class="bg-orange-100 rounded-full p-4">
-                    <i class="fas fa-hourglass-half text-orange-600 text-2xl"></i>
+                <div class="rounded-full p-4" style="background-color: rgba(249, 115, 22, 0.15);">
+                    <i class="fas fa-hourglass-half text-[#F97316] text-2xl"></i>
                 </div>
             </div>
         </div>
@@ -135,16 +135,16 @@
     <!-- Gráficas principales -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Distribución por estado -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribución por Estado</h3>
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Distribución por Estado</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartEstado"></canvas>
             </div>
         </div>
 
         <!-- Tickets resueltos por día (últimos 30 días) -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Tickets Resueltos (Últimos 30 días)</h3>
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Tickets Resueltos (Últimos 30 días)</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartResueltosPorDia"></canvas>
             </div>
@@ -154,16 +154,16 @@
     <!-- Gráficas secundarias -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Tendencias semanales -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Tendencias Semanales</h3>
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Tendencias Semanales</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartTendenciasSemanales"></canvas>
             </div>
         </div>
 
         <!-- Tickets por prioridad -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Tickets por Prioridad</h3>
+        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Tickets por Prioridad</h3>
             <div style="height: 300px; position: relative;">
                 <canvas id="chartPrioridad"></canvas>
             </div>
@@ -171,8 +171,8 @@
     </div>
 
     <!-- Gráfica de clasificaciones -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribución por Clasificación (En Progreso y Cerrados)</h3>
+    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Distribución por Clasificación (En Progreso y Cerrados)</h3>
         <div style="height: 300px; position: relative;">
             <canvas id="chartClasificacion"></canvas>
         </div>
@@ -252,34 +252,34 @@
     </div>
 
     <!-- Métricas por Empleado -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Desempeño por Empleado TI</h3>
-        <p class="text-sm text-gray-600 mb-6">Análisis mensual del rendimiento de cada responsable de TI (Últimos 6 meses)</p>
+    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Desempeño por Empleado TI</h3>
+        <p class="text-sm text-[#9CA3AF] mb-6">Análisis mensual del rendimiento de cada responsable de TI (Últimos 6 meses)</p>
         
         <div class="space-y-8">
             @forelse($metricasProductividad['metricas_por_empleado'] as $empleado)
-            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow bg-gradient-to-br from-white to-gray-50">
+            <div class="border border-[#2A2F3A] rounded-lg p-6 hover:border-[#3A3F4A] transition-colors bg-[#1F2937]">
                 <!-- Encabezado del empleado -->
-                <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-300">
+                <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-[#2A2F3A]">
                     <div class="flex items-center gap-4">
-                        <div class="bg-blue-100 rounded-full p-3">
-                            <i class="fas fa-user-tie text-blue-600 text-xl"></i>
+                        <div class="rounded-full p-3" style="background-color: rgba(59, 130, 246, 0.15);">
+                            <i class="fas fa-user-tie text-[#3B82F6] text-xl"></i>
                         </div>
                         <div>
-                            <h4 class="text-xl font-bold text-gray-800">{{ $empleado['nombre'] }}</h4>
-                            <p class="text-sm text-gray-500">Total acumulado: <span class="font-semibold text-gray-700">{{ $empleado['total'] }} tickets</span></p>
+                            <h4 class="text-xl font-bold text-[#F3F4F6]">{{ $empleado['nombre'] }}</h4>
+                            <p class="text-sm text-[#9CA3AF]">Total acumulado: <span class="font-semibold text-[#F3F4F6]">{{ $empleado['total'] }} tickets</span></p>
                         </div>
                     </div>
                     <div class="flex items-center gap-6">
-                        <div class="text-center bg-white rounded-lg px-4 py-2 shadow-sm">
-                            <p class="text-xs text-gray-500 mb-1">Tasa de Cierre</p>
-                            <p class="text-2xl font-bold {{ $empleado['tasa_cierre'] >= 70 ? 'text-green-600' : ($empleado['tasa_cierre'] >= 50 ? 'text-yellow-600' : 'text-red-600') }}">
+                        <div class="text-center bg-[#1C1F26] border border-[#2A2F3A] rounded-lg px-4 py-2">
+                            <p class="text-xs text-[#9CA3AF] mb-1">Tasa de Cierre</p>
+                            <p class="text-2xl font-bold {{ $empleado['tasa_cierre'] >= 70 ? 'text-[#4ADE80]' : ($empleado['tasa_cierre'] >= 50 ? 'text-[#FBBF24]' : 'text-[#F87171]') }}">
                                 {{ $empleado['tasa_cierre'] }}%
                             </p>
                         </div>
-                        <div class="text-center bg-white rounded-lg px-4 py-2 shadow-sm">
-                            <p class="text-xs text-gray-500 mb-1">Tiempo Promedio</p>
-                            <p class="text-2xl font-bold text-blue-600">
+                        <div class="text-center bg-[#1C1F26] border border-[#2A2F3A] rounded-lg px-4 py-2">
+                            <p class="text-xs text-[#9CA3AF] mb-1">Tiempo Promedio</p>
+                            <p class="text-2xl font-bold text-[#3B82F6]">
                                 {{ $empleado['tiempo_promedio_resolucion'] > 0 ? number_format($empleado['tiempo_promedio_resolucion'], 1) : '0' }}h
                             </p>
                         </div>
@@ -288,27 +288,27 @@
 
                 <!-- Resumen por estado -->
                 <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
-                        <i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i>
-                        <p class="text-sm text-gray-600 mb-1">Cerrados</p>
-                        <p class="text-3xl font-bold text-green-600">{{ $empleado['cerrados'] }}</p>
+                    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4 text-center" style="background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
+                        <i class="fas fa-check-circle text-[#4ADE80] text-2xl mb-2"></i>
+                        <p class="text-sm text-[#9CA3AF] mb-1">Cerrados</p>
+                        <p class="text-3xl font-bold text-[#4ADE80]">{{ $empleado['cerrados'] }}</p>
                     </div>
-                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 text-center border border-yellow-200">
-                        <i class="fas fa-clock text-yellow-600 text-2xl mb-2"></i>
-                        <p class="text-sm text-gray-600 mb-1">En Progreso</p>
-                        <p class="text-3xl font-bold text-yellow-600">{{ $empleado['en_progreso'] }}</p>
+                    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4 text-center" style="background-color: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);">
+                        <i class="fas fa-clock text-[#FBBF24] text-2xl mb-2"></i>
+                        <p class="text-sm text-[#9CA3AF] mb-1">En Progreso</p>
+                        <p class="text-3xl font-bold text-[#FBBF24]">{{ $empleado['en_progreso'] }}</p>
                     </div>
-                    <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 text-center border border-red-200">
-                        <i class="fas fa-exclamation-circle text-red-600 text-2xl mb-2"></i>
-                        <p class="text-sm text-gray-600 mb-1">Pendientes</p>
-                        <p class="text-3xl font-bold text-red-600">{{ $empleado['pendientes'] }}</p>
+                    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4 text-center" style="background-color: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3);">
+                        <i class="fas fa-exclamation-circle text-[#F87171] text-2xl mb-2"></i>
+                        <p class="text-sm text-[#9CA3AF] mb-1">Pendientes</p>
+                        <p class="text-3xl font-bold text-[#F87171]">{{ $empleado['pendientes'] }}</p>
                     </div>
                 </div>
 
                 <!-- Tarjetas por mes -->
                 <div class="mb-6">
-                    <h5 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-blue-600"></i>
+                    <h5 class="text-sm font-semibold text-[#F3F4F6] mb-4 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-[#3B82F6]"></i>
                         Desempeño Mensual (Últimos 6 meses)
                     </h5>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -331,45 +331,45 @@
                                 $mesFormateado = str_replace($en, $es, $mesFormateado);
                             }
                         @endphp
-                        <div class="bg-white border-2 {{ $totalMes > 0 ? 'border-blue-300' : 'border-gray-200' }} rounded-lg p-4 hover:shadow-md transition-all">
+                        <div class="bg-[#1C1F26] border-2 {{ $totalMes > 0 ? 'border-[#3B82F6]' : 'border-[#2A2F3A]' }} rounded-lg p-4 hover:border-[#4A8FF6] transition-all">
                             <div class="flex items-center justify-between mb-3">
-                                <h6 class="font-bold text-gray-800 text-sm">{{ $mesFormateado }}</h6>
+                                <h6 class="font-bold text-[#F3F4F6] text-sm">{{ $mesFormateado }}</h6>
                                 @if($totalMes > 0)
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $tasaCierreMes >= 70 ? 'bg-green-100 text-green-700' : ($tasaCierreMes >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700') }}">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $tasaCierreMes >= 70 ? 'bg-[#4ADE80]/20 text-[#4ADE80]' : ($tasaCierreMes >= 50 ? 'bg-[#FBBF24]/20 text-[#FBBF24]' : 'bg-[#F87171]/20 text-[#F87171]') }}">
                                     {{ $tasaCierreMes }}%
                                 </span>
                                 @else
-                                <span class="text-gray-400 text-xs">Sin datos</span>
+                                <span class="text-[#6B7280] text-xs">Sin datos</span>
                                 @endif
                             </div>
                             
                             @if($totalMes > 0)
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-xs text-gray-600">Total</span>
-                                    <span class="text-sm font-bold text-gray-800">{{ $totalMes }}</span>
+                                    <span class="text-xs text-[#9CA3AF]">Total</span>
+                                    <span class="text-sm font-bold text-[#F3F4F6]">{{ $totalMes }}</span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 100%"></div>
+                                <div class="w-full bg-[#2A2F3A] rounded-full h-2">
+                                    <div class="bg-[#3B82F6] h-2 rounded-full" style="width: 100%"></div>
                                 </div>
                                 
                                 <div class="flex items-center justify-between mt-3">
-                                    <span class="text-xs text-gray-600 flex items-center gap-1">
-                                        <i class="fas fa-check text-green-600"></i> Cerrados
+                                    <span class="text-xs text-[#9CA3AF] flex items-center gap-1">
+                                        <i class="fas fa-check text-[#4ADE80]"></i> Cerrados
                                     </span>
-                                    <span class="text-sm font-bold text-green-600">{{ $cerradosMes }}</span>
+                                    <span class="text-sm font-bold text-[#4ADE80]">{{ $cerradosMes }}</span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-green-500 h-2 rounded-full" style="width: {{ $tasaCierreMes }}%"></div>
+                                <div class="w-full bg-[#2A2F3A] rounded-full h-2">
+                                    <div class="bg-[#4ADE80] h-2 rounded-full" style="width: {{ $tasaCierreMes }}%"></div>
                                 </div>
                                 
                                 <div class="flex items-center justify-between mt-2">
-                                    <span class="text-xs text-gray-600">Pendientes</span>
-                                    <span class="text-sm font-bold text-red-600">{{ $totalMes - $cerradosMes }}</span>
+                                    <span class="text-xs text-[#9CA3AF]">Pendientes</span>
+                                    <span class="text-sm font-bold text-[#F87171]">{{ $totalMes - $cerradosMes }}</span>
                                 </div>
                             </div>
                             @else
-                            <div class="text-center py-4 text-gray-400">
+                            <div class="text-center py-4 text-[#6B7280]">
                                 <i class="fas fa-inbox text-2xl mb-2"></i>
                                 <p class="text-xs">Sin tickets</p>
                             </div>
@@ -381,8 +381,8 @@
 
                 <!-- Gráfica de tickets por mes -->
                 <div class="mb-6">
-                    <h5 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <i class="fas fa-chart-bar text-blue-600"></i>
+                    <h5 class="text-sm font-semibold text-[#F3F4F6] mb-3 flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-[#3B82F6]"></i>
                         Gráfica de Tendencia Mensual
                     </h5>
                     <div style="height: 300px; position: relative;">
@@ -392,33 +392,33 @@
         
                 <!-- Tickets por prioridad -->
                 <div>
-                    <h5 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <i class="fas fa-signal text-blue-600"></i>
+                    <h5 class="text-sm font-semibold text-[#F3F4F6] mb-3 flex items-center gap-2">
+                        <i class="fas fa-signal text-[#3B82F6]"></i>
                         Distribución por Prioridad
                     </h5>
                     <div class="grid grid-cols-3 gap-4">
                         @php
                             $prioridades = [
-                                'Alta' => ['color' => 'red', 'bg' => 'bg-red-500', 'icon' => 'fa-exclamation-triangle'],
-                                'Media' => ['color' => 'yellow', 'bg' => 'bg-yellow-500', 'icon' => 'fa-exclamation-circle'],
-                                'Baja' => ['color' => 'green', 'bg' => 'bg-green-500', 'icon' => 'fa-info-circle']
+                                'Alta' => ['color' => '#F87171', 'bg' => '#F87171', 'icon' => 'fa-exclamation-triangle'],
+                                'Media' => ['color' => '#FBBF24', 'bg' => '#FBBF24', 'icon' => 'fa-exclamation-circle'],
+                                'Baja' => ['color' => '#4ADE80', 'bg' => '#4ADE80', 'icon' => 'fa-info-circle']
                             ];
                         @endphp
                         @foreach($prioridades as $prioridad => $config)
-                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas {{ $config['icon'] }} text-{{ $config['color'] }}-600"></i>
-                                    <span class="text-sm font-semibold text-gray-700">{{ $prioridad }}</span>
+                                    <i class="fas {{ $config['icon'] }}" style="color: {{ $config['color'] }};"></i>
+                                    <span class="text-sm font-semibold text-[#F3F4F6]">{{ $prioridad }}</span>
                                 </div>
-                                <span class="text-lg font-bold text-gray-800">
+                                <span class="text-lg font-bold text-[#F3F4F6]">
                                     {{ $empleado['tickets_por_prioridad'][$prioridad] ?? 0 }}
                                 </span>
                             </div>
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="{{ $config['bg'] }} h-3 rounded-full transition-all duration-300" style="width: {{ $empleado['total'] > 0 ? (($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100 : 0 }}%"></div>
+                            <div class="w-full bg-[#2A2F3A] rounded-full h-3">
+                                <div class="h-3 rounded-full transition-all duration-300" style="background-color: {{ $config['bg'] }}; width: {{ $empleado['total'] > 0 ? (($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100 : 0 }}%"></div>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">
+                            <p class="text-xs text-[#9CA3AF] mt-1">
                                 {{ $empleado['total'] > 0 ? round((($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100, 1) : 0 }}% del total
                             </p>
                         </div>
@@ -427,10 +427,10 @@
                 </div>
             </div>
             @empty
-            <div class="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <i class="fas fa-users text-5xl mb-4 text-gray-400"></i>
-                <p class="text-lg font-semibold">No hay métricas disponibles para empleados</p>
-                <p class="text-sm mt-2">Los empleados aparecerán aquí cuando tengan tickets asignados</p>
+            <div class="text-center py-12 text-[#9CA3AF] bg-[#1C1F26] border-2 border-dashed border-[#2A2F3A] rounded-lg">
+                <i class="fas fa-users text-5xl mb-4 text-[#6B7280]"></i>
+                <p class="text-lg font-semibold text-[#F3F4F6]">No hay métricas disponibles para empleados</p>
+                <p class="text-sm mt-2 text-[#9CA3AF]">Los empleados aparecerán aquí cuando tengan tickets asignados</p>
             </div>
             @endforelse
         </div>
@@ -473,14 +473,14 @@ function inicializarGraficas() {
             datasets: [{
                 data: Object.values(distribucionEstado),
                 backgroundColor: [
-                    'rgba(239, 68, 68, 0.8)',  // Rojo para Pendiente
-                    'rgba(251, 191, 36, 0.8)', // Amarillo para En progreso
-                    'rgba(34, 197, 94, 0.8)'   // Verde para Cerrado
+                    '#F87171',  // Rojo suave para Pendiente
+                    '#FBBF24',  // Amarillo para En progreso
+                    '#4ADE80'   // Verde para Cerrado
                 ],
                 borderColor: [
-                    'rgba(239, 68, 68, 1)',
-                    'rgba(251, 191, 36, 1)',
-                    'rgba(34, 197, 94, 1)'
+                    '#F87171',
+                    '#FBBF24',
+                    '#4ADE80'
                 ],
                 borderWidth: 2
             }]
@@ -490,9 +490,22 @@ function inicializarGraficas() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        color: '#9CA3AF',
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
+                    titleColor: '#F3F4F6',
+                    bodyColor: '#F3F4F6',
+                    borderColor: '#2A2F3A',
+                    borderWidth: 1,
+                    padding: 12,
                     callbacks: {
                         label: function(context) {
                             let label = context.label || '';
@@ -526,8 +539,8 @@ function inicializarGraficas() {
             datasets: [{
                 label: 'Tickets Resueltos',
                 data: valores,
-                borderColor: 'rgba(34, 197, 94, 1)',
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderColor: '#22C55E',
+                backgroundColor: 'rgba(34, 197, 94, 0.15)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4
@@ -540,14 +553,37 @@ function inicializarGraficas() {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
                     }
                 }
             },
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        color: '#9CA3AF'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
+                    titleColor: '#F3F4F6',
+                    bodyColor: '#F3F4F6',
+                    borderColor: '#2A2F3A',
+                    borderWidth: 1,
+                    padding: 12
                 }
             }
         }
@@ -568,14 +604,14 @@ function inicializarGraficas() {
                     label: 'Creados',
                     data: creados,
                     backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderColor: '#3B82F6',
                     borderWidth: 1
                 },
                 {
                     label: 'Resueltos',
                     data: resueltos,
                     backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                    borderColor: 'rgba(34, 197, 94, 1)',
+                    borderColor: '#22C55E',
                     borderWidth: 1
                 }
             ]
@@ -587,14 +623,37 @@ function inicializarGraficas() {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
                     }
                 }
             },
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        color: '#9CA3AF'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
+                    titleColor: '#F3F4F6',
+                    bodyColor: '#F3F4F6',
+                    borderColor: '#2A2F3A',
+                    borderWidth: 1,
+                    padding: 12
                 }
             }
         }
@@ -610,14 +669,14 @@ function inicializarGraficas() {
                 label: 'Tickets',
                 data: Object.values(ticketsPorPrioridad),
                 backgroundColor: [
-                    'rgba(239, 68, 68, 0.8)',  // Alta
-                    'rgba(251, 191, 36, 0.8)', // Media
-                    'rgba(34, 197, 94, 0.8)'   // Baja
+                    '#F87171',  // Alta
+                    '#FBBF24',  // Media
+                    '#4ADE80'   // Baja
                 ],
                 borderColor: [
-                    'rgba(239, 68, 68, 1)',
-                    'rgba(251, 191, 36, 1)',
-                    'rgba(34, 197, 94, 1)'
+                    '#F87171',
+                    '#FBBF24',
+                    '#4ADE80'
                 ],
                 borderWidth: 1
             }]
@@ -630,13 +689,33 @@ function inicializarGraficas() {
                 x: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                },
+                y: {
+                    ticks: {
+                        color: '#6B7280'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
                     }
                 }
             },
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
+                    titleColor: '#F3F4F6',
+                    bodyColor: '#F3F4F6',
+                    borderColor: '#2A2F3A',
+                    borderWidth: 1,
+                    padding: 12
                 }
             }
         }
@@ -652,12 +731,12 @@ function inicializarGraficas() {
                 datasets: [{
                     data: Object.values(ticketsPorClasificacion),
                     backgroundColor: [
-                        'rgba(220, 38, 38, 0.8)',  // Rojo para Problema
-                        'rgba(37, 99, 235, 0.8)'   // Azul para Servicio
+                        '#F87171',  // Rojo para Problema
+                        '#3B82F6'   // Azul para Servicio
                     ],
                     borderColor: [
-                        'rgba(220, 38, 38, 1)',
-                        'rgba(37, 99, 235, 1)'
+                        '#F87171',
+                        '#3B82F6'
                     ],
                     borderWidth: 2
                 }]
@@ -667,9 +746,22 @@ function inicializarGraficas() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'bottom'
+                        position: 'bottom',
+                        labels: {
+                            color: '#9CA3AF',
+                            padding: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     tooltip: {
+                        backgroundColor: 'rgba(15, 17, 21, 0.95)',
+                        titleColor: '#F3F4F6',
+                        bodyColor: '#F3F4F6',
+                        borderColor: '#2A2F3A',
+                        borderWidth: 1,
+                        padding: 12,
                         callbacks: {
                             label: function(context) {
                                 let label = context.label || '';
@@ -883,7 +975,7 @@ function inicializarGraficasEmpleados() {
                                 label: 'Total de Tickets',
                                 data: totales,
                                 backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                                borderColor: 'rgba(59, 130, 246, 1)',
+                                borderColor: '#3B82F6',
                                 borderWidth: 2,
                                 borderRadius: 4
                             },
@@ -891,7 +983,7 @@ function inicializarGraficasEmpleados() {
                                 label: 'Tickets Cerrados',
                                 data: cerrados,
                                 backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                                borderColor: 'rgba(34, 197, 94, 1)',
+                                borderColor: '#22C55E',
                                 borderWidth: 2,
                                 borderRadius: 4
                             }
@@ -905,15 +997,19 @@ function inicializarGraficasEmpleados() {
                                 beginAtZero: true,
                                 ticks: {
                                     stepSize: 1,
-                                    precision: 0
+                                    precision: 0,
+                                    color: '#6B7280'
                                 },
                                 grid: {
-                                    color: 'rgba(0, 0, 0, 0.05)'
+                                    color: 'rgba(255, 255, 255, 0.05)'
                                 }
                             },
                             x: {
+                                ticks: {
+                                    color: '#6B7280'
+                                },
                                 grid: {
-                                    display: false
+                                    color: 'rgba(255, 255, 255, 0.05)'
                                 }
                             }
                         },
@@ -924,13 +1020,18 @@ function inicializarGraficasEmpleados() {
                                 labels: {
                                     usePointStyle: true,
                                     padding: 15,
+                                    color: '#9CA3AF',
                                     font: {
                                         size: 12
                                     }
                                 }
                             },
                             tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                backgroundColor: 'rgba(15, 17, 21, 0.95)',
+                                titleColor: '#F3F4F6',
+                                bodyColor: '#F3F4F6',
+                                borderColor: '#2A2F3A',
+                                borderWidth: 1,
                                 padding: 12,
                                 titleFont: {
                                     size: 14
