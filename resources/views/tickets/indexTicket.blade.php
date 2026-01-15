@@ -741,9 +741,9 @@
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="bg-white dark:bg-gray-800 w-11/12 md:w-4/5 lg:w-[1100px] xl:w-[1200px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300"
+            class="bg-white dark:bg-gray-800 w-[95%] md:w-[90%] lg:w-[1400px] xl:w-[1600px] rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300"
             @click.stop>
-            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[90vh] bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
 
                 <aside class="bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col overflow-y-auto">
                     <h2 class="text-gray-800 dark:text-gray-700 text-sm font-semibold mb-4 uppercase">
