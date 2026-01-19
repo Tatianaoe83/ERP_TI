@@ -75,6 +75,38 @@
         min-height: 300px;
     }
     
+    /* Ocultar textarea cuando TinyMCE está activo - Múltiples selectores para asegurar que funcione */
+    .tox-tinymce ~ textarea#editor-mensaje,
+    .tox-tinymce + textarea#editor-mensaje,
+    textarea#editor-mensaje[style*="display: none"],
+    textarea#editor-mensaje[style*="opacity: 0"] {
+        display: none !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+    
+    /* Ocultar textarea cuando está en el mismo contenedor que TinyMCE */
+    .tox-tinymce {
+        position: relative;
+    }
+    
+    .tox-tinymce + textarea#editor-mensaje,
+    .tox-tinymce ~ textarea#editor-mensaje {
+        display: none !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+    
     /* Estilos para selects en modo oscuro */
     .dark select {
         background-color: #374151 !important;
@@ -807,10 +839,10 @@
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="w-[95%] md:w-[90%] lg:w-[1400px] xl:w-[1600px] rounded-2xl overflow-hidden border transition-all duration-300"
+            class="w-[95%] md:w-[90%] lg:max-w-[1000px] xl:max-w-[1100px] rounded-2xl overflow-hidden border transition-all duration-300"
             style="background-color: #1C1F26; border-color: #2A2F3A; border-width: 1px;"
             @click.stop>
-            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] rounded-2xl overflow-hidden" style="background-color: #1C1F26;">
+            <div class="grid grid-cols-1 md:grid-cols-[42%_58%] h-[85vh] rounded-2xl overflow-hidden" style="background-color: #1C1F26;">
 
                 <aside class="p-6 flex flex-col overflow-y-auto" style="background-color: #1F2937; border-right: 1px solid #2A2F3A;">
                     <h2 class="text-sm font-semibold mb-4 uppercase" style="color: #F3F4F6;">
@@ -819,9 +851,9 @@
 
                     <div class="space-y-5 text-sm flex-1" style="color: #E5E7EB;">
 
-                        <div class="rounded-lg p-4" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
-                            <h3 class="text-xs font-semibold uppercase mb-2" style="color: #F3F4F6;">Descripcion de ticket</h3>
-                            <div class="font-medium whitespace-pre-wrap ticket-description" style="color: #E5E7EB;" x-text="selected.descripcion"></div>
+                        <div class="rounded-lg p-5" style="background-color: #1F2937; border: 1px solid #2A2F3A; min-height: 200px;">
+                            <h3 class="text-xs font-semibold uppercase mb-3" style="color: #F3F4F6;">Descripcion de ticket</h3>
+                            <div class="font-medium whitespace-pre-wrap ticket-description leading-relaxed" style="color: #E5E7EB; max-height: 300px; overflow-y: auto;" x-text="selected.descripcion"></div>
                         </div>
 
                         <!-- Documentos Adjuntos -->
@@ -1494,8 +1526,8 @@
                                     id="editor-mensaje"
                                     x-model="nuevoMensaje"
                                     :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                    class="w-full disabled:cursor-not-allowed rounded-md"
-                                    style="background-color: #0F1115; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.75rem; min-height: 300px;"
+                                    class="w-full disabled:cursor-not-allowed rounded-md hidden"
+                                    style="display: none !important; visibility: hidden !important; position: absolute !important; opacity: 0 !important; height: 0 !important; width: 0 !important; overflow: hidden !important; pointer-events: none !important; background-color: #0F1115; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.75rem; min-height: 300px;"
                                     placeholder="Escribe tu mensaje aquí..."
                                     :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''"></textarea>
                                 
@@ -2074,12 +2106,20 @@
                         'bullist numlist | outdent indent | ' +
                         'removeformat | link image | code | help',
                     content_style: isDarkMode 
-                        ? 'body { font-family: Arial, sans-serif; font-size: 14px; background-color: #1f2937 !important; color: #ffffff !important; } body * { color: #ffffff !important; }' 
+                        ? 'body { font-family: Arial, sans-serif; font-size: 14px; background-color: #6B7280 !important; color: #111827 !important; } body * { color: #111827 !important; }' 
                         : 'body { font-family: Arial, sans-serif; font-size: 14px; }',
                     language: 'es',
                     placeholder: 'Escribe tu mensaje aquí...',
                     setup: (editor) => {
                         this.tinyMCEInstance = editor;
+                        
+                        // Ocultar el textarea original cuando TinyMCE se inicializa
+                        editor.on('init', () => {
+                            const textareaElement = document.getElementById('editor-mensaje');
+                            if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                                textareaElement.style.display = 'none';
+                            }
+                        });
                         
                         // Sincronizar contenido con Alpine.js en tiempo real
                         editor.on('input', () => {
@@ -2111,6 +2151,17 @@
                         });
                     },
                     init_instance_callback: (editor) => {
+                        // Ocultar el textarea original cuando TinyMCE está completamente inicializado
+                        setTimeout(() => {
+                            const textareaElement = document.getElementById('editor-mensaje');
+                            if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                                textareaElement.style.display = 'none';
+                                textareaElement.style.visibility = 'hidden';
+                                textareaElement.style.position = 'absolute';
+                                textareaElement.style.opacity = '0';
+                            }
+                        }, 100);
+                        
                         // Verificar estado al inicializar y deshabilitar si está cerrado
                         this.$nextTick(() => {
                             this.actualizarEstadoEditor();
@@ -2368,6 +2419,18 @@
                 if (adjuntosInput) {
                     adjuntosInput.value = '';
                 }
+                
+                // Ocultar el textarea original inmediatamente para evitar que aparezcan dos editores
+                this.$nextTick(() => {
+                    const textareaElement = document.getElementById('editor-mensaje');
+                    if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                        textareaElement.style.display = 'none';
+                        textareaElement.style.visibility = 'hidden';
+                        textareaElement.style.position = 'absolute';
+                        textareaElement.style.opacity = '0';
+                    }
+                });
+                
                 // Cargar datos del ticket para el formulario
                 this.cargarDatosTicket(datos.id);
                 this.cargarMensajes();
@@ -2375,6 +2438,17 @@
                 this.iniciarVerificacionMensajes();
                 // Inicializar TinyMCE si no está inicializado
                 this.$nextTick(() => {
+                    // Ocultar textarea nuevamente antes de inicializar TinyMCE
+                    setTimeout(() => {
+                        const textareaElement = document.getElementById('editor-mensaje');
+                        if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                            textareaElement.style.display = 'none';
+                            textareaElement.style.visibility = 'hidden';
+                            textareaElement.style.position = 'absolute';
+                            textareaElement.style.opacity = '0';
+                        }
+                    }, 50);
+                    
                     if (!this.tinyMCEInstance) {
                         this.inicializarTinyMCE();
                     } else {
