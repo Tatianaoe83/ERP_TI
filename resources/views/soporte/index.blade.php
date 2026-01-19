@@ -294,7 +294,7 @@
                                     <i class="fas fa-info-circle text-primary"></i>
                                 </span>
                             </label>
-                            <select name="Proyecto" style="width:100%" id="Proyecto" class="cursor-pointer w-full text-black js-example-basic-single" disabled>
+                            <select name="Proyecto" style="width:100%" id="Proyecto" class="cursor-pointer w-full text-black js-example-basic-single">
                             </select>
                         </div>
                         <div>
@@ -340,111 +340,277 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#Proyecto').select2({
-                placeholder: "Busca y selecciona una ubicación...",
-                allowClear: true,
-                language: {
-                    noResults: function() {
-                        return "No se encontraron resultados";
-                    },
-                    searching: function() {
-                        return "Buscando...";
-                    }
-                },
-                templateResult: function(data) {
-                    if (!data.id) {
-                        return data.text;
-                    }
-                    
-                    var $result = $('<span></span>');
-                    var icon = '';
-                    var prefix = '';
-                    
-                    // Determinar icono según el tipo
-                    var optgroup = $(data.element).closest('optgroup');
-                    var groupLabel = optgroup.attr('label') || '';
-                    
-                    if (groupLabel.toLowerCase().includes("proyecto")) {
-                        icon = '<i class="fas fa-folder-open text-blue-500 mr-2"></i>';
-                        prefix = '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">PR</span>';
-                    } else if (groupLabel.toLowerCase().includes("obra")) {
-                        icon = '<i class="fas fa-building text-orange-500 mr-2"></i>';
-                        prefix = '<span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded mr-2">OB</span>';
-                    } else if (groupLabel.toLowerCase().includes("gerencia")) {
-                        icon = '<i class="fas fa-briefcase text-purple-500 mr-2"></i>';
-                        prefix = '<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded mr-2">GE</span>';
-                    } else {
-                        icon = '<i class="fas fa-map-marker-alt text-gray-500 mr-2"></i>';
-                    }
-                    
-                    $result.append(icon + prefix + '<span>' + data.text + '</span>');
-                    return $result;
-                },
-                templateSelection: function(data) {
-                    if (!data.id) {
-                        return data.text;
-                    }
-                    
-                    // Para la selección, mostrar solo el texto sin iconos
-                    return data.text;
-                },
-                escapeMarkup: function(markup) {
-                    return markup;
-                }
-            });
+<script>
+// =========================================================
+// 1. VARIABLES GLOBALES (Usamos window para evitar conflictos)
+// =========================================================
+window.datosUbicacion = []; 
+window.correoSolicitudValido = false; // Para el formulario Solicitud
+window.correoTicketValido = false;    // Para el formulario Ticket
 
-            $.ajax({
-                url: "/getTypes",
-                method: "GET",
-                success: function(data) {
-                    $('#Proyecto').empty();
+$(document).ready(function() {
+    
+    // Carga inicial de datos de ubicación
+    $.ajax({
+        url: "/getTypes",
+        method: "GET",
+        success: function(data) {
+            window.datosUbicacion = data;
+        }
+    });
 
-                    $.each(data, function(index, group) {
-                        var $optgroup = $('<optgroup>', {
-                            label: group.text
-                        });
+    // Inicializar Select2 básico (si hay alguno en el Ticket)
+    $('.js-example-basic-single').select2();
 
-                        var prefix = "";
+    // =========================================================
+    // 2. LÓGICA DE PESTAÑAS (TICKET vs SOLICITUD)
+    // =========================================================
+    $('#type').on('change', function() {
+        var seleccion = $(this).val();
 
-                        if (group.text.toLowerCase().includes("proyecto")) {
-                            prefix = "PR";
-                        } else if (group.text.toLowerCase().includes("obra")) {
-                            prefix = "OB";
-                        } else if (group.text.toLowerCase().includes("gerencia")) {
-                            prefix = "GE";
-                        }
+        $('#ticket-form').addClass('hidden');
+        $('#solicitud-form').addClass('hidden');
 
-                        if (group.children) {
-                            $.each(group.children, function(i, item) {
-                                $optgroup.append(
-                                    $('<option>', {
-                                        value: prefix + item.id,
-                                        text: item.text
-                                    })
-                                );
-                            });
-                        }
+        if (seleccion === 'Ticket') {
+            $('#ticket-form').removeClass('hidden');
+        } 
+        else if (seleccion === 'Solicitud') {
+            $('#solicitud-form').removeClass('hidden');
+            // ARREGLO VISUAL: Reiniciar Select2 al mostrar el formulario
+            setTimeout(function() { revivirSelect2(); }, 50);
+        }
+    });
 
-                        $('#Proyecto').append($optgroup);
-                    });
+    // =========================================================
+    // 3. LÓGICA DEL FORMULARIO "SOLICITUD"
+    // =========================================================
+    var $inputCorreoSol = $('#correoEmpleadoSolicitud');
 
-                    $('#Proyecto').val(null).trigger('change');
-                    // Deshabilitar Select2 inicialmente
-                    $('#Proyecto').select2('enable', false);
-                }
-            });
+    // Deshabilitar campos de solicitud al inicio
+    deshabilitarCamposSolicitud();
+
+    // Detección de correo (Solicitud)
+    $inputCorreoSol.on('change blur', function() {
+        var correo = $(this).val().trim();
+        if (correo && esCorreoValido(correo)) {
+            buscarEmpleadoSolicitud(correo);
+        }
+    });
+    
+    // Enter en correo (Solicitud)
+    $inputCorreoSol.on('keypress', function(e) {
+        if(e.which === 13) { e.preventDefault(); $(this).blur(); }
+    });
+
+    // =========================================================
+    // 4. LÓGICA DEL FORMULARIO "TICKET" (Tu código original integrado)
+    // =========================================================
+    
+    // Validar Correo Ticket
+    $('#correoEmpleado').on('change blur', function() {
+        var correo = $(this).val().trim();
+        var $error = $('#correo-error');
+        
+        if (!correo) {
+             deshabilitarCamposTicket();
+             return;
+        }
+        
+        if (!esCorreoValido(correo)) {
+            $error.removeClass('hidden').text('Correo inválido');
+            deshabilitarCamposTicket();
+        } else {
+            $error.addClass('hidden');
+            // Aquí llamarías a tu búsqueda de Ticket si existe
+            // Por ahora simulamos que busca:
+            buscarEmpleadoTicket(correo); 
+        }
+    });
+
+    // Validar Teléfono
+    $('#numeroTelefono').on('input', function() {
+        var val = $(this).val().replace(/\D/g, '');
+        $(this).val(val);
+        var $err = $('#telefono-error');
+        if(!$err.length) $(this).after('<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>');
+        
+        if (val.length === 10) {
+            $('#telefono-error').addClass('hidden');
+            $(this).removeClass('border-red-500').addClass('border-green-500');
+        } else {
+            $('#telefono-error').removeClass('hidden').text('Debe tener 10 dígitos');
+            $(this).addClass('border-red-500');
+        }
+    });
+
+    // Validar AnyDesk y Descripción (Visual)
+    $('#codeAnyDesk, #descripcionTicket').on('input', function() {
+        if($(this).val().trim().length > 0) $(this).removeClass('border-red-500').addClass('border-green-500');
+        else $(this).removeClass('border-green-500').addClass('border-red-500');
+    });
+
+    // =========================================================
+    // 5. EVENTO ENVIAR (VALIDACIÓN FINAL PARA AMBOS)
+    // =========================================================
+    $('form').on('submit', function(e) {
+        var errores = [];
+        var esSolicitud = $('#solicitud-form').is(':visible');
+        var esTicket = $('#ticket-form').is(':visible');
+
+        // --- VALIDACIÓN SOLICITUD ---
+        if (esSolicitud) {
+            var correo = $('#correoEmpleadoSolicitud').val().trim();
+            var empleadoID = $('#EmpleadoIDSolicitud').val();
+            var proyecto = $('#Proyecto').val();
+
+            if (!correo) errores.push('El correo es requerido.');
+            else if (!window.correoSolicitudValido || !empleadoID) errores.push('Debes validar el correo del empleado primero.');
+            
+            if (!proyecto) errores.push('Debes seleccionar una ubicación (Proyecto).');
+        }
+
+        // --- VALIDACIÓN TICKET ---
+        else if (esTicket) {
+            var correoT = $('#correoEmpleado').val().trim();
+            var tel = $('#numeroTelefono').val().replace(/\D/g, '');
+            var desc = $('#descripcionTicket').val().trim();
+
+            if (!correoT) errores.push('El correo es requerido.');
+            // Si tienes validación de empleado para ticket, agrégala aquí:
+            // else if (!window.correoTicketValido) errores.push('Empleado no encontrado.');
+
+            if (tel.length !== 10) errores.push('El teléfono debe tener 10 dígitos.');
+            if (!desc) errores.push('La descripción es requerida.');
+        }
+
+        // --- MANEJO DE ERRORES ---
+        if (errores.length > 0) {
+            e.preventDefault();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'error', title: 'Faltan datos', html: errores.join('<br>'), confirmButtonColor: '#ef4444' });
+            } else {
+                alert(errores.join('\n'));
+            }
+            return false;
+        }
+
+        // Habilitar campos deshabilitados para que se envíen en el POST
+        $('input, select, textarea').prop('disabled', false);
+    });
+});
+
+// =========================================================
+// FUNCIONES AUXILIARES
+// =========================================================
+
+function esCorreoValido(correo) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+}
+
+// --- SOLICITUD ---
+function deshabilitarCamposSolicitud() {
+    window.correoSolicitudValido = false;
+    $('#autoEmpleadosSolicitud, #NombreGerencia, #NombreObra, #NombrePuesto, #Motivo, #DescripcionMotivo, #SupervisorNombre, #Requerimientos')
+        .prop('disabled', true).addClass('bg-gray-100');
+    $('#btnEnviarSolicitud').prop('disabled', true).addClass('bg-gray-400 cursor-not-allowed').removeClass('bg-red-500');
+
+    // Deshabilitar Select2 de forma segura
+    var $p = $('#Proyecto');
+    $p.prop('disabled', true);
+    if ($p.hasClass('select2-hidden-accessible')) { try{ $p.select2('enable', false); }catch(e){} }
+    var $cont = $p.next('.select2-container');
+    if($cont.length) $cont.addClass('select2-container--disabled');
+}
+
+function buscarEmpleadoSolicitud(correo) {
+    $('#autoEmpleadosSolicitud').val('Buscando...');
+    $.ajax({
+        url: '/buscarEmpleadoPorCorreo',
+        method: 'GET',
+        data: { correo: correo, type: 'Solicitud' },
+        success: function(data) {
+            window.correoSolicitudValido = true;
+            // Llenar campos
+            $('#autoEmpleadosSolicitud').val(data.NombreEmpleado).removeClass('border-blue-500').addClass('border-green-500');
+            $('#NombreGerencia').val(data.NombreGerencia);
+            $('#NombreObra').val(data.NombreObra);
+            $('#NombrePuesto').val(data.NombrePuesto);
+            
+            // IDs
+            $('#EmpleadoIDSolicitud').val(data.EmpleadoID);
+            $('#GerenciaID').val(data.GerenciaID);
+            $('#ObraID').val(data.ObraID);
+            $('#PuestoID').val(data.PuestoID);
+
+            // Habilitar
+            $('#Motivo, #DescripcionMotivo, #SupervisorNombre, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+            $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400').addClass('bg-red-500');
+
+            // DESBLOQUEAR UBICACIÓN (Select2)
+            revivirSelect2(); 
+        },
+        error: function() {
+            deshabilitarCamposSolicitud();
+            $('#autoEmpleadosSolicitud').val('').addClass('border-red-500');
+            $('#correo-solicitud-error').removeClass('hidden').text('No encontrado');
+        }
+    });
+}
+
+function revivirSelect2() {
+    var $p = $('#Proyecto');
+    if ($p.hasClass("select2-hidden-accessible")) $p.select2('destroy');
+    
+    $p.empty().append('<option></option>');
+    if (window.datosUbicacion.length) {
+        $.each(window.datosUbicacion, function(i, g) {
+            var $opt = $('<optgroup>', { label: g.text });
+            var pre = g.text.includes("Proyecto") ? "PR" : (g.text.includes("Obra") ? "OB" : "GE");
+            if(g.children) $.each(g.children, function(j,item){ $opt.append($('<option>',{value:pre+item.id, text:item.text})); });
+            $p.append($opt);
         });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    }
+    
+    $p.prop('disabled', false).removeAttr('disabled');
+    $p.select2({
+        placeholder: "Selecciona ubicación...", allowClear: true, width: '100%',
+        templateResult: function(d){ return d.id?$('<span>'+d.text+'</span>'):d.text; },
+        templateSelection: function(d){ return d.text; }
+    });
+}
+
+// --- TICKET (Funciones básicas) ---
+function deshabilitarCamposTicket() {
+    window.correoTicketValido = false;
+    $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', true).addClass('bg-gray-100');
+    $('#btnEnviar').prop('disabled', true);
+}
+
+function buscarEmpleadoTicket(correo) {
+    // Aquí puedes poner tu AJAX para ticket si es distinto al de solicitud
+    // Por ahora solo habilitamos para que funcione el ejemplo
+    $.ajax({
+        url: '/buscarEmpleadoPorCorreo',
+        method: 'GET',
+        data: { correo: correo, type: 'Ticket' },
+        success: function(data) {
+             window.correoTicketValido = true;
+             $('#autoEmpleadosTicket').val(data.NombreEmpleado).addClass('border-green-500');
+             $('#EmpleadoID').val(data.EmpleadoID);
+             // Habilitar campos
+             $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', false).removeClass('bg-gray-100');
+             $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400').addClass('bg-red-500');
+        }
+    });
+}
+</script>    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @if (session('success'))
     @php
-        $tipo = session('tipo', 'Ticket'); // Por defecto es Ticket si no se especifica
-        $titulo = $tipo === 'Solicitud' ? '¡Solicitud Enviada Exitosamente! 🎉' : '¡Ticket Enviado Exitosamente! 🎉';
-        $mensaje = $tipo === 'Solicitud' 
-            ? 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.' 
-            : 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.';
+    $tipo = session('tipo', 'Ticket'); // Por defecto es Ticket si no se especifica
+    $titulo = $tipo === 'Solicitud' ? '¡Solicitud Enviada Exitosamente! 🎉' : '¡Ticket Enviado Exitosamente! 🎉';
+    $mensaje = $tipo === 'Solicitud'
+    ? 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.'
+    : 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.';
     @endphp
     <script>
         Swal.fire({
@@ -562,7 +728,7 @@
             const select = document.getElementById("type");
             const ticket = document.getElementById("ticket-form");
             const solicitud = document.getElementById("solicitud-form");
-            
+
             // Función para manejar atributos required según visibilidad
             const manejarRequired = (form, visible) => {
                 const requiredFields = form.querySelectorAll('[required]');
@@ -574,7 +740,7 @@
                     }
                 });
             };
-            
+
             // Remover required inicialmente ya que ambos formularios están ocultos
             manejarRequired(ticket, false);
             manejarRequired(solicitud, false);
@@ -660,70 +826,70 @@
                 const ext = getExt(file.name);
                 // Intentar usar iconos específicos primero, con fallback a iconos básicos
                 if (file.type === "application/pdf" || ext === "pdf") {
-                    return { 
-                        icon: "fa-file-pdf", 
+                    return {
+                        icon: "fa-file-pdf",
                         fallbackIcon: "fa-file",
-                        style: "fas", 
-                        color: "text-red-600", 
+                        style: "fas",
+                        color: "text-red-600",
                         bgColor: "bg-red-50",
                         emoji: "📄"
                     };
                 }
                 if (/msword|vnd.openxmlformats-officedocument.wordprocessingml/.test(file.type) || ["doc", "docx"].includes(ext)) {
-                    return { 
-                        icon: "fa-file-word", 
+                    return {
+                        icon: "fa-file-word",
                         fallbackIcon: "fa-file-alt",
-                        style: "fas", 
-                        color: "text-blue-600", 
+                        style: "fas",
+                        color: "text-blue-600",
                         bgColor: "bg-blue-50",
                         emoji: "📝"
                     };
                 }
                 if (/vnd.ms-excel|spreadsheetml|csv/.test(file.type) || ["xls", "xlsx", "csv"].includes(ext)) {
-                    return { 
-                        icon: "fa-file-excel", 
+                    return {
+                        icon: "fa-file-excel",
                         fallbackIcon: "fa-file-alt",
-                        style: "fas", 
-                        color: "text-green-600", 
+                        style: "fas",
+                        color: "text-green-600",
                         bgColor: "bg-green-50",
                         emoji: "📊"
                     };
                 }
                 if (/vnd.ms-powerpoint|presentationml/.test(file.type) || ["ppt", "pptx"].includes(ext)) {
-                    return { 
-                        icon: "fa-file-powerpoint", 
+                    return {
+                        icon: "fa-file-powerpoint",
                         fallbackIcon: "fa-file-alt",
-                        style: "fas", 
-                        color: "text-orange-600", 
+                        style: "fas",
+                        color: "text-orange-600",
                         bgColor: "bg-orange-50",
                         emoji: "📽️"
                     };
                 }
                 if (/zip|x-7z-compressed|x-rar-compressed|x-zip-compressed/.test(file.type) || ["zip", "rar", "7z"].includes(ext)) {
-                    return { 
-                        icon: "fa-file-archive", 
+                    return {
+                        icon: "fa-file-archive",
                         fallbackIcon: "fa-file",
-                        style: "fas", 
-                        color: "text-yellow-600", 
+                        style: "fas",
+                        color: "text-yellow-600",
                         bgColor: "bg-yellow-50",
                         emoji: "📦"
                     };
                 }
                 if (/text\/plain|md|json|xml/.test(file.type) || ["txt", "md", "json", "xml"].includes(ext)) {
-                    return { 
-                        icon: "fa-file-alt", 
+                    return {
+                        icon: "fa-file-alt",
                         fallbackIcon: "fa-file-alt",
-                        style: "fas", 
-                        color: "text-gray-600", 
+                        style: "fas",
+                        color: "text-gray-600",
                         bgColor: "bg-gray-50",
                         emoji: "📄"
                     };
                 }
-                return { 
-                    icon: "fa-file", 
+                return {
+                    icon: "fa-file",
                     fallbackIcon: "fa-file",
-                    style: "fas", 
-                    color: "text-gray-600", 
+                    style: "fas",
+                    color: "text-gray-600",
                     bgColor: "bg-gray-50",
                     emoji: "📄"
                 };
@@ -749,14 +915,14 @@
                     } else {
                         const fileInfo = getFileIconInfo(file);
                         visual.className = `w-full h-32 flex flex-col items-center justify-center ${fileInfo.bgColor}`;
-                        
+
                         // Usar emoji como icono principal (más confiable y universal)
                         const emoji = document.createElement("div");
                         emoji.className = "text-6xl mb-2";
                         emoji.textContent = fileInfo.emoji;
                         emoji.style.fontSize = "3.5rem";
                         visual.appendChild(emoji);
-                        
+
                         // Agregar extensión como texto
                         const ext = getExt(file.name);
                         if (ext) {
@@ -815,7 +981,7 @@
 
                     if (currenTotal + file.size > MAX_SIZE) {
                         Swal.fire("Límite total excedido", "El total no debera pasar de 8MB", "error");
-                        break;  
+                        break;
                     }
 
                     const duplicate = Array.from(dt.files).some(
@@ -855,7 +1021,7 @@
             updateCounter();
         })();
     </script>
-    <script>
+    <!-- <script>
         $(document).ready(function() {
             const $input = $(".autoEmpleados");
             const $suggestions = $(".suggestions");
@@ -890,9 +1056,9 @@
                             const id = $(this).data("id");
                             const $clickedInput = $(this).closest('.relative').find('.autoEmpleados');
                             $clickedInput.val(nombre);
-                            
+
                             let type = $('#type').val();
-                            
+
                             // Asignar el ID según el formulario activo
                             if (type === "Ticket") {
                                 $('#EmpleadoID').val(id);
@@ -937,7 +1103,7 @@
                 }
             });
         });
-    </script>
+    </script> -->
     <script>
         $(document).ready(function() {
             const $input = $(".autoSupervisor");
@@ -991,11 +1157,11 @@
         // Variables globales para rastrear validación de correos
         let correoValido = false;
         let correoSolicitudValido = false;
-        
+
         // Script para validar correo y llenar datos automáticamente
         $(document).ready(function() {
             let correoTimeout;
-            
+
             // Función para deshabilitar todos los campos excepto el correo
             function deshabilitarCampos() {
                 correoValido = false; // Marcar correo como inválido
@@ -1007,13 +1173,13 @@
                 $('#btnEnviar').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
                 $('#dropzone').addClass('bg-gray-100 opacity-50').removeClass('hover:bg-gray-100');
             }
-            
+
             // Función para habilitar solo campos específicos
             function habilitarCamposEspecificos() {
                 correoValido = true; // Marcar correo como válido
                 // Mantener empleado deshabilitado pero visible
                 $('#autoEmpleadosTicket').prop('disabled', true).addClass('bg-gray-100');
-                
+
                 // Habilitar solo campos específicos y hacerlos requeridos
                 $('#numeroTelefono').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
                 $('#codeAnyDesk').prop('disabled', false).removeClass('bg-gray-100');
@@ -1022,20 +1188,20 @@
                 $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
                 $('#dropzone').removeClass('bg-gray-100 opacity-50').addClass('hover:bg-gray-100');
             }
-            
+
             // Deshabilitar campos inicialmente
             deshabilitarCampos();
-            
+
             $('#correoEmpleado').on('input', function() {
                 const correo = $(this).val().trim();
                 const $errorDiv = $('#correo-error');
                 const $empleadoInput = $('#autoEmpleadosTicket');
                 const $numeroInput = $('#numeroTelefono');
                 const $empleadoIDInput = $('#EmpleadoID');
-                
+
                 // Limpiar timeout anterior
                 clearTimeout(correoTimeout);
-                
+
                 // Deshabilitar campos si el correo está vacío
                 if (correo === '') {
                     deshabilitarCampos();
@@ -1045,7 +1211,7 @@
                     $errorDiv.addClass('hidden').text('');
                     return;
                 }
-                
+
                 // Validar formato de correo básico
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(correo)) {
@@ -1056,77 +1222,125 @@
                     $empleadoIDInput.val('');
                     return;
                 }
-                
+
                 // Esperar 500ms después de que el usuario deje de escribir
                 correoTimeout = setTimeout(function() {
                     buscarEmpleadoPorCorreo(correo);
                 }, 500);
             });
-            
-            function buscarEmpleadoPorCorreo(correo) {
-                const $errorDiv = $('#correo-error');
-                const $empleadoInput = $('#autoEmpleadosTicket');
-                const $numeroInput = $('#numeroTelefono');
-                const $empleadoIDInput = $('#EmpleadoID');
-                
-                // Mostrar indicador de carga
+
+            // Función corregida para buscar empleado (SOLICITUD)
+            function buscarEmpleadoPorCorreoSolicitud(correo) {
+                const $errorDiv = $('#correo-solicitud-error');
+                // Referencias a campos
+                const $empleadoInput = $('#autoEmpleadosSolicitud');
+                const $gerenciaInput = $('#NombreGerencia');
+                const $obraInput = $('#NombreObra');
+                const $puestoInput = $('#NombrePuesto');
+                const $empleadoIDInput = $('#EmpleadoIDSolicitud');
+                const $gerenciaIDInput = $('#GerenciaID');
+                const $obraIDInput = $('#ObraID');
+                const $puestoIDInput = $('#PuestoID');
+
+                // 1. IMPORTANTE: NO bloquear aquí.
+                // deshabilitarCampoUbicacion(); // <--- ELIMINADO para evitar parpadeo
+
+                // Indicadores visuales de carga
                 $empleadoInput.val('Buscando...').addClass('border-blue-500');
-                // No poner "Buscando..." en campos numéricos, solo mostrar indicador visual
-                $numeroInput.addClass('border-blue-500').prop('placeholder', 'Buscando...');
+                $gerenciaInput.val('Buscando...').addClass('border-blue-500');
+                $obraInput.val('Buscando...').addClass('border-blue-500');
+                $puestoInput.val('Buscando...').addClass('border-blue-500');
                 $errorDiv.addClass('hidden').text('');
-                
+
                 $.ajax({
                     url: '/buscarEmpleadoPorCorreo',
                     method: 'GET',
-                    data: { correo: correo },
+                    data: {
+                        correo: correo,
+                        type: 'Solicitud'
+                    },
                     success: function(data) {
-                        // Empleado encontrado - habilitar campos específicos
-                        habilitarCamposEspecificos();
-                        $empleadoInput.val(data.NombreEmpleado)
-                            .removeClass('border-blue-500 border-red-500')
-                            .addClass('border-green-500');
-                        $numeroInput.val(data.NumTelefono)
-                            .removeClass('border-blue-500 border-red-500')
-                            .addClass('border-green-500');
+                        // MARCAR COMO VÁLIDO INMEDIATAMENTE para que otros eventos no lo bloqueen
+                        correoSolicitudValido = true;
+                        window.correoSolicitudValido = true;
+
+                        // Llenar datos visuales
+                        $empleadoInput.val(data.NombreEmpleado).removeClass('border-blue-500 border-red-500').addClass('border-green-500');
+                        $gerenciaInput.val(data.NombreGerencia || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
+                        $obraInput.val(data.NombreObra || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
+                        $puestoInput.val(data.NombrePuesto || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
+
+                        // Llenar IDs
                         $empleadoIDInput.val(data.EmpleadoID);
-                        $errorDiv.addClass('hidden').text('');
+                        $gerenciaIDInput.val(data.GerenciaID || '');
+                        $obraIDInput.val(data.ObraID || '');
+                        $puestoIDInput.val(data.PuestoID || '');
+
+                        // Habilitar campos de texto generales
+                        $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
+                        $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
+                        $('#SupervisorNombre').prop('disabled', false).removeClass('bg-gray-100');
+                        $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+                        $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
+
+                        // =======================================================
+                        // ZONA CRÍTICA: DESBLOQUEO DE UBICACIÓN (PROYECTO)
+                        // =======================================================
+                        var $proyecto = $('#Proyecto');
+
+                        // 1. Aseguramos que el select nativo esté libre
+                        $proyecto.prop('disabled', false);
+                        $proyecto.removeAttr('disabled');
+
+                        // 2. Si Select2 está activo, lo forzamos a habilitarse
+                        if ($proyecto.hasClass("select2-hidden-accessible")) {
+                            $proyecto.select2('enable', true);
+                        }
+
+                        // 3. TRUCO FINAL: Eliminamos manualmente la clase de bloqueo del contenedor visual
+                        // Esto arregla el problema visual aunque la lógica falle
+                        var $s2Container = $proyecto.next('.select2-container');
+                        if ($s2Container.length) {
+                            $s2Container.removeClass('select2-container--disabled');
+                            $s2Container.find('*').css({
+                                'pointer-events': 'auto',
+                                'opacity': '1',
+                                'cursor': 'pointer'
+                            });
+                            $s2Container.find('input').prop('disabled', false);
+                        }
+
+                        // NOTA: He eliminado los setTimeout que llamaban a habilitarCampoUbicacion()
+                        // porque esas funciones externas son las que te estaban volviendo a bloquear el campo.
+                        // =======================================================
                     },
                     error: function(xhr) {
-                        // Error en la búsqueda - deshabilitar campos
-                        deshabilitarCampos();
-                        if (xhr.status === 404) {
-                            $empleadoInput.val('')
-                                .removeClass('border-blue-500 border-green-500')
-                                .addClass('border-red-500');
-                            $numeroInput.val('')
-                                .removeClass('border-blue-500 border-green-500')
-                                .addClass('border-red-500');
-                            $empleadoIDInput.val('');
-                            $errorDiv.removeClass('hidden').text(xhr.responseJSON.error || 'No se encontró correo, contacta a soporte');
-                        } else {
-                            $empleadoInput.val('')
-                                .removeClass('border-blue-500 border-green-500')
-                                .addClass('border-red-500');
-                            $numeroInput.val('')
-                                .removeClass('border-blue-500 border-green-500')
-                                .addClass('border-red-500');
-                            $empleadoIDInput.val('');
-                            $errorDiv.removeClass('hidden').text('Error al buscar empleado. Intenta de nuevo.');
-                        }
+                        // En error sí bloqueamos
+                        correoSolicitudValido = false;
+
+                        // Bloquear ubicación
+                        $('#Proyecto').prop('disabled', true);
+                        try {
+                            $('#Proyecto').select2('enable', false);
+                        } catch (e) {}
+
+                        // Limpieza de error visual...
+                        $empleadoInput.val('').addClass('border-red-500');
+                        $errorDiv.removeClass('hidden').text('No se encontró el empleado.');
                     }
                 });
             }
-            
+
             // Validación del número telefónico (10 dígitos)
             $('#numeroTelefono').on('input', function() {
                 const numero = $(this).val().replace(/\D/g, ''); // Solo números
                 const $errorDiv = $('#telefono-error');
-                
+
                 // Crear div de error si no existe
                 if ($errorDiv.length === 0) {
                     $(this).after('<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>');
                 }
-                
+
                 if (numero.length === 0) {
                     $('#telefono-error').addClass('hidden').text('');
                     $(this).removeClass('border-red-500 border-green-500').addClass('border-gray-300');
@@ -1137,21 +1351,21 @@
                     $('#telefono-error').removeClass('hidden').text('El número telefónico debe tener exactamente 10 dígitos');
                     $(this).removeClass('border-green-500 border-gray-300').addClass('border-red-500');
                 }
-                
+
                 // Actualizar el valor solo con números
                 $(this).val(numero);
             });
-            
+
             // Validación del código AnyDesk
             $('#codeAnyDesk').on('input', function() {
                 const anyDesk = $(this).val().trim();
                 const $errorDiv = $('#anydesk-error');
-                
+
                 // Crear div de error si no existe
                 if ($errorDiv.length === 0) {
                     $(this).after('<div id="anydesk-error" class="text-red-500 text-sm hidden mb-2"></div>');
                 }
-                
+
                 if (anyDesk.length === 0) {
                     $('#anydesk-error').addClass('hidden').text('');
                     $(this).removeClass('border-red-500 border-green-500').addClass('border-gray-300');
@@ -1160,17 +1374,17 @@
                     $(this).removeClass('border-red-500 border-gray-300').addClass('border-green-500');
                 }
             });
-            
+
             // Validación de la descripción
             $('#descripcionTicket').on('input', function() {
                 const descripcion = $(this).val().trim();
                 const $errorDiv = $('#descripcion-error');
-                
+
                 // Crear div de error si no existe
                 if ($errorDiv.length === 0) {
                     $(this).after('<div id="descripcion-error" class="text-red-500 text-sm hidden mb-2"></div>');
                 }
-                
+
                 if (descripcion.length === 0) {
                     $('#descripcion-error').addClass('hidden').text('');
                     $(this).removeClass('border-red-500 border-green-500').addClass('border-gray-300');
@@ -1179,11 +1393,11 @@
                     $(this).removeClass('border-red-500 border-gray-300').addClass('border-green-500');
                 }
             });
-            
+
             // Validar formulario antes de enviar
             $('form').on('submit', function(e) {
                 let errores = [];
-                
+
                 // Validar si es el formulario de Ticket
                 if ($('#ticket-form').is(':visible')) {
                     const numero = $('#numeroTelefono').val().replace(/\D/g, '');
@@ -1191,7 +1405,7 @@
                     const descripcion = $('#descripcionTicket').val().trim();
                     const correo = $('#correoEmpleado').val().trim();
                     const empleadoID = $('#EmpleadoID').val();
-                    
+
                     // Asegurar que el campo de correo se envíe correctamente
                     // Si el campo está deshabilitado, habilitarlo temporalmente para el envío
                     const $correoInput = $('#correoEmpleado');
@@ -1199,7 +1413,7 @@
                     if (correoWasDisabled) {
                         $correoInput.prop('disabled', false);
                     }
-                    
+
                     // Crear un campo hidden con el correo para asegurar que se envíe
                     if (correo && !$('#correoHidden').length) {
                         $('<input>').attr({
@@ -1211,7 +1425,7 @@
                     } else if (correo && $('#correoHidden').length) {
                         $('#correoHidden').val(correo);
                     }
-                    
+
                     // Validar formato de correo
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                     if (!correo) {
@@ -1224,12 +1438,12 @@
                         $('#correoEmpleado').addClass('border-red-500').focus();
                         $('#correo-error').removeClass('hidden').text('Debe validar el correo electrónico antes de enviar');
                     }
-                    
+
                     // Validar número telefónico
                     if (numero.length !== 10) {
                         errores.push('El número telefónico debe tener exactamente 10 dígitos');
                     }
-                    
+
                     // Validar descripción
                     if (!descripcion) {
                         errores.push('La descripción es requerida');
@@ -1239,9 +1453,7 @@
                 else if ($('#solicitud-form').is(':visible')) {
                     const correo = $('#correoEmpleadoSolicitud').val().trim();
                     const empleadoID = $('#EmpleadoIDSolicitud').val();
-                    
-                    // Validar formato de correo
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
                     if (!correo) {
                         errores.push('El correo electrónico es requerido');
                     } else if (!emailRegex.test(correo)) {
@@ -1253,7 +1465,7 @@
                         $('#correo-solicitud-error').removeClass('hidden').text('Debe validar el correo electrónico antes de enviar');
                     }
                 }
-                
+
                 if (errores.length > 0) {
                     e.preventDefault();
                     // Restaurar estado del campo de correo si se modificó
@@ -1269,12 +1481,53 @@
                     });
                     return false;
                 }
-                
+
                 // Asegurar que el campo de correo esté habilitado antes de enviar
                 if ($('#ticket-form').is(':visible')) {
                     $('#correoEmpleado').prop('disabled', false);
                 }
             });
+        });
+        // Evento para arreglar el Select2 al cambiar entre Ticket y Solicitud
+        $('#type').on('change', function() {
+            var seleccion = $(this).val();
+
+            // Ocultar todo primero
+            $('#ticket-form').addClass('hidden');
+            $('#solicitud-form').addClass('hidden');
+
+            if (seleccion === 'Ticket') {
+                $('#ticket-form').removeClass('hidden');
+            } else if (seleccion === 'Solicitud') {
+                $('#solicitud-form').removeClass('hidden');
+
+                // REINICIAR SELECT2 AL MOSTRAR EL FORMULARIO
+                setTimeout(function() {
+                    var $proyecto = $('#Proyecto');
+
+                    // Si existe una instancia previa rota, la destruimos
+                    if ($proyecto.hasClass("select2-hidden-accessible")) {
+                        $proyecto.select2('destroy');
+                    }
+
+                    // Aseguramos que el HTML esté desbloqueado
+                    $proyecto.prop('disabled', false).removeAttr('disabled');
+
+                    // Creamos la instancia nueva y limpia
+                    $proyecto.select2({
+                        placeholder: "Busca y selecciona una ubicación...",
+                        allowClear: true,
+                        width: '100%',
+                        // Tus templates visuales (si los usas) van aquí
+                        templateResult: function(data) {
+                            return data.id ? $('<span>' + data.text + '</span>') : data.text;
+                        },
+                        templateSelection: function(data) {
+                            return data.text;
+                        }
+                    });
+                }, 100); // Pequeño retraso para asegurar que el div ya es visible
+            }
         });
     </script>
     <script>
@@ -1282,10 +1535,10 @@
         $(document).ready(function() {
             let correoSolicitudTimeout;
             let intervaloHabilitacion = null;
-            
+
             // Función para deshabilitar campos cuando no hay correo válido
             function deshabilitarCamposSolicitud() {
-             
+
                 correoSolicitudValido = false; // Marcar correo como inválido
                 $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
                 $('#NombreGerencia').prop('disabled', true).addClass('bg-gray-100');
@@ -1305,11 +1558,11 @@
                 $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
                 $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
             }
-            
+
             // Función para cargar datos en el campo de ubicación
             function cargarDatosUbicacion(callback) {
                 var $proyecto = $('#Proyecto');
-                
+
                 // Verificar si el select ya tiene opciones
                 if ($proyecto.find('option').length > 0 && $proyecto.find('optgroup').length > 0) {
                     // Ya tiene datos, ejecutar callback si existe con un pequeño delay
@@ -1320,7 +1573,7 @@
                     }
                     return;
                 }
-                
+
                 // Cargar datos desde el servidor
                 $.ajax({
                     url: "/getTypes",
@@ -1361,9 +1614,9 @@
                         if (typeof $.fn.select2 !== 'undefined' && $proyecto.hasClass('select2-hidden-accessible')) {
                             $proyecto.trigger('change.select2');
                         }
-                        
+
                         $proyecto.val(null).trigger('change');
-                        
+
                         // Ejecutar callback si existe (con un pequeño delay para asegurar que Select2 se actualice)
                         if (typeof callback === 'function') {
                             setTimeout(function() {
@@ -1372,7 +1625,7 @@
                         }
                     },
                     error: function() {
-                      
+
                         // Ejecutar callback incluso si hay error
                         if (typeof callback === 'function') {
                             callback();
@@ -1380,54 +1633,54 @@
                     }
                 });
             }
-            
+
             // Función para habilitar campo de ubicación
             function habilitarCampoUbicacion() {
-               
-                
+
+
                 if (!correoSolicitudValido) {
                     return;
                 }
-                
+
                 var $proyecto = $('#Proyecto');
-                
+
                 if (!$proyecto.length) {
-                  
+
                     return;
                 }
-                
+
                 // Limpiar intervalo anterior si existe
                 if (intervaloHabilitacion) {
                     clearInterval(intervaloHabilitacion);
                     intervaloHabilitacion = null;
                 }
-                
+
                 // Función simple y directa para habilitar
                 function habilitarAhora() {
                     if (!correoSolicitudValido) {
                         return;
                     }
-                    
+
                     var $proyecto = $('#Proyecto');
                     var $select2Container = $proyecto.next('.select2-container');
-                    
+
                     if (!$select2Container.length) {
                         $select2Container = $proyecto.parent().find('.select2-container');
                     }
-                    
+
                     // Forzar habilitación del select
                     $proyecto.prop('disabled', false);
                     $proyecto.removeAttr('disabled');
-                    
+
                     // Habilitar Select2
                     if (typeof $.fn.select2 !== 'undefined') {
                         try {
                             $proyecto.select2('enable', true);
-                        } catch(e) {
-                            
+                        } catch (e) {
+
                         }
                     }
-                    
+
                     // Habilitar contenedor
                     if ($select2Container.length) {
                         $select2Container.removeClass('select2-container--disabled');
@@ -1438,22 +1691,22 @@
                         });
                         $select2Container.find('input').prop('disabled', false);
                     }
-                    
-                  
+
+
                 }
-                
+
                 // Cargar datos primero si es necesario
                 cargarDatosUbicacion(function() {
-                  
-                    
+
+
                     // Habilitar inmediatamente
                     habilitarAhora();
-                    
+
                     // Habilitar después de delays para asegurar
                     setTimeout(habilitarAhora, 50);
                     setTimeout(habilitarAhora, 200);
                     setTimeout(habilitarAhora, 500);
-                    
+
                     // Crear intervalo para mantener habilitado
                     intervaloHabilitacion = setInterval(function() {
                         if (correoSolicitudValido) {
@@ -1463,177 +1716,172 @@
                             intervaloHabilitacion = null;
                         }
                     }, 300);
-                    
+
                     console.log('Intervalo de habilitación creado');
                 });
             }
-            
+
             // Función para habilitar campos cuando el correo es válido
             function habilitarCamposSolicitud() {
                 correoSolicitudValido = true; // Marcar correo como válido
                 // Mantener empleado deshabilitado pero visible
                 $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
-                
+
                 // Habilitar campos de Gerencia, Obra y Puesto (solo lectura, ya están llenos)
                 $('#NombreGerencia').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
                 $('#NombreObra').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
                 $('#NombrePuesto').prop('disabled', true).removeClass('bg-gray-100').addClass('bg-green-50');
-                
+
                 // Habilitar todos los demás campos
                 $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
                 $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
                 $('#SupervisorNombre').prop('disabled', false).removeClass('bg-gray-100');
-                
+
                 // Habilitar campo Proyecto (Select2) usando la función específica
                 habilitarCampoUbicacion();
-                
+
                 $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
                 $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
             }
-            
+
             // Deshabilitar campos inicialmente
             deshabilitarCamposSolicitud();
-            
+
             // Función para deshabilitar campo de ubicación
-            function deshabilitarCampoUbicacion() {
-                // No deshabilitar si el correo ya es válido
-              
-                
-                // Limpiar intervalo de habilitación si existe
-                if (intervaloHabilitacion) {
-                    clearInterval(intervaloHabilitacion);
-                    intervaloHabilitacion = null;
-                }
-                
-                var $proyecto = $('#Proyecto');
-                
-                // Verificar que el elemento exista
-                if (!$proyecto.length) {
-                    return;
-                }
-                
-                // Deshabilitar el elemento select primero
-                $proyecto.prop('disabled', true);
-                
-                // Deshabilitar Select2 si está inicializado
-                if (typeof $.fn.select2 !== 'undefined') {
-                    try {
-                        $proyecto.select2('enable', false);
-                    } catch(e) {
-                        // Si falla, continuar de todas formas
-                    }
-                }
-                
-                // Buscar y deshabilitar el contenedor de Select2
-                setTimeout(function() {
-                    var $select2Container = $proyecto.next('.select2-container');
-                    if ($select2Container.length) {
-                        $select2Container.addClass('select2-container--disabled');
-                        // Deshabilitar interacciones
-                        $select2Container.find('.select2-selection').css({
-                            'pointer-events': 'none',
-                            'opacity': '0.6',
-                            'cursor': 'not-allowed'
-                        });
-                        $select2Container.find('input').prop('disabled', true);
-                    }
-                }, 50);
-            }
-            
+            function deshabilitarCamposSolicitud() {
+    correoSolicitudValido = false; // Marcar correo como inválido
+
+    // Deshabilitar inputs normales (Esto está bien, no da error)
+    $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
+    $('#NombreGerencia').prop('disabled', true).addClass('bg-gray-100');
+    $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
+    $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
+    $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
+    $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
+    $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
+    $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
+    $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
+
+    // =================================================================
+    // AQUÍ ESTÁ EL ARREGLO DEL ERROR DE CONSOLA
+    // =================================================================
+    var $proyecto = $('#Proyecto');
+
+    // 1. Siempre deshabilitamos el HTML nativo (esto nunca falla y es seguro)
+    $proyecto.prop('disabled', true);
+
+    // 2. Solo llamamos a Select2 SI ya fue inicializado.
+    // La clase 'select2-hidden-accessible' es la marca de que Select2 está vivo.
+    if ($proyecto.hasClass('select2-hidden-accessible')) {
+        try {
+            $proyecto.select2('enable', false);
+        } catch (e) {
+            console.warn("Select2 aún no listo, ignorando comando disable.");
+        }
+    }
+
+    // 3. Forzamos el estilo visual gris al contenedor (si existe)
+    // Esto asegura que se vea bloqueado aunque el JS de Select2 no haya cargado aún
+    var $select2Container = $proyecto.next('.select2-container');
+    if ($select2Container.length) {
+        $select2Container.addClass('select2-container--disabled');
+    }
+}
+
             // Función para manejar cambios en el correo
-            function manejarCambioCorreo() {
-                const correo = $('#correoEmpleadoSolicitud').val().trim();
-                const $errorDiv = $('#correo-solicitud-error');
-                const $empleadoInput = $('#autoEmpleadosSolicitud');
-                const $gerenciaInput = $('#NombreGerencia');
-                const $obraInput = $('#NombreObra');
-                const $puestoInput = $('#NombrePuesto');
-                const $empleadoIDInput = $('#EmpleadoIDSolicitud');
-                const $gerenciaIDInput = $('#GerenciaID');
-                const $obraIDInput = $('#ObraID');
-                const $puestoIDInput = $('#PuestoID');
-                
-                // Limpiar timeout anterior
-                clearTimeout(correoSolicitudTimeout);
-                
-                // Solo deshabilitar campo de ubicación cuando hay texto pero el correo aún no es válido
-                // (se habilitará solo cuando el correo sea válido y se encuentre el empleado)
-                if (correo !== '' && !correoSolicitudValido) {
-                    // Deshabilitar inmediatamente solo si el correo no es válido aún
-                    deshabilitarCampoUbicacion();
-                }
-                
-                // Deshabilitar campos si el correo está vacío
-                if (correo === '') {
-                    deshabilitarCamposSolicitud();
-                    $empleadoInput.val('').removeClass('border-green-500').addClass('border-gray-300');
-                    $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
-                    $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
-                    $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
-                    $('#Motivo').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
-                    $('#DescripcionMotivo').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
-                    $('#SupervisorNombre').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
-                    $('#Proyecto').val(null).trigger('change');
-                    $('#Requerimientos').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
-                    $empleadoIDInput.val('');
-                    $gerenciaIDInput.val('');
-                    $obraIDInput.val('');
-                    $puestoIDInput.val('');
-                    $('#SupervisorID').val('');
-                    $errorDiv.addClass('hidden').text('');
-                    return;
-                }
-                
-                // Validar formato de correo básico
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(correo)) {
-                    deshabilitarCamposSolicitud();
-                    deshabilitarCampoUbicacion(); // Asegurar que el campo de ubicación esté deshabilitado
-                    $errorDiv.removeClass('hidden').text('Por favor ingresa un correo válido');
-                    $empleadoInput.val('').removeClass('border-green-500').addClass('border-red-500');
-                    $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
-                    $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
-                    $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
-                    $('#Motivo').val('').removeClass('border-green-500').addClass('border-red-500');
-                    $('#DescripcionMotivo').val('').removeClass('border-green-500').addClass('border-red-500');
-                    $('#SupervisorNombre').val('').removeClass('border-green-500').addClass('border-red-500');
-                    $('#Proyecto').val(null).trigger('change');
-                    $('#Requerimientos').val('').removeClass('border-green-500').addClass('border-red-500');
-                    $empleadoIDInput.val('');
-                    $gerenciaIDInput.val('');
-                    $obraIDInput.val('');
-                    $puestoIDInput.val('');
-                    $('#SupervisorID').val('');
-                    return;
-                }
-                
-                // Esperar 500ms después de que el usuario deje de escribir
-                correoSolicitudTimeout = setTimeout(function() {
-                    buscarEmpleadoPorCorreoSolicitud(correo);
-                }, 500);
-            }
-            
-            // Agregar event listeners para capturar todos los cambios
-            $('#correoEmpleadoSolicitud').on('input', manejarCambioCorreo);
-            $('#correoEmpleadoSolicitud').on('keyup', manejarCambioCorreo);
-            $('#correoEmpleadoSolicitud').on('change', manejarCambioCorreo);
-            
-            // Para eventos de pegar, dar un pequeño delay para que el valor se pegue primero
-            $('#correoEmpleadoSolicitud').on('paste', function() {
-                var self = this;
-                setTimeout(function() {
-                    manejarCambioCorreo();
-                }, 10);
-            });
-            
-            // Verificar si ya hay un correo al cargar la página (después de que Select2 se inicialice)
-            setTimeout(function() {
-                const correoInicial = $('#correoEmpleadoSolicitud').val().trim();
-                if (correoInicial !== '') {
-                    deshabilitarCampoUbicacion();
-                }
-            }, 1000);
-            
+            // function manejarCambioCorreo() {
+            //     const correo = $('#correoEmpleadoSolicitud').val().trim();
+            //     const $errorDiv = $('#correo-solicitud-error');
+            //     const $empleadoInput = $('#autoEmpleadosSolicitud');
+            //     const $gerenciaInput = $('#NombreGerencia');
+            //     const $obraInput = $('#NombreObra');
+            //     const $puestoInput = $('#NombrePuesto');
+            //     const $empleadoIDInput = $('#EmpleadoIDSolicitud');
+            //     const $gerenciaIDInput = $('#GerenciaID');
+            //     const $obraIDInput = $('#ObraID');
+            //     const $puestoIDInput = $('#PuestoID');
+
+            //     // Limpiar timeout anterior
+            //     clearTimeout(correoSolicitudTimeout);
+
+            //     // Solo deshabilitar campo de ubicación cuando hay texto pero el correo aún no es válido
+            //     // (se habilitará solo cuando el correo sea válido y se encuentre el empleado)
+            //     if (correo !== '' && !correoSolicitudValido) {
+            //         // Deshabilitar inmediatamente solo si el correo no es válido aún
+            //         deshabilitarCampoUbicacion();
+            //     }
+
+            //     // Deshabilitar campos si el correo está vacío
+            //     if (correo === '') {
+            //         deshabilitarCamposSolicitud();
+            //         $empleadoInput.val('').removeClass('border-green-500').addClass('border-gray-300');
+            //         $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
+            //         $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
+            //         $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-gray-300');
+            //         $('#Motivo').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
+            //         $('#DescripcionMotivo').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
+            //         $('#SupervisorNombre').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
+            //         $('#Proyecto').val(null).trigger('change');
+            //         $('#Requerimientos').val('').removeClass('border-green-500 border-red-500').addClass('border-gray-300');
+            //         $empleadoIDInput.val('');
+            //         $gerenciaIDInput.val('');
+            //         $obraIDInput.val('');
+            //         $puestoIDInput.val('');
+            //         $('#SupervisorID').val('');
+            //         $errorDiv.addClass('hidden').text('');
+            //         return;
+            //     }
+
+            //     // Validar formato de correo básico
+            //     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            //     if (!emailRegex.test(correo)) {
+            //         deshabilitarCamposSolicitud();
+            //         deshabilitarCampoUbicacion(); // Asegurar que el campo de ubicación esté deshabilitado
+            //         $errorDiv.removeClass('hidden').text('Por favor ingresa un correo válido');
+            //         $empleadoInput.val('').removeClass('border-green-500').addClass('border-red-500');
+            //         $gerenciaInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
+            //         $obraInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
+            //         $puestoInput.val('').removeClass('border-green-500 border-blue-500').addClass('border-red-500');
+            //         $('#Motivo').val('').removeClass('border-green-500').addClass('border-red-500');
+            //         $('#DescripcionMotivo').val('').removeClass('border-green-500').addClass('border-red-500');
+            //         $('#SupervisorNombre').val('').removeClass('border-green-500').addClass('border-red-500');
+            //         $('#Proyecto').val(null).trigger('change');
+            //         $('#Requerimientos').val('').removeClass('border-green-500').addClass('border-red-500');
+            //         $empleadoIDInput.val('');
+            //         $gerenciaIDInput.val('');
+            //         $obraIDInput.val('');
+            //         $puestoIDInput.val('');
+            //         $('#SupervisorID').val('');
+            //         return;
+            //     }
+
+            //     // Esperar 500ms después de que el usuario deje de escribir
+            //     correoSolicitudTimeout = setTimeout(function() {
+            //         buscarEmpleadoPorCorreoSolicitud(correo);
+            //     }, 500);
+            // }
+
+            // // Agregar event listeners para capturar todos los cambios
+            // $('#correoEmpleadoSolicitud').on('input', manejarCambioCorreo);
+            // $('#correoEmpleadoSolicitud').on('keyup', manejarCambioCorreo);
+            // $('#correoEmpleadoSolicitud').on('change', manejarCambioCorreo);
+
+            // // Para eventos de pegar, dar un pequeño delay para que el valor se pegue primero
+            // $('#correoEmpleadoSolicitud').on('paste', function() {
+            //     var self = this;
+            //     setTimeout(function() {
+            //         manejarCambioCorreo();
+            //     }, 10);
+            // });
+
+            // // Verificar si ya hay un correo al cargar la página (después de que Select2 se inicialice)
+            // setTimeout(function() {
+            //     const correoInicial = $('#correoEmpleadoSolicitud').val().trim();
+            //     if (correoInicial !== '') {
+            //         deshabilitarCampoUbicacion();
+            //     }
+            // }, 1000);
+
             function buscarEmpleadoPorCorreoSolicitud(correo) {
                 const $errorDiv = $('#correo-solicitud-error');
                 const $empleadoInput = $('#autoEmpleadosSolicitud');
@@ -1644,30 +1892,30 @@
                 const $gerenciaIDInput = $('#GerenciaID');
                 const $obraIDInput = $('#ObraID');
                 const $puestoIDInput = $('#PuestoID');
-                
+
                 // Asegurar que el campo de ubicación esté deshabilitado durante la búsqueda
                 deshabilitarCampoUbicacion();
-                
+
                 // Mostrar indicador de carga
                 $empleadoInput.val('Buscando...').addClass('border-blue-500');
                 $gerenciaInput.val('Buscando...').addClass('border-blue-500');
                 $obraInput.val('Buscando...').addClass('border-blue-500');
                 $puestoInput.val('Buscando...').addClass('border-blue-500');
                 $errorDiv.addClass('hidden').text('');
-                
+
                 $.ajax({
                     url: '/buscarEmpleadoPorCorreo',
                     method: 'GET',
-                    data: { 
+                    data: {
                         correo: correo,
                         type: 'Solicitud'
                     },
                     success: function(data) {
-                    
-                        
+
+
                         // Primero marcar correo como válido
                         correoSolicitudValido = true;
-                        
+
                         // Llenar datos primero
                         $empleadoInput.val(data.NombreEmpleado)
                             .removeClass('border-blue-500 border-red-500')
@@ -1686,19 +1934,19 @@
                         $obraIDInput.val(data.ObraID || '');
                         $puestoIDInput.val(data.PuestoID || '');
                         $errorDiv.addClass('hidden').text('');
-                        
+
                         // Luego habilitar todos los campos
                         habilitarCamposSolicitud();
-                        
+
                         // Habilitar campo de ubicación con múltiples intentos
                         setTimeout(function() {
                             habilitarCampoUbicacion();
                         }, 100);
-                        
+
                         setTimeout(function() {
                             habilitarCampoUbicacion();
                         }, 300);
-                        
+
                         setTimeout(function() {
                             habilitarCampoUbicacion();
                         }, 600);
@@ -1760,6 +2008,38 @@
                 });
             }
         });
+
+        // Función auxiliar para que no tengas que repetir el código de los iconos dos veces
+        function formatState(data) {
+            if (!data.id) {
+                return data.text;
+            }
+            var $result = $('<span></span>');
+            var icon = '<i class="fas fa-map-marker-alt text-gray-500 mr-2"></i>';
+            var prefix = '';
+
+            // Intentamos obtener el grupo
+            var element = data.element;
+            var groupLabel = '';
+            if (element) {
+                var optgroup = $(element).closest('optgroup');
+                groupLabel = optgroup.attr('label') || '';
+            }
+
+            if (groupLabel.toLowerCase().includes("proyecto")) {
+                icon = '<i class="fas fa-folder-open text-blue-500 mr-2"></i>';
+                prefix = '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">PR</span>';
+            } else if (groupLabel.toLowerCase().includes("obra")) {
+                icon = '<i class="fas fa-building text-orange-500 mr-2"></i>';
+                prefix = '<span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded mr-2">OB</span>';
+            } else if (groupLabel.toLowerCase().includes("gerencia")) {
+                icon = '<i class="fas fa-briefcase text-purple-500 mr-2"></i>';
+                prefix = '<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded mr-2">GE</span>';
+            }
+
+            $result.append(icon + prefix + '<span>' + data.text + '</span>');
+            return $result;
+        };
     </script>
 </body>
 
