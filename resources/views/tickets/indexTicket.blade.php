@@ -141,7 +141,7 @@
             }, 800);
         }
     "
-    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden bg-[#0F1115] min-h-screen p-6">
+    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden bg-[#ffffff] min-h-screen p-6">
     
     <!-- Alert de Tickets Excedidos -->
     <div 
@@ -218,7 +218,7 @@
         @endcan
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
+            <div class="flex items-center gap-1 bg-[#fffff] border border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
                 <button
                     @click="vista = 'kanban'; localStorage.setItem('ticketsVista', 'kanban')"
                     :class="vista === 'kanban' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
@@ -245,107 +245,106 @@
     </div>
 
     <!-- Vista Kanban -->
-    <div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
+<div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
     @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
-    <div class="p-4 text-center rounded-lg bg-[#1C1F26] border border-[#2A2F3A]">
-        <div class="bg-[#242933] font-semibold text-[#F3F4F6] mb-2 p-2 rounded">{{ $titulo }}</div>
+    
+    <div class="p-4 text-center rounded-lg bg-gray-100 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 transition-colors duration-300">
+        
+        <div class="bg-white text-gray-700 font-semibold mb-2 p-2 rounded shadow-sm border border-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
+            {{ $titulo }}
+        </div>
 
         <div class="relative w-full h-[505px]">
-            <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2" style="scrollbar-width: thin; scrollbar-color: #2A2F3A #1C1F26;">
-                @forelse ($ticketsStatus[$key] as $ticket)
+            <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2" style="scrollbar-width: thin;"> 
+                 @forelse ($ticketsStatus[$key] as $ticket)
                 @php
-                $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
-                if (count($partes) >= 3) array_splice($partes, 1, 1);
-                $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
-                
-                // Calcular información de tiempo solo para tickets en proceso
-                $tiempoInfo = null;
-                $nombreResponsable = null;
-                
-                if ($key === 'proceso') {
-                    // Obtener nombre del responsable
-                    if ($ticket->responsableTI) {
-                        $partesResp = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
-                        if (count($partesResp) >= 3) array_splice($partesResp, 1, 1);
-                        $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $partesResp))->title();
-                    }
+                    // Lógica PHP original intacta
+                    $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
+                    if (count($partes) >= 3) array_splice($partes, 1, 1);
+                    $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
                     
-                    // Calcular tiempo si tiene fecha de inicio y tiempo estimado
-                    if ($ticket->FechaInicioProgreso && $ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
-                        $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                        $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
-                        $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
+                    $tiempoInfo = null;
+                    $nombreResponsable = null;
+                    
+                    if ($key === 'proceso') {
+                        if ($ticket->responsableTI) {
+                            $partesResp = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
+                            if (count($partesResp) >= 3) array_splice($partesResp, 1, 1);
+                            $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $partesResp))->title();
+                        }
                         
-                        $tiempoInfo = [
-                            'transcurrido' => round($tiempoTranscurrido, 1),
-                            'estimado' => round($tiempoEstimadoHoras, 1),
-                            'porcentaje' => round($porcentajeUsado, 1),
-                            'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
-                        ];
+                        if ($ticket->FechaInicioProgreso && $ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
+                            $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                            $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
+                            $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
+                            
+                            $tiempoInfo = [
+                                'transcurrido' => round($tiempoTranscurrido, 1),
+                                'estimado' => round($tiempoEstimadoHoras, 1),
+                                'porcentaje' => round($porcentajeUsado, 1),
+                                'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
+                            ];
+                        }
                     }
-                }
                 @endphp
 
                 <div
-                    class="bg-[#1F2937] rounded-lg border border-[#2A2F3A] hover:bg-[#273244] transition-colors p-4 text-left cursor-pointer"
+                    class="bg-white dark:bg-black rounded-lg border border-black dark:border-black hover:bg-black dark:hover:bg-black transition-all duration-200 p-4 text-left cursor-pointer shadow-sm group"
                     data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
-                    data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
-                    data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
-                    data-ticket-prioridad="{{ $ticket->Prioridad }}"
-                    data-ticket-empleado="{{ $nombreFormateado }}"
-                    data-ticket-anydesk="{{ $ticket->CodeAnyDesk }}"
-                    data-ticket-numero="{{ $ticket->Numero }}"
-                    data-ticket-correo="{{ $ticket->empleado->Correo }}"
-                    data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
-                    data-ticket-imagen="{{ htmlspecialchars($ticket->imagen ?? '', ENT_QUOTES, 'UTF-8') }}"
-                    data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
-                    data-ticket-tiempo-transcurrido="{{ $tiempoInfo['transcurrido'] ?? '' }}"
-                    data-ticket-tiempo-estimado="{{ $tiempoInfo['estimado'] ?? '' }}"
-                    data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
                     @click="abrirModalDesdeElemento($el)">
-                    <div class="flex justify-between items-start">
-                        <h3 class="text-sm font-semibold text-[#F3F4F6] truncate">
+                    
+                    <div class="flex justify-between items-start gap-2">
+                        <h3 class="text-sm font-semibold text-black dark:text-black truncate flex-1">
                             Ticket #{{ $ticket->TicketID }} 
                         </h3>
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap {{ $ticket->Prioridad == 'Baja' ? 'text-[#22C55E]' : ($ticket->Prioridad == 'Media' ? 'text-[#FBBF24]' : 'text-[#F87171]') }}" style="background-color: {{ $ticket->Prioridad == 'Baja' ? 'rgba(34, 197, 94, 0.15)' : ($ticket->Prioridad == 'Media' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(248, 113, 113, 0.15)') }};">
+                        
+                        <span class="text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap border border-transparent
+                            {{ $ticket->Prioridad == 'Baja' 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : ($ticket->Prioridad == 'Media' 
+                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' 
+                                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200') 
+                            }}">
                             {{ $ticket->Prioridad  }}
                         </span>
                     </div>
 
-                    <p class="text-sm text-[#D1D5DB] mt-2 line-clamp-2">
+                    <p class="text-sm text-black dark:text-black mt-2 line-clamp-2 leading-relaxed">
                         {{ Str::limit($ticket->Descripcion, 100, '...') }}
                     </p>
 
                     @if($key === 'proceso' && $nombreResponsable)
-                    <div class="mt-2 pt-2 border-t" style="border-color: rgba(255, 255, 255, 0.05);">
-                        <div class="flex items-center gap-2 text-xs text-[#9CA3AF]">
-                            <i class="fas fa-user-tie text-[#3B82F6]"></i>
-                            <span class="font-semibold text-[#9CA3AF]">Responsable:</span>
-                            <span class="text-[#E5E7EB]">{{ $nombreResponsable }}</span>
+                    <div class="mt-3 pt-3 border-t border-black dark:border-black">
+                        <div class="flex items-center gap-2 text-xs">
+                            <i class="fas fa-user-tie text-blue-500 dark:text-blue-400"></i>
+                            <span class="font-semibold text-black dark:text-black">Responsable:</span>
+                            <span class="text-black dark:text-black">{{ $nombreResponsable }}</span>
                         </div>
                     </div>
                     @endif
 
                     @if($key === 'proceso' && $tiempoInfo)
-                    <div class="tiempo-indicador-container mt-2 pt-2 border-t" style="border-color: rgba(255, 255, 255, 0.05);">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-[#9CA3AF]">Tiempo:</span>
-                            <span class="badge-estado text-xs px-2 py-0.5 rounded-full font-semibold text-white
-                                {{ $tiempoInfo['estado'] === 'agotado' ? '' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? '' : '') }}"
-                                style="background-color: {{ $tiempoInfo['estado'] === 'agotado' ? 'rgba(239, 68, 68, 0.3)' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'rgba(251, 191, 36, 0.3)' : 'rgba(34, 197, 94, 0.3)') }};">
+                    <div class="tiempo-indicador-container mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Tiempo:</span>
+                            
+                            <span class="text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1
+                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
+                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200') }}">
+                                
                                 @if($tiempoInfo['estado'] === 'agotado')
-                                    <i class="fas fa-exclamation-triangle"></i> Tiempo Agotado
+                                    <i class="fas fa-exclamation-triangle text-[10px]"></i> Agotado
                                 @elseif($tiempoInfo['estado'] === 'por_vencer')
-                                    <i class="fas fa-clock"></i> Por Vencer
+                                    <i class="fas fa-clock text-[10px]"></i> Por Vencer
                                 @else
-                                    <i class="fas fa-check-circle"></i> En Tiempo
+                                    <i class="fas fa-check-circle text-[10px]"></i> En Tiempo
                                 @endif
                             </span>
                         </div>
-                        <div class="text-xs text-[#6B7280]">
+                        
+                        <div class="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-1">
                             @php
                                 $horasTrans = floor($tiempoInfo['transcurrido'] ?? 0);
                                 $minsTrans = round((($tiempoInfo['transcurrido'] ?? 0) - $horasTrans) * 60);
@@ -354,33 +353,37 @@
                                 $textoTrans = ($horasTrans > 0 ? $horasTrans . 'h ' : '') . ($minsTrans > 0 ? $minsTrans . 'm' : ($horasTrans == 0 ? '0m' : ''));
                                 $textoEst = ($horasEst > 0 ? $horasEst . 'h ' : '') . ($minsEst > 0 ? $minsEst . 'm' : ($horasEst == 0 ? '0m' : ''));
                             @endphp
-                            <span class="tiempo-texto">{{ $textoTrans }} / {{ $textoEst }}</span>
+                            <span>{{ $textoTrans }}</span>
+                            <span>{{ $textoEst }}</span>
                         </div>
-                        <div class="mt-1 w-full bg-[#2A2F3A] rounded-full h-1.5">
-                            <div class="barra-progreso h-1.5 rounded-full transition-all duration-300
-                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-[#EF4444]' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-[#FBBF24]' : 'bg-[#22C55E]') }}"
+
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 overflow-hidden">
+                            <div class="h-1.5 rounded-full transition-all duration-300
+                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-500' : 
+                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500') }}"
                                 style="width: {{ min($tiempoInfo['porcentaje'], 100) }}%"></div>
                         </div>
                     </div>
                     @endif
 
-                    <div class="flex justify-between items-center mt-3 text-xs" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem;">
-                        <span class="font-semibold text-[#9CA3AF]">
-                            {{ $nombreFormateado }}
+                    <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <span class="font-medium text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                            <i class="fas fa-user text-gray-400 text-[10px]"></i> {{ $nombreFormateado }}
                         </span>
-                        <span class="text-[#6B7280]">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
+                        <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ $ticket->created_at->format('d/m H:i') }}</span>
                     </div>
                 </div>
                 @empty
-                <p class="text-sm text-[#6B7280] mt-10">No hay tickets en esta categoría.</p>
+                <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
+                    <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
+                    <p class="text-sm">Sin tickets</p>
+                </div>
                 @endforelse
             </div>
         </div>
     </div>
     @endforeach
-    </div>
-
+</div>
     <!-- Vista Lista -->
     <div x-show="vista === 'lista'" x-transition class="space-y-3 w-full max-w-full overflow-x-hidden" style="background-color: #0F1115;">
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
