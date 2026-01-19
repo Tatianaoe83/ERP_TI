@@ -12,6 +12,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CortesController;
 use App\Http\Controllers\FacturasController;
 use App\Http\Controllers\ReportesController;
+use App\Http\Controllers\SolicitudAprobacionController;
 use App\Http\Controllers\SoporteTIController;
 use App\Http\Controllers\TicketsController;
 use App\Http\Livewire\ReportesLista;
@@ -34,13 +35,14 @@ Route::get('/', function () {
 Auth::routes(['register' => false]);
 
 
+
 //y creamos un grupo de rutas protegidas para los controladores
 Route::group(['middleware' => ['auth']], function () {
     // Dashboard principal
     Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', [App\Http\Controllers\HomeController::class, 'index'])->name('dashboard');
     Route::get('/insumos-licencia-pagination', [App\Http\Controllers\HomeController::class, 'insumosLicenciaPagination'])->name('insumos.licencia.pagination');
-    
+
     Route::resource('roles', RolController::class);
     Route::resource('usuarios', UsuarioController::class);
     Route::resource('blogs', BlogController::class);
@@ -139,22 +141,22 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/tickets/exportar-reporte-mensual-excel', [App\Http\Controllers\TicketsController::class, 'exportarReporteMensualExcel'])->name('tickets.exportar-reporte-mensual-excel');
     // Ruta con parámetro dinámico debe ir AL FINAL
     Route::get('/tickets/{id}', [App\Http\Controllers\TicketsController::class, 'show']);
-    
+
     // Rutas para procesamiento automático de correos
     Route::post('/api/webhook/email-response', [App\Http\Controllers\EmailWebhookController::class, 'handleEmailResponse']);
     Route::post('/api/process-manual-response', [App\Http\Controllers\EmailWebhookController::class, 'processManualResponse']);
-    
+
     // Rutas para Webklex IMAP
     Route::post('/api/test-webklex-connection', [App\Http\Controllers\WebklexApiController::class, 'testConnection']);
     Route::post('/api/process-webklex-responses', [App\Http\Controllers\WebklexApiController::class, 'processResponses']);
     Route::get('/api/webklex-mailbox-info', [App\Http\Controllers\WebklexApiController::class, 'getMailboxInfo']);
-    
+
     // Rutas de correo (SMTP/IMAP)
     Route::get('/email/verificar-configuracion', [App\Http\Controllers\EmailController::class, 'verificarConfiguracion']);
     Route::post('/email/procesar-correos', [App\Http\Controllers\EmailController::class, 'procesarCorreos']);
     Route::post('/email/enviar-prueba', [App\Http\Controllers\EmailController::class, 'enviarCorreoPrueba']);
     Route::get('/email/estadisticas', [App\Http\Controllers\EmailController::class, 'obtenerEstadisticas']);
-    
+
     // Rutas de autenticación de Outlook (mantener para compatibilidad)
     Route::get('/auth/outlook', [App\Http\Controllers\OutlookAuthController::class, 'redirect']);
     Route::get('/auth/outlook/callback', [App\Http\Controllers\OutlookAuthController::class, 'callback']);
@@ -172,12 +174,13 @@ Route::POST('/crearTickets', [SoporteTIController::class, 'crearTickets'])
 Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
 
 // Rutas de aprobación de solicitudes
-Route::post('/solicitudes/{id}/aprobar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarSupervisor'])->name('solicitudes.aprobar-supervisor');
-Route::post('/solicitudes/{id}/rechazar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarSupervisor'])->name('solicitudes.rechazar-supervisor');
-Route::post('/solicitudes/{id}/aprobar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarGerencia'])->name('solicitudes.aprobar-gerencia');
-Route::post('/solicitudes/{id}/rechazar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarGerencia'])->name('solicitudes.rechazar-gerencia');
-Route::post('/solicitudes/{id}/aprobar-administracion', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarAdministracion'])->name('solicitudes.aprobar-administracion');
-Route::post('/solicitudes/{id}/rechazar-administracion', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarAdministracion'])->name('solicitudes.rechazar-administracion');
+Route::get('/revision-solicitud/{token}', [App\Http\Controllers\SolicitudAprobacionController::class, 'show'])->name('solicitudes.public.show');
+Route::post('/revision-solicitud/{token}/decide', [SolicitudAprobacionController::class, 'decide'])->name('solicitudes.public.decide');
+/* Route::post('/solicitudes/{id}/rechazar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarSupervisor'])->name('solicitudes.rechazar-supervisor');
+    Route::post('/solicitudes/{id}/aprobar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarGerencia'])->name('solicitudes.aprobar-gerencia');
+    Route::post('/solicitudes/{id}/rechazar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarGerencia'])->name('solicitudes.rechazar-gerencia');
+    Route::post('/solicitudes/{id}/aprobar-administracion', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarAdministracion'])->name('solicitudes.aprobar-administracion');
+    Route::post('/solicitudes/{id}/rechazar-administracion', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarAdministracion'])->name('solicitudes.rechazar-administracion'); */
 
 
 // Ruta de fallback para redirigir al dashboard

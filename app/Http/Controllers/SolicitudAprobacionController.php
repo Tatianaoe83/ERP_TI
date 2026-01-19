@@ -2,379 +2,137 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Solicitud;
-use App\Models\Empleados;
-use App\Services\SimpleEmailService;
+use App\Models\SolicitudPasos;
+use App\Models\SolicitudTokens;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class SolicitudAprobacionController extends Controller
 {
-    protected $emailService;
-
-    public function __construct(SimpleEmailService $emailService)
+    /**
+     * Vista pública por token (sin login)
+     */
+    public function show(string $token): View
     {
-        $this->emailService = $emailService;
+        $tokenRow = SolicitudTokens::query()
+            ->active()
+            ->where('token', $token)
+            ->with([
+                'approvalStep.approverEmpleado',
+                'approvalStep.solicitud.empleadoid',
+                'approvalStep.solicitud.obraid',
+                'approvalStep.solicitud.gerenciaid',
+                'approvalStep.solicitud.puestoid',
+            ])
+            ->firstOrFail();
+
+        $step = $tokenRow->approvalStep;
+        $solicitud = $step->solicitud;
+
+        $prevNotApproved = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+            ->where('step_order', '<', $step->step_order)
+            ->where('status', '!=', 'approved')
+            ->exists();
+
+        $canDecide = ! $prevNotApproved && $step->status === 'pending';
+
+        return view('solicitudes.revision-publica', [
+            'solicitud' => $solicitud,
+            'step'      => $step,
+            'tokenRow'  => $tokenRow,
+            'canDecide' => $canDecide,
+            'waitingFor' => $prevNotApproved ? $this->waitingLabel($solicitud, $step) : null,
+        ]);
     }
 
-    /**
-     * Aprobar solicitud por supervisor
-     */
-    public function aprobarSupervisor(Request $request, $id)
+    private function waitingLabel($solicitud, $currentStep): string
     {
-        try {
-            $solicitud = Solicitud::with(['empleadoid', 'gerenciaid'])->findOrFail($id);
-            $usuario = auth()->user();
-            
-            $solicitud->AprobacionSupervisor = 'Aprobado';
-            $solicitud->FechaAprobacionSupervisor = now();
-            $solicitud->SupervisorAprobadorID = $usuario->id;
-            $solicitud->ComentarioSupervisor = $request->input('comentario');
-            $solicitud->AprobacionGerencia = 'Pendiente';
-            $solicitud->Estatus = 'Pendiente Aprobación Gerencia';
-            $solicitud->save();
+        $prevStep = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+            ->where('step_order', '<', $currentStep->step_order)
+            ->where('status', '!=', 'approved')
+            ->orderBy('step_order')
+            ->first();
 
-            // Enviar notificación a gerencia
-            $this->enviarNotificacionGerencia($solicitud);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud aprobada por supervisor. Notificación enviada a gerencia.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error aprobando solicitud por supervisor: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al aprobar la solicitud: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Rechazar solicitud por supervisor
-     */
-    public function rechazarSupervisor(Request $request, $id)
-    {
-        try {
-            $solicitud = Solicitud::findOrFail($id);
-            $usuario = auth()->user();
-            
-            $solicitud->AprobacionSupervisor = 'Rechazado';
-            $solicitud->FechaAprobacionSupervisor = now();
-            $solicitud->SupervisorAprobadorID = $usuario->id;
-            $solicitud->ComentarioSupervisor = $request->input('comentario');
-            $solicitud->Estatus = 'Rechazada';
-            $solicitud->save();
-
-            // Enviar notificación al empleado
-            $this->enviarNotificacionRechazo($solicitud, 'Supervisor');
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud rechazada por supervisor.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error rechazando solicitud por supervisor: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al rechazar la solicitud: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Aprobar solicitud por gerencia
-     */
-    public function aprobarGerencia(Request $request, $id)
-    {
-        try {
-            $solicitud = Solicitud::with(['empleadoid', 'gerenciaid'])->findOrFail($id);
-            $usuario = auth()->user();
-            
-            $solicitud->AprobacionGerencia = 'Aprobado';
-            $solicitud->FechaAprobacionGerencia = now();
-            $solicitud->GerenteAprobadorID = $usuario->id;
-            $solicitud->ComentarioGerencia = $request->input('comentario');
-            $solicitud->AprobacionAdministracion = 'Pendiente';
-            $solicitud->Estatus = 'Pendiente Aprobación Administración';
-            $solicitud->save();
-
-            // Enviar notificación a administración
-            $this->enviarNotificacionAdministracion($solicitud);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud aprobada por gerencia. Notificación enviada a administración.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error aprobando solicitud por gerencia: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al aprobar la solicitud: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Rechazar solicitud por gerencia
-     */
-    public function rechazarGerencia(Request $request, $id)
-    {
-        try {
-            $solicitud = Solicitud::findOrFail($id);
-            $usuario = auth()->user();
-            
-            $solicitud->AprobacionGerencia = 'Rechazado';
-            $solicitud->FechaAprobacionGerencia = now();
-            $solicitud->GerenteAprobadorID = $usuario->id;
-            $solicitud->ComentarioGerencia = $request->input('comentario');
-            $solicitud->Estatus = 'Rechazada';
-            $solicitud->save();
-
-            // Enviar notificación al empleado
-            $this->enviarNotificacionRechazo($solicitud, 'Gerencia');
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud rechazada por gerencia.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error rechazando solicitud por gerencia: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al rechazar la solicitud: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Aprobar solicitud por administración
-     */
-    public function aprobarAdministracion(Request $request, $id)
-    {
-        try {
-            $solicitud = Solicitud::with(['empleadoid'])->findOrFail($id);
-            $usuario = auth()->user();
-            
-            $solicitud->AprobacionAdministracion = 'Aprobado';
-            $solicitud->FechaAprobacionAdministracion = now();
-            $solicitud->AdministradorAprobadorID = $usuario->id;
-            $solicitud->ComentarioAdministracion = $request->input('comentario');
-            $solicitud->Estatus = 'Pendiente Cotización TI';
-            $solicitud->save();
-
-            // Enviar notificación a TI
-            $this->enviarNotificacionTI($solicitud);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud aprobada por administración. Notificación enviada a TI para cotización.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error aprobando solicitud por administración: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al aprobar la solicitud: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Rechazar solicitud por administración
-     */
-    public function rechazarAdministracion(Request $request, $id)
-    {
-        try {
-            $solicitud = Solicitud::findOrFail($id);
-            $usuario = auth()->user();
-            
-            $solicitud->AprobacionAdministracion = 'Rechazado';
-            $solicitud->FechaAprobacionAdministracion = now();
-            $solicitud->AdministradorAprobadorID = $usuario->id;
-            $solicitud->ComentarioAdministracion = $request->input('comentario');
-            $solicitud->Estatus = 'Rechazada';
-            $solicitud->save();
-
-            // Enviar notificación al empleado
-            $this->enviarNotificacionRechazo($solicitud, 'Administración');
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud rechazada por administración.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error rechazando solicitud por administración: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al rechazar la solicitud: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Enviar notificación a gerencia
-     */
-    private function enviarNotificacionGerencia($solicitud)
-    {
-        // Obtener gerentes de la gerencia de la solicitud
-        $gerentes = Empleados::where('GerenciaID', $solicitud->GerenciaID)
-            ->where('tipo_persona', 'FISICA')
-            ->get();
-
-        foreach ($gerentes as $gerente) {
-            if ($gerente->Correo) {
-                $this->enviarEmailAprobacion($solicitud, $gerente->Correo, 'Gerencia');
-            }
-        }
-    }
-
-    /**
-     * Enviar notificación a administración
-     */
-    private function enviarNotificacionAdministracion($solicitud)
-    {
-        // Obtener usuarios de administración (puedes ajustar este criterio)
-        $administradores = Empleados::where('ObraID', 46) // Ajustar según tu lógica
-            ->where('tipo_persona', 'FISICA')
-            ->get();
-
-        foreach ($administradores as $admin) {
-            if ($admin->Correo) {
-                $this->enviarEmailAprobacion($solicitud, $admin->Correo, 'Administración');
-            }
-        }
-    }
-
-    /**
-     * Enviar notificación a TI
-     */
-    private function enviarNotificacionTI($solicitud)
-    {
-        // Obtener usuarios de TI
-        $tiUsers = Empleados::where('ObraID', 46) // Ajustar según tu lógica
-            ->where('tipo_persona', 'FISICA')
-            ->get();
-
-        foreach ($tiUsers as $ti) {
-            if ($ti->Correo) {
-                $this->enviarEmailAprobacion($solicitud, $ti->Correo, 'TI');
-            }
-        }
-    }
-
-    /**
-     * Enviar email de aprobación
-     */
-    private function enviarEmailAprobacion($solicitud, $correo, $nivel)
-    {
-        try {
-            $asunto = "Solicitud #{$solicitud->SolicitudID} - Requiere aprobación de {$nivel}";
-            $contenido = $this->construirContenidoEmailAprobacion($solicitud, $nivel);
-
-            $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-            $this->configurarMailer($mail);
-            
-            $mail->setFrom(config('mail.from.address'), config('mail.from.name'));
-            $mail->addAddress($correo);
-            $mail->isHTML(true);
-            $mail->Subject = $asunto;
-            $mail->Body = $contenido;
-            
-            $mail->send();
-            
-            Log::info("Notificación de aprobación enviada a {$correo} para solicitud #{$solicitud->SolicitudID}");
-        } catch (\Exception $e) {
-            Log::error("Error enviando notificación de aprobación: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Enviar notificación de rechazo
-     */
-    private function enviarNotificacionRechazo($solicitud, $nivel)
-    {
-        $empleado = $solicitud->empleadoid;
-        if ($empleado && $empleado->Correo) {
-            try {
-                $asunto = "Solicitud #{$solicitud->SolicitudID} - Rechazada por {$nivel}";
-                $contenido = $this->construirContenidoEmailRechazo($solicitud, $nivel);
-
-                $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
-                $this->configurarMailer($mail);
-                
-                $mail->setFrom(config('mail.from.address'), config('mail.from.name'));
-                $mail->addAddress($empleado->Correo);
-                $mail->isHTML(true);
-                $mail->Subject = $asunto;
-                $mail->Body = $contenido;
-                
-                $mail->send();
-                
-                Log::info("Notificación de rechazo enviada a {$empleado->Correo} para solicitud #{$solicitud->SolicitudID}");
-            } catch (\Exception $e) {
-                Log::error("Error enviando notificación de rechazo: " . $e->getMessage());
-            }
-        }
-    }
-
-    /**
-     * Construir contenido de email de aprobación
-     */
-    private function construirContenidoEmailAprobacion($solicitud, $nivel)
-    {
-        $empleado = $solicitud->empleadoid;
-        $url = url("/solicitudes/{$solicitud->SolicitudID}/aprobar");
-        
-        return "
-        <html>
-        <body style='font-family: Arial, sans-serif;'>
-            <h2>Solicitud Requiere Aprobación de {$nivel}</h2>
-            <p><strong>Solicitud #{$solicitud->SolicitudID}</strong></p>
-            <p><strong>Empleado:</strong> {$empleado->NombreEmpleado}</p>
-            <p><strong>Motivo:</strong> {$solicitud->Motivo}</p>
-            <p><strong>Descripción:</strong> {$solicitud->DescripcionMotivo}</p>
-            <p><a href='{$url}'>Ver y Aprobar Solicitud</a></p>
-        </body>
-        </html>
-        ";
-    }
-
-    /**
-     * Construir contenido de email de rechazo
-     */
-    private function construirContenidoEmailRechazo($solicitud, $nivel)
-    {
-        $comentario = match($nivel) {
-            'Supervisor' => $solicitud->ComentarioSupervisor,
-            'Gerencia' => $solicitud->ComentarioGerencia,
-            'Administración' => $solicitud->ComentarioAdministracion,
-            default => ''
+        return match ($prevStep?->stage) {
+            'supervisor' => 'Esperando aprobación del Supervisor',
+            'gerencia' => 'Esperando aprobación de Gerencia',
+            'administracion' => 'Esperando aprobación de Administración',
+            default => 'Esperando aprobación previa',
         };
-        
-        return "
-        <html>
-        <body style='font-family: Arial, sans-serif;'>
-            <h2>Solicitud Rechazada</h2>
-            <p>Su solicitud #{$solicitud->SolicitudID} ha sido rechazada por {$nivel}.</p>
-            " . ($comentario ? "<p><strong>Comentario:</strong> {$comentario}</p>" : "") . "
-        </body>
-        </html>
-        ";
     }
 
-    /**
-     * Configurar PHPMailer
-     */
-    private function configurarMailer($mail)
+    public function decide(Request $request, string $token): RedirectResponse
     {
-        $mail->isSMTP();
-        $mail->Host = config('mail.mailers.smtp.host');
-        $mail->SMTPAuth = true;
-        $mail->Username = config('mail.mailers.smtp.username');
-        $mail->Password = config('mail.mailers.smtp.password');
-        $mail->SMTPSecure = config('mail.mailers.smtp.encryption');
-        $mail->Port = config('mail.mailers.smtp.port');
-        $mail->CharSet = 'UTF-8';
-        $mail->Timeout = 30;
+        $data = $request->validate([
+            'decision' => 'required|in:approved,rejected',
+            'comment'  => 'nullable|string|max:5000',
+        ]);
+
+        try {
+            DB::transaction(function () use ($data, $token) {
+
+                $tokenRow = SolicitudTokens::query()
+                    ->active()
+                    ->where('token', $token)
+                    ->lockForUpdate()
+                    ->with(['approvalStep', 'approvalStep.solicitud'])
+                    ->firstOrFail();
+
+                $step = $tokenRow->approvalStep;
+                $solicitud = $step->solicitud;
+
+                if ($step->status !== 'pending') {
+                    throw new \RuntimeException('Esta etapa ya fue resuelta.');
+                }
+
+                $prevNotApproved = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+                    ->where('step_order', '<', $step->step_order)
+                    ->where('status', '!=', 'approved')
+                    ->exists();
+
+                if ($prevNotApproved) {
+                    throw new \RuntimeException('Aún faltan aprobaciones previas antes de poder firmar esta etapa.');
+                }
+
+                $step->update([
+                    'status' => $data['decision'],
+                    'comment' => $data['comment'] ?? null,
+                    'decided_at' => now(),
+                    'decided_by_empleado_id' => $step->approver_empleado_id,
+                ]);
+
+                $tokenRow->update([
+                    'used_at' => now(),
+                ]);
+
+                if ($data['decision'] === 'rejected') {
+                    $solicitud->update(['Estatus' => 'Rechazada']);
+                    return;
+                }
+
+                $pending = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+                    ->where('status', 'pending')
+                    ->exists();
+
+                $solicitud->update([
+                    'Estatus' => $pending ? 'En revisión' : 'Aprobada',
+                ]);
+            });
+
+            return redirect()
+                ->route('solicitudes.public.decide', ['token' => $token])
+                ->with('swal_success', 'Decisión registrada correctamente.');
+        } catch (ModelNotFoundException $e) {
+            return redirect()
+                ->route('solicitudes.public.decide', ['token' => $token])
+                ->with('swal_error', 'El enlace no es válido, ya expiró o ya fue usado.');
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route('solicitudes.public.decide', ['token' => $token])
+                ->with('swal_error', $e->getMessage() ?: 'Ocurrió un error al registrar la decisión.');
+        }
     }
 }

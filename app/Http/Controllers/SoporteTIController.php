@@ -7,13 +7,14 @@ use App\Models\Gerencia;
 use App\Models\Obras;
 use App\Models\Proyecto;
 use App\Models\Solicitud;
+use App\Models\SolicitudPasos;
+use App\Models\SolicitudTokens;
 use App\Models\Tickets;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PHPMailer\PHPMailer\PHPMailer;
-use Intervention\Image\Colors\Rgb\Channels\Red;
+use Illuminate\Support\Str;
 
 class SoporteTIController extends Controller
 {
@@ -40,7 +41,7 @@ class SoporteTIController extends Controller
     {
         $correo = $request->input('correo');
         $type = $request->input('type'); // 'Ticket' o 'Solicitud'
-        
+
         if (empty($correo)) {
             return response()->json(['error' => 'Correo requerido'], 400);
         }
@@ -63,7 +64,7 @@ class SoporteTIController extends Controller
         // Si el tipo es Solicitud, incluir información completa de Gerencia, Puesto y Obra
         if ($type === 'Solicitud') {
             $empleado->load(['puestos.departamentos.gerencia', 'obras']);
-            
+
             $response['GerenciaID'] = $empleado->puestos->departamentos->gerencia->GerenciaID ?? null;
             $response['NombreGerencia'] = $empleado->puestos->departamentos->gerencia->NombreGerencia ?? null;
             $response['PuestoID'] = $empleado->puestos->PuestoID ?? null;
@@ -145,10 +146,10 @@ class SoporteTIController extends Controller
 
     public function crearTickets(Request $request)
     {
-       
-        
+
+
         $type = $request->input('type');
-        
+
 
         if (!in_array($type, ['Ticket', 'Solicitud'])) {
             \Log::warning('Tipo no válido: ' . $type);
@@ -156,7 +157,7 @@ class SoporteTIController extends Controller
         }
 
         if ($type === 'Ticket') {
-          
+
             // Validar que el correo esté presente
             $correo = $request->input('Correo');
             if (empty($correo)) {
@@ -211,9 +212,9 @@ class SoporteTIController extends Controller
                 }
 
                 // Crear el ticket
-             
+
                 $ticket = Tickets::create($ticketData);
-            
+
 
                 return redirect()->back()->with([
                     'success' => 'Ticket guardado correctamente',
@@ -235,121 +236,96 @@ class SoporteTIController extends Controller
         }
 
         if ($type === 'Solicitud') {
-            // Validar que el correo esté presente
-            $correo = $request->input('Correo');
-            if (empty($correo)) {
-                return redirect()->back()->with('error', 'El correo electrónico es requerido');
-            }
 
-            // Buscar el empleado por correo para obtener el EmpleadoID
-            $empleado = Empleados::where('Correo', $correo)->first();
-            if (!$empleado) {
-                return redirect()->back()->with('error', 'No se encontró el empleado con el correo proporcionado');
-            }
-
-            $solicitud = Solicitud::create([
-                'EmpleadoID' => $empleado->EmpleadoID,
-                'Motivo' => $request->input('Motivo'),
-                'DescripcionMotivo' => $request->input('DescripcionMotivo'),
-                'Requerimientos' => $request->input('Requerimientos'),
-                'ObraID' => $request->input('ObraID'),
-                'SupervisorID' => $request->input('SupervisorID'),
-                'GerenciaID' => $request->input('GerenciaID'),
-                'PuestoID' => $request->input('PuestoID'),
-                'Proyecto' => $request->input('Proyecto') ?: '',
-                'Estatus' => 'Pendiente Aprobación Supervisor',
-                'AprobacionSupervisor' => 'Pendiente',
-                'AprobacionGerencia' => 'Pendiente',
-                'AprobacionAdministracion' => 'Pendiente',
+            $data = $request->validate([
+                'Correo' => 'required|email',
+                'Motivo' => 'nullable|string',
+                'DescripcionMotivo' => 'required|string',
+                'Requerimientos' => 'required|string',
+                'ObraID' => 'required|integer',
+                'PuestoID' => 'required|integer',
+                'Proyecto' => 'nullable|string',
+                'SupervisorID' => 'required|integer',
             ]);
 
-            // Enviar notificación al supervisor
-            $this->enviarNotificacionSupervisor($solicitud);
+            $empleadoSolicitante = Empleados::where('Correo', $data['Correo'])->first();
+            if (!$empleadoSolicitante) {
+                return redirect()->back()->with('error', 'Empleado solicitante no encontrado');
+            }
 
-            return redirect()->back()->with([
-                'success' => 'Solicitud guardada correctamente',
-                'tipo' => 'Solicitud'
-            ]);
+            $supervisor = Empleados::find($data['SupervisorID']);
+            if (! $supervisor) {
+                return redirect()->back()->with('error', 'Supervisor no encontrado');
+            }
+
+            $gerencia = $supervisor->puestos?->departamentos?->gerencia;
+
+            if (! $gerencia || ! $gerencia->NombreGerente) {
+                return redirect()->back()->with('error', 'El supervisor no tiene gerencia válida');
+            }
+
+            $gerente = Empleados::where('NombreEmpleado', $gerencia->NombreGerente)->first();
+            if (! $gerente) {
+                return redirect()->back()->with('error', 'Gerente no encontrado');
+            }
+
+            $gerenciaAdmin = Gerencia::where('NombreGerencia', 'Administración')->first();
+            if (! $gerenciaAdmin || ! $gerenciaAdmin->NombreGerente) {
+                return redirect()->back()->with('error', 'Gerencia Administración mal configurada');
+            }
+
+            $admin = Empleados::where('NombreEmpleado', $gerenciaAdmin->NombreGerente)->first();
+            if (! $admin) {
+                return redirect()->back()->with('error', 'Administrador no encontrado');
+            }
+
+            DB::transaction(function () use (
+                $data,
+                $empleadoSolicitante,
+                $supervisor,
+                $gerencia,
+                $gerente,
+                $admin
+            ) {
+
+                $solicitud = Solicitud::create([
+                    'EmpleadoID' => $empleadoSolicitante->EmpleadoID,
+                    'Motivo' => $data['Motivo'] ?? null,
+                    'DescripcionMotivo' => $data['DescripcionMotivo'],
+                    'Requerimientos' => $data['Requerimientos'],
+                    'ObraID' => $data['ObraID'],
+                    'GerenciaID' => $gerencia->GerenciaID,
+                    'PuestoID' => $data['PuestoID'],
+                    'Proyecto' => $data['Proyecto'] ?? '',
+                    'Estatus' => 'Pendiente',
+                ]);
+
+                $steps = [
+                    ['order' => 1, 'stage' => 'supervisor',     'approver' => $supervisor->EmpleadoID],
+                    ['order' => 2, 'stage' => 'gerencia',       'approver' => $gerente->EmpleadoID],
+                    ['order' => 3, 'stage' => 'administracion', 'approver' => $admin->EmpleadoID],
+                ];
+
+                foreach ($steps as $s) {
+                    $step = SolicitudPasos::create([
+                        'solicitud_id' => $solicitud->SolicitudID,
+                        'step_order' => $s['order'],
+                        'stage' => $s['stage'],
+                        'approver_empleado_id' => $s['approver'],
+                        'status' => 'pending',
+                    ]);
+
+                    SolicitudTokens::create([
+                        'approval_step_id' => $step->id,
+                        'token' => Str::uuid(),
+                        'expires_at' => now()->addDays(7),
+                    ]);
+                }
+            });
+
+            return redirect()->back()->with('success', 'Solicitud guardada correctamente');
         }
+
         return redirect()->back()->with(['error' => 'Ocurrió un error inesperado'], 500);
-    }
-
-    /**
-     * Enviar notificación al supervisor cuando se crea una solicitud
-     */
-    private function enviarNotificacionSupervisor($solicitud)
-    {
-        try {
-            $supervisor = Empleados::find($solicitud->SupervisorID);
-            if (!$supervisor || !$supervisor->Correo) {
-                Log::warning("No se pudo enviar notificación al supervisor: SupervisorID {$solicitud->SupervisorID}");
-                return;
-            }
-
-            $asunto = "Nueva Solicitud #{$solicitud->SolicitudID} - Requiere Aprobación";
-            $contenido = $this->construirContenidoEmailSupervisor($solicitud);
-
-            $mail = new PHPMailer(true);
-            $this->configurarMailer($mail);
-            
-            $mail->setFrom(config('mail.from.address'), config('mail.from.name'));
-            $mail->addAddress($supervisor->Correo);
-            $mail->isHTML(true);
-            $mail->Subject = $asunto;
-            $mail->Body = $contenido;
-            
-            $mail->send();
-            
-            Log::info("Notificación de nueva solicitud enviada a supervisor {$supervisor->Correo} para solicitud #{$solicitud->SolicitudID}");
-        } catch (\Exception $e) {
-            Log::error("Error enviando notificación al supervisor: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Construir contenido de email para supervisor
-     */
-    private function construirContenidoEmailSupervisor($solicitud)
-    {
-        $empleado = $solicitud->empleadoid;
-        $url = url("/solicitudes/{$solicitud->SolicitudID}/aprobar");
-        
-        return "
-        <html>
-        <body style='font-family: Arial, sans-serif; padding: 20px;'>
-            <h2 style='color: #2563eb;'>Nueva Solicitud Requiere Aprobación</h2>
-            <div style='background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-                <p><strong>Solicitud #{$solicitud->SolicitudID}</strong></p>
-                <p><strong>Empleado:</strong> {$empleado->NombreEmpleado}</p>
-                <p><strong>Correo:</strong> {$empleado->Correo}</p>
-                <p><strong>Motivo:</strong> {$solicitud->Motivo}</p>
-                <p><strong>Descripción:</strong> {$solicitud->DescripcionMotivo}</p>
-                <p><strong>Requerimientos:</strong> {$solicitud->Requerimientos}</p>
-                <p><strong>Fecha:</strong> {$solicitud->created_at->format('d/m/Y H:i')}</p>
-            </div>
-            <p>
-                <a href='{$url}' style='background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;'>
-                    Ver y Aprobar Solicitud
-                </a>
-            </p>
-        </body>
-        </html>
-        ";
-    }
-
-    /**
-     * Configurar PHPMailer
-     */
-    private function configurarMailer($mail)
-    {
-        $mail->isSMTP();
-        $mail->Host = config('mail.mailers.smtp.host');
-        $mail->SMTPAuth = true;
-        $mail->Username = config('mail.mailers.smtp.username');
-        $mail->Password = config('mail.mailers.smtp.password');
-        $mail->SMTPSecure = config('mail.mailers.smtp.encryption');
-        $mail->Port = config('mail.mailers.smtp.port');
-        $mail->CharSet = 'UTF-8';
-        $mail->Timeout = 30;
     }
 }

@@ -35,6 +35,8 @@ class Solicitud extends Model
 
 
     public $table = 'solicitudes';
+    protected $primaryKey = 'SolicitudID';
+
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
@@ -45,8 +47,6 @@ class Solicitud extends Model
 
 
     public $fillable = [
-        'FechaSolicitud',
-        'SupervisorID',
         'Motivo',
         'DescripcionMotivo',
         'Requerimientos',
@@ -57,18 +57,6 @@ class Solicitud extends Model
         'PuestoID',
         'EmpleadoID',
         'Proyecto',
-        'AprobacionSupervisor',
-        'FechaAprobacionSupervisor',
-        'SupervisorAprobadorID',
-        'ComentarioSupervisor',
-        'AprobacionGerencia',
-        'FechaAprobacionGerencia',
-        'GerenteAprobadorID',
-        'ComentarioGerencia',
-        'AprobacionAdministracion',
-        'FechaAprobacionAdministracion',
-        'AdministradorAprobadorID',
-        'ComentarioAdministracion'
     ];
 
     /**
@@ -78,7 +66,6 @@ class Solicitud extends Model
      */
     protected $casts = [
         'SolicitudID' => 'integer',
-        'SupervisorID' => 'integer',
         'Motivo' => 'string',
         'DescripcionMotivo' => 'string',
         'Requerimientos' => 'string',
@@ -89,12 +76,6 @@ class Solicitud extends Model
         'PuestoID' => 'integer',
         'EmpleadoID' => 'integer',
         'Proyecto' => 'string',
-        'FechaAprobacionSupervisor' => 'datetime',
-        'SupervisorAprobadorID' => 'integer',
-        'FechaAprobacionGerencia' => 'datetime',
-        'GerenteAprobadorID' => 'integer',
-        'FechaAprobacionAdministracion' => 'datetime',
-        'AdministradorAprobadorID' => 'integer'
     ];
 
     /**
@@ -103,8 +84,6 @@ class Solicitud extends Model
      * @var array
      */
     public static $rules = [
-        'FechaSolicitud' => 'required',
-        'SupervisorID' => 'required|integer',
         'Motivo' => 'nullable|string',
         'DescripcionMotivo' => 'required|string',
         'Requerimientos' => 'required|string',
@@ -158,29 +137,5 @@ class Solicitud extends Model
     public function cotizaciones()
     {
         return $this->hasMany(\App\Models\Cotizacion::class, 'SolicitudID', 'SolicitudID');
-    }
-
-    /**
-     * Relación con supervisor aprobador
-     */
-    public function supervisorAprobador()
-    {
-        return $this->belongsTo(\App\Models\Empleados::class, 'SupervisorAprobadorID', 'EmpleadoID');
-    }
-
-    /**
-     * Relación con gerente aprobador
-     */
-    public function gerenteAprobador()
-    {
-        return $this->belongsTo(\App\Models\Empleados::class, 'GerenteAprobadorID', 'EmpleadoID');
-    }
-
-    /**
-     * Relación con administrador aprobador
-     */
-    public function administradorAprobador()
-    {
-        return $this->belongsTo(\App\Models\Empleados::class, 'AdministradorAprobadorID', 'EmpleadoID');
     }
 }
