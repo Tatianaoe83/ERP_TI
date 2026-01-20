@@ -141,7 +141,7 @@
             }, 800);
         }
     "
-    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden bg-[#ffffff] min-h-screen p-6">
+    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden min-h-screen p-6">
     
     <!-- Alert de Tickets Excedidos -->
     <div 
@@ -244,359 +244,303 @@
         </div>
     </div>
 
-    <!-- Vista Kanban -->
-<div x-show="vista === 'kanban'" x-transition class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
-    @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
-    
-    <div class="p-4 text-center rounded-lg bg-gray-100 border border-gray-200 dark:bg-gray-900 dark:border-gray-800 transition-colors duration-300">
-        
-        <div class="bg-white text-gray-700 font-semibold mb-2 p-2 rounded shadow-sm border border-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700">
-            {{ $titulo }}
+
+        <!-- Vista kanban -->
+<div class="kanban-root bg-gray-100 dark:bg-[#0F1116]">
+
+<div
+    x-show="vista === 'kanban'"
+    x-transition
+    class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
+
+@foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
+
+<div class="p-4 rounded-lg text-center
+            bg-gray-100 dark:bg-gray-900
+            border border-gray-200 dark:border-gray-800">
+
+    {{-- Columna --}}
+    <div class="mb-2 p-2 rounded font-semibold shadow-sm
+                bg-white dark:bg-gray-800
+                text-gray-700 dark:text-gray-100
+                border border-gray-200 dark:border-gray-700">
+        {{ $titulo }}
+    </div>
+
+    {{-- Scroll --}}
+    <div class="relative w-full h-[505px]">
+        <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2
+                    bg-gray-100 dark:bg-[#0F1116]">
+
+        @forelse ($ticketsStatus[$key] as $ticket)
+
+        @php
+            $nombreResponsable = null;
+            $tiempoInfo = null;
+
+            $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
+            if (count($partes) >= 3) array_splice($partes, 1, 1);
+            $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
+
+            if ($key === 'proceso') {
+                if ($ticket->responsableTI) {
+                    $p = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
+                    if (count($p) >= 3) array_splice($p, 1, 1);
+                    $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
+                }
+
+                if ($ticket->FechaInicioProgreso && $ticket->tipoticket?->TiempoEstimadoMinutos) {
+                    $estimado = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                    $trans = $ticket->tiempo_respuesta ?? 0;
+                    $porcentaje = $estimado > 0 ? ($trans / $estimado) * 100 : 0;
+
+                    $tiempoInfo = [
+                        'transcurrido' => round($trans, 1),
+                        'estimado' => round($estimado, 1),
+                        'porcentaje' => round($porcentaje, 1),
+                        'estado' => $porcentaje >= 100
+                            ? 'agotado'
+                            : ($porcentaje >= 80 ? 'por_vencer' : 'normal')
+                    ];
+                }
+            }
+        @endphp
+
+        {{-- Card --}}
+        <div
+            class="group cursor-pointer p-4 rounded-lg border shadow-sm
+                   bg-white dark:bg-gray-800
+                   border-gray-200 dark:border-gray-700
+                   hover:shadow-md"
+            data-categoria="{{ $key }}"
+            data-ticket-id="{{ $ticket->TicketID }}"
+            @click="abrirModalDesdeElemento($el)">
+
+            {{-- Header --}}
+            <div class="flex justify-between items-start gap-2">
+                <h3 class="text-sm font-semibold truncate text-gray-900 dark:text-gray-100">
+                    Ticket #{{ $ticket->TicketID }}
+                </h3>
+
+                <span class="text-xs font-bold px-2 py-1 rounded-full
+                    @if($ticket->Prioridad=='Baja') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                    @elseif($ticket->Prioridad=='Media') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                    @else bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                    @endif">
+                    {{ $ticket->Prioridad }}
+                </span>
+            </div>
+
+            {{-- Descripción --}}
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                {{ Str::limit($ticket->Descripcion, 100) }}
+            </p>
+
+            {{-- Responsable --}}
+            @if($key==='proceso' && $nombreResponsable)
+            <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs">
+                <i class="fas fa-user-tie text-blue-500"></i>
+                <span class="ml-1 text-gray-400">Responsable:</span>
+                <span class="text-gray-300">{{ $nombreResponsable }}</span>
+            </div>
+            @endif
+
+            {{-- Footer --}}
+            <div class="flex justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs">
+                <span class="text-gray-400">
+                    <i class="fas fa-user"></i> {{ $nombreFormateado }}
+                </span>
+                <span class="text-gray-500">{{ $ticket->created_at->format('d/m H:i') }}</span>
+            </div>
         </div>
 
-        <div class="relative w-full h-[505px]">
-            <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2" style="scrollbar-width: thin;"> 
-                 @forelse ($ticketsStatus[$key] as $ticket)
-                @php
-                    // Lógica PHP original intacta
-                    $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
-                    if (count($partes) >= 3) array_splice($partes, 1, 1);
-                    $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
-                    
-                    $tiempoInfo = null;
-                    $nombreResponsable = null;
-                    
-                    if ($key === 'proceso') {
-                        if ($ticket->responsableTI) {
-                            $partesResp = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
-                            if (count($partesResp) >= 3) array_splice($partesResp, 1, 1);
-                            $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $partesResp))->title();
-                        }
-                        
-                        if ($ticket->FechaInicioProgreso && $ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
-                            $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                            $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
-                            $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
-                            
-                            $tiempoInfo = [
-                                'transcurrido' => round($tiempoTranscurrido, 1),
-                                'estimado' => round($tiempoEstimadoHoras, 1),
-                                'porcentaje' => round($porcentajeUsado, 1),
-                                'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
-                            ];
-                        }
-                    }
-                @endphp
+        @empty
+        <div class="flex flex-col items-center py-10 text-gray-400">
+            <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
+            <p class="text-sm">Sin tickets</p>
+        </div>
+        @endforelse
 
-                <div
-                    class="bg-white dark:bg-black rounded-lg border border-black dark:border-black hover:bg-black dark:hover:bg-black transition-all duration-200 p-4 text-left cursor-pointer shadow-sm group"
-                    data-categoria="{{ $key }}"
-                    data-ticket-id="{{ $ticket->TicketID }}"
-                    @click="abrirModalDesdeElemento($el)">
-                    
-                    <div class="flex justify-between items-start gap-2">
-                        <h3 class="text-sm font-semibold text-black dark:text-black truncate flex-1">
-                            Ticket #{{ $ticket->TicketID }} 
-                        </h3>
-                        
-                        <span class="text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap border border-transparent
-                            {{ $ticket->Prioridad == 'Baja' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                                : ($ticket->Prioridad == 'Media' 
-                                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' 
-                                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200') 
-                            }}">
-                            {{ $ticket->Prioridad  }}
-                        </span>
-                    </div>
-
-                    <p class="text-sm text-black dark:text-black mt-2 line-clamp-2 leading-relaxed">
-                        {{ Str::limit($ticket->Descripcion, 100, '...') }}
-                    </p>
-
-                    @if($key === 'proceso' && $nombreResponsable)
-                    <div class="mt-3 pt-3 border-t border-black dark:border-black">
-                        <div class="flex items-center gap-2 text-xs">
-                            <i class="fas fa-user-tie text-blue-500 dark:text-blue-400"></i>
-                            <span class="font-semibold text-black dark:text-black">Responsable:</span>
-                            <span class="text-black dark:text-black">{{ $nombreResponsable }}</span>
-                        </div>
-                    </div>
-                    @endif
-
-                    @if($key === 'proceso' && $tiempoInfo)
-                    <div class="tiempo-indicador-container mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Tiempo:</span>
-                            
-                            <span class="text-xs px-2 py-0.5 rounded-full font-semibold flex items-center gap-1
-                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 
-                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200') }}">
-                                
-                                @if($tiempoInfo['estado'] === 'agotado')
-                                    <i class="fas fa-exclamation-triangle text-[10px]"></i> Agotado
-                                @elseif($tiempoInfo['estado'] === 'por_vencer')
-                                    <i class="fas fa-clock text-[10px]"></i> Por Vencer
-                                @else
-                                    <i class="fas fa-check-circle text-[10px]"></i> En Tiempo
-                                @endif
-                            </span>
-                        </div>
-                        
-                        <div class="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-1">
-                            @php
-                                $horasTrans = floor($tiempoInfo['transcurrido'] ?? 0);
-                                $minsTrans = round((($tiempoInfo['transcurrido'] ?? 0) - $horasTrans) * 60);
-                                $horasEst = floor($tiempoInfo['estimado'] ?? 0);
-                                $minsEst = round((($tiempoInfo['estimado'] ?? 0) - $horasEst) * 60);
-                                $textoTrans = ($horasTrans > 0 ? $horasTrans . 'h ' : '') . ($minsTrans > 0 ? $minsTrans . 'm' : ($horasTrans == 0 ? '0m' : ''));
-                                $textoEst = ($horasEst > 0 ? $horasEst . 'h ' : '') . ($minsEst > 0 ? $minsEst . 'm' : ($horasEst == 0 ? '0m' : ''));
-                            @endphp
-                            <span>{{ $textoTrans }}</span>
-                            <span>{{ $textoEst }}</span>
-                        </div>
-
-                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5 overflow-hidden">
-                            <div class="h-1.5 rounded-full transition-all duration-300
-                                {{ $tiempoInfo['estado'] === 'agotado' ? 'bg-red-500' : 
-                                   ($tiempoInfo['estado'] === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500') }}"
-                                style="width: {{ min($tiempoInfo['porcentaje'], 100) }}%"></div>
-                        </div>
-                    </div>
-                    @endif
-
-                    <div class="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                        <span class="font-medium text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                            <i class="fas fa-user text-gray-400 text-[10px]"></i> {{ $nombreFormateado }}
-                        </span>
-                        <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ $ticket->created_at->format('d/m H:i') }}</span>
-                    </div>
-                </div>
-                @empty
-                <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500">
-                    <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
-                    <p class="text-sm">Sin tickets</p>
-                </div>
-                @endforelse
-            </div>
         </div>
     </div>
-    @endforeach
 </div>
+
+@endforeach
+</div>
+</div>
+
+
     <!-- Vista Lista -->
-    <div x-show="vista === 'lista'" x-transition class="space-y-3 w-full max-w-full overflow-x-hidden" style="background-color: #0F1115;">
-        @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
-        <div class="rounded-lg overflow-hidden" style="background-color: #1C1F26; border: 1px solid #2A2F3A;">
-            <div class="px-4 py-2 flex justify-between items-center" style="background-color: #242933;">
-                <h3 class="font-semibold text-sm" style="color: #F3F4F6;">{{ $titulo }}</h3>
-                <span class="text-xs" style="color: #9CA3AF;" x-text="`Total: ${ticketsLista['{{ $key }}'] || 0}`"></span>
-            </div>
-            <div style="border-top: 1px solid #2A2F3A;">
-                @forelse ($ticketsStatus[$key] as $ticket)
-                @php
+    <div
+    x-show="vista === 'lista'"
+    x-transition
+    class="space-y-3 w-full max-w-full overflow-x-hidden
+           bg-gray-100 dark:bg-[#0F1115]">
+
+    @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
+
+    <div class="rounded-lg overflow-hidden
+                bg-white dark:bg-[#1C1F26]
+                border border-gray-200 dark:border-[#2A2F3A]">
+
+        {{-- Header --}}
+        <div class="px-4 py-2 flex justify-between items-center
+                    bg-gray-200 dark:bg-[#242933]">
+            <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                {{ $titulo }}
+            </h3>
+
+            <span class="text-xs text-gray-600 dark:text-gray-400"
+                  x-text="`Total: ${ticketsLista['{{ $key }}'] || 0}`">
+            </span>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-[#2A2F3A]">
+
+            @forelse ($ticketsStatus[$key] as $ticket)
+
+            @php
                 $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
                 if (count($partes) >= 3) array_splice($partes, 1, 1);
                 $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
-                
-                // Calcular información de tiempo solo para tickets en proceso
+
                 $tiempoInfo = null;
                 $nombreResponsable = null;
-                
+
                 if ($key === 'proceso') {
-                    // Obtener nombre del responsable
                     if ($ticket->responsableTI) {
                         $partesResp = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
                         if (count($partesResp) >= 3) array_splice($partesResp, 1, 1);
                         $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $partesResp))->title();
                     }
-                    
-                    // Calcular tiempo si tiene fecha de inicio y tiempo estimado
-                    if ($ticket->FechaInicioProgreso && $ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
-                        $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                        $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
-                        $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
-                        
+
+                    if ($ticket->FechaInicioProgreso && $ticket->tipoticket?->TiempoEstimadoMinutos) {
+                        $estimado = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                        $trans = $ticket->tiempo_respuesta ?? 0;
+                        $porcentaje = $estimado > 0 ? ($trans / $estimado) * 100 : 0;
+
                         $tiempoInfo = [
-                            'transcurrido' => round($tiempoTranscurrido, 1),
-                            'estimado' => round($tiempoEstimadoHoras, 1),
-                            'porcentaje' => round($porcentajeUsado, 1),
-                            'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
+                            'trans' => $trans,
+                            'est' => $estimado,
+                            'estado' => $porcentaje >= 100 ? 'agotado' : ($porcentaje >= 80 ? 'por_vencer' : 'normal')
                         ];
                     }
                 }
-                @endphp
-                <div
-                    class="p-4 transition cursor-pointer"
-                    style="background-color: #1F2937; border-bottom: 1px solid #2A2F3A;"
-                    onmouseover="this.style.backgroundColor='#273244'"
-                    onmouseout="this.style.backgroundColor='#1F2937'"
-                    data-categoria="{{ $key }}"
-                    data-ticket-id="{{ $ticket->TicketID }}"
-                    data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
-                    data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
-                    data-ticket-prioridad="{{ $ticket->Prioridad }}"
-                    data-ticket-empleado="{{ $nombreFormateado }}"
-                    data-ticket-anydesk="{{ $ticket->CodeAnyDesk }}"
-                    data-ticket-numero="{{ $ticket->Numero }}"
-                    data-ticket-correo="{{ $ticket->empleado->Correo }}"
-                    data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
-                    data-ticket-imagen="{{ htmlspecialchars($ticket->imagen ?? '', ENT_QUOTES, 'UTF-8') }}"
-                    data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
-                    data-ticket-tiempo-transcurrido="{{ $tiempoInfo['transcurrido'] ?? '' }}"
-                    data-ticket-tiempo-estimado="{{ $tiempoInfo['estimado'] ?? '' }}"
-                    data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
-                    x-show="estaEnPaginaListaPorElemento('{{ $key }}', $el)"
-                    @click="abrirModalDesdeElemento($el)">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-3 mb-2">
-                                <h4 class="text-base font-semibold" style="color: #F3F4F6;">Ticket #{{ $ticket->TicketID }}</h4>
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="color: {{ $ticket->Prioridad == 'Baja' ? '#22C55E' : ($ticket->Prioridad == 'Media' ? '#FBBF24' : '#F87171') }}; background-color: {{ $ticket->Prioridad == 'Baja' ? 'rgba(34, 197, 94, 0.15)' : ($ticket->Prioridad == 'Media' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(248, 113, 113, 0.15)') }};">
-                                    {{ $ticket->Prioridad }}
-                                </span>
-                            </div>
-                            <p class="text-sm mb-3 line-clamp-2" style="color: #D1D5DB;">
-                                {{ Str::limit($ticket->Descripcion, 150, '...') }}
-                            </p>
-                            <div class="flex items-center gap-4 text-xs flex-wrap" style="color: #9CA3AF;">
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-user" style="color: #6B7280;"></i>
-                                    <span class="font-semibold" style="color: #9CA3AF;">{{ $nombreFormateado }}</span>
-                                </span>
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-calendar" style="color: #6B7280;"></i>
-                                    <span style="color: #9CA3AF;">{{ $ticket->created_at->format('d/m/Y H:i:s') }}</span>
-                                </span>
-                                @if($key === 'proceso' && $nombreResponsable)
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-user-tie" style="color: #3B82F6;"></i>
-                                    <span class="font-semibold" style="color: #9CA3AF;">Responsable:</span>
-                                    <span style="color: #E5E7EB;">{{ $nombreResponsable }}</span>
-                                </span>
-                                @endif
-                                @if($key === 'proceso' && $tiempoInfo)
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-clock" style="color: #6B7280;"></i>
-                                    <span class="font-semibold" style="color: #9CA3AF;">Tiempo:</span>
-                                    @php
-                                        $horasTrans = floor($tiempoInfo['transcurrido'] ?? 0);
-                                        $minsTrans = round((($tiempoInfo['transcurrido'] ?? 0) - $horasTrans) * 60);
-                                        $horasEst = floor($tiempoInfo['estimado'] ?? 0);
-                                        $minsEst = round((($tiempoInfo['estimado'] ?? 0) - $horasEst) * 60);
-                                        $textoTrans = ($horasTrans > 0 ? $horasTrans . 'h ' : '') . ($minsTrans > 0 ? $minsTrans . 'm' : ($horasTrans == 0 ? '0m' : ''));
-                                        $textoEst = ($horasEst > 0 ? $horasEst . 'h ' : '') . ($minsEst > 0 ? $minsEst . 'm' : ($horasEst == 0 ? '0m' : ''));
-                                    @endphp
-                                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
-                                        style="color: {{ $tiempoInfo['estado'] === 'agotado' ? '#F87171' : ($tiempoInfo['estado'] === 'por_vencer' ? '#FBBF24' : '#22C55E') }}; background-color: {{ $tiempoInfo['estado'] === 'agotado' ? 'rgba(248, 113, 113, 0.15)' : ($tiempoInfo['estado'] === 'por_vencer' ? 'rgba(251, 191, 36, 0.15)' : 'rgba(34, 197, 94, 0.15)') }};">
-                                        {{ $textoTrans }} / {{ $textoEst }}
-                                    </span>
-                                </span>
-                                @endif
-                                @if($ticket->CodeAnyDesk)
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-desktop" style="color: #6B7280;"></i>
-                                    <span style="color: #9CA3AF;">{{ $ticket->CodeAnyDesk }}</span>
-                                </span>
-                                @endif
-                            </div>
+            @endphp
+
+            <div
+                class="p-4 cursor-pointer transition
+                       bg-gray-50 dark:bg-gray-800
+                       hover:bg-gray-200 dark:hover:bg-[#273244]
+                       border-b border-gray-200 dark:border-[#2A2F3A]"
+
+                data-categoria="{{ $key }}"
+                data-ticket-id="{{ $ticket->TicketID }}"
+                data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
+                data-ticket-empleado="{{ $nombreFormateado }}"
+                data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
+                data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
+
+                x-show="estaEnPaginaListaPorElemento('{{ $key }}', $el)"
+                @click="abrirModalDesdeElemento($el)">
+
+                <div class="flex justify-between gap-4">
+
+                    <div class="flex-1 min-w-0">
+
+                        {{-- Título --}}
+                        <div class="flex items-center gap-3 mb-2">
+                            <h4 class="font-semibold text-gray-900 dark:text-gray-100">
+                                Ticket #{{ $ticket->TicketID }}
+                            </h4>
+
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                                @if($ticket->Prioridad == 'Baja')
+                                    text-green-600 bg-green-100 dark:bg-green-500/20
+                                @elseif($ticket->Prioridad == 'Media')
+                                    text-yellow-600 bg-yellow-100 dark:bg-yellow-500/20
+                                @else
+                                    text-red-600 bg-red-100 dark:bg-red-500/20
+                                @endif">
+                                {{ $ticket->Prioridad }}
+                            </span>
                         </div>
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-chevron-right" style="color: #6B7280;" onmouseover="this.style.color='#F3F4F6'" onmouseout="this.style.color='#6B7280'"></i>
+
+                        {{-- Descripción --}}
+                        <p class="text-sm mb-3 text-gray-700 dark:text-gray-300 line-clamp-2">
+                            {{ Str::limit($ticket->Descripcion, 150) }}
+                        </p>
+
+                        {{-- Info --}}
+                        <div class="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-400">
+
+                            <span class="flex items-center gap-1">
+                                <i class="fas fa-user"></i>
+                                <span class="font-semibold">{{ $nombreFormateado }}</span>
+                            </span>
+
+                            <span class="flex items-center gap-1">
+                                <i class="fas fa-calendar"></i>
+                                {{ $ticket->created_at->format('d/m/Y H:i:s') }}
+                            </span>
+
+                            @if($key === 'proceso' && $nombreResponsable)
+                            <span class="flex items-center gap-1">
+                                <i class="fas fa-user-tie text-blue-500"></i>
+                                <span class="text-gray-800 dark:text-gray-200">
+                                    {{ $nombreResponsable }}
+                                </span>
+                            </span>
+                            @endif
+
                         </div>
                     </div>
-                </div>
-                @empty
-                <div class="p-8 text-center">
-                    <p class="text-sm" style="color: #6B7280;">No hay tickets en esta categoría.</p>
-                </div>
-                @endforelse
-            </div>
-            <!-- Paginación Lista - Cada sección tiene su propia paginación independiente -->
-            <div x-show="ticketsLista && ticketsLista['{{ $key }}'] !== undefined && ticketsLista['{{ $key }}'] > 0" class="px-4 py-3" style="background-color: #1C1F26; border-top: 1px solid #2A2F3A;">
-                <div class="flex items-center justify-between">
-                    <div class="text-sm" style="color: #9CA3AF;">
-                        <span x-text="`Mostrando ${((paginaLista['{{ $key }}'] - 1) * elementosPorPagina) + 1} - ${Math.min(paginaLista['{{ $key }}'] * elementosPorPagina, ticketsLista['{{ $key }}'] || 0)} de ${ticketsLista['{{ $key }}'] || 0} tickets`"></span>
-                        <span x-show="obtenerTotalPaginasLista('{{ $key }}') > 1" class="ml-2" x-text="`(Página ${paginaLista['{{ $key }}']} de ${obtenerTotalPaginasLista('{{ $key }}')})`"></span>
-                    </div>
-                    <div x-show="obtenerTotalPaginasLista('{{ $key }}') > 1" class="flex items-center gap-2">
-                        <button
-                            @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] - 1)"
-                            :disabled="paginaLista['{{ $key }}'] === 1"
-                            class="px-3 py-1.5 text-sm font-medium rounded-md transition"
-                            style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
-                            onmouseover="if(paginaLista['{{ $key }}'] !== 1) this.style.backgroundColor='#242933'"
-                            onmouseout="this.style.backgroundColor='#1F2937'"
-                            :style="paginaLista['{{ $key }}'] === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">
-                            <i class="fas fa-chevron-left text-xs"></i> Anterior
-                        </button>
-                        <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasLista('{{ $key }}'), 10)}, (_, i) => {
-                            const total = obtenerTotalPaginasLista('{{ $key }}');
-                            const current = paginaLista['{{ $key }}'];
-                            let start = Math.max(1, current - 4);
-                            let end = Math.min(total, start + 9);
-                            if (end - start < 9) start = Math.max(1, end - 9);
-                            return start + i;
-                        }).filter((p, i, arr) => p <= obtenerTotalPaginasLista('{{ $key }}') && (i === 0 || p !== arr[i-1]))" :key="pagina">
-                            <button
-                                @click="cambiarPaginaLista('{{ $key }}', pagina)"
-                                class="px-3 py-1.5 text-sm font-medium border rounded-md transition"
-                                :style="paginaLista['{{ $key }}'] === pagina ? 'background-color: #3B82F6; color: white; border-color: #3B82F6;' : 'background-color: #1F2937; border-color: #2A2F3A; color: #E5E7EB;'"
-                                onmouseover="if(paginaLista['{{ $key }}'] !== pagina) this.style.backgroundColor='#242933'"
-                                onmouseout="if(paginaLista['{{ $key }}'] !== pagina) this.style.backgroundColor='#1F2937'">
-                                <span x-text="pagina"></span>
-                            </button>
-                        </template>
-                        <button
-                            @click="cambiarPaginaLista('{{ $key }}', paginaLista['{{ $key }}'] + 1)"
-                            :disabled="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}')"
-                            class="px-3 py-1.5 text-sm font-medium rounded-md transition"
-                            style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
-                            onmouseover="if(paginaLista['{{ $key }}'] !== obtenerTotalPaginasLista('{{ $key }}')) this.style.backgroundColor='#242933'"
-                            onmouseout="this.style.backgroundColor='#1F2937'"
-                            :style="paginaLista['{{ $key }}'] === obtenerTotalPaginasLista('{{ $key }}') ? 'opacity: 0.5; cursor: not-allowed;' : ''">
-                            Siguiente <i class="fas fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
+
+                    <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500"></i>
                 </div>
             </div>
+
+            @empty
+            <div class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                No hay tickets en esta categoría.
+            </div>
+            @endforelse
+
         </div>
-        @endforeach
     </div>
 
+    @endforeach
+</div>
+
     <!-- Vista Tabla -->
-    <div x-show="vista === 'tabla'" x-transition class="rounded-lg overflow-hidden w-full max-w-full" style="background-color: #1C1F26; border: 1px solid #2A2F3A;">
-        <div class="px-4 py-3 flex items-center justify-between" style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;">
+    <div x-show="vista === 'tabla'" x-transition class="rounded-lg overflow-hidden w-full max-w-full">
+        <div class="px-4 py-3 flex items-center justify-between" >
             <div class="text-sm" style="color: #9CA3AF;">
                 <span x-text="`Mostrando ${(paginaTabla - 1) * elementosPorPagina + 1} - ${Math.min(paginaTabla * elementosPorPagina, ticketsTabla.length)} de ${ticketsTabla.length} tickets`"></span>
             </div>
             <div class="text-sm flex items-center gap-2" style="color: #9CA3AF;">
                 <span>Elementos por página:</span>
                 <select x-model="elementosPorPagina" @change="paginaTabla = 1" class="px-2 py-1 rounded text-sm"
-                    style="background-color: #1C1F26; border: 1px solid #2A2F3A; color: #E5E7EB;"
                     onfocus="this.style.borderColor='#2563EB'"
                     onblur="this.style.borderColor='#2A2F3A'">
-                    <option value="5" style="background-color: #1C1F26; color: #E5E7EB;">5</option>
-                    <option value="10" style="background-color: #1C1F26; color: #E5E7EB;">10</option>
-                    <option value="25" style="background-color: #1C1F26; color: #E5E7EB;">25</option>
-                    <option value="50" style="background-color: #1C1F26; color: #E5E7EB;">50</option>
+                    <option value="5" >5</option>
+                    <option value="10" >10</option>
+                    <option value="25" >25</option>
+                    <option value="50" >50</option>
                 </select>
             </div>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full" style="border-collapse: separate; border-spacing: 0;">
-                <thead style="background-color: #242933;">
+                <thead >
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
-                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
-                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
-                            onmouseout="this.style.backgroundColor='transparent'"
                             @click="cambiarOrden('id')">
                             <div class="flex items-center gap-2">
                                 <span>ID</span>
                                 <i class="fas fa-sort text-xs"
                                    style="color: #6B7280;"
-                                   :style="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
+                                   :style="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? ) : ''"
                                    :class="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
                                    onmouseover="this.style.color='#F3F4F6'"
                                    onmouseout="this.style.color=ordenColumna === 'id' ? '#3B82F6' : '#6B7280'"></i>
@@ -682,13 +626,10 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;">Acciones</th>
                     </tr>
                 </thead>
-                <tbody style="background-color: #1C1F26;">
+                <tbody>
                     <template x-for="(ticket, index) in obtenerTicketsTablaPagina()" :key="`ticket-${paginaTabla}-${index}-${ticket.id || index}`">
                         <tr
                             class="transition cursor-pointer"
-                            style="background-color: #1F2937; border-bottom: 1px solid #2A2F3A;"
-                            onmouseover="this.style.backgroundColor='#273244'"
-                            onmouseout="this.style.backgroundColor='#1F2937'"
                             :data-ticket-id="ticket.id"
                             :data-ticket-asunto="ticket.asunto"
                             :data-ticket-descripcion="ticket.descripcion"
@@ -700,7 +641,7 @@
                             :data-ticket-fecha="ticket.fecha"
                             @click="abrirModalDesdeElemento($el)">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold" style="color: #F3F4F6;" x-text="'#' + ticket.id"></div>
+                                <div class="text-sm font-semibold" x-text="'#' + ticket.id"></div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm max-w-md truncate" style="color: #D1D5DB;" x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
@@ -748,7 +689,7 @@
             </table>
         </div>
         <!-- Paginación Tabla -->
-        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 flex items-center justify-between" style="background-color: #1C1F26; border-top: 1px solid #2A2F3A;">
+        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 flex items-center justify-between" style=" border-top: 1px ">
             <div class="text-sm" style="color: #9CA3AF;">
                 <span x-text="`Página ${paginaTabla} de ${obtenerTotalPaginasTabla()}`"></span>
             </div>
@@ -757,7 +698,7 @@
                     @click="cambiarPaginaTabla(paginaTabla - 1)"
                     :disabled="paginaTabla === 1"
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition"
-                    style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                    style="border: 1px"
                     onmouseover="if(paginaTabla !== 1) this.style.backgroundColor='#242933'"
                     onmouseout="this.style.backgroundColor='#1F2937'"
                     :style="paginaTabla === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">
@@ -794,6 +735,11 @@
         </div>
     </div>
 
+    
+    
+
+            <!-- modal -->
+
     <div
         x-show="mostrar && selected.id"
         x-transition:enter="transition ease-out duration-300"
@@ -803,42 +749,41 @@
         x-transition:leave-start="opacity-100 translate-y-0"
         x-transition:leave-end="opacity-0 translate-y-10"
         class="fixed inset-0 flex items-center justify-center backdrop-blur-md z-50"
-        style="background-color: rgba(15, 17, 21, 0.85);"
         @click.self="cerrarModal"
         x-cloak>
         <div
             class="w-[95%] md:w-[90%] lg:w-[1400px] xl:w-[1600px] rounded-2xl overflow-hidden border transition-all duration-300"
-            style="background-color: #1C1F26; border-color: #2A2F3A; border-width: 1px;"
+            style="border-width: 1px;"
             @click.stop>
-            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] rounded-2xl overflow-hidden" style="background-color: #1C1F26;">
+            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] rounded-2xl overflow-hidden">
 
-                <aside class="p-6 flex flex-col overflow-y-auto" style="background-color: #1F2937; border-right: 1px solid #2A2F3A;">
-                    <h2 class="text-sm font-semibold mb-4 uppercase" style="color: #F3F4F6;">
+                <aside class="p-6 flex flex-col overflow-y-auto" style="border-right: 1px ">
+                    <h2 class="text-sm font-semibold mb-4 uppercase">
                         Propiedades del Ticket
                     </h2>
 
-                    <div class="space-y-5 text-sm flex-1" style="color: #E5E7EB;">
+                    <div class="space-y-5 text-sm flex-1" >
 
-                        <div class="rounded-lg p-4" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
-                            <h3 class="text-xs font-semibold uppercase mb-2" style="color: #F3F4F6;">Descripcion de ticket</h3>
-                            <div class="font-medium whitespace-pre-wrap ticket-description" style="color: #E5E7EB;" x-text="selected.descripcion"></div>
+                        <div class="rounded-lg p-4" style="border: 1px">
+                            <h3 class="text-xs font-semibold uppercase mb-2">Descripcion de ticket</h3>
+                            <div class="font-medium whitespace-pre-wrap ticket-description" x-text="selected.descripcion"></div>
                         </div>
 
                         <!-- Documentos Adjuntos -->
-                        <div x-show="obtenerAdjuntos().length > 0" class="rounded-lg p-4" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
-                            <h3 class="text-xs font-semibold uppercase mb-3" style="color: #F3F4F6;">Documentos Adjuntos</h3>
+                        <div x-show="obtenerAdjuntos().length > 0" class="rounded-lg p-4" style="border: 1px">
+                            <h3 class="text-xs font-semibold uppercase mb-3">Documentos Adjuntos</h3>
                             <div class="space-y-2">
                                 <template x-for="(adjunto, index) in obtenerAdjuntos()" :key="index">
-                                    <div class="flex items-center justify-between p-2 rounded-lg transition" style="background-color: #1C1F26; border: 1px solid #2A2F3A;" onmouseover="this.style.backgroundColor='#242933'" onmouseout="this.style.backgroundColor='#1C1F26'">
+                                    <div class="flex items-center justify-between p-2 rounded-lg transition" style="border: 1px ">
                                         <div class="flex items-center gap-3 flex-1 min-w-0">
                                             <div class="flex-shrink-0">
-                                                <svg class="w-5 h-5" style="color: #9CA3AF;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                                 </svg>
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium truncate" style="color: #E5E7EB;" x-text="obtenerNombreArchivo(adjunto)"></p>
-                                                <p class="text-xs" style="color: #6B7280;" x-text="obtenerExtensionArchivo(adjunto)"></p>
+                                                <p class="text-sm font-medium truncate" x-text="obtenerNombreArchivo(adjunto)"></p>
+                                                <p class="text-xs" x-text="obtenerExtensionArchivo(adjunto)"></p>
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-2 flex-shrink-0">
@@ -846,8 +791,6 @@
                                                 :href="obtenerUrlArchivo(adjunto)" 
                                                 target="_blank"
                                                 class="p-1.5 rounded transition"
-                                                style="color: #3B82F6;"
-                                                onmouseover="this.style.backgroundColor='rgba(59, 130, 246, 0.15)'"
                                                 onmouseout="this.style.backgroundColor='transparent'"
                                                 title="Ver archivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -860,7 +803,6 @@
                                                 download
                                                 class="p-1.5 rounded transition"
                                                 style="color: #22C55E;"
-                                                onmouseover="this.style.backgroundColor='rgba(34, 197, 94, 0.15)'"
                                                 onmouseout="this.style.backgroundColor='transparent'"
                                                 title="Descargar archivo">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -873,43 +815,43 @@
                             </div>
                         </div>
 
-                        <div class="rounded-lg p-4" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
-                            <h3 class="text-xs font-semibold uppercase mb-2" style="color: #F3F4F6;">Información de Contacto</h3>
-                            <p class="font-medium" style="color: #E5E7EB;" x-text="selected.empleado"></p>
-                            <p class="text-sm" style="color: #9CA3AF;" x-text="selected.correo"></p>
-                            <p class="text-sm" style="color: #9CA3AF;" x-text="selected.numero"></p>
-                            <p class="text-sm" style="color: #9CA3AF;" x-text="selected.anydesk"></p>
+                        <div class="rounded-lg p-4" style="border: 1px ">
+                            <h3 class="text-xs font-semibold uppercase mb-2" >Información de Contacto</h3>
+                            <p class="font-medium" x-text="selected.empleado"></p>
+                            <p class="text-sm"  x-text="selected.correo"></p>
+                            <p class="text-sm"  x-text="selected.numero"></p>
+                            <p class="text-sm"  x-text="selected.anydesk"></p>
                         </div>
 
-                        <div class="rounded-lg p-4 flex flex-col gap-3" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
-                            <h3 class="text-xs font-semibold uppercase mb-2" style="color: #F3F4F6;">Detalles del Ticket</h3>
+                        <div class="rounded-lg p-4 flex flex-col gap-3" style=" border: 1px ">
+                            <h3 class="text-xs font-semibold uppercase mb-2">Detalles del Ticket</h3>
 
-                            <label class="text-sm font-semibold" style="color: #6B7280;">Prioridad</label>
+                            <label class="text-sm font-semibold" >Prioridad</label>
                             <select
                                 x-model="ticketPrioridad"
                                 :disabled="selected.estatus === 'Cerrado'"
                                 class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
                                 style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
-                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
-                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
-                                :style="selected.estatus === 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
-                                <option value="Baja" style="background-color: #1F2937; color: #E5E7EB;">Baja</option>
-                                <option value="Media" style="background-color: #1F2937; color: #E5E7EB;">Media</option>
-                                <option value="Alta" style="background-color: #1F2937; color: #E5E7EB;">Alta</option>
+                                onfocus="this.style.ring='1px';"
+                                onblur="this.style.ring='none';"
+                                :style="selected.estatus === 'Cerrado' ?  : ''">
+                                <option value="Baja" >Baja</option>
+                                <option value="Media" >Media</option>
+                                <option value="Alta" >Alta</option>
                             </select>
 
-                            <label class="text-sm font-semibold" style="color: #6B7280;">Estado</label>
+                            <label class="text-sm font-semibold">Estado</label>
                             <select 
                                 x-model="ticketEstatus"
                                 :disabled="selected.estatus === 'Cerrado'"
                                 class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
-                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
-                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
-                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
-                                :style="selected.estatus === 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
-                                <option value="Pendiente" style="background-color: #1F2937; color: #E5E7EB;">Pendiente</option>
-                                <option value="En progreso" style="background-color: #1F2937; color: #E5E7EB;">En progreso</option>
-                                <option value="Cerrado" style="background-color: #1F2937; color: #E5E7EB;">Cerrado</option>
+                                style="border: 1px solid  #E5E7EB; padding: 0.5rem;"
+                                onfocus="this.style.ring='1px';"
+                                onblur="this.style.ring='none';"
+                                :style="selected.estatus === 'Cerrado' ? : ''">
+                                <option value="Pendiente" >Pendiente</option>
+                                <option value="En progreso">En progreso</option>
+                                <option value="Cerrado">Cerrado</option>
                             </select>
 
                             <label class="text-sm font-semibold" style="color: #6B7280;">Clasificación <span style="color: #F87171;">*</span></label>
@@ -917,13 +859,13 @@
                                 x-model="ticketClasificacion"
                                 :disabled="selected.estatus === 'Cerrado'"
                                 class="w-full mt-1 mb-2 rounded-md text-sm cursor-pointer transition-all duration-200 ease-in-out disabled:cursor-not-allowed"
-                                style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.5rem;"
-                                onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
-                                onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
-                                :style="selected.estatus === 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
-                                <option value="" style="background-color: #1F2937; color: #E5E7EB;">Seleccione</option>
-                                <option value="Problema" style="background-color: #1F2937; color: #E5E7EB;">Problema</option>
-                                <option value="Servicio" style="background-color: #1F2937; color: #E5E7EB;">Servicio</option>
+                                style="border: 1px;"
+                                onfocus=" this.style.ring='1px';"
+                                onblur="this.style.ring='none';"
+                                :style="selected.estatus === 'Cerrado' ?  : ''">
+                                <option value="" >Seleccione</option>
+                                <option value="Problema" >Problema</option>
+                                <option value="Servicio" >Servicio</option>
                             </select>
                             
                             <!-- Mensaje informativo cuando está en "En progreso" -->
@@ -1149,7 +1091,7 @@
                             </div>
                             <!-- Encabezado de Composición -->
                             <div class="p-4" 
-                                 style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;"
+                                 
                                  :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
                                 <div class="space-y-3">
                                     <!-- Campo Para -->
@@ -1357,7 +1299,7 @@
                             
                             <!-- Sección de Adjuntos -->
                             <div class="p-3"
-                                 style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;"
+                                 
                                  :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
                                 <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 rounded-lg" style="background-color: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3);">
                                     <p class="text-xs flex items-center gap-2" style="color: #FBBF24;">
@@ -1672,7 +1614,7 @@
                 <!-- Tabla de Métricas -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full border-collapse">
-                        <thead class="bg-gray-50 dark:bg-[#242933]">
+                        <thead>
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-[#9CA3AF] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A]">
                                     Tipo de Ticket
