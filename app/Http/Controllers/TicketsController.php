@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Empleados;
 use App\Models\Solicitud;
+use App\Models\Cotizacion;
 use App\Models\Tickets;
 use App\Models\TicketChat;
 use App\Models\Tertipos;
@@ -13,6 +14,7 @@ use App\Services\SimpleEmailService;
 use App\Services\TicketNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 class TicketsController extends Controller
@@ -74,9 +76,12 @@ class TicketsController extends Controller
                 'gerenciaid', 
                 'obraid', 
                 'puestoid',
-                'supervisorAprobador',
-                'gerenteAprobador',
-                'administradorAprobador',
+                'pasoSupervisor.approverEmpleado',
+                'pasoSupervisor.decidedByEmpleado',
+                'pasoGerencia.approverEmpleado',
+                'pasoGerencia.decidedByEmpleado',
+                'pasoAdministracion.approverEmpleado',
+                'pasoAdministracion.decidedByEmpleado',
                 'cotizaciones'
             ])
             ->orderBy('created_at', 'desc')
@@ -248,6 +253,236 @@ class TicketsController extends Controller
         ];
 
         return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad', 'mes', 'anio', 'solicitudesStatus'));
+    }
+
+    /**
+     * Obtener datos de una solicitud para el modal
+     */
+    public function obtenerDatosSolicitud($id)
+    {
+        $solicitud = Solicitud::with([
+            'empleadoid',
+            'gerenciaid',
+            'obraid',
+            'puestoid',
+            'pasoSupervisor.approverEmpleado',
+            'pasoSupervisor.decidedByEmpleado',
+            'pasoGerencia.approverEmpleado',
+            'pasoGerencia.decidedByEmpleado',
+            'pasoAdministracion.approverEmpleado',
+            'pasoAdministracion.decidedByEmpleado',
+            'cotizaciones'
+        ])->findOrFail($id);
+
+        // Determinar estatus real
+        $pasoSupervisor = $solicitud->pasoSupervisor;
+        $pasoGerencia = $solicitud->pasoGerencia;
+        $pasoAdministracion = $solicitud->pasoAdministracion;
+        
+        $estatusReal = $solicitud->Estatus ?? 'Pendiente';
+        if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
+            ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
+            ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
+            $estatusReal = 'Rechazada';
+        } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
+            if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
+                if ($pasoGerencia && $pasoGerencia->status === 'approved') {
+                    if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
+                        $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
+                        $estatusReal = ($cotizacionesCount >= 3) ? 'Completada' : 'Pendiente Cotización TI';
+                    } else {
+                        $estatusReal = 'Pendiente Aprobación Administración';
+                    }
+                } else {
+                    $estatusReal = 'Pendiente Aprobación Gerencia';
+                }
+            } else {
+                $estatusReal = 'Pendiente Aprobación Supervisor';
+            }
+        }
+
+        // Preparar pasos de aprobación
+        $pasosAprobacion = [];
+        
+        $stages = [
+            'supervisor' => ['label' => 'Supervisor', 'paso' => $pasoSupervisor],
+            'gerencia' => ['label' => 'Gerencia', 'paso' => $pasoGerencia],
+            'administracion' => ['label' => 'Administración', 'paso' => $pasoAdministracion],
+        ];
+
+        foreach ($stages as $key => $stage) {
+            $paso = $stage['paso'];
+            $pasosAprobacion[] = [
+                'stage' => $key,
+                'stageLabel' => $stage['label'],
+                'status' => $paso ? $paso->status : 'pending',
+                'statusLabel' => $paso ? match($paso->status) {
+                    'approved' => 'Aprobado',
+                    'rejected' => 'Rechazado',
+                    default => 'Pendiente'
+                } : 'Pendiente',
+                'approverNombre' => $paso && $paso->approverEmpleado ? $paso->approverEmpleado->NombreEmpleado : null,
+                'decidedByNombre' => $paso && $paso->decidedByEmpleado ? $paso->decidedByEmpleado->NombreEmpleado : null,
+                'decidedAt' => $paso && $paso->decided_at ? $paso->decided_at->format('d/m/Y H:i') : null,
+                'comment' => $paso ? $paso->comment : null,
+            ];
+        }
+
+        return response()->json([
+            'SolicitudID' => $solicitud->SolicitudID,
+            'Motivo' => $solicitud->Motivo,
+            'DescripcionMotivo' => $solicitud->DescripcionMotivo,
+            'Requerimientos' => $solicitud->Requerimientos,
+            'Proyecto' => $solicitud->Proyecto,
+            'estatusReal' => $estatusReal,
+            'fechaCreacion' => $solicitud->created_at->format('d/m/Y H:i'),
+            'empleado' => [
+                'NombreEmpleado' => $solicitud->empleadoid->NombreEmpleado ?? null,
+                'Correo' => $solicitud->empleadoid->Correo ?? null,
+            ],
+            'gerencia' => [
+                'NombreGerencia' => $solicitud->gerenciaid->NombreGerencia ?? null,
+            ],
+            'obra' => [
+                'NombreObra' => $solicitud->obraid->NombreObra ?? null,
+            ],
+            'puesto' => [
+                'NombrePuesto' => $solicitud->puestoid->NombrePuesto ?? null,
+            ],
+            'pasosAprobacion' => $pasosAprobacion,
+            'cotizaciones' => $solicitud->cotizaciones->map(function($cotizacion) {
+                return [
+                    'CotizacionID' => $cotizacion->CotizacionID,
+                    'Proveedor' => $cotizacion->Proveedor,
+                    'Descripcion' => $cotizacion->Descripcion,
+                    'Precio' => $cotizacion->Precio,
+                    'Estatus' => $cotizacion->Estatus,
+                    'TiempoEntrega' => $cotizacion->TiempoEntrega,
+                    'Observaciones' => $cotizacion->Observaciones,
+                ];
+            })->values(),
+        ]);
+    }
+
+    /**
+     * Obtener cotizaciones de una solicitud para el modal
+     */
+    public function obtenerCotizaciones($id)
+    {
+        $solicitud = Solicitud::with('cotizaciones')->findOrFail($id);
+        
+        // Agrupar cotizaciones por producto
+        $productos = [];
+        $proveedores = [];
+        
+        foreach ($solicitud->cotizaciones as $cotizacion) {
+            if (!in_array($cotizacion->Proveedor, $proveedores)) {
+                $proveedores[] = $cotizacion->Proveedor;
+            }
+        }
+        
+        // Si no hay proveedores, usar los predeterminados
+        if (empty($proveedores)) {
+            $proveedores = ['INTERCOMPRAS', 'PCEL', 'ABASTEO'];
+        }
+        
+        // Agrupar por número de propuesta o crear estructura
+        $productosAgrupados = [];
+        foreach ($solicitud->cotizaciones as $cotizacion) {
+            $key = $cotizacion->NumeroPropuesta ?? 1;
+            if (!isset($productosAgrupados[$key])) {
+                $productosAgrupados[$key] = [
+                    'cantidad' => 1,
+                    'numeroParte' => '',
+                    'descripcion' => $cotizacion->Descripcion,
+                    'unidad' => 'PIEZA',
+                    'precios' => [],
+                    'tiempoEntrega' => [],
+                    'observaciones' => []
+                ];
+            }
+            $productosAgrupados[$key]['precios'][$cotizacion->Proveedor] = $cotizacion->Precio;
+            if ($cotizacion->TiempoEntrega) {
+                $productosAgrupados[$key]['tiempoEntrega'][$cotizacion->Proveedor] = $cotizacion->TiempoEntrega;
+            }
+            if ($cotizacion->Observaciones) {
+                $productosAgrupados[$key]['observaciones'][$cotizacion->Proveedor] = $cotizacion->Observaciones;
+            }
+        }
+        
+        return response()->json([
+            'proveedores' => $proveedores,
+            'productos' => array_values($productosAgrupados),
+        ]);
+    }
+
+    /**
+     * Guardar cotizaciones de una solicitud
+     */
+    public function guardarCotizaciones(Request $request, $id)
+    {
+        $solicitud = Solicitud::findOrFail($id);
+        
+        $data = $request->validate([
+            'proveedores' => 'required|array|min:1',
+            'proveedores.*' => 'required|string|max:255',
+            'productos' => 'required|array|min:1',
+            'productos.*.cantidad' => 'required|integer|min:1',
+            'productos.*.numero_parte' => 'nullable|string|max:255',
+            'productos.*.descripcion' => 'required|string',
+            'productos.*.unidad' => 'nullable|string|max:50',
+            'productos.*.precios' => 'required|array',
+            'productos.*.tiempo_entrega' => 'nullable|array',
+            'productos.*.observaciones' => 'nullable|array',
+        ]);
+
+        try {
+            DB::transaction(function () use ($solicitud, $data, $id) {
+                // Eliminar cotizaciones existentes
+                $solicitud->cotizaciones()->delete();
+                
+                // Crear nuevas cotizaciones
+                $proveedores = $data['proveedores'];
+                
+                foreach ($data['productos'] as $prodIndex => $producto) {
+                    foreach ($proveedores as $provIndex => $proveedor) {
+                        $precio = isset($producto['precios'][$proveedor]) && 
+                                  $producto['precios'][$proveedor] !== null && 
+                                  $producto['precios'][$proveedor] !== '' 
+                                  ? floatval($producto['precios'][$proveedor]) 
+                                  : null;
+                        
+                        if ($precio !== null && $precio > 0) {
+                            \App\Models\Cotizacion::create([
+                                'SolicitudID' => $id,
+                                'Proveedor' => $proveedor,
+                                'Descripcion' => $producto['descripcion'],
+                                'Precio' => $precio,
+                                'TiempoEntrega' => isset($producto['tiempo_entrega'][$proveedor]) 
+                                    ? intval($producto['tiempo_entrega'][$proveedor]) 
+                                    : null,
+                                'Observaciones' => isset($producto['observaciones'][$proveedor]) 
+                                    ? $producto['observaciones'][$proveedor] 
+                                    : null,
+                                'Estatus' => 'Pendiente',
+                                'NumeroPropuesta' => $prodIndex + 1,
+                            ]);
+                        }
+                    }
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cotizaciones guardadas correctamente.',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al guardar cotizaciones: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar las cotizaciones: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

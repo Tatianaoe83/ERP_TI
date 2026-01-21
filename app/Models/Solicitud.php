@@ -138,4 +138,39 @@ class Solicitud extends Model
     {
         return $this->hasMany(\App\Models\Cotizacion::class, 'SolicitudID', 'SolicitudID');
     }
+
+    /**
+     * Relación con pasos de aprobación
+     */
+    public function pasosAprobacion()
+    {
+        return $this->hasMany(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID');
+    }
+
+    /**
+     * Obtener el paso de aprobación del supervisor
+     */
+    public function pasoSupervisor()
+    {
+        return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
+            ->where('stage', 'supervisor');
+    }
+
+    /**
+     * Obtener el paso de aprobación de gerencia
+     */
+    public function pasoGerencia()
+    {
+        return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
+            ->where('stage', 'gerencia');
+    }
+
+    /**
+     * Obtener el paso de aprobación de administración
+     */
+    public function pasoAdministracion()
+    {
+        return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
+            ->where('stage', 'administracion');
+    }
 }

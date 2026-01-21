@@ -279,51 +279,62 @@ class SoporteTIController extends Controller
                 return redirect()->back()->with('error', 'Administrador no encontrado');
             }
 
-            DB::transaction(function () use (
-                $data,
-                $empleadoSolicitante,
-                $supervisor,
-                $gerencia,
-                $gerente,
-                $admin
-            ) {
+            try {
+                DB::transaction(function () use (
+                    $data,
+                    $empleadoSolicitante,
+                    $supervisor,
+                    $gerencia,
+                    $gerente,
+                    $admin
+                ) {
 
-                $solicitud = Solicitud::create([
-                    'EmpleadoID' => $empleadoSolicitante->EmpleadoID,
-                    'Motivo' => $data['Motivo'] ?? null,
-                    'DescripcionMotivo' => $data['DescripcionMotivo'],
-                    'Requerimientos' => $data['Requerimientos'],
-                    'ObraID' => $data['ObraID'],
-                    'GerenciaID' => $gerencia->GerenciaID,
-                    'PuestoID' => $data['PuestoID'],
-                    'Proyecto' => $data['Proyecto'] ?? '',
-                    'Estatus' => 'Pendiente',
-                ]);
-
-                $steps = [
-                    ['order' => 1, 'stage' => 'supervisor',     'approver' => $supervisor->EmpleadoID],
-                    ['order' => 2, 'stage' => 'gerencia',       'approver' => $gerente->EmpleadoID],
-                    ['order' => 3, 'stage' => 'administracion', 'approver' => $admin->EmpleadoID],
-                ];
-
-                foreach ($steps as $s) {
-                    $step = SolicitudPasos::create([
-                        'solicitud_id' => $solicitud->SolicitudID,
-                        'step_order' => $s['order'],
-                        'stage' => $s['stage'],
-                        'approver_empleado_id' => $s['approver'],
-                        'status' => 'pending',
+                    $solicitud = Solicitud::create([
+                        'EmpleadoID' => $empleadoSolicitante->EmpleadoID,
+                        'Motivo' => $data['Motivo'] ?? null,
+                        'DescripcionMotivo' => $data['DescripcionMotivo'],
+                        'Requerimientos' => $data['Requerimientos'],
+                        'ObraID' => $data['ObraID'],
+                        'GerenciaID' => $gerencia->GerenciaID,
+                        'PuestoID' => $data['PuestoID'],
+                        'Proyecto' => $data['Proyecto'] ?? '',
+                        'Estatus' => 'Pendiente',
                     ]);
 
-                    SolicitudTokens::create([
-                        'approval_step_id' => $step->id,
-                        'token' => Str::uuid(),
-                        'expires_at' => now()->addDays(7),
-                    ]);
-                }
-            });
+                    $steps = [
+                        ['order' => 1, 'stage' => 'supervisor',     'approver' => $supervisor->EmpleadoID],
+                        ['order' => 2, 'stage' => 'gerencia',       'approver' => $gerente->EmpleadoID],
+                        ['order' => 3, 'stage' => 'administracion', 'approver' => $admin->EmpleadoID],
+                    ];
 
-            return redirect()->back()->with('success', 'Solicitud guardada correctamente');
+                    foreach ($steps as $s) {
+                        $step = SolicitudPasos::create([
+                            'solicitud_id' => $solicitud->SolicitudID,
+                            'step_order' => $s['order'],
+                            'stage' => $s['stage'],
+                            'approver_empleado_id' => $s['approver'],
+                            'status' => 'pending',
+                        ]);
+
+                        SolicitudTokens::create([
+                            'approval_step_id' => $step->id,
+                            'token' => Str::uuid(),
+                            'expires_at' => now()->addDays(7),
+                        ]);
+                    }
+                });
+
+                return redirect()->back()->with('success', 'Solicitud guardada correctamente');
+            } catch (\Illuminate\Database\QueryException $e) {
+                \Log::error('Error SQL al crear solicitud: ' . $e->getMessage());
+                \Log::error('SQL: ' . $e->getSql());
+                \Log::error('Bindings: ' . json_encode($e->getBindings()));
+                return redirect()->back()->with('error', 'Error al guardar la solicitud. Por favor verifica los datos e intenta nuevamente.');
+            } catch (\Exception $e) {
+                \Log::error('Error al crear solicitud: ' . $e->getMessage());
+                \Log::error('Stack trace: ' . $e->getTraceAsString());
+                return redirect()->back()->with('error', 'Error al guardar la solicitud: ' . $e->getMessage());
+            }
         }
 
         return redirect()->back()->with(['error' => 'Ocurrió un error inesperado'], 500);

@@ -176,6 +176,11 @@ Route::get('/getTypes', [SoporteTIController::class, 'getTypes']);
 // Rutas de aprobación de solicitudes
 Route::get('/revision-solicitud/{token}', [App\Http\Controllers\SolicitudAprobacionController::class, 'show'])->name('solicitudes.public.show');
 Route::post('/revision-solicitud/{token}/decide', [SolicitudAprobacionController::class, 'decide'])->name('solicitudes.public.decide');
+Route::get('/solicitudes/{id}/datos', [App\Http\Controllers\TicketsController::class, 'obtenerDatosSolicitud'])->name('solicitudes.datos');
+Route::get('/solicitudes/{id}/cotizaciones', [App\Http\Controllers\TicketsController::class, 'obtenerCotizaciones'])->name('solicitudes.cotizaciones');
+Route::post('/solicitudes/{id}/guardar-cotizaciones', [App\Http\Controllers\TicketsController::class, 'guardarCotizaciones'])->name('solicitudes.guardar-cotizaciones');
+Route::post('/solicitudes/{id}/aprobar-{nivel}', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarPorNivel'])->name('solicitudes.aprobar-nivel');
+Route::post('/solicitudes/{id}/rechazar-{nivel}', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarPorNivel'])->name('solicitudes.rechazar-nivel');
 /* Route::post('/solicitudes/{id}/rechazar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarSupervisor'])->name('solicitudes.rechazar-supervisor');
     Route::post('/solicitudes/{id}/aprobar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarGerencia'])->name('solicitudes.aprobar-gerencia');
     Route::post('/solicitudes/{id}/rechazar-gerencia', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarGerencia'])->name('solicitudes.rechazar-gerencia');
