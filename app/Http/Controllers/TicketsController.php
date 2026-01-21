@@ -145,29 +145,31 @@ class TicketsController extends Controller
                 if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
                     return false;
                 }
-                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
-                    $solicitud->AprobacionGerencia === 'Rechazado' || 
-                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                
+                $pasoSupervisor = $solicitud->pasoSupervisor;
+                $pasoGerencia = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
+                
+                // Verificar si hay algún rechazo
+                if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
+                    ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
+                    ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
                     return false;
                 }
+                
                 // Si tiene el estatus nuevo, incluirla
                 if ($solicitud->Estatus === 'Pendiente Aprobación Supervisor') {
                     return true;
                 }
+                
                 // Si tiene estatus antiguo "Pendiente" o NULL/vacío
                 if (in_array($solicitud->Estatus, ['Pendiente', null, '']) || empty($solicitud->Estatus)) {
-                    // Si todos los campos de aprobación están pendientes o son NULL, va a supervisor
-                    $supervisorNoAprobado = !$solicitud->AprobacionSupervisor || 
-                                           $solicitud->AprobacionSupervisor === 'Pendiente' || 
-                                           $solicitud->AprobacionSupervisor === '';
-                    $gerenciaNoAprobada = !$solicitud->AprobacionGerencia || 
-                                         $solicitud->AprobacionGerencia === 'Pendiente' || 
-                                         $solicitud->AprobacionGerencia === '';
-                    $adminNoAprobada = !$solicitud->AprobacionAdministracion || 
-                                      $solicitud->AprobacionAdministracion === 'Pendiente' || 
-                                      $solicitud->AprobacionAdministracion === '';
+                    // Si todos los pasos de aprobación están pendientes o no existen, va a supervisor
+                    $supervisorPendiente = !$pasoSupervisor || $pasoSupervisor->status === 'pending';
+                    $gerenciaPendiente = !$pasoGerencia || $pasoGerencia->status === 'pending';
+                    $adminPendiente = !$pasoAdministracion || $pasoAdministracion->status === 'pending';
                     
-                    return $supervisorNoAprobado && $gerenciaNoAprobada && $adminNoAprobada;
+                    return $supervisorPendiente && $gerenciaPendiente && $adminPendiente;
                 }
                 return false;
             })->values()->sortByDesc(function($solicitud) {
@@ -178,18 +180,28 @@ class TicketsController extends Controller
                 if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
                     return false;
                 }
-                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
-                    $solicitud->AprobacionGerencia === 'Rechazado' || 
-                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                
+                $pasoSupervisor = $solicitud->pasoSupervisor;
+                $pasoGerencia = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
+                
+                // Verificar si hay algún rechazo
+                if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
+                    ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
+                    ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
                     return false;
                 }
+                
                 if ($solicitud->Estatus === 'Pendiente Aprobación Gerencia') {
                     return true;
                 }
+                
                 // Supervisor aprobado pero gerencia pendiente o NULL
-                return ($solicitud->AprobacionSupervisor === 'Aprobado') &&
-                       (!$solicitud->AprobacionGerencia || $solicitud->AprobacionGerencia === 'Pendiente') &&
-                       (!$solicitud->AprobacionAdministracion || $solicitud->AprobacionAdministracion === 'Pendiente');
+                $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
+                $gerenciaPendiente = !$pasoGerencia || $pasoGerencia->status === 'pending';
+                $adminPendiente = !$pasoAdministracion || $pasoAdministracion->status === 'pending';
+                
+                return $supervisorAprobado && $gerenciaPendiente && $adminPendiente;
             })->values()->sortByDesc(function($solicitud) {
                 return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
             })->values(),
@@ -198,18 +210,28 @@ class TicketsController extends Controller
                 if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
                     return false;
                 }
-                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
-                    $solicitud->AprobacionGerencia === 'Rechazado' || 
-                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                
+                $pasoSupervisor = $solicitud->pasoSupervisor;
+                $pasoGerencia = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
+                
+                // Verificar si hay algún rechazo
+                if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
+                    ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
+                    ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
                     return false;
                 }
+                
                 if ($solicitud->Estatus === 'Pendiente Aprobación Administración') {
                     return true;
                 }
+                
                 // Supervisor y gerencia aprobados, administración pendiente o NULL
-                return ($solicitud->AprobacionSupervisor === 'Aprobado') &&
-                       ($solicitud->AprobacionGerencia === 'Aprobado') &&
-                       (!$solicitud->AprobacionAdministracion || $solicitud->AprobacionAdministracion === 'Pendiente');
+                $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
+                $gerenciaAprobada = $pasoGerencia && $pasoGerencia->status === 'approved';
+                $administracionPendiente = !$pasoAdministracion || $pasoAdministracion->status === 'pending';
+                
+                return $supervisorAprobado && $gerenciaAprobada && $administracionPendiente;
             })->values()->sortByDesc(function($solicitud) {
                 return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
             })->values(),
@@ -218,18 +240,26 @@ class TicketsController extends Controller
                 if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
                     return false;
                 }
-                if ($solicitud->AprobacionSupervisor === 'Rechazado' || 
-                    $solicitud->AprobacionGerencia === 'Rechazado' || 
-                    $solicitud->AprobacionAdministracion === 'Rechazado') {
+                
+                $pasoSupervisor = $solicitud->pasoSupervisor;
+                $pasoGerencia = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
+                
+                // Verificar si hay algún rechazo
+                if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
+                    ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
+                    ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
                     return false;
                 }
+                
                 if ($solicitud->Estatus === 'Pendiente Cotización TI') {
                     return true;
                 }
+                
                 // Todas aprobadas pero no completada y menos de 3 cotizaciones
-                $todasAprobadas = ($solicitud->AprobacionSupervisor === 'Aprobado') &&
-                                  ($solicitud->AprobacionGerencia === 'Aprobado') &&
-                                  ($solicitud->AprobacionAdministracion === 'Aprobado');
+                $todasAprobadas = ($pasoSupervisor && $pasoSupervisor->status === 'approved') &&
+                                  ($pasoGerencia && $pasoGerencia->status === 'approved') &&
+                                  ($pasoAdministracion && $pasoAdministracion->status === 'approved');
                 $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
                 return $todasAprobadas && $cotizacionesCount < 3;
             })->values()->sortByDesc(function($solicitud) {
@@ -237,10 +267,14 @@ class TicketsController extends Controller
             })->values(),
             
             'rechazadas' => $solicitudes->filter(function($solicitud) {
+                $pasoSupervisor = $solicitud->pasoSupervisor;
+                $pasoGerencia = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
+                
                 return $solicitud->Estatus === 'Rechazada' ||
-                       $solicitud->AprobacionSupervisor === 'Rechazado' ||
-                       $solicitud->AprobacionGerencia === 'Rechazado' ||
-                       $solicitud->AprobacionAdministracion === 'Rechazado';
+                       ($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
+                       ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
+                       ($pasoAdministracion && $pasoAdministracion->status === 'rejected');
             })->values()->sortByDesc(function($solicitud) {
                 return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
             })->values(),

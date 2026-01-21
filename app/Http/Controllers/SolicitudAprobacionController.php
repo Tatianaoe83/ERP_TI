@@ -20,17 +20,55 @@ class SolicitudAprobacionController extends Controller
      */
     public function show(string $token): View
     {
+        // Buscar el token sin filtrar por activo para poder detectar el motivo
         $tokenRow = SolicitudTokens::query()
-            ->active()
             ->where('token', $token)
             ->with([
                 'approvalStep.approverEmpleado',
                 'approvalStep.solicitud.empleadoid',
-                'approvalStep.solicitud.obraid',
-                'approvalStep.solicitud.gerenciaid',
-                'approvalStep.solicitud.puestoid',
             ])
-            ->firstOrFail();
+            ->first();
+
+        // Si no existe el token
+        if (!$tokenRow) {
+            abort(404, 'Token no encontrado');
+        }
+
+        // Verificar si el token está usado
+        if ($tokenRow->used_at) {
+            $tokenInfo = [
+                'razon' => 'Este enlace ya fue utilizado para firmar la solicitud',
+                'fecha_usado' => $tokenRow->used_at->translatedFormat('d M Y, H:i'),
+            ];
+            return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
+        }
+
+        // Verificar si el token está revocado
+        if ($tokenRow->revoked_at) {
+            $tokenInfo = [
+                'razon' => 'Este enlace fue revocado. La aprobación fue transferida a otra persona',
+                'fecha_usado' => $tokenRow->revoked_at->translatedFormat('d M Y, H:i'),
+            ];
+            return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
+        }
+
+        // Verificar si el token expiró
+        if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
+            $tokenInfo = [
+                'razon' => 'Este enlace ha expirado. El tiempo límite para revisar esta solicitud ha finalizado',
+                'fecha_expiracion' => $tokenRow->expires_at->translatedFormat('d M Y, H:i'),
+            ];
+            return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
+        }
+
+        // Si el token está activo, cargar relaciones completas y mostrar la vista normal
+        $tokenRow->load([
+            'approvalStep.approverEmpleado',
+            'approvalStep.solicitud.empleadoid',
+            'approvalStep.solicitud.obraid',
+            'approvalStep.solicitud.gerenciaid',
+            'approvalStep.solicitud.puestoid',
+        ]);
 
         $step = $tokenRow->approvalStep;
         $solicitud = $step->solicitud;
@@ -252,5 +290,124 @@ class SolicitudAprobacionController extends Controller
                 'message' => $e->getMessage() ?: 'Ocurrió un error al rechazar la solicitud.',
             ], 400);
         }
+    }
+
+    /**
+     * Transferir aprobación a otra persona (desde vista pública)
+     */
+    public function transferir(Request $request, string $token): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate([
+            'nuevo_aprobador_id' => 'required|integer|exists:empleados,EmpleadoID',
+            'comentario' => 'nullable|string|max:5000',
+        ]);
+
+        try {
+            $nuevoToken = DB::transaction(function () use ($data, $token) {
+                $tokenRow = SolicitudTokens::query()
+                    ->where('token', $token)
+                    ->whereNull('used_at') // Solo permitir transferir si el token no ha sido usado
+                    ->lockForUpdate()
+                    ->with(['approvalStep', 'approvalStep.solicitud'])
+                    ->firstOrFail();
+
+                $step = $tokenRow->approvalStep;
+                $solicitud = $step->solicitud;
+
+                if ($step->status !== 'pending') {
+                    throw new \RuntimeException('Esta etapa ya fue resuelta.');
+                }
+
+                // Verificar que el nuevo aprobador sea diferente al actual
+                if ($step->approver_empleado_id == $data['nuevo_aprobador_id']) {
+                    throw new \RuntimeException('Debe seleccionar un aprobador diferente al actual.');
+                }
+
+                // Verificar que el nuevo aprobador existe
+                $nuevoAprobador = Empleados::findOrFail($data['nuevo_aprobador_id']);
+
+                // Actualizar el paso con el nuevo aprobador
+                $step->update([
+                    'approver_empleado_id' => $data['nuevo_aprobador_id'],
+                    'comment' => $data['comentario'] ?? null,
+                ]);
+
+                // Invalidar el token actual
+                $tokenRow->update([
+                    'used_at' => now(),
+                    'revoked_at' => now(),
+                ]);
+
+                // Crear nuevo token para el nuevo aprobador
+                $nuevoTokenRow = SolicitudTokens::create([
+                    'approval_step_id' => $step->id,
+                    'token' => \Illuminate\Support\Str::uuid(),
+                    'expires_at' => now()->addDays(7),
+                ]);
+
+                return $nuevoTokenRow->token;
+            });
+
+            // Si es una petición AJAX, devolver JSON
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'La aprobación ha sido transferida correctamente.',
+                ]);
+            }
+
+            // Si no, redirigir (aunque el token actual ya no funcionará)
+            return redirect()
+                ->route('solicitudes.public.show', ['token' => $nuevoToken])
+                ->with('swal_success', 'La aprobación ha sido transferida correctamente. El nuevo aprobador recibirá un enlace para revisar la solicitud.');
+        } catch (ModelNotFoundException $e) {
+            $message = 'El enlace no es válido, ya expiró o ya fue usado.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 404);
+            }
+            return redirect()
+                ->route('solicitudes.public.show', ['token' => $token])
+                ->with('swal_error', $message);
+        } catch (\Throwable $e) {
+            $message = $e->getMessage() ?: 'Ocurrió un error al transferir la aprobación.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 400);
+            }
+            return redirect()
+                ->route('solicitudes.public.show', ['token' => $token])
+                ->with('swal_error', $message);
+        }
+    }
+
+    /**
+     * Obtener empleados disponibles para transferir (AJAX)
+     */
+    public function obtenerEmpleadosParaTransferir(Request $request): JsonResponse
+    {
+        $query = $request->get('q', '');
+        $stage = $request->get('stage', '');
+        $excludeId = $request->get('exclude_id', null);
+
+        $empleados = Empleados::query()
+            ->where('Estado', true)
+            ->when($excludeId, function ($q) use ($excludeId) {
+                $q->where('EmpleadoID', '!=', $excludeId);
+            })
+            ->when($query, function ($q) use ($query) {
+                $q->where('NombreEmpleado', 'like', '%' . $query . '%')
+                  ->orWhere('Correo', 'like', '%' . $query . '%');
+            })
+            ->select('EmpleadoID', 'NombreEmpleado', 'Correo')
+            ->orderBy('NombreEmpleado')
+            ->limit(20)
+            ->get();
+
+        return response()->json($empleados);
     }
 }

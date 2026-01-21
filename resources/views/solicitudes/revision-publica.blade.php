@@ -269,9 +269,10 @@
                                 </button>
                             </form>
 
-                            <p class="w-full cursor-pointer bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm">
+                            <button type="button" onclick="abrirModalTransferir()" class="w-full cursor-pointer bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm" {{ (!$canDecide) ? 'disabled' : '' }}>
+                                <span class="material-icons-outlined text-lg">swap_horiz</span>
                                 Transferir
-                            </p>
+                            </button>
                         </div>
                     </div>
                     @else
@@ -294,6 +295,151 @@
         <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl translate-x-1/2 -translate-y-1/2"></div>
         <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl -translate-x-1/2 translate-y-1/2"></div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function abrirModalTransferir() {
+            const comentario = document.getElementById('comment').value;
+            
+            // Obtener empleados disponibles
+            fetch('{{ route("solicitudes.empleados-transferir") }}?exclude_id={{ $step->approver_empleado_id }}&stage={{ $step->stage }}')
+                .then(response => response.json())
+                .then(empleados => {
+                    let optionsHtml = '<option value="">-- Seleccione un empleado --</option>';
+                    empleados.forEach(empleado => {
+                        optionsHtml += `<option value="${empleado.EmpleadoID}">${empleado.NombreEmpleado} (${empleado.Correo})</option>`;
+                    });
+
+                    Swal.fire({
+                        title: 'Transferir Aprobación',
+                        html: `
+                            <form id="transferirForm">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Seleccione el nuevo aprobador:
+                                    </label>
+                                    <select id="nuevoAprobador" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary" required>
+                                        ${optionsHtml}
+                                    </select>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        Comentario (opcional):
+                                    </label>
+                                    <textarea id="comentarioTransferir" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary" rows="3" placeholder="Motivo de la transferencia...">${comentario || ''}</textarea>
+                                </div>
+                            </form>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Transferir',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#0F766E',
+                        cancelButtonColor: '#6B7280',
+                        didOpen: () => {
+                            const nuevoAprobadorSelect = document.getElementById('nuevoAprobador');
+                            nuevoAprobadorSelect.focus();
+                        },
+                        preConfirm: () => {
+                            const nuevoAprobadorId = document.getElementById('nuevoAprobador').value;
+                            const comentarioTransferir = document.getElementById('comentarioTransferir').value;
+                            
+                            if (!nuevoAprobadorId) {
+                                Swal.showValidationMessage('Debe seleccionar un nuevo aprobador');
+                                return false;
+                            }
+                            
+                            return {
+                                nuevo_aprobador_id: nuevoAprobadorId,
+                                comentario: comentarioTransferir
+                            };
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Enviar formulario de transferencia
+                            const formData = new FormData();
+                            formData.append('nuevo_aprobador_id', result.value.nuevo_aprobador_id);
+                            formData.append('comentario', result.value.comentario || '');
+                            formData.append('_token', '{{ csrf_token() }}');
+
+                            Swal.fire({
+                                title: 'Procesando...',
+                                text: 'Transferiendo aprobación',
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            fetch('{{ route("solicitudes.public.transferir", ["token" => $tokenRow->token]) }}', {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    return response.json().then(err => Promise.reject(err));
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: '¡Transferencia exitosa!',
+                                        text: data.message || 'La aprobación ha sido transferida correctamente. El nuevo aprobador recibirá un enlace para revisar la solicitud.',
+                                        confirmButtonColor: '#0F766E'
+                                    }).then(() => {
+                                        // Recargar la página
+                                        window.location.reload();
+                                    });
+                                } else {
+                                    throw new Error(data.message || 'Error al transferir');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: error.message || 'Ocurrió un error al transferir la aprobación',
+                                    confirmButtonColor: '#EF4444'
+                                });
+                            });
+                        }
+                    });
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudieron cargar los empleados disponibles',
+                        confirmButtonColor: '#EF4444'
+                    });
+                });
+        }
+
+        // Mostrar mensajes de éxito/error de sesión
+        @if(session('swal_success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: '{{ session('swal_success') }}',
+                confirmButtonColor: '#0F766E'
+            });
+        @endif
+
+        @if(session('swal_error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: '{{ session('swal_error') }}',
+                confirmButtonColor: '#EF4444'
+            });
+        @endif
+    </script>
 </body>
 
 </html>
