@@ -324,7 +324,10 @@ class SoporteTIController extends Controller
                     }
                 });
 
-                return redirect()->back()->with('success', 'Solicitud guardada correctamente');
+                return redirect()->back()->with([
+                    'success' => 'Solicitud guardada correctamente',
+                    'tipo' => 'Solicitud',
+                ]);
             } catch (\Illuminate\Database\QueryException $e) {
                 \Log::error('Error SQL al crear solicitud: ' . $e->getMessage());
                 \Log::error('SQL: ' . $e->getSql());
