@@ -10,12 +10,14 @@ use App\Models\TicketChat;
 use App\Models\Tertipos;
 use App\Models\Subtipos;
 use App\Models\Tipoticket;
+use App\Models\SolicitudCotizacionToken;
 use App\Services\SimpleEmailService;
 use App\Services\SolicitudAprobacionEmailService;
 use App\Services\TicketNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class TicketsController extends Controller
@@ -317,11 +319,11 @@ class TicketsController extends Controller
             'cotizaciones'
         ])->findOrFail($id);
 
-        // Determinar estatus real
+        // Estatus interno (lógica) y display (4 valores: Pendiente, Rechazada, En revisión, Aprobada)
         $pasoSupervisor = $solicitud->pasoSupervisor;
         $pasoGerencia = $solicitud->pasoGerencia;
         $pasoAdministracion = $solicitud->pasoAdministracion;
-        
+
         $estatusReal = $solicitud->Estatus ?? 'Pendiente';
         if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
             ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
@@ -333,13 +335,9 @@ class TicketsController extends Controller
             if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                 if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                     if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
-                        $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
                         $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
-                        if ($tieneSeleccionada) {
-                            $estatusReal = 'Aprobado';
-                        } else {
-                            $estatusReal = ($cotizacionesCount >= 3) ? 'Completada' : 'Pendiente Cotización TI';
-                        }
+                        $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
+                        $estatusReal = $tieneSeleccionada ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
                     } else {
                         $estatusReal = 'Pendiente Aprobación Administración';
                     }
@@ -351,10 +349,30 @@ class TicketsController extends Controller
             }
         }
 
+        $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
+            && ($pasoGerencia && $pasoGerencia->status === 'approved')
+            && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
         $tieneCotizaciones = $solicitud->cotizaciones && $solicitud->cotizaciones->count() > 0;
-        $puedeElegirCotizacion = in_array($estatusReal, ['Pendiente Cotización TI', 'Completada'], true)
-            && $tieneCotizaciones && auth()->check() && auth()->user()->can('aprobar-solicitudes-gerencia');
-        $puedeSubirFactura = $estatusReal === 'Aprobado' && auth()->check();
+        $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+
+        if ($estatusReal === 'Rechazada') {
+            $estatusDisplay = 'Rechazada';
+        } elseif ($estatusReal === 'Aprobado' || $tieneSeleccionada) {
+            $estatusDisplay = 'Aprobada';
+        } elseif ($estatusReal === 'Completada') {
+            $estatusDisplay = 'En revisión'; // gerente debe elegir ganador
+        } elseif ($estatusReal === 'Pendiente Cotización TI') {
+            $estatusDisplay = 'Pendiente'; // ya firmaron los 3, pendiente de cotizar
+        } elseif (in_array($estatusReal, ['Pendiente Aprobación Supervisor', 'Pendiente Aprobación Gerencia', 'Pendiente Aprobación Administración'], true)) {
+            $estatusDisplay = 'En revisión';
+        } else {
+            $estatusDisplay = 'Pendiente';
+        }
+
+        $puedeCotizar = $todasFirmaron && auth()->check();
+        $puedeElegirCotizacion = $todasFirmaron && $tieneCotizaciones && !$tieneSeleccionada
+            && auth()->check() && auth()->user()->can('aprobar-solicitudes-gerencia');
+        $puedeSubirFactura = ($estatusReal === 'Aprobado' || $tieneSeleccionada) && auth()->check();
 
         // Preparar pasos de aprobación
         $pasosAprobacion = [];
@@ -390,6 +408,8 @@ class TicketsController extends Controller
             'Requerimientos' => $solicitud->Requerimientos,
             'Proyecto' => $solicitud->Proyecto,
             'estatusReal' => $estatusReal,
+            'estatusDisplay' => $estatusDisplay,
+            'puedeCotizar' => $puedeCotizar,
             'puedeElegirCotizacion' => $puedeElegirCotizacion,
             'puedeSubirFactura' => $puedeSubirFactura,
             'fechaCreacion' => $solicitud->created_at->format('d/m/Y H:i'),
@@ -478,8 +498,17 @@ class TicketsController extends Controller
      */
     public function guardarCotizaciones(Request $request, $id)
     {
-        $solicitud = Solicitud::findOrFail($id);
-        
+        $solicitud = Solicitud::with(['pasoSupervisor', 'pasoGerencia', 'pasoAdministracion'])->findOrFail($id);
+        $todasFirmaron = ($solicitud->pasoSupervisor && $solicitud->pasoSupervisor->status === 'approved')
+            && ($solicitud->pasoGerencia && $solicitud->pasoGerencia->status === 'approved')
+            && ($solicitud->pasoAdministracion && $solicitud->pasoAdministracion->status === 'approved');
+        if (!$todasFirmaron) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo se pueden guardar cotizaciones cuando los 3 responsables (Supervisor, Gerencia, Administración) ya firmaron.',
+            ], 403);
+        }
+
         $data = $request->validate([
             'proveedores' => 'required|array|min:1',
             'proveedores.*' => 'required|string|max:255',
@@ -529,15 +558,6 @@ class TicketsController extends Controller
                 }
             });
 
-            $solicitud->load(['pasoGerencia.approverEmpleado', 'cotizaciones']);
-            $gerente = $solicitud->pasoGerencia && $solicitud->pasoGerencia->approverEmpleado
-                ? $solicitud->pasoGerencia->approverEmpleado
-                : null;
-            if ($gerente && $gerente->Correo) {
-                app(SolicitudAprobacionEmailService::class)
-                    ->enviarCotizacionesListasParaElegir($gerente, $solicitud);
-            }
-
             return response()->json([
                 'success' => true,
                 'message' => 'Cotizaciones guardadas correctamente.',
@@ -552,17 +572,184 @@ class TicketsController extends Controller
     }
 
     /**
+     * Enviar cotizaciones al gerente por correo electrónico
+     */
+    public function enviarCotizacionesAlGerente(Request $request, $id)
+    {
+        $solicitud = Solicitud::with(['pasoGerencia.approverEmpleado', 'cotizaciones'])->findOrFail($id);
+        
+        // Verificar que hay cotizaciones guardadas
+        if (!$solicitud->cotizaciones || $solicitud->cotizaciones->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No hay cotizaciones guardadas para enviar. Primero debe guardar las cotizaciones.',
+            ], 400);
+        }
+
+        // Obtener el gerente
+        $gerente = $solicitud->pasoGerencia && $solicitud->pasoGerencia->approverEmpleado
+            ? $solicitud->pasoGerencia->approverEmpleado
+            : null;
+
+        if (!$gerente || !$gerente->Correo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró el correo del gerente asignado.',
+            ], 400);
+        }
+
+        try {
+            $token = null;
+            
+            // Verificar si la tabla existe antes de intentar crear el token
+            try {
+                // Revocar tokens anteriores para esta solicitud
+                SolicitudCotizacionToken::where('solicitud_id', $id)
+                    ->whereNull('used_at')
+                    ->update(['revoked_at' => now()]);
+
+                // Crear nuevo token
+                $token = Str::uuid();
+                $tokenRow = SolicitudCotizacionToken::create([
+                    'solicitud_id' => $id,
+                    'token' => $token,
+                    'expires_at' => now()->addDays(30), // Token válido por 30 días
+                ]);
+            } catch (\Exception $e) {
+                // Si la tabla no existe, continuar sin token (modo fallback)
+                Log::warning('No se pudo crear token de cotización (tabla puede no existir): ' . $e->getMessage());
+                // Continuar sin token, el servicio usará la ruta general
+            }
+
+            $enviado = app(SolicitudAprobacionEmailService::class)
+                ->enviarCotizacionesListasParaElegir($gerente, $solicitud, $token);
+
+            if ($enviado) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Correo enviado al gerente correctamente.',
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al enviar el correo. Por favor, intente nuevamente.',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al enviar cotizaciones al gerente: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al enviar el correo: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Vista pública para que el gerente elija el ganador usando token
+     */
+    public function elegirGanadorConToken(string $token)
+    {
+        try {
+            $tokenRow = SolicitudCotizacionToken::where('token', $token)
+                ->with('solicitud.cotizaciones', 'solicitud.empleadoid', 'solicitud.gerenciaid')
+                ->first();
+
+            if (!$tokenRow) {
+                abort(404, 'Token no encontrado');
+            }
+        } catch (\Exception $e) {
+            // Si la tabla no existe, mostrar error amigable
+            Log::error('Error al buscar token de cotización: ' . $e->getMessage());
+            abort(500, 'Error al acceder a la base de datos. Por favor, contacte al administrador.');
+        }
+
+        // Verificar si el token está usado
+        if ($tokenRow->used_at) {
+            return view('solicitudes.token-invalido', [
+                'tokenInfo' => [
+                    'razon' => 'Este enlace ya fue utilizado para elegir el ganador',
+                    'fecha_usado' => $tokenRow->used_at->translatedFormat('d M Y, H:i'),
+                ]
+            ])->with('status', 401);
+        }
+
+        // Verificar si el token está revocado
+        if ($tokenRow->revoked_at) {
+            return view('solicitudes.token-invalido', [
+                'tokenInfo' => [
+                    'razon' => 'Este enlace fue revocado',
+                    'fecha_usado' => $tokenRow->revoked_at->translatedFormat('d M Y, H:i'),
+                ]
+            ])->with('status', 401);
+        }
+
+        // Verificar si el token expiró
+        if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
+            return view('solicitudes.token-invalido', [
+                'tokenInfo' => [
+                    'razon' => 'Este enlace ha expirado. El tiempo límite para elegir el ganador ha finalizado',
+                    'fecha_expiracion' => $tokenRow->expires_at->translatedFormat('d M Y, H:i'),
+                ]
+            ])->with('status', 401);
+        }
+
+        $solicitud = $tokenRow->solicitud;
+        
+        // Verificar que hay cotizaciones
+        if (!$solicitud->cotizaciones || $solicitud->cotizaciones->isEmpty()) {
+            return view('solicitudes.token-invalido', [
+                'tokenInfo' => [
+                    'razon' => 'No hay cotizaciones disponibles para esta solicitud',
+                ]
+            ])->with('status', 400);
+        }
+
+        // Verificar que la solicitud no esté ya aprobada
+        if ($solicitud->Estatus === 'Aprobado') {
+            return view('solicitudes.token-invalido', [
+                'tokenInfo' => [
+                    'razon' => 'Esta solicitud ya fue aprobada',
+                ]
+            ])->with('status', 400);
+        }
+
+        return view('solicitudes.elegir-ganador', [
+            'solicitud' => $solicitud,
+            'token' => $token,
+            'cotizaciones' => $solicitud->cotizaciones,
+        ]);
+    }
+
+    /**
      * Seleccionar cotización (gerente elige cuál aprobar). Pasa a Aprobado y habilita factura.
      */
     public function seleccionarCotizacion(Request $request, $id)
     {
-        if (!auth()->check() || !auth()->user()->can('aprobar-solicitudes-gerencia')) {
-            return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
-        }
-
         $data = $request->validate([
             'cotizacion_id' => 'required|integer|exists:cotizaciones,CotizacionID',
+            'token' => 'nullable|string',
         ]);
+
+        // Si hay token, validar el token en lugar de la autenticación
+        if ($request->has('token') && $request->input('token')) {
+            try {
+                $tokenRow = SolicitudCotizacionToken::where('token', $request->input('token'))
+                    ->where('solicitud_id', $id)
+                    ->first();
+                
+                if (!$tokenRow || !$tokenRow->isActive()) {
+                    return response()->json(['success' => false, 'message' => 'Token inválido, expirado o ya utilizado.'], 403);
+                }
+            } catch (\Exception $e) {
+                Log::error('Error al validar token de cotización: ' . $e->getMessage());
+                return response()->json(['success' => false, 'message' => 'Error al validar el token.'], 500);
+            }
+        } else {
+            // Si no hay token, validar autenticación normal
+            if (!auth()->check() || !auth()->user()->can('aprobar-solicitudes-gerencia')) {
+                return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
+            }
+        }
 
         $solicitud = Solicitud::with('cotizaciones')->findOrFail($id);
         $cotizacion = $solicitud->cotizaciones->firstWhere('CotizacionID', (int) $data['cotizacion_id']);
@@ -571,16 +758,28 @@ class TicketsController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($solicitud, $cotizacion) {
+            DB::transaction(function () use ($solicitud, $cotizacion, $request) {
                 foreach ($solicitud->cotizaciones as $c) {
                     $c->update(['Estatus' => $c->CotizacionID === $cotizacion->CotizacionID ? 'Seleccionada' : 'Rechazada']);
                 }
                 $solicitud->update(['Estatus' => 'Aprobado']);
+                
+                // Si se está usando un token, marcarlo como usado
+                if ($request->has('token')) {
+                    try {
+                        SolicitudCotizacionToken::where('token', $request->input('token'))
+                            ->where('solicitud_id', $solicitud->SolicitudID)
+                            ->update(['used_at' => now()]);
+                    } catch (\Exception $e) {
+                        Log::warning('No se pudo marcar token como usado: ' . $e->getMessage());
+                        // Continuar sin error, la solicitud ya se aprobó
+                    }
+                }
             });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cotización seleccionada. La solicitud ha pasado a Aprobado. Ya puedes subir la factura.',
+                'message' => 'Ganador seleccionado. La solicitud está Aprobada y se procederá a la compra.',
             ]);
         } catch (\Exception $e) {
             \Log::error('Error al seleccionar cotización: ' . $e->getMessage());

@@ -10,6 +10,7 @@ document.addEventListener('alpine:init', () => {
         cargandoCotizaciones: false,
         proveedores: ['INTERCOMPRAS', 'PCEL', 'ABASTEO'],
         productos: [],
+        tieneCotizacionesGuardadas: false,
         abrirModal(id) {
             this.cargando = true;
             this.modalAbierto = true;
@@ -39,6 +40,7 @@ document.addEventListener('alpine:init', () => {
             this.modalCotizacionAbierto = false;
             this.solicitudCotizacionId = null;
             this.productos = [];
+            this.tieneCotizacionesGuardadas = false;
         },
         agregarProveedor() {
             const nombre = prompt('Nombre del proveedor:');
@@ -100,8 +102,10 @@ document.addEventListener('alpine:init', () => {
                             });
                             return prod;
                         });
+                        this.tieneCotizacionesGuardadas = true;
                     } else {
                         this.agregarProducto();
+                        this.tieneCotizacionesGuardadas = false;
                     }
                     this.cargandoCotizaciones = false;
                 })
@@ -110,6 +114,7 @@ document.addEventListener('alpine:init', () => {
                     if (this.productos.length === 0) {
                         this.agregarProducto();
                     }
+                    this.tieneCotizacionesGuardadas = false;
                     this.cargandoCotizaciones = false;
                 });
         },
@@ -184,9 +189,8 @@ document.addEventListener('alpine:init', () => {
             .then(data => {
                 Swal.close();
                 if (data.success) {
-                    Swal.fire('Éxito', data.message || 'Cotizaciones guardadas correctamente', 'success').then(() => {
-                        location.reload();
-                    });
+                    this.tieneCotizacionesGuardadas = true;
+                    Swal.fire('Éxito', data.message || 'Cotizaciones guardadas correctamente', 'success');
                 } else {
                     Swal.fire('Error', data.message || 'Error al guardar las cotizaciones', 'error');
                 }
@@ -202,15 +206,73 @@ document.addEventListener('alpine:init', () => {
             const precios = Object.values(producto.precios || {}).filter(p => p && parseFloat(p) > 0);
             return precios.length > 0 ? Math.min(...precios.map(p => parseFloat(p))) : null;
         },
+        enviarCotizacionesAlGerente() {
+            if (!this.solicitudCotizacionId) {
+                Swal.fire('Error', 'No hay solicitud seleccionada', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Enviar cotizaciones al gerente?',
+                text: 'Se enviará un correo electrónico al gerente con las cotizaciones para que elija el ganador.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, enviar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#10b981'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Enviando...',
+                        text: 'Por favor espere',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    fetch(`/solicitudes/${this.solicitudCotizacionId}/enviar-cotizaciones-gerente`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => Promise.reject(err));
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        Swal.close();
+                        if (data.success) {
+                            Swal.fire('Éxito', data.message || 'Correo enviado al gerente correctamente', 'success').then(() => {
+                                this.cerrarModalCotizacion();
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', data.message || 'Error al enviar el correo', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        Swal.close();
+                        console.error('Error:', error);
+                        const mensaje = error.message || error.error || 'Error al enviar el correo';
+                        Swal.fire('Error', mensaje, 'error');
+                    });
+                }
+            });
+        },
         async seleccionarCotizacion(cotizacionId) {
             const id = this.solicitudSeleccionada?.SolicitudID;
             if (!id) return;
             const ok = await Swal.fire({
-                title: '¿Elegir esta cotización?',
-                text: 'La solicitud pasará a Aprobado y se habilitará subir factura.',
+                title: '¿Elegir esta propuesta como ganador?',
+                text: 'La solicitud pasará a Aprobada y se habilitará subir factura.',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, elegir',
+                confirmButtonText: 'Sí, elegir ganador',
                 cancelButtonText: 'Cancelar'
             }).then(r => r.isConfirmed);
             if (!ok) return;
@@ -227,10 +289,10 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json().catch(() => ({}));
                 Swal.close();
                 if (data.success) {
-                    await Swal.fire('Éxito', data.message || 'Cotización seleccionada', 'success');
+                    await Swal.fire('Éxito', data.message || 'Ganador seleccionado. La solicitud está Aprobada.', 'success');
                     this.abrirModal(id);
                 } else {
-                    Swal.fire('Error', data.message || 'Error al seleccionar', 'error');
+                    Swal.fire('Error', data.message || 'Error al elegir ganador', 'error');
                 }
             } catch (e) {
                 Swal.close();
@@ -300,13 +362,9 @@ document.addEventListener('alpine:init', () => {
                         if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                             if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                                 if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
-                                    $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
                                     $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
-                                    if ($tieneSeleccionada) {
-                                        $estatusReal = 'Aprobado';
-                                    } else {
-                                        $estatusReal = ($cotizacionesCount >= 3) ? 'Completada' : 'Pendiente Cotización TI';
-                                    }
+                                    $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
+                                    $estatusReal = $tieneSeleccionada ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
                                 } else {
                                     $estatusReal = 'Pendiente Aprobación Administración';
                                 }
@@ -318,15 +376,31 @@ document.addEventListener('alpine:init', () => {
                         }
                     }
                     
-                    $colorEstatus = match($estatusReal) {
-                        'Pendiente Aprobación Supervisor' => 'bg-yellow-100 text-yellow-800',
-                        'Pendiente Aprobación Gerencia' => 'bg-orange-100 text-orange-800',
-                        'Pendiente Aprobación Administración' => 'bg-purple-100 text-purple-800',
-                        'Pendiente Cotización TI' => 'bg-blue-100 text-blue-800',
-                        'Rechazada' => 'bg-red-100 text-red-800',
-                        'Completada' => 'bg-green-100 text-green-800',
-                        'Aprobado' => 'bg-emerald-100 text-emerald-800',
-                        default => 'bg-gray-100 text-gray-800'
+                    if ($estatusReal === 'Rechazada') {
+                        $estatusDisplay = 'Rechazada';
+                    } elseif ($estatusReal === 'Aprobado' || ($solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty())) {
+                        $estatusDisplay = 'Aprobada';
+                    } elseif ($estatusReal === 'Completada') {
+                        $estatusDisplay = 'En revisión';
+                    } elseif ($estatusReal === 'Pendiente Cotización TI') {
+                        $estatusDisplay = 'Pendiente';
+                    } elseif (in_array($estatusReal, ['Pendiente Aprobación Supervisor', 'Pendiente Aprobación Gerencia', 'Pendiente Aprobación Administración'], true)) {
+                        $estatusDisplay = 'En revisión';
+                    } else {
+                        $estatusDisplay = 'Pendiente';
+                    }
+                    
+                    $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
+                        && ($pasoGerencia && $pasoGerencia->status === 'approved')
+                        && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+                    $puedeCotizar = $todasFirmaron && auth()->check();
+                    
+                    $colorEstatus = match($estatusDisplay) {
+                        'Pendiente' => 'bg-amber-50 text-amber-800 border border-amber-200',
+                        'Rechazada' => 'bg-red-50 text-red-800 border border-red-200',
+                        'En revisión' => 'bg-sky-50 text-sky-800 border border-sky-200',
+                        'Aprobada' => 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+                        default => 'bg-gray-50 text-gray-700 border border-gray-200'
                     };
                     
                     $puedeAprobar = false;
@@ -361,8 +435,8 @@ document.addEventListener('alpine:init', () => {
                         <div class="text-sm text-gray-900">{{ Str::limit($solicitud->Motivo ?? 'N/A', 30) }}</div>
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap">
-                        <span class="inline-block px-2 py-1 rounded text-xs font-medium {{ $colorEstatus }}">
-                            {{ Str::limit($estatusReal, 25) }}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold {{ $colorEstatus }}">
+                            {{ $estatusDisplay }}
                         </span>
                     </td>
                     <td class="px-4 py-3">
@@ -421,11 +495,11 @@ document.addEventListener('alpine:init', () => {
                                 class="text-blue-600 hover:text-blue-800 text-sm font-medium transition">
                                 <i class="fas fa-eye mr-1"></i> Ver
                             </button>
-                            @if($estatusReal === 'Pendiente Cotización TI' || auth()->user()->can('crear-cotizaciones-ti'))
+                            @if($puedeCotizar)
                             <button 
                                 @click="abrirModalCotizacion({{ $solicitud->SolicitudID }})"
-                                class="text-purple-600 hover:text-purple-800 text-sm font-medium transition">
-                                <i class="fas fa-dollar-sign mr-1"></i> Cotizar
+                                class="text-violet-600 hover:text-violet-800 text-sm font-medium transition">
+                                <i class="fas fa-file-invoice-dollar mr-1"></i> Cotizar
                             </button>
                             @endif
                             @if($puedeAprobar)
@@ -545,12 +619,27 @@ document.addEventListener('alpine:init', () => {
                             <div class="grid grid-cols-2 gap-4 mt-3">
                                 <div>
                                     <label class="text-xs font-medium text-gray-500">Estatus</label>
-                                    <p class="text-sm text-gray-900 font-medium" x-text="solicitudSeleccionada?.estatusReal || 'Pendiente'"></p>
+                                    <p class="text-sm font-semibold" 
+                                       :class="{
+                                           'text-amber-600': (solicitudSeleccionada?.estatusDisplay || '') === 'Pendiente',
+                                           'text-red-600': (solicitudSeleccionada?.estatusDisplay || '') === 'Rechazada',
+                                           'text-sky-600': (solicitudSeleccionada?.estatusDisplay || '') === 'En revisión',
+                                           'text-emerald-600': (solicitudSeleccionada?.estatusDisplay || '') === 'Aprobada',
+                                           'text-gray-900': !['Pendiente','Rechazada','En revisión','Aprobada'].includes(solicitudSeleccionada?.estatusDisplay || '')
+                                       }"
+                                       x-text="solicitudSeleccionada?.estatusDisplay || 'Pendiente'"></p>
                                 </div>
                                 <div>
                                     <label class="text-xs font-medium text-gray-500">Fecha de Creación</label>
                                     <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.fechaCreacion || 'N/A'"></p>
                                 </div>
+                            </div>
+                            <div class="mt-4 flex flex-wrap gap-2" x-show="solicitudSeleccionada?.puedeCotizar">
+                                <button @click="abrirModalCotizacion(solicitudSeleccionada?.SolicitudID)"
+                                        class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    <span x-text="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0 ? 'Editar cotizaciones' : 'Cotizar'"></span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -598,11 +687,58 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     </div>
 
-                    <!-- Cotizaciones -->
-                    <div class="mb-6" x-show="solicitudSeleccionada?.cotizaciones?.length > 0">
+                    <!-- Vista Gerente: Propuestas – Elige el ganador -->
+                    <div class="mb-6" x-show="solicitudSeleccionada?.puedeElegirCotizacion && (solicitudSeleccionada?.cotizaciones?.length || 0) > 0">
+                        <h4 class="text-lg font-semibold text-sky-800 mb-2 flex items-center gap-2">
+                            <i class="fas fa-trophy text-amber-500"></i>
+                            Vista para Gerente – Elige el ganador
+                        </h4>
+                        <p class="text-sm text-gray-600 mb-4">Los 3 responsables ya firmaron. Revisa las propuestas y selecciona la cotización ganadora.</p>
+                        <div class="space-y-3">
+                            <template x-for="(cotizacion, index) in solicitudSeleccionada?.cotizaciones || []" :key="index">
+                                <div class="p-4 rounded-xl border-2 transition"
+                                     :class="cotizacion.Estatus === 'Seleccionada' ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200 hover:border-sky-200'">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">Proveedor</label>
+                                            <p class="text-sm font-semibold text-gray-900" x-text="cotizacion.Proveedor"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">Precio</label>
+                                            <p class="text-sm font-semibold text-gray-900" x-text="'$' + parseFloat(cotizacion.Precio).toLocaleString('es-MX', {minimumFractionDigits: 2})"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">Estatus</label>
+                                            <p class="text-sm font-medium" 
+                                               :class="{
+                                                   'text-emerald-600': cotizacion.Estatus === 'Seleccionada',
+                                                   'text-red-600': cotizacion.Estatus === 'Rechazada',
+                                                   'text-gray-500': cotizacion.Estatus === 'Pendiente'
+                                               }"
+                                               x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : cotizacion.Estatus"></p>
+                                        </div>
+                                        <div class="col-span-3 flex flex-wrap items-center justify-between gap-2">
+                                            <div class="flex-1 min-w-0">
+                                                <label class="text-xs font-medium text-gray-500">Descripción</label>
+                                                <p class="text-sm text-gray-700" x-text="cotizacion.Descripcion"></p>
+                                            </div>
+                                            <button x-show="solicitudSeleccionada?.puedeElegirCotizacion && cotizacion.Estatus === 'Pendiente'"
+                                                    @click="seleccionarCotizacion(cotizacion.CotizacionID)"
+                                                    class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition shadow-sm">
+                                                <i class="fas fa-trophy mr-1"></i> Elegir ganador
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Cotizaciones (cuando no es vista elegir ganador) -->
+                    <div class="mb-6" x-show="(!solicitudSeleccionada?.puedeElegirCotizacion) && (solicitudSeleccionada?.cotizaciones?.length || 0) > 0">
                         <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-file-invoice-dollar text-blue-500"></i>
-                            Cotizaciones (<span x-text="solicitudSeleccionada?.cotizaciones?.length || 0"></span>/3)
+                            <i class="fas fa-file-invoice-dollar text-violet-500"></i>
+                            Cotizaciones (<span x-text="solicitudSeleccionada?.cotizaciones?.length || 0"></span>)
                         </h4>
                         <div class="space-y-3">
                             <template x-for="(cotizacion, index) in solicitudSeleccionada?.cotizaciones || []" :key="index">
@@ -618,24 +754,17 @@ document.addEventListener('alpine:init', () => {
                                         </div>
                                         <div>
                                             <label class="text-xs font-medium text-gray-500">Estatus</label>
-                                            <p class="text-sm" 
+                                            <p class="text-sm font-medium" 
                                                :class="{
-                                                   'text-green-600': cotizacion.Estatus === 'Seleccionada',
+                                                   'text-emerald-600': cotizacion.Estatus === 'Seleccionada',
                                                    'text-red-600': cotizacion.Estatus === 'Rechazada',
                                                    'text-gray-600': cotizacion.Estatus === 'Pendiente'
                                                }"
-                                               x-text="cotizacion.Estatus"></p>
+                                               x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : cotizacion.Estatus"></p>
                                         </div>
-                                        <div class="col-span-3 flex flex-wrap items-center justify-between gap-2">
-                                            <div class="flex-1 min-w-0">
-                                                <label class="text-xs font-medium text-gray-500">Descripción</label>
-                                                <p class="text-sm text-gray-900" x-text="cotizacion.Descripcion"></p>
-                                            </div>
-                                            <button x-show="solicitudSeleccionada?.puedeElegirCotizacion && cotizacion.Estatus === 'Pendiente'"
-                                                    @click="seleccionarCotizacion(cotizacion.CotizacionID)"
-                                                    class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded transition">
-                                                <i class="fas fa-check mr-1"></i> Elegir esta
-                                            </button>
+                                        <div class="col-span-3">
+                                            <label class="text-xs font-medium text-gray-500">Descripción</label>
+                                            <p class="text-sm text-gray-900" x-text="cotizacion.Descripcion"></p>
                                         </div>
                                     </div>
                                 </div>
@@ -820,6 +949,12 @@ document.addEventListener('alpine:init', () => {
                                 @click="guardarCotizaciones()"
                                 class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded transition">
                                 <i class="fas fa-save mr-2"></i> Guardar Cotizaciones
+                            </button>
+                            <button 
+                                x-show="tieneCotizacionesGuardadas"
+                                @click="enviarCotizacionesAlGerente()"
+                                class="px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded transition">
+                                <i class="fas fa-envelope mr-2"></i> Enviar al Gerente
                             </button>
                         </div>
                     </div>

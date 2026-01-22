@@ -70,16 +70,22 @@ class SolicitudAprobacionEmailService
     /**
      * Notificar a gerente que hay cotizaciones para elegir (tras crear cotizaciones).
      */
-    public function enviarCotizacionesListasParaElegir(Empleados $gerente, Solicitud $solicitud): bool
+    public function enviarCotizacionesListasParaElegir(Empleados $gerente, Solicitud $solicitud, string $token = null): bool
     {
         if (empty($gerente->Correo)) {
             Log::warning("SolicitudAprobacionEmailService: gerente {$gerente->EmpleadoID} sin correo.");
             return false;
         }
 
-        $urlTickets = route('tickets.index');
-        $asunto = "Cotizaciones listas – Solicitud #{$solicitud->SolicitudID}";
-        $contenido = $this->construirContenidoCotizacionesListas($solicitud, $urlTickets, $gerente->NombreEmpleado);
+        // Si hay token, usar la URL personalizada con token, sino usar la ruta general
+        if ($token) {
+            $urlElegir = url('/elegir-ganador/' . $token);
+        } else {
+            $urlElegir = route('tickets.index');
+        }
+        
+        $asunto = "Propuestas listas – Elige ganador – Solicitud #{$solicitud->SolicitudID}";
+        $contenido = $this->construirContenidoCotizacionesListas($solicitud, $urlElegir, $gerente->NombreEmpleado);
 
         try {
             $mail = new PHPMailer(true);
@@ -142,21 +148,29 @@ HTML;
 
     private function construirContenidoCotizacionesListas(Solicitud $solicitud, string $url, string $nombreGerente): string
     {
+        $empleado = $solicitud->empleadoid;
+        $nombreSolicitante = $empleado ? $empleado->NombreEmpleado : 'N/A';
+        $motivo = e($solicitud->Motivo ?? 'N/A');
+        
         return <<<HTML
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px;">
     <div style="max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #0F766E;">Cotizaciones listas para elegir</h2>
+        <h2 style="color: #0F766E;">Propuestas listas – Elige el ganador</h2>
         <p>Hola <strong>{$nombreGerente}</strong>,</p>
-        <p>La solicitud <strong>#{$solicitud->SolicitudID}</strong> tiene cotizaciones cargadas. Por favor revisa y selecciona la opción que desees aprobar.</p>
+        <p>La solicitud <strong>#{$solicitud->SolicitudID}</strong> tiene las propuestas de cotización cargadas. Revisa las opciones y <strong>elige el ganador</strong>.</p>
+        <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <p><strong>Solicitante:</strong> {$nombreSolicitante}</p>
+            <p><strong>Motivo:</strong> {$motivo}</p>
+        </div>
         <p style="margin: 24px 0;">
-            <a href="{$url}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Ver solicitud y cotizaciones</a>
+            <a href="{$url}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Ver propuestas y elegir ganador</a>
         </p>
-        <p style="font-size: 12px; color: #6b7280;">Enlace: {$url}</p>
+        <p style="font-size: 12px; color: #6b7280;">Si el enlace no funciona, copia y pega en tu navegador: {$url}</p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-        <p style="font-size: 12px; color: #9ca3af;">Sistema de Solicitudes.</p>
+        <p style="font-size: 12px; color: #9ca3af;">Este correo fue enviado automáticamente por el Sistema de Solicitudes.</p>
     </div>
 </body>
 </html>
