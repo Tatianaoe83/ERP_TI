@@ -201,6 +201,42 @@ document.addEventListener('alpine:init', () => {
         obtenerPrecioMinimo(producto) {
             const precios = Object.values(producto.precios || {}).filter(p => p && parseFloat(p) > 0);
             return precios.length > 0 ? Math.min(...precios.map(p => parseFloat(p))) : null;
+        },
+        async seleccionarCotizacion(cotizacionId) {
+            const id = this.solicitudSeleccionada?.SolicitudID;
+            if (!id) return;
+            const ok = await Swal.fire({
+                title: '¿Elegir esta cotización?',
+                text: 'La solicitud pasará a Aprobado y se habilitará subir factura.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, elegir',
+                cancelButtonText: 'Cancelar'
+            }).then(r => r.isConfirmed);
+            if (!ok) return;
+            Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const res = await fetch(`/solicitudes/${id}/seleccionar-cotizacion`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ cotizacion_id: cotizacionId })
+                });
+                const data = await res.json().catch(() => ({}));
+                Swal.close();
+                if (data.success) {
+                    await Swal.fire('Éxito', data.message || 'Cotización seleccionada', 'success');
+                    this.abrirModal(id);
+                } else {
+                    Swal.fire('Error', data.message || 'Error al seleccionar', 'error');
+                }
+            } catch (e) {
+                Swal.close();
+                console.error(e);
+                Swal.fire('Error', 'Error al seleccionar la cotización', 'error');
+            }
         }
     }));
 });
@@ -258,12 +294,19 @@ document.addEventListener('alpine:init', () => {
                         ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
                         $estatusReal = 'Rechazada';
                         $estaRechazada = true;
+                    } elseif ($solicitud->Estatus === 'Aprobado') {
+                        $estatusReal = 'Aprobado';
                     } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
                         if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                             if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                                 if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
                                     $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
-                                    $estatusReal = ($cotizacionesCount >= 3) ? 'Completada' : 'Pendiente Cotización TI';
+                                    $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+                                    if ($tieneSeleccionada) {
+                                        $estatusReal = 'Aprobado';
+                                    } else {
+                                        $estatusReal = ($cotizacionesCount >= 3) ? 'Completada' : 'Pendiente Cotización TI';
+                                    }
                                 } else {
                                     $estatusReal = 'Pendiente Aprobación Administración';
                                 }
@@ -282,6 +325,7 @@ document.addEventListener('alpine:init', () => {
                         'Pendiente Cotización TI' => 'bg-blue-100 text-blue-800',
                         'Rechazada' => 'bg-red-100 text-red-800',
                         'Completada' => 'bg-green-100 text-green-800',
+                        'Aprobado' => 'bg-emerald-100 text-emerald-800',
                         default => 'bg-gray-100 text-gray-800'
                     };
                     
@@ -582,14 +626,33 @@ document.addEventListener('alpine:init', () => {
                                                }"
                                                x-text="cotizacion.Estatus"></p>
                                         </div>
-                                        <div class="col-span-3">
-                                            <label class="text-xs font-medium text-gray-500">Descripción</label>
-                                            <p class="text-sm text-gray-900" x-text="cotizacion.Descripcion"></p>
+                                        <div class="col-span-3 flex flex-wrap items-center justify-between gap-2">
+                                            <div class="flex-1 min-w-0">
+                                                <label class="text-xs font-medium text-gray-500">Descripción</label>
+                                                <p class="text-sm text-gray-900" x-text="cotizacion.Descripcion"></p>
+                                            </div>
+                                            <button x-show="solicitudSeleccionada?.puedeElegirCotizacion && cotizacion.Estatus === 'Pendiente'"
+                                                    @click="seleccionarCotizacion(cotizacion.CotizacionID)"
+                                                    class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded transition">
+                                                <i class="fas fa-check mr-1"></i> Elegir esta
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </template>
                         </div>
+                    </div>
+
+                    <!-- Subir factura (cuando Aprobado) -->
+                    <div class="mb-6" x-show="solicitudSeleccionada?.puedeSubirFactura">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-file-invoice text-emerald-600"></i>
+                            Factura
+                        </h4>
+                        <p class="text-sm text-gray-600 mb-2">La solicitud está aprobada. Puedes subir la factura correspondiente.</p>
+                        <a href="{{ route('facturas.index') }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition">
+                            <i class="fas fa-upload"></i> Ir a Facturas
+                        </a>
                     </div>
                 </div>
             </div>

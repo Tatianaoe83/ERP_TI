@@ -6,6 +6,7 @@ use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Models\Solicitud;
 use App\Models\Empleados;
+use App\Services\SolicitudAprobacionEmailService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -105,6 +106,12 @@ class SolicitudAprobacionController extends Controller
         };
     }
 
+    private const STAGE_LABELS = [
+        'supervisor' => 'Supervisor',
+        'gerencia' => 'Gerencia',
+        'administracion' => 'Administración',
+    ];
+
     public function decide(Request $request, string $token): RedirectResponse
     {
         $data = $request->validate([
@@ -112,14 +119,15 @@ class SolicitudAprobacionController extends Controller
             'comment'  => 'nullable|string|max:5000',
         ]);
 
-        try {
-            DB::transaction(function () use ($data, $token) {
+        $emailRevisionData = null;
 
+        try {
+            DB::transaction(function () use ($data, $token, &$emailRevisionData) {
                 $tokenRow = SolicitudTokens::query()
                     ->active()
                     ->where('token', $token)
                     ->lockForUpdate()
-                    ->with(['approvalStep', 'approvalStep.solicitud'])
+                    ->with(['approvalStep', 'approvalStep.solicitud', 'approvalStep.approverEmpleado'])
                     ->firstOrFail();
 
                 $step = $tokenRow->approvalStep;
@@ -156,12 +164,43 @@ class SolicitudAprobacionController extends Controller
 
                 $pending = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
                     ->where('status', 'pending')
-                    ->exists();
+                    ->orderBy('step_order')
+                    ->get();
 
                 $solicitud->update([
-                    'Estatus' => $pending ? 'En revisión' : 'Aprobada',
+                    'Estatus' => $pending->isNotEmpty() ? 'En revisión' : 'Aprobada',
                 ]);
+
+                if ($pending->isNotEmpty()) {
+                    $nextStep = $pending->first();
+                    $nextStep->load('approverEmpleado');
+                    $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
+                        ->whereNull('used_at')
+                        ->whereNull('revoked_at')
+                        ->where(function ($q) {
+                            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                        })
+                        ->first();
+                    if ($nextTokenRow && $nextStep->approverEmpleado) {
+                        $stageLabel = self::STAGE_LABELS[$nextStep->stage] ?? $nextStep->stage;
+                        $emailRevisionData = [
+                            'aprobador' => $nextStep->approverEmpleado,
+                            'solicitud' => $solicitud->load('empleadoid'),
+                            'token' => $nextTokenRow->token,
+                            'stageLabel' => $stageLabel,
+                        ];
+                    }
+                }
             });
+
+            if ($emailRevisionData) {
+                app(SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
+                    $emailRevisionData['aprobador'],
+                    $emailRevisionData['solicitud'],
+                    $emailRevisionData['token'],
+                    $emailRevisionData['stageLabel']
+                );
+            }
 
             return redirect()
                 ->route('solicitudes.public.decide', ['token' => $token])
@@ -302,11 +341,13 @@ class SolicitudAprobacionController extends Controller
             'comentario' => 'nullable|string|max:5000',
         ]);
 
+        $emailTransferData = null;
+
         try {
-            $nuevoToken = DB::transaction(function () use ($data, $token) {
+            $nuevoToken = DB::transaction(function () use ($data, $token, &$emailTransferData) {
                 $tokenRow = SolicitudTokens::query()
                     ->where('token', $token)
-                    ->whereNull('used_at') // Solo permitir transferir si el token no ha sido usado
+                    ->whereNull('used_at')
                     ->lockForUpdate()
                     ->with(['approvalStep', 'approvalStep.solicitud'])
                     ->firstOrFail();
@@ -318,37 +359,48 @@ class SolicitudAprobacionController extends Controller
                     throw new \RuntimeException('Esta etapa ya fue resuelta.');
                 }
 
-                // Verificar que el nuevo aprobador sea diferente al actual
                 if ($step->approver_empleado_id == $data['nuevo_aprobador_id']) {
                     throw new \RuntimeException('Debe seleccionar un aprobador diferente al actual.');
                 }
 
-                // Verificar que el nuevo aprobador existe
                 $nuevoAprobador = Empleados::findOrFail($data['nuevo_aprobador_id']);
 
-                // Actualizar el paso con el nuevo aprobador
                 $step->update([
                     'approver_empleado_id' => $data['nuevo_aprobador_id'],
                     'comment' => $data['comentario'] ?? null,
                 ]);
 
-                // Invalidar el token actual
                 $tokenRow->update([
                     'used_at' => now(),
                     'revoked_at' => now(),
                 ]);
 
-                // Crear nuevo token para el nuevo aprobador
                 $nuevoTokenRow = SolicitudTokens::create([
                     'approval_step_id' => $step->id,
                     'token' => \Illuminate\Support\Str::uuid(),
                     'expires_at' => now()->addDays(7),
                 ]);
 
+                $stageLabel = self::STAGE_LABELS[$step->stage] ?? $step->stage;
+                $emailTransferData = [
+                    'aprobador' => $nuevoAprobador,
+                    'solicitud' => $solicitud->load('empleadoid'),
+                    'token' => $nuevoTokenRow->token,
+                    'stageLabel' => $stageLabel,
+                ];
+
                 return $nuevoTokenRow->token;
             });
 
-            // Si es una petición AJAX, devolver JSON
+            if ($emailTransferData) {
+                app(SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
+                    $emailTransferData['aprobador'],
+                    $emailTransferData['solicitud'],
+                    $emailTransferData['token'],
+                    $emailTransferData['stageLabel']
+                );
+            }
+
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -356,7 +408,6 @@ class SolicitudAprobacionController extends Controller
                 ]);
             }
 
-            // Si no, redirigir (aunque el token actual ya no funcionará)
             return redirect()
                 ->route('solicitudes.public.show', ['token' => $nuevoToken])
                 ->with('swal_success', 'La aprobación ha sido transferida correctamente. El nuevo aprobador recibirá un enlace para revisar la solicitud.');

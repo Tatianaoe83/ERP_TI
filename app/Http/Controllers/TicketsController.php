@@ -11,6 +11,7 @@ use App\Models\Tertipos;
 use App\Models\Subtipos;
 use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
+use App\Services\SolicitudAprobacionEmailService;
 use App\Services\TicketNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -141,8 +142,7 @@ class TicketsController extends Controller
         // Manejar valores antiguos ("Pendiente") y nuevos
         $solicitudesStatus = [
             'pendiente_supervisor' => $solicitudes->filter(function($solicitud) {
-                // Excluir rechazadas y completadas primero
-                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada' || $solicitud->Estatus === 'Aprobado') {
                     return false;
                 }
                 
@@ -177,7 +177,7 @@ class TicketsController extends Controller
             })->values(),
             
             'pendiente_gerencia' => $solicitudes->filter(function($solicitud) {
-                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada' || $solicitud->Estatus === 'Aprobado') {
                     return false;
                 }
                 
@@ -207,7 +207,7 @@ class TicketsController extends Controller
             })->values(),
             
             'pendiente_administracion' => $solicitudes->filter(function($solicitud) {
-                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada' || $solicitud->Estatus === 'Aprobado') {
                     return false;
                 }
                 
@@ -237,7 +237,7 @@ class TicketsController extends Controller
             })->values(),
             
             'pendiente_cotizacion' => $solicitudes->filter(function($solicitud) {
-                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada') {
+                if ($solicitud->Estatus === 'Rechazada' || $solicitud->Estatus === 'Completada' || $solicitud->Estatus === 'Aprobado') {
                     return false;
                 }
                 
@@ -245,7 +245,6 @@ class TicketsController extends Controller
                 $pasoGerencia = $solicitud->pasoGerencia;
                 $pasoAdministracion = $solicitud->pasoAdministracion;
                 
-                // Verificar si hay algún rechazo
                 if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
                     ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
                     ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
@@ -256,12 +255,12 @@ class TicketsController extends Controller
                     return true;
                 }
                 
-                // Todas aprobadas pero no completada y menos de 3 cotizaciones
                 $todasAprobadas = ($pasoSupervisor && $pasoSupervisor->status === 'approved') &&
                                   ($pasoGerencia && $pasoGerencia->status === 'approved') &&
                                   ($pasoAdministracion && $pasoAdministracion->status === 'approved');
                 $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
-                return $todasAprobadas && $cotizacionesCount < 3;
+                $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+                return $todasAprobadas && !$tieneSeleccionada;
             })->values()->sortByDesc(function($solicitud) {
                 return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
             })->values(),
@@ -275,6 +274,16 @@ class TicketsController extends Controller
                        ($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
                        ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
                        ($pasoAdministracion && $pasoAdministracion->status === 'rejected');
+            })->values()->sortByDesc(function($solicitud) {
+                return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
+            })->values(),
+            
+            'aprobadas' => $solicitudes->filter(function($solicitud) {
+                if ($solicitud->Estatus === 'Aprobado') {
+                    return true;
+                }
+                $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+                return $tieneSeleccionada;
             })->values()->sortByDesc(function($solicitud) {
                 return $solicitud->created_at ? $solicitud->created_at->timestamp : 0;
             })->values(),
@@ -318,12 +327,19 @@ class TicketsController extends Controller
             ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
             ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
             $estatusReal = 'Rechazada';
+        } elseif ($solicitud->Estatus === 'Aprobado') {
+            $estatusReal = 'Aprobado';
         } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
             if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                 if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                     if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
                         $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
-                        $estatusReal = ($cotizacionesCount >= 3) ? 'Completada' : 'Pendiente Cotización TI';
+                        $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+                        if ($tieneSeleccionada) {
+                            $estatusReal = 'Aprobado';
+                        } else {
+                            $estatusReal = ($cotizacionesCount >= 3) ? 'Completada' : 'Pendiente Cotización TI';
+                        }
                     } else {
                         $estatusReal = 'Pendiente Aprobación Administración';
                     }
@@ -334,6 +350,11 @@ class TicketsController extends Controller
                 $estatusReal = 'Pendiente Aprobación Supervisor';
             }
         }
+
+        $tieneCotizaciones = $solicitud->cotizaciones && $solicitud->cotizaciones->count() > 0;
+        $puedeElegirCotizacion = in_array($estatusReal, ['Pendiente Cotización TI', 'Completada'], true)
+            && $tieneCotizaciones && auth()->check() && auth()->user()->can('aprobar-solicitudes-gerencia');
+        $puedeSubirFactura = $estatusReal === 'Aprobado' && auth()->check();
 
         // Preparar pasos de aprobación
         $pasosAprobacion = [];
@@ -369,6 +390,8 @@ class TicketsController extends Controller
             'Requerimientos' => $solicitud->Requerimientos,
             'Proyecto' => $solicitud->Proyecto,
             'estatusReal' => $estatusReal,
+            'puedeElegirCotizacion' => $puedeElegirCotizacion,
+            'puedeSubirFactura' => $puedeSubirFactura,
             'fechaCreacion' => $solicitud->created_at->format('d/m/Y H:i'),
             'empleado' => [
                 'NombreEmpleado' => $solicitud->empleadoid->NombreEmpleado ?? null,
@@ -506,6 +529,15 @@ class TicketsController extends Controller
                 }
             });
 
+            $solicitud->load(['pasoGerencia.approverEmpleado', 'cotizaciones']);
+            $gerente = $solicitud->pasoGerencia && $solicitud->pasoGerencia->approverEmpleado
+                ? $solicitud->pasoGerencia->approverEmpleado
+                : null;
+            if ($gerente && $gerente->Correo) {
+                app(SolicitudAprobacionEmailService::class)
+                    ->enviarCotizacionesListasParaElegir($gerente, $solicitud);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Cotizaciones guardadas correctamente.',
@@ -515,6 +547,46 @@ class TicketsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al guardar las cotizaciones: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Seleccionar cotización (gerente elige cuál aprobar). Pasa a Aprobado y habilita factura.
+     */
+    public function seleccionarCotizacion(Request $request, $id)
+    {
+        if (!auth()->check() || !auth()->user()->can('aprobar-solicitudes-gerencia')) {
+            return response()->json(['success' => false, 'message' => 'No autorizado.'], 403);
+        }
+
+        $data = $request->validate([
+            'cotizacion_id' => 'required|integer|exists:cotizaciones,CotizacionID',
+        ]);
+
+        $solicitud = Solicitud::with('cotizaciones')->findOrFail($id);
+        $cotizacion = $solicitud->cotizaciones->firstWhere('CotizacionID', (int) $data['cotizacion_id']);
+        if (!$cotizacion) {
+            return response()->json(['success' => false, 'message' => 'La cotización no pertenece a esta solicitud.'], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($solicitud, $cotizacion) {
+                foreach ($solicitud->cotizaciones as $c) {
+                    $c->update(['Estatus' => $c->CotizacionID === $cotizacion->CotizacionID ? 'Seleccionada' : 'Rechazada']);
+                }
+                $solicitud->update(['Estatus' => 'Aprobado']);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cotización seleccionada. La solicitud ha pasado a Aprobado. Ya puedes subir la factura.',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al seleccionar cotización: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al seleccionar la cotización.',
             ], 500);
         }
     }

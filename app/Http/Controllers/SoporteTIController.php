@@ -10,6 +10,7 @@ use App\Models\Solicitud;
 use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Models\Tickets;
+use App\Services\SolicitudAprobacionEmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -279,6 +280,9 @@ class SoporteTIController extends Controller
                 return redirect()->back()->with('error', 'Administrador no encontrado');
             }
 
+            $firstToken = null;
+            $solicitudId = null;
+
             try {
                 DB::transaction(function () use (
                     $data,
@@ -286,9 +290,10 @@ class SoporteTIController extends Controller
                     $supervisor,
                     $gerencia,
                     $gerente,
-                    $admin
+                    $admin,
+                    &$firstToken,
+                    &$solicitudId
                 ) {
-
                     $solicitud = Solicitud::create([
                         'EmpleadoID' => $empleadoSolicitante->EmpleadoID,
                         'Motivo' => $data['Motivo'] ?? null,
@@ -301,13 +306,15 @@ class SoporteTIController extends Controller
                         'Estatus' => 'Pendiente',
                     ]);
 
+                    $solicitudId = $solicitud->SolicitudID;
+
                     $steps = [
                         ['order' => 1, 'stage' => 'supervisor',     'approver' => $supervisor->EmpleadoID],
                         ['order' => 2, 'stage' => 'gerencia',       'approver' => $gerente->EmpleadoID],
                         ['order' => 3, 'stage' => 'administracion', 'approver' => $admin->EmpleadoID],
                     ];
 
-                    foreach ($steps as $s) {
+                    foreach ($steps as $idx => $s) {
                         $step = SolicitudPasos::create([
                             'solicitud_id' => $solicitud->SolicitudID,
                             'step_order' => $s['order'],
@@ -316,13 +323,24 @@ class SoporteTIController extends Controller
                             'status' => 'pending',
                         ]);
 
-                        SolicitudTokens::create([
+                        $tokenRow = SolicitudTokens::create([
                             'approval_step_id' => $step->id,
                             'token' => Str::uuid(),
                             'expires_at' => now()->addDays(7),
                         ]);
+                        if ($idx === 0) {
+                            $firstToken = $tokenRow->token;
+                        }
                     }
                 });
+
+                if ($firstToken && $solicitudId) {
+                    $solicitud = Solicitud::with('empleadoid')->find($solicitudId);
+                    if ($solicitud && $supervisor) {
+                        app(SolicitudAprobacionEmailService::class)
+                            ->enviarRevisionPendiente($supervisor, $solicitud, $firstToken, 'Supervisor');
+                    }
+                }
 
                 return redirect()->back()->with([
                     'success' => 'Solicitud guardada correctamente',
