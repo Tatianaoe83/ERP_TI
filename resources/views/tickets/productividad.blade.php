@@ -1,7 +1,7 @@
-<div class="space-y-6 bg-[#0F1115] min-h-screen p-6" id="productividad-container">
+<div class="space-y-6  min-h-screen p-6" id="productividad-container">
     <!-- Encabezado con selector de mes/año y botón de exportar -->
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-[#F3F4F6]">Reporte de Productividad</h2>
+        <h2 class="text-xl font-bold">Reporte de Productividad</h2>
         
         <div class="flex items-center gap-4" 
              x-data="{ 
@@ -42,194 +42,313 @@
                  }
              }">
             <!-- Selector de mes y año -->
-            <div class="flex items-center gap-2">
-                <select x-model="mes" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 bg-[#1F2937] border border-[#2A2F3A] rounded-lg text-[#F3F4F6] focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] disabled:bg-[#1C1F26] disabled:text-[#6B7280] disabled:cursor-not-allowed">
-                    @for($i = 1; $i <= 12; $i++)
-                        <option value="{{ $i }}">{{ \Carbon\Carbon::create(now()->year, $i, 1)->locale('es')->isoFormat('MMMM') }}</option>
-                    @endfor
-                </select>
-                
-                <select x-model="anio" @change="cargarProductividad()" :disabled="cargando" class="px-3 py-2 bg-[#1F2937] border border-[#2A2F3A] rounded-lg text-[#F3F4F6] focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB] disabled:bg-[#1C1F26] disabled:text-[#6B7280] disabled:cursor-not-allowed">
-                    @for($i = now()->year; $i >= now()->year - 5; $i--)
-                        <option value="{{ $i }}">{{ $i }}</option>
-                    @endfor
-                </select>
-                
-                <div x-show="cargando" class="ml-2">
-                    <i class="fas fa-spinner fa-spin text-[#2563EB]"></i>
-                </div>
-            </div>
+<div class="flex items-center gap-2">
+    <select
+        x-model="mes"
+        @change="cargarProductividad()"
+        :disabled="cargando"
+        class="
+            px-3 py-2 rounded-lg
+            text-gray-800 border border-gray-300
+            dark:bg-[#1F2937] dark dark:border-[#2A2F3A]
+            focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB]
+            disabled:bg-gray-100 disabled:text-gray-400
+            dark:disabled:dark:disabled:text-[#6B7280]
+            disabled:cursor-not-allowed
+        "
+    >
+        @for($i = 1; $i <= 12; $i++)
+            <option value="{{ $i }}">
+                {{ \Carbon\Carbon::create(now()->year, $i, 1)->locale('es')->isoFormat('MMMM') }}
+            </option>
+        @endfor
+    </select>
+
+    <select
+        x-model="anio"
+        @change="cargarProductividad()"
+        :disabled="cargando"
+        class="
+            px-3 py-2 rounded-lg
+            text-gray-800 border border-gray-300
+            dark:bg-[#1F2937] dark dark:border-[#2A2F3A]
+            focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB]
+            disabled:bg-gray-100 disabled:text-gray-400
+            dark:disabled:dark:disabled:text-[#6B7280]
+            disabled:cursor-not-allowed
+        "
+    >
+        @for($i = now()->year; $i >= now()->year - 5; $i--)
+            <option value="{{ $i }}">{{ $i }}</option>
+        @endfor
+    </select>
+
+    <div x-show="cargando" class="ml-2">
+        <i class="fas fa-spinner fa-spin text-[#2563EB]"></i>
+    </div>
+</div>
+
             
             <!-- Botón de exportar a Excel -->
-            <a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year]) }}" 
-               class="px-4 py-2 bg-[#22C55E] hover:bg-[#16A34A] text-white font-medium rounded-lg transition-colors flex items-center gap-2">
-                <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
-            </a>
-        </div>
-    </div>
+<a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year]) }}"
+   class="
+        px-4 py-2 rounded-lg font-medium transition-colors
+        flex items-center gap-2
+        bg-green-500 hover:bg-green-600 text-white
+   ">
+    <i class="fas fa-file-excel mr-2"></i>
+    Exportar a Excel
+</a>
+</div>
+</div>
 
-    <!-- Tarjetas de resumen -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Total de tickets -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-[#9CA3AF]">Total de Tickets</p>
-                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">{{ $metricasProductividad['total_tickets'] }}</p>
-                </div>
-                <div class="rounded-full p-4" style="background-color: rgba(59, 130, 246, 0.15);">
-                    <i class="fas fa-ticket-alt text-[#3B82F6] text-2xl"></i>
-                </div>
+<!-- Tarjetas de resumen -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- Total de tickets -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium  dark:text-[#9CA3AF]">
+                    Total de Tickets
+                </p>
+                <p class="text-3xl font-bold  dark mt-2">
+                    {{ $metricasProductividad['total_tickets'] }}
+                </p>
             </div>
-        </div>
-
-        <!-- Tickets cerrados -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-[#9CA3AF]">Tickets Cerrados</p>
-                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">{{ $metricasProductividad['tickets_cerrados'] }}</p>
-                    <p class="text-xs text-[#6B7280] mt-1">
-                        {{ $metricasProductividad['total_tickets'] > 0 ? round(($metricasProductividad['tickets_cerrados'] / $metricasProductividad['total_tickets']) * 100, 1) : 0 }}% del total
-                    </p>
-                </div>
-                <div class="rounded-full p-4" style="background-color: rgba(34, 197, 94, 0.15);">
-                    <i class="fas fa-check-circle text-[#22C55E] text-2xl"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tiempo promedio de resolución -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-[#9CA3AF]">Tiempo Promedio Resolución</p>
-                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">
-                        {{ $metricasProductividad['tiempo_promedio_resolucion'] > 0 ? number_format($metricasProductividad['tiempo_promedio_resolucion'], 1) : '0' }}
-                    </p>
-                    <p class="text-xs text-[#6B7280] mt-1">horas laborales</p>
-                </div>
-                <div class="rounded-full p-4" style="background-color: rgba(168, 85, 247, 0.15);">
-                    <i class="fas fa-clock text-[#A855F7] text-2xl"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tiempo promedio de respuesta -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-[#9CA3AF]">Tiempo Promedio Respuesta</p>
-                    <p class="text-3xl font-bold text-[#F3F4F6] mt-2">
-                        {{ $metricasProductividad['tiempo_promedio_respuesta'] > 0 ? number_format($metricasProductividad['tiempo_promedio_respuesta'], 1) : '0' }}
-                    </p>
-                    <p class="text-xs text-[#6B7280] mt-1">horas laborales</p>
-                </div>
-                <div class="rounded-full p-4" style="background-color: rgba(249, 115, 22, 0.15);">
-                    <i class="fas fa-hourglass-half text-[#F97316] text-2xl"></i>
-                </div>
+            <div class="rounded-full p-4 bg-blue-500/15">
+                <i class="fas fa-ticket-alt text-blue-500 text-2xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Gráficas principales -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Distribución por estado -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Distribución por Estado</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="chartEstado"></canvas>
+    <!-- Tickets cerrados -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium  dark:text-[#9CA3AF]">
+                    Tickets Cerrados
+                </p>
+                <p class="text-3xl font-bold  dark mt-2">
+                    {{ $metricasProductividad['tickets_cerrados'] }}
+                </p>
+                <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">
+                    {{ $metricasProductividad['total_tickets'] > 0
+                        ? round(($metricasProductividad['tickets_cerrados'] / $metricasProductividad['total_tickets']) * 100, 1)
+                        : 0 }}% del total
+                </p>
             </div>
-        </div>
-
-        <!-- Tickets resueltos por día (últimos 30 días) -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Tickets Resueltos (Últimos 30 días)</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="chartResueltosPorDia"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Gráficas secundarias -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Tendencias semanales -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Tendencias Semanales</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="chartTendenciasSemanales"></canvas>
-            </div>
-        </div>
-
-        <!-- Tickets por prioridad -->
-        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Tickets por Prioridad</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="chartPrioridad"></canvas>
+            <div class="rounded-full p-4 bg-green-500/15">
+                <i class="fas fa-check-circle text-green-500 text-2xl"></i>
             </div>
         </div>
     </div>
 
-    <!-- Gráfica de clasificaciones -->
-    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Distribución por Clasificación (En Progreso y Cerrados)</h3>
-        <div style="height: 300px; position: relative;">
-            <canvas id="chartClasificacion"></canvas>
+    <!-- Tiempo promedio de resolución -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium  dark:text-[#9CA3AF]">
+                    Tiempo Promedio Resolución
+                </p>
+                <p class="text-3xl font-bold  dark mt-2">
+                    {{ $metricasProductividad['tiempo_promedio_resolucion'] > 0
+                        ? number_format($metricasProductividad['tiempo_promedio_resolucion'], 1)
+                        : '0' }}
+                </p>
+                <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">
+                    horas laborales
+                </p>
+            </div>
+            <div class="rounded-full p-4 bg-purple-500/15">
+                <i class="fas fa-clock text-purple-500 text-2xl"></i>
+            </div>
         </div>
     </div>
+
+    <!-- Tiempo promedio de respuesta -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium  dark:text-[#9CA3AF]">
+                    Tiempo Promedio Respuesta
+                </p>
+                <p class="text-3xl font-bold  dark mt-2">
+                    {{ $metricasProductividad['tiempo_promedio_respuesta'] > 0
+                        ? number_format($metricasProductividad['tiempo_promedio_respuesta'], 1)
+                        : '0' }}
+                </p>
+                <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">
+                    horas laborales
+                </p>
+            </div>
+            <div class="rounded-full p-4 bg-orange-500/15">
+                <i class="fas fa-hourglass-half text-orange-500 text-2xl"></i>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Gráficas principales -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Distribución por estado -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <h3 class="text-lg font-semibold mb-4
+                    dark">
+            Distribución por Estado
+        </h3>
+
+        <div class="relative h-[300px]">
+            <canvas id="chartEstado"></canvas>
+        </div>
+    </div>
+
+    <!-- Tickets resueltos por día -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <h3 class="text-lg font-semibold mb-4
+                    dark">
+            Tickets Resueltos (Últimos 30 días)
+        </h3>
+
+        <div class="relative h-[300px]">
+            <canvas id="chartResueltosPorDia"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- Gráficas secundarias -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Tendencias semanales -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <h3 class="text-lg font-semibold mb-4
+                    dark">
+            Tendencias Semanales
+        </h3>
+
+        <div class="relative h-[300px]">
+            <canvas id="chartTendenciasSemanales"></canvas>
+        </div>
+    </div>
+
+    <!-- Tickets por prioridad -->
+    <div class="
+        rounded-lg p-6 border
+        border-gray-200
+        dark:dark:border-[#2A2F3A]
+    ">
+        <h3 class="text-lg font-semibold mb-4
+                    dark">
+            Tickets por Prioridad
+        </h3>
+
+        <div class="relative h-[300px]">
+            <canvas id="chartPrioridad"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- Gráfica de clasificaciones -->
+<div class="
+    rounded-lg p-6 border
+    border-gray-200
+    dark:dark:border-[#2A2F3A]
+">
+    <h3 class="text-lg font-semibold mb-4
+                dark">
+        Distribución por Clasificación (En Progreso y Cerrados)
+    </h3>
+
+    <div class="relative h-[300px]">
+        <canvas id="chartClasificacion"></canvas>
+    </div>
+</div>
+
 
     <!-- Tabla de tickets por responsable -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Rendimiento por Responsable TI</h3>
+    <div class="rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-4">Rendimiento por Responsable TI</h3>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table>
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cerrados</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Progreso</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pendientes</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Problemas</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Servicios</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasa de Cierre</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Responsable</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">Cerrados</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">En Progreso</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">Pendientes</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">Problemas</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">Servicios</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider">Tasa de Cierre</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200">
                     @forelse($metricasProductividad['tickets_por_responsable'] as $responsable)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ">
                                 {{ $responsable['nombre'] }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ">
                                 {{ $responsable['total'] }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                     {{ $responsable['cerrados'] }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                     {{ $responsable['en_progreso'] }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
                                     {{ $responsable['pendientes'] }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
                                     {{ $responsable['problemas'] ?? 0 }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                     {{ $responsable['servicios'] ?? 0 }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ">
                                 @if($responsable['total'] > 0)
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                         {{ round(($responsable['cerrados'] / $responsable['total']) * 100, 1) }}%
@@ -241,7 +360,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colspan="8" class="px-6 py-4 text-center text-sm ">
                                 No hay datos disponibles
                             </td>
                         </tr>
@@ -252,62 +371,84 @@
     </div>
 
     <!-- Métricas por Empleado -->
-    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-6">
-        <h3 class="text-lg font-semibold text-[#F3F4F6] mb-4">Desempeño por Empleado TI</h3>
-        <p class="text-sm text-[#9CA3AF] mb-6">Análisis mensual del rendimiento de cada responsable de TI (Últimos 6 meses)</p>
+    <div class="rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Desempeño por Empleado TI</h3>
+        <p class="text-sm mb-6">Análisis mensual del rendimiento de cada responsable de TI (Últimos 6 meses)</p>
         
         <div class="space-y-8">
             @forelse($metricasProductividad['metricas_por_empleado'] as $empleado)
-            <div class="border border-[#2A2F3A] rounded-lg p-6 hover:border-[#3A3F4A] transition-colors bg-[#1F2937]">
+            <div class="rounded-lg p-6 hover: transition-colors">
                 <!-- Encabezado del empleado -->
-                <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-[#2A2F3A]">
-                    <div class="flex items-center gap-4">
-                        <div class="rounded-full p-3" style="background-color: rgba(59, 130, 246, 0.15);">
-                            <i class="fas fa-user-tie text-[#3B82F6] text-xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xl font-bold text-[#F3F4F6]">{{ $empleado['nombre'] }}</h4>
-                            <p class="text-sm text-[#9CA3AF]">Total acumulado: <span class="font-semibold text-[#F3F4F6]">{{ $empleado['total'] }} tickets</span></p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-6">
-                        <div class="text-center bg-[#1C1F26] border border-[#2A2F3A] rounded-lg px-4 py-2">
-                            <p class="text-xs text-[#9CA3AF] mb-1">Tasa de Cierre</p>
-                            <p class="text-2xl font-bold {{ $empleado['tasa_cierre'] >= 70 ? 'text-[#4ADE80]' : ($empleado['tasa_cierre'] >= 50 ? 'text-[#FBBF24]' : 'text-[#F87171]') }}">
-                                {{ $empleado['tasa_cierre'] }}%
-                            </p>
-                        </div>
-                        <div class="text-center bg-[#1C1F26] border border-[#2A2F3A] rounded-lg px-4 py-2">
-                            <p class="text-xs text-[#9CA3AF] mb-1">Tiempo Promedio</p>
-                            <p class="text-2xl font-bold text-[#3B82F6]">
-                                {{ $empleado['tiempo_promedio_resolucion'] > 0 ? number_format($empleado['tiempo_promedio_resolucion'], 1) : '0' }}h
-                            </p>
-                        </div>
-                    </div>
-                </div>
+<div class="flex items-center justify-between mb-6 pb-4 border-b-2">
+    <div class="flex items-center gap-4">
+        <div class="rounded-full p-3" style="background-color: rgba(59, 130, 246, 0.15);">
+            <i class="fas fa-user-tie text-xl"></i>
+        </div>
+
+        <div>
+            <h4 class="text-xl font-bold">
+                {{ $empleado['nombre'] ?? 'Sin nombre' }}
+            </h4>
+            <p class="text-sm text-[#9CA3AF]">
+                Total acumulado:
+                <span class="font-semibold">
+                    {{ $empleado['total'] ?? 0 }} tickets
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-6">
+        <!-- Tasa de cierre -->
+        @php
+            $tasa = $empleado['tasa_cierre'] ?? 0;
+            $colorTasa = $tasa >= 70
+                ? 'text-[#4ADE80]'
+                : ($tasa >= 50 ?  : 'text-[#F87171]');
+        @endphp
+
+        <div class="text-center rounded-lg px-4 py-2">
+            <p class="text-xs mb-1">Tasa de Cierre</p>
+            <p class="text-2xl font-bold {{ $colorTasa }}">
+                {{ $tasa }}%
+            </p>
+        </div>
+
+        <!-- Tiempo promedio -->
+        <div class="text-center rounded-lg px-4 py-2">
+            <p class="text-xs mb-1">Tiempo Promedio</p>
+            <p class="text-2xl font-bold text-[#3B82F6]">
+                {{ isset($empleado['tiempo_promedio_resolucion']) && $empleado['tiempo_promedio_resolucion'] > 0
+                    ? number_format($empleado['tiempo_promedio_resolucion'], 1)
+                    : '0' }}h
+            </p>
+        </div>
+    </div>
+</div>
+
 
                 <!-- Resumen por estado -->
                 <div class="grid grid-cols-3 gap-4 mb-6">
-                    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4 text-center" style="background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
+                    <div class="rounded-lg p-4 text-center" style="background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
                         <i class="fas fa-check-circle text-[#4ADE80] text-2xl mb-2"></i>
-                        <p class="text-sm text-[#9CA3AF] mb-1">Cerrados</p>
+                        <p class="text-sm mb-1">Cerrados</p>
                         <p class="text-3xl font-bold text-[#4ADE80]">{{ $empleado['cerrados'] }}</p>
                     </div>
-                    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4 text-center" style="background-color: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);">
-                        <i class="fas fa-clock text-[#FBBF24] text-2xl mb-2"></i>
-                        <p class="text-sm text-[#9CA3AF] mb-1">En Progreso</p>
-                        <p class="text-3xl font-bold text-[#FBBF24]">{{ $empleado['en_progreso'] }}</p>
+                    <div class="rounded-lg p-4 text-center" style="background-color: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);">
+                        <i class="fas fa-clock  text-2xl mb-2"></i>
+                        <p class="text-sm mb-1">En Progreso</p>
+                        <p class="text-3xl font-bold ">{{ $empleado['en_progreso'] }}</p>
                     </div>
-                    <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4 text-center" style="background-color: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3);">
+                    <div class="rounded-lg p-4 text-center" style="background-color: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3);">
                         <i class="fas fa-exclamation-circle text-[#F87171] text-2xl mb-2"></i>
-                        <p class="text-sm text-[#9CA3AF] mb-1">Pendientes</p>
+                        <p class="text-sm mb-1">Pendientes</p>
                         <p class="text-3xl font-bold text-[#F87171]">{{ $empleado['pendientes'] }}</p>
                     </div>
                 </div>
 
                 <!-- Tarjetas por mes -->
                 <div class="mb-6">
-                    <h5 class="text-sm font-semibold text-[#F3F4F6] mb-4 flex items-center gap-2">
+                    <h5 class="text-sm font-semibold mb-4 flex items-center gap-2">
                         <i class="fas fa-calendar-alt text-[#3B82F6]"></i>
                         Desempeño Mensual (Últimos 6 meses)
                     </h5>
@@ -331,11 +472,11 @@
                                 $mesFormateado = str_replace($en, $es, $mesFormateado);
                             }
                         @endphp
-                        <div class="bg-[#1C1F26] border-2 {{ $totalMes > 0 ? 'border-[#3B82F6]' : 'border-[#2A2F3A]' }} rounded-lg p-4 hover:border-[#4A8FF6] transition-all">
+                        <div class="border-2 {{ $totalMes > 0 ? 'border-[#3B82F6]' : 'border-[#2A2F3A]' }} rounded-lg p-4 hover:border-[#4A8FF6] transition-all">
                             <div class="flex items-center justify-between mb-3">
-                                <h6 class="font-bold text-[#F3F4F6] text-sm">{{ $mesFormateado }}</h6>
+                                <h6 class="font-bold text-sm">{{ $mesFormateado }}</h6>
                                 @if($totalMes > 0)
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $tasaCierreMes >= 70 ? 'bg-[#4ADE80]/20 text-[#4ADE80]' : ($tasaCierreMes >= 50 ? 'bg-[#FBBF24]/20 text-[#FBBF24]' : 'bg-[#F87171]/20 text-[#F87171]') }}">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $tasaCierreMes >= 70 ? 'bg-[#4ADE80]/20 text-[#4ADE80]' : ($tasaCierreMes >= 50 ? 'bg-[#FBBF24]/20 ' : 'bg-[#F87171]/20 text-[#F87171]') }}">
                                     {{ $tasaCierreMes }}%
                                 </span>
                                 @else
@@ -347,14 +488,14 @@
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
                                     <span class="text-xs text-[#9CA3AF]">Total</span>
-                                    <span class="text-sm font-bold text-[#F3F4F6]">{{ $totalMes }}</span>
+                                    <span class="text-sm font-bold">{{ $totalMes }}</span>
                                 </div>
                                 <div class="w-full bg-[#2A2F3A] rounded-full h-2">
                                     <div class="bg-[#3B82F6] h-2 rounded-full" style="width: 100%"></div>
                                 </div>
                                 
                                 <div class="flex items-center justify-between mt-3">
-                                    <span class="text-xs text-[#9CA3AF] flex items-center gap-1">
+                                    <span class="text-xs flex items-center gap-1">
                                         <i class="fas fa-check text-[#4ADE80]"></i> Cerrados
                                     </span>
                                     <span class="text-sm font-bold text-[#4ADE80]">{{ $cerradosMes }}</span>
@@ -381,7 +522,7 @@
 
                 <!-- Gráfica de tickets por mes -->
                 <div class="mb-6">
-                    <h5 class="text-sm font-semibold text-[#F3F4F6] mb-3 flex items-center gap-2">
+                    <h5 class="text-sm font-semibold mb-3 flex items-center gap-2">
                         <i class="fas fa-chart-bar text-[#3B82F6]"></i>
                         Gráfica de Tendencia Mensual
                     </h5>
@@ -392,7 +533,7 @@
         
                 <!-- Tickets por prioridad -->
                 <div>
-                    <h5 class="text-sm font-semibold text-[#F3F4F6] mb-3 flex items-center gap-2">
+                    <h5 class="text-sm font-semibold mb-3 flex items-center gap-2">
                         <i class="fas fa-signal text-[#3B82F6]"></i>
                         Distribución por Prioridad
                     </h5>
@@ -405,20 +546,20 @@
                             ];
                         @endphp
                         @foreach($prioridades as $prioridad => $config)
-                        <div class="bg-[#1C1F26] border border-[#2A2F3A] rounded-lg p-4">
+                        <div class="rounded-lg p-4">
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex items-center gap-2">
                                     <i class="fas {{ $config['icon'] }}" style="color: {{ $config['color'] }};"></i>
-                                    <span class="text-sm font-semibold text-[#F3F4F6]">{{ $prioridad }}</span>
+                                    <span class="text-sm font-semibold">{{ $prioridad }}</span>
                                 </div>
-                                <span class="text-lg font-bold text-[#F3F4F6]">
+                                <span class="text-lg font-bold">
                                     {{ $empleado['tickets_por_prioridad'][$prioridad] ?? 0 }}
                                 </span>
                             </div>
                             <div class="w-full bg-[#2A2F3A] rounded-full h-3">
                                 <div class="h-3 rounded-full transition-all duration-300" style="background-color: {{ $config['bg'] }}; width: {{ $empleado['total'] > 0 ? (($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100 : 0 }}%"></div>
                             </div>
-                            <p class="text-xs text-[#9CA3AF] mt-1">
+                            <p class="text-xs mt-1">
                                 {{ $empleado['total'] > 0 ? round((($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100, 1) : 0 }}% del total
                             </p>
                         </div>
@@ -427,9 +568,9 @@
                 </div>
             </div>
             @empty
-            <div class="text-center py-12 text-[#9CA3AF] bg-[#1C1F26] border-2 border-dashed border-[#2A2F3A] rounded-lg">
+            <div class="text-center py-12 border-2 border-dashed border-[#2A2F3A] rounded-lg">
                 <i class="fas fa-users text-5xl mb-4 text-[#6B7280]"></i>
-                <p class="text-lg font-semibold text-[#F3F4F6]">No hay métricas disponibles para empleados</p>
+                <p class="text-lg font-semibold">No hay métricas disponibles para empleados</p>
                 <p class="text-sm mt-2 text-[#9CA3AF]">Los empleados aparecerán aquí cuando tengan tickets asignados</p>
             </div>
             @endforelse
@@ -441,6 +582,11 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
 <script>
+
+function isDarkMode() {
+    return document.documentElement.classList.contains('dark');
+}
+    
 // Variables globales para almacenar las instancias de gráficas
 let chartEstado, chartResueltos, chartTendencias, chartPrioridad, chartClasificacion;
 
@@ -449,6 +595,17 @@ function inicializarGraficas() {
     if (!document.getElementById('chartEstado')) {
         return;
     }
+    
+    const dark = isDarkMode();
+
+        const colores = {
+        texto: dark ? '#F3F4F6' : '#111827',
+        textoSecundario: dark ? '#9CA3AF' : '#6B7280',
+        grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+        tooltipBg: dark ? 'rgba(15,17,21,0.95)' : '#FFFFFF',
+        tooltipTexto: dark ? '#F3F4F6' : '#111827',
+        tooltipBorder: dark ? '#2A2F3A' : '#E5E7EB'
+    };  
 
     // Destruir gráficas existentes si ya están creadas
     if (chartEstado) chartEstado.destroy();
@@ -465,61 +622,53 @@ function inicializarGraficas() {
     const ticketsPorClasificacion = @json(isset($metricasProductividad['tickets_por_clasificacion']) ? $metricasProductividad['tickets_por_clasificacion'] : []);
 
     // Gráfica de distribución por estado (Doughnut)
-    const ctxEstado = document.getElementById('chartEstado').getContext('2d');
-    chartEstado = new Chart(ctxEstado, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(distribucionEstado),
-            datasets: [{
-                data: Object.values(distribucionEstado),
-                backgroundColor: [
-                    '#F87171',  // Rojo suave para Pendiente
-                    '#FBBF24',  // Amarillo para En progreso
-                    '#4ADE80'   // Verde para Cerrado
-                ],
-                borderColor: [
-                    '#F87171',
-                    '#FBBF24',
-                    '#4ADE80'
-                ],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        color: '#9CA3AF',
-                        padding: 15,
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
-                    titleColor: '#F3F4F6',
-                    bodyColor: '#F3F4F6',
-                    borderColor: '#2A2F3A',
-                    borderWidth: 1,
-                    padding: 12,
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            label += context.parsed + ' tickets';
-                            return label;
-                        }
+// Gráfica de distribución por estado (Doughnut)
+const ctxEstado = document.getElementById('chartEstado').getContext('2d');
+
+chartEstado = new Chart(ctxEstado, {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(distribucionEstado),
+        datasets: [{
+            data: Object.values(distribucionEstado),
+            backgroundColor: [
+                '#F87171', // Pendiente
+                '#FBBF24', // En progreso
+                '#4ADE80'  // Cerrado
+            ],
+            borderColor: colores.tooltipBorder,
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%', // ✅ evita efecto raro en dark
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: colores.textoSecundario,
+                    padding: 15
+                }
+            },
+            tooltip: {
+                backgroundColor: colores.tooltipBg,
+                titleColor: colores.tooltipTexto,
+                bodyColor: colores.tooltipTexto,
+                borderColor: colores.tooltipBorder,
+                borderWidth: 1,
+                padding: 12,
+                callbacks: {
+                    label(context) {
+                        return `${context.label}: ${context.parsed} tickets`;
                     }
                 }
             }
         }
-    });
+    }
+});
+
 
     // Gráfica de tickets resueltos por día (Line)
     const ctxResueltos = document.getElementById('chartResueltosPorDia').getContext('2d');

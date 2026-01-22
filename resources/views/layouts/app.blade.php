@@ -274,6 +274,47 @@
                 overflow-x: auto;
             }
         }
+
+        /* 🔒 Blindaje total para Kanban en DARK */
+        .dark .kanban-root {
+            background-color: #0F1116 !important;
+        }
+
+        .dark .kanban-root .bg-white {
+            background-color: #1C1F26 !important;
+        }
+
+        .dark .kanban-root .bg-gray-100 {
+            background-color: #0F1116 !important;
+        }
+
+        .dark .kanban-root .bg-gray-900 {
+            background-color: #161A22 !important;
+        }
+
+        :root {
+            --bg-table: #ffffff;
+            --bg-head: #f1f5f9;
+            --bg-row: #ffffff;
+            --bg-row-hover: #f3f4f6;
+            --border-soft: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+        }
+
+        .dark {
+            --bg-table: #1c1f26;
+            --bg-head: #242933;
+            --bg-row: #1f2937;
+            --bg-row-hover: #273244;
+            --border-soft: #2a2f3a;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+        }
+
+
+
+    
     </style>
 
     @stack('styles')
