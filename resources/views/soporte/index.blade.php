@@ -513,6 +513,7 @@ function deshabilitarCamposSolicitud() {
     $('#autoEmpleadosSolicitud, #NombreGerencia, #NombreObra, #NombrePuesto, #Motivo, #DescripcionMotivo, #SupervisorNombre, #Requerimientos')
         .prop('disabled', true).addClass('bg-gray-100');
     $('#btnEnviarSolicitud').prop('disabled', true).addClass('bg-gray-400 cursor-not-allowed').removeClass('bg-red-500');
+    console.log('deshabilitarCamposSolicitud');
 
     // Deshabilitar Select2 de forma segura
     var $p = $('#Proyecto');
@@ -544,8 +545,8 @@ function buscarEmpleadoSolicitud(correo) {
 
             // Habilitar
             $('#Motivo, #DescripcionMotivo, #SupervisorNombre, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
-            $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400').addClass('bg-red-500');
-
+            $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500');
+            console.log('habilitarCamposSolicitud');
             // DESBLOQUEAR UBICACIÓN (Select2)
             revivirSelect2(); 
         },
@@ -1021,89 +1022,7 @@ function buscarEmpleadoTicket(correo) {
             updateCounter();
         })();
     </script>
-    <!-- <script>
-        $(document).ready(function() {
-            const $input = $(".autoEmpleados");
-            const $suggestions = $(".suggestions");
-
-            $input.on("input", function() {
-                const query = $(this).val().trim();
-
-                if (query.length < 2) {
-                    $suggestions.empty().addClass("hidden");
-                    return;
-                }
-
-                $.ajax({
-                    url: "/autocompleteEmpleado",
-                    method: "GET",
-                    data: {
-                        query
-                    },
-                    success: function(data) {
-                        if (data.length === 0) {
-                            $suggestions.html("<div class='p-2 text-gray-500'>Sin resultados</div>").removeClass("hidden");
-                            return;
-                        }
-                        let html = "";
-                        data.forEach(item => {
-                            html += `<div class="p-2 hover:bg-blue-100 cursor-pointer" data-id="${item.EmpleadoID}" data-name="${item.NombreEmpleado}">${item.NombreEmpleado}</div>`;
-                        });
-
-                        $suggestions.html(html).removeClass("hidden");
-                        $suggestions.children().on("click", function() {
-                            const nombre = $(this).data("name");
-                            const id = $(this).data("id");
-                            const $clickedInput = $(this).closest('.relative').find('.autoEmpleados');
-                            $clickedInput.val(nombre);
-
-                            let type = $('#type').val();
-
-                            // Asignar el ID según el formulario activo
-                            if (type === "Ticket") {
-                                $('#EmpleadoID').val(id);
-                            } else if (type === "Solicitud") {
-                                $('#EmpleadoIDSolicitud').val(id);
-                            } else {
-                                $(".EmpleadoID").val(id);
-                            }
-
-                            $suggestions.empty().addClass("hidden");
-
-                            $.ajax({
-                                url: "/getEmpleadoInfo",
-                                method: "GET",
-                                data: {
-                                    EmpleadoID: id,
-                                    type: type
-                                },
-                                success: function(data) {
-                                    if (type === "Ticket") {
-                                        $("input[name='Correo']").val(data.correo);
-                                        $("input[name='Numero']").val(data.telefono);
-                                    } else if (type === "Solicitud") {
-                                        $("input[name='GerenciaID']").val(data.GerenciaID);
-                                        $("input[name='NombreGerencia']").val(data.NombreGerencia);
-                                        $("input[name='PuestoID']").val(data.PuestoID);
-                                        $("input[name='NombrePuesto']").val(data.NombrePuesto);
-                                        $("input[name='ObraID']").val(data.ObraID);
-                                        $("input[name='NombreObra']").val(data.NombreObra);
-                                    }
-                                }
-                            });
-
-                        });
-                    }
-                });
-            });
-
-            $(document).on("click", function(e) {
-                if (!$(e.target).closest(".autoEmpleados, .suggestions").length) {
-                    $suggestions.empty().addClass("hidden");
-                }
-            });
-        });
-    </script> -->
+  
     <script>
         $(document).ready(function() {
             const $input = $(".autoSupervisor");
@@ -1225,7 +1144,27 @@ function buscarEmpleadoTicket(correo) {
 
                 // Esperar 500ms después de que el usuario deje de escribir
                 correoTimeout = setTimeout(function() {
-                    buscarEmpleadoPorCorreo(correo);
+                    // Buscar empleado por correo para tickets
+                    $.ajax({
+                        url: '/buscarEmpleadoPorCorreo',
+                        method: 'GET',
+                        data: { correo: correo, type: 'Ticket' },
+                        success: function(data) {
+                            window.correoTicketValido = true;
+                            correoValido = true;
+                            $('#autoEmpleadosTicket').val(data.NombreEmpleado).addClass('border-green-500');
+                            $('#EmpleadoID').val(data.EmpleadoID);
+                            $errorDiv.addClass('hidden');
+                            
+                            // Habilitar campos
+                            habilitarCamposEspecificos();
+                        },
+                        error: function() {
+                            deshabilitarCampos();
+                            $errorDiv.removeClass('hidden').text('No se encontró el empleado');
+                            $empleadoInput.val('').addClass('border-red-500');
+                        }
+                    });
                 }, 500);
             });
 
@@ -1281,8 +1220,9 @@ function buscarEmpleadoTicket(correo) {
                         $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
                         $('#SupervisorNombre').prop('disabled', false).removeClass('bg-gray-100');
                         $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+                        console.log('Habilitando botón de enviar solicitud');
                         $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
-
+                        console.log('Habilitando botón de enviar solicitud');
                         // =======================================================
                         // ZONA CRÍTICA: DESBLOQUEO DE UBICACIÓN (PROYECTO)
                         // =======================================================
@@ -1556,7 +1496,10 @@ function buscarEmpleadoTicket(correo) {
                     $select2Container.addClass('select2-container--disabled');
                 }
                 $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
+                console.log('deshabilitarCamposSolicitud');
+
                 $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
+                console.log('deshabilitarCamposSolicitud');
             }
 
             // Función para cargar datos en el campo de ubicación
@@ -1741,6 +1684,7 @@ function buscarEmpleadoTicket(correo) {
                 habilitarCampoUbicacion();
 
                 $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+                console.log('habilitarCamposSolicitud');
                 $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
             }
 
@@ -1760,6 +1704,7 @@ function buscarEmpleadoTicket(correo) {
     $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
     $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
     $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
+    console.log('deshabilitarCamposSolicitud');
     $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
 
     // =================================================================
