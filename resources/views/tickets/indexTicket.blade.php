@@ -381,7 +381,7 @@
                             
                             <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded
                                 @if($ticket->Prioridad=='Baja') bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
-                                @elseif($ticket->Prioridad=='Media') bg-<span class="font-semibold truncate">{{ $nombreResponsable }}</span>yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
+                                @elseif($ticket->Prioridad=='Media') bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
                                 @else bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
                                 @endif">
                                 {{ $ticket->Prioridad }}
