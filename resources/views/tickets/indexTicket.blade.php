@@ -2,11 +2,12 @@
     /* =========================================
        1. ESTILOS BASE (Modo Claro / Estructura)
        ========================================= */
-    
+
     /* TinyMCE Base */
     .tox-tinymce {
         border-radius: 0.5rem !important;
-        border: 1px solid #e5e7eb !important; /* Gris claro */
+        border: 1px solid #e5e7eb !important;
+        /* Gris claro */
         background-color: #ffffff !important;
     }
 
@@ -19,17 +20,19 @@
         width: 8px;
         height: 8px;
     }
-    
+
     .tickets-container ::-webkit-scrollbar-track {
-        background: #f3f4f6; /* Gris muy claro */
+        background: #f3f4f6;
+        /* Gris muy claro */
         border-radius: 4px;
     }
-    
+
     .tickets-container ::-webkit-scrollbar-thumb {
-        background: #d1d5db; /* Gris medio */
+        background: #d1d5db;
+        /* Gris medio */
         border-radius: 4px;
     }
-    
+
     .tickets-container ::-webkit-scrollbar-thumb:hover {
         background: #9ca3af;
     }
@@ -37,60 +40,60 @@
     /* =========================================
        2. MODO OSCURO (Se activa con la clase .dark)
        ========================================= */
-    
+
     /* Contenedor Principal TinyMCE */
     .dark .tox-tinymce {
         border: 1px solid #2A2F3A !important;
         background-color: #0F1115 !important;
     }
-    
+
     /* Fondo del área de edición (alrededor del iframe) */
     .dark .tox .tox-edit-area__iframe {
         background-color: #0F1115 !important;
     }
-    
+
     /* Cabecera y Barra de Herramientas */
     .dark .tox .tox-editor-header {
         background-color: #1C1F26 !important;
         border-bottom: 1px solid #2A2F3A !important;
     }
-    
+
     .dark .tox .tox-toolbar,
     .dark .tox .tox-toolbar__primary {
         background-color: #1C1F26 !important;
         background: #1C1F26 !important;
     }
-    
+
     /* Botones de la barra de herramientas */
     .dark .tox .tox-tbtn {
         color: #9CA3AF !important;
     }
-    
+
     .dark .tox .tox-tbtn:hover {
         background-color: rgba(255, 255, 255, 0.05) !important;
         color: #F3F4F6 !important;
     }
-    
+
     .dark .tox .tox-tbtn--enabled,
     .dark .tox .tox-tbtn--enabled:hover {
         background-color: rgba(59, 130, 246, 0.15) !important;
         color: #3B82F6 !important;
     }
-    
+
     /* Menús desplegables y botones split */
     .dark .tox .tox-split-button {
         background-color: transparent !important;
     }
-    
+
     .dark .tox .tox-menu {
         background-color: #1C1F26 !important;
         border: 1px solid #2A2F3A !important;
     }
-    
+
     .dark .tox .tox-collection__item {
         color: #E5E7EB !important;
     }
-    
+
     .dark .tox .tox-collection__item--active {
         background-color: rgba(59, 130, 246, 0.15) !important;
     }
@@ -98,21 +101,21 @@
     .dark .tox .tox-menu__label {
         color: #E5E7EB !important;
     }
-    
+
     .dark .tox .tox-menu__label:hover {
         background-color: rgba(255, 255, 255, 0.05) !important;
         color: #F3F4F6 !important;
     }
-    
+
     /* Scrollbars Dark Mode */
     .dark .tickets-container ::-webkit-scrollbar-track {
         background: #1C1F26;
     }
-    
+
     .dark .tickets-container ::-webkit-scrollbar-thumb {
         background: #2A2F3A;
     }
-    
+
     .dark .tickets-container ::-webkit-scrollbar-thumb:hover {
         background: #3A3F4A;
     }
@@ -123,17 +126,17 @@
         color: #ffffff !important;
         border-color: #4b5563 !important;
     }
-    
+
     .dark select option {
         background-color: #374151 !important;
         color: #ffffff !important;
     }
-    
+
     .dark select:focus {
         border-color: #3b82f6 !important;
         ring-color: #3b82f6 !important;
     }
-    
+
 
     @media (max-width: 640px) {
         .tickets-container {
@@ -141,7 +144,7 @@
             max-width: 100% !important;
             overflow-x: hidden !important;
         }
-        
+
         .tickets-container * {
             max-width: 100% !important;
             box-sizing: border-box !important;
@@ -264,265 +267,343 @@
         </div>
     </div>
 
+    <!-- KANBAN -->
 
-    <!-- Vista kanban -->
-    <div class="kanban-root bg-gray-100 dark:bg-[#0F1116]">
+<div
+        class="kanban-root w-full h-full"
+        x-show="vista === 'kanban'"
+        x-transition>
 
-        <div
-            x-show="vista === 'kanban'"
-            x-transition
-            class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start w-full max-w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
 
             @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
 
-            <div class="p-4 rounded-lg text-center
-            bg-gray-100 dark:bg-gray-900
-            border border-gray-200 dark:border-gray-800">
+            <div class="flex flex-col h-full max-h-[80vh] rounded-xl overflow-hidden
+                        bg-gray-200/70 dark:bg-[#161920]
+                        border border-gray-300 dark:border-[#2A2F3A]">
 
-                {{-- Columna --}}
-                <div class="mb-2 p-2 rounded font-semibold shadow-sm
-                bg-white dark:bg-gray-800
-                text-gray-700 dark:text-gray-100
-                border border-gray-200 dark:border-gray-700">
-                    {{ $titulo }}
+                {{-- Header de Columna --}}
+                <div class="px-4 py-3 flex justify-between items-center
+                            bg-gray-300/50 dark:bg-[#1C1F26]
+                            border-b border-gray-300 dark:border-[#2A2F3A]">
+                    
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full
+                            {{ $key === 'nuevos' ? 'bg-yellow-500' : ($key === 'proceso' ? 'bg-blue-500' : 'bg-green-500') }}">
+                        </div>
+                        <h3 class="font-bold text-sm text-gray-700 dark:text-gray-100 uppercase tracking-wide">
+                            {{ $titulo }}
+                        </h3>
+                    </div>
+
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        {{ count($ticketsStatus[$key]) }}
+                    </span>
                 </div>
 
-                {{-- Scroll --}}
-                <div class="relative w-full h-[505px]">
-                    <div class="absolute inset-0 overflow-y-auto space-y-3 pr-2
-                    bg-gray-100 dark:bg-[#0F1116]">
+                {{-- Área de Scroll --}}
+                <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
 
-                        @forelse ($ticketsStatus[$key] as $ticket)
+                    @forelse ($ticketsStatus[$key] as $ticket)
 
-                        @php
+                    @php
                         $nombreResponsable = null;
                         $tiempoInfo = null;
 
-                        $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
+                       $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
                         if (count($partes) >= 3) array_splice($partes, 1, 1);
                         $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
 
                         if ($key === 'proceso') {
-                        if ($ticket->responsableTI) {
-                        $p = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
-                        if (count($p) >= 3) array_splice($p, 1, 1);
-                        $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
+                            if ($ticket->responsableTI) {
+                                $p = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
+                                if (count($p) >= 3) array_splice($p, 1, 1);
+                                $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
+                            }
+
+                            // CÁLCULO DE TIEMPO CON FORMATO
+                            if ($ticket->FechaInicioProgreso && $ticket->tipoticket?->TiempoEstimadoMinutos) {
+                                $estimado = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                                $trans = $ticket->tiempo_respuesta ?? 0;
+                                $porcentaje = $estimado > 0 ? ($trans / $estimado) * 100 : 0;
+
+                                // --- Lógica de Formato (Horas y Minutos) ---
+                                // Transcurrido
+                                $hTrans = floor($trans);
+                                $mTrans = round(($trans - $hTrans) * 60);
+                                $textoTrans = ($hTrans > 0 ? $hTrans.'h ' : '') . $mTrans.'m';
+
+                                // Estimado
+                                $hEst = floor($estimado);
+                                $mEst = round(($estimado - $hEst) * 60);
+                                $textoEst = ($hEst > 0 ? $hEst.'h ' : '') . $mEst.'m';
+
+                                $tiempoInfo = [
+                                    'texto_transcurrido' => $textoTrans, // Ej: "1h 30m"
+                                    'texto_estimado' => $textoEst,       // Ej: "2h 0m"
+                                    'porcentaje' => round($porcentaje, 1),
+                                    'estado' => $porcentaje >= 100 ? 'agotado' : ($porcentaje >= 80 ? 'por_vencer' : 'normal')
+                                ];
+                            }
                         }
+                    @endphp
 
-                        if ($ticket->FechaInicioProgreso && $ticket->tipoticket?->TiempoEstimadoMinutos) {
-                        $estimado = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                        $trans = $ticket->tiempo_respuesta ?? 0;
-                        $porcentaje = $estimado > 0 ? ($trans / $estimado) * 100 : 0;
+                    {{-- Tarjeta (Card) --}}
+                    <div
+                        class="group cursor-pointer p-4 rounded-lg shadow-sm transition-all duration-200
+                               bg-gray-50 dark:bg-[#1C1F26]
+                               border border-gray-200 dark:border-[#2A2F3A]
+                               hover:shadow-md hover:translate-y-[-2px]
+                               border-l-[4px]"
+                        
+                        style="border-left-color: {{ $ticket->Prioridad == 'Baja' ? '#22c55e' : ($ticket->Prioridad == 'Media' ? '#eab308' : '#ef4444') }};"
 
-                        $tiempoInfo = [
-                        'transcurrido' => round($trans, 1),
-                        'estimado' => round($estimado, 1),
-                        'porcentaje' => round($porcentaje, 1),
-                        'estado' => $porcentaje >= 100
-                        ? 'agotado'
-                        : ($porcentaje >= 80 ? 'por_vencer' : 'normal')
-                        ];
-                        }
-                        }
-                        @endphp
+                        data-categoria="{{ $key }}"
+                        data-ticket-id="{{ $ticket->TicketID }}"
+                        data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
+                        data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
+                        data-ticket-prioridad="{{ $ticket->Prioridad }}"
+                        data-ticket-empleado="{{ $nombreFormateado }}"
+                        data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
+                        data-ticket-correo="{{ $ticket->empleado->Correo ?? '' }}"
+                        data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
+                        data-ticket-numero="{{ $ticket->Numero ?? '' }}"
+                        data-ticket-anydesk="{{ $ticket->CodeAnyDesk ?? '' }}"
+                        data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
 
-                        {{-- Card --}}
-                        <div
-                            class="group cursor-pointer p-4 rounded-lg border shadow-sm
-                   bg-white dark:bg-gray-800
-                   border-gray-200 dark:border-gray-700
-                   hover:shadow-md"
-                            data-categoria="{{ $key }}"
-                            data-ticket-id="{{ $ticket->TicketID }}"
-                            @click="abrirModalDesdeElemento($el)">
+                        @click="abrirModalDesdeElemento($el)">
 
-                            {{-- Header --}}
-                            <div class="flex justify-between items-start gap-2">
-                                <h3 class="text-sm font-semibold truncate text-gray-900 dark:text-gray-100">
-                                    Ticket #{{ $ticket->TicketID }}
-                                </h3>
+                        {{-- Header de la Tarjeta --}}
+                        <div class="flex justify-between items-start gap-2 mb-2">
+                            <span class="text-xs font-mono font-bold text-gray-500 dark:text-gray-400">
+                                #{{ $ticket->TicketID }}
+                            </span>
+                            
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded
+                                @if($ticket->Prioridad=='Baja') bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
+                                @elseif($ticket->Prioridad=='Media') bg-<span class="font-semibold truncate">{{ $nombreResponsable }}</span>yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
+                                @else bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                                @endif">
+                                {{ $ticket->Prioridad }}
+                            </span>
+                        </div>
 
-                                <span class="text-xs font-bold px-2 py-1 rounded-full
-                    @if($ticket->Prioridad=='Baja') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                    @elseif($ticket->Prioridad=='Media') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                    @else bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                    @endif">
-                                    {{ $ticket->Prioridad }}
-                                </span>
+                        {{-- Descripción --}}
+                        <p class="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-3 mb-3 leading-relaxed">
+                            {{ Str::limit($ticket->Descripcion, 100) }}
+                        </p>
+
+                        {{-- Footer de la Tarjeta --}}
+                        <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-2">
+                            
+                            {{-- Usuario y Fecha (Igual que antes) --}}
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-user opacity-70"></i>
+                                    <span class="truncate max-w-[80px]">{{ $nombreFormateado }}</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-500">
+                                    <i class="fas fa-clock opacity-70"></i>
+                                    <span>{{ $ticket->created_at->diffForHumans() }}</span>
+                                </div>
                             </div>
 
-                            {{-- Descripción --}}
-                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                                {{ Str::limit($ticket->Descripcion, 100) }}
-                            </p>
-
                             {{-- Responsable --}}
-                            @if($key==='proceso' && $nombreResponsable)
-                            <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs">
-                                <i class="fas fa-user-tie text-blue-500"></i>
-                                <span class="ml-1 text-gray-400">Responsable:</span>
-                                <span class="text-gray-300">{{ $nombreResponsable }}</span>
+                            @if($key === 'proceso' && $nombreResponsable)
+                            <div class="mt-1 flex items-center gap-2 text-xs px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                                <i class="fas fa-user-tie"></i>
+                                <span class="font-semibold truncate">{{ $nombreResponsable }}</span>
+                            </div>
+                            @endif
+                            
+                            {{-- Barra de Tiempo con Formato H/M --}}
+                            @if($tiempoInfo)
+                            <div class="mt-2 w-full">
+                                <div class="flex justify-between text-[10px] mb-1 text-gray-500 dark:text-gray-400">
+                                    <span>Tiempo:</span>
+                                    <span class="{{ $tiempoInfo['estado'] == 'agotado' ? 'text-red-500 font-bold' : '' }}">
+                                        {{ $tiempoInfo['texto_transcurrido'] }} / {{ $tiempoInfo['texto_estimado'] }}
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-1.5 rounded-full {{ $tiempoInfo['estado'] == 'agotado' ? 'bg-red-500' : ($tiempoInfo['estado'] == 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500') }}"
+                                         style="width: {{ min($tiempoInfo['porcentaje'], 100) }}%">
+                                    </div>
+                                </div>
                             </div>
                             @endif
 
-                            {{-- Footer --}}
-                            <div class="flex justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs">
-                                <span class="text-gray-400">
-                                    <i class="fas fa-user"></i> {{ $nombreFormateado }}
-                                </span>
-                                <span class="text-gray-500">{{ $ticket->created_at->format('d/m H:i') }}</span>
-                            </div>
                         </div>
-
-                        @empty
-                        <div class="flex flex-col items-center py-10 text-gray-400">
-                            <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
-                            <p class="text-sm">Sin tickets</p>
-                        </div>
-                        @endforelse
-
                     </div>
+
+                    @empty
+                    <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 opacity-60">
+                        <i class="fas fa-clipboard-list text-4xl mb-2"></i>
+                        <p class="text-sm">Sin tickets</p>
+                    </div>
+                    @endforelse
+
                 </div>
             </div>
-
             @endforeach
+
         </div>
     </div>
 
 
     <!-- Vista Lista -->
-    <div
+<div
         x-show="vista === 'lista'"
         x-transition
-        class="space-y-3 w-full max-w-full overflow-x-hidden
-           bg-gray-100 dark:bg-[#0F1115]">
+        class="space-y-4 w-full max-w-full overflow-x-hidden pb-6">
 
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
 
-        <div class="rounded-lg overflow-hidden
-                bg-white dark:bg-[#1C1F26]
-                border border-gray-200 dark:border-[#2A2F3A]">
+        <div class="rounded-lg overflow-hidden shadow-sm
+                    bg-gray-50 dark:bg-[#1C1F26]
+                    border border-gray-300 dark:border-[#2A2F3A]">
 
-            {{-- Header --}}
-            <div class="px-4 py-2 flex justify-between items-center
-                    bg-gray-200 dark:bg-[#242933]">
-                <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">
+            {{-- Header de Categoría --}}
+            <div class="px-4 py-3 flex justify-between items-center
+                        bg-gray-200 dark:bg-[#242933]
+                        border-b border-gray-300 dark:border-[#2A2F3A]">
+                <h3 class="font-bold text-sm text-gray-800 dark:text-gray-100 uppercase tracking-wide">
                     {{ $titulo }}
                 </h3>
 
-                <span class="text-xs text-gray-600 dark:text-gray-400"
+                <span class="text-xs font-semibold px-2 py-1 rounded bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                     x-text="`Total: ${ticketsLista['{{ $key }}'] || 0}`">
                 </span>
             </div>
 
-            <div class="border-t border-gray-200 dark:border-[#2A2F3A]">
+            <div class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
 
                 @forelse ($ticketsStatus[$key] as $ticket)
 
-                @php
-                $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
-                if (count($partes) >= 3) array_splice($partes, 1, 1);
-                $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
+@php
+    $nombreResponsable = null;
+    $tiempoInfo = null;
 
-                $tiempoInfo = null;
-                $nombreResponsable = null;
+    // Formatear nombre del empleado
+    $partes = preg_split('/\s+/', trim($ticket->empleado->NombreEmpleado));
+    if (count($partes) >= 3) array_splice($partes, 1, 1);
+    $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
 
-                if ($key === 'proceso') {
-                if ($ticket->responsableTI) {
-                $partesResp = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
-                if (count($partesResp) >= 3) array_splice($partesResp, 1, 1);
-                $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $partesResp))->title();
-                }
+    // Obtener nombre del responsable TI si existe
+    if ($ticket->responsableTI) {
+        $p = preg_split('/\s+/', trim($ticket->responsableTI->NombreEmpleado));
+        if (count($p) >= 3) array_splice($p, 1, 1);
+        $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
+    }
 
-                if ($ticket->FechaInicioProgreso && $ticket->tipoticket?->TiempoEstimadoMinutos) {
-                $estimado = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                $trans = $ticket->tiempo_respuesta ?? 0;
-                $porcentaje = $estimado > 0 ? ($trans / $estimado) * 100 : 0;
+    // Calcular TIEMPO (Lógica principal corregida)
+    if ($ticket->Estatus === 'En progreso' && $ticket->FechaInicioProgreso && $ticket->tipoticket?->TiempoEstimadoMinutos) {
+        $estimado = $ticket->tipoticket->TiempoEstimadoMinutos / 60; // Horas
+        $trans = $ticket->tiempo_respuesta ?? 0; // Horas transcurridas
+        
+        // Evitar división por cero
+        $porcentaje = $estimado > 0 ? ($trans / $estimado) * 100 : 0;
 
-                $tiempoInfo = [
-                'trans' => $trans,
-                'est' => $estimado,
-                'estado' => $porcentaje >= 100 ? 'agotado' : ($porcentaje >= 80 ? 'por_vencer' : 'normal')
-                ];
-                }
-                }
-                @endphp
+        $tiempoInfo = [
+            'transcurrido' => round($trans, 1),
+            'estimado' => round($estimado, 1),
+            'porcentaje' => round($porcentaje, 1),
+            'estado' => $porcentaje >= 100 ? 'agotado' : ($porcentaje >= 80 ? 'por_vencer' : 'normal')
+        ];
+    }
+@endphp
 
                 <div
-                    class="p-4 cursor-pointer transition
-                       bg-gray-50 dark:bg-gray-800
-                       hover:bg-gray-200 dark:hover:bg-[#273244]
-                       border-b border-gray-200 dark:border-[#2A2F3A]"
+                    class="p-4 cursor-pointer transition-all duration-200
+                           bg-gray-50 dark:bg-[#1C1F26]
+                           hover:bg-gray-100 dark:hover:bg-[#242933]
+                           border-l-4 border-l-transparent hover:border-l-blue-500"
 
                     data-categoria="{{ $key }}"
                     data-ticket-id="{{ $ticket->TicketID }}"
+                    data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion, ENT_QUOTES, 'UTF-8') }}"
+                    data-ticket-prioridad="{{ $ticket->Prioridad }}"
                     data-ticket-empleado="{{ $nombreFormateado }}"
                     data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
+                    data-ticket-correo="{{ $ticket->empleado->Correo ?? '' }}"
+                    data-ticket-fecha="{{ $ticket->created_at->format('d/m/Y H:i:s') }}"
+                    data-ticket-numero="{{ $ticket->empleado->Numero ?? '' }}"
+                    data-ticket-anydesk="{{ $ticket->empleado->CodeAnyDesk ?? '' }}"
+
+
+
+
                     data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
 
                     x-show="estaEnPaginaListaPorElemento('{{ $key }}', $el)"
                     @click="abrirModalDesdeElemento($el)">
 
-                    <div class="flex justify-between gap-4">
+                    <div class="flex flex-col sm:flex-row justify-between gap-4">
 
                         <div class="flex-1 min-w-0">
 
-                            {{-- Título --}}
+                            {{-- Título y Prioridad --}}
                             <div class="flex items-center gap-3 mb-2">
-                                <h4 class="font-semibold text-gray-900 dark:text-gray-100">
+                                <h4 class="font-bold text-base text-gray-900 dark:text-white">
                                     Ticket #{{ $ticket->TicketID }}
                                 </h4>
 
-                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full
+                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border
                                 @if($ticket->Prioridad == 'Baja')
-                                    text-green-600 bg-green-100 dark:bg-green-500/20
+                                    bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800
                                 @elseif($ticket->Prioridad == 'Media')
-                                    text-yellow-600 bg-yellow-100 dark:bg-yellow-500/20
+                                    bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800
                                 @else
-                                    text-red-600 bg-red-100 dark:bg-red-500/20
+                                    bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800
                                 @endif">
                                     {{ $ticket->Prioridad }}
                                 </span>
                             </div>
 
                             {{-- Descripción --}}
-                            <p class="text-sm mb-3 text-gray-700 dark:text-gray-300 line-clamp-2">
-                                {{ Str::limit($ticket->Descripcion, 150) }}
+                            <p class="text-sm mb-3 text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                                {{ Str::limit($ticket->Descripcion, 160) }}
                             </p>
 
-                            {{-- Info --}}
-                            <div class="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-400">
+                            {{-- Info Footer --}}
+                            <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600 dark:text-gray-400">
 
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-user"></i>
-                                    <span class="font-semibold">{{ $nombreFormateado }}</span>
+                                <span class="flex items-center gap-1.5" title="Solicitante">
+                                    <i class="fas fa-user text-gray-500 dark:text-gray-500"></i>
+                                    <span class="text-gray-800 dark:text-gray-300">{{ $nombreFormateado }}</span>
                                 </span>
 
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-calendar"></i>
-                                    {{ $ticket->created_at->format('d/m/Y H:i:s') }}
+                                <span class="flex items-center gap-1.5" title="Fecha de creación">
+                                    <i class="fas fa-calendar-alt text-gray-500 dark:text-gray-500"></i>
+                                    <span>{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
                                 </span>
 
                                 @if($key === 'proceso' && $nombreResponsable)
-                                <span class="flex items-center gap-1">
-                                    <i class="fas fa-user-tie text-blue-500"></i>
-                                    <span class="text-gray-800 dark:text-gray-200">
-                                        {{ $nombreResponsable }}
-                                    </span>
+                                <span class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                                    <i class="fas fa-user-tie"></i>
+                                    <span>{{ $nombreResponsable }}</span>
                                 </span>
                                 @endif
 
                             </div>
                         </div>
 
-                        <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500"></i>
+                        {{-- Icono de acción --}}
+                        <div class="flex items-center justify-center sm:justify-end">
+                            <div class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                <i class="fas fa-chevron-right text-gray-400 dark:text-gray-500"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 @empty
-                <div class="p-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No hay tickets en esta categoría.
+                <div class="p-12 text-center flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                    <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-3">
+                        <i class="fas fa-inbox text-3xl opacity-50"></i>
+                    </div>
+                    <p class="text-sm font-medium">No hay tickets en esta categoría.</p>
                 </div>
                 @endforelse
 
@@ -533,16 +614,19 @@
     </div>
 
     <!-- Vista Tabla -->
-    <div x-show="vista === 'tabla'" x-transition class="rounded-lg overflow-hidden w-full max-w-full">
-        <div class="px-4 py-3 flex items-center justify-between">
-            <div class="text-sm" style="color: #9CA3AF;">
+    <div x-show="vista === 'tabla'"
+         x-transition
+         class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
+        
+        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
                 <span x-text="`Mostrando ${(paginaTabla - 1) * elementosPorPagina + 1} - ${Math.min(paginaTabla * elementosPorPagina, ticketsTabla.length)} de ${ticketsTabla.length} tickets`"></span>
             </div>
-            <div class="text-sm flex items-center gap-2" style="color: #9CA3AF;">
+            <div class="text-sm flex items-center gap-2 text-gray-600 dark:text-gray-400">
                 <span>Elementos por página:</span>
-                <select x-model="elementosPorPagina" @change="paginaTabla = 1" class="px-2 py-1 rounded text-sm"
-                    onfocus="this.style.borderColor='#2563EB'"
-                    onblur="this.style.borderColor='#2A2F3A'">
+                <select x-model="elementosPorPagina" 
+                        @change="paginaTabla = 1" 
+                        class="px-2 py-1 rounded text-sm border bg-gray-100 border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:bg-[#0F1115] dark:border-[#2A2F3A] dark:text-gray-200">
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -550,106 +634,73 @@
                 </select>
             </div>
         </div>
+
         <div class="overflow-x-auto">
-            <table class="min-w-full" style="border-collapse: separate; border-spacing: 0;">
-                <thead>
+            <table class="min-w-full border-collapse">
+                <thead class="bg-gray-100 dark:bg-[#242933]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
                             @click="cambiarOrden('id')">
                             <div class="flex items-center gap-2">
                                 <span>ID</span>
                                 <i class="fas fa-sort text-xs"
-                                    style="color: #6B7280;"
-                                    :style="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? ) : ''"
-                                    :class="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
-                                    onmouseover="this.style.color='#F3F4F6'"
-                                    onmouseout="this.style.color=ordenColumna === 'id' ? '#3B82F6' : '#6B7280'"></i>
+                                   :class="ordenColumna === 'id' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600 dark:text-[#3B82F6]' : 'fa-sort-down text-blue-600 dark:text-[#3B82F6]') : 'text-gray-400 dark:text-gray-600'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
-                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
-                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
-                            onmouseout="this.style.backgroundColor='transparent'"
+
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
                             @click="cambiarOrden('descripcion')">
                             <div class="flex items-center gap-2">
                                 <span>Descripción</span>
                                 <i class="fas fa-sort text-xs"
-                                    style="color: #6B7280;"
-                                    :style="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
-                                    :class="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
-                                    onmouseover="this.style.color='#F3F4F6'"
-                                    onmouseout="this.style.color=ordenColumna === 'descripcion' ? '#3B82F6' : '#6B7280'"></i>
+                                   :class="ordenColumna === 'descripcion' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600 dark:text-[#3B82F6]' : 'fa-sort-down text-blue-600 dark:text-[#3B82F6]') : 'text-gray-400 dark:text-gray-600'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
-                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
-                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
-                            onmouseout="this.style.backgroundColor='transparent'"
+
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
                             @click="cambiarOrden('empleado')">
                             <div class="flex items-center gap-2">
                                 <span>Empleado</span>
                                 <i class="fas fa-sort text-xs"
-                                    style="color: #6B7280;"
-                                    :style="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
-                                    :class="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
-                                    onmouseover="this.style.color='#F3F4F6'"
-                                    onmouseout="this.style.color=ordenColumna === 'empleado' ? '#3B82F6' : '#6B7280'"></i>
+                                   :class="ordenColumna === 'empleado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600 dark:text-[#3B82F6]' : 'fa-sort-down text-blue-600 dark:text-[#3B82F6]') : 'text-gray-400 dark:text-gray-600'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
-                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
-                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
-                            onmouseout="this.style.backgroundColor='transparent'"
+
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
                             @click="cambiarOrden('prioridad')">
                             <div class="flex items-center gap-2">
                                 <span>Prioridad</span>
                                 <i class="fas fa-sort text-xs"
-                                    style="color: #6B7280;"
-                                    :style="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
-                                    :class="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
-                                    onmouseover="this.style.color='#F3F4F6'"
-                                    onmouseout="this.style.color=ordenColumna === 'prioridad' ? '#3B82F6' : '#6B7280'"></i>
+                                   :class="ordenColumna === 'prioridad' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600 dark:text-[#3B82F6]' : 'fa-sort-down text-blue-600 dark:text-[#3B82F6]') : 'text-gray-400 dark:text-gray-600'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
-                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
-                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
-                            onmouseout="this.style.backgroundColor='transparent'"
+
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
                             @click="cambiarOrden('estado')">
                             <div class="flex items-center gap-2">
                                 <span>Estado</span>
                                 <i class="fas fa-sort text-xs"
-                                    style="color: #6B7280;"
-                                    :style="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
-                                    :class="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
-                                    onmouseover="this.style.color='#F3F4F6'"
-                                    onmouseout="this.style.color=ordenColumna === 'estado' ? '#3B82F6' : '#6B7280'"></i>
+                                   :class="ordenColumna === 'estado' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600 dark:text-[#3B82F6]' : 'fa-sort-down text-blue-600 dark:text-[#3B82F6]') : 'text-gray-400 dark:text-gray-600'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition"
-                            style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;"
-                            onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.05)'"
-                            onmouseout="this.style.backgroundColor='transparent'"
+
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
                             @click="cambiarOrden('fecha')">
                             <div class="flex items-center gap-2">
                                 <span>Fecha</span>
                                 <i class="fas fa-sort text-xs"
-                                    style="color: #6B7280;"
-                                    :style="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'color: #3B82F6;' : 'color: #3B82F6;') : ''"
-                                    :class="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : ''"
-                                    onmouseover="this.style.color='#F3F4F6'"
-                                    onmouseout="this.style.color=ordenColumna === 'fecha' ? '#3B82F6' : '#6B7280'"></i>
+                                   :class="ordenColumna === 'fecha' ? (ordenDireccion === 'asc' ? 'fa-sort-up text-blue-600 dark:text-[#3B82F6]' : 'fa-sort-down text-blue-600 dark:text-[#3B82F6]') : 'text-gray-400 dark:text-gray-600'"></i>
                             </div>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;">Responsable</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;">Tiempo</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider" style="color: #9CA3AF; border-bottom: 1px solid #2A2F3A;">Acciones</th>
+
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A]">Responsable</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A]">Tiempo</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A]">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
                     <template x-for="(ticket, index) in obtenerTicketsTablaPagina()" :key="`ticket-${paginaTabla}-${index}-${ticket.id || index}`">
-                        <tr
-                            class="transition cursor-pointer"
+                        <tr class="transition cursor-pointer hover:bg-gray-100 dark:hover:bg-[#273244]"
                             :data-ticket-id="ticket.id"
                             :data-ticket-asunto="ticket.asunto"
                             :data-ticket-descripcion="ticket.descripcion"
@@ -660,70 +711,89 @@
                             :data-ticket-correo="ticket.correo"
                             :data-ticket-fecha="ticket.fecha"
                             @click="abrirModalDesdeElemento($el)">
+                            
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold" x-text="'#' + ticket.id"></div>
+                                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100" x-text="'#' + ticket.id"></div>
                             </td>
+
                             <td class="px-6 py-4">
-                                <div class="text-sm max-w-md truncate" style="color: #D1D5DB;" x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
+                                <div class="text-sm max-w-md truncate text-gray-600 dark:text-gray-300" 
+                                     x-text="(ticket.descripcion || '').substring(0, 80) + ((ticket.descripcion || '').length > 80 ? '...' : '')"></div>
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm" style="color: #E5E7EB;" x-text="ticket.empleado || ''"></div>
-                                <div class="text-xs" style="color: #9CA3AF;" x-text="ticket.correo || ''"></div>
+                                <div class="text-sm text-gray-900 dark:text-gray-200" x-text="ticket.empleado || ''"></div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400" x-text="ticket.correo || ''"></div>
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
-                                    :style="ticket.prioridad == 'Baja' ? 'color: #22C55E; background-color: rgba(34, 197, 94, 0.15);' : (ticket.prioridad == 'Media' ? 'color: #FBBF24; background-color: rgba(251, 191, 36, 0.15);' : 'color: #F87171; background-color: rgba(248, 113, 113, 0.15);')"
+                                    :class="ticket.prioridad == 'Baja' ? 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/20' : 
+                                           (ticket.prioridad == 'Media' ? 'text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/20' : 
+                                           'text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-500/20')"
                                     x-text="ticket.prioridad || 'Media'"></span>
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full"
-                                    :style="ticket.estatus == 'Pendiente' ? 'color: #FBBF24; background-color: rgba(251, 191, 36, 0.15);' : (ticket.estatus == 'En progreso' ? 'color: #3B82F6; background-color: rgba(59, 130, 246, 0.15);' : 'color: #22C55E; background-color: rgba(34, 197, 94, 0.15);')"
+                                    :class="ticket.estatus == 'Pendiente' ? 'text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/20' : 
+                                           (ticket.estatus == 'En progreso' ? 'text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-500/20' : 
+                                           'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/20')"
                                     x-text="ticket.estatus || 'Pendiente'"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: #9CA3AF;" x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
+
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" 
+                                x-text="(ticket.fecha || '').split(' ').slice(0, 2).join(' ')"></td>
+
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div x-show="ticket.responsable && ticket.responsable.trim() !== ''" class="text-sm" style="color: #E5E7EB;" x-text="ticket.responsable"></div>
-                                <div x-show="!ticket.responsable || ticket.responsable.trim() === ''" class="text-xs" style="color: #6B7280;">-</div>
+                                <div x-show="ticket.responsable && ticket.responsable.trim() !== ''" 
+                                     class="text-sm text-gray-700 dark:text-gray-300" x-text="ticket.responsable"></div>
+                                <div x-show="!ticket.responsable || ticket.responsable.trim() === ''" 
+                                     class="text-xs text-gray-400 dark:text-gray-500">-</div>
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div x-show="ticket.tiempoTranscurrido && ticket.tiempoEstimado && ticket.tiempoTranscurrido !== '' && ticket.tiempoEstimado !== ''" class="flex flex-col gap-1">
+                                <div x-show="ticket.tiempoTranscurrido && ticket.tiempoEstimado" class="flex flex-col gap-1">
                                     <span class="text-xs px-2 py-0.5 rounded-full font-semibold"
-                                        :style="ticket.tiempoEstado === 'agotado' ? 'color: #F87171; background-color: rgba(248, 113, 113, 0.15);' : 
-                                                 (ticket.tiempoEstado === 'por_vencer' ? 'color: #FBBF24; background-color: rgba(251, 191, 36, 0.15);' : 
-                                                 (ticket.tiempoEstado === 'normal' ? 'color: #22C55E; background-color: rgba(34, 197, 94, 0.15);' : 'color: #6B7280; background-color: #1C1F26;'))"
+                                        :class="ticket.tiempoEstado === 'agotado' ? 'text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-500/20' : 
+                                               (ticket.tiempoEstado === 'por_vencer' ? 'text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/20' : 
+                                               (ticket.tiempoEstado === 'normal' ? 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/20' : 
+                                               'text-gray-600 bg-gray-200 dark:text-gray-400 dark:bg-gray-700'))"
                                         x-text="formatearHorasDecimales(ticket.tiempoTranscurrido) + ' / ' + formatearHorasDecimales(ticket.tiempoEstimado)"></span>
                                 </div>
-                                <div x-show="!ticket.tiempoTranscurrido || !ticket.tiempoEstimado || ticket.tiempoTranscurrido === '' || ticket.tiempoEstimado === ''" class="text-xs" style="color: #6B7280;">-</div>
+                                <div x-show="!ticket.tiempoTranscurrido || !ticket.tiempoEstimado" class="text-xs text-gray-400 dark:text-gray-500">-</div>
                             </td>
+
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <i class="fas fa-eye" style="color: #3B82F6;"></i>
+                                <i class="fas fa-eye text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"></i>
                             </td>
                         </tr>
                     </template>
-                    <tr x-show="!ticketsTabla || ticketsTabla.length === 0" style="background-color: #1F2937;">
-                        <td colspan="9" class="px-6 py-8 text-center text-sm" style="color: #6B7280;">
+
+                    <tr x-show="!ticketsTabla || ticketsTabla.length === 0">
+                        <td colspan="9" class="px-6 py-12 text-center text-sm bg-gray-50 dark:bg-[#1F2937] text-gray-500 dark:text-gray-400">
                             No hay tickets disponibles.
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <!-- Paginación Tabla -->
-        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 flex items-center justify-between" style=" border-top: 1px ">
-            <div class="text-sm" style="color: #9CA3AF;">
+
+        <div x-show="obtenerTotalPaginasTabla() > 1" class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-[#2A2F3A]">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
                 <span x-text="`Página ${paginaTabla} de ${obtenerTotalPaginasTabla()}`"></span>
             </div>
             <div class="flex items-center gap-2">
                 <button
                     @click="cambiarPaginaTabla(paginaTabla - 1)"
                     :disabled="paginaTabla === 1"
-                    class="px-3 py-1.5 text-sm font-medium rounded-md transition"
-                    style="border: 1px"
-                    onmouseover="if(paginaTabla !== 1) this.style.backgroundColor='#242933'"
-                    onmouseout="this.style.backgroundColor='#1F2937'"
-                    :style="paginaTabla === 1 ? 'opacity: 0.5; cursor: not-allowed;' : ''">
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition border"
+                    :class="paginaTabla === 1 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200 dark:bg-[#1F2937] dark:text-gray-500 dark:border-[#2A2F3A]' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
                     <i class="fas fa-chevron-left text-xs"></i> Anterior
                 </button>
+
                 <template x-for="pagina in Array.from({length: Math.min(obtenerTotalPaginasTabla(), 10)}, (_, i) => {
                     const total = obtenerTotalPaginasTabla();
                     const current = paginaTabla;
@@ -735,20 +805,20 @@
                     <button
                         @click="cambiarPaginaTabla(pagina)"
                         class="px-3 py-1.5 text-sm font-medium border rounded-md transition"
-                        :style="paginaTabla === pagina ? 'background-color: #3B82F6; color: white; border-color: #3B82F6;' : 'background-color: #1F2937; border-color: #2A2F3A; color: #E5E7EB;'"
-                        onmouseover="if(paginaTabla !== pagina) this.style.backgroundColor='#242933'"
-                        onmouseout="if(paginaTabla !== pagina) this.style.backgroundColor='#1F2937'">
+                        :class="paginaTabla === pagina 
+                            ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-600' 
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
                         <span x-text="pagina"></span>
                     </button>
                 </template>
+
                 <button
                     @click="cambiarPaginaTabla(paginaTabla + 1)"
                     :disabled="paginaTabla === obtenerTotalPaginasTabla()"
-                    class="px-3 py-1.5 text-sm font-medium rounded-md transition"
-                    style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
-                    onmouseover="if(paginaTabla !== obtenerTotalPaginasTabla()) this.style.backgroundColor='#242933'"
-                    onmouseout="this.style.backgroundColor='#1F2937'"
-                    :style="paginaTabla === obtenerTotalPaginasTabla() ? 'opacity: 0.5; cursor: not-allowed;' : ''">
+                    class="px-3 py-1.5 text-sm font-medium rounded-md transition border"
+                    :class="paginaTabla === obtenerTotalPaginasTabla()
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200 dark:bg-[#1F2937] dark:text-gray-500 dark:border-[#2A2F3A]' 
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
                     Siguiente <i class="fas fa-chevron-right text-xs"></i>
                 </button>
             </div>
@@ -759,7 +829,7 @@
 
 
     <!-- modal -->
-        <div
+    <div
         x-show="mostrar && selected.id"
         x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="opacity-0 translate-y-10"
@@ -849,16 +919,56 @@
                         </div>
 
                         <div class="rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
-                            <h3 class="text-xs font-semibold uppercase mb-2 text-gray-500 dark:text-gray-400">
-                                Información de Contacto
-                            </h3>
-                            <div class="space-y-1">
-                                <p class="font-medium text-gray-900 dark:text-gray-100" x-text="selected.empleado"></p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400" x-text="selected.correo"></p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400" x-text="selected.numero"></p>
-                                <p class="text-sm text-gray-600 dark:text-gray-400" x-text="selected.anydesk"></p>
-                            </div>
-                        </div>
+    <h3 class="text-xs font-semibold uppercase mb-3 text-gray-500 dark:text-gray-400 flex items-center gap-2">
+        <i class="fas fa-address-card"></i> Información de Contacto
+    </h3>
+    
+    <div class="space-y-3">
+        <div class="flex items-start gap-3">
+            <div class="mt-0.5 text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-user"></i>
+            </div>
+            <p class="font-medium text-sm text-gray-900 dark:text-gray-100 break-words" 
+               x-text="selected.empleado || 'Sin nombre assigned'"></p>
+        </div>
+
+        <div class="flex items-start gap-3" x-show="selected.correo">
+            <div class="mt-0.5 text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <a :href="'mailto:' + selected.correo" 
+               class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors break-all" 
+               x-text="selected.correo"></a>
+        </div>
+
+        <div class="flex items-center gap-3" x-show="selected.numero">
+            <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-phone-alt"></i>
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Tel/Ext:</span>
+                <span x-text="selected.numero" class="font-mono"></span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3" x-show="selected.anydesk">
+            <div class="text-red-500 dark:text-red-400 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-desktop"></i>
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">AnyDesk:</span>
+                <span class="font-mono bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 select-all" 
+                      x-text="selected.anydesk"></span>
+            </div>
+        </div>
+
+        <div x-show="!selected.numero && !selected.anydesk" class="pt-2 pl-7">
+            <p class="text-xs italic text-gray-400 dark:text-gray-600">
+                Sin datos de contacto adicionales.
+            </p>
+        </div>
+    </div>
+</div>
 
                         <div class="rounded-lg p-4 flex flex-col gap-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
                             <h3 class="text-xs font-semibold uppercase mb-2 text-gray-500 dark:text-gray-400">
@@ -965,8 +1075,8 @@
                             </div>
 
                             <div>
-                               <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                Grupo <span class="text-red-500">*</span>
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                    Grupo <span class="text-red-500">*</span>
                                 </label>
                                 <select
                                     id="subtipo-select"
@@ -1022,7 +1132,7 @@
                     </div>
                 </aside>
 
-                <main class="flex flex-col overflow-hidden">
+                <main class="flex flex-col overflow-hidden  dark:bg-[#1A1D24]">
                     <div class="flex justify-between items-start p-6 border-b border-gray-200 dark:border-gray-700 dark:bg-[#1A1D24]">
                         <div>
                             <h1 class="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100"
@@ -1068,59 +1178,59 @@
                     <!-- Área de Conversaciones -->
 
 
-                                                <!-- Encabezado de Composición -->
-                            <div class="p-4 transition-opacity duration-200"
-                                :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50 pointer-events-none' : ''">
+                    <!-- Encabezado de Composición -->
+                    <div class="p-4 transition-opacity duration-200"
+                        :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50 pointer-events-none' : ''">
 
-                                <div class="space-y-4">
+                        <div class="space-y-4">
 
-                                    <div class="flex items-center gap-2">
-                                        <label class="text-sm font-medium w-16 flex-shrink-0 text-gray-500 dark:text-gray-400">Para:</label>
-                                        <input
-                                            type="email"
-                                            :value="selected.correo || ''"
-                                            readonly
-                                            :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                            class="flex-1 px-3 py-2 rounded-md text-sm border shadow-sm transition-colors
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium w-16 flex-shrink-0 text-gray-500 dark:text-gray-400">Para:</label>
+                                <input
+                                    type="email"
+                                    :value="selected.correo || ''"
+                                    readonly
+                                    :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                    class="flex-1 px-3 py-2 rounded-md text-sm border shadow-sm transition-colors
                         border-gray-300 text-gray-900
                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                        dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-500
                        disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
                        dark:disabled:bg-gray-900 dark:disabled:border-gray-800 dark:disabled:text-gray-500">
-                                    </div>
+                            </div>
 
-                                    <div class="flex items-center gap-2">
-                                        <label class="text-sm font-medium w-16 flex-shrink-0 text-gray-500 dark:text-gray-400">
-                                            Asunto: <span class="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            x-model="asuntoCorreo"
-                                            required
-                                            readonly
-                                            :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                            class="flex-1 px-3 py-2 rounded-md text-sm border shadow-sm cursor-not-allowed
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium w-16 flex-shrink-0 text-gray-500 dark:text-gray-400">
+                                    Asunto: <span class="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    x-model="asuntoCorreo"
+                                    required
+                                    readonly
+                                    :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                    class="flex-1 px-3 py-2 rounded-md text-sm border shadow-sm cursor-not-allowed
                        bg-gray-100 border-gray-300 text-gray-500
                        focus:outline-none
                        dark:bg-gray-900 dark:border-gray-700 dark:text-gray-400">
-                                    </div>
-
-                                </div>
                             </div>
 
-                            <div x-show="mostrarBcc" x-transition class="flex items-center gap-2 mt-3">
-                                <label class="text-sm font-medium w-16 flex-shrink-0 text-gray-500 dark:text-gray-400">
-                                    Copia Oculta:
-                                </label>
-                                <input
-                                    type="email"
-                                    x-model="correoBcc"
-                                    placeholder="correo@ejemplo.com"
-                                    class="flex-1 px-3 py-2 rounded-md text-sm border shadow-sm transition-colors
-               bg-white border-gray-300 text-gray-900
+                        </div>
+                    </div>
+
+                    <div x-show="mostrarBcc" x-transition class="flex items-center gap-2 mt-3">
+                        <label class="text-sm font-medium w-16 flex-shrink-0 text-gray-500 dark:text-gray-400">
+                            Copia Oculta:
+                        </label>
+                        <input
+                            type="email"
+                            x-model="correoBcc"
+                            placeholder="correo@ejemplo.com"
+                            class="flex-1 px-3 py-2 rounded-md text-sm border shadow-sm transition-colors
+                border-gray-300 text-gray-900
                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-500">
-                            </div>
+                    </div>
                     <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container"> <!-- Mensajes dinámicos del chat -->
                         <template x-for="mensaje in mensajes" :key="mensaje.id">
                             <div class="flex gap-4 mb-4" :class="mensaje.remitente === 'soporte' ? 'justify-end' : 'justify-start'">
@@ -1233,355 +1343,253 @@
                                 </p>
                             </div>
 
+                            <div class="p-3 transition-opacity duration-200"
+                                :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50 pointer-events-none' : ''">
 
-
-                            <!-- <div class="border-b border-gray-200 p-2 flex items-center gap-2 flex-wrap
-            bg-white dark:bg-gray-800 dark:border-gray-700"> -->
-
-                                <!-- <div class="flex items-center gap-1 border-r border-gray-200 pr-2 dark:border-gray-600">
-                                    <button type="button" @click="aplicarFormato('bold')"
-                                        class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Negrita">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
-                                        </svg>
-                                    </button>
-                                </div> -->
-
-                                <!-- <div class="flex items-center gap-1 border-r border-gray-200 pr-2 dark:border-gray-600">
-                                    <select class="text-xs border rounded px-2 py-1 focus:outline-none
-                       bg-white border-gray-300 text-gray-700
-                       dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
-                                        <option>Calibri</option>
-                                        <option>Arial</option>
-                                    </select>
-                                </div> -->
-                            <!-- </div> -->
-
-                            <!-- <div class="flex items-center gap-1 border-r border-gray-200 pr-2 dark:border-gray-600">
-                                <button type="button" class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Color de texto">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
-                                    </svg>
-                                </button>
-                                <button type="button" class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Resaltar">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M6 14l3 3v5h6v-5l3-3V9H6v5zm5-12h2v3h-2V2zM3.5 5.88L4.88 4.5 7.05 6.67 5.67 8.05 3.5 5.88zm13.45.79l2.58-2.59L21.5 5.88l-2.58 2.59-1.97-1.97zM11 16h2v2h-2v-2z"></path>
-                                    </svg>
-                                </button>
-                            </div> -->
-
-                            <!-- <div class="flex items-center gap-1 border-r border-gray-200 pr-2 dark:border-gray-600">
-                                <button type="button" class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Alinear izquierda">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path>
-                                    </svg>
-                                </button>
-                                <button type="button" class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Centrar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                                    </svg>
-                                </button>
-                                <button type="button" class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Alinear derecha">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path>
-                                    </svg>
-                                </button>
-                            </div> -->
-
-                            <!-- <div class="flex items-center gap-1 border-r border-gray-200 pr-2 dark:border-gray-600">
-                                <button type="button" class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Lista con viñetas">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                                    </svg>
-                                </button>
-                                <button type="button" class="p-1.5 rounded transition text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Lista numerada">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                                    </svg>
-                                </button>
-                            </div> -->
-
-                            <!-- <button type="button" class="p-1.5 rounded transition ml-auto text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Más opciones">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                                </svg>
-                            </button>
-                        </div> -->
-
-                        <div class="p-3 transition-opacity duration-200"
-                            :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50 pointer-events-none' : ''">
-
-                            <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
-                                class="mb-2 p-2 rounded-lg border transition-colors
+                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                    class="mb-2 p-2 rounded-lg border transition-colors
                 bg-yellow-50 border-yellow-200 text-yellow-800
                 dark:bg-yellow-900/20 dark:border-yellow-700/50 dark:text-yellow-200">
-                                <p class="text-xs flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                    </svg>
-                                    <span>Este ticket está cerrado. No se pueden agregar nuevos mensajes o adjuntos.</span>
-                                </p>
-                            </div>
+                                    <p class="text-xs flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                        </svg>
+                                        <span>Este ticket está cerrado. No se pueden agregar nuevos mensajes o adjuntos.</span>
+                                    </p>
+                                </div>
 
-                            
-                        <div class="p-4 transition-opacity duration-200 dark:bg-[#0F1115]"
-                            :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
 
-                            <textarea
-                                id="editor-mensaje"
-                                x-model="nuevoMensaje"
-                                :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
-                                class="w-full rounded-md border shadow-sm p-3 min-h-[300px] transition-colors resize-y
+                                <div class="p-4 transition-opacity duration-200 dark:bg-[#0F1115]"
+                                    :class="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity-50' : ''">
+
+                                    <textarea
+                                        id="editor-mensaje"
+                                        x-model="nuevoMensaje"
+                                        :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                        class="w-full rounded-md border shadow-sm p-3 min-h-[300px] transition-colors resize-y
                    bg-white border-gray-300 text-gray-900 placeholder-gray-400
                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                    dark:bg-[#0F1115] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
                    dark:disabled:bg-[#1C1F26] dark:disabled:text-gray-500"
-                                placeholder="Escribe tu mensaje aquí..."></textarea>
+                                        placeholder="Escribe tu mensaje aquí..."></textarea>
 
-                            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
-                                <div class="text-xs space-y-1 text-gray-500 dark:text-gray-400">
-
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-medium text-gray-700 dark:text-gray-300">De:</span>
-                                        <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400">Soporte TI</span>
-                                    </div>
-
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-medium text-gray-700 dark:text-gray-300">Fecha:</span>
-                                        <span class="text-gray-900 dark:text-gray-200"
-                                            x-text="new Date().toLocaleString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
-                                    </div>
-
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-medium text-gray-700 dark:text-gray-300">Para:</span>
-                                        <span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400"
-                                            x-text="selected.correo || 'No disponible'"></span>
-                                    </div>
-
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-medium text-gray-700 dark:text-gray-300">Asunto:</span>
-                                        <span class="text-gray-900 dark:text-gray-200" x-text="'Ticket #' + (selected.id || '')"></span>
-                                    </div>
-                                </div>
-                            </div>
-<div
-                                id="drag-drop-area"
-                                :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'cursor-not-allowed' : 'cursor-pointer'"
-                                class="border-2 border-dashed rounded-lg p-4 transition-all duration-200 mb-2
+                                    <div
+                                        id="drag-drop-area"
+                                        :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'cursor-not-allowed' : 'cursor-pointer'"
+                                        class="border-2 border-dashed rounded-lg p-4 transition-all duration-200 mb-2
                bg-blue-50 border-blue-200
                dark:bg-blue-900/10 dark:border-blue-800"
-                                @dragover.prevent="handleDragOver($event)"
-                                @dragleave.prevent="handleDragLeave($event)"
-                                @drop.prevent="handleDrop($event)"
-                                @click="!((selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) && document.getElementById('adjuntos').click()"
-                                :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'Arrastra archivos aquí o haz clic para seleccionar')">
+                                        @dragover.prevent="handleDragOver($event)"
+                                        @dragleave.prevent="handleDragLeave($event)"
+                                        @drop.prevent="handleDrop($event)"
+                                        @click="!((selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) && document.getElementById('adjuntos').click()"
+                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'Arrastra archivos aquí o haz clic para seleccionar')">
 
-                                <div class="flex flex-col items-center justify-center gap-2 text-center">
-                                    <svg class="w-8 h-8 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                                    </svg>
+                                        <div class="flex flex-col items-center justify-center gap-2 text-center">
+                                            <svg class="w-8 h-8 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                            </svg>
 
-                                    <div>
-                                        <span class="text-sm font-medium text-blue-600 dark:text-blue-400">Arrastra archivos aquí o </span>
-                                        <label
-                                            for="adjuntos"
-                                            class="text-sm font-medium underline cursor-pointer text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                                            @click.stop
-                                            :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'cursor-not-allowed' : ''">
-                                            haz clic para seleccionar
-                                        </label>
+                                            <div>
+                                                <span class="text-sm font-medium text-blue-600 dark:text-blue-400">Arrastra archivos aquí o </span>
+                                                <label
+                                                    for="adjuntos"
+                                                    class="text-sm font-medium underline cursor-pointer text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                                                    @click.stop
+                                                    :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'cursor-not-allowed' : ''">
+                                                    haz clic para seleccionar
+                                                </label>
+                                            </div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX, TXT, JPG, PNG, GIF (máx. 10MB por archivo)</p>
+                                        </div>
                                     </div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX, TXT, JPG, PNG, GIF (máx. 10MB por archivo)</p>
-                                </div>
-                            </div>
 
-                            <div class="flex items-center justify-end mb-2">
-                                <span x-show="archivosAdjuntos.length > 0" class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                    <span x-text="archivosAdjuntos.length"></span> archivo<span x-show="archivosAdjuntos.length !== 1">s</span> seleccionado<span x-show="archivosAdjuntos.length !== 1">s</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div x-show="archivosAdjuntos.length > 0" class="mt-3 space-y-2">
-                            <template x-for="(archivo, index) in archivosAdjuntos" :key="index">
-                                <div class="flex items-center gap-3 p-2 rounded-lg border transition-colors
+                                    <div class="flex items-center justify-end mb-2">
+                                        <span x-show="archivosAdjuntos.length > 0" class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            <span x-text="archivosAdjuntos.length"></span> archivo<span x-show="archivosAdjuntos.length !== 1">s</span> seleccionado<span x-show="archivosAdjuntos.length !== 1">s</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div x-show="archivosAdjuntos.length > 0" class="mt-3 space-y-2">
+                                    <template x-for="(archivo, index) in archivosAdjuntos" :key="index">
+                                        <div class="flex items-center gap-3 p-2 rounded-lg border transition-colors
                     bg-white border-gray-200 hover:bg-gray-50
                     dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:hover:bg-[#242933]">
 
-                                    <div class="flex-shrink-0">
-                                        <svg x-show="archivo.type && archivo.type.startsWith('image/')"
-                                            class="w-6 h-6 text-green-500 dark:text-green-400"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                        <svg x-show="archivo.type && archivo.type === 'application/pdf'"
-                                            class="w-6 h-6 text-red-500 dark:text-red-400"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                        </svg>
-                                        <svg x-show="archivo.type && (archivo.type.includes('word') || archivo.type.includes('document') || archivo.name.endsWith('.doc') || archivo.name.endsWith('.docx'))"
-                                            class="w-6 h-6 text-blue-500 dark:text-blue-400"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                        </svg>
-                                        <svg x-show="!archivo.type || (!archivo.type.startsWith('image/') && archivo.type !== 'application/pdf' && !archivo.type.includes('word') && !archivo.type.includes('document') && !archivo.name.endsWith('.doc') && !archivo.name.endsWith('.docx'))"
-                                            class="w-6 h-6 text-gray-400 dark:text-gray-500"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </div>
+                                            <div class="flex-shrink-0">
+                                                <svg x-show="archivo.type && archivo.type.startsWith('image/')"
+                                                    class="w-6 h-6 text-green-500 dark:text-green-400"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <svg x-show="archivo.type && archivo.type === 'application/pdf'"
+                                                    class="w-6 h-6 text-red-500 dark:text-red-400"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <svg x-show="archivo.type && (archivo.type.includes('word') || archivo.type.includes('document') || archivo.name.endsWith('.doc') || archivo.name.endsWith('.docx'))"
+                                                    class="w-6 h-6 text-blue-500 dark:text-blue-400"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <svg x-show="!archivo.type || (!archivo.type.startsWith('image/') && archivo.type !== 'application/pdf' && !archivo.type.includes('word') && !archivo.type.includes('document') && !archivo.name.endsWith('.doc') && !archivo.name.endsWith('.docx'))"
+                                                    class="w-6 h-6 text-gray-400 dark:text-gray-500"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
 
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium truncate text-gray-700 dark:text-gray-200" x-text="archivo.name"></p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="formatearTamañoArchivo(archivo.size)"></p>
-                                    </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium truncate text-gray-700 dark:text-gray-200" x-text="archivo.name"></p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="formatearTamañoArchivo(archivo.size)"></p>
+                                            </div>
 
-                                    <button
-                                        type="button"
-                                        @click="eliminarArchivo(index)"
-                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
-                                        class="flex-shrink-0 p-1.5 rounded transition 
+                                            <button
+                                                type="button"
+                                                @click="eliminarArchivo(index)"
+                                                :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
+                                                class="flex-shrink-0 p-1.5 rounded transition 
                        text-red-500 hover:bg-red-50 
                        dark:text-red-400 dark:hover:bg-red-900/20
                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                                        title="Eliminar archivo">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                        </svg>
-                                    </button>
+                                                title="Eliminar archivo">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
                                 </div>
-                            </template>
-                        </div>
-                        <input
-                            type="file"
-                            id="adjuntos"
-                            name="adjuntos[]"
-                            multiple
-                            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                            class="hidden"
-                            :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
-                            @change="manejarArchivosSeleccionados($event)">
-
-                            <div class="flex justify-end items-center gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
-
-                                <button
-                                    type="button"
-                                    @click="limpiarEditor()"
+                                <input
+                                    type="file"
+                                    id="adjuntos"
+                                    name="adjuntos[]"
+                                    multiple
+                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                                    class="hidden"
                                     :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
-                                    class="px-4 py-2 rounded-lg text-sm transition font-medium
+                                    @change="manejarArchivosSeleccionados($event)">
+
+                                <div class="flex justify-end items-center gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700/50">
+
+                                    <button
+                                        type="button"
+                                        @click="limpiarEditor()"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
+                                        class="px-4 py-2 rounded-lg text-sm transition font-medium
                        text-gray-500 hover:text-gray-700 hover:bg-gray-100
                        dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800
                        disabled:opacity-50 disabled:cursor-not-allowed">
-                                    Descartar
-                                </button>
+                                        Descartar
+                                    </button>
 
-                                <button
-                                    @click="enviarRespuesta()"
-                                    :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
-                                    class="font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2 text-white
+                                    <button
+                                        @click="enviarRespuesta()"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
+                                        class="font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2 text-white
                        bg-blue-600 hover:bg-blue-700
                        dark:bg-blue-600 dark:hover:bg-blue-500
                        disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed
                        dark:disabled:bg-[#1C1F26] dark:disabled:text-gray-600"
-                                    :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'El botón se activará cuando haya contenido en el mensaje y un asunto')">
+                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'El botón se activará cuando haya contenido en el mensaje y un asunto')">
 
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                    </svg>
-                                    Enviar
-                                </button>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                        Enviar
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div x-show="mostrarProcesarRespuesta"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 transform scale-95"
-                            x-transition:enter-end="opacity-100 transform scale-100"
-                            x-transition:leave="transition ease-in duration-200"
-                            x-transition:leave-start="opacity-100 transform scale-100"
-                            x-transition:leave-end="opacity-0 transform scale-95"
-                            class="rounded-lg p-4 mt-4 border transition-colors
+                            <div x-show="mostrarProcesarRespuesta"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 transform scale-95"
+                                x-transition:enter-end="opacity-100 transform scale-100"
+                                x-transition:leave="transition ease-in duration-200"
+                                x-transition:leave-start="opacity-100 transform scale-100"
+                                x-transition:leave-end="opacity-0 transform scale-95"
+                                class="rounded-lg p-4 mt-4 border transition-colors
             bg-green-50 border-green-200
             dark:bg-green-900/10 dark:border-green-500/30">
 
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="text-sm font-medium text-green-700 dark:text-green-400">
-                                    📧 Procesar Respuesta de Correo:
-                                </span>
-                                <span class="text-xs text-green-600 dark:text-green-500">
-                                    (Procesamiento manual cuando Webklex no funciona)
-                                </span>
-                            </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="text-sm font-medium text-green-700 dark:text-green-400">
+                                        📧 Procesar Respuesta de Correo:
+                                    </span>
+                                    <span class="text-xs text-green-600 dark:text-green-500">
+                                        (Procesamiento manual cuando Webklex no funciona)
+                                    </span>
+                                </div>
 
-                            <div class="rounded-lg p-3 mb-3 border
+                                <div class="rounded-lg p-3 mb-3 border
                 bg-green-100 border-green-200
                 dark:bg-green-900/20 dark:border-green-500/30">
-                                <div class="flex items-start gap-2">
-                                    <div class="mt-0.5 text-green-600 dark:text-green-400">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                                        </svg>
-                                    </div>
-                                    <div class="text-sm text-green-800 dark:text-green-200">
-                                        <p class="font-medium mb-1">¿Cómo procesar respuestas de correo?</p>
-                                        <ol class="text-xs space-y-1 list-decimal list-inside text-green-700 dark:text-green-300/70">
-                                            <li><strong>Automático:</strong> El procesamiento automático se ejecuta cada 5 minutos mediante un job programado</li>
-                                            <li><strong>Manual:</strong> Si el automático falla, usa esta área</li>
-                                            <li>El usuario recibe tu correo con instrucciones</li>
-                                            <li>El usuario responde por correo</li>
-                                            <li>Copia y pega su respuesta aquí</li>
-                                            <li>La respuesta aparecerá en el chat del ticket</li>
-                                        </ol>
+                                    <div class="flex items-start gap-2">
+                                        <div class="mt-0.5 text-green-600 dark:text-green-400">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="text-sm text-green-800 dark:text-green-200">
+                                            <p class="font-medium mb-1">¿Cómo procesar respuestas de correo?</p>
+                                            <ol class="text-xs space-y-1 list-decimal list-inside text-green-700 dark:text-green-300/70">
+                                                <li><strong>Automático:</strong> El procesamiento automático se ejecuta cada 5 minutos mediante un job programado</li>
+                                                <li><strong>Manual:</strong> Si el automático falla, usa esta área</li>
+                                                <li>El usuario recibe tu correo con instrucciones</li>
+                                                <li>El usuario responde por correo</li>
+                                                <li>Copia y pega su respuesta aquí</li>
+                                                <li>La respuesta aparecerá en el chat del ticket</li>
+                                            </ol>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                <div>
-                                    <label class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-400">Nombre del usuario:</label>
-                                    <input
-                                        x-model="respuestaManual.nombre"
-                                        type="text"
-                                        class="w-full p-2 rounded text-sm border shadow-sm transition-colors
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-400">Nombre del usuario:</label>
+                                        <input
+                                            x-model="respuestaManual.nombre"
+                                            type="text"
+                                            class="w-full p-2 rounded text-sm border shadow-sm transition-colors
                        bg-white border-gray-300 text-gray-900 placeholder-gray-400
                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
                        dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500"
-                                        placeholder="Nombre del usuario">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-400">Correo del usuario:</label>
-                                    <input
-                                        x-model="respuestaManual.correo"
-                                        type="email"
-                                        class="w-full p-2 rounded text-sm border shadow-sm transition-colors
+                                            placeholder="Nombre del usuario">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-400">Correo del usuario:</label>
+                                        <input
+                                            x-model="respuestaManual.correo"
+                                            type="email"
+                                            class="w-full p-2 rounded text-sm border shadow-sm transition-colors
                        bg-white border-gray-300 text-gray-900 placeholder-gray-400
                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
                        dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500"
-                                        placeholder="correo@usuario.com">
+                                            placeholder="correo@usuario.com">
+                                    </div>
                                 </div>
-                            </div>
 
-                            <textarea
-                                x-model="respuestaManual.mensaje"
-                                class="w-full h-20 p-3 rounded-lg resize-none text-sm border shadow-sm transition-colors
+                                <textarea
+                                    x-model="respuestaManual.mensaje"
+                                    class="w-full h-20 p-3 rounded-lg resize-none text-sm border shadow-sm transition-colors
                bg-white border-gray-300 text-gray-900 placeholder-gray-400
                focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
                dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500"
-                                placeholder="Copia y pega aquí la respuesta que recibiste por correo..."></textarea>
+                                    placeholder="Copia y pega aquí la respuesta que recibiste por correo..."></textarea>
 
-                            <div class="flex justify-end mt-3">
-                                <button
-                                    @click="agregarRespuestaManual()"
-                                    :disabled="!respuestaManual.mensaje.trim()"
-                                    class="font-medium py-2 px-4 rounded-lg transition text-sm text-white
+                                <div class="flex justify-end mt-3">
+                                    <button
+                                        @click="agregarRespuestaManual()"
+                                        :disabled="!respuestaManual.mensaje.trim()"
+                                        class="font-medium py-2 px-4 rounded-lg transition text-sm text-white
                    bg-green-600 hover:bg-green-700
                    dark:bg-green-600 dark:hover:bg-green-500
                    disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed
                    dark:disabled:bg-[#1C1F26] dark:disabled:text-gray-600">
-                                    Procesar Respuesta de Correo
-                                </button>
+                                        Procesar Respuesta de Correo
+                                    </button>
+                                </div>
                             </div>
-                        </div>
 
                 </main>
             </div>
@@ -1592,64 +1600,66 @@
     <div
         x-show="mostrarModalMetricas"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/50 dark:bg-[rgba(15,17,21,0.85)]"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/50"
         @click.self="mostrarModalMetricas = false">
+
         <div
-            class="rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border  dark:bg-[#1C1F26] border-gray-200 dark:border-[#2A2F3A]"
+            class="rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border shadow-xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
             @click.stop>
-            <!-- Header del Modal -->
-            <div class="px-6 py-4 flex justify-between items-center bg-gradient-to-r from-purple-600 to-purple-700 dark:from-purple-600 dark:to-purple-700">
-                <h2 class="text-white dark:text-[#F3F4F6] text-xl font-semibold flex items-center gap-2">
+
+            <div class="px-6 py-4 flex justify-between items-center bg-gradient-to-r from-purple-600 to-purple-700">
+                <h2 class="text-white text-xl font-semibold flex items-center gap-2">
                     <i class="fas fa-chart-line"></i>
-                    Ajustar Métricas de Tiempo Estimado
+                    Ajustar Métricas
                 </h2>
                 <button
                     @click="mostrarModalMetricas = false"
-                    class="text-white dark:text-[#E5E7EB] hover:text-gray-200 dark:hover:text-gray-300 transition">
+                    class="text-white/80 hover:text-white transition">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
 
-            <!-- Contenido del Modal -->
-            <div class="flex-1 overflow-y-auto p-6  dark:bg-[#1C1F26]">
-                <!-- Bloque informativo -->
-                <div class="mb-4 text-sm rounded-lg p-3 border bg-blue-50 dark:bg-[#1F2937] border-blue-200 dark:border-[#2A2F3A] text-blue-600 dark:text-blue-400">
+            <div class="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-800">
+
+                <div class="mb-4 text-sm rounded-lg p-3 border bg-blue-100/50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
                     <i class="fas fa-info-circle mr-2"></i>
-                    Configure el tiempo estimado en minutos para cada tipo de ticket. Este tiempo es utilizado para las alertas de la resolución de tickets.
+                    Configure el tiempo estimado en minutos para cada tipo de ticket.
                 </div>
 
-                <!-- Tabla de Métricas -->
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                     <table class="min-w-full border-collapse">
-                        <thead>
+                        <thead class="bg-gray-100 dark:bg-gray-900/50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-[#9CA3AF] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A]">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                                     Tipo de Ticket
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-[#9CA3AF] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A]">
-                                    Tiempo Estimado (Minutos)
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                                    Tiempo Estimado
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-[#9CA3AF] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A]">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                                     Equivalente
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class=" dark:bg-[#1C1F26]">
+
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+
                             <template x-if="cargandoMetricas">
                                 <tr>
-                                    <td colspan="3" class="px-4 py-8 text-center">
-                                        <div class="flex items-center justify-center gap-2 text-gray-500 dark:text-[#9CA3AF]">
+                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                        <div class="flex items-center justify-center gap-2">
                                             <i class="fas fa-spinner fa-spin"></i>
-                                            <span>Cargando métricas...</span>
+                                            <span>Cargando...</span>
                                         </div>
                                     </td>
                                 </tr>
                             </template>
+
                             <template x-if="!cargandoMetricas && metricasTipos && metricasTipos.length > 0">
                                 <template x-for="(tipo, index) in metricasTipos" :key="tipo.TipoID">
-                                    <tr class="transition dark:bg-[#1F2937] border-b border-gray-200 dark:border-b dark:border-[#2A2F3A] hover:bg-gray-50 dark:hover:bg-[#273244]">
+                                    <tr class="transition hover:bg-gray-100 dark:hover:bg-gray-700/50">
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm font-medium text-gray-900 dark:text-[#E5E7EB]"
+                                            <span class="text-sm font-medium text-gray-900 dark:text-gray-100"
                                                 x-text="tipo.NombreTipo"></span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
@@ -1660,21 +1670,27 @@
                                                 :value="tipo.TiempoEstimadoMinutos || ''"
                                                 @input="tipo.TiempoEstimadoMinutos = $event.target.value ? parseInt($event.target.value) : null; tipo.cambiado = true"
                                                 placeholder="0"
-                                                class="w-32 px-3 py-2 rounded-md text-sm border dark:bg-[#0F1115] border-gray-300 dark:border-[#2A2F3A] text-gray-900 dark:text-[#E5E7EB] placeholder-gray-400 dark:placeholder-[#6B7280] focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition">
+                                                class="w-32 px-3 py-2 rounded-md text-sm border transition
+                                                   bg-[#ffffff] dark:bg-gray-900
+                                                   border-gray-300 dark:border-gray-600
+                                                   text-gray-900 dark:text-white
+                                                   placeholder-gray-400 dark:placeholder-gray-500
+                                                   focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent">
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm text-gray-600 dark:text-[#9CA3AF]"
+                                            <span class="text-sm text-gray-600 dark:text-gray-400"
                                                 x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
                                         </td>
                                     </tr>
                                 </template>
                             </template>
+
                             <template x-if="!cargandoMetricas && (!metricasTipos || metricasTipos.length === 0)">
                                 <tr>
-                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-[#6B7280]">
+                                    <td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                         <div class="flex flex-col items-center gap-2">
                                             <i class="fas fa-info-circle text-2xl"></i>
-                                            <span>No hay tipos de tickets disponibles</span>
+                                            <span>No hay datos</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -1684,23 +1700,26 @@
                 </div>
             </div>
 
-            <!-- Footer del Modal -->
-            <div class="px-6 py-4 flex justify-between items-center border-t bg-gray-50 dark:bg-[#1C1F26] border-gray-200 dark:border-[#2A2F3A]">
-                <div class="text-sm text-gray-600 dark:text-[#9CA3AF]">
+            <div class="px-6 py-4 flex justify-between items-center border-t bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
+                <div class="text-sm text-gray-600 dark:text-gray-400">
                     <span x-text="`${metricasTipos.filter(t => t.cambiado).length} cambios pendientes`"></span>
                 </div>
                 <div class="flex gap-3">
-                    <!-- Botón Cancelar -->
                     <button
                         @click="mostrarModalMetricas = false"
-                        class="px-4 py-2 font-medium rounded-lg transition bg-transparent dark:bg-transparent text-gray-700 dark:text-[#9CA3AF] border border-gray-300 dark:border-[#2A2F3A] hover:bg-gray-100 dark:hover:text-[#F3F4F6]">
+                        class="px-4 py-2 font-medium rounded-lg transition border
+                           bg-transparent
+                           text-gray-700 dark:text-gray-300
+                           border-gray-300 dark:border-gray-600
+                           hover:bg-gray-200 dark:hover:bg-gray-700">
                         Cancelar
                     </button>
-                    <!-- Botón Guardar Cambios -->
                     <button
                         @click="guardarMetricas()"
                         :disabled="guardandoMetricas || metricasTipos.filter(t => t.cambiado).length === 0"
-                        class="px-4 py-2 font-medium rounded-lg transition flex items-center gap-2 disabled:cursor-not-allowed bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white disabled:from-gray-400 disabled:to-gray-500 disabled:opacity-50 dark:disabled:bg-[#1C1F26] dark:disabled:text-[#6B7280]">
+                        class="px-4 py-2 font-medium rounded-lg transition flex items-center gap-2 shadow-sm
+                           text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800
+                           disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fas fa-save" :class="{'fa-spin': guardandoMetricas}"></i>
                         <span x-text="guardandoMetricas ? 'Guardando...' : 'Guardar Cambios'"></span>
                     </button>
@@ -1708,7 +1727,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js" defer></script>
 <script>
@@ -2350,6 +2368,8 @@
                             this.ticketTipoID = data.ticket.TipoID ? String(data.ticket.TipoID) : '';
                             this.ticketSubtipoID = data.ticket.SubtipoID ? String(data.ticket.SubtipoID) : '';
                             this.ticketTertipoID = data.ticket.TertipoID ? String(data.ticket.TertipoID) : '';
+                            this.selected.numero = data.ticket.numero || '';  // Actualiza el número con lo que viene del server
+                            this.selected.anydesk = data.ticket.anydesk || '';
                             
                             // Actualizar también el estatus e imagen en selected para el bloqueo visual
                             if (this.selected) {
