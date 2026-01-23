@@ -282,8 +282,7 @@ class TicketsController extends Controller
     public function show($id)
     {
         try {
-            // Es buena práctica cargar la relación aquí
-            $ticket = Tickets::with('empleado')->find($id);
+            $ticket = Tickets::find($id);
 
             if (!$ticket) {
                 return response()->json([
@@ -304,15 +303,6 @@ class TicketsController extends Controller
                     'SubtipoID' => $ticket->SubtipoID,
                     'TertipoID' => $ticket->TertipoID,
                     'imagen' => $ticket->imagen,
-                    
-                    
-                    // Nombre y Correo sí vienen del empleado (usamos operador ternario por seguridad)
-                    'empleado' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin asignar',
-                    'correo' => $ticket->empleado ? $ticket->empleado->Correo : '',
-                    
-                    // Numero y Anydesk vienen directo de la tabla TICKETS
-                    'numero' => $ticket->Numero, 
-                    'anydesk' => $ticket->CodeAnyDesk, 
                 ]
             ]);
         } catch (\Exception $e) {
