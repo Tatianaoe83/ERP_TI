@@ -119,8 +119,44 @@
     .dark .tickets-container ::-webkit-scrollbar-thumb:hover {
         background: #3A3F4A;
     }
-
-    /* Selects nativos en modo oscuro */
+    
+    #editor-mensaje {
+        min-height: 300px;
+    }
+    
+    /* Ocultar textarea cuando TinyMCE está activo - Múltiples selectores para asegurar que funcione */
+    .tox-tinymce ~ textarea#editor-mensaje,
+    .tox-tinymce + textarea#editor-mensaje,
+    textarea#editor-mensaje[style*="display: none"],
+    textarea#editor-mensaje[style*="opacity: 0"] {
+        display: none !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+    
+    /* Ocultar textarea cuando está en el mismo contenedor que TinyMCE */
+    .tox-tinymce {
+        position: relative;
+    }
+    
+    .tox-tinymce + textarea#editor-mensaje,
+    .tox-tinymce ~ textarea#editor-mensaje {
+        display: none !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+    
+    /* Estilos para selects en modo oscuro */
     .dark select {
         background-color: #374151 !important;
         color: #ffffff !important;
@@ -841,10 +877,10 @@
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
-           bg-white dark:bg-[#1A1D24] 
-           border border-transparent dark:border-gray-700"
+            class="w-[95%] md:w-[90%] lg:max-w-[1000px] xl:max-w-[1100px] rounded-2xl overflow-hidden border transition-all duration-300"
+            style="background-color: #1C1F26; border-color: #2A2F3A; border-width: 1px;"
             @click.stop>
+            <div class="grid grid-cols-1 md:grid-cols-[42%_58%] h-[85vh] rounded-2xl overflow-hidden" style="background-color: #1C1F26;">
 
             <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] rounded-2xl overflow-hidden">
 
@@ -856,7 +892,10 @@
                         Propiedades del Ticket
                     </h2>
 
-                    <div class="space-y-5 text-sm flex-1">
+                        <div class="rounded-lg p-5" style="background-color: #1F2937; border: 1px solid #2A2F3A; min-height: 200px;">
+                            <h3 class="text-xs font-semibold uppercase mb-3" style="color: #F3F4F6;">Descripcion de ticket</h3>
+                            <div class="font-medium whitespace-pre-wrap ticket-description leading-relaxed" style="color: #E5E7EB; max-height: 300px; overflow-y: auto;" x-text="selected.descripcion"></div>
+                        </div>
 
                         <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
                             <h3 class="text-xs font-semibold uppercase mb-2 text-gray-500 dark:text-gray-400">
@@ -1303,11 +1342,438 @@
                                                     <span class="text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors
                                          bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200
                                          dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                                                        📎 <span x-text="adjunto.name"></span>
-                                                    </span>
-                                                </template>
-                                            </div>
+                                📎 <span x-text="adjunto.name"></span>
+                            </span>
+                        </template>
+
+                        <!-- Mensaje cuando no hay conversaciones -->
+                        <div x-show="mensajes.length === 0" class="text-center py-8">
+                            <div class="text-sm" style="color: #6B7280;">
+                                <svg class="mx-auto h-12 w-12 mb-4" style="color: #6B7280;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                No hay mensajes aún. Envía una respuesta para iniciar la conversación.
+                            </div>
+                        </div>
+
+                        <!-- Área para escribir nueva respuesta - Estilo Cliente de Correo -->
+                        <div class="rounded-lg" style="background-color: #1F2937; border: 1px solid #2A2F3A;">
+                            <!-- Mensaje informativo cuando está en Pendiente -->
+                            <div x-show="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'" 
+                                 class="p-4" style="background-color: rgba(251, 191, 36, 0.15); border-bottom: 1px solid rgba(251, 191, 36, 0.3);">
+                                <p class="text-sm flex items-center gap-2" style="color: #FBBF24;">
+                                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                    </svg>
+                                    <span>El ticket está en estado "Pendiente". Para enviar mensajes, cambia el estado a "En progreso" en los detalles del ticket.</span>
+                                </p>
+                            </div>
+                            <!-- Encabezado de Composición -->
+                            <div class="p-4" 
+                                 style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;"
+                                 :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
+                                <div class="space-y-3">
+                                    <!-- Campo Para -->
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-sm font-medium w-16 flex-shrink-0" style="color: #6B7280;">Para:</label>
+                                        <input 
+                                            type="email"
+                                            :value="selected.correo || ''"
+                                            readonly
+                                            :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                            class="flex-1 px-3 py-2 rounded-md text-sm focus:outline-none focus:ring-2 disabled:cursor-not-allowed"
+                                            style="background-color: #1F2937; border: 1px solid #2A2F3A; color: #E5E7EB;"
+                                            onfocus="this.style.borderColor='#2563EB'; this.style.ring='1px';"
+                                            onblur="this.style.borderColor='#2A2F3A'; this.style.ring='none';"
+                                            :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''">
+                                        {{-- Botones de Copia y Copia Oculta comentados
+                                        <div class="flex items-center gap-2">
+                                            <button 
+                                                type="button"
+                                                @click="mostrarCc = !mostrarCc"
+                                                class="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100 transition">
+                                                Copia
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                @click="mostrarBcc = !mostrarBcc"
+                                                class="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100 transition">
+                                                Copia Oculta
+                                            </button>
                                         </div>
+                                        --}}
+                                    </div>
+                                    
+                                    {{-- Campos de Copia y Copia Oculta comentados
+                                    <!-- Campo Copia (oculto por defecto) -->
+                                    <div x-show="mostrarCc" x-transition class="flex items-center gap-2">
+                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Copia:</label>
+                                        <input 
+                                            type="email"
+                                            x-model="correoCc"
+                                            placeholder="correo@ejemplo.com"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                    
+                                    <!-- Campo Copia Oculta (oculto por defecto) -->
+                                    <div x-show="mostrarBcc" x-transition class="flex items-center gap-2">
+                                        <label class="text-sm font-medium text-gray-700 w-16 flex-shrink-0">Copia Oculta:</label>
+                                        <input 
+                                            type="email"
+                                            x-model="correoBcc"
+                                            placeholder="correo@ejemplo.com"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                    --}}
+                                    
+                                    <!-- Campo Asunto -->
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-sm font-medium w-16 flex-shrink-0" style="color: #6B7280;">Asunto: <span style="color: #F87171;">*</span></label>
+                                        <input 
+                                            type="text"
+                                            x-model="asuntoCorreo"
+                                            required
+                                            readonly
+                                            :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                            class="flex-1 px-3 py-2 rounded-md text-sm focus:outline-none cursor-not-allowed"
+                                            style="background-color: #1C1F26; border: 1px solid #2A2F3A; color: #9CA3AF;"
+                                            placeholder="Asunto del correo">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {{-- Barra de herramientas personalizada comentada - Quill.js tiene su propia barra de herramientas integrada
+                            <!-- Barra de Herramientas de Formato -->
+                            <div class="border-b border-gray-200 p-2 bg-white flex items-center gap-2 flex-wrap">
+                                <!-- Botones de formato básico -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        @click="aplicarFormato('bold')"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Negrita">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        @click="aplicarFormato('italic')"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Cursiva">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        @click="aplicarFormato('underline')"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Subrayado">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Selector de fuente y tamaño -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <select class="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none">
+                                        <option>Calibri</option>
+                                        <option>Arial</option>
+                                        <option>Times New Roman</option>
+                                        <option>Courier New</option>
+                                    </select>
+                                    <select class="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 focus:outline-none">
+                                        <option>11</option>
+                                        <option>10</option>
+                                        <option>12</option>
+                                        <option>14</option>
+                                        <option>16</option>
+                                        <option>18</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Colores y alineación -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Color de texto">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Resaltar">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M6 14l3 3v5h6v-5l3-3V9H6v5zm5-12h2v3h-2V2zM3.5 5.88L4.88 4.5 7.05 6.67 5.67 8.05 3.5 5.88zm13.45.79l2.58-2.59L21.5 5.88l-2.58 2.59-1.97-1.97zM11 16h2v2h-2v-2z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Alineación -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Alinear izquierda">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Centrar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Alinear derecha">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M3 6h18M3 18h18"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Listas -->
+                                <div class="flex items-center gap-1 border-r border-gray-200 pr-2">
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Lista con viñetas">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                        </svg>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        class="p-1.5 hover:bg-gray-100 rounded transition"
+                                        title="Lista numerada">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                
+                                <!-- Más opciones -->
+                                <button 
+                                    type="button"
+                                    class="p-1.5 hover:bg-gray-100 rounded transition ml-auto"
+                                    title="Más opciones">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            --}}
+                            
+                            <!-- Sección de Adjuntos -->
+                            <div class="p-3"
+                                 style="background-color: #1C1F26; border-bottom: 1px solid #2A2F3A;"
+                                 :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
+                                <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" class="mb-2 p-2 rounded-lg" style="background-color: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3);">
+                                    <p class="text-xs flex items-center gap-2" style="color: #FBBF24;">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                        </svg>
+                                        <span>Este ticket está cerrado. No se pueden agregar nuevos mensajes o adjuntos.</span>
+                                    </p>
+                                </div>
+                                
+                                <!-- Área de Drag and Drop -->
+                                <div 
+                                    id="drag-drop-area"
+                                    :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+                                    class="border-2 border-dashed rounded-lg p-4 transition-all duration-200 mb-2"
+                                    style="background-color: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.3);"
+                                    @dragover.prevent="handleDragOver($event)"
+                                    @dragleave.prevent="handleDragLeave($event)"
+                                    @drop.prevent="handleDrop($event)"
+                                    @click="!((selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) && document.getElementById('adjuntos').click()"
+                                    :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'Arrastra archivos aquí o haz clic para seleccionar')">
+                                    <div class="flex flex-col items-center justify-center gap-2 text-center">
+                                        <svg class="w-8 h-8" style="color: #3B82F6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                        </svg>
+                                        <div>
+                                            <span class="text-sm font-medium" style="color: #3B82F6;">Arrastra archivos aquí o </span>
+                                            <label 
+                                                for="adjuntos"
+                                                class="text-sm font-medium underline cursor-pointer"
+                                                style="color: #3B82F6;"
+                                                @click.stop
+                                                :class="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')) ? 'cursor-not-allowed' : ''">
+                                                haz clic para seleccionar
+                                            </label>
+                                        </div>
+                                        <p class="text-xs" style="color: #6B7280;">PDF, DOC, DOCX, TXT, JPG, PNG, GIF (máx. 10MB por archivo)</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-end mb-2">
+                                    <span x-show="archivosAdjuntos.length > 0" class="text-sm font-medium" style="color: #9CA3AF;">
+                                        <span x-text="archivosAdjuntos.length"></span> archivo<span x-show="archivosAdjuntos.length !== 1">s</span> seleccionado<span x-show="archivosAdjuntos.length !== 1">s</span>
+                                    </span>
+                                </div>
+                                
+                                <!-- Lista visual de archivos adjuntos -->
+                                <div x-show="archivosAdjuntos.length > 0" class="mt-3 space-y-2">
+                                    <template x-for="(archivo, index) in archivosAdjuntos" :key="index">
+                                        <div class="flex items-center gap-3 p-2 rounded-lg border transition" style="background-color: #1F2937; border-color: #2A2F3A;" onmouseover="this.style.backgroundColor='#242933'" onmouseout="this.style.backgroundColor='#1F2937'">
+                                            <!-- Icono según tipo de archivo -->
+                                            <div class="flex-shrink-0">
+                                                <!-- Imagen -->
+                                                <svg x-show="archivo.type && archivo.type.startsWith('image/')" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #22C55E;"
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24"
+                                                     style="display: none;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <!-- PDF -->
+                                                <svg x-show="archivo.type && archivo.type === 'application/pdf'" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #F87171;"
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24"
+                                                     style="display: none;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <!-- Word/Document -->
+                                                <svg x-show="archivo.type && (archivo.type.includes('word') || archivo.type.includes('document') || archivo.name.endsWith('.doc') || archivo.name.endsWith('.docx'))" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #3B82F6;"
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24"
+                                                     style="display: none;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <!-- Genérico -->
+                                                <svg x-show="!archivo.type || (!archivo.type.startsWith('image/') && archivo.type !== 'application/pdf' && !archivo.type.includes('word') && !archivo.type.includes('document') && !archivo.name.endsWith('.doc') && !archivo.name.endsWith('.docx'))" 
+                                                     class="w-6 h-6" 
+                                                     style="color: #9CA3AF;"
+                                                     fill="none" 
+                                                     stroke="currentColor" 
+                                                     viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                            
+                                            <!-- Información del archivo -->
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium truncate" style="color: #E5E7EB;" x-text="archivo.name"></p>
+                                                <p class="text-xs" style="color: #6B7280;" x-text="formatearTamañoArchivo(archivo.size)"></p>
+                                            </div>
+                                            
+                                            <!-- Botón para eliminar -->
+                                            <button 
+                                                type="button"
+                                                @click="eliminarArchivo(index)"
+                                                :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
+                                                class="flex-shrink-0 p-1.5 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                style="color: #F87171;"
+                                                onmouseover="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) this.style.backgroundColor='rgba(248, 113, 113, 0.15)'"
+                                                onmouseout="this.style.backgroundColor='transparent'"
+                                                title="Eliminar archivo">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                                        </div>
+                                    </template>
+                                </div>
+                                
+                                <input 
+                                    type="file" 
+                                    id="adjuntos" 
+                                    name="adjuntos[]" 
+                                    multiple 
+                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                                    class="hidden"
+                                    :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
+                                    @change="manejarArchivosSeleccionados($event)">
+                            </div>
+                            
+                            <!-- Área de Composición del Mensaje -->
+                            <div class="p-4"
+                                 style="background-color: #0F1115;"
+                                 :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'opacity: 0.5;' : ''">
+                                <textarea 
+                                    id="editor-mensaje"
+                                    x-model="nuevoMensaje"
+                                    :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
+                                    class="w-full disabled:cursor-not-allowed rounded-md hidden"
+                                    style="display: none !important; visibility: hidden !important; position: absolute !important; opacity: 0 !important; height: 0 !important; width: 0 !important; overflow: hidden !important; pointer-events: none !important; background-color: #0F1115; border: 1px solid #2A2F3A; color: #E5E7EB; padding: 0.75rem; min-height: 300px;"
+                                    placeholder="Escribe tu mensaje aquí..."
+                                    :style="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado' ? 'background-color: #1C1F26; color: #6B7280;' : ''"></textarea>
+                                
+                                <!-- Información del ticket (mostrada como correo citado) -->
+                                <div class="mt-4 pt-4" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                    <div class="text-xs space-y-1" style="color: #9CA3AF;">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium">De:</span>
+                                            <span class="px-2 py-0.5 rounded" style="background-color: rgba(168, 85, 247, 0.15); color: #A855F7;">Soporte TI</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium">Fecha:</span>
+                                            <span style="color: #E5E7EB;" x-text="new Date().toLocaleString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium">Para:</span>
+                                            <span class="px-2 py-0.5 rounded" style="background-color: rgba(168, 85, 247, 0.15); color: #A855F7;" x-text="selected.correo || 'No disponible'"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium">Asunto:</span>
+                                            <span style="color: #E5E7EB;" x-text="'Ticket #' + (selected.id || '')"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Botón de envío -->
+                                <div class="flex justify-end items-center gap-3 mt-4 pt-4" style="border-top: 1px solid rgba(255, 255, 255, 0.05);">
+                                    <button 
+                                        type="button"
+                                        @click="limpiarEditor()"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
+                                        class="px-4 py-2 rounded-lg transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style="background-color: transparent; color: #9CA3AF;"
+                                        onmouseover="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente'))) this.style.color='#F3F4F6'"
+                                        onmouseout="this.style.color='#9CA3AF'">
+                                        Descartar
+                                    </button>
+                                    <button 
+                                        @click="enviarRespuesta()"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
+                                        class="font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2 disabled:cursor-not-allowed"
+                                        style="background-color: #3B82F6; color: white;"
+                                        onmouseover="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0)) this.style.backgroundColor='#2563EB'"
+                                        onmouseout="if(!(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0)) this.style.backgroundColor='#3B82F6'"
+                                        :style="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0) ? 'background-color: #1C1F26; color: #6B7280;' : ''"
+                                        :title="(selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado') ? 'El ticket está cerrado' : ((selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') ? 'El ticket está en Pendiente. Cambia a En progreso para enviar mensajes' : 'El botón se activará cuando haya contenido en el mensaje y un asunto')">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                        </svg>
+                                        Enviar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
 
                                     </div>
                                 </div>
@@ -2041,12 +2507,20 @@
                         'bullist numlist | outdent indent | ' +
                         'removeformat | link image | code | help',
                     content_style: isDarkMode 
-                        ? 'body { font-family: Arial, sans-serif; font-size: 14px; background-color: #1f2937 !important; color: #ffffff !important; } body * { color: #ffffff !important; }' 
+                        ? 'body { font-family: Arial, sans-serif; font-size: 14px; background-color: #6B7280 !important; color: #111827 !important; } body * { color: #111827 !important; }' 
                         : 'body { font-family: Arial, sans-serif; font-size: 14px; }',
                     language: 'es',
                     placeholder: 'Escribe tu mensaje aquí...',
                     setup: (editor) => {
                         this.tinyMCEInstance = editor;
+                        
+                        // Ocultar el textarea original cuando TinyMCE se inicializa
+                        editor.on('init', () => {
+                            const textareaElement = document.getElementById('editor-mensaje');
+                            if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                                textareaElement.style.display = 'none';
+                            }
+                        });
                         
                         // Sincronizar contenido con Alpine.js en tiempo real
                         editor.on('input', () => {
@@ -2078,6 +2552,17 @@
                         });
                     },
                     init_instance_callback: (editor) => {
+                        // Ocultar el textarea original cuando TinyMCE está completamente inicializado
+                        setTimeout(() => {
+                            const textareaElement = document.getElementById('editor-mensaje');
+                            if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                                textareaElement.style.display = 'none';
+                                textareaElement.style.visibility = 'hidden';
+                                textareaElement.style.position = 'absolute';
+                                textareaElement.style.opacity = '0';
+                            }
+                        }, 100);
+                        
                         // Verificar estado al inicializar y deshabilitar si está cerrado
                         this.$nextTick(() => {
                             this.actualizarEstadoEditor();
@@ -2335,6 +2820,18 @@
                 if (adjuntosInput) {
                     adjuntosInput.value = '';
                 }
+                
+                // Ocultar el textarea original inmediatamente para evitar que aparezcan dos editores
+                this.$nextTick(() => {
+                    const textareaElement = document.getElementById('editor-mensaje');
+                    if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                        textareaElement.style.display = 'none';
+                        textareaElement.style.visibility = 'hidden';
+                        textareaElement.style.position = 'absolute';
+                        textareaElement.style.opacity = '0';
+                    }
+                });
+                
                 // Cargar datos del ticket para el formulario
                 this.cargarDatosTicket(datos.id);
                 this.cargarMensajes();
@@ -2342,6 +2839,17 @@
                 this.iniciarVerificacionMensajes();
                 // Inicializar TinyMCE si no está inicializado
                 this.$nextTick(() => {
+                    // Ocultar textarea nuevamente antes de inicializar TinyMCE
+                    setTimeout(() => {
+                        const textareaElement = document.getElementById('editor-mensaje');
+                        if (textareaElement && textareaElement.tagName === 'TEXTAREA') {
+                            textareaElement.style.display = 'none';
+                            textareaElement.style.visibility = 'hidden';
+                            textareaElement.style.position = 'absolute';
+                            textareaElement.style.opacity = '0';
+                        }
+                    }, 50);
+                    
                     if (!this.tinyMCEInstance) {
                         this.inicializarTinyMCE();
                     } else {
