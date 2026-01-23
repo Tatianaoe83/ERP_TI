@@ -274,6 +274,48 @@
                 overflow-x: auto;
             }
         }
+
+        /* 🔒 Blindaje total para Kanban en DARK */
+        .dark .kanban-root {
+            background-color: #0F1116 !important;
+        }
+
+        .dark .kanban-root .bg-white {
+            background-color: #1C1F26 !important;
+        }
+
+        .dark .kanban-root .bg-gray-100 {
+            background-color: #0F1116 !important;
+        }
+
+        .dark .kanban-root .bg-gray-900 {
+            background-color: #161A22 !important;
+        }
+
+        :root {
+            --bg-table: #ffffff;
+            --bg-head: #f1f5f9;
+            --bg-row: #ffffff;
+            --bg-row-hover: #f3f4f6;
+            --border-soft: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+        }
+
+        .dark {
+            --bg-table: #1c1f26;
+            --bg-head: #242933;
+            --bg-row: #1f2937;
+            --bg-row-hover: #273244;
+            --border-soft: #2a2f3a;
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+        }
+        
+
+
+
+    
     </style>
 
     @stack('styles')
@@ -291,11 +333,9 @@
 </head>
 @livewireScripts
 
-<body class="transition-colors duration-500 ease-in-out">
-
+<body class="bg-gray-100 dark:bg-[#0F1116] text-gray-800 dark:text-gray-200 transition-colors duration-500 ease-in-out">
     <div id="app">
-        <nav class="bg-white h-[60px] md:h-[60px] text-white text-white border-b border-b-gray-300 rounded-md">
-            @include('layouts.header')
+        <nav class="bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
         </nav>
         <div class="flex flex-1 min-h-[calc(100vh-60px)] md:min-h-[calc(100vh-60px)]">
             <!-- Overlay para m?vil -->
@@ -305,7 +345,7 @@
             
             <!-- Sidebar responsivo -->
             <aside id="sidebar" 
-                class="fixed lg:static inset-y-0 left-0 z-50 bg-white w-[280px] lg:w-[300px] border-r border-gray-300 rounded-md dark:!bg-[#101010] transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-in-out h-[calc(100vh-70px)] md:h-[calc(100vh-80px)] lg:h-auto overflow-y-auto">
+                class="fixed lg:static inset-y-0 left-0 z-50 bg-white w-[280px] lg:w-[300px] border-r border-gray-300 rounded-md dark:!bg-[#101010] transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-in-out h-[calc(100vh-70px)]bg-white dark:bg-[#1C1F26] border-r border-gray-300 dark:border-[#2A2F3A] md:h-[calc(100vh-80px)] lg:h-auto overflow-y-auto">
                 @include('layouts.sidebar')
             </aside>
 

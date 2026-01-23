@@ -554,7 +554,7 @@ class PresupuestoController extends Controller
                 $data = ["title" => $request->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
                         "dato" => $request->tipo == 'mens' ? 'Mensual' : 'Anual',
                         'datosheader' => $datosheader,
-                        'GerenciaTb' => $GerenciaTb[0] ?? '',
+                        'GerenciaTb' => $GerenciaTb->first() ?? '',
                         'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
                         'columnaspresup_otrosinsums' => $columnaspresup_otrosinsums,
                         'totalespresup_otrosinsums' => $totalespresup_otrosinsums,
@@ -578,11 +578,15 @@ class PresupuestoController extends Controller
                 $pdf = PDF::loadView('presupuesto.reporte', $data);
                 $pdf->setPaper('A4', 'landscape');
                 $pdf->render();
-                return $pdf->stream('Reporte_Presupuesto_' . $GerenciaTb[0]->NombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.pdf');
+                $gerencia = $GerenciaTb->first();
+                $nombreGerencia = $gerencia ? $gerencia->NombreGerencia : 'Sin_Gerencia';
+                return $pdf->stream('Reporte_Presupuesto_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.pdf');
 
         
        }else{
-                $fileName = 'Reporte_Presupuesto_' . $GerenciaTb[0]->NombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.xlsx';
+                $gerencia = $GerenciaTb->first();
+                $nombreGerencia = $gerencia ? $gerencia->NombreGerencia : 'Sin_Gerencia';
+                $fileName = 'Reporte_Presupuesto_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.xlsx';
                 return Excel::download(new ReportExport($request->GerenciaID, $request->tipo), $fileName);
        }
         
