@@ -23,6 +23,8 @@ class Proyecto extends Model
 
     public $table = 'proyectos';
     
+    protected $primaryKey = 'ProyectoID';
+    
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 

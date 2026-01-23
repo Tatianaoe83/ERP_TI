@@ -310,7 +310,6 @@ document.addEventListener('alpine:init', () => {
     class="bg-white rounded-lg shadow-sm overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200">
         <h2 class="text-xl font-semibold text-gray-800">Solicitudes de Equipos TI</h2>
-        <p class="text-sm text-gray-600 mt-1">Gestión y seguimiento del flujo de aprobación</p>
     </div>
     
     <div class="overflow-x-auto">
@@ -393,7 +392,8 @@ document.addEventListener('alpine:init', () => {
                     $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
                         && ($pasoGerencia && $pasoGerencia->status === 'approved')
                         && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
-                    $puedeCotizar = $todasFirmaron && auth()->check();
+                    $puedeCotizar = $todasFirmaron && auth()->check() && $estatusDisplay !== 'Aprobada';
+                    $puedeSubirFactura = $estatusDisplay === 'Aprobada' && auth()->check();
                     
                     $colorEstatus = match($estatusDisplay) {
                         'Pendiente' => 'bg-amber-50 text-amber-800 border border-amber-200',
@@ -502,6 +502,12 @@ document.addEventListener('alpine:init', () => {
                                 <i class="fas fa-file-invoice-dollar mr-1"></i> Cotizar
                             </button>
                             @endif
+                            @if($puedeSubirFactura)
+                            <span 
+                                class="text-emerald-600 text-sm font-medium cursor-default">
+                                <i class="fas fa-file-invoice mr-1"></i> Factura
+                            </span>
+                            @endif
                             @if($puedeAprobar)
                             <div class="flex gap-1" @click.stop>
                                 <button 
@@ -591,8 +597,8 @@ document.addEventListener('alpine:init', () => {
                                 <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.puesto?.NombrePuesto || 'N/A'"></p>
                             </div>
                             <div>
-                                <label class="text-xs font-medium text-gray-500">Proyecto</label>
-                                <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.Proyecto || 'N/A'"></p>
+                                <label class="text-xs font-medium text-gray-500">Ubicación</label>
+                                <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.ProyectoNombre || solicitudSeleccionada?.Proyecto || 'N/A'"></p>
                             </div>
                         </div>
                     </div>
@@ -634,7 +640,7 @@ document.addEventListener('alpine:init', () => {
                                     <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.fechaCreacion || 'N/A'"></p>
                                 </div>
                             </div>
-                            <div class="mt-4 flex flex-wrap gap-2" x-show="solicitudSeleccionada?.puedeCotizar">
+                            <div class="mt-4 flex flex-wrap gap-2" x-show="solicitudSeleccionada?.puedeCotizar && solicitudSeleccionada?.estatusDisplay !== 'Aprobada'">
                                 <button @click="abrirModalCotizacion(solicitudSeleccionada?.SolicitudID)"
                                         class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition">
                                     <i class="fas fa-file-invoice-dollar"></i>
@@ -698,10 +704,14 @@ document.addEventListener('alpine:init', () => {
                             <template x-for="(cotizacion, index) in solicitudSeleccionada?.cotizaciones || []" :key="index">
                                 <div class="p-4 rounded-xl border-2 transition"
                                      :class="cotizacion.Estatus === 'Seleccionada' ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200 hover:border-sky-200'">
-                                    <div class="grid grid-cols-3 gap-4">
+                                    <div class="grid grid-cols-4 gap-4">
                                         <div>
                                             <label class="text-xs font-medium text-gray-500">Proveedor</label>
                                             <p class="text-sm font-semibold text-gray-900" x-text="cotizacion.Proveedor"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">NO. PARTE</label>
+                                            <p class="text-sm font-semibold text-gray-900" x-text="cotizacion.NumeroParte || 'N/A'"></p>
                                         </div>
                                         <div>
                                             <label class="text-xs font-medium text-gray-500">Precio</label>
@@ -717,7 +727,7 @@ document.addEventListener('alpine:init', () => {
                                                }"
                                                x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : cotizacion.Estatus"></p>
                                         </div>
-                                        <div class="col-span-3 flex flex-wrap items-center justify-between gap-2">
+                                        <div class="col-span-4 flex flex-wrap items-center justify-between gap-2">
                                             <div class="flex-1 min-w-0">
                                                 <label class="text-xs font-medium text-gray-500">Descripción</label>
                                                 <p class="text-sm text-gray-700" x-text="cotizacion.Descripcion"></p>
@@ -743,10 +753,14 @@ document.addEventListener('alpine:init', () => {
                         <div class="space-y-3">
                             <template x-for="(cotizacion, index) in solicitudSeleccionada?.cotizaciones || []" :key="index">
                                 <div class="bg-gray-50 p-4 rounded-lg border">
-                                    <div class="grid grid-cols-3 gap-4">
+                                    <div class="grid grid-cols-4 gap-4">
                                         <div>
                                             <label class="text-xs font-medium text-gray-500">Proveedor</label>
                                             <p class="text-sm text-gray-900 font-medium" x-text="cotizacion.Proveedor"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">NO. PARTE</label>
+                                            <p class="text-sm text-gray-900 font-medium" x-text="cotizacion.NumeroParte || 'N/A'"></p>
                                         </div>
                                         <div>
                                             <label class="text-xs font-medium text-gray-500">Precio</label>
@@ -762,7 +776,7 @@ document.addEventListener('alpine:init', () => {
                                                }"
                                                x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : cotizacion.Estatus"></p>
                                         </div>
-                                        <div class="col-span-3">
+                                        <div class="col-span-4">
                                             <label class="text-xs font-medium text-gray-500">Descripción</label>
                                             <p class="text-sm text-gray-900" x-text="cotizacion.Descripcion"></p>
                                         </div>
@@ -772,17 +786,7 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     </div>
 
-                    <!-- Subir factura (cuando Aprobado) -->
-                    <div class="mb-6" x-show="solicitudSeleccionada?.puedeSubirFactura">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-file-invoice text-emerald-600"></i>
-                            Factura
-                        </h4>
-                        <p class="text-sm text-gray-600 mb-2">La solicitud está aprobada. Puedes subir la factura correspondiente.</p>
-                        <a href="{{ route('facturas.index') }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition">
-                            <i class="fas fa-upload"></i> Ir a Facturas
-                        </a>
-                    </div>
+                  
                 </div>
             </div>
         </div>

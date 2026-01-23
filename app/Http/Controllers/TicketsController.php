@@ -11,6 +11,9 @@ use App\Models\Tertipos;
 use App\Models\Subtipos;
 use App\Models\Tipoticket;
 use App\Models\SolicitudCotizacionToken;
+use App\Models\Proyecto;
+use App\Models\Gerencia;
+use App\Models\Obras;
 use App\Services\SimpleEmailService;
 use App\Services\SolicitudAprobacionEmailService;
 use App\Services\TicketNotificationService;
@@ -369,7 +372,7 @@ class TicketsController extends Controller
             $estatusDisplay = 'Pendiente';
         }
 
-        $puedeCotizar = $todasFirmaron && auth()->check();
+        $puedeCotizar = $todasFirmaron && auth()->check() && $estatusDisplay !== 'Aprobada';
         $puedeElegirCotizacion = $todasFirmaron && $tieneCotizaciones && !$tieneSeleccionada
             && auth()->check() && auth()->user()->can('aprobar-solicitudes-gerencia');
         $puedeSubirFactura = ($estatusReal === 'Aprobado' || $tieneSeleccionada) && auth()->check();
@@ -401,12 +404,16 @@ class TicketsController extends Controller
             ];
         }
 
+        // Obtener nombre completo del proyecto basado en la nomenclatura
+        $proyectoNombre = $this->obtenerNombreProyecto($solicitud->Proyecto);
+        
         return response()->json([
             'SolicitudID' => $solicitud->SolicitudID,
             'Motivo' => $solicitud->Motivo,
             'DescripcionMotivo' => $solicitud->DescripcionMotivo,
             'Requerimientos' => $solicitud->Requerimientos,
             'Proyecto' => $solicitud->Proyecto,
+            'ProyectoNombre' => $proyectoNombre,
             'estatusReal' => $estatusReal,
             'estatusDisplay' => $estatusDisplay,
             'puedeCotizar' => $puedeCotizar,
@@ -436,6 +443,8 @@ class TicketsController extends Controller
                     'Estatus' => $cotizacion->Estatus,
                     'TiempoEntrega' => $cotizacion->TiempoEntrega,
                     'Observaciones' => $cotizacion->Observaciones,
+                    'NumeroPropuesta' => $cotizacion->NumeroPropuesta,
+                    'NumeroParte' => $cotizacion->NumeroParte ?? '',
                 ];
             })->values(),
         ]);
@@ -470,7 +479,7 @@ class TicketsController extends Controller
             if (!isset($productosAgrupados[$key])) {
                 $productosAgrupados[$key] = [
                     'cantidad' => 1,
-                    'numeroParte' => '',
+                    'numeroParte' => $cotizacion->NumeroParte ?? '',
                     'descripcion' => $cotizacion->Descripcion,
                     'unidad' => 'PIEZA',
                     'precios' => [],
@@ -552,6 +561,7 @@ class TicketsController extends Controller
                                     : null,
                                 'Estatus' => 'Pendiente',
                                 'NumeroPropuesta' => $prodIndex + 1,
+                                'NumeroParte' => isset($producto['numero_parte']) ? $producto['numero_parte'] : null,
                             ]);
                         }
                     }
@@ -2648,5 +2658,56 @@ class TicketsController extends Controller
                 'total' => 0
             ], 500);
         }
+    }
+
+    /**
+     * Obtener el nombre completo del proyecto basado en la nomenclatura
+     * Formato: PREFIJO + ID (ej: PR2, GE5, OB10)
+     * PR = Proyecto, GE = Gerencia, OB = Obra
+     */
+    private function obtenerNombreProyecto($proyecto)
+    {
+        if (empty($proyecto)) {
+            return 'N/A';
+        }
+
+        // Extraer prefijo y ID
+        if (preg_match('/^([A-Z]{2})(\d+)$/i', $proyecto, $matches)) {
+            $prefijo = strtoupper($matches[1]);
+            $id = (int) $matches[2];
+
+            try {
+                switch ($prefijo) {
+                    case 'PR':
+                        // Buscar en tabla proyectos
+                        $proyectoModel = Proyecto::find($id);
+                        if ($proyectoModel) {
+                            return $proyectoModel->NombreProyecto ?? $proyectoModel->Proyecto ?? $proyecto;
+                        }
+                        break;
+                    
+                    case 'GE':
+                        // Buscar en tabla gerencia
+                        $gerencia = Gerencia::find($id);
+                        if ($gerencia) {
+                            return $gerencia->NombreGerencia ?? $proyecto;
+                        }
+                        break;
+                    
+                    case 'OB':
+                        // Buscar en tabla obras
+                        $obra = Obras::find($id);
+                        if ($obra) {
+                            return $obra->NombreObra ?? $proyecto;
+                        }
+                        break;
+                }
+            } catch (\Exception $e) {
+                Log::warning("Error al obtener nombre de proyecto para '{$proyecto}': " . $e->getMessage());
+            }
+        }
+
+        // Si no se pudo parsear o no se encontró, retornar el valor original
+        return $proyecto;
     }
 }

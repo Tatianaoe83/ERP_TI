@@ -6,6 +6,9 @@ use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Models\Solicitud;
 use App\Models\Empleados;
+use App\Models\Proyecto;
+use App\Models\Gerencia;
+use App\Models\Obras;
 use App\Services\SolicitudAprobacionEmailService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\RedirectResponse;
@@ -81,12 +84,19 @@ class SolicitudAprobacionController extends Controller
 
         $canDecide = ! $prevNotApproved && $step->status === 'pending';
 
+        // Obtener nombre completo del proyecto basado en la nomenclatura
+        // Si hay una obra relacionada directamente, priorizarla
+       
+        $proyectoNombre = $this->obtenerNombreProyecto($solicitud->Proyecto);
+        
+       
         return view('solicitudes.revision-publica', [
             'solicitud' => $solicitud,
             'step'      => $step,
             'tokenRow'  => $tokenRow,
             'canDecide' => $canDecide,
             'waitingFor' => $prevNotApproved ? $this->waitingLabel($solicitud, $step) : null,
+            'proyectoNombre' => $proyectoNombre,
         ]);
     }
 
@@ -112,7 +122,7 @@ class SolicitudAprobacionController extends Controller
         'administracion' => 'Administración',
     ];
 
-    public function decide(Request $request, string $token): RedirectResponse
+    public function decide(Request $request, string $token)
     {
         $data = $request->validate([
             'decision' => 'required|in:approved,rejected',
@@ -123,12 +133,32 @@ class SolicitudAprobacionController extends Controller
 
         try {
             DB::transaction(function () use ($data, $token, &$emailRevisionData) {
+                // Buscar el token sin filtrar por activo para poder detectar el motivo
                 $tokenRow = SolicitudTokens::query()
-                    ->active()
                     ->where('token', $token)
                     ->lockForUpdate()
                     ->with(['approvalStep', 'approvalStep.solicitud', 'approvalStep.approverEmpleado'])
-                    ->firstOrFail();
+                    ->first();
+                
+                // Si no existe el token
+                if (!$tokenRow) {
+                    throw new \RuntimeException('Token no encontrado');
+                }
+                
+                // Verificar si el token está usado
+                if ($tokenRow->used_at) {
+                    throw new \RuntimeException('Este enlace ya fue utilizado para firmar la solicitud');
+                }
+                
+                // Verificar si el token está revocado
+                if ($tokenRow->revoked_at) {
+                    throw new \RuntimeException('Este enlace fue revocado. La aprobación fue transferida a otra persona');
+                }
+                
+                // Verificar si el token expiró
+                if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
+                    throw new \RuntimeException('Este enlace ha expirado. El tiempo límite para revisar esta solicitud ha finalizado');
+                }
 
                 $step = $tokenRow->approvalStep;
                 $solicitud = $step->solicitud;
@@ -202,18 +232,79 @@ class SolicitudAprobacionController extends Controller
                 );
             }
 
+            // Si es una petición AJAX, retornar JSON
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Decisión registrada correctamente.'
+                ]);
+            }
+            
             return redirect()
-                ->route('solicitudes.public.decide', ['token' => $token])
+                ->route('solicitudes.public.show', ['token' => $token])
                 ->with('swal_success', 'Decisión registrada correctamente.');
         } catch (ModelNotFoundException $e) {
-            return redirect()
-                ->route('solicitudes.public.decide', ['token' => $token])
-                ->with('swal_error', 'El enlace no es válido, ya expiró o ya fue usado.');
+            return $this->handleTokenError($request, $token, 'El enlace no es válido, ya expiró o ya fue usado.');
         } catch (\Throwable $e) {
+            $message = $e->getMessage();
+            
+            // Si el error es relacionado con token expirado/usado/revocado, mostrar vista de token inválido
+            if (str_contains($message, 'expirado') || 
+                str_contains($message, 'utilizado') || 
+                str_contains($message, 'revocado') ||
+                str_contains($message, 'no encontrado')) {
+                return $this->handleTokenError($request, $token, $message);
+            }
+            
+            // Si es una petición AJAX, retornar JSON
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message ?: 'Ocurrió un error al registrar la decisión.'
+                ], 400);
+            }
+            
             return redirect()
-                ->route('solicitudes.public.decide', ['token' => $token])
-                ->with('swal_error', $e->getMessage() ?: 'Ocurrió un error al registrar la decisión.');
+                ->route('solicitudes.public.show', ['token' => $token])
+                ->with('swal_error', $message ?: 'Ocurrió un error al registrar la decisión.');
         }
+    }
+    
+    /**
+     * Manejar errores de token y mostrar vista apropiada
+     */
+    private function handleTokenError(Request $request, string $token, string $message)
+    {
+        // Buscar el token para obtener información adicional
+        $tokenRow = SolicitudTokens::where('token', $token)->first();
+        
+        $tokenInfo = [
+            'razon' => $message,
+        ];
+        
+        if ($tokenRow) {
+            if ($tokenRow->used_at) {
+                $tokenInfo['fecha_usado'] = $tokenRow->used_at->translatedFormat('d M Y, H:i');
+            }
+            if ($tokenRow->revoked_at) {
+                $tokenInfo['fecha_usado'] = $tokenRow->revoked_at->translatedFormat('d M Y, H:i');
+            }
+            if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
+                $tokenInfo['fecha_expiracion'] = $tokenRow->expires_at->translatedFormat('d M Y, H:i');
+            }
+        }
+        
+        // Si es una petición AJAX, retornar JSON con indicador de token expirado
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+                'token_expired' => true
+            ], 401);
+        }
+        
+        // Retornar vista de token inválido
+        return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
     }
 
     /**
@@ -345,12 +436,32 @@ class SolicitudAprobacionController extends Controller
 
         try {
             $nuevoToken = DB::transaction(function () use ($data, $token, &$emailTransferData) {
+                // Buscar el token sin filtrar por usado para poder detectar el motivo
                 $tokenRow = SolicitudTokens::query()
                     ->where('token', $token)
-                    ->whereNull('used_at')
                     ->lockForUpdate()
                     ->with(['approvalStep', 'approvalStep.solicitud'])
-                    ->firstOrFail();
+                    ->first();
+                
+                // Si no existe el token
+                if (!$tokenRow) {
+                    throw new \RuntimeException('Token no encontrado');
+                }
+                
+                // Verificar si el token está usado
+                if ($tokenRow->used_at) {
+                    throw new \RuntimeException('Este enlace ya fue utilizado para firmar la solicitud');
+                }
+                
+                // Verificar si el token está revocado
+                if ($tokenRow->revoked_at) {
+                    throw new \RuntimeException('Este enlace fue revocado. La aprobación fue transferida a otra persona');
+                }
+                
+                // Verificar si el token expiró
+                if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
+                    throw new \RuntimeException('Este enlace ha expirado. El tiempo límite para revisar esta solicitud ha finalizado');
+                }
 
                 $step = $tokenRow->approvalStep;
                 $solicitud = $step->solicitud;
@@ -412,18 +523,18 @@ class SolicitudAprobacionController extends Controller
                 ->route('solicitudes.public.show', ['token' => $nuevoToken])
                 ->with('swal_success', 'La aprobación ha sido transferida correctamente. El nuevo aprobador recibirá un enlace para revisar la solicitud.');
         } catch (ModelNotFoundException $e) {
-            $message = 'El enlace no es válido, ya expiró o ya fue usado.';
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $message,
-                ], 404);
-            }
-            return redirect()
-                ->route('solicitudes.public.show', ['token' => $token])
-                ->with('swal_error', $message);
+            return $this->handleTokenError($request, $token, 'El enlace no es válido, ya expiró o ya fue usado.');
         } catch (\Throwable $e) {
             $message = $e->getMessage() ?: 'Ocurrió un error al transferir la aprobación.';
+            
+            // Si el error es relacionado con token expirado/usado/revocado, mostrar vista de token inválido
+            if (str_contains($message, 'expirado') || 
+                str_contains($message, 'utilizado') || 
+                str_contains($message, 'revocado') ||
+                str_contains($message, 'no encontrado')) {
+                return $this->handleTokenError($request, $token, $message);
+            }
+            
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -445,20 +556,84 @@ class SolicitudAprobacionController extends Controller
         $stage = $request->get('stage', '');
         $excludeId = $request->get('exclude_id', null);
 
+        // Palabras clave para filtrar puestos
+        $puestosKeywords = ['coordinador', 'jefe', 'gerente', 'director'];
+
         $empleados = Empleados::query()
-            ->where('Estado', true)
+            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->where('empleados.Estado', true)
+            ->where('empleados.tipo_persona', 'FISICA')
+            ->where(function ($q) use ($puestosKeywords) {
+                foreach ($puestosKeywords as $keyword) {
+                    $q->orWhere('puestos.NombrePuesto', 'like', '%' . $keyword . '%');
+                }
+            })
             ->when($excludeId, function ($q) use ($excludeId) {
-                $q->where('EmpleadoID', '!=', $excludeId);
+                $q->where('empleados.EmpleadoID', '!=', $excludeId);
             })
             ->when($query, function ($q) use ($query) {
-                $q->where('NombreEmpleado', 'like', '%' . $query . '%')
-                  ->orWhere('Correo', 'like', '%' . $query . '%');
+                $q->where(function ($subQ) use ($query) {
+                    $subQ->where('empleados.NombreEmpleado', 'like', '%' . $query . '%')
+                         ->orWhere('empleados.Correo', 'like', '%' . $query . '%');
+                });
             })
-            ->select('EmpleadoID', 'NombreEmpleado', 'Correo')
-            ->orderBy('NombreEmpleado')
-            ->limit(20)
+            ->select('empleados.EmpleadoID', 'empleados.NombreEmpleado', 'empleados.Correo')
+            ->orderBy('empleados.NombreEmpleado')
             ->get();
 
         return response()->json($empleados);
+    }
+
+    /**
+     * Obtener el nombre completo del proyecto basado en la nomenclatura
+     * Formato: PREFIJO + ID (ej: PR2, GE5, OB10)
+     * PR = Proyecto, GE = Gerencia, OB = Obra
+     */
+    private function obtenerNombreProyecto($proyecto)
+    {
+        if (empty($proyecto)) {
+            return 'N/A';
+        }
+
+        // Extraer prefijo y ID
+        if (preg_match('/^([A-Z]{2})(\d+)$/i', $proyecto, $matches)) {
+            $prefijo = strtoupper($matches[1]);
+            $id = (int) $matches[2];
+
+         
+
+            try {
+                switch ($prefijo) {
+                    case 'PR':
+                        // Buscar en tabla proyectos
+                        $proyectoModel = Proyecto::find($id);
+                        if ($proyectoModel) {
+                            return $proyectoModel->NombreProyecto ?? $proyectoModel->Proyecto ?? $proyecto;
+                        }
+                        break;
+                    
+                    case 'GE':
+                        // Buscar en tabla gerencia
+                        $gerencia = Gerencia::find($id);
+                        if ($gerencia) {
+                            return $gerencia->NombreGerencia ?? $proyecto;
+                        }
+                        break;
+                    
+                    case 'OB':
+                        // Buscar en tabla obras
+                        $obra = Obras::find($id);
+                        if ($obra) {
+                            return $obra->NombreObra ?? $proyecto;
+                        } 
+                        break;
+                }
+            } catch (\Exception $e) {
+              
+            }
+        }
+
+        // Si no se pudo parsear o no se encontró, retornar el valor original
+        return $proyecto;
     }
 }

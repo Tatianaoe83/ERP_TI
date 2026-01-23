@@ -23,7 +23,8 @@ class Cotizacion extends Model
         'TiempoEntrega',
         'Observaciones',
         'Estatus',
-        'NumeroPropuesta'
+        'NumeroPropuesta',
+        'NumeroParte'
     ];
 
     protected $casts = [
