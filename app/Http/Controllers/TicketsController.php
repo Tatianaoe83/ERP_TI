@@ -2544,7 +2544,7 @@ class TicketsController extends Controller
                 ->where(function($q) {
                     $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
                 })
-                ->with(['approvalStep.solicitud'])
+                ->with(['approvalStep.solicitud.cotizaciones'])
                 ->first();
 
             if (!$tokenRow) {
@@ -2568,6 +2568,39 @@ class TicketsController extends Controller
                     $query->orderBy('Proveedor')->orderBy('Precio');
                 }
             ]);
+
+            // Verificar si ya se seleccionó un ganador
+            $tieneGanadorSeleccionado = false;
+            $cotizacionGanadora = null;
+            
+            // Verificar si hay una cotización con estatus "Seleccionada"
+            if ($solicitud->cotizaciones) {
+                $cotizacionGanadora = $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->first();
+                if ($cotizacionGanadora) {
+                    $tieneGanadorSeleccionado = true;
+                }
+            }
+            
+            // También verificar si la solicitud tiene estatus "Aprobado"
+            if ($solicitud->Estatus === 'Aprobado') {
+                $tieneGanadorSeleccionado = true;
+            }
+
+            // Si ya se seleccionó un ganador, mostrar vista de token inválido
+            if ($tieneGanadorSeleccionado) {
+                $tokenInfo = [
+                    'razon' => 'Ya se ha seleccionado un ganador para esta solicitud. El proceso de elección ya fue completado.',
+                ];
+                
+                if ($cotizacionGanadora) {
+                    $tokenInfo['proveedor_ganador'] = $cotizacionGanadora->Proveedor;
+                    $tokenInfo['precio_ganador'] = number_format($cotizacionGanadora->Precio, 2, '.', ',');
+                }
+                
+                Log::info("Intento de acceder a elegir ganador con token {$token} para solicitud #{$solicitud->SolicitudID} que ya tiene ganador seleccionado");
+                
+                return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
+            }
 
             // Verificar que haya cotizaciones
             if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {

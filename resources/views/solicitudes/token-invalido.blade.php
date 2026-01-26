@@ -92,6 +92,22 @@
                         <strong>Razón:</strong> {{ $tokenInfo['razon'] }}
                     </p>
                     @endif
+                    @if(isset($tokenInfo['proveedor_ganador']))
+                    <div class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-trophy text-green-600 dark:text-green-400"></i>
+                            <span class="text-sm font-semibold text-green-800 dark:text-green-200">Ganador Seleccionado</span>
+                        </div>
+                        <p class="text-sm text-green-700 dark:text-green-300">
+                            <strong>Proveedor:</strong> {{ $tokenInfo['proveedor_ganador'] }}
+                        </p>
+                        @if(isset($tokenInfo['precio_ganador']))
+                        <p class="text-sm text-green-700 dark:text-green-300">
+                            <strong>Precio:</strong> ${{ $tokenInfo['precio_ganador'] }}
+                        </p>
+                        @endif
+                    </div>
+                    @endif
                     @if(isset($tokenInfo['fecha_usado']))
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         <strong>Fecha de uso:</strong> {{ $tokenInfo['fecha_usado'] }}

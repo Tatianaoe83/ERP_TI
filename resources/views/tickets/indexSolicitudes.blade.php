@@ -12,6 +12,10 @@ document.addEventListener('alpine:init', () => {
         productos: [],
         tieneCotizacionesGuardadas: false,
         tieneCotizacionesEnviadas: false,
+        // Filtros
+        filtros: {
+            estatus: ''
+        },
         abrirModal(id) {
             this.cargando = true;
             this.modalAbierto = true;
@@ -328,6 +332,35 @@ document.addEventListener('alpine:init', () => {
         <h2 class="text-xl font-semibold text-gray-800">Solicitudes de Equipos TI</h2>
     </div>
     
+    <!-- Filtros -->
+    <div class="mb-4 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-filter text-gray-500"></i>
+            <h3 class="text-sm font-semibold text-gray-700">Filtros</h3>
+            <button 
+                @click="filtros = { estatus: '' }"
+                x-show="filtros.estatus"
+                class="ml-auto text-xs text-gray-600 hover:text-gray-800 underline">
+                Limpiar filtro
+            </button>
+        </div>
+        <div class="flex gap-3">
+            <div class="flex-1 max-w-xs">
+                <label class="block text-xs font-medium text-gray-700 mb-1">Estatus</label>
+                <select 
+                    x-model="filtros.estatus"
+                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Todos los estatus</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En revisión">En revisión</option>
+                    <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
+                    <option value="Aprobada">Aprobada</option>
+                    <option value="Rechazada">Rechazada</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -442,7 +475,9 @@ document.addEventListener('alpine:init', () => {
                         }
                     }
                 @endphp
-                <tr class="hover:bg-gray-50 transition">
+                <tr 
+                    class="hover:bg-gray-50 transition"
+                    x-show="!filtros.estatus || filtros.estatus === '{{ $estatusDisplay }}'">
                     <td class="px-4 py-3 whitespace-nowrap">
                         <div class="text-sm font-semibold text-gray-900">#{{ $solicitud->SolicitudID }}</div>
                     </td>
