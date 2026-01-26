@@ -11,6 +11,7 @@ document.addEventListener('alpine:init', () => {
         proveedores: ['INTERCOMPRAS', 'PCEL', 'ABASTEO'],
         productos: [],
         tieneCotizacionesGuardadas: false,
+        tieneCotizacionesEnviadas: false,
         abrirModal(id) {
             this.cargando = true;
             this.modalAbierto = true;
@@ -41,6 +42,7 @@ document.addEventListener('alpine:init', () => {
             this.solicitudCotizacionId = null;
             this.productos = [];
             this.tieneCotizacionesGuardadas = false;
+            this.tieneCotizacionesEnviadas = false;
         },
         agregarProveedor() {
             const nombre = prompt('Nombre del proveedor:');
@@ -107,6 +109,7 @@ document.addEventListener('alpine:init', () => {
                         this.agregarProducto();
                         this.tieneCotizacionesGuardadas = false;
                     }
+                    this.tieneCotizacionesEnviadas = data.tieneCotizacionesEnviadas || false;
                     this.cargandoCotizaciones = false;
                 })
                 .catch(error => {
@@ -115,6 +118,7 @@ document.addEventListener('alpine:init', () => {
                         this.agregarProducto();
                     }
                     this.tieneCotizacionesGuardadas = false;
+                    this.tieneCotizacionesEnviadas = false;
                     this.cargandoCotizaciones = false;
                 });
         },
@@ -379,6 +383,8 @@ document.addEventListener('alpine:init', () => {
                         $estatusDisplay = 'Rechazada';
                     } elseif ($estatusReal === 'Aprobado' || ($solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty())) {
                         $estatusDisplay = 'Aprobada';
+                    } elseif ($estatusReal === 'Cotizaciones Enviadas') {
+                        $estatusDisplay = 'Cotizaciones Enviadas';
                     } elseif ($estatusReal === 'Completada') {
                         $estatusDisplay = 'En revisión';
                     } elseif ($estatusReal === 'Pendiente Cotización TI') {
@@ -400,6 +406,7 @@ document.addEventListener('alpine:init', () => {
                         'Rechazada' => 'bg-red-50 text-red-800 border border-red-200',
                         'En revisión' => 'bg-sky-50 text-sky-800 border border-sky-200',
                         'Aprobada' => 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+                        'Cotizaciones Enviadas' => 'bg-blue-50 text-blue-800 border border-blue-200',
                         default => 'bg-gray-50 text-gray-700 border border-gray-200'
                     };
                     
@@ -631,7 +638,8 @@ document.addEventListener('alpine:init', () => {
                                            'text-red-600': (solicitudSeleccionada?.estatusDisplay || '') === 'Rechazada',
                                            'text-sky-600': (solicitudSeleccionada?.estatusDisplay || '') === 'En revisión',
                                            'text-emerald-600': (solicitudSeleccionada?.estatusDisplay || '') === 'Aprobada',
-                                           'text-gray-900': !['Pendiente','Rechazada','En revisión','Aprobada'].includes(solicitudSeleccionada?.estatusDisplay || '')
+                                           'text-blue-600': (solicitudSeleccionada?.estatusDisplay || '') === 'Cotizaciones Enviadas',
+                                           'text-gray-900': !['Pendiente','Rechazada','En revisión','Aprobada','Cotizaciones Enviadas'].includes(solicitudSeleccionada?.estatusDisplay || '')
                                        }"
                                        x-text="solicitudSeleccionada?.estatusDisplay || 'Pendiente'"></p>
                                 </div>
@@ -640,7 +648,7 @@ document.addEventListener('alpine:init', () => {
                                     <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.fechaCreacion || 'N/A'"></p>
                                 </div>
                             </div>
-                            <div class="mt-4 flex flex-wrap gap-2" x-show="solicitudSeleccionada?.puedeCotizar && solicitudSeleccionada?.estatusDisplay !== 'Aprobada'">
+                            <div class="mt-4 flex flex-wrap gap-2" x-show="solicitudSeleccionada?.puedeCotizar && solicitudSeleccionada?.estatusDisplay !== 'Aprobada' && solicitudSeleccionada?.estatusDisplay !== 'Cotizaciones Enviadas'">
                                 <button @click="abrirModalCotizacion(solicitudSeleccionada?.SolicitudID)"
                                         class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition">
                                     <i class="fas fa-file-invoice-dollar"></i>
@@ -822,6 +830,17 @@ document.addEventListener('alpine:init', () => {
                 </div>
                 
                 <div x-show="!cargandoCotizaciones" style="display: none;">
+                    <!-- Alerta de cotizaciones enviadas -->
+                    <div x-show="tieneCotizacionesEnviadas || solicitudSeleccionada?.estatusDisplay === 'Cotizaciones Enviadas'" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-info-circle text-blue-500"></i>
+                            <p class="text-sm text-blue-800">
+                                <strong>Cotizaciones enviadas:</strong> Ya se han enviado cotizaciones al gerente para su revisión. 
+                                Puedes agregar o editar nuevas cotizaciones si es necesario.
+                            </p>
+                        </div>
+                    </div>
+                    
                     <!-- Controles de Proveedores -->
                     <div class="mb-4 flex justify-between items-center">
                         <div class="flex items-center gap-2">

@@ -146,6 +146,42 @@ class SolicitudAprobacionEmailService
 HTML;
     }
 
+    /**
+     * Notificar que se eligió un ganador y se puede proceder a la compra.
+     */
+    public function enviarGanadorSeleccionado(Solicitud $solicitud, \App\Models\Cotizacion $cotizacionGanadora, string $correoDestinatario = 'tordonez@proser.com.mx'): bool
+    {
+        if (empty($correoDestinatario)) {
+            Log::warning("SolicitudAprobacionEmailService: correo destinatario vacío para notificación de ganador seleccionado.");
+            return false;
+        }
+
+        $asunto = "Ganador seleccionado – Proceder a compra – Solicitud #{$solicitud->SolicitudID}";
+        $contenido = $this->construirContenidoGanadorSeleccionado($solicitud, $cotizacionGanadora);
+
+        try {
+            $mail = new PHPMailer(true);
+            $this->configurarMailer($mail);
+
+            $fromAddress = config('email_tickets.smtp.from_address', config('mail.from.address'));
+            $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
+
+            $mail->setFrom($fromAddress, $nombreSoporte);
+            $mail->addAddress($correoDestinatario);
+            $mail->isHTML(true);
+            $mail->CharSet = 'UTF-8';
+            $mail->Subject = $asunto;
+            $mail->Body = $contenido;
+            $mail->send();
+
+            Log::info("Email ganador seleccionado enviado para solicitud #{$solicitud->SolicitudID} a {$correoDestinatario}");
+            return true;
+        } catch (Exception $e) {
+            Log::error("Error enviando email ganador seleccionado solicitud #{$solicitud->SolicitudID}: " . $e->getMessage());
+            return false;
+        }
+    }
+
     private function construirContenidoCotizacionesListas(Solicitud $solicitud, string $url, string $nombreGerente): string
     {
         $empleado = $solicitud->empleadoid;
@@ -169,6 +205,54 @@ HTML;
             <a href="{$url}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Ver propuestas y elegir ganador</a>
         </p>
         <p style="font-size: 12px; color: #6b7280;">Si el enlace no funciona, copia y pega en tu navegador: {$url}</p>
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+        <p style="font-size: 12px; color: #9ca3af;">Este correo fue enviado automáticamente por el Sistema de Solicitudes.</p>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
+    private function construirContenidoGanadorSeleccionado(Solicitud $solicitud, \App\Models\Cotizacion $cotizacion): string
+    {
+        $empleado = $solicitud->empleadoid;
+        $nombreSolicitante = $empleado ? $empleado->NombreEmpleado : 'N/A';
+        $motivo = e($solicitud->Motivo ?? 'N/A');
+        $proveedor = e($cotizacion->Proveedor ?? 'N/A');
+        $descripcion = e($cotizacion->Descripcion ?? 'N/A');
+        $precio = number_format($cotizacion->Precio ?? 0, 2, '.', ',');
+        $numeroParte = e($cotizacion->NumeroParte ?? 'N/A');
+        $urlSistema = route('tickets.index');
+        
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px;">
+    <div style="max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #0F766E;">Ganador seleccionado – Proceder a compra</h2>
+        <p>Hola,</p>
+        <p>Se ha seleccionado el ganador para la solicitud <strong>#{$solicitud->SolicitudID}</strong>. Ya puedes proceder con la compra.</p>
+        
+        <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <h3 style="color: #0F766E; margin-top: 0;">Información de la Solicitud</h3>
+            <p><strong>Solicitante:</strong> {$nombreSolicitante}</p>
+            <p><strong>Motivo:</strong> {$motivo}</p>
+            <p><strong>Solicitud ID:</strong> #{$solicitud->SolicitudID}</p>
+        </div>
+
+        <div style="background: #ecfdf5; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #10b981;">
+            <h3 style="color: #059669; margin-top: 0;">Cotización Ganadora</h3>
+            <p><strong>Proveedor:</strong> {$proveedor}</p>
+            <p><strong>Número de Parte:</strong> {$numeroParte}</p>
+            <p><strong>Descripción:</strong> {$descripcion}</p>
+            <p><strong>Precio:</strong> $ {$precio} MXN</p>
+        </div>
+
+        <p style="margin: 24px 0;">
+            <a href="{$urlSistema}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Ver solicitud en el sistema</a>
+        </p>
+        
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
         <p style="font-size: 12px; color: #9ca3af;">Este correo fue enviado automáticamente por el Sistema de Solicitudes.</p>
     </div>
