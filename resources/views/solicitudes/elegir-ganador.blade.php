@@ -101,10 +101,8 @@
                                 <p class="text-sm font-semibold text-gray-900">${{ number_format($cotizacion->Precio, 2, '.', ',') }}</p>
                             </div>
                             <div>
-                                <label class="text-xs font-medium text-gray-500">Estatus</label>
-                                <p class="text-sm font-medium {{ $cotizacion->Estatus === 'Seleccionada' ? 'text-emerald-600' : ($cotizacion->Estatus === 'Rechazada' ? 'text-red-600' : 'text-gray-500') }}">
-                                    {{ $cotizacion->Estatus === 'Seleccionada' ? 'Ganador' : $cotizacion->Estatus }}
-                                </p>
+                                <label class="text-xs font-medium text-gray-500">Numero de Parte</label>
+                                <p class="text-sm font-semibold text-gray-900">{{ $cotizacion->NumeroParte ?? 'N/A' }}</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center justify-between gap-2">

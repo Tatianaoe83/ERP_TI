@@ -73,19 +73,24 @@ class SolicitudAprobacionEmailService
     public function enviarCotizacionesListasParaElegir(Empleados $gerente, Solicitud $solicitud, string $token = null): bool
     {
         if (empty($gerente->Correo)) {
-            Log::warning("SolicitudAprobacionEmailService: gerente {$gerente->EmpleadoID} sin correo.");
+            Log::warning("SolicitudAprobacionEmailService: gerente sin correo para solicitud #{$solicitud->SolicitudID}.");
             return false;
         }
 
         // Si hay token, usar la URL personalizada con token, sino usar la ruta general
         if ($token) {
             $urlElegir = url('/elegir-ganador/' . $token);
+            Log::info("URL generada con token para solicitud #{$solicitud->SolicitudID}: {$urlElegir}");
         } else {
             $urlElegir = route('tickets.index');
+            Log::warning("No se proporcionó token para solicitud #{$solicitud->SolicitudID}, usando ruta general: {$urlElegir}");
         }
         
         $asunto = "Propuestas listas – Elige ganador – Solicitud #{$solicitud->SolicitudID}";
         $contenido = $this->construirContenidoCotizacionesListas($solicitud, $urlElegir, $gerente->NombreEmpleado);
+
+        // Log del contenido del correo (solo la URL para verificar)
+        Log::info("Preparando correo para solicitud #{$solicitud->SolicitudID} - URL en correo: {$urlElegir} - Destinatario: {$gerente->Correo}");
 
         try {
             $mail = new PHPMailer(true);
@@ -102,10 +107,11 @@ class SolicitudAprobacionEmailService
             $mail->Body = $contenido;
             $mail->send();
 
-            Log::info("Email cotizaciones listas enviado para solicitud #{$solicitud->SolicitudID} a {$gerente->Correo}");
+            Log::info("Email cotizaciones listas enviado exitosamente para solicitud #{$solicitud->SolicitudID} a {$gerente->Correo} - URL: {$urlElegir}");
             return true;
         } catch (Exception $e) {
-            Log::error("Error enviando email cotizaciones listas solicitud #{$solicitud->SolicitudID}: " . $e->getMessage());
+            Log::error("Error enviando email cotizaciones listas solicitud #{$solicitud->SolicitudID} a {$gerente->Correo}: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             return false;
         }
     }

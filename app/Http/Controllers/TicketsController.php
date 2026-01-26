@@ -2450,56 +2450,73 @@ class TicketsController extends Controller
                 ], 400);
             }
             
-            // Obtener el gerente (usuario con permiso aprobar-solicitudes-gerencia)
-            // Por ahora, enviaremos a un correo específico o al usuario actual si tiene el permiso
-            $gerenteEmail = null;
-            if (auth()->check() && auth()->user()->can('aprobar-solicitudes-gerencia')) {
-                $usuarioEmpleado = Empleados::where('Correo', auth()->user()->email)->first();
-                if ($usuarioEmpleado) {
-                    $gerenteEmail = $usuarioEmpleado->Correo;
-                }
-            }
-            
-            // Si no hay gerente identificado, usar un correo por defecto o el de la gerencia
-            if (!$gerenteEmail && $solicitud->GerenciaID) {
-                $gerencia = \App\Models\Gerencia::find($solicitud->GerenciaID);
-                // Aquí podrías obtener el correo del gerente de la gerencia si existe esa relación
-            }
-            
             // Actualizar el estatus de la solicitud a "Cotizaciones Enviadas"
             $solicitud->Estatus = 'Cotizaciones Enviadas';
             $solicitud->save();
             
             // Crear token para elegir ganador
             $pasoGerencia = $solicitud->pasoGerencia;
-            if ($pasoGerencia) {
-                $token = \Illuminate\Support\Str::uuid()->toString();
-                
-                // Guardar token en la tabla de tokens (si existe)
-                try {
-                    \App\Models\SolicitudTokens::create([
-                        'approval_step_id' => $pasoGerencia->id,
-                        'token' => $token,
-                        'expires_at' => now()->addDays(7)
-                    ]);
-                } catch (\Exception $e) {
-                    Log::warning("No se pudo crear token para elegir ganador: " . $e->getMessage());
-                    $token = null;
-                }
-                
-                // Enviar correo usando el servicio
-                $emailService = new \App\Services\SolicitudAprobacionEmailService();
-                
-                if ($gerenteEmail) {
-                    $gerente = Empleados::where('Correo', $gerenteEmail)->first();
-                    if ($gerente) {
-                        $emailService->enviarCotizacionesListasParaElegir($gerente, $solicitud, $token);
-                    }
-                } else {
-                    // Si no hay gerente específico, podrías enviar a un correo por defecto
-                    Log::warning("No se identificó gerente para solicitud #{$id}");
+            if (!$pasoGerencia) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró el paso de aprobación de gerencia'
+                ], 400);
+            }
+            
+            // Cargar la relación del approver
+            $pasoGerencia->load('approverEmpleado');
+            
+            $token = \Illuminate\Support\Str::uuid()->toString();
+            
+            // Guardar token en la tabla de tokens
+            try {
+                \App\Models\SolicitudTokens::create([
+                    'approval_step_id' => $pasoGerencia->id,
+                    'token' => $token,
+                    'expires_at' => now()->addDays(7)
+                ]);
+                Log::info("Token creado para elegir ganador - Solicitud #{$id}: {$token}");
+            } catch (\Exception $e) {
+                Log::error("No se pudo crear token para elegir ganador: " . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al crear el token de acceso: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            // Obtener el gerente del paso de aprobación
+            $gerente = $pasoGerencia->approverEmpleado;
+            
+            // Si no hay gerente en el paso, intentar obtenerlo de otras formas
+            if (!$gerente) {
+                // Intentar obtener del usuario autenticado con permiso
+                if (auth()->check() && auth()->user()->can('aprobar-solicitudes-gerencia')) {
+                    $gerente = Empleados::where('Correo', auth()->user()->email)->first();
                 }
             }
+            
+            // Si aún no hay gerente, usar correo por defecto
+            if (!$gerente || empty($gerente->Correo)) {
+                // Crear un objeto Empleados temporal con correo por defecto
+                $gerente = new Empleados();
+                $gerente->NombreEmpleado = 'Gerente';
+                $gerente->Correo = config('email_tickets.default_gerente_email', 'tordonez@proser.com.mx');
+                Log::warning("No se encontró gerente para solicitud #{$id}, usando correo por defecto: {$gerente->Correo}");
+            }
+            
+            // Enviar correo usando el servicio
+            $emailService = new \App\Services\SolicitudAprobacionEmailService();
+            $emailEnviado = $emailService->enviarCotizacionesListasParaElegir($gerente, $solicitud, $token);
+            
+            if (!$emailEnviado) {
+                Log::error("No se pudo enviar el correo al gerente para solicitud #{$id}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al enviar el correo al gerente. El token fue creado pero el correo no se pudo enviar.'
+                ], 500);
+            }
+            
+            Log::info("Correo enviado al gerente para elegir ganador - Solicitud #{$id} - Token: {$token} - Email: {$gerente->Correo}");
             
             return response()->json([
                 'success' => true,
