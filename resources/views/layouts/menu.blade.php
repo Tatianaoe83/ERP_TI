@@ -201,7 +201,7 @@
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
             <div class="flex items-center gap-2 md:gap-2">
                 <i class="fas fa-file-invoice-dollar text-center w-5 md:w-auto text-base"></i>
-                <span class="sidebar-text">Facturas</span>
+                <span class="sidebar-text">Administracion</span>
             </div>
             <i :class="{ 'rotate-90': open === 5 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
@@ -210,7 +210,15 @@
                 <a href="/cortes" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
                     @if(auth()->user()->can('ver-cortes'))
-                    <span class="sidebar-text">Cortes de Insumo</span>
+                    <span class="sidebar-text">Cortes</span>
+                    @endif
+                </a>
+            </li>
+            <li>
+                <a href="/facturas" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
+                    <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
+                    @if(auth()->user()->can('ver-cortes'))
+                    <span class="sidebar-text">Facturas</span>
                     @endif
                 </a>
             </li>
