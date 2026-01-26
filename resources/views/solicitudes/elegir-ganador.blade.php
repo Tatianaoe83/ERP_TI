@@ -87,10 +87,14 @@
                     @foreach($cotizaciones as $cotizacion)
                     <div class="p-4 rounded-xl border-2 transition {{ $cotizacion->Estatus === 'Seleccionada' ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200 hover:border-sky-200' }}" 
                          data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
-                        <div class="grid grid-cols-3 gap-4 mb-3">
+                        <div class="grid grid-cols-4 gap-4 mb-3">
                             <div>
                                 <label class="text-xs font-medium text-gray-500">Proveedor</label>
                                 <p class="text-sm font-semibold text-gray-900">{{ $cotizacion->Proveedor }}</p>
+                            </div>
+                            <div>
+                                <label class="text-xs font-medium text-gray-500">NO. PARTE</label>
+                                <p class="text-sm font-semibold text-gray-900">{{ $cotizacion->NumeroParte ?? 'N/A' }}</p>
                             </div>
                             <div>
                                 <label class="text-xs font-medium text-gray-500">Precio</label>

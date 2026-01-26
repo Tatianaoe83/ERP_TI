@@ -88,38 +88,86 @@ document.addEventListener('alpine:init', () => {
         },
         cargarCotizaciones(id) {
             this.cargandoCotizaciones = true;
+            // Limpiar datos previos
+            this.productos = [];
+            this.proveedores = [];
+            
             fetch(`/solicitudes/${id}/cotizaciones`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.proveedores && data.proveedores.length > 0) {
-                        this.proveedores = data.proveedores;
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    if (data.productos && data.productos.length > 0) {
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Datos recibidos:', data);
+                    
+                    // Primero establecer los proveedores
+                    if (data.proveedores && Array.isArray(data.proveedores) && data.proveedores.length > 0) {
+                        this.proveedores = data.proveedores;
+                    } else {
+                        // Si no hay proveedores en los datos, inicializar con uno por defecto
+                        this.proveedores = ['INTERCOMPRAS'];
+                    }
+                    
+                    // Luego procesar los productos
+                    if (data.productos && Array.isArray(data.productos) && data.productos.length > 0) {
                         this.productos = data.productos.map(prod => {
-                            if (!prod.precios) prod.precios = {};
+                            // Asegurar que el objeto precios existe
+                            if (!prod.precios || typeof prod.precios !== 'object') {
+                                prod.precios = {};
+                            }
+                            
+                            // Asegurar que todos los proveedores tengan una entrada en precios
                             this.proveedores.forEach(prov => {
                                 if (!prod.precios.hasOwnProperty(prov)) {
                                     prod.precios[prov] = '';
+                                } else {
+                                    // Convertir a string si es número para que funcione con el input
+                                    if (typeof prod.precios[prov] === 'number') {
+                                        prod.precios[prov] = prod.precios[prov].toString();
+                                    }
                                 }
                             });
+                            
+                            // Asegurar otros campos
+                            if (!prod.cantidad) prod.cantidad = 1;
+                            if (!prod.numeroParte) prod.numeroParte = '';
+                            if (!prod.descripcion) prod.descripcion = '';
+                            if (!prod.unidad) prod.unidad = 'PIEZA';
+                            
                             return prod;
                         });
                         this.tieneCotizacionesGuardadas = true;
                     } else {
+                        // Si no hay productos, agregar uno vacío para que el usuario pueda empezar
                         this.agregarProducto();
                         this.tieneCotizacionesGuardadas = false;
                     }
+                    
                     this.tieneCotizacionesEnviadas = data.tieneCotizacionesEnviadas || false;
                     this.cargandoCotizaciones = false;
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Error cargando cotizaciones:', error);
+                    // En caso de error, inicializar con valores por defecto
+                    if (this.proveedores.length === 0) {
+                        this.proveedores = ['INTERCOMPRAS'];
+                    }
                     if (this.productos.length === 0) {
                         this.agregarProducto();
                     }
                     this.tieneCotizacionesGuardadas = false;
                     this.tieneCotizacionesEnviadas = false;
                     this.cargandoCotizaciones = false;
+                    
+                    // Mostrar mensaje de error al usuario
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Aviso',
+                        text: 'No se pudieron cargar las cotizaciones guardadas. Puedes agregar nuevas cotizaciones.',
+                        confirmButtonColor: '#0F766E'
+                    });
                 });
         },
         guardarCotizaciones() {
@@ -267,42 +315,6 @@ document.addEventListener('alpine:init', () => {
                     });
                 }
             });
-        },
-        async seleccionarCotizacion(cotizacionId) {
-            const id = this.solicitudSeleccionada?.SolicitudID;
-            if (!id) return;
-            const ok = await Swal.fire({
-                title: '¿Elegir esta propuesta como ganador?',
-                text: 'La solicitud pasará a Aprobada y se habilitará subir factura.',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, elegir ganador',
-                cancelButtonText: 'Cancelar'
-            }).then(r => r.isConfirmed);
-            if (!ok) return;
-            Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            try {
-                const res = await fetch(`/solicitudes/${id}/seleccionar-cotizacion`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ cotizacion_id: cotizacionId })
-                });
-                const data = await res.json().catch(() => ({}));
-                Swal.close();
-                if (data.success) {
-                    await Swal.fire('Éxito', data.message || 'Ganador seleccionado. La solicitud está Aprobada.', 'success');
-                    this.abrirModal(id);
-                } else {
-                    Swal.fire('Error', data.message || 'Error al elegir ganador', 'error');
-                }
-            } catch (e) {
-                Swal.close();
-                console.error(e);
-                Swal.fire('Error', 'Error al seleccionar la cotización', 'error');
-            }
         }
     }));
 });
@@ -701,59 +713,8 @@ document.addEventListener('alpine:init', () => {
                         </div>
                     </div>
 
-                    <!-- Vista Gerente: Propuestas – Elige el ganador -->
-                    <div class="mb-6" x-show="solicitudSeleccionada?.puedeElegirCotizacion && (solicitudSeleccionada?.cotizaciones?.length || 0) > 0">
-                        <h4 class="text-lg font-semibold text-sky-800 mb-2 flex items-center gap-2">
-                            <i class="fas fa-trophy text-amber-500"></i>
-                            Vista para Gerente – Elige el ganador
-                        </h4>
-                        <p class="text-sm text-gray-600 mb-4">Los 3 responsables ya firmaron. Revisa las propuestas y selecciona la cotización ganadora.</p>
-                        <div class="space-y-3">
-                            <template x-for="(cotizacion, index) in solicitudSeleccionada?.cotizaciones || []" :key="index">
-                                <div class="p-4 rounded-xl border-2 transition"
-                                     :class="cotizacion.Estatus === 'Seleccionada' ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200 hover:border-sky-200'">
-                                    <div class="grid grid-cols-4 gap-4">
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500">Proveedor</label>
-                                            <p class="text-sm font-semibold text-gray-900" x-text="cotizacion.Proveedor"></p>
-                                        </div>
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500">NO. PARTE</label>
-                                            <p class="text-sm font-semibold text-gray-900" x-text="cotizacion.NumeroParte || 'N/A'"></p>
-                                        </div>
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500">Precio</label>
-                                            <p class="text-sm font-semibold text-gray-900" x-text="'$' + parseFloat(cotizacion.Precio).toLocaleString('es-MX', {minimumFractionDigits: 2})"></p>
-                                        </div>
-                                        <div>
-                                            <label class="text-xs font-medium text-gray-500">Estatus</label>
-                                            <p class="text-sm font-medium" 
-                                               :class="{
-                                                   'text-emerald-600': cotizacion.Estatus === 'Seleccionada',
-                                                   'text-red-600': cotizacion.Estatus === 'Rechazada',
-                                                   'text-gray-500': cotizacion.Estatus === 'Pendiente'
-                                               }"
-                                               x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : cotizacion.Estatus"></p>
-                                        </div>
-                                        <div class="col-span-4 flex flex-wrap items-center justify-between gap-2">
-                                            <div class="flex-1 min-w-0">
-                                                <label class="text-xs font-medium text-gray-500">Descripción</label>
-                                                <p class="text-sm text-gray-700" x-text="cotizacion.Descripcion"></p>
-                                            </div>
-                                            <button x-show="solicitudSeleccionada?.puedeElegirCotizacion && cotizacion.Estatus === 'Pendiente'"
-                                                    @click="seleccionarCotizacion(cotizacion.CotizacionID)"
-                                                    class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition shadow-sm">
-                                                <i class="fas fa-trophy mr-1"></i> Elegir ganador
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-
-                    <!-- Cotizaciones (cuando no es vista elegir ganador) -->
-                    <div class="mb-6" x-show="(!solicitudSeleccionada?.puedeElegirCotizacion) && (solicitudSeleccionada?.cotizaciones?.length || 0) > 0">
+                    <!-- Cotizaciones -->
+                    <div class="mb-6" x-show="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0">
                         <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                             <i class="fas fa-file-invoice-dollar text-violet-500"></i>
                             Cotizaciones (<span x-text="solicitudSeleccionada?.cotizaciones?.length || 0"></span>)

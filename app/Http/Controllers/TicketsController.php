@@ -2239,51 +2239,63 @@ class TicketsController extends Controller
         try {
             $solicitud = Solicitud::with('cotizaciones')->findOrFail($id);
             
-            // Agrupar cotizaciones por proveedor
-            $cotizacionesPorProveedor = [];
-            $proveedores = [];
-            
-            foreach ($solicitud->cotizaciones as $cotizacion) {
-                $proveedor = $cotizacion->Proveedor;
-                if (!in_array($proveedor, $proveedores)) {
-                    $proveedores[] = $proveedor;
-                }
-                
-                if (!isset($cotizacionesPorProveedor[$proveedor])) {
-                    $cotizacionesPorProveedor[$proveedor] = [];
-                }
-                
-                $cotizacionesPorProveedor[$proveedor][] = [
-                    'CotizacionID' => $cotizacion->CotizacionID,
-                    'cantidad' => 1, // Por defecto, se puede ajustar según necesidad
-                    'numeroParte' => $cotizacion->NumeroParte ?? '',
-                    'descripcion' => $cotizacion->Descripcion,
-                    'unidad' => 'PIEZA', // Por defecto
-                    'precios' => [$proveedor => (float)$cotizacion->Precio],
-                    'tiempoEntrega' => $cotizacion->TiempoEntrega ?? null,
-                    'observaciones' => $cotizacion->Observaciones ?? null
-                ];
+            // Si no hay cotizaciones, retornar estructura vacía
+            if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
+                return response()->json([
+                    'proveedores' => [],
+                    'productos' => [],
+                    'tieneCotizacionesEnviadas' => $solicitud->Estatus === 'Cotizaciones Enviadas'
+                ]);
             }
             
-            // Convertir a formato esperado por el frontend
-            $productos = [];
-            foreach ($cotizacionesPorProveedor as $proveedor => $cots) {
-                foreach ($cots as $cot) {
-                    // Buscar si ya existe un producto con la misma descripción
-                    $productoExistente = null;
-                    foreach ($productos as &$prod) {
-                        if ($prod['descripcion'] === $cot['descripcion']) {
-                            $productoExistente = &$prod;
-                            break;
-                        }
-                    }
-                    
-                    if ($productoExistente) {
-                        // Agregar precio de este proveedor al producto existente
-                        $productoExistente['precios'][$proveedor] = $cot['precios'][$proveedor];
-                    } else {
-                        // Crear nuevo producto
-                        $productos[] = $cot;
+            // Obtener todos los proveedores únicos
+            $proveedores = $solicitud->cotizaciones->pluck('Proveedor')->unique()->values()->toArray();
+            
+            // Agrupar cotizaciones por descripción (producto)
+            // Usamos descripción + número de parte como clave única para identificar productos
+            $productosMap = [];
+            
+            foreach ($solicitud->cotizaciones as $cotizacion) {
+                // Usar descripción como clave principal para agrupar
+                $claveProducto = trim($cotizacion->Descripcion);
+                
+                // Si no existe el producto, crearlo
+                if (!isset($productosMap[$claveProducto])) {
+                    $productosMap[$claveProducto] = [
+                        'cantidad' => 1, // Por defecto, ya que no guardamos cantidad
+                        'numeroParte' => $cotizacion->NumeroParte ?? '',
+                        'descripcion' => $cotizacion->Descripcion,
+                        'unidad' => 'PIEZA', // Por defecto
+                        'precios' => [],
+                        'tiempoEntrega' => [],
+                        'observaciones' => []
+                    ];
+                }
+                
+                // Agregar precio de este proveedor
+                // El precio guardado es el precio total, asumimos cantidad = 1
+                $precioUnitario = (float)$cotizacion->Precio;
+                $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = $precioUnitario;
+                
+                // Agregar tiempo de entrega si existe
+                if ($cotizacion->TiempoEntrega !== null) {
+                    $productosMap[$claveProducto]['tiempoEntrega'][$cotizacion->Proveedor] = (int)$cotizacion->TiempoEntrega;
+                }
+                
+                // Agregar observaciones si existen
+                if ($cotizacion->Observaciones !== null && trim($cotizacion->Observaciones) !== '') {
+                    $productosMap[$claveProducto]['observaciones'][$cotizacion->Proveedor] = $cotizacion->Observaciones;
+                }
+            }
+            
+            // Convertir el mapa a array indexado
+            $productos = array_values($productosMap);
+            
+            // Asegurar que todos los productos tengan precios para todos los proveedores (inicializar vacíos si no existen)
+            foreach ($productos as &$producto) {
+                foreach ($proveedores as $proveedor) {
+                    if (!isset($producto['precios'][$proveedor])) {
+                        $producto['precios'][$proveedor] = '';
                     }
                 }
             }
@@ -2298,9 +2310,11 @@ class TicketsController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error("Error obteniendo cotizaciones de solicitud #{$id}: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
             return response()->json([
-                'proveedores' => ['INTERCOMPRAS', 'PCEL', 'ABASTEO'],
-                'productos' => []
+                'proveedores' => [],
+                'productos' => [],
+                'tieneCotizacionesEnviadas' => false
             ]);
         }
     }
@@ -2497,6 +2511,65 @@ class TicketsController extends Controller
                 'success' => false,
                 'message' => 'Error al enviar las cotizaciones: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Mostrar página para elegir ganador con token (ruta enviada por correo)
+     */
+    public function elegirGanadorConToken($token)
+    {
+        try {
+            // Buscar el token
+            $tokenRow = \App\Models\SolicitudTokens::where('token', $token)
+                ->whereNull('used_at')
+                ->whereNull('revoked_at')
+                ->where(function($q) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                })
+                ->with(['approvalStep.solicitud'])
+                ->first();
+
+            if (!$tokenRow) {
+                abort(404, 'Token no encontrado o inválido');
+            }
+
+            $paso = $tokenRow->approvalStep;
+            if (!$paso) {
+                abort(404, 'Paso de aprobación no encontrado');
+            }
+
+            $solicitud = $paso->solicitud;
+            if (!$solicitud) {
+                abort(404, 'Solicitud no encontrada');
+            }
+
+            // Cargar relaciones necesarias
+            $solicitud->load([
+                'empleadoid',
+                'cotizaciones' => function($query) {
+                    $query->orderBy('Proveedor')->orderBy('Precio');
+                }
+            ]);
+
+            // Verificar que haya cotizaciones
+            if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
+                return view('solicitudes.elegir-ganador', [
+                    'solicitud' => $solicitud,
+                    'cotizaciones' => collect([]),
+                    'token' => $token,
+                    'error' => 'No hay cotizaciones disponibles para esta solicitud'
+                ]);
+            }
+
+            return view('solicitudes.elegir-ganador', [
+                'solicitud' => $solicitud,
+                'cotizaciones' => $solicitud->cotizaciones,
+                'token' => $token
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error mostrando página elegir ganador con token {$token}: " . $e->getMessage());
+            abort(500, 'Error al cargar la página de elección de ganador');
         }
     }
 }
