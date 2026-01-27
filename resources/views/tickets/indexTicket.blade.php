@@ -160,7 +160,15 @@
         // Si la vista inicial es tabla, asegurar que se preparen los datos después de que el DOM esté listo
         if (vistaGuardada === 'tabla') {
             setTimeout(() => {
-                prepararDatosTabla();
+                if (typeof this.prepararDatosTabla === 'function') {
+                    this.prepararDatosTabla();
+                }
+            }, 800);
+        } else if (vistaGuardada === 'lista') {
+            setTimeout(() => {
+                if (typeof this.prepararDatosLista === 'function') {
+                    this.prepararDatosLista();
+                }
             }, 800);
         }
     "
@@ -250,14 +258,14 @@
                     <span class="hidden sm:inline">Kanban</span>
                 </button>
                 <button
-                    @click="vista = 'lista'; localStorage.setItem('ticketsVista', 'lista'); prepararDatosLista()"
+                    @click="vista = 'lista'; localStorage.setItem('ticketsVista', 'lista')"
                     :class="vista === 'lista' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-list text-xs"></i>
                     <span class="hidden sm:inline">Lista</span>
                 </button>
                 <button
-                    @click="vista = 'tabla'; localStorage.setItem('ticketsVista', 'tabla'); $nextTick(() => { prepararDatosTabla(); })"
+                    @click="vista = 'tabla'; localStorage.setItem('ticketsVista', 'tabla')"
                     :class="vista === 'tabla' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-table text-xs"></i>
@@ -273,6 +281,9 @@
         class="kanban-root w-full h-full"
         x-show="vista === 'kanban'"
         x-transition>
+        
+        <!-- Componente Livewire para actualizaciones automáticas con wire:poll en Kanban -->
+        @livewire('tickets-kanban-updater')
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
 
@@ -296,7 +307,8 @@
                         </h3>
                     </div>
 
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300" 
+                          data-categoria-header="{{ $key }}">
                         {{ count($ticketsStatus[$key]) }}
                     </span>
                 </div>
@@ -456,6 +468,9 @@
         x-show="vista === 'lista'"
         x-transition
         class="space-y-4 w-full max-w-full overflow-x-hidden pb-6">
+        
+        <!-- Componente Livewire para actualizaciones automáticas con wire:poll en Lista -->
+        @livewire('tickets-lista-updater')
 
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
 
@@ -617,6 +632,9 @@
     <div x-show="vista === 'tabla'"
          x-transition
          class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
+        
+        <!-- Componente Livewire para actualizaciones automáticas con wire:poll en Tabla -->
+        @livewire('tickets-tabla-updater')
         
         <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
             <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -1785,6 +1803,11 @@
                 'proceso': {{ count($ticketsStatus['proceso']) }},
                 'resueltos': {{ count($ticketsStatus['resueltos']) }}
             },
+            ultimaActualizacionTickets: {
+                'nuevos': {{ count($ticketsStatus['nuevos']) }},
+                'proceso': {{ count($ticketsStatus['proceso']) }},
+                'resueltos': {{ count($ticketsStatus['resueltos']) }}
+            },
             ticketsTabla: [],
             // Variables para métricas
             mostrarModalMetricas: false,
@@ -1805,14 +1828,496 @@
 
             init() {
                 // Los datos de ticketsLista ya están inicializados desde el servidor
-                // Preparar datos para tabla
-                this.prepararDatosTabla();
+                // Preparar datos para tabla solo si la función existe
+                if (typeof this.prepararDatosTabla === 'function') {
+                    this.prepararDatosTabla();
+                }
              
                 this.mostrar = false;
                 this.selected = {};
                 this.mensajes = [];
                 this.nuevoMensaje = '';
                 this.asuntoCorreo = '';
+                
+                // Escuchar eventos de Livewire para actualizaciones automáticas
+                Livewire.on('tickets-actualizados-kanban', (datos) => {
+                    console.log('Evento recibido: tickets-actualizados-kanban', datos);
+                    if (this.vista === 'kanban') {
+                        this.procesarActualizacionTickets(datos);
+                    }
+                });
+                
+                Livewire.on('tickets-actualizados-lista', (datos) => {
+                    console.log('Evento recibido: tickets-actualizados-lista', datos);
+                    if (this.vista === 'lista') {
+                        this.procesarActualizacionTickets(datos);
+                    }
+                });
+                
+                Livewire.on('tickets-actualizados-tabla', (datos) => {
+                    console.log('Evento recibido: tickets-actualizados-tabla', datos);
+                    if (this.vista === 'tabla') {
+                        this.procesarActualizacionTickets(datos);
+                    }
+                });
+                
+                // Función para procesar las actualizaciones
+                this.procesarActualizacionTickets = (datos) => {
+                    console.log('Procesando actualización de tickets', datos);
+                    
+                    if (datos && datos.ticketsExcedidos) {
+                        this.ticketsExcedidos = datos.ticketsExcedidos;
+                        if (this.ticketsExcedidos.length > 0) {
+                            this.mostrarPopupExcedidos = true;
+                            this.iniciarTimerPopup();
+                        } else {
+                            this.mostrarPopupExcedidos = false;
+                        }
+                    }
+                    if (datos && datos.tiemposProgreso) {
+                        // Actualizar indicadores de tiempo usando la función auxiliar
+                        this.actualizarIndicadoresTiempoEnDOM(datos.tiemposProgreso);
+                    }
+                    // Verificar si hay cambios en los tickets usando el hash
+                    if (datos && datos.ticketsStatus && datos.hash) {
+                        console.log('Hash recibido:', datos.hash);
+                        console.log('Hash anterior:', this.ultimoHashTickets);
+                        console.log('Timestamp:', datos.timestamp);
+                        
+                        // Comparar hash para detectar cualquier cambio en los datos
+                        if (!this.ultimoHashTickets) {
+                            // Primera vez, guardar el hash
+                            console.log('Primera actualización, guardando hash inicial');
+                            this.ultimoHashTickets = datos.hash;
+                        } else if (this.ultimoHashTickets !== datos.hash) {
+                            // Hay cambios en los datos (cualquier campo modificado)
+                            console.log('¡CAMBIO DETECTADO! Hash anterior:', this.ultimoHashTickets, 'Hash nuevo:', datos.hash);
+                            console.log('Datos de tickets recibidos:', datos.ticketsStatus);
+                            
+                            // Verificar si hay cambios específicos en los tickets (no solo conteos)
+                            const hayCambiosReales = this.detectarCambiosEnTickets(datos.ticketsStatus);
+                            
+                            if (hayCambiosReales) {
+                                console.log('Cambios reales detectados en los datos de tickets');
+                                this.ultimoHashTickets = datos.hash;
+                                
+                                // Actualizar los conteos
+                                const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
+                                const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
+                                const resueltosCount = datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0;
+                                
+                                this.ticketsLista = {
+                                    nuevos: nuevosCount,
+                                    proceso: procesoCount,
+                                    resueltos: resueltosCount
+                                };
+                                
+                                // Actualizar los contadores en los headers sin recargar
+                                this.actualizarContadoresTickets(nuevosCount, procesoCount, resueltosCount);
+                                
+                                // Actualizar los datos de tickets en el DOM sin recargar la página
+                                // Esto incluye mover cartas entre columnas y actualizar contenido
+                                this.actualizarTicketsEnDOM(datos.ticketsStatus);
+                                
+                                console.log('Tickets y contadores actualizados en tiempo real sin recargar página');
+                            } else {
+                                // Solo actualizar el hash si no hay cambios reales
+                                this.ultimoHashTickets = datos.hash;
+                                console.log('Hash actualizado pero sin cambios reales en datos');
+                            }
+                        } else {
+                            console.log('Sin cambios detectados, hash igual');
+                        }
+                    } else {
+                        console.warn('Datos incompletos recibidos:', datos);
+                    }
+                };
+                
+                // Función para detectar cambios reales en los tickets
+                this.detectarCambiosEnTickets = (ticketsStatus) => {
+                    if (!ticketsStatus) return false;
+                    
+                    // Comparar conteos primero
+                    const nuevosCount = ticketsStatus.nuevos ? ticketsStatus.nuevos.length : 0;
+                    const procesoCount = ticketsStatus.proceso ? ticketsStatus.proceso.length : 0;
+                    const resueltosCount = ticketsStatus.resueltos ? ticketsStatus.resueltos.length : 0;
+                    
+                    const totalActual = nuevosCount + procesoCount + resueltosCount;
+                    const totalAnterior = (this.ticketsLista?.nuevos || 0) + 
+                                        (this.ticketsLista?.proceso || 0) + 
+                                        (this.ticketsLista?.resueltos || 0);
+                    
+                    // Si cambió el total, definitivamente hay cambios
+                    if (totalActual !== totalAnterior) {
+                        return true;
+                    }
+                    
+                    // Si los conteos son iguales pero el hash cambió, puede haber cambios en los datos
+                    // En este caso, siempre actualizar para estar seguros
+                    return true; // Actualizar siempre que el hash cambie
+                };
+                
+                // Función para actualizar los contadores de tickets en los headers
+                this.actualizarContadoresTickets = (nuevos, proceso, resueltos) => {
+                    const contadores = {
+                        'nuevos': nuevos,
+                        'proceso': proceso,
+                        'resueltos': resueltos
+                    };
+                    
+                    Object.keys(contadores).forEach(categoria => {
+                        // Buscar todos los contadores de esta categoría (puede haber múltiples en diferentes vistas)
+                        const elementosContador = document.querySelectorAll(`[data-categoria-header="${categoria}"]`);
+                        elementosContador.forEach(contador => {
+                            const valorAnterior = parseInt(contador.textContent) || 0;
+                            const valorNuevo = contadores[categoria];
+                            
+                            if (valorAnterior !== valorNuevo) {
+                                // Agregar animación cuando cambia el valor
+                                contador.style.transition = 'all 0.3s ease';
+                                contador.style.transform = 'scale(1.2)';
+                                contador.textContent = valorNuevo;
+                                
+                                setTimeout(() => {
+                                    contador.style.transform = 'scale(1)';
+                                }, 300);
+                                
+                                console.log(`Contador ${categoria} actualizado: ${valorAnterior} → ${valorNuevo}`);
+                            }
+                        });
+                    });
+                };
+                
+                // Función para actualizar los tickets en el DOM usando los datos de Livewire
+                this.actualizarTicketsEnDOM = (ticketsStatus) => {
+                    if (!ticketsStatus) return;
+                    
+                    let elementosActualizados = 0;
+                    let cartasMovidas = 0;
+                    
+                    // Mapeo de estados a categorías
+                    const estadoACategoria = {
+                        'Pendiente': 'nuevos',
+                        'En progreso': 'proceso',
+                        'Cerrado': 'resueltos'
+                    };
+                    
+                    // Primero, identificar qué tickets han cambiado de estado
+                    const ticketsPorId = {};
+                    ['nuevos', 'proceso', 'resueltos'].forEach(categoria => {
+                        const tickets = ticketsStatus[categoria] || [];
+                        tickets.forEach(ticket => {
+                            ticketsPorId[ticket.id] = {
+                                ...ticket,
+                                categoriaActual: categoria,
+                                estado: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado')
+                            };
+                        });
+                    });
+                    
+                    // Procesar cada ticket existente y nuevos
+                    Object.keys(ticketsPorId).forEach(ticketId => {
+                        const ticket = ticketsPorId[ticketId];
+                        const elementos = document.querySelectorAll(`[data-ticket-id="${ticket.id}"]`);
+                        
+                        if (elementos.length === 0) {
+                            // Ticket nuevo que no existe en el DOM
+                            console.log(`Ticket #${ticket.id} es nuevo, necesita recargar sección para mostrarlo`);
+                            // Si hay tickets nuevos, necesitamos recargar la sección correspondiente
+                            // porque no podemos crear el HTML completo dinámicamente
+                            this.recargarSeccionTickets(categoriaNueva);
+                            return;
+                        }
+                        
+                        elementos.forEach(elemento => {
+                            // Validar que el elemento existe y está en el DOM
+                            if (!elemento || !elemento.parentElement) {
+                                console.warn(`Elemento del ticket #${ticket.id} no está en el DOM`);
+                                return;
+                            }
+                            
+                            const categoriaAnterior = elemento.getAttribute('data-categoria');
+                            const categoriaNueva = ticket.categoriaActual;
+                            
+                            // Si el ticket cambió de categoría, moverlo visualmente
+                            if (categoriaAnterior && categoriaAnterior !== categoriaNueva) {
+                                console.log(`Ticket #${ticket.id} movido de ${categoriaAnterior} a ${categoriaNueva}`);
+                                
+                                // Encontrar el contenedor de la nueva categoría según la vista actual
+                                const contenedorNuevo = this.encontrarContenedorCategoria(categoriaNueva);
+                                const contenedorAnterior = elemento.closest('.flex-1.overflow-y-auto') || 
+                                                          elemento.closest('.divide-y') ||
+                                                          (elemento.parentElement ? elemento.parentElement : null);
+                                
+                                // Validar que ambos contenedores existen
+                                if (!contenedorAnterior) {
+                                    console.warn(`No se encontró contenedor anterior para ticket #${ticket.id}`);
+                                    // Solo actualizar los datos sin mover
+                                    elemento.setAttribute('data-categoria', categoriaNueva);
+                                    this.actualizarAtributosTicket(elemento, ticket);
+                                    this.actualizarContenidoTicket(elemento, ticket);
+                                    elementosActualizados++;
+                                    return;
+                                }
+                                
+                                if (contenedorNuevo && contenedorAnterior && contenedorAnterior !== contenedorNuevo) {
+                                    // Actualizar atributos del elemento antes de moverlo
+                                    elemento.setAttribute('data-categoria', categoriaNueva);
+                                    this.actualizarAtributosTicket(elemento, ticket);
+                                    // El contenido se actualizará después, antes de mover
+                                    
+                                    // Actualizar contenido ANTES de mover (mientras el elemento está en el DOM)
+                                    this.actualizarContenidoTicket(elemento, ticket);
+                                    
+                                    // Agregar animación de salida
+                                    elemento.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                                    elemento.style.opacity = '0.5';
+                                    elemento.style.transform = 'translateX(50px) scale(0.95)';
+                                    
+                                    // Mover al nuevo contenedor después de la animación de salida
+                                    setTimeout(() => {
+                                        // Validar que el elemento todavía existe antes de moverlo
+                                        if (!elemento || !elemento.parentElement) {
+                                            console.warn(`Elemento del ticket #${ticket.id} ya fue removido`);
+                                            return;
+                                        }
+                                        
+                                        // Remover del contenedor anterior
+                                        elemento.remove();
+                                        
+                                        // Validar que el contenedor nuevo existe
+                                        if (!contenedorNuevo) {
+                                            console.warn(`Contenedor nuevo no existe para ticket #${ticket.id}`);
+                                            return;
+                                        }
+                                        
+                                        // Resetear estilos para animación de entrada
+                                        elemento.style.opacity = '0';
+                                        elemento.style.transform = 'translateY(-20px) scale(0.9)';
+                                        
+                                        // Insertar en el nuevo contenedor
+                                        contenedorNuevo.appendChild(elemento);
+                                        
+                                        // Animar entrada en el nuevo contenedor
+                                        setTimeout(() => {
+                                            if (elemento && elemento.parentElement) {
+                                                elemento.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                                                elemento.style.opacity = '1';
+                                                elemento.style.transform = 'translateY(0) scale(1)';
+                                            }
+                                        }, 50);
+                                    }, 400);
+                                    
+                                    cartasMovidas++;
+                                } else {
+                                    // Si no se encontró el contenedor, solo actualizar los datos
+                                    elemento.setAttribute('data-categoria', categoriaNueva);
+                                    this.actualizarAtributosTicket(elemento, ticket);
+                                    this.actualizarContenidoTicket(elemento, ticket);
+                                    elementosActualizados++;
+                                }
+                            } else {
+                                // Si no cambió de categoría, solo actualizar los datos
+                                // Validar que el elemento todavía existe antes de actualizar
+                                if (elemento && elemento.parentElement) {
+                                    this.actualizarAtributosTicket(elemento, ticket);
+                                    this.actualizarContenidoTicket(elemento, ticket);
+                                    elementosActualizados++;
+                                }
+                            }
+                            
+                            // Si el ticket está seleccionado actualmente, actualizar también el modal
+                            if (this.selected && this.selected.id == ticket.id) {
+                                if (ticket.code_anydesk !== undefined) {
+                                    this.selected.anydesk = ticket.code_anydesk || '';
+                                }
+                                if (ticket.descripcion !== undefined) {
+                                    this.selected.descripcion = ticket.descripcion || '';
+                                }
+                            }
+                        });
+                    });
+                    
+                    // Eliminar tickets que ya no existen
+                    const todosLosElementos = document.querySelectorAll('[data-ticket-id]');
+                    todosLosElementos.forEach(elemento => {
+                        const ticketId = elemento.getAttribute('data-ticket-id');
+                        if (!ticketsPorId[ticketId]) {
+                            console.log(`Ticket #${ticketId} ya no existe, removiendo...`);
+                            elemento.style.transition = 'all 0.3s ease';
+                            elemento.style.opacity = '0';
+                            elemento.style.transform = 'scale(0.8)';
+                            setTimeout(() => {
+                                elemento.remove();
+                            }, 300);
+                        }
+                    });
+                    
+                    console.log(`Actualización completa: ${elementosActualizados} tickets actualizados, ${cartasMovidas} cartas movidas`);
+                };
+                
+                // Función para recargar solo una sección de tickets cuando hay tickets nuevos
+                this.recargarSeccionTickets = async (categoria) => {
+                    console.log(`Recargando sección de tickets para categoría: ${categoria}`);
+                    // Hacer una petición AJAX para obtener solo el HTML de los tickets
+                    try {
+                        const response = await fetch(window.location.href.split('?')[0] + '?partial=1&categoria=' + categoria + '&t=' + Date.now(), {
+                            method: 'GET',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'text/html'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const html = await response.text();
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            
+                            // Buscar la sección correspondiente en el nuevo HTML
+                            let seccionNueva = null;
+                            let seccionActual = null;
+                            
+                            if (this.vista === 'kanban') {
+                                const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                                const columnasNuevas = doc.querySelectorAll('.kanban-root .grid > div');
+                                const columnasActuales = document.querySelectorAll('.kanban-root .grid > div');
+                                
+                                if (columnasNuevas[indices[categoria]] && columnasActuales[indices[categoria]]) {
+                                    seccionNueva = columnasNuevas[indices[categoria]].querySelector('.flex-1.overflow-y-auto');
+                                    seccionActual = columnasActuales[indices[categoria]].querySelector('.flex-1.overflow-y-auto');
+                                }
+                            }
+                            
+                            if (seccionNueva && seccionActual) {
+                                // Actualizar solo el contenido de la sección
+                                seccionActual.innerHTML = seccionNueva.innerHTML;
+                                console.log(`Sección ${categoria} actualizada sin recargar página completa`);
+                            } else {
+                                // Si no se puede actualizar parcialmente, recargar solo la página
+                                console.log('No se pudo actualizar parcialmente, recargando página...');
+                                window.location.reload();
+                            }
+                        } else {
+                            // Si falla, recargar la página completa
+                            window.location.reload();
+                        }
+                    } catch (error) {
+                        console.error('Error recargando sección:', error);
+                        // Si falla, recargar la página completa
+                        window.location.reload();
+                    }
+                };
+                
+                // Función auxiliar para encontrar el contenedor de una categoría
+                this.encontrarContenedorCategoria = (categoria) => {
+                    // Buscar la columna correspondiente según la vista actual
+                    if (this.vista === 'kanban') {
+                        // En Kanban, buscar las columnas por orden dentro del grid
+                        const grid = document.querySelector('.kanban-root .grid');
+                        if (grid) {
+                            const columnas = Array.from(grid.children);
+                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                            const columna = columnas[indices[categoria]];
+                            // Retornar el contenedor de scroll dentro de la columna
+                            if (columna) {
+                                return columna.querySelector('.flex-1.overflow-y-auto');
+                            }
+                        }
+                    } else if (this.vista === 'lista') {
+                        // Para lista, buscar el contenedor dentro de la sección correspondiente
+                        const contenedorLista = document.querySelector('[x-show="vista === \'lista\'"]');
+                        if (contenedorLista) {
+                            const secciones = Array.from(contenedorLista.children).filter(el => 
+                                el.querySelector && el.querySelector('.divide-y')
+                            );
+                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                            const seccion = secciones[indices[categoria]];
+                            // Retornar el contenedor divide-y dentro de la sección
+                            return seccion ? seccion.querySelector('.divide-y') : null;
+                        }
+                    }
+                    console.warn(`No se encontró contenedor para categoría: ${categoria} en vista: ${this.vista}`);
+                    return null;
+                };
+                
+                // Función auxiliar para actualizar atributos data-* de un ticket
+                this.actualizarAtributosTicket = (elemento, ticket) => {
+                    if (ticket.code_anydesk !== undefined) {
+                        elemento.setAttribute('data-ticket-anydesk', ticket.code_anydesk || '');
+                    }
+                    if (ticket.descripcion !== undefined) {
+                        elemento.setAttribute('data-ticket-descripcion', ticket.descripcion || '');
+                    }
+                    if (ticket.prioridad !== undefined) {
+                        elemento.setAttribute('data-ticket-prioridad', ticket.prioridad || '');
+                    }
+                    if (ticket.numero !== undefined) {
+                        elemento.setAttribute('data-ticket-numero', ticket.numero || '');
+                    }
+                    if (ticket.empleado && ticket.empleado.nombre) {
+                        elemento.setAttribute('data-ticket-empleado', ticket.empleado.nombre);
+                    }
+                    if (ticket.empleado && ticket.empleado.correo) {
+                        elemento.setAttribute('data-ticket-correo', ticket.empleado.correo);
+                    }
+                    if (ticket.responsable && ticket.responsable.nombre) {
+                        elemento.setAttribute('data-ticket-responsable', ticket.responsable.nombre);
+                    }
+                };
+                
+                // Función auxiliar para actualizar el contenido visible de un ticket
+                this.actualizarContenidoTicket = (elemento, ticket) => {
+                    // Validar que el elemento existe
+                    if (!elemento) {
+                        console.warn('Intento de actualizar contenido de elemento null');
+                        return;
+                    }
+                    
+                    try {
+                        // Actualizar descripción
+                        const descripcionElement = elemento.querySelector('p.text-sm.font-medium.line-clamp-3');
+                        if (descripcionElement && ticket.descripcion) {
+                            const descripcionLimitada = ticket.descripcion.length > 100 
+                                ? ticket.descripcion.substring(0, 100) + '...' 
+                                : ticket.descripcion;
+                            descripcionElement.textContent = descripcionLimitada;
+                        }
+                        
+                        // Actualizar prioridad (badge) - buscar de múltiples formas
+                        let prioridadElement = elemento.querySelector('.text-\\[10px\\].uppercase') ||
+                                             elemento.querySelector('[class*="text-[10px]"]') ||
+                                             elemento.querySelector('.uppercase.font-bold');
+                        
+                        if (prioridadElement && ticket.prioridad) {
+                            prioridadElement.textContent = ticket.prioridad;
+                            // Actualizar clases según prioridad
+                            prioridadElement.className = `text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                                ticket.prioridad === 'Baja' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                ticket.prioridad === 'Media' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }`;
+                        }
+                        
+                        // Actualizar nombre del empleado - con validación segura
+                        const iconoUsuario = elemento.querySelector('.fa-user');
+                        if (iconoUsuario && iconoUsuario.parentElement) {
+                            const empleadoElement = iconoUsuario.parentElement.nextElementSibling;
+                            if (empleadoElement && ticket.empleado && ticket.empleado.nombre) {
+                                empleadoElement.textContent = ticket.empleado.nombre.length > 15 
+                                    ? ticket.empleado.nombre.substring(0, 15) + '...' 
+                                    : ticket.empleado.nombre;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error actualizando contenido del ticket:', error);
+                        // No lanzar el error, solo registrarlo para no interrumpir otras actualizaciones
+                    }
+                };
+                
+                
+                // Variable para rastrear el último hash de tickets
+                this.ultimoHashTickets = null;
                 
                 // Watcher para ejecutar prepararDatosTabla cuando se cambie a vista tabla
                 this.$watch('vista', (newValue) => {
@@ -1823,8 +2328,15 @@
                         }, 200);
                         // Iniciar actualización en tiempo real también en vista tabla
                         this.iniciarActualizacionTiempoReal();
-                    } else if (newValue === 'kanban' || newValue === 'lista') {
-                        // Iniciar actualización en tiempo real cuando se cambia a kanban o lista
+                    } else if (newValue === 'lista') {
+                        // Ejecutar prepararDatosLista cuando se cambia a vista lista
+                        this.$nextTick(() => {
+                            this.prepararDatosLista();
+                        });
+                        // Iniciar actualización en tiempo real cuando se cambia a lista
+                        this.iniciarActualizacionTiempoReal();
+                    } else if (newValue === 'kanban') {
+                        // Iniciar actualización en tiempo real cuando se cambia a kanban
                         this.iniciarActualizacionTiempoReal();
                     }
                 });
@@ -1858,23 +2370,8 @@
                 // Verificar tickets excedidos al cargar
                 this.verificarTicketsExcedidos();
                 
-                // Configurar verificación periódica cada 2 minutos
-                // Usar arrow function para mantener el contexto de 'this'
-                const iniciarVerificacionPeriodica = () => {
-                    // Limpiar intervalo anterior si existe
-                    if (this.intervaloVerificacionExcedidos) {
-                        clearInterval(this.intervaloVerificacionExcedidos);
-                    }
-                    
-                    this.intervaloVerificacionExcedidos = setInterval(() => {
-                      
-                        this.verificarTicketsExcedidos();
-                    }, 300000); // 5 minutos = 300000 ms
-                    
-                };
-                
-                // Iniciar la verificación periódica
-                iniciarVerificacionPeriodica();
+                // La verificación de tickets excedidos ahora se maneja con wire:poll
+                // Se elimina el setInterval ya que wire:poll actualiza automáticamente cada 30 segundos
                 
                 // Reiniciar verificación si la página vuelve a estar visible (cuando el usuario regresa a la pestaña)
                 document.addEventListener('visibilitychange', () => {
@@ -1888,21 +2385,112 @@
             },
 
             iniciarActualizacionTiempoReal() {
-                // Limpiar intervalo anterior si existe
-                if (this.intervaloTiempoReal) {
-                    clearInterval(this.intervaloTiempoReal);
-                }
+                // La actualización de tiempo real ahora se maneja con wire:poll
+                // Se elimina el setInterval ya que wire:poll actualiza automáticamente cada 30 segundos
                 
                 // Actualizar indicadores de tiempo inmediatamente
                 this.actualizarIndicadoresTiempo();
+            },
+
+            actualizarIndicadoresTiempoEnDOM(tiempos) {
+                // Función auxiliar para actualizar el DOM con los datos de tiempo
+                // Puede ser llamada desde actualizarIndicadoresTiempo o desde eventos de Livewire
+                if (!tiempos) return;
                 
-                // Configurar intervalo para actualizar cada 30 segundos (tiempo real)
-                this.intervaloTiempoReal = setInterval(() => {
-                    this.actualizarIndicadoresTiempo();
-                }, 30000); // 30 segundos = 30000 ms
+                Object.keys(tiempos).forEach(ticketId => {
+                    const tiempoInfo = tiempos[ticketId];
+                    if (!tiempoInfo) return;
+                    
+                    // Actualizar cada ticket en el DOM
+                    this.actualizarTicketEnDOM(ticketId, tiempoInfo);
+                });
+            },
+            
+            actualizarTicketEnDOM(ticketId, tiempoInfo) {
+                // Actualizar vista Kanban
+                const ticketElementKanban = document.querySelector(`[data-ticket-id="${ticketId}"][data-categoria="proceso"]`);
+                if (ticketElementKanban) {
+                    const tiempoContainer = ticketElementKanban.querySelector('.tiempo-indicador-container');
+                    if (tiempoContainer) {
+                        // Actualizar el badge de estado
+                        const badgeEstado = tiempoContainer.querySelector('.badge-estado');
+                        if (badgeEstado) {
+                            const estado = tiempoInfo.estado;
+                            badgeEstado.className = `text-xs px-2 py-0.5 rounded-full font-semibold ${
+                                estado === 'agotado' ? 'bg-red-100 text-red-700' : 
+                                (estado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
+                            }`;
+                            badgeEstado.innerHTML = estado === 'agotado' 
+                                ? '<i class="fas fa-exclamation-triangle"></i> Tiempo Agotado'
+                                : (estado === 'por_vencer' 
+                                    ? '<i class="fas fa-clock"></i> Por Vencer'
+                                    : '<i class="fas fa-check-circle"></i> En Tiempo');
+                        }
+                        
+                        // Actualizar el texto de tiempo
+                        const tiempoTexto = tiempoContainer.querySelector('.tiempo-texto');
+                        if (tiempoTexto) {
+                            // Convertir horas decimales a horas y minutos
+                            const formatearHoras = (horas) => {
+                                if (!horas || horas === 0 || horas === '') return '-';
+                                const h = parseFloat(horas);
+                                if (isNaN(h)) return '-';
+                                const horasEnteras = Math.floor(h);
+                                const minutos = Math.round((h - horasEnteras) * 60);
+                                if (horasEnteras > 0 && minutos > 0) {
+                                    return `${horasEnteras}h ${minutos}m`;
+                                } else if (horasEnteras > 0) {
+                                    return `${horasEnteras}h`;
+                                } else if (minutos > 0) {
+                                    return `${minutos}m`;
+                                } else {
+                                    return '0m';
+                                }
+                            };
+                            tiempoTexto.textContent = `${formatearHoras(tiempoInfo.transcurrido)} / ${formatearHoras(tiempoInfo.estimado)}`;
+                        }
+                        
+                        // Actualizar la barra de progreso
+                        const barraProgreso = tiempoContainer.querySelector('.barra-progreso');
+                        if (barraProgreso) {
+                            barraProgreso.style.width = `${Math.min(tiempoInfo.porcentaje, 100)}%`;
+                            barraProgreso.className = `h-1.5 rounded-full transition-all duration-300 ${
+                                tiempoInfo.estado === 'agotado' ? 'bg-red-500' : 
+                                (tiempoInfo.estado === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500')
+                            }`;
+                        }
+                    }
+                }
+                
+                // Actualizar vista Lista (usando Alpine.js)
+                if (this.ticketsTabla && Array.isArray(this.ticketsTabla)) {
+                    const ticketEnLista = this.ticketsTabla.find(t => t.id == ticketId);
+                    if (ticketEnLista && ticketEnLista.tiempoTranscurrido !== undefined) {
+                        ticketEnLista.tiempoTranscurrido = tiempoInfo.transcurrido.toString();
+                        ticketEnLista.tiempoEstimado = tiempoInfo.estimado.toString();
+                        ticketEnLista.tiempoEstado = tiempoInfo.estado;
+                        
+                        // Actualizar también los atributos data-* en el elemento DOM si existe
+                        if (ticketEnLista.elemento) {
+                            ticketEnLista.elemento.setAttribute('data-ticket-tiempo-transcurrido', tiempoInfo.transcurrido);
+                            ticketEnLista.elemento.setAttribute('data-ticket-tiempo-estimado', tiempoInfo.estimado);
+                            ticketEnLista.elemento.setAttribute('data-ticket-tiempo-estado', tiempoInfo.estado);
+                        }
+                    }
+                }
+                
+                // Actualizar atributos data-* en todos los elementos del ticket para mantener consistencia
+                const todosLosElementosTicket = document.querySelectorAll(`[data-ticket-id="${ticketId}"]`);
+                todosLosElementosTicket.forEach(elemento => {
+                    elemento.setAttribute('data-ticket-tiempo-transcurrido', tiempoInfo.transcurrido);
+                    elemento.setAttribute('data-ticket-tiempo-estimado', tiempoInfo.estimado);
+                    elemento.setAttribute('data-ticket-tiempo-estado', tiempoInfo.estado);
+                });
             },
 
             async actualizarIndicadoresTiempo() {
+                // Esta función ahora se llama manualmente cuando es necesario
+                // Las actualizaciones automáticas se manejan con wire:poll a través de Livewire
                 try {
                     const response = await fetch('/tickets/tiempo-progreso', {
                         method: 'GET',
@@ -1915,91 +2503,8 @@
                     const data = await response.json();
                     
                     if (data.success && data.tiempos) {
-                        // Actualizar cada ticket en el DOM
-                        Object.keys(data.tiempos).forEach(ticketId => {
-                            const tiempoInfo = data.tiempos[ticketId];
-                            if (!tiempoInfo) return;
-                            
-                            // Actualizar vista Kanban
-                            const ticketElementKanban = document.querySelector(`[data-ticket-id="${ticketId}"][data-categoria="proceso"]`);
-                            if (ticketElementKanban) {
-                                const tiempoContainer = ticketElementKanban.querySelector('.tiempo-indicador-container');
-                                if (tiempoContainer) {
-                                    // Actualizar el badge de estado
-                                    const badgeEstado = tiempoContainer.querySelector('.badge-estado');
-                                    if (badgeEstado) {
-                                        const estado = tiempoInfo.estado;
-                                        badgeEstado.className = `text-xs px-2 py-0.5 rounded-full font-semibold ${
-                                            estado === 'agotado' ? 'bg-red-100 text-red-700' : 
-                                            (estado === 'por_vencer' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700')
-                                        }`;
-                                        badgeEstado.innerHTML = estado === 'agotado' 
-                                            ? '<i class="fas fa-exclamation-triangle"></i> Tiempo Agotado'
-                                            : (estado === 'por_vencer' 
-                                                ? '<i class="fas fa-clock"></i> Por Vencer'
-                                                : '<i class="fas fa-check-circle"></i> En Tiempo');
-                                    }
-                                    
-                                    // Actualizar el texto de tiempo
-                                    const tiempoTexto = tiempoContainer.querySelector('.tiempo-texto');
-                                    if (tiempoTexto) {
-                                        // Convertir horas decimales a horas y minutos
-                                        const formatearHoras = (horas) => {
-                                            if (!horas || horas === 0 || horas === '') return '-';
-                                            const h = parseFloat(horas);
-                                            if (isNaN(h)) return '-';
-                                            const horasEnteras = Math.floor(h);
-                                            const minutos = Math.round((h - horasEnteras) * 60);
-                                            if (horasEnteras > 0 && minutos > 0) {
-                                                return `${horasEnteras}h ${minutos}m`;
-                                            } else if (horasEnteras > 0) {
-                                                return `${horasEnteras}h`;
-                                            } else if (minutos > 0) {
-                                                return `${minutos}m`;
-                                            } else {
-                                                return '0m';
-                                            }
-                                        };
-                                        tiempoTexto.textContent = `${formatearHoras(tiempoInfo.transcurrido)} / ${formatearHoras(tiempoInfo.estimado)}`;
-                                    }
-                                    
-                                    // Actualizar la barra de progreso
-                                    const barraProgreso = tiempoContainer.querySelector('.barra-progreso');
-                                    if (barraProgreso) {
-                                        barraProgreso.style.width = `${Math.min(tiempoInfo.porcentaje, 100)}%`;
-                                        barraProgreso.className = `h-1.5 rounded-full transition-all duration-300 ${
-                                            tiempoInfo.estado === 'agotado' ? 'bg-red-500' : 
-                                            (tiempoInfo.estado === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500')
-                                        }`;
-                                    }
-                                }
-                            }
-                            
-                            // Actualizar vista Lista (usando Alpine.js)
-                            if (this.ticketsTabla && Array.isArray(this.ticketsTabla)) {
-                                const ticketEnLista = this.ticketsTabla.find(t => t.id == ticketId);
-                                if (ticketEnLista && ticketEnLista.tiempoTranscurrido !== undefined) {
-                                    ticketEnLista.tiempoTranscurrido = tiempoInfo.transcurrido.toString();
-                                    ticketEnLista.tiempoEstimado = tiempoInfo.estimado.toString();
-                                    ticketEnLista.tiempoEstado = tiempoInfo.estado;
-                                    
-                                    // Actualizar también los atributos data-* en el elemento DOM si existe
-                                    if (ticketEnLista.elemento) {
-                                        ticketEnLista.elemento.setAttribute('data-ticket-tiempo-transcurrido', tiempoInfo.transcurrido);
-                                        ticketEnLista.elemento.setAttribute('data-ticket-tiempo-estimado', tiempoInfo.estimado);
-                                        ticketEnLista.elemento.setAttribute('data-ticket-tiempo-estado', tiempoInfo.estado);
-                                    }
-                                }
-                            }
-                            
-                            // Actualizar atributos data-* en todos los elementos del ticket para mantener consistencia
-                            const todosLosElementosTicket = document.querySelectorAll(`[data-ticket-id="${ticketId}"]`);
-                            todosLosElementosTicket.forEach(elemento => {
-                                elemento.setAttribute('data-ticket-tiempo-transcurrido', tiempoInfo.transcurrido);
-                                elemento.setAttribute('data-ticket-tiempo-estimado', tiempoInfo.estimado);
-                                elemento.setAttribute('data-ticket-tiempo-estado', tiempoInfo.estado);
-                            });
-                        });
+                        // Usar la función auxiliar para actualizar el DOM
+                        this.actualizarIndicadoresTiempoEnDOM(data.tiempos);
                     }
                 } catch (error) {
                     console.error('Error actualizando indicadores de tiempo:', error);
@@ -2979,29 +3484,15 @@
             },
 
             iniciarVerificacionMensajes() {
-                // Limpiar intervalo anterior si existe
-                if (this.intervaloVerificacionMensajes) {
-                    clearInterval(this.intervaloVerificacionMensajes);
-                }
+                // La verificación de mensajes ahora se maneja con wire:poll
+                // Se elimina el setInterval ya que wire:poll actualiza automáticamente
                 
                 // Verificar inmediatamente al iniciar
                 this.verificarMensajesNuevos();
-                
-                // Configurar intervalo para verificar cada 30 segundos
-                // Esto coincide con la frecuencia del job que se ejecuta cada 5 minutos
-                // pero verificamos más frecuentemente para mejor UX
-                this.intervaloVerificacionMensajes = setInterval(() => {
-                    if (this.mostrar && this.selected.id) {
-                        this.verificarMensajesNuevos();
-                    }
-                }, 30000); // 30 segundos
             },
 
             detenerVerificacionMensajes() {
-                if (this.intervaloVerificacionMensajes) {
-                    clearInterval(this.intervaloVerificacionMensajes);
-                    this.intervaloVerificacionMensajes = null;
-                }
+                // Ya no hay intervalo que limpiar, wire:poll maneja las actualizaciones
                 this.ultimoMensajeId = 0;
             },
 
