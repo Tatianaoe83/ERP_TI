@@ -48,11 +48,29 @@
                 this.tieneCotizacionesGuardadas = false;
                 this.tieneCotizacionesEnviadas = false;
             },
-            agregarProveedor() {
-                const nombre = prompt('Nombre del proveedor:');
-                if (nombre && nombre.trim() && !this.proveedores.includes(nombre.trim())) {
+            async agregarProveedor() {
+                const { value: nombre } = await Swal.fire({
+                    title: 'Agregar Proveedor',
+                    input: 'text',
+                    inputPlaceholder: 'Nombre del proveedor...',
+                    showCancelButton: true,
+                    confirmButtonText: 'Aceptar',
+                    cancelButtonText: 'Cancelar',
+                    inputValidator: (value) => {
+                        if (!value || !value.trim()) {
+                            return 'Por favor escribe un nombre';
+                        }
+                        if (this.proveedores.includes(value.trim())) {
+                            return 'Este proveedor ya está en la lista';
+                        }
+                    }
+                });
+
+                if (nombre) {
                     const nuevoProveedor = nombre.trim();
                     this.proveedores.push(nuevoProveedor);
+                    
+                    // Actualiza los productos existentes con la nueva columna vacía
                     this.productos.forEach(prod => {
                         if (!prod.precios) prod.precios = {};
                         prod.precios[nuevoProveedor] = '';
