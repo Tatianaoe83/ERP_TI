@@ -57,14 +57,12 @@ class FacturasController extends AppBaseController
     {
         $gerenciaID = $request->input('gerenci_id');
         $mes = $request->input('mes');
-        $año = $request->input('año');
 
         if ($request->ajax()) {
             if ($gerenciaID && $mes) {
                 $query = DB::table('cortes')
                     ->where('GerenciaID', $gerenciaID)
-                    ->where('Mes', $mes)
-                    ->where('Año', $año);
+                    ->where('Mes', $mes);
 
                 return DataTables::of($query)
                     ->addColumn('action', function ($row) {
