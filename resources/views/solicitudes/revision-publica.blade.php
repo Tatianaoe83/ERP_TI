@@ -79,13 +79,13 @@
     </style>
 </head>
 
-<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-100 h-screen overflow-hidden transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen overflow-y-auto transition-colors duration-300">
 
     @php
     $stageLabels = [
-    'supervisor' => 'Supervisor',
-    'gerencia' => 'Gerencia',
-    'administracion' => 'Administración',
+        'supervisor' => 'Supervisor',
+        'gerencia' => 'Gerencia',
+        'administracion' => 'Administración',
     ];
 
     $stageLabel = $stageLabels[$step->stage ?? ''] ?? 'Aprobación';
@@ -93,13 +93,14 @@
     $status = $step->status ?? 'pending';
 
     $statusLabel = $status === 'approved' ? 'Aprobada'
-    : ($status === 'rejected' ? 'Rechazada' : 'Pendiente');
+        : ($status === 'rejected' ? 'Rechazada' : 'Pendiente');
 
+    // Ajuste de colores a paleta Slate/Emerald/Red/Amber para mejor visibilidad dark/light
     $statusClasses = $status === 'approved'
-    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-    : ($status === 'rejected'
-    ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800'
-    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800');
+        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+        : ($status === 'rejected'
+        ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800'
+        : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800');
 
     $pulseDot = $status === 'pending';
 
@@ -111,29 +112,30 @@
     $canDecide = ($canDecide ?? false) && $tokenActive;
 
     $blockedReason = (!$tokenActive)
-    ? 'El enlace ya no es válido (usado, revocado o expirado).'
-    : (!empty($waitingFor) ? $waitingFor : '');
+        ? 'El enlace ya no es válido (usado, revocado o expirado).'
+        : (!empty($waitingFor) ? $waitingFor : '');
     @endphp
 
-    <div class="flex flex-col lg:flex-row h-full max-w-7xl mx-auto p-4 lg:p-8 gap-6 lg:gap-8">
-        <main class="flex-1 min-h-0">
-            <div class="bg-surface-light dark:bg-surface-dark rounded-2xl shadow-card border border-border-light dark:border-border-dark overflow-hidden transition-colors duration-300 h-full flex flex-col">
+    <div class="flex flex-col lg:flex-row w-full max-w-7xl mx-auto p-4 lg:p-8 gap-6 lg:gap-8 relative z-10">
+        
+        <main class="flex-1 w-full min-w-0">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col transition-colors duration-300">
 
-                <div class="p-6 lg:p-8 border-b border-border-light dark:border-border-dark flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0">
+                <div class="p-6 lg:p-8 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <span class="text-xs font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase mb-2 block">
                             {{ $solicitud->gerenciaid->NombreGerencia ?? 'Sin Gerencia' }}
                         </span>
-                        <div class="flex items-baseline gap-3">
-                            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                        <div class="flex flex-wrap items-baseline gap-3">
+                            <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
                                 Solicitud #{{ $solicitud->SolicitudID }}
                             </h1>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                            <span class="text-sm text-slate-500 dark:text-slate-400">
                                 {{ optional($solicitud->created_at)->translatedFormat('d M, Y') ?? 'Sin Fecha' }}
                             </span>
                         </div>
-                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Etapa actual: <span class="font-semibold">{{ $stageLabel }}</span>
+                        <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Etapa actual: <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $stageLabel }}</span>
                         </div>
                     </div>
 
@@ -143,121 +145,118 @@
                     </span>
                 </div>
 
-                <div class="overflow-y-auto min-h-0 pr-2">
-                    <div class="p-6 lg:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-subtle-light dark:bg-gray-800/50 rounded-xl p-5 border border-border-light dark:border-border-dark">
+                <div class="p-6 lg:p-8">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-5 border border-slate-200 dark:border-slate-600">
                             <div class="flex items-center gap-2 mb-3">
-                                <span class="material-icons-outlined text-gray-400 text-lg">person</span>
-                                <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Solicitante</span>
+                                <span class="material-icons-outlined text-slate-400 text-lg">person</span>
+                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Solicitante</span>
                             </div>
-                            <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-1">
+                            <h3 class="font-semibold text-lg text-slate-900 dark:text-white mb-1">
                                 {{ $solicitud->empleadoid->NombreEmpleado ?? 'Sin Solicitante' }}
                             </h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
                                 {{ $solicitud->puestoid->NombrePuesto ?? 'Sin Puesto' }}
                             </p>
                         </div>
 
-                        <div class="bg-subtle-light dark:bg-gray-800/50 rounded-xl p-5 border border-border-light dark:border-border-dark">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-5 border border-slate-200 dark:border-slate-600">
                             <div class="flex items-center gap-2 mb-3">
-                                <span class="material-icons-outlined text-gray-400 text-lg">business_center</span>
-                                <span class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Obra/Ubicación</span>
+                                <span class="material-icons-outlined text-slate-400 text-lg">business_center</span>
+                                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Obra/Ubicación</span>
                             </div>
-                            <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-1">
+                            <h3 class="font-semibold text-lg text-slate-900 dark:text-white mb-1">
                                 {{ $solicitud->obraid->NombreObra ?? 'Sin Obra' }}
                             </h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
                                 {{ $proyectoNombre ?? 'Sin Proyecto' }}
                             </p>
                         </div>
                     </div>
 
-                    <div class="px-6 lg:px-8 pb-8">
-                        <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-6 lg:p-8 border border-blue-100 dark:border-blue-900/30">
-                            <div class="mb-8">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
-                                    <span class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Motivo</span>
-                                </div>
-                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                                    {{ $solicitud->Motivo ?? 'Sin Motivo' }}
-                                </h2>
+                    <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-6 lg:p-8 border border-blue-100 dark:border-blue-900/30">
+                        <div class="mb-8">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2 h-2 bg-blue-600 rounded-full"></span>
+                                <span class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Motivo</span>
                             </div>
-
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-1.5 h-1.5 bg-gray-900 dark:bg-gray-300 rounded-full"></span>
-                                            <h4 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-white">Descripción</h4>
-                                        </div>
-                                        <span class="text-xs text-gray-400 font-medium">DETALLE</span>
-                                    </div>
-
-                                    <div class="overflow-y-auto overflow-x-hidden break-words bg-white dark:bg-gray-800 rounded-lg p-4 text-gray-600 dark:text-gray-300 text-sm leading-relaxed border border-gray-100 dark:border-gray-700 shadow-sm space-y-4 min-h-[170px]">
-                                        <p>{{ $solicitud->DescripcionMotivo }}</p>
-                                    </div>
-                                </div>
-
-                                <div class="space-y-4">
-                                    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                                            <h4 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-white">Requerimientos</h4>
-                                        </div>
-                                        <span class="text-xs text-gray-400 font-medium">ESPECIFICACIÓN</span>
-                                    </div>
-
-                                    <div class="overflow-y-auto overflow-x-hidden break-words bg-white dark:bg-gray-800 rounded-lg p-4 text-gray-600 dark:text-gray-300 text-sm leading-relaxed border border-gray-100 dark:border-gray-700 shadow-sm min-h-[170px]">
-                                        <p>{{ $solicitud->Requerimientos }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @if(!empty($step->comment))
-                            <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
-                                <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-                                    Comentario registrado ({{ $stageLabel }})
-                                </div>
-                                <div class="text-sm text-gray-700 dark:text-gray-200 break-words">
-                                    {{ $step->comment }}
-                                </div>
-                            </div>
-                            @endif
-
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white break-words">
+                                {{ $solicitud->Motivo ?? 'Sin Motivo' }}
+                            </h2>
                         </div>
-                    </div>
 
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-1.5 h-1.5 bg-slate-900 dark:bg-slate-300 rounded-full"></span>
+                                        <h4 class="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white">Descripción</h4>
+                                    </div>
+                                    <span class="text-xs text-slate-400 font-medium">DETALLE</span>
+                                </div>
+                                <div class="bg-white dark:bg-slate-800 rounded-lg p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed border border-slate-100 dark:border-slate-700 shadow-sm min-h-[120px]">
+                                    <p class="break-words">{{ $solicitud->DescripcionMotivo }}</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                        <h4 class="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white">Requerimientos</h4>
+                                    </div>
+                                    <span class="text-xs text-slate-400 font-medium">ESPECIFICACIÓN</span>
+                                </div>
+                                <div class="bg-white dark:bg-slate-800 rounded-lg p-4 text-slate-600 dark:text-slate-300 text-sm leading-relaxed border border-slate-100 dark:border-slate-700 shadow-sm min-h-[120px]">
+                                    <p class="break-words">{{ $solicitud->Requerimientos }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if(!empty($step->comment))
+                        <div class="mt-6 bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-100 dark:border-slate-700">
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                                Comentario registrado ({{ $stageLabel }})
+                            </div>
+                            <div class="text-sm text-slate-700 dark:text-slate-200 break-words">
+                                {{ $step->comment }}
+                            </div>
+                        </div>
+                        @endif
+
+                    </div>
                 </div>
+
             </div>
         </main>
 
-        <aside class="w-full lg:w-96 flex-shrink-0 h-full overflow-hidden">
-            <div class="sticky top-8 space-y-6 max-h-[calc(100vh-4rem)] overflow-hidden">
+        <aside class="w-full lg:w-96 flex-shrink-0">
+            <div class="lg:sticky lg:top-8 space-y-6">
 
-                <div class="bg-emerald-50/50 dark:bg-surface-dark border border-emerald-100 dark:border-border-dark rounded-xl p-5 shadow-sm">
+                <div class="bg-emerald-50/50 dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 rounded-xl p-5 shadow-sm">
                     <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-3 block">
                         Aprobador asignado ({{ $stageLabel }})
                     </span>
                     <div class="flex items-center gap-3">
                         <div>
-                            <h3 class="font-semibold text-gray-900 dark:text-white text-sm">
+                            <h3 class="font-semibold text-slate-900 dark:text-white text-sm">
                                 {{ $step->approverEmpleado->NombreEmpleado ?? 'Sin aprobador' }}
                             </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
                                 {{ $stageLabel }}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-surface-light dark:bg-surface-dark rounded-2xl shadow-card border border-border-light dark:border-border-dark p-6">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                     <div class="mb-6">
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2" for="comment">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2" for="comment">
                             Comentarios ({{ $stageLabel }})
                         </label>
                         <textarea
-                            class="w-full rounded-xl border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 text-sm p-3 resize-none transition-colors"
+                            class="w-full rounded-xl border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-sm p-3 resize-none transition-colors"
                             id="comment"
                             name="comment"
                             placeholder="Observaciones de {{ strtolower($stageLabel) }}..."
@@ -273,30 +272,28 @@
 
                     @if($status === 'pending')
                     <div class="space-y-3">
-
-                        <button type="button" onclick="procesarDecision('approved')" class="w-full group bg-primary hover:bg-primary-hover text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-teal-700/20 transition-all duration-200 transform active:scale-[0.98] flex justify-center items-center gap-2" {{ (!$canDecide) ? 'disabled' : '' }}>
+                        <button type="button" onclick="procesarDecision('approved')" class="w-full group bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg transition-all duration-200 transform active:scale-[0.98] flex justify-center items-center gap-2" {{ (!$canDecide) ? 'disabled' : '' }}>
                             <span>Aprobar</span>
                             <span class="material-icons-outlined text-lg group-hover:translate-x-1 transition-transform">check_circle</span>
                         </button>
 
                         <div class="grid grid-cols-2 gap-3">
-
-                            <button type="button" onclick="procesarDecision('rejected')" class="w-full bg-white dark:bg-transparent border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm" {{ (!$canDecide) ? 'disabled' : '' }}>
+                            <button type="button" onclick="procesarDecision('rejected')" class="w-full bg-white dark:bg-transparent border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm" {{ (!$canDecide) ? 'disabled' : '' }}>
                                 <span class="material-icons-outlined text-lg">cancel</span>
                                 Rechazar
                             </button>
 
-                            <button type="button" onclick="abrirModalTransferir()" class="w-full cursor-pointer bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm" {{ (!$canDecide) ? 'disabled' : '' }}>
+                            <button type="button" onclick="abrirModalTransferir()" class="w-full cursor-pointer bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium py-3 px-4 rounded-xl transition-colors duration-200 flex justify-center items-center gap-2 text-sm" {{ (!$canDecide) ? 'disabled' : '' }}>
                                 <span class="material-icons-outlined text-lg">swap_horiz</span>
                                 Transferir
                             </button>
                         </div>
                     </div>
                     @else
-                    <div class="text-sm text-gray-600 dark:text-gray-300">
+                    <div class="text-sm text-slate-600 dark:text-slate-300">
                         Esta etapa ya fue resuelta: <span class="font-semibold">{{ $statusLabel }}</span>
                         @if($step->decided_at)
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
                             Fecha: {{ $step->decided_at->translatedFormat('d M, Y H:i') }}
                         </div>
                         @endif
@@ -312,6 +309,7 @@
         <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl translate-x-1/2 -translate-y-1/2"></div>
         <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl -translate-x-1/2 translate-y-1/2"></div>
     </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
