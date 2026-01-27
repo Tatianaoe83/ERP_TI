@@ -109,8 +109,7 @@ class ReporteHelper
             $query->limit($limite);
         }
 
-        //dd($query->toSql(), $query->getBindings());
-        //Log::debug('Query generada:', [$query->toSql(), $query->getBindings()]);
+        Log::debug('Query generada:', [$query->toSql(), $query->getBindings()]);
 
         return $query->get();
     }

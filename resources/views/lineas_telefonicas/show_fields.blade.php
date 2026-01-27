@@ -31,7 +31,7 @@
 <!-- Obraid Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('ObraID', 'Obra:') !!}
-    <p>{{ $lineasTelefonicas->obraid->NombreObra }}</p>
+    <p>{{ $lineasTelefonicas->obras->NombreObra }}</p>
 </div>
 
 <!-- Fechafianza Field -->

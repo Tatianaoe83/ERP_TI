@@ -1,6 +1,6 @@
 <!-- Categoriaid Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
-    {!! Form::label('CategoriaID', 'Categoria:') !!}
+    {!! Form::label('ID', 'Categoria:') !!}
     <p>{{ $equipos->categorias->Categoria }}</p>
 </div>
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Empleados;
 use App\Models\Solicitud;
 use App\Models\Tickets;
+use App\Models\Cotizacion;
 use App\Models\TicketChat;
 use App\Models\Tertipos;
 use App\Models\Subtipos;
@@ -54,7 +55,23 @@ class TicketsController extends Controller
         // Métricas de productividad
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets);
 
-        return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad', 'mes', 'anio'));
+        // Cargar solicitudes con todas sus relaciones necesarias
+        $solicitudes = Solicitud::with([
+            'empleadoid',
+            'pasoSupervisor',
+            'pasoGerencia',
+            'pasoAdministracion',
+            'cotizaciones'
+        ])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+        // Estructurar las solicitudes para compatibilidad con la vista
+        // La vista hace collect($solicitudesStatus)->flatten()->unique('SolicitudID')
+        // Envolvemos la colección en un array para que flatten() pueda aplanarla correctamente
+        $solicitudesStatus = [$solicitudes->all()];
+
+        return view('tickets.index', compact('ticketsStatus', 'responsablesTI', 'metricasProductividad', 'mes', 'anio', 'solicitudesStatus'));
     }
 
     /**
@@ -1924,6 +1941,685 @@ class TicketsController extends Controller
                 'tickets' => [],
                 'total' => 0
             ], 500);
+        }
+    }
+
+    /**
+     * Obtener datos completos de una solicitud para el modal
+     */
+    public function obtenerDatosSolicitud($id)
+    {
+        try {
+            $solicitud = Solicitud::with([
+                'empleadoid',
+                'gerenciaid',
+                'obraid',
+                'puestoid',
+                'pasoSupervisor.approverEmpleado',
+                'pasoSupervisor.decidedByEmpleado',
+                'pasoGerencia.approverEmpleado',
+                'pasoGerencia.decidedByEmpleado',
+                'pasoAdministracion.approverEmpleado',
+                'pasoAdministracion.decidedByEmpleado',
+                'cotizaciones'
+            ])->findOrFail($id);
+
+            // Calcular estatus real (similar a la vista)
+            $pasoSupervisor = $solicitud->pasoSupervisor;
+            $pasoGerencia = $solicitud->pasoGerencia;
+            $pasoAdministracion = $solicitud->pasoAdministracion;
+            
+            $estatusReal = $solicitud->Estatus ?? 'Pendiente';
+            $estaRechazada = false;
+            
+            if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
+                ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
+                ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
+                $estatusReal = 'Rechazada';
+                $estaRechazada = true;
+                    } elseif ($solicitud->Estatus === 'Aprobado') {
+                        $estatusReal = 'Aprobado';
+                    } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
+                        $estatusReal = 'Cotizaciones Enviadas';
+                    } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
+                if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
+                    if ($pasoGerencia && $pasoGerencia->status === 'approved') {
+                        if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
+                            $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+                            $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
+                            $estatusReal = $tieneSeleccionada ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
+                        } else {
+                            $estatusReal = 'Pendiente Aprobación Administración';
+                        }
+                    } else {
+                        $estatusReal = 'Pendiente Aprobación Gerencia';
+                    }
+                } else {
+                    $estatusReal = 'Pendiente Aprobación Supervisor';
+                }
+            }
+            
+                    if ($estatusReal === 'Rechazada') {
+                        $estatusDisplay = 'Rechazada';
+                    } elseif ($estatusReal === 'Aprobado' || ($solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty())) {
+                        $estatusDisplay = 'Aprobada';
+                    } elseif ($estatusReal === 'Cotizaciones Enviadas') {
+                        $estatusDisplay = 'Cotizaciones Enviadas';
+                    } elseif ($estatusReal === 'Completada') {
+                        $estatusDisplay = 'En revisión';
+                    } elseif ($estatusReal === 'Pendiente Cotización TI') {
+                        $estatusDisplay = 'Pendiente';
+                    } elseif (in_array($estatusReal, ['Pendiente Aprobación Supervisor', 'Pendiente Aprobación Gerencia', 'Pendiente Aprobación Administración'], true)) {
+                        $estatusDisplay = 'En revisión';
+                    } else {
+                        $estatusDisplay = 'Pendiente';
+                    }
+            
+            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
+                && ($pasoGerencia && $pasoGerencia->status === 'approved')
+                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+            $puedeCotizar = $todasFirmaron && auth()->check() && $estatusDisplay !== 'Aprobada' && $estatusDisplay !== 'Cotizaciones Enviadas';
+            
+            // Verificar si puede elegir cotización (gerente con todas las firmas y cotizaciones cargadas o enviadas)
+            $puedeElegirCotizacion = $todasFirmaron 
+                && $solicitud->cotizaciones 
+                && $solicitud->cotizaciones->count() > 0
+                && ($estatusDisplay === 'Cotizaciones Enviadas' || $estatusDisplay === 'En revisión')
+                && auth()->check() 
+                && auth()->user()->can('aprobar-solicitudes-gerencia');
+
+            // Construir pasos de aprobación
+            $pasosAprobacion = [];
+            $stageLabels = [
+                'supervisor' => 'Supervisor',
+                'gerencia' => 'Gerencia',
+                'administracion' => 'Administración'
+            ];
+            $statusLabels = [
+                'approved' => 'Aprobado',
+                'rejected' => 'Rechazado',
+                'pending' => 'Pendiente'
+            ];
+
+            foreach ([$pasoSupervisor, $pasoGerencia, $pasoAdministracion] as $paso) {
+                if ($paso) {
+                    $pasosAprobacion[] = [
+                        'stage' => $paso->stage,
+                        'stageLabel' => $stageLabels[$paso->stage] ?? ucfirst($paso->stage),
+                        'status' => $paso->status,
+                        'statusLabel' => $statusLabels[$paso->status] ?? ucfirst($paso->status),
+                        'approverNombre' => $paso->approverEmpleado ? $paso->approverEmpleado->NombreEmpleado : 'N/A',
+                        'decidedByNombre' => $paso->decidedByEmpleado ? $paso->decidedByEmpleado->NombreEmpleado : null,
+                        'decidedAt' => $paso->decided_at ? $paso->decided_at->format('d/m/Y H:i') : null,
+                        'comment' => $paso->comment
+                    ];
+                }
+            }
+
+            // Obtener nombre del proyecto
+            $proyectoNombre = $solicitud->Proyecto;
+            if (!empty($proyectoNombre) && preg_match('/^([A-Z]{2})(\d+)$/i', $proyectoNombre, $matches)) {
+                $prefijo = strtoupper($matches[1]);
+                $proyectoId = (int)$matches[2];
+                
+                try {
+                    switch ($prefijo) {
+                        case 'PR':
+                            $proyecto = \App\Models\Proyecto::find($proyectoId);
+                            if ($proyecto) {
+                                $proyectoNombre = $proyecto->NombreProyecto ?? $proyecto->Proyecto ?? $proyectoNombre;
+                            }
+                            break;
+                        case 'GE':
+                            $gerencia = \App\Models\Gerencia::find($proyectoId);
+                            if ($gerencia) {
+                                $proyectoNombre = $gerencia->NombreGerencia ?? $proyectoNombre;
+                            }
+                            break;
+                        case 'OB':
+                            $obra = \App\Models\Obras::find($proyectoId);
+                            if ($obra) {
+                                $proyectoNombre = $obra->NombreObra ?? $proyectoNombre;
+                            }
+                            break;
+                    }
+                } catch (\Exception $e) {
+                    // Mantener el nombre original si hay error
+                }
+            }
+
+            // Preparar cotizaciones (incluir todas, incluyendo las enviadas)
+            $cotizaciones = $solicitud->cotizaciones ? $solicitud->cotizaciones->map(function($cot) {
+                return [
+                    'CotizacionID' => $cot->CotizacionID,
+                    'Proveedor' => $cot->Proveedor,
+                    'Descripcion' => $cot->Descripcion,
+                    'Precio' => (float)$cot->Precio,
+                    'NumeroParte' => $cot->NumeroParte,
+                    'Estatus' => $cot->Estatus,
+                    'TiempoEntrega' => $cot->TiempoEntrega,
+                    'Observaciones' => $cot->Observaciones
+                ];
+            })->toArray() : [];
+            
+            // Verificar si las cotizaciones fueron enviadas (basado en el estatus de la solicitud)
+            $cotizacionesEnviadas = ($solicitud->Estatus === 'Cotizaciones Enviadas') ? 1 : 0;
+            
+            return response()->json([
+                'SolicitudID' => $solicitud->SolicitudID,
+                'Motivo' => $solicitud->Motivo,
+                'DescripcionMotivo' => $solicitud->DescripcionMotivo,
+                'Requerimientos' => $solicitud->Requerimientos,
+                'Estatus' => $solicitud->Estatus,
+                'estatusDisplay' => $estatusDisplay,
+                'fechaCreacion' => $solicitud->created_at ? $solicitud->created_at->format('d/m/Y H:i') : 'N/A',
+                'Proyecto' => $solicitud->Proyecto,
+                'ProyectoNombre' => $proyectoNombre,
+                'empleado' => $solicitud->empleadoid ? [
+                    'EmpleadoID' => $solicitud->empleadoid->EmpleadoID,
+                    'NombreEmpleado' => $solicitud->empleadoid->NombreEmpleado,
+                    'Correo' => $solicitud->empleadoid->Correo
+                ] : null,
+                'gerencia' => $solicitud->gerenciaid ? [
+                    'GerenciaID' => $solicitud->gerenciaid->GerenciaID,
+                    'NombreGerencia' => $solicitud->gerenciaid->NombreGerencia
+                ] : null,
+                'obra' => $solicitud->obraid ? [
+                    'ObraID' => $solicitud->obraid->ObraID,
+                    'NombreObra' => $solicitud->obraid->NombreObra
+                ] : null,
+                'puesto' => $solicitud->puestoid ? [
+                    'PuestoID' => $solicitud->puestoid->PuestoID,
+                    'NombrePuesto' => $solicitud->puestoid->NombrePuesto
+                ] : null,
+                'pasosAprobacion' => $pasosAprobacion,
+                'cotizaciones' => $cotizaciones,
+                'puedeCotizar' => $puedeCotizar,
+                'puedeElegirCotizacion' => $puedeElegirCotizacion,
+                'cotizacionesEnviadas' => $cotizacionesEnviadas
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'error' => 'Solicitud no encontrada'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo datos de solicitud #{$id}: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al cargar la información de la solicitud'
+            ], 500);
+        }
+    }
+
+    /**
+     * Seleccionar cotización ganadora
+     */
+    public function seleccionarCotizacion(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'cotizacion_id' => 'required|integer|exists:cotizaciones,CotizacionID',
+                'token' => 'nullable|string'
+            ]);
+
+            $solicitud = Solicitud::with(['empleadoid', 'cotizaciones'])->findOrFail($id);
+            $cotizacionGanadora = Cotizacion::findOrFail($request->input('cotizacion_id'));
+
+            // Verificar que la cotización pertenece a la solicitud
+            if ($cotizacionGanadora->SolicitudID != $solicitud->SolicitudID) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La cotización no pertenece a esta solicitud'
+                ], 400);
+            }
+
+            // Verificar que la cotización no esté ya seleccionada o rechazada
+            if ($cotizacionGanadora->Estatus === 'Seleccionada') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Esta cotización ya fue seleccionada anteriormente'
+                ], 400);
+            }
+            
+            // Permitir seleccionar cotizaciones con estatus "Pendiente", "Seleccionada" o "Rechazada"
+            // El estatus "Enviada" se maneja en la tabla solicitudes
+            if (!in_array($cotizacionGanadora->Estatus, ['Pendiente', 'Seleccionada', 'Rechazada'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede seleccionar esta cotización'
+                ], 400);
+            }
+
+            // Marcar la cotización ganadora como seleccionada
+            $cotizacionGanadora->Estatus = 'Seleccionada';
+            $cotizacionGanadora->save();
+
+            // Marcar las demás cotizaciones de la solicitud como rechazadas
+            Cotizacion::where('SolicitudID', $solicitud->SolicitudID)
+                ->where('CotizacionID', '!=', $cotizacionGanadora->CotizacionID)
+                ->where('Estatus', '!=', 'Rechazada')
+                ->update(['Estatus' => 'Rechazada']);
+
+            // Actualizar el estatus de la solicitud a Aprobado
+            $solicitud->Estatus = 'Aprobado';
+            $solicitud->save();
+
+            // Enviar correo a tordonez@proser.com.mx
+            $emailService = new \App\Services\SolicitudAprobacionEmailService();
+            $emailService->enviarGanadorSeleccionado($solicitud, $cotizacionGanadora, 'tordonez@proser.com.mx');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ganador seleccionado correctamente. Se ha notificado para proceder con la compra.'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solicitud o cotización no encontrada'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error("Error seleccionando cotización ganadora: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al seleccionar la cotización: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener cotizaciones de una solicitud
+     */
+    public function obtenerCotizaciones($id)
+    {
+        try {
+            $solicitud = Solicitud::with('cotizaciones')->findOrFail($id);
+            
+            // Si no hay cotizaciones, retornar estructura vacía
+            if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
+                return response()->json([
+                    'proveedores' => [],
+                    'productos' => [],
+                    'tieneCotizacionesEnviadas' => $solicitud->Estatus === 'Cotizaciones Enviadas'
+                ]);
+            }
+            
+            // Obtener todos los proveedores únicos
+            $proveedores = $solicitud->cotizaciones->pluck('Proveedor')->unique()->values()->toArray();
+            
+            // Agrupar cotizaciones por descripción (producto)
+            // Usamos descripción + número de parte como clave única para identificar productos
+            $productosMap = [];
+            
+            foreach ($solicitud->cotizaciones as $cotizacion) {
+                // Usar descripción como clave principal para agrupar
+                $claveProducto = trim($cotizacion->Descripcion);
+                
+                // Si no existe el producto, crearlo
+                if (!isset($productosMap[$claveProducto])) {
+                    $productosMap[$claveProducto] = [
+                        'cantidad' => 1, // Por defecto, ya que no guardamos cantidad
+                        'numeroParte' => $cotizacion->NumeroParte ?? '',
+                        'descripcion' => $cotizacion->Descripcion,
+                        'unidad' => 'PIEZA', // Por defecto
+                        'precios' => [],
+                        'tiempoEntrega' => [],
+                        'observaciones' => []
+                    ];
+                }
+                
+                // Agregar precio de este proveedor
+                // El precio guardado es el precio total, asumimos cantidad = 1
+                $precioUnitario = (float)$cotizacion->Precio;
+                $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = $precioUnitario;
+                
+                // Agregar tiempo de entrega si existe
+                if ($cotizacion->TiempoEntrega !== null) {
+                    $productosMap[$claveProducto]['tiempoEntrega'][$cotizacion->Proveedor] = (int)$cotizacion->TiempoEntrega;
+                }
+                
+                // Agregar observaciones si existen
+                if ($cotizacion->Observaciones !== null && trim($cotizacion->Observaciones) !== '') {
+                    $productosMap[$claveProducto]['observaciones'][$cotizacion->Proveedor] = $cotizacion->Observaciones;
+                }
+            }
+            
+            // Convertir el mapa a array indexado
+            $productos = array_values($productosMap);
+            
+            // Asegurar que todos los productos tengan precios para todos los proveedores (inicializar vacíos si no existen)
+            foreach ($productos as &$producto) {
+                foreach ($proveedores as $proveedor) {
+                    if (!isset($producto['precios'][$proveedor])) {
+                        $producto['precios'][$proveedor] = '';
+                    }
+                }
+            }
+            
+            // Verificar si las cotizaciones fueron enviadas (basado en el estatus de la solicitud)
+            $tieneCotizacionesEnviadas = $solicitud->Estatus === 'Cotizaciones Enviadas';
+            
+            return response()->json([
+                'proveedores' => $proveedores,
+                'productos' => $productos,
+                'tieneCotizacionesEnviadas' => $tieneCotizacionesEnviadas
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo cotizaciones de solicitud #{$id}: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            return response()->json([
+                'proveedores' => [],
+                'productos' => [],
+                'tieneCotizacionesEnviadas' => false
+            ]);
+        }
+    }
+
+    /**
+     * Guardar cotizaciones de una solicitud
+     */
+    public function guardarCotizaciones(Request $request, $id)
+    {
+        // Forzar respuesta JSON
+        $request->headers->set('Accept', 'application/json');
+        
+        try {
+            // Validar que la solicitud existe primero
+            $solicitud = Solicitud::findOrFail($id);
+            
+            // Validar datos de entrada
+            $validated = $request->validate([
+                'proveedores' => 'required|array|min:1',
+                'productos' => 'required|array|min:1'
+            ]);
+            
+            // Eliminar todas las cotizaciones existentes de esta solicitud
+            // El estatus de "enviadas" se maneja en la tabla solicitudes, no en cotizaciones
+            Cotizacion::where('SolicitudID', $solicitud->SolicitudID)->delete();
+            
+            $proveedores = $validated['proveedores'] ?? $request->input('proveedores', []);
+            $productos = $validated['productos'] ?? $request->input('productos', []);
+            
+            $numeroPropuesta = 1;
+            $cotizacionesCreadas = 0;
+            
+            // Crear una cotización por cada combinación de producto y proveedor con precio
+            foreach ($productos as $producto) {
+                if (empty($producto['descripcion']) || trim($producto['descripcion']) === '') {
+                    continue; // Saltar productos sin descripción
+                }
+                
+                $precios = $producto['precios'] ?? [];
+                $cantidad = isset($producto['cantidad']) ? (int)$producto['cantidad'] : 1;
+                
+                foreach ($proveedores as $proveedor) {
+                    $precio = $precios[$proveedor] ?? null;
+                    
+                    // Solo crear cotización si hay un precio válido
+                    if ($precio !== null && $precio !== '' && (float)$precio > 0) {
+                        // Calcular precio total (precio unitario * cantidad)
+                        $precioTotal = (float)$precio * $cantidad;
+                        
+                        Cotizacion::create([
+                            'SolicitudID' => $solicitud->SolicitudID,
+                            'Proveedor' => $proveedor,
+                            'Descripcion' => $producto['descripcion'],
+                            'Precio' => $precioTotal,
+                            'NumeroParte' => $producto['numero_parte'] ?? $producto['numeroParte'] ?? null,
+                            'TiempoEntrega' => isset($producto['tiempo_entrega'][$proveedor]) ? (int)$producto['tiempo_entrega'][$proveedor] : null,
+                            'Observaciones' => isset($producto['observaciones'][$proveedor]) ? $producto['observaciones'][$proveedor] : null,
+                            'Estatus' => 'Pendiente',
+                            'NumeroPropuesta' => $numeroPropuesta
+                        ]);
+                        
+                        $cotizacionesCreadas++;
+                    }
+                }
+                
+                // Incrementar número de propuesta solo si se crearon cotizaciones para este producto
+                if ($cotizacionesCreadas > 0) {
+                    $numeroPropuesta++;
+                }
+            }
+            
+            if ($cotizacionesCreadas === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se crearon cotizaciones. Verifica que haya al menos un precio válido.'
+                ], 400);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Se guardaron {$cotizacionesCreadas} cotización(es) correctamente."
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solicitud no encontrada'
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error("Error guardando cotizaciones para solicitud #{$id}: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar las cotizaciones: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Enviar cotizaciones al gerente para que elija el ganador
+     */
+    public function enviarCotizacionesAlGerente(Request $request, $id)
+    {
+        try {
+            $solicitud = Solicitud::with(['empleadoid', 'cotizaciones'])->findOrFail($id);
+            
+            // Verificar que haya cotizaciones
+            if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No hay cotizaciones guardadas para esta solicitud'
+                ], 400);
+            }
+            
+            // Verificar que todas las aprobaciones estén completas
+            $pasoSupervisor = $solicitud->pasoSupervisor;
+            $pasoGerencia = $solicitud->pasoGerencia;
+            $pasoAdministracion = $solicitud->pasoAdministracion;
+            
+            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
+                && ($pasoGerencia && $pasoGerencia->status === 'approved')
+                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+            
+            if (!$todasFirmaron) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Todas las aprobaciones deben estar completas antes de enviar al gerente'
+                ], 400);
+            }
+            
+            // Actualizar el estatus de la solicitud a "Cotizaciones Enviadas"
+            $solicitud->Estatus = 'Cotizaciones Enviadas';
+            $solicitud->save();
+            
+            // Crear token para elegir ganador
+            $pasoGerencia = $solicitud->pasoGerencia;
+            if (!$pasoGerencia) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró el paso de aprobación de gerencia'
+                ], 400);
+            }
+            
+            // Cargar la relación del approver
+            $pasoGerencia->load('approverEmpleado');
+            
+            $token = \Illuminate\Support\Str::uuid()->toString();
+            
+            // Guardar token en la tabla de tokens
+            try {
+                \App\Models\SolicitudTokens::create([
+                    'approval_step_id' => $pasoGerencia->id,
+                    'token' => $token,
+                    'expires_at' => now()->addDays(7)
+                ]);
+                Log::info("Token creado para elegir ganador - Solicitud #{$id}: {$token}");
+            } catch (\Exception $e) {
+                Log::error("No se pudo crear token para elegir ganador: " . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al crear el token de acceso: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            // Obtener el gerente del paso de aprobación
+            $gerente = $pasoGerencia->approverEmpleado;
+            
+            // Si no hay gerente en el paso, intentar obtenerlo de otras formas
+            if (!$gerente) {
+                // Intentar obtener del usuario autenticado con permiso
+                if (auth()->check() && auth()->user()->can('aprobar-solicitudes-gerencia')) {
+                    $gerente = Empleados::where('Correo', auth()->user()->email)->first();
+                }
+            }
+            
+            // Si aún no hay gerente, usar correo por defecto
+            if (!$gerente || empty($gerente->Correo)) {
+                // Crear un objeto Empleados temporal con correo por defecto
+                $gerente = new Empleados();
+                $gerente->NombreEmpleado = 'Gerente';
+                $gerente->Correo = config('email_tickets.default_gerente_email', 'tordonez@proser.com.mx');
+                Log::warning("No se encontró gerente para solicitud #{$id}, usando correo por defecto: {$gerente->Correo}");
+            }
+            
+            // Enviar correo usando el servicio
+            $emailService = new \App\Services\SolicitudAprobacionEmailService();
+            $emailEnviado = $emailService->enviarCotizacionesListasParaElegir($gerente, $solicitud, $token);
+            
+            if (!$emailEnviado) {
+                Log::error("No se pudo enviar el correo al gerente para solicitud #{$id}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al enviar el correo al gerente. El token fue creado pero el correo no se pudo enviar.'
+                ], 500);
+            }
+            
+            Log::info("Correo enviado al gerente para elegir ganador - Solicitud #{$id} - Token: {$token} - Email: {$gerente->Correo}");
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Cotizaciones enviadas al gerente correctamente'
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error enviando cotizaciones al gerente para solicitud #{$id}: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al enviar las cotizaciones: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mostrar página para elegir ganador con token (ruta enviada por correo)
+     */
+    public function elegirGanadorConToken($token)
+    {
+        try {
+            // Buscar el token
+            $tokenRow = \App\Models\SolicitudTokens::where('token', $token)
+                ->whereNull('used_at')
+                ->whereNull('revoked_at')
+                ->where(function($q) {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                })
+                ->with(['approvalStep.solicitud.cotizaciones'])
+                ->first();
+
+            if (!$tokenRow) {
+                abort(404, 'Token no encontrado o inválido');
+            }
+
+            $paso = $tokenRow->approvalStep;
+            if (!$paso) {
+                abort(404, 'Paso de aprobación no encontrado');
+            }
+
+            $solicitud = $paso->solicitud;
+            if (!$solicitud) {
+                abort(404, 'Solicitud no encontrada');
+            }
+
+            // Cargar relaciones necesarias
+            $solicitud->load([
+                'empleadoid',
+                'cotizaciones' => function($query) {
+                    $query->orderBy('Proveedor')->orderBy('Precio');
+                }
+            ]);
+
+            // Verificar si ya se seleccionó un ganador
+            $tieneGanadorSeleccionado = false;
+            $cotizacionGanadora = null;
+            
+            // Verificar si hay una cotización con estatus "Seleccionada"
+            if ($solicitud->cotizaciones) {
+                $cotizacionGanadora = $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->first();
+                if ($cotizacionGanadora) {
+                    $tieneGanadorSeleccionado = true;
+                }
+            }
+            
+            // También verificar si la solicitud tiene estatus "Aprobado"
+            if ($solicitud->Estatus === 'Aprobado') {
+                $tieneGanadorSeleccionado = true;
+            }
+
+            // Si ya se seleccionó un ganador, mostrar vista de token inválido
+            if ($tieneGanadorSeleccionado) {
+                $tokenInfo = [
+                    'razon' => 'Ya se ha seleccionado un ganador para esta solicitud. El proceso de elección ya fue completado.',
+                ];
+                
+                if ($cotizacionGanadora) {
+                    $tokenInfo['proveedor_ganador'] = $cotizacionGanadora->Proveedor;
+                    $tokenInfo['precio_ganador'] = number_format($cotizacionGanadora->Precio, 2, '.', ',');
+                }
+                
+                Log::info("Intento de acceder a elegir ganador con token {$token} para solicitud #{$solicitud->SolicitudID} que ya tiene ganador seleccionado");
+                
+                return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
+            }
+
+            // Verificar que haya cotizaciones
+            if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
+                return view('solicitudes.elegir-ganador', [
+                    'solicitud' => $solicitud,
+                    'cotizaciones' => collect([]),
+                    'token' => $token,
+                    'error' => 'No hay cotizaciones disponibles para esta solicitud'
+                ]);
+            }
+
+            return view('solicitudes.elegir-ganador', [
+                'solicitud' => $solicitud,
+                'cotizaciones' => $solicitud->cotizaciones,
+                'token' => $token
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error mostrando página elegir ganador con token {$token}: " . $e->getMessage());
+            abort(500, 'Error al cargar la página de elección de ganador');
         }
     }
 }

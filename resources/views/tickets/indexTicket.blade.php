@@ -3971,9 +3971,7 @@
                     if (!estaCerrado) {
                     subtipoSelect.disabled = false;
                     }
-                } else {
-                    console.log('No hay subtipos disponibles para este tipo');
-                }
+                } 
             } catch (error) {
             }
         }

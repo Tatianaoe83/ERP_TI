@@ -285,7 +285,7 @@
 
                                 </td>
 
-                                <td>{{ $insumo->categoriaid->Categoria }}</td>
+                                <td>{{ $insumo->categorias->Categoria }}</td>
                                 <td>{{ $insumo->NombreInsumo }}</td>
                                 <td>{{ $insumo->CostoMensual }}</td>
                                 <td>{{ $insumo->CostoAnual }}</td>
@@ -332,7 +332,7 @@
                             <th>Fecha Asignación</th>
                             <th>Comentario</th>
                             <th>Monto Renovación Fianza</th>
-                           
+
 
 
                         </tr>
@@ -364,13 +364,13 @@
                             <td>{{ $LineasAsignado->CuentaPadre}}</td>
                             <td>{{ $LineasAsignado->CuentaHija}}</td>
                             <td>{{ $LineasAsignado->TipoLinea}}</td>
-                            <td>{{ $LineasAsignado->lineas->obraid->NombreObra}}</td>
+                            <td>{{ $LineasAsignado->lineas->obras->NombreObra}}</td>
                             <td>{{ $LineasAsignado->FechaFianza}}</td>
                             <td>{{ $LineasAsignado->CostoFianza}}</td>
                             <td>{{ $LineasAsignado->FechaAsignacion}}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
-                            
+
                         </tr>
                         @endforeach
 
@@ -420,7 +420,7 @@
                                 <td>{{ $Linea->CuentaPadre}}</td>
                                 <td>{{ $Linea->CuentaHija}}</td>
                                 <td>{{ $Linea->TipoLinea}}</td>
-                                <td>{{ $Linea->obraid->NombreObra}}</td>
+                                <td>{{ $Linea->obras->NombreObra}}</td>
                                 <td>{{ $Linea->FechaFianza}}</td>
                                 <td>{{ $Linea->CostoFianza}}</td>
                                 <td>
@@ -429,7 +429,7 @@
                                     </label>
 
                                 </td>
-                               
+
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
 
                             </tr>
@@ -1252,7 +1252,7 @@
 
 
     function updatetelefTableRow(telefono) {
-        let row = $(`tr[data-id=${telefono.InventarioID}]`);    
+        let row = $(`tr[data-id=${telefono.InventarioID}]`);
         row.find('td:eq(11)').text(telefono.FechaAsignacion);
         row.find('td:eq(12)').text(telefono.Comentarios);
     }

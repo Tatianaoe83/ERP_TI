@@ -10,7 +10,7 @@ class TiposDeCategorias extends Model
     use HasFactory;
     public $table = 'tiposdecategorias';
     protected $primaryKey = 'ID';
-    protected $keyType = 'int'; 
+    protected $keyType = 'int';
 
     protected $fillable = ['Categoria'];
 }

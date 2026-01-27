@@ -35,6 +35,8 @@ class Solicitud extends Model
 
 
     public $table = 'solicitudes';
+    protected $primaryKey = 'SolicitudID';
+
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
@@ -45,8 +47,6 @@ class Solicitud extends Model
 
 
     public $fillable = [
-        'FechaSolicitud',
-        'SupervisorID',
         'Motivo',
         'DescripcionMotivo',
         'Requerimientos',
@@ -56,7 +56,7 @@ class Solicitud extends Model
         'GerenciaID',
         'PuestoID',
         'EmpleadoID',
-        'Proyecto'
+        'Proyecto',
     ];
 
     /**
@@ -66,7 +66,6 @@ class Solicitud extends Model
      */
     protected $casts = [
         'SolicitudID' => 'integer',
-        'SupervisorID' => 'integer',
         'Motivo' => 'string',
         'DescripcionMotivo' => 'string',
         'Requerimientos' => 'string',
@@ -76,7 +75,7 @@ class Solicitud extends Model
         'GerenciaID' => 'integer',
         'PuestoID' => 'integer',
         'EmpleadoID' => 'integer',
-        'Proyecto' => 'string'
+        'Proyecto' => 'string',
     ];
 
     /**
@@ -85,8 +84,6 @@ class Solicitud extends Model
      * @var array
      */
     public static $rules = [
-        'FechaSolicitud' => 'required',
-        'SupervisorID' => 'required|integer',
         'Motivo' => 'nullable|string',
         'DescripcionMotivo' => 'required|string',
         'Requerimientos' => 'required|string',
@@ -107,7 +104,7 @@ class Solicitud extends Model
      **/
     public function obraid()
     {
-        return $this->belongsTo(\App\Models\Obra::class, 'ObraID');
+        return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
 
     /**
@@ -115,7 +112,7 @@ class Solicitud extends Model
      **/
     public function empleadoid()
     {
-        return $this->belongsTo(\App\Models\Empleado::class, 'EmpleadoID');
+        return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');
     }
 
     /**
@@ -123,7 +120,7 @@ class Solicitud extends Model
      **/
     public function gerenciaid()
     {
-        return $this->belongsTo(\App\Models\Gerencium::class, 'GerenciaID');
+        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
     }
 
     /**
@@ -131,6 +128,49 @@ class Solicitud extends Model
      **/
     public function puestoid()
     {
-        return $this->belongsTo(\App\Models\Puesto::class, 'PuestoID');
+        return $this->belongsTo(\App\Models\Puestos::class, 'PuestoID');
+    }
+
+    /**
+     * Relación con cotizaciones
+     */
+    public function cotizaciones()
+    {
+        return $this->hasMany(\App\Models\Cotizacion::class, 'SolicitudID', 'SolicitudID');
+    }
+
+    /**
+     * Relación con pasos de aprobación
+     */
+    public function pasosAprobacion()
+    {
+        return $this->hasMany(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID');
+    }
+
+    /**
+     * Obtener el paso de aprobación del supervisor
+     */
+    public function pasoSupervisor()
+    {
+        return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
+            ->where('stage', 'supervisor');
+    }
+
+    /**
+     * Obtener el paso de aprobación de gerencia
+     */
+    public function pasoGerencia()
+    {
+        return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
+            ->where('stage', 'gerencia');
+    }
+
+    /**
+     * Obtener el paso de aprobación de administración
+     */
+    public function pasoAdministracion()
+    {
+        return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
+            ->where('stage', 'administracion');
     }
 }
