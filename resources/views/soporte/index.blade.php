@@ -269,15 +269,15 @@
                             <input type="hidden" name="SupervisorID" id="SupervisorID" class="SupervisorID">
                             <div id="suggestionsSupervisor" class="suggestionsSupervisor absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
                         </div>
-                        <div>
-                            <label for="Motivo">Selecciona el motivo de la solicitud</label>
-                            <select name="Motivo" id="Motivo" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                                <option value="">Selecciona el motivo de la solicitud</option>
-                                <option value="Nuevo Ingreso">Nuevo Ingreso</option>
-                                <option value="Reemplazo por fallo o descompostura">Reemplazo por fallo o descompostura</option>
-                                <option value="Renovación">Renovación</option>
-                            </select>
-                        </div>
+                            <div>
+                                <label for="Motivo">Selecciona el motivo de la solicitud</label>
+                                <select name="Motivo" id="Motivo" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
+                                    <option value="">Selecciona el motivo de la solicitud</option>
+                                    <option value="Nuevo Ingreso">Nuevo Ingreso</option>
+                                    <option value="Equipo Nuevo">Equipo Nuevo</option> <option value="Reemplazo por fallo o descompostura">Reemplazo por fallo o descompostura</option>
+                                    <option value="Renovación">Renovación</option>
+                                </select>
+                            </div>
                         <div>
                             <label for="DescripcionMotivo">Describe el motivo de la solicitud</label>
                             <textarea id="DescripcionMotivo" placeholder="Describe Motivo" name="DescripcionMotivo" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled></textarea>
@@ -522,32 +522,66 @@ function deshabilitarCamposSolicitud() {
     var $cont = $p.next('.select2-container');
     if($cont.length) $cont.addClass('select2-container--disabled');
 }
-
 function buscarEmpleadoSolicitud(correo) {
     $('#autoEmpleadosSolicitud').val('Buscando...');
+    
     $.ajax({
         url: '/buscarEmpleadoPorCorreo',
         method: 'GET',
         data: { correo: correo, type: 'Solicitud' },
         success: function(data) {
             window.correoSolicitudValido = true;
-            // Llenar campos
+            
+            // 1. Llenar campos visuales
             $('#autoEmpleadosSolicitud').val(data.NombreEmpleado).removeClass('border-blue-500').addClass('border-green-500');
             $('#NombreGerencia').val(data.NombreGerencia);
             $('#NombreObra').val(data.NombreObra);
             $('#NombrePuesto').val(data.NombrePuesto);
             
-            // IDs
+            // 2. Llenar IDs ocultos
             $('#EmpleadoIDSolicitud').val(data.EmpleadoID);
             $('#GerenciaID').val(data.GerenciaID);
             $('#ObraID').val(data.ObraID);
             $('#PuestoID').val(data.PuestoID);
 
-            // Habilitar
-            $('#Motivo, #DescripcionMotivo, #SupervisorNombre, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+            // =========================================================
+            // 3. LÓGICA PARA OCULTAR SUPERVISOR SI ES GERENTE
+            // =========================================================
+            let puesto = (data.NombrePuesto || '').toUpperCase();
+            let $supervisorInput = $('#SupervisorNombre');
+            let $supervisorContainer = $supervisorInput.closest('div'); // Selecciona el contenedor (label + input)
+
+            // Lista de palabras clave para identificar jefes que no requieren supervisor
+            if (puesto.includes('GERENTE') || puesto.includes('DIRECTOR')) {
+                // CASO GERENTE: Ocultamos el campo
+                $supervisorContainer.addClass('hidden'); 
+                
+                // Le ponemos un valor automático y quitamos el required para que el formulario pase
+                $supervisorInput
+                    .val('N/A - Jerarquía Gerencial')
+                    .prop('required', false)
+                    .prop('disabled', false); // Debe estar habilitado para que se envíe el valor "N/A"
+            } else {
+                // CASO NORMAL: Mostramos el campo
+                $supervisorContainer.removeClass('hidden');
+                
+                // Limpiamos, habilitamos y hacemos obligatorio
+                $supervisorInput
+                    .val('')
+                    .prop('required', true)
+                    .prop('disabled', false)
+                    .removeClass('bg-gray-100');
+            }
+
+            // 4. Habilitar el resto de los campos (Nota: Quité #SupervisorNombre de aquí porque ya se manejó arriba)
+            $('#Motivo, #DescripcionMotivo, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+            
+            // 5. Activar botón de envío
             $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500');
-            console.log('habilitarCamposSolicitud');
-            // DESBLOQUEAR UBICACIÓN (Select2)
+            
+            console.log('habilitarCamposSolicitud con lógica de jerarquía');
+            
+            // 6. Desbloquear ubicación (Select2)
             revivirSelect2(); 
         },
         error: function() {
@@ -792,6 +826,9 @@ function buscarEmpleadoTicket(correo) {
             });
         });
     </script>
+
+
+
     <script>
         (() => {
             const dropzone = document.getElementById("dropzone");
@@ -1072,6 +1109,10 @@ function buscarEmpleadoTicket(correo) {
             });
         });
     </script>
+
+
+
+
     <script>
         // Variables globales para rastrear validación de correos
         let correoValido = false;
@@ -1169,6 +1210,7 @@ function buscarEmpleadoTicket(correo) {
             });
 
             // Función corregida para buscar empleado (SOLICITUD)
+            // Función corregida para buscar empleado (SOLICITUD)
             function buscarEmpleadoPorCorreoSolicitud(correo) {
                 const $errorDiv = $('#correo-solicitud-error');
                 // Referencias a campos
@@ -1181,8 +1223,10 @@ function buscarEmpleadoTicket(correo) {
                 const $obraIDInput = $('#ObraID');
                 const $puestoIDInput = $('#PuestoID');
 
-                // 1. IMPORTANTE: NO bloquear aquí.
-                // deshabilitarCampoUbicacion(); // <--- ELIMINADO para evitar parpadeo
+                // Referencias al Supervisor
+                const $supervisorInput = $('#SupervisorNombre');
+                // Buscamos el contenedor padre (el div que envuelve el input y el label) para ocultar todo
+                const $supervisorContainer = $supervisorInput.closest('div'); 
 
                 // Indicadores visuales de carga
                 $empleadoInput.val('Buscando...').addClass('border-blue-500');
@@ -1199,7 +1243,7 @@ function buscarEmpleadoTicket(correo) {
                         type: 'Solicitud'
                     },
                     success: function(data) {
-                        // MARCAR COMO VÁLIDO INMEDIATAMENTE para que otros eventos no lo bloqueen
+                        // MARCAR COMO VÁLIDO INMEDIATAMENTE
                         correoSolicitudValido = true;
                         window.correoSolicitudValido = true;
 
@@ -1215,14 +1259,33 @@ function buscarEmpleadoTicket(correo) {
                         $obraIDInput.val(data.ObraID || '');
                         $puestoIDInput.val(data.PuestoID || '');
 
+                        // =======================================================
+                        // LÓGICA DE JERARQUÍA (GERENTE vs SUPERVISOR)
+                        // =======================================================
+                        let nombrePuesto = (data.NombrePuesto || '').toUpperCase();
+                        
+                        // Si el puesto contiene GERENTE o DIRECTOR, ocultamos supervisor
+                        if (nombrePuesto.includes('GERENTE') || nombrePuesto.includes('DIRECTOR')) {
+                            // Ocultar contenedor visualmente
+                            $supervisorContainer.addClass('hidden');
+                            
+                            // Deshabilitar validación y poner valor por defecto para que el backend no falle
+                            $supervisorInput.prop('required', false).prop('disabled', false).val('N/A - Jerarquía Gerencial');
+                        } else {
+                            // Si NO es gerente, mostramos el campo
+                            $supervisorContainer.removeClass('hidden');
+                            
+                            // Habilitar campo, limpiar valor anterior y hacerlo requerido
+                            $supervisorInput.prop('disabled', false).prop('required', true).val('').removeClass('bg-gray-100');
+                        }
+
                         // Habilitar campos de texto generales
                         $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
                         $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
-                        $('#SupervisorNombre').prop('disabled', false).removeClass('bg-gray-100');
                         $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
-                        console.log('Habilitando botón de enviar solicitud');
+                        
                         $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
-                        console.log('Habilitando botón de enviar solicitud');
+
                         // =======================================================
                         // ZONA CRÍTICA: DESBLOQUEO DE UBICACIÓN (PROYECTO)
                         // =======================================================
@@ -1238,7 +1301,6 @@ function buscarEmpleadoTicket(correo) {
                         }
 
                         // 3. TRUCO FINAL: Eliminamos manualmente la clase de bloqueo del contenedor visual
-                        // Esto arregla el problema visual aunque la lógica falle
                         var $s2Container = $proyecto.next('.select2-container');
                         if ($s2Container.length) {
                             $s2Container.removeClass('select2-container--disabled');
@@ -1249,17 +1311,15 @@ function buscarEmpleadoTicket(correo) {
                             });
                             $s2Container.find('input').prop('disabled', false);
                         }
-
-                        // NOTA: He eliminado los setTimeout que llamaban a habilitarCampoUbicacion()
-                        // porque esas funciones externas son las que te estaban volviendo a bloquear el campo.
-                        // =======================================================
                     },
                     error: function(xhr) {
                         // En error sí bloqueamos
                         correoSolicitudValido = false;
 
-                        // Bloquear ubicación
+                        // Bloquear ubicación y Supervisor
                         $('#Proyecto').prop('disabled', true);
+                        $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
+                        
                         try {
                             $('#Proyecto').select2('enable', false);
                         } catch (e) {}
@@ -1470,6 +1530,8 @@ function buscarEmpleadoTicket(correo) {
             }
         });
     </script>
+
+
     <script>
         // Script para validar correo y llenar datos automáticamente en formulario de Solicitud
         $(document).ready(function() {
@@ -1707,9 +1769,6 @@ function buscarEmpleadoTicket(correo) {
     console.log('deshabilitarCamposSolicitud');
     $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
 
-    // =================================================================
-    // AQUÍ ESTÁ EL ARREGLO DEL ERROR DE CONSOLA
-    // =================================================================
     var $proyecto = $('#Proyecto');
 
     // 1. Siempre deshabilitamos el HTML nativo (esto nunca falla y es seguro)

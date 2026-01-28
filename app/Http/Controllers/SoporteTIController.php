@@ -145,97 +145,62 @@ class SoporteTIController extends Controller
         return response()->json($data);
     }
 
-    public function crearTickets(Request $request)
+public function crearTickets(Request $request)
     {
-
-
         $type = $request->input('type');
-
 
         if (!in_array($type, ['Ticket', 'Solicitud'])) {
             \Log::warning('Tipo no válido: ' . $type);
             return redirect()->back()->with(['error' => 'Tipo no válido'], 400);
         }
 
+        // ==========================================
+        // LÓGICA PARA TICKETS (Igual que siempre)
+        // ==========================================
         if ($type === 'Ticket') {
 
-            // Validar que el correo esté presente
-            $correo = $request->input('Correo');
-            if (empty($correo)) {
-                return redirect()->back()->with('error', 'El correo electrónico es requerido');
-            }
+             $correo = $request->input('Correo');
+             if (empty($correo)) return redirect()->back()->with('error', 'El correo electrónico es requerido');
+             
+             $empleado = Empleados::where('Correo', $correo)->first();
+             if (!$empleado) return redirect()->back()->with('error', 'No se encontró el empleado');
+             
+             $descripcion = $request->input('Descripcion');
+             if (empty($descripcion)) return redirect()->back()->with('error', 'La descripción es requerida');
 
-            // Buscar el empleado por correo para obtener el EmpleadoID
-            $empleado = Empleados::where('Correo', $correo)->first();
-            if (!$empleado) {
-                return redirect()->back()->with('error', 'No se encontró el empleado con el correo proporcionado');
-            }
-
-            // Validar que la descripción esté presente
-            $descripcion = $request->input('Descripcion');
-            if (empty($descripcion)) {
-                return redirect()->back()->with('error', 'La descripción es requerida');
-            }
-
-            $files = $request->file('imagen');
-            $names = [];
-
-            if ($files && is_array($files)) {
-                foreach ($files as $file) {
-                    if ($file && $file->isValid()) {
-                        $fileName = uniqid() . '_' . $file->getClientOriginalName();
-                        $path = $file->storeAs('tickets', $fileName, 'public');
-                        $names[] = $path;
-                    }
-                }
-            }
-
-            try {
-                // Preparar datos para el ticket
-                $ticketData = [
-                    'EmpleadoID' => $empleado->EmpleadoID,
-                    'Descripcion' => $descripcion,
-                    'Prioridad' => 'Baja', // Valor por defecto para tickets desde el formulario público
-                    'Estatus' => 'Pendiente', // Valor por defecto
-                ];
-
-                // Agregar campos opcionales solo si tienen valor
-                if ($request->input('Numero')) {
-                    $ticketData['Numero'] = $request->input('Numero');
-                }
-
-                if ($request->input('CodeAnyDesk')) {
-                    $ticketData['CodeAnyDesk'] = $request->input('CodeAnyDesk');
-                }
-
-                if (!empty($names)) {
-                    $ticketData['imagen'] = json_encode($names);
-                }
-
-                // Crear el ticket
-
-                $ticket = Tickets::create($ticketData);
-
-
-                return redirect()->back()->with([
-                    'success' => 'Ticket guardado correctamente',
-                    'tipo' => 'Ticket'
-                ]);
-            } catch (\Illuminate\Database\QueryException $e) {
-                \Log::error('Error SQL al crear ticket: ' . $e->getMessage());
-                \Log::error('SQL: ' . $e->getSql());
-                \Log::error('Bindings: ' . json_encode($e->getBindings()));
-                return redirect()->back()->with('error', 'Error al guardar el ticket. Por favor verifica los datos e intenta nuevamente.');
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                \Log::error('Error de validación al crear ticket: ' . $e->getMessage());
-                return redirect()->back()->with('error', 'Error de validación: ' . $e->getMessage());
-            } catch (\Exception $e) {
-                \Log::error('Error al crear ticket: ' . $e->getMessage());
-                \Log::error('Stack trace: ' . $e->getTraceAsString());
-                return redirect()->back()->with('error', 'Error al guardar el ticket: ' . $e->getMessage());
-            }
+             $files = $request->file('imagen');
+             $names = [];
+             if ($files && is_array($files)) {
+                 foreach ($files as $file) {
+                     if ($file && $file->isValid()) {
+                         $fileName = uniqid() . '_' . $file->getClientOriginalName();
+                         $path = $file->storeAs('tickets', $fileName, 'public');
+                         $names[] = $path;
+                     }
+                 }
+             }
+ 
+             try {
+                 $ticketData = [
+                     'EmpleadoID' => $empleado->EmpleadoID,
+                     'Descripcion' => $descripcion,
+                     'Prioridad' => 'Baja',
+                     'Estatus' => 'Pendiente',
+                 ];
+                 if ($request->input('Numero')) $ticketData['Numero'] = $request->input('Numero');
+                 if ($request->input('CodeAnyDesk')) $ticketData['CodeAnyDesk'] = $request->input('CodeAnyDesk');
+                 if (!empty($names)) $ticketData['imagen'] = json_encode($names);
+ 
+                 Tickets::create($ticketData);
+                 return redirect()->back()->with(['success' => 'Ticket guardado correctamente', 'tipo' => 'Ticket']);
+             } catch (\Exception $e) {
+                 return redirect()->back()->with('error', 'Error al guardar ticket: ' . $e->getMessage());
+             }
         }
 
+        // ==========================================
+        // LÓGICA PARA SOLICITUDES (CORREGIDA VISUALMENTE)
+        // ==========================================
         if ($type === 'Solicitud') {
 
             $data = $request->validate([
@@ -246,7 +211,7 @@ class SoporteTIController extends Controller
                 'ObraID' => 'required|integer',
                 'PuestoID' => 'required|integer',
                 'Proyecto' => 'nullable|string',
-                'SupervisorID' => 'required|integer',
+                'SupervisorID' => 'nullable', 
             ]);
 
             $empleadoSolicitante = Empleados::where('Correo', $data['Correo'])->first();
@@ -254,46 +219,46 @@ class SoporteTIController extends Controller
                 return redirect()->back()->with('error', 'Empleado solicitante no encontrado');
             }
 
-            $supervisor = Empleados::find($data['SupervisorID']);
-            if (! $supervisor) {
-                return redirect()->back()->with('error', 'Supervisor no encontrado');
+            // 1. Detectar Supervisor
+            $supervisor = null;
+            if (!empty($data['SupervisorID']) && is_numeric($data['SupervisorID']) && $data['SupervisorID'] > 0) {
+                $supervisor = Empleados::find($data['SupervisorID']);
             }
 
-            $gerencia = $supervisor->puestos?->departamentos?->gerencia;
+            // 2. Definir Gerencia
+            $gerencia = null;
+            if ($supervisor) {
+                $gerencia = $supervisor->puestos?->departamentos?->gerencia;
+            } else {
+                $gerencia = $empleadoSolicitante->puestos?->departamentos?->gerencia;
+            }
 
-            if (! $gerencia || ! $gerencia->NombreGerente) {
-                return redirect()->back()->with('error', 'El supervisor no tiene gerencia válida');
+            if (!$gerencia || !$gerencia->NombreGerente) {
+                return redirect()->back()->with('error', 'No se pudo determinar la Gerencia o el Gerente');
             }
 
             $gerente = Empleados::where('NombreEmpleado', $gerencia->NombreGerente)->first();
-            if (! $gerente) {
-                return redirect()->back()->with('error', 'Gerente no encontrado');
-            }
-
+            
+            // Configurar Admin
             $gerenciaAdmin = Gerencia::where('NombreGerencia', 'Administración')->first();
-            if (! $gerenciaAdmin || ! $gerenciaAdmin->NombreGerente) {
-                return redirect()->back()->with('error', 'Gerencia Administración mal configurada');
-            }
-
             $admin = Empleados::where('NombreEmpleado', $gerenciaAdmin->NombreGerente)->first();
-            if (! $admin) {
-                return redirect()->back()->with('error', 'Administrador no encontrado');
+
+            if (!$gerente || !$admin) {
+                return redirect()->back()->with('error', 'Faltan aprobadores configurados');
             }
 
             $firstToken = null;
             $solicitudId = null;
+            $primerAprobadorReal = null; 
+            $rolPrimerAprobador = '';
 
             try {
                 DB::transaction(function () use (
-                    $data,
-                    $empleadoSolicitante,
-                    $supervisor,
-                    $gerencia,
-                    $gerente,
-                    $admin,
-                    &$firstToken,
-                    &$solicitudId
+                    $data, $empleadoSolicitante, $supervisor, $gerencia, 
+                    $gerente, $admin, 
+                    &$firstToken, &$solicitudId, &$primerAprobadorReal, &$rolPrimerAprobador
                 ) {
+                    // Crear Solicitud
                     $solicitud = Solicitud::create([
                         'EmpleadoID' => $empleadoSolicitante->EmpleadoID,
                         'Motivo' => $data['Motivo'] ?? null,
@@ -304,41 +269,104 @@ class SoporteTIController extends Controller
                         'PuestoID' => $data['PuestoID'],
                         'Proyecto' => $data['Proyecto'] ?? '',
                         'Estatus' => 'Pendiente',
+                        'SupervisorID' => $supervisor ? $supervisor->EmpleadoID : null,
                     ]);
 
                     $solicitudId = $solicitud->SolicitudID;
 
-                    $steps = [
-                        ['order' => 1, 'stage' => 'supervisor',     'approver' => $supervisor->EmpleadoID],
-                        ['order' => 2, 'stage' => 'gerencia',       'approver' => $gerente->EmpleadoID],
-                        ['order' => 3, 'stage' => 'administracion', 'approver' => $admin->EmpleadoID],
+                    // CONSTRUCCIÓN DE PASOS
+                    $steps = [];
+                    $ordenActual = 1;
+
+                    // PASO 1: SUPERVISOR
+                    if ($supervisor) {
+                        // Caso Normal: Pendiente
+                        $steps[] = [
+                            'stage' => 'supervisor',
+                            'approver' => $supervisor->EmpleadoID,
+                            'role' => 'Supervisor',
+                            'status' => 'pending',          // <-- Pendiente normal
+                            'comment' => null,
+                            'decided_by' => null,
+                            'decided_at' => null
+                        ];
+                    } else {
+                        // Caso Gerente: AUTO-APROBADO
+                        // Creamos el registro para que se vea el CHECK VERDE en la vista
+                        $steps[] = [
+                            'stage' => 'supervisor',
+                            'approver' => $empleadoSolicitante->EmpleadoID, // Asignamos al mismo solicitante
+                            'role' => 'Supervisor',
+                            'status' => 'approved',         // <-- APROBADO DIRECTO
+                            'comment' => 'Aprobación automática por jerarquía (Gerencia).',
+                            'decided_by' => $empleadoSolicitante->EmpleadoID,
+                            'decided_at' => now()
+                        ];
+                    }
+
+                    // PASO 2: GERENCIA (Siempre Pendiente)
+                    $steps[] = [
+                        'stage' => 'gerencia',
+                        'approver' => $gerente->EmpleadoID,
+                        'role' => 'Gerencia',
+                        'status' => 'pending',
+                        'comment' => null,
+                        'decided_by' => null,
+                        'decided_at' => null
                     ];
 
-                    foreach ($steps as $idx => $s) {
+                    // PASO 3: ADMINISTRACIÓN
+                    $steps[] = [
+                        'stage' => 'administracion',
+                        'approver' => $admin->EmpleadoID,
+                        'role' => 'Administración',
+                        'status' => 'pending',
+                        'comment' => null,
+                        'decided_by' => null,
+                        'decided_at' => null
+                    ];
+
+                    // Guardar Pasos
+                    $emailEncontrado = false;
+
+                    foreach ($steps as $s) {
                         $step = SolicitudPasos::create([
                             'solicitud_id' => $solicitud->SolicitudID,
-                            'step_order' => $s['order'],
+                            'step_order' => $ordenActual++,
                             'stage' => $s['stage'],
                             'approver_empleado_id' => $s['approver'],
-                            'status' => 'pending',
+                            'status' => $s['status'], // 'pending' o 'approved'
+                            'comment' => $s['comment'],
+                            'decided_by_empleado_id' => $s['decided_by'],
+                            'decided_at' => $s['decided_at']
                         ]);
 
+                        // Generar Token
                         $tokenRow = SolicitudTokens::create([
                             'approval_step_id' => $step->id,
                             'token' => Str::uuid(),
                             'expires_at' => now()->addDays(7),
+                            // Si ya está aprobado, quemamos el token
+                            'used_at' => ($s['status'] === 'approved') ? now() : null,
                         ]);
-                        if ($idx === 0) {
+
+                        // Detectar a quién enviar el correo
+                        // Buscamos el PRIMER paso que esté 'pending'
+                        if ($s['status'] === 'pending' && !$emailEncontrado) {
                             $firstToken = $tokenRow->token;
+                            $primerAprobadorReal = Empleados::find($s['approver']);
+                            $rolPrimerAprobador = $s['role'];
+                            $emailEncontrado = true; // Dejamos de buscar
                         }
                     }
                 });
 
-                if ($firstToken && $solicitudId) {
+                // Enviar Correo al primer aprobador REAL encontrado
+                if ($firstToken && $solicitudId && $primerAprobadorReal) {
                     $solicitud = Solicitud::with('empleadoid')->find($solicitudId);
-                    if ($solicitud && $supervisor) {
+                    if ($solicitud) {
                         app(SolicitudAprobacionEmailService::class)
-                            ->enviarRevisionPendiente($supervisor, $solicitud, $firstToken, 'Supervisor');
+                            ->enviarRevisionPendiente($primerAprobadorReal, $solicitud, $firstToken, $rolPrimerAprobador);
                     }
                 }
 
@@ -346,18 +374,13 @@ class SoporteTIController extends Controller
                     'success' => 'Solicitud guardada correctamente',
                     'tipo' => 'Solicitud',
                 ]);
-            } catch (\Illuminate\Database\QueryException $e) {
-                \Log::error('Error SQL al crear solicitud: ' . $e->getMessage());
-                \Log::error('SQL: ' . $e->getSql());
-                \Log::error('Bindings: ' . json_encode($e->getBindings()));
-                return redirect()->back()->with('error', 'Error al guardar la solicitud. Por favor verifica los datos e intenta nuevamente.');
+
             } catch (\Exception $e) {
-                \Log::error('Error al crear solicitud: ' . $e->getMessage());
-                \Log::error('Stack trace: ' . $e->getTraceAsString());
-                return redirect()->back()->with('error', 'Error al guardar la solicitud: ' . $e->getMessage());
+                \Log::error('Error al guardar: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Error al guardar la solicitud.');
             }
         }
 
-        return redirect()->back()->with(['error' => 'Ocurrió un error inesperado'], 500);
+        return redirect()->back()->with(['error' => 'Error inesperado'], 500);
     }
 }
