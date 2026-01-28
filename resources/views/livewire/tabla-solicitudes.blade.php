@@ -1,386 +1,161 @@
-@verbatim
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('solicitudesData', () => ({
-            modalAbierto: false,
-            modalCotizacionAbierto: false,
-            solicitudSeleccionada: null,
-            solicitudCotizacionId: null,
-            cargando: false,
-            cargandoCotizaciones: false,
-            proveedores: ['INTERCOMPRAS', 'PCEL', 'ABASTEO'],
-            productos: [],
-            tieneCotizacionesGuardadas: false,
-            tieneCotizacionesEnviadas: false,
-            // Filtros
-            filtros: {
-                estatus: ''
-            },
-            abrirModal(id) {
-                this.cargando = true;
-                this.modalAbierto = true;
-                fetch(`/solicitudes/${id}/datos`)
-                    .then(response => response.json())
-                    .then(data => {
-                        this.solicitudSeleccionada = data;
-                        this.cargando = false;
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        Swal.fire('Error', 'No se pudo cargar la información de la solicitud', 'error');
-                        this.cargando = false;
-                        this.modalAbierto = false;
-                    });
-            },
-            cerrarModal() {
-                this.modalAbierto = false;
-                this.solicitudSeleccionada = null;
-            },
-            abrirModalCotizacion(id) {
-                this.solicitudCotizacionId = id;
-                this.modalCotizacionAbierto = true;
-                this.cargarCotizaciones(id);
-            },
-            cerrarModalCotizacion() {
-                this.modalCotizacionAbierto = false;
-                this.solicitudCotizacionId = null;
-                this.productos = [];
-                this.tieneCotizacionesGuardadas = false;
-                this.tieneCotizacionesEnviadas = false;
-            },
-            async agregarProveedor() {
-                const { value: nombre } = await Swal.fire({
-                    title: 'Agregar Proveedor',
-                    input: 'text',
-                    inputPlaceholder: 'Nombre del proveedor...',
-                    showCancelButton: true,
-                    confirmButtonText: 'Aceptar',
-                    cancelButtonText: 'Cancelar',
-                    inputValidator: (value) => {
-                        if (!value || !value.trim()) {
-                            return 'Por favor escribe un nombre';
-                        }
-                        if (this.proveedores.includes(value.trim())) {
-                            return 'Este proveedor ya está en la lista';
-                        }
-                    }
-                });
-
-                if (nombre) {
-                    const nuevoProveedor = nombre.trim();
-                    this.proveedores.push(nuevoProveedor);
-                    
-                    // Actualiza los productos existentes con la nueva columna vacía
-                    this.productos.forEach(prod => {
-                        if (!prod.precios) prod.precios = {};
-                        prod.precios[nuevoProveedor] = '';
-                    });
-                }
-            },
-            eliminarProveedor(index) {
-                if (this.proveedores.length > 1) {
-                    const proveedorEliminado = this.proveedores[index];
-                    this.proveedores.splice(index, 1);
-                    this.productos.forEach(prod => {
-                        if (prod.precios && prod.precios[proveedorEliminado]) {
-                            delete prod.precios[proveedorEliminado];
-                        }
-                    });
-                } else {
-                    Swal.fire('Aviso', 'Debe haber al menos un proveedor', 'warning');
-                }
-            },
-            agregarProducto() {
-                const nuevoProducto = {
-                    cantidad: 1,
-                    numeroParte: '',
-                    descripcion: '',
-                    unidad: 'PIEZA',
-                    precios: {},
-                    tiempoEntrega: {},
-                    observaciones: {}
-                };
-                this.proveedores.forEach(prov => {
-                    nuevoProducto.precios[prov] = '';
-                });
-                this.productos.push(nuevoProducto);
-            },
-            eliminarProducto(index) {
-                this.productos.splice(index, 1);
-            },
-            cargarCotizaciones(id) {
-                this.cargandoCotizaciones = true;
-                // Limpiar datos previos
-                this.productos = [];
-                this.proveedores = [];
-
-                fetch(`/solicitudes/${id}/cotizaciones`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Datos recibidos:', data);
-
-                        // Primero establecer los proveedores
-                        if (data.proveedores && Array.isArray(data.proveedores) && data.proveedores.length > 0) {
-                            this.proveedores = data.proveedores;
-                        } else {
-                            // Si no hay proveedores en los datos, inicializar con uno por defecto
-                            this.proveedores = ['INTERCOMPRAS'];
-                        }
-
-                        // Luego procesar los productos
-                        if (data.productos && Array.isArray(data.productos) && data.productos.length > 0) {
-                            this.productos = data.productos.map(prod => {
-                                // Asegurar que el objeto precios existe
-                                if (!prod.precios || typeof prod.precios !== 'object') {
-                                    prod.precios = {};
-                                }
-
-                                // Asegurar que todos los proveedores tengan una entrada en precios
-                                this.proveedores.forEach(prov => {
-                                    if (!prod.precios.hasOwnProperty(prov)) {
-                                        prod.precios[prov] = '';
-                                    } else {
-                                        // Convertir a string si es número para que funcione con el input
-                                        if (typeof prod.precios[prov] === 'number') {
-                                            prod.precios[prov] = prod.precios[prov].toString();
-                                        }
-                                    }
-                                });
-
-                                // Asegurar otros campos
-                                if (!prod.cantidad) prod.cantidad = 1;
-                                if (!prod.numeroParte) prod.numeroParte = '';
-                                if (!prod.descripcion) prod.descripcion = '';
-                                if (!prod.unidad) prod.unidad = 'PIEZA';
-
-                                return prod;
-                            });
-                            this.tieneCotizacionesGuardadas = true;
-                        } else {
-                            // Si no hay productos, agregar uno vacío para que el usuario pueda empezar
-                            this.agregarProducto();
-                            this.tieneCotizacionesGuardadas = false;
-                        }
-
-                        this.tieneCotizacionesEnviadas = data.tieneCotizacionesEnviadas || false;
-                        this.cargandoCotizaciones = false;
-                    })
-                    .catch(error => {
-                        console.error('Error cargando cotizaciones:', error);
-                        // En caso de error, inicializar con valores por defecto
-                        if (this.proveedores.length === 0) {
-                            this.proveedores = ['INTERCOMPRAS'];
-                        }
-                        if (this.productos.length === 0) {
-                            this.agregarProducto();
-                        }
-                        this.tieneCotizacionesGuardadas = false;
-                        this.tieneCotizacionesEnviadas = false;
-                        this.cargandoCotizaciones = false;
-
-                        // Mostrar mensaje de error al usuario
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Aviso',
-                            text: 'No se pudieron cargar las cotizaciones guardadas. Puedes agregar nuevas cotizaciones.',
-                            confirmButtonColor: '#0F766E'
-                        });
-                    });
-            },
-            guardarCotizaciones() {
-                if (this.productos.length === 0) {
-                    Swal.fire('Aviso', 'Debe agregar al menos un producto', 'warning');
-                    return;
-                }
-
-                const productosValidos = this.productos.filter(prod => prod.descripcion && prod.descripcion.trim() !== '');
-                if (productosValidos.length === 0) {
-                    Swal.fire('Aviso', 'Debe agregar al menos un producto con descripción', 'warning');
-                    return;
-                }
-
-                const tienePrecios = productosValidos.some(prod => {
-                    return Object.values(prod.precios || {}).some(precio =>
-                        precio !== null && precio !== '' && precio !== undefined && parseFloat(precio) > 0
-                    );
-                });
-                if (!tienePrecios) {
-                    Swal.fire('Aviso', 'Debe ingresar al menos un precio para algún producto', 'warning');
-                    return;
-                }
-
-                const datos = {
-                    proveedores: this.proveedores,
-                    productos: this.productos.map(prod => {
-                        const preciosLimpios = {};
-                        Object.keys(prod.precios || {}).forEach(prov => {
-                            const precio = prod.precios[prov];
-                            if (precio !== null && precio !== '' && precio !== undefined) {
-                                preciosLimpios[prov] = parseFloat(precio) || 0;
-                            }
-                        });
-
-                        return {
-                            cantidad: parseInt(prod.cantidad) || 1,
-                            numero_parte: (prod.numeroParte || '').trim(),
-                            descripcion: (prod.descripcion || '').trim(),
-                            unidad: (prod.unidad || 'PIEZA').trim(),
-                            precios: preciosLimpios,
-                            tiempo_entrega: prod.tiempoEntrega || {},
-                            observaciones: prod.observaciones || {}
-                        };
-                    }).filter(prod => prod.descripcion !== '')
-                };
-
-                Swal.fire({
-                    title: 'Guardando...',
-                    text: 'Por favor espere',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                fetch(`/solicitudes/${this.solicitudCotizacionId}/guardar-cotizaciones`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify(datos)
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => Promise.reject(err));
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        Swal.close();
-                        if (data.success) {
-                            this.tieneCotizacionesGuardadas = true;
-                            Swal.fire('Éxito', data.message || 'Cotizaciones guardadas correctamente', 'success');
-                        } else {
-                            Swal.fire('Error', data.message || 'Error al guardar las cotizaciones', 'error');
-                        }
-                    })
-                    .catch(error => {
-                        Swal.close();
-                        console.error('Error:', error);
-                        const mensaje = error.message || error.error || 'Error al guardar las cotizaciones';
-                        Swal.fire('Error', mensaje, 'error');
-                    });
-            },
-            obtenerPrecioMinimo(producto) {
-                const precios = Object.values(producto.precios || {}).filter(p => p && parseFloat(p) > 0);
-                return precios.length > 0 ? Math.min(...precios.map(p => parseFloat(p))) : null;
-            },
-            enviarCotizacionesAlGerente() {
-                if (!this.solicitudCotizacionId) {
-                    Swal.fire('Error', 'No hay solicitud seleccionada', 'error');
-                    return;
-                }
-
-                Swal.fire({
-                    title: '¿Enviar cotizaciones al gerente?',
-                    text: 'Se enviará un correo electrónico al gerente con las cotizaciones para que elija el ganador.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, enviar',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#10b981'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Enviando...',
-                            text: 'Por favor espere',
-                            allowOutsideClick: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-
-                        fetch(`/solicitudes/${this.solicitudCotizacionId}/enviar-cotizaciones-gerente`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                                }
-                            })
-                            .then(response => {
-                                if (!response.ok) {
-                                    return response.json().then(err => Promise.reject(err));
-                                }
-                                return response.json();
-                            })
-                            .then(data => {
-                                Swal.close();
-                                if (data.success) {
-                                    Swal.fire('Éxito', data.message || 'Correo enviado al gerente correctamente', 'success').then(() => {
-                                        this.cerrarModalCotizacion();
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire('Error', data.message || 'Error al enviar el correo', 'error');
-                                }
-                            })
-                            .catch(error => {
-                                Swal.close();
-                                console.error('Error:', error);
-                                const mensaje = error.message || error.error || 'Error al enviar el correo';
-                                Swal.fire('Error', mensaje, 'error');
-                            });
-                    }
-                });
-            }
-        }));
-    });
-</script>
-@endverbatim
-
-<div
-    x-data="solicitudesData()"
-    class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+<div x-data="solicitudesData()">
     
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-        <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
-    </div>
-
-    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-        <div class="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800/50">
-            <i class="fas fa-filter text-slate-400 dark:text-slate-500"></i>
-            <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Filtros</h3>
-            <button
-                @click="filtros = { estatus: '' }"
-                x-show="filtros.estatus"
-                class="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors duration-200">
-                Limpiar filtro
-            </button>
+    <div class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+        
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
         </div>
-        <div class="flex gap-3">
-            <div class="flex-1 max-w-xs">
-                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Estatus</label>
-                <select
-                    x-model="filtros.estatus"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todos los estatus</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En revisión">En revisión</option>
-                    <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
-                    <option value="Aprobada">Aprobada</option>
-                    <option value="Rechazada">Rechazada</option>
-                </select>
+
+        <div wire:poll.15s>
+            
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                <div class="flex gap-3">
+                    <div class="flex-1 max-w-xs">
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Estatus</label>
+                        <select wire:model.live="filtroEstatus" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200">
+                            <option value="">Todos los estatus</option>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En revisión">En revisión</option>
+                            <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
+                            <option value="Aprobada">Aprobada</option>
+                            <option value="Rechazada">Rechazada</option>
+                        </select>
+                    </div>
+                    
+                    @if($filtroEstatus)
+                        <button wire:click="$set('filtroEstatus', '')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-6">
+                            Limpiar filtro
+                        </button>
+                    @endif
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                    <thead class="bg-slate-100 dark:bg-slate-800">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Empleado</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Motivo</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estatus</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aprobaciones</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cotiz.</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-transparent">
+                        
+                        @forelse ($todasSolicitudes as $solicitud)
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800">
+
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">#{{ $solicitud->SolicitudID }}</div>
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->nombreFormateado }}</div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($solicitud->empleadoid->Correo ?? 'N/A', 25) }}</div>
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <div class="text-sm text-slate-700 dark:text-slate-300">{{ Str::limit($solicitud->Motivo ?? 'N/A', 30) }}</div>
+                                </td>
+
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold {{ $solicitud->colorEstatus }}">
+                                        {{ $solicitud->estatusDisplay }}
+                                    </span>
+                                </td>
+
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        @if($solicitud->pasoSupervisor)
+                                            @if($solicitud->pasoSupervisor->status === 'approved')
+                                                <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Supervisor: Aprobado"></i>
+                                            @elseif($solicitud->pasoSupervisor->status === 'rejected')
+                                                <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Supervisor: Rechazado"></i>
+                                            @else
+                                                <i class="far fa-circle text-yellow-500 dark:text-yellow-400" title="Supervisor: Pendiente"></i>
+                                            @endif
+                                        @else
+                                            <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Supervisor: Pendiente"></i>
+                                        @endif
+
+                                        @if($solicitud->pasoGerencia)
+                                            @if($solicitud->pasoGerencia->status === 'approved')
+                                                <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Gerencia: Aprobado"></i>
+                                            @elseif($solicitud->pasoGerencia->status === 'rejected')
+                                                <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Gerencia: Rechazado"></i>
+                                            @else
+                                                <i class="far fa-circle text-orange-500 dark:text-orange-400" title="Gerencia: Pendiente"></i>
+                                            @endif
+                                        @else
+                                            <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Gerencia: Esperando"></i>
+                                        @endif
+
+                                        @if($solicitud->pasoAdministracion)
+                                            @if($solicitud->pasoAdministracion->status === 'approved')
+                                                <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Administración: Aprobado"></i>
+                                            @elseif($solicitud->pasoAdministracion->status === 'rejected')
+                                                <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Administración: Rechazado"></i>
+                                            @else
+                                                <i class="far fa-circle text-purple-500 dark:text-purple-400" title="Administración: Pendiente"></i>
+                                            @endif
+                                        @else
+                                            <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Administración: Esperando"></i>
+                                        @endif
+                                    </div>
+                                </td>
+
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    @if($solicitud->cotizaciones && $solicitud->cotizaciones->count() > 0)
+                                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->cotizaciones->count() }}/3</span>
+                                    @else
+                                        <span class="text-sm text-slate-400 dark:text-slate-500">0/3</span>
+                                    @endif
+                                </td>
+
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm text-slate-700 dark:text-slate-300">{{ $solicitud->created_at->format('d/m/Y') }}</div>
+                                </td>
+
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <button
+                                            @click="abrirModal({{ $solicitud->SolicitudID }})"
+                                            class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium transition-colors">
+                                            <i class="fas fa-eye mr-1"></i> Ver
+                                        </button>
+
+                                        @if($solicitud->puedeCotizar)
+                                            <button
+                                                @click="abrirModalCotizacion({{ $solicitud->SolicitudID }})"
+                                                class="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium transition-colors">
+                                                <i class="fas fa-file-invoice-dollar mr-1"></i> Cotizar
+                                            </button>
+                                        @endif
+
+                                        @if($solicitud->puedeSubirFactura)
+                                            <span class="text-emerald-600 dark:text-emerald-400 text-sm font-medium cursor-default">
+                                                <i class="fas fa-file-invoice mr-1"></i> Factura
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                    <i class="fas fa-inbox text-4xl mb-3 block text-slate-300 dark:text-slate-600"></i>
+                                    <p class="text-lg font-medium">No hay solicitudes registradas</p>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
-
-    <div class="overflow-x-auto">
-        <livewire:tabla-solicitudes />
     </div>
 
     <template x-teleport="body">
@@ -780,91 +555,5 @@
             </div>
         </div>
     </template>
-</div>
-<!-- Scripts para manejar aprobaciones -->
-<script>
-    function aprobarSolicitud(solicitudId, nivel) {
-        Swal.fire({
-            title: '¿Aprobar solicitud?',
-            text: 'Ingrese un comentario (opcional)',
-            input: 'textarea',
-            inputPlaceholder: 'Comentario...',
-            showCancelButton: true,
-            confirmButtonText: 'Aprobar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#10b981',
-            preConfirm: (comentario) => {
-                return fetch(`/solicitudes/${solicitudId}/aprobar-${nivel}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({
-                            comentario: comentario || ''
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.success) {
-                            throw new Error(data.message || 'Error al aprobar');
-                        }
-                        return data;
-                    });
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire('¡Aprobado!', result.value.message, 'success').then(() => {
-                    location.reload();
-                });
-            }
-        }).catch(error => {
-            Swal.fire('Error', error.message, 'error');
-        });
-    }
 
-    function rechazarSolicitud(solicitudId, nivel) {
-        Swal.fire({
-            title: '¿Rechazar solicitud?',
-            text: 'Ingrese el motivo del rechazo',
-            input: 'textarea',
-            inputPlaceholder: 'Motivo del rechazo...',
-            inputValidator: (value) => {
-                if (!value) {
-                    return 'Debe ingresar un motivo';
-                }
-            },
-            showCancelButton: true,
-            confirmButtonText: 'Rechazar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#ef4444',
-            preConfirm: (comentario) => {
-                return fetch(`/solicitudes/${solicitudId}/rechazar-${nivel}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({
-                            comentario: comentario
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.success) {
-                            throw new Error(data.message || 'Error al rechazar');
-                        }
-                        return data;
-                    });
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire('Rechazada', result.value.message, 'info').then(() => {
-                    location.reload();
-                });
-            }
-        }).catch(error => {
-            Swal.fire('Error', error.message, 'error');
-        });
-    }
-</script>
+</div>
