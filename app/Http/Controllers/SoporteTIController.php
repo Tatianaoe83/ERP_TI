@@ -240,8 +240,7 @@ public function crearTickets(Request $request)
             $gerente = Empleados::where('NombreEmpleado', $gerencia->NombreGerente)->first();
             
             // Configurar Admin
-            $gerenciaAdmin = Gerencia::where('NombreGerencia', 'Administración')->first();
-            $admin = Empleados::where('NombreEmpleado', $gerenciaAdmin->NombreGerente)->first();
+            $admin = Empleados::where('NombreEmpleado', 'BAAS SANCHEZ JOSE ALBERTO')->first();
 
             if (!$gerente || !$admin) {
                 return redirect()->back()->with('error', 'Faltan aprobadores configurados');
