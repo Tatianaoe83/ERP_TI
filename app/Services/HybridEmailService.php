@@ -109,13 +109,9 @@ class HybridEmailService
         <head>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-                .header { background-color: #007bff; color: white; padding: 20px; border-radius: 8px; }
                 .content { margin: 20px 0; }
-                .response { background-color: #f8f9fa; padding: 20px; border-left: 4px solid #007bff; margin: 20px 0; border-radius: 4px; }
-                .instructions { background-color: #fff3cd; padding: 20px; border: 1px solid #ffeaa7; border-radius: 8px; margin: 20px 0; }
-                .ticket-info { background-color: #e9ecef; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                .important { background-color: #f8d7da; padding: 15px; border: 1px solid #f5c6cb; border-radius: 8px; margin: 15px 0; }
-                .code { background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; }
+                .response { padding: 20px; margin: 20px 0; }
+                .important { padding: 15px; margin: 15px 0; }
             </style>
         </head>
         <body>
@@ -125,13 +121,13 @@ class HybridEmailService
                 <p>Hemos recibido tu solicitud y te proporcionamos la siguiente respuesta:</p>
                 
                 <div class='response'>
-                    <h3>💬 Respuesta del Soporte:</h3>
+                    <h3>Respuesta del Soporte:</h3>
                     " . $mensaje . "
                 </div>
                 
                 
                 <div class='important'>
-                    <h3>⚠️ Importante:</h3>
+                    <h3>Importante:</h3>
                     <ul>
                         <li><strong>NO cambies el asunto del correo</strong></li>
                         <li><strong>NO agregues texto al asunto</strong></li>
@@ -142,7 +138,7 @@ class HybridEmailService
             
             </div>
             
-            <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d;'>
+            <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #000; font-size: 12px;'>
                 <p><strong>Sistema de Tickets ERP TI - Proser</strong></p>
                 <p>Este es un correo automático. Para responder, simplemente responde a este correo manteniendo el asunto original.</p>
             </div>
