@@ -15,6 +15,8 @@ class TicketsKanbanUpdater extends Component
         $this->actualizarDatos();
     }
     
+    protected $listeners = ['ticket-estatus-actualizado' => 'actualizarDatos'];
+    
     public function actualizarDatos()
     {
         // Recargar todos los tickets

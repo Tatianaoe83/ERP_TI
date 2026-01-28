@@ -1,4 +1,4 @@
-<div wire:poll.30s="actualizarDatos" 
+<div wire:poll.3s="actualizarDatos" 
      wire:loading.class="opacity-50"
      style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">
     <!-- Componente invisible que actualiza los datos cada 30 segundos para la vista Kanban -->

@@ -313,8 +313,9 @@
                     </span>
                 </div>
 
-                {{-- Área de Scroll --}}
-                <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+                {{-- Área de Scroll (data-categoria-contenedor) --}}
+                <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"
+                     data-categoria-contenedor="{{ $key }}">
 
                     @forelse ($ticketsStatus[$key] as $ticket)
 
@@ -362,6 +363,7 @@
 
                     {{-- Tarjeta (Card) --}}
                     <div
+                        wire:key="ticket-{{ $ticket->TicketID }}-{{ $ticket->Estatus }}"
                         class="group cursor-pointer p-4 rounded-lg shadow-sm transition-all duration-200
                                bg-gray-50 dark:bg-[#1C1F26]
                                border border-gray-200 dark:border-[#2A2F3A]
@@ -449,7 +451,8 @@
                     </div>
 
                     @empty
-                    <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 opacity-60">
+                    <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 opacity-60"
+                         data-empty-placeholder="kanban">
                         <i class="fas fa-clipboard-list text-4xl mb-2"></i>
                         <p class="text-sm">Sin tickets</p>
                     </div>
@@ -529,6 +532,7 @@
 @endphp
 
                 <div
+                    wire:key="ticket-{{ $ticket->TicketID }}-{{ $ticket->Estatus }}"
                     class="p-4 cursor-pointer transition-all duration-200
                            bg-gray-50 dark:bg-[#1C1F26]
                            hover:bg-gray-100 dark:hover:bg-[#242933]
@@ -614,7 +618,8 @@
                 </div>
 
                 @empty
-                <div class="p-12 text-center flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                <div class="p-12 text-center flex flex-col items-center justify-center text-gray-500 dark:text-gray-400"
+                     data-empty-placeholder="lista">
                     <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-3">
                         <i class="fas fa-inbox text-3xl opacity-50"></i>
                     </div>
@@ -1809,6 +1814,8 @@
                 'resueltos': {{ count($ticketsStatus['resueltos']) }}
             },
             ticketsTabla: [],
+            // Variable para rastrear tickets que se están moviendo manualmente
+            ticketsMoviendose: new Set(),
             // Variables para métricas
             mostrarModalMetricas: false,
             metricasTipos: [],
@@ -1840,30 +1847,24 @@
                 this.asuntoCorreo = '';
                 
                 // Escuchar eventos de Livewire para actualizaciones automáticas
+                // Siempre actualizar el DOM de la vista que emitió el evento (pasamos 'kanban'/'lista'/'tabla')
+                // para que el movimiento de tarjetas ocurra aunque this.vista haya cambiado antes del rAF
                 Livewire.on('tickets-actualizados-kanban', (datos) => {
-                    console.log('Evento recibido: tickets-actualizados-kanban', datos);
-                    if (this.vista === 'kanban') {
-                        this.procesarActualizacionTickets(datos);
-                    }
+                    this.procesarActualizacionTickets(datos, 'kanban');
                 });
                 
                 Livewire.on('tickets-actualizados-lista', (datos) => {
                     console.log('Evento recibido: tickets-actualizados-lista', datos);
-                    if (this.vista === 'lista') {
-                        this.procesarActualizacionTickets(datos);
-                    }
+                    this.procesarActualizacionTickets(datos, 'lista');
                 });
                 
                 Livewire.on('tickets-actualizados-tabla', (datos) => {
-                    console.log('Evento recibido: tickets-actualizados-tabla', datos);
-                    if (this.vista === 'tabla') {
-                        this.procesarActualizacionTickets(datos);
-                    }
+                    this.procesarActualizacionTickets(datos, 'tabla');
                 });
                 
-                // Función para procesar las actualizaciones
-                this.procesarActualizacionTickets = (datos) => {
-                    console.log('Procesando actualización de tickets', datos);
+                // Función para procesar las actualizaciones. vistaOrigen: 'kanban'|'lista'|'tabla' indica
+                // qué DOM actualizar (mover tarjetas), para que no falle si el usuario cambió de vista antes del rAF
+                this.procesarActualizacionTickets = (datos, vistaOrigen) => {
                     
                     if (datos && datos.ticketsExcedidos) {
                         this.ticketsExcedidos = datos.ticketsExcedidos;
@@ -1880,53 +1881,41 @@
                     }
                     // Verificar si hay cambios en los tickets usando el hash
                     if (datos && datos.ticketsStatus && datos.hash) {
-                        console.log('Hash recibido:', datos.hash);
-                        console.log('Hash anterior:', this.ultimoHashTickets);
-                        console.log('Timestamp:', datos.timestamp);
                         
-                        // Comparar hash para detectar cualquier cambio en los datos
-                        if (!this.ultimoHashTickets) {
-                            // Primera vez, guardar el hash
-                            console.log('Primera actualización, guardando hash inicial');
-                            this.ultimoHashTickets = datos.hash;
-                        } else if (this.ultimoHashTickets !== datos.hash) {
-                            // Hay cambios en los datos (cualquier campo modificado)
-                            console.log('¡CAMBIO DETECTADO! Hash anterior:', this.ultimoHashTickets, 'Hash nuevo:', datos.hash);
-                            console.log('Datos de tickets recibidos:', datos.ticketsStatus);
-                            
-                            // Verificar si hay cambios específicos en los tickets (no solo conteos)
-                            const hayCambiosReales = this.detectarCambiosEnTickets(datos.ticketsStatus);
-                            
-                            if (hayCambiosReales) {
-                                console.log('Cambios reales detectados en los datos de tickets');
-                                this.ultimoHashTickets = datos.hash;
-                                
-                                // Actualizar los conteos
-                                const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
-                                const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
-                                const resueltosCount = datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0;
-                                
-                                this.ticketsLista = {
-                                    nuevos: nuevosCount,
-                                    proceso: procesoCount,
-                                    resueltos: resueltosCount
-                                };
-                                
-                                // Actualizar los contadores en los headers sin recargar
-                                this.actualizarContadoresTickets(nuevosCount, procesoCount, resueltosCount);
-                                
-                                // Actualizar los datos de tickets en el DOM sin recargar la página
-                                // Esto incluye mover cartas entre columnas y actualizar contenido
-                                this.actualizarTicketsEnDOM(datos.ticketsStatus);
-                                
-                                console.log('Tickets y contadores actualizados en tiempo real sin recargar página');
+                        const hashCambio = !this.ultimoHashTickets || this.ultimoHashTickets !== datos.hash;
+                        
+                        // Aplicar a la vista cuando: primera vez (sync inicial con el wire) o cuando el hash cambió
+                        if (hashCambio) {
+                            if (!this.ultimoHashTickets) {
                             } else {
-                                // Solo actualizar el hash si no hay cambios reales
-                                this.ultimoHashTickets = datos.hash;
-                                console.log('Hash actualizado pero sin cambios reales en datos');
+                                console.log('¡CAMBIO DETECTADO! Hash anterior:', this.ultimoHashTickets, 'Hash nuevo:', datos.hash);
                             }
-                        } else {
-                            console.log('Sin cambios detectados, hash igual');
+                            
+                            this.ultimoHashTickets = datos.hash;
+                            
+                            // Actualizar conteos y DOM para que la vista refleje lo que trae el wire
+                            const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
+                            const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
+                            const resueltosCount = datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0;
+                            
+                            this.ticketsLista = {
+                                nuevos: nuevosCount,
+                                proceso: procesoCount,
+                                resueltos: resueltosCount
+                            };
+                            
+                            this.actualizarContadoresTickets(nuevosCount, procesoCount, resueltosCount);
+                            // Ejecutar actualización del DOM (incl. mover tarjetas) en el siguiente frame.
+                            // Pasamos vistaOrigen para mover siempre en kanban/lista que tocó el evento,
+                            // aunque el usuario haya cambiado de vista antes del rAF.
+                            const self = this;
+                            const vistaParaDOM = vistaOrigen || this.vista;
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    self.actualizarTicketsEnDOM(datos.ticketsStatus, vistaParaDOM);
+                                });
+                            });
+                            
                         }
                     } else {
                         console.warn('Datos incompletos recibidos:', datos);
@@ -1988,9 +1977,11 @@
                     });
                 };
                 
-                // Función para actualizar los tickets en el DOM usando los datos de Livewire
-                this.actualizarTicketsEnDOM = (ticketsStatus) => {
+                // Función para actualizar los tickets en el DOM usando los datos de Livewire.
+                // vistaParaUpdate: 'kanban'|'lista'|'tabla' — qué DOM tocar (la que emitió el evento).
+                this.actualizarTicketsEnDOM = (ticketsStatus, vistaParaUpdate) => {
                     if (!ticketsStatus) return;
+                    const vista = (vistaParaUpdate !== undefined && vistaParaUpdate !== null) ? vistaParaUpdate : this.vista;
                     
                     let elementosActualizados = 0;
                     let cartasMovidas = 0;
@@ -2015,17 +2006,30 @@
                         });
                     });
                     
-                    // Procesar cada ticket existente y nuevos
+                    // Raíz de la vista que debemos actualizar (kanban o lista; tabla no tiene columnas para mover)
+                    const raizVista = vista === 'kanban'
+                        ? document.querySelector('.kanban-root')
+                        : (vista === 'lista' ? document.querySelector('[x-show*="lista"]') : null);
+                    
+                    // Procesar cada ticket existente y nuevos (id como string para el selector)
                     Object.keys(ticketsPorId).forEach(ticketId => {
                         const ticket = ticketsPorId[ticketId];
-                        const elementos = document.querySelectorAll(`[data-ticket-id="${ticket.id}"]`);
+                        const idStr = String(ticket.id);
+                        
+                        // Si este ticket se está moviendo manualmente, saltarlo para evitar conflictos
+                        if (this.ticketsMoviendose && this.ticketsMoviendose.has(idStr)) {
+                            return;
+                        }
+                        
+                        let elementos = document.querySelectorAll(`[data-ticket-id="${idStr}"]`);
+                        // Siempre filtrar por la vista actual cuando hay raíz (evita mover el elemento de la otra vista)
+                        if (raizVista && elementos.length > 0) {
+                            elementos = Array.from(elementos).filter(el => raizVista.contains(el));
+                        }
                         
                         if (elementos.length === 0) {
-                            // Ticket nuevo que no existe en el DOM
-                            console.log(`Ticket #${ticket.id} es nuevo, necesita recargar sección para mostrarlo`);
-                            // Si hay tickets nuevos, necesitamos recargar la sección correspondiente
-                            // porque no podemos crear el HTML completo dinámicamente
-                            this.recargarSeccionTickets(categoriaNueva);
+                            // Ticket nuevo que no existe en el DOM: no recargar sección para no romper el poll.
+                            // Los contadores ya se actualizan más arriba; las cards nuevas aparecerán al refrescar.
                             return;
                         }
                         
@@ -2041,17 +2045,15 @@
                             
                             // Si el ticket cambió de categoría, moverlo visualmente
                             if (categoriaAnterior && categoriaAnterior !== categoriaNueva) {
-                                console.log(`Ticket #${ticket.id} movido de ${categoriaAnterior} a ${categoriaNueva}`);
                                 
-                                // Encontrar el contenedor de la nueva categoría según la vista actual
-                                const contenedorNuevo = this.encontrarContenedorCategoria(categoriaNueva);
+                                // Encontrar el contenedor de la nueva categoría según la vista que estamos actualizando
+                                const contenedorNuevo = this.encontrarContenedorCategoria(categoriaNueva, vista);
                                 const contenedorAnterior = elemento.closest('.flex-1.overflow-y-auto') || 
                                                           elemento.closest('.divide-y') ||
                                                           (elemento.parentElement ? elemento.parentElement : null);
                                 
                                 // Validar que ambos contenedores existen
                                 if (!contenedorAnterior) {
-                                    console.warn(`No se encontró contenedor anterior para ticket #${ticket.id}`);
                                     // Solo actualizar los datos sin mover
                                     elemento.setAttribute('data-categoria', categoriaNueva);
                                     this.actualizarAtributosTicket(elemento, ticket);
@@ -2061,52 +2063,82 @@
                                 }
                                 
                                 if (contenedorNuevo && contenedorAnterior && contenedorAnterior !== contenedorNuevo) {
-                                    // Actualizar atributos del elemento antes de moverlo
-                                    elemento.setAttribute('data-categoria', categoriaNueva);
-                                    this.actualizarAtributosTicket(elemento, ticket);
-                                    // El contenido se actualizará después, antes de mover
+                                    // Marcar que este ticket se está moviendo manualmente
+                                    this.ticketsMoviendose.add(String(ticket.id));
                                     
-                                    // Actualizar contenido ANTES de mover (mientras el elemento está en el DOM)
+                                    // Actualizar atributos y contenido antes de mover
+                                    elemento.setAttribute('data-categoria', categoriaNueva);
+                                    
+                                    // Actualizar wire:key con el nuevo estatus para que Livewire lo rastree correctamente
+                                    const nuevoEstatus = categoriaNueva === 'nuevos' ? 'Pendiente' : 
+                                                         (categoriaNueva === 'proceso' ? 'En progreso' : 'Cerrado');
+                                    elemento.setAttribute('wire:key', `ticket-${ticket.id}-${nuevoEstatus}`);
+                                    
+                                    this.actualizarAtributosTicket(elemento, ticket);
                                     this.actualizarContenidoTicket(elemento, ticket);
                                     
-                                    // Agregar animación de salida
-                                    elemento.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                                    elemento.style.opacity = '0.5';
-                                    elemento.style.transform = 'translateX(50px) scale(0.95)';
-                                    
-                                    // Mover al nuevo contenedor después de la animación de salida
-                                    setTimeout(() => {
-                                        // Validar que el elemento todavía existe antes de moverlo
-                                        if (!elemento || !elemento.parentElement) {
-                                            console.warn(`Elemento del ticket #${ticket.id} ya fue removido`);
-                                            return;
-                                        }
+                                    // Si el ticket está en "proceso", asegurarse de que tenga responsable y tiempo
+                                    // PERO solo si realmente necesita actualizarse (no remover timer existente)
+                                    if (categoriaNueva === 'proceso') {
+                                        // Verificar si ya tiene responsable y tiempo antes de actualizar
+                                        const footer = elemento.querySelector('.pt-3.border-t') || 
+                                                      elemento.querySelector('[class*="border-t"]') ||
+                                                      elemento.querySelector('.flex.flex-col.gap-2');
                                         
-                                        // Remover del contenedor anterior
-                                        elemento.remove();
-                                        
-                                        // Validar que el contenedor nuevo existe
-                                        if (!contenedorNuevo) {
-                                            console.warn(`Contenedor nuevo no existe para ticket #${ticket.id}`);
-                                            return;
-                                        }
-                                        
-                                        // Resetear estilos para animación de entrada
-                                        elemento.style.opacity = '0';
-                                        elemento.style.transform = 'translateY(-20px) scale(0.9)';
-                                        
-                                        // Insertar en el nuevo contenedor
-                                        contenedorNuevo.appendChild(elemento);
-                                        
-                                        // Animar entrada en el nuevo contenedor
-                                        setTimeout(() => {
-                                            if (elemento && elemento.parentElement) {
-                                                elemento.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                                                elemento.style.opacity = '1';
-                                                elemento.style.transform = 'translateY(0) scale(1)';
+                                        if (footer) {
+                                            const tieneResponsable = footer.querySelector('.bg-blue-50, .bg-blue-900\\/20, [class*="bg-blue"]');
+                                            const tieneTiempo = footer.querySelector('div.mt-2.w-full');
+                                            
+                                            // Solo actualizar si falta el responsable o el tiempo
+                                            if (!tieneResponsable || !tieneTiempo) {
+                                                setTimeout(() => {
+                                                    this.actualizarContenidoTicketProceso(elemento, ticket);
+                                                }, 100);
                                             }
-                                        }, 50);
-                                    }, 400);
+                                        } else {
+                                            // Si no hay footer, intentar actualizar de todas formas
+                                            setTimeout(() => {
+                                                this.actualizarContenidoTicketProceso(elemento, ticket);
+                                            }, 100);
+                                        }
+                                    }
+                                    
+                                    // Re-obtener contenedor por si el DOM cambió (p. ej. por otro tick)
+                                    const dest = this.encontrarContenedorCategoria(categoriaNueva, vista) || contenedorNuevo;
+                                    if (!dest || !dest.isConnected) {
+                                        console.warn(`Contenedor destino no válido para ticket #${ticket.id}`);
+                                        this.ticketsMoviendose.delete(String(ticket.id));
+                                        return;
+                                    }
+                                    
+                                    // Mover de forma inmediata para que se vea el cambio (evitar condiciones de carrera)
+                                    if (!elemento.parentElement) {
+                                        this.ticketsMoviendose.delete(String(ticket.id));
+                                        return;
+                                    }
+                                    
+                                    // Remover placeholder si existe en el destino
+                                    const placeholder = dest.querySelector('[data-empty-placeholder]');
+                                    if (placeholder) placeholder.remove();
+                                    
+                                    // Remover el elemento del contenedor anterior
+                                    elemento.remove();
+                                    
+                                    // Agregar al nuevo contenedor
+                                    dest.appendChild(elemento);
+                                    
+                                    // Pequeña animación de entrada
+                                    elemento.style.transition = 'all 0.25s ease';
+                                    elemento.style.opacity = '0.85';
+                                    requestAnimationFrame(() => {
+                                        if (elemento && elemento.parentElement) {
+                                            elemento.style.opacity = '1';
+                                        }
+                                        // Remover de la lista de tickets moviéndose después de la animación
+                                        setTimeout(() => {
+                                            this.ticketsMoviendose.delete(String(ticket.id));
+                                        }, 500);
+                                    });
                                     
                                     cartasMovidas++;
                                 } else {
@@ -2114,6 +2146,33 @@
                                     elemento.setAttribute('data-categoria', categoriaNueva);
                                     this.actualizarAtributosTicket(elemento, ticket);
                                     this.actualizarContenidoTicket(elemento, ticket);
+                                    
+                                    // Si el ticket está en "proceso", asegurarse de que tenga responsable y tiempo
+                                    // PERO solo si realmente necesita actualizarse (no remover timer existente)
+                                    if (categoriaNueva === 'proceso') {
+                                        // Verificar si ya tiene responsable y tiempo antes de actualizar
+                                        const footer = elemento.querySelector('.pt-3.border-t') || 
+                                                      elemento.querySelector('[class*="border-t"]') ||
+                                                      elemento.querySelector('.flex.flex-col.gap-2');
+                                        
+                                        if (footer) {
+                                            const tieneResponsable = footer.querySelector('.bg-blue-50, .bg-blue-900\\/20, [class*="bg-blue"]');
+                                            const tieneTiempo = footer.querySelector('div.mt-2.w-full');
+                                            
+                                            // Solo actualizar si falta el responsable o el tiempo
+                                            if (!tieneResponsable || !tieneTiempo) {
+                                                setTimeout(() => {
+                                                    this.actualizarContenidoTicketProceso(elemento, ticket);
+                                                }, 100);
+                                            }
+                                        } else {
+                                            // Si no hay footer, intentar actualizar de todas formas
+                                            setTimeout(() => {
+                                                this.actualizarContenidoTicketProceso(elemento, ticket);
+                                            }, 100);
+                                        }
+                                    }
+                                    
                                     elementosActualizados++;
                                 }
                             } else {
@@ -2122,6 +2181,34 @@
                                 if (elemento && elemento.parentElement) {
                                     this.actualizarAtributosTicket(elemento, ticket);
                                     this.actualizarContenidoTicket(elemento, ticket);
+                                    
+                                    // Si el ticket está en "proceso", asegurarse de que tenga responsable y tiempo
+                                    // PERO solo si realmente necesita actualizarse (no remover timer existente)
+                                    const categoriaActual = elemento.getAttribute('data-categoria');
+                                    if (categoriaActual === 'proceso') {
+                                        // Verificar si ya tiene responsable y tiempo antes de actualizar
+                                        const footer = elemento.querySelector('.pt-3.border-t') || 
+                                                      elemento.querySelector('[class*="border-t"]') ||
+                                                      elemento.querySelector('.flex.flex-col.gap-2');
+                                        
+                                        if (footer) {
+                                            const tieneResponsable = footer.querySelector('.bg-blue-50, .bg-blue-900\\/20, [class*="bg-blue"]');
+                                            const tieneTiempo = footer.querySelector('div.mt-2.w-full');
+                                            
+                                            // Solo actualizar si falta el responsable o el tiempo
+                                            if (!tieneResponsable || !tieneTiempo) {
+                                                setTimeout(() => {
+                                                    this.actualizarContenidoTicketProceso(elemento, ticket);
+                                                }, 50);
+                                            }
+                                        } else {
+                                            // Si no hay footer, intentar actualizar de todas formas
+                                            setTimeout(() => {
+                                                this.actualizarContenidoTicketProceso(elemento, ticket);
+                                            }, 50);
+                                        }
+                                    }
+                                    
                                     elementosActualizados++;
                                 }
                             }
@@ -2138,27 +2225,26 @@
                         });
                     });
                     
-                    // Eliminar tickets que ya no existen
-                    const todosLosElementos = document.querySelectorAll('[data-ticket-id]');
-                    todosLosElementos.forEach(elemento => {
+                    // Eliminar tickets que ya no existen (solo en la vista actual para no tocar kanban/lista)
+                    const todosEnVista = raizVista
+                        ? Array.from(raizVista.querySelectorAll('[data-ticket-id]'))
+                        : Array.from(document.querySelectorAll('[data-ticket-id]'));
+                    todosEnVista.forEach(elemento => {
                         const ticketId = elemento.getAttribute('data-ticket-id');
                         if (!ticketsPorId[ticketId]) {
-                            console.log(`Ticket #${ticketId} ya no existe, removiendo...`);
                             elemento.style.transition = 'all 0.3s ease';
                             elemento.style.opacity = '0';
                             elemento.style.transform = 'scale(0.8)';
                             setTimeout(() => {
-                                elemento.remove();
+                                if (elemento.parentElement) elemento.remove();
                             }, 300);
                         }
                     });
                     
-                    console.log(`Actualización completa: ${elementosActualizados} tickets actualizados, ${cartasMovidas} cartas movidas`);
                 };
                 
                 // Función para recargar solo una sección de tickets cuando hay tickets nuevos
                 this.recargarSeccionTickets = async (categoria) => {
-                    console.log(`Recargando sección de tickets para categoría: ${categoria}`);
                     // Hacer una petición AJAX para obtener solo el HTML de los tickets
                     try {
                         const response = await fetch(window.location.href.split('?')[0] + '?partial=1&categoria=' + categoria + '&t=' + Date.now(), {
@@ -2209,35 +2295,54 @@
                     }
                 };
                 
-                // Función auxiliar para encontrar el contenedor de una categoría
-                this.encontrarContenedorCategoria = (categoria) => {
-                    // Buscar la columna correspondiente según la vista actual
-                    if (this.vista === 'kanban') {
-                        // En Kanban, buscar las columnas por orden dentro del grid
+                // Función auxiliar para encontrar el contenedor de una categoría.
+                // vistaOpcional: 'kanban'|'lista' — si se pasa, se usa en lugar de this.vista (para el evento diferido).
+                this.encontrarContenedorCategoria = (categoria, vistaOpcional) => {
+                    const v = (vistaOpcional !== undefined && vistaOpcional !== null) ? vistaOpcional : this.vista;
+                    if (v === 'kanban') {
+                        const contenedor = document.querySelector('.kanban-root [data-categoria-contenedor="' + categoria + '"]');
+                        if (contenedor) return contenedor;
                         const grid = document.querySelector('.kanban-root .grid');
                         if (grid) {
                             const columnas = Array.from(grid.children);
                             const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
                             const columna = columnas[indices[categoria]];
-                            // Retornar el contenedor de scroll dentro de la columna
-                            if (columna) {
-                                return columna.querySelector('.flex-1.overflow-y-auto');
+                            if (columna) return columna.querySelector('.flex-1.overflow-y-auto');
+                        }
+                    } else if (v === 'lista') {
+                        // Buscar el contenedor de la vista lista
+                        const contenedorLista = document.querySelector('[x-show="vista === \'lista\'"]') || 
+                                                document.querySelector('[x-show*="lista"]');
+                        if (contenedorLista) {
+                            // Buscar todas las secciones que tienen la clase divide-y (son los contenedores de tickets)
+                            const todasLasSecciones = Array.from(contenedorLista.querySelectorAll('.rounded-lg.overflow-hidden.shadow-sm'));
+                            
+                            // Si no encuentra con esa clase, intentar con otra estructura
+                            if (todasLasSecciones.length === 0) {
+                                const seccionesAlternativas = Array.from(contenedorLista.children).filter(el => 
+                                    el.querySelector && el.querySelector('.divide-y')
+                                );
+                                if (seccionesAlternativas.length > 0) {
+                                    const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                                    const seccion = seccionesAlternativas[indices[categoria]];
+                                    return seccion ? seccion.querySelector('.divide-y') : null;
+                                }
+                            }
+                            
+                            // Mapeo de categorías a índices de sección (orden: nuevos, proceso, resueltos)
+                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
+                            const indiceNueva = indices[categoria];
+                            const seccion = todasLasSecciones[indiceNueva];
+                            
+                            if (seccion) {
+                                // Buscar el contenedor divide-y dentro de la sección
+                                return seccion.querySelector('.divide-y.divide-gray-200') || 
+                                       seccion.querySelector('.divide-y') ||
+                                       null;
                             }
                         }
-                    } else if (this.vista === 'lista') {
-                        // Para lista, buscar el contenedor dentro de la sección correspondiente
-                        const contenedorLista = document.querySelector('[x-show="vista === \'lista\'"]');
-                        if (contenedorLista) {
-                            const secciones = Array.from(contenedorLista.children).filter(el => 
-                                el.querySelector && el.querySelector('.divide-y')
-                            );
-                            const indices = { 'nuevos': 0, 'proceso': 1, 'resueltos': 2 };
-                            const seccion = secciones[indices[categoria]];
-                            // Retornar el contenedor divide-y dentro de la sección
-                            return seccion ? seccion.querySelector('.divide-y') : null;
-                        }
                     }
-                    console.warn(`No se encontró contenedor para categoría: ${categoria} en vista: ${this.vista}`);
+                    console.warn(`No se encontró contenedor para categoría: ${categoria} en vista: ${v}`);
                     return null;
                 };
                 
@@ -2259,10 +2364,18 @@
                         elemento.setAttribute('data-ticket-empleado', ticket.empleado.nombre);
                     }
                     if (ticket.empleado && ticket.empleado.correo) {
-                        elemento.setAttribute('data-ticket-correo', ticket.empleado.correo);
+                        elemento.setAttribute('data-ticket-correo', ticket.empleado.correo || '');
                     }
                     if (ticket.responsable && ticket.responsable.nombre) {
                         elemento.setAttribute('data-ticket-responsable', ticket.responsable.nombre);
+                    } else if (ticket.responsable === null || !ticket.responsable) {
+                        // Si no hay responsable, remover el atributo
+                        elemento.removeAttribute('data-ticket-responsable');
+                    }
+                    // Sincronizar wire:key con el estatus real (evita que quede "En progreso" cuando ya es "Cerrado")
+                    if (ticket.id !== undefined && (ticket.estatus !== undefined || ticket.estado !== undefined)) {
+                        const estatusKey = (ticket.estatus || ticket.estado || '').toString();
+                        elemento.setAttribute('wire:key', 'ticket-' + ticket.id + '-' + estatusKey);
                     }
                 };
                 
@@ -2312,6 +2425,338 @@
                     } catch (error) {
                         console.error('Error actualizando contenido del ticket:', error);
                         // No lanzar el error, solo registrarlo para no interrumpir otras actualizaciones
+                    }
+                };
+                
+                // Función para actualizar el contenido del ticket cuando está en "proceso"
+                // ticketData puede ser un objeto con datos del ticket o un objeto con estructura { responsable: { nombre: ... }, estatus: ... }
+                this.actualizarContenidoTicketProceso = async (elemento, ticketData) => {
+                    try {
+                        // Determinar si es vista kanban o lista
+                        const esVistaKanban = elemento.closest('.kanban-root') || elemento.closest('[x-show*="kanban"]');
+                        const esVistaLista = elemento.closest('[x-show*="lista"]') || elemento.closest('.divide-y');
+                        
+                        if (esVistaLista) {
+                            // Para vista lista, actualizar el responsable en el footer de info
+                            this.actualizarResponsableEnLista(elemento, ticketData);
+                            return;
+                        }
+                        
+                        // Para vista kanban, buscar el footer de la tarjeta donde van el responsable y tiempo
+                        const footer = elemento.querySelector('.pt-3.border-t') || 
+                                      elemento.querySelector('[class*="border-t"]') ||
+                                      elemento.querySelector('.flex.flex-col.gap-2');
+                        
+                        if (!footer) return;
+                        
+                        // Verificar si ya existe la sección del responsable
+                        let responsableSection = footer.querySelector('.bg-blue-50, .bg-blue-900\\/20, [class*="bg-blue"]');
+                        let tiempoSection = footer.querySelector('div.mt-2.w-full');
+                        
+                        // Obtener el nombre del responsable desde múltiples fuentes
+                        let responsableNombre = elemento.getAttribute('data-ticket-responsable') || '';
+                        
+                        // Si no está en el atributo, intentar obtenerlo desde múltiples fuentes
+                        if (!responsableNombre || responsableNombre.trim() === '') {
+                            // 1. Intentar desde ticketData (puede venir del servidor con relación responsable)
+                            // ticketData puede tener estructura { responsable: { nombre: ... } } o ser un objeto plano
+                            if (ticketData && ticketData.responsable) {
+                                if (typeof ticketData.responsable === 'object' && ticketData.responsable.nombre) {
+                                    responsableNombre = ticketData.responsable.nombre;
+                                    // Guardar en el atributo para futuras referencias
+                                    elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                                } else if (typeof ticketData.responsable === 'string') {
+                                    responsableNombre = ticketData.responsable;
+                                    elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                                }
+                            } 
+                            // 2. Intentar desde this.selected
+                            if ((!responsableNombre || responsableNombre.trim() === '') && this.selected && this.selected.responsable) {
+                                responsableNombre = this.selected.responsable;
+                                elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                            } 
+                            // 3. Intentar desde ResponsableTI usando el select
+                            if ((!responsableNombre || responsableNombre.trim() === '') && ticketData && (ticketData.ResponsableTI || this.ticketResponsableTI)) {
+                                const responsableId = ticketData.ResponsableTI || this.ticketResponsableTI;
+                                const responsableSelect = document.getElementById('responsable-select');
+                                if (responsableSelect) {
+                                    const option = responsableSelect.querySelector(`option[value="${responsableId}"]`);
+                                    if (option && option.textContent) {
+                                        responsableNombre = option.textContent.trim();
+                                        // Guardar en el atributo para futuras referencias
+                                        elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Si aún no tenemos el responsable pero el elemento tiene el atributo actualizado, usarlo
+                        if ((!responsableNombre || responsableNombre.trim() === '') && elemento.getAttribute('data-ticket-responsable')) {
+                            responsableNombre = elemento.getAttribute('data-ticket-responsable');
+                        }
+                        
+                        // Si el ticket tiene responsable, agregar o actualizar la sección del responsable
+                        if (responsableNombre && responsableNombre.trim() !== '') {
+                            // Formatear el nombre (similar a como se hace en PHP)
+                            const partes = responsableNombre.trim().split(/\s+/);
+                            let nombreFormateado = responsableNombre;
+                            if (partes.length >= 3) {
+                                const sinSegundo = [...partes];
+                                sinSegundo.splice(1, 1);
+                                nombreFormateado = sinSegundo.join(' ');
+                            }
+                            
+                            if (!responsableSection) {
+                                // Crear la sección del responsable
+                                responsableSection = document.createElement('div');
+                                responsableSection.className = 'mt-1 flex items-center gap-2 text-xs px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800';
+                                responsableSection.innerHTML = `
+                                    <i class="fas fa-user-tie"></i>
+                                    <span class="font-semibold truncate">${nombreFormateado}</span>
+                                `;
+                                
+                                // Insertar después del usuario y fecha (buscar el contenedor correcto)
+                                const usuarioFechaContainer = footer.querySelector('.flex.items-center.gap-2')?.parentElement || 
+                                                             footer.querySelector('.flex.justify-between.items-center');
+                                
+                                if (usuarioFechaContainer) {
+                                    // Insertar después del contenedor de usuario/fecha
+                                    usuarioFechaContainer.insertAdjacentElement('afterend', responsableSection);
+                                } else {
+                                    // Si no se encuentra, insertar al principio del footer
+                                    footer.insertBefore(responsableSection, footer.firstChild);
+                                }
+                            } else {
+                                // Actualizar el nombre del responsable existente
+                                const nombreSpan = responsableSection.querySelector('span.font-semibold');
+                                if (nombreSpan) {
+                                    nombreSpan.textContent = nombreFormateado;
+                                }
+                            }
+                        } else {
+                            // Si no hay responsable, remover la sección si existe
+                            if (responsableSection) {
+                                responsableSection.remove();
+                            }
+                        }
+                        
+                        // Obtener información de tiempo si el ticket está en progreso
+                        const ticketId = ticketData.TicketID || ticketData.id || this.selected.id;
+                        
+                        // Solo crear/actualizar tiempo si no existe la sección
+                        // Si ya existe tiempoSection con datos válidos, NO hacer nada (se actualiza automáticamente por actualizarIndicadoresTiempoEnDOM)
+                        if (!tiempoSection) {
+                            const tiempoInfo = await this.obtenerTiempoTicket(ticketId);
+                            
+                            if (tiempoInfo) {
+                                // Crear la sección de tiempo solo si no existe
+                                tiempoSection = document.createElement('div');
+                                tiempoSection.className = 'mt-2 w-full';
+                                const estadoColor = tiempoInfo.estado === 'agotado' ? 'text-red-500 font-bold' : '';
+                                const barraColor = tiempoInfo.estado === 'agotado' ? 'bg-red-500' : 
+                                                  (tiempoInfo.estado === 'por_vencer' ? 'bg-yellow-500' : 'bg-green-500');
+                                
+                                tiempoSection.innerHTML = `
+                                    <div class="flex justify-between text-[10px] mb-1 text-gray-500 dark:text-gray-400">
+                                        <span>Tiempo:</span>
+                                        <span class="${estadoColor}">${tiempoInfo.texto_transcurrido} / ${tiempoInfo.texto_estimado}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                        <div class="h-1.5 rounded-full ${barraColor}" style="width: ${Math.min(tiempoInfo.porcentaje, 100)}%"></div>
+                                    </div>
+                                `;
+                                
+                                footer.appendChild(tiempoSection);
+                            }
+                        }
+                        // Si tiempoSection ya existe, NO hacer nada - se actualiza automáticamente por actualizarIndicadoresTiempoEnDOM
+                    } catch (error) {
+                        console.error('Error actualizando contenido del ticket en proceso:', error);
+                    }
+                };
+                
+                // Función para actualizar el responsable en la vista lista
+                this.actualizarResponsableEnLista = (elemento, ticketData) => {
+                    try {
+                        // Buscar el contenedor de info footer donde va el responsable
+                        const infoFooter = elemento.querySelector('.flex.flex-wrap.items-center.gap-4') ||
+                                          elemento.querySelector('[class*="flex-wrap"]');
+                        
+                        if (!infoFooter) return;
+                        
+                        // Verificar si ya existe la sección del responsable
+                        let responsableSection = infoFooter.querySelector('.bg-blue-50, .bg-blue-900\\/20, [class*="bg-blue"]');
+                        
+                        // Obtener el nombre del responsable desde múltiples fuentes
+                        let responsableNombre = elemento.getAttribute('data-ticket-responsable') || '';
+                        
+                        // Si no está en el atributo, intentar obtenerlo desde múltiples fuentes
+                        if (!responsableNombre || responsableNombre.trim() === '') {
+                            // 1. Intentar desde ticketData
+                            if (ticketData && ticketData.responsable) {
+                                if (typeof ticketData.responsable === 'object' && ticketData.responsable.nombre) {
+                                    responsableNombre = ticketData.responsable.nombre;
+                                    elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                                } else if (typeof ticketData.responsable === 'string') {
+                                    responsableNombre = ticketData.responsable;
+                                    elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                                }
+                            } 
+                            // 2. Intentar desde this.selected
+                            if ((!responsableNombre || responsableNombre.trim() === '') && this.selected && this.selected.responsable) {
+                                responsableNombre = this.selected.responsable;
+                                elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                            } 
+                            // 3. Intentar desde ResponsableTI usando el select
+                            if ((!responsableNombre || responsableNombre.trim() === '') && ticketData && (ticketData.ResponsableTI || this.ticketResponsableTI)) {
+                                const responsableId = ticketData.ResponsableTI || this.ticketResponsableTI;
+                                const responsableSelect = document.getElementById('responsable-select');
+                                if (responsableSelect) {
+                                    const option = responsableSelect.querySelector(`option[value="${responsableId}"]`);
+                                    if (option && option.textContent) {
+                                        responsableNombre = option.textContent.trim();
+                                        elemento.setAttribute('data-ticket-responsable', responsableNombre);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Si aún no tenemos el responsable pero el elemento tiene el atributo actualizado, usarlo
+                        if ((!responsableNombre || responsableNombre.trim() === '') && elemento.getAttribute('data-ticket-responsable')) {
+                            responsableNombre = elemento.getAttribute('data-ticket-responsable');
+                        }
+                        
+                        // Si el ticket tiene responsable, agregar o actualizar la sección del responsable
+                        if (responsableNombre && responsableNombre.trim() !== '') {
+                            // Formatear el nombre (similar a como se hace en PHP)
+                            const partes = responsableNombre.trim().split(/\s+/);
+                            let nombreFormateado = responsableNombre;
+                            if (partes.length >= 3) {
+                                const sinSegundo = [...partes];
+                                sinSegundo.splice(1, 1);
+                                nombreFormateado = sinSegundo.join(' ');
+                            }
+                            
+                            if (!responsableSection) {
+                                // Crear la sección del responsable para lista
+                                responsableSection = document.createElement('span');
+                                responsableSection.className = 'flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800';
+                                responsableSection.innerHTML = `
+                                    <i class="fas fa-user-tie"></i>
+                                    <span>${nombreFormateado}</span>
+                                `;
+                                
+                                // Insertar después del elemento de fecha (buscar el contenedor de fecha)
+                                const fechaElement = infoFooter.querySelector('.fa-calendar-alt')?.closest('span');
+                                if (fechaElement && fechaElement.nextSibling) {
+                                    infoFooter.insertBefore(responsableSection, fechaElement.nextSibling);
+                                } else if (fechaElement) {
+                                    fechaElement.insertAdjacentElement('afterend', responsableSection);
+                                } else {
+                                    // Si no se encuentra la fecha, agregar al final
+                                    infoFooter.appendChild(responsableSection);
+                                }
+                            } else {
+                                // Actualizar el nombre del responsable existente
+                                const nombreSpan = responsableSection.querySelector('span:last-child');
+                                if (nombreSpan) {
+                                    nombreSpan.textContent = nombreFormateado;
+                                }
+                            }
+                        } else {
+                            // Si no hay responsable, remover la sección si existe
+                            if (responsableSection) {
+                                responsableSection.remove();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error actualizando responsable en lista:', error);
+                    }
+                };
+                
+                // Función para remover las secciones de responsable y tiempo cuando el ticket sale de "proceso"
+                this.removerContenidoTicketProceso = (elemento) => {
+                    // Determinar si es vista kanban o lista
+                    const esVistaKanban = elemento.closest('.kanban-root') || elemento.closest('[x-show*="kanban"]');
+                    const esVistaLista = elemento.closest('[x-show*="lista"]') || elemento.closest('.divide-y');
+                    
+                    if (esVistaLista) {
+                        // Para vista lista, remover el responsable del footer de info
+                        const infoFooter = elemento.querySelector('.flex.flex-wrap.items-center.gap-4') ||
+                                          elemento.querySelector('[class*="flex-wrap"]');
+                        if (infoFooter) {
+                            const responsableSection = infoFooter.querySelector('.bg-blue-50, .bg-blue-900\\/20, [class*="bg-blue"]');
+                            if (responsableSection) {
+                                responsableSection.remove();
+                            }
+                        }
+                        return;
+                    }
+                    
+                    // Para vista kanban, remover del footer
+                    const footer = elemento.querySelector('.pt-3.border-t') || 
+                                  elemento.querySelector('[class*="border-t"]') ||
+                                  elemento.querySelector('.flex.flex-col.gap-2');
+                    
+                    if (!footer) return;
+                    
+                    // Remover sección del responsable
+                    const responsableSection = footer.querySelector('.bg-blue-50, .bg-blue-900\\/20, [class*="bg-blue"]');
+                    if (responsableSection) {
+                        responsableSection.remove();
+                    }
+                    
+                    // Remover sección de tiempo solo si el ticket ya no está en proceso
+                    const tiempoSection = footer.querySelector('div.mt-2.w-full');
+                    if (tiempoSection) {
+                        // Verificar que realmente es la sección de tiempo (debe tener "Tiempo:" en el contenido)
+                        const tiempoLabel = tiempoSection.querySelector('span:first-child');
+                        if (tiempoLabel && tiempoLabel.textContent.includes('Tiempo:')) {
+                            tiempoSection.remove();
+                        }
+                    }
+                };
+                
+                // Función auxiliar para obtener información de tiempo del ticket
+                this.obtenerTiempoTicket = async (ticketId) => {
+                    try {
+                        const response = await fetch(`/tickets/tiempo-progreso`, {
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        const data = await response.json();
+                        if (data.success && data.tiempos && data.tiempos[ticketId]) {
+                            const tiempo = data.tiempos[ticketId];
+                            // Formatear horas a texto
+                            const formatearHoras = (horas) => {
+                                if (!horas || horas === 0 || horas === '') return '0m';
+                                const h = parseFloat(horas);
+                                if (isNaN(h)) return '0m';
+                                const horasEnteras = Math.floor(h);
+                                const minutos = Math.round((h - horasEnteras) * 60);
+                                if (horasEnteras > 0 && minutos > 0) {
+                                    return `${horasEnteras}h ${minutos}m`;
+                                } else if (horasEnteras > 0) {
+                                    return `${horasEnteras}h`;
+                                } else if (minutos > 0) {
+                                    return `${minutos}m`;
+                                } else {
+                                    return '0m';
+                                }
+                            };
+                            
+                            return {
+                                texto_transcurrido: formatearHoras(tiempo.transcurrido),
+                                texto_estimado: formatearHoras(tiempo.estimado),
+                                porcentaje: tiempo.porcentaje,
+                                estado: tiempo.estado
+                            };
+                        }
+                        return null;
+                    } catch (error) {
+                        return null;
                     }
                 };
                 
@@ -3004,8 +3449,16 @@
                                 nuevoEstatusTexto = 'Cerrado';
                             }
                             
-                            // Actualizar todas las vistas sin recargar la página
+                            // Mover la tarjeta inmediatamente antes de que Livewire re-renderice
                             this.actualizarVistasDespuesDeGuardar(data.ticket, estatusAnterior, nuevaCategoria, nuevoEstatusTexto);
+                            
+                            // Forzar actualización del componente Livewire después de mover
+                            // Esto asegura que los datos del servidor se actualicen para futuras actualizaciones
+                            setTimeout(() => {
+                                if (typeof Livewire !== 'undefined') {
+                                    Livewire.emit('ticket-estatus-actualizado');
+                                }
+                            }, 1000);
                         }
                     } else {
                         this.mostrarNotificacion(data.message || 'Error al guardar los cambios', 'error');
@@ -3020,89 +3473,158 @@
 
             actualizarVistasDespuesDeGuardar(ticketData, estatusAnterior, nuevaCategoria, nuevoEstatusTexto) {
                 // Esta función actualiza todas las vistas sin recargar la página
-                            this.$nextTick(() => {
-                                // Buscar todos los elementos con el mismo ticket-id (puede haber múltiples en diferentes vistas)
-                                const ticketElements = document.querySelectorAll(`[data-ticket-id="${this.selected.id}"]`);
+                // Determinar la categoría anterior
+                let categoriaAnterior = '';
+                if (estatusAnterior === 'Pendiente' || estatusAnterior === 'Nuevo') {
+                    categoriaAnterior = 'nuevos';
+                } else if (estatusAnterior === 'En progreso' || estatusAnterior === 'Proceso') {
+                    categoriaAnterior = 'proceso';
+                } else if (estatusAnterior === 'Cerrado' || estatusAnterior === 'Resuelto') {
+                    categoriaAnterior = 'resueltos';
+                }
+                
+                const estatusCambio = estatusAnterior !== ticketData.Estatus;
+                
+                if (!estatusCambio || !nuevaCategoria || !categoriaAnterior) {
+                    return;
+                }
+                
+                // Ejecutar inmediatamente sin esperar $nextTick para mover más rápido
+                this.$nextTick(() => {
+                    // Buscar todos los elementos con el mismo ticket-id (puede haber múltiples en diferentes vistas)
+                    const ticketElements = document.querySelectorAll(`[data-ticket-id="${this.selected.id}"]`);
                     
-                    // Determinar la categoría anterior
-                    let categoriaAnterior = '';
-                    if (estatusAnterior === 'Pendiente' || estatusAnterior === 'Nuevo') {
-                        categoriaAnterior = 'nuevos';
-                    } else if (estatusAnterior === 'En progreso' || estatusAnterior === 'Proceso') {
-                        categoriaAnterior = 'proceso';
-                    } else if (estatusAnterior === 'Cerrado' || estatusAnterior === 'Resuelto') {
-                        categoriaAnterior = 'resueltos';
+                    if (ticketElements.length === 0) {
+                        return;
                     }
                     
-                    const estatusCambio = estatusAnterior !== ticketData.Estatus;
+                    // Actualizar contadores antes de mover las tarjetas
+                    if (estatusCambio && categoriaAnterior && nuevaCategoria) {
+                        // Actualizar contadores en el objeto ticketsLista
+                        if (this.ticketsLista[categoriaAnterior] > 0) {
+                            this.ticketsLista[categoriaAnterior]--;
+                        }
+                        if (!this.ticketsLista[nuevaCategoria]) {
+                            this.ticketsLista[nuevaCategoria] = 0;
+                        }
+                        this.ticketsLista[nuevaCategoria]++;
+                        
+                        // Actualizar contadores en los headers del Kanban
+                        const headerAnterior = document.querySelector(`[data-categoria-header="${categoriaAnterior}"]`);
+                        const headerNuevo = document.querySelector(`[data-categoria-header="${nuevaCategoria}"]`);
+                        if (headerAnterior) {
+                            const nuevoValor = Math.max(0, parseInt(headerAnterior.textContent.trim()) - 1);
+                            headerAnterior.textContent = nuevoValor;
+                        }
+                        if (headerNuevo) {
+                            const nuevoValor = parseInt(headerNuevo.textContent.trim()) + 1;
+                            headerNuevo.textContent = nuevoValor;
+                        }
+                    }
                                 
                                 ticketElements.forEach(ticketElement => {
                                     // Actualizar atributos data-* del elemento
                         ticketElement.setAttribute('data-ticket-prioridad', ticketData.Prioridad);
+                        
+                        // Actualizar el atributo del responsable si está disponible
+                        if (ticketData.ResponsableTI && this.ticketResponsableTI) {
+                            // Buscar el nombre del responsable en el select
+                            const responsableSelect = document.getElementById('responsable-select');
+                            if (responsableSelect) {
+                                const option = responsableSelect.querySelector(`option[value="${this.ticketResponsableTI}"]`);
+                                if (option) {
+                                    ticketElement.setAttribute('data-ticket-responsable', option.textContent.trim());
+                                }
+                            }
+                        }
                                     
                         // Si el estatus cambió, mover el ticket entre secciones (kanban y lista)
                         if (estatusCambio && nuevaCategoria && categoriaAnterior) {
                             // Solo mover si el elemento tiene data-categoria
-                                        if (ticketElement.hasAttribute('data-categoria')) {
+                            if (ticketElement.hasAttribute('data-categoria')) {
                                 const categoriaActual = ticketElement.getAttribute('data-categoria');
                                 
                                 // Si está en una categoría diferente, moverlo físicamente
                                 if (categoriaActual !== nuevaCategoria) {
                                     // Determinar si es vista kanban o lista
-                                    const esVistaKanban = ticketElement.closest('[x-show*="kanban"]');
+                                    const esVistaKanban = ticketElement.closest('[x-show*="kanban"]') || ticketElement.closest('.kanban-root');
                                     const esVistaLista = ticketElement.closest('[x-show*="lista"]');
                                     
                                     let contenedorNuevaSeccion = null;
                                     
                                     if (esVistaKanban) {
-                                        // Mover en vista kanban
-                                        const vistaKanban = document.querySelector('[x-show*="kanban"]');
-                                        if (vistaKanban && vistaKanban.offsetParent !== null) {
-                                            const todasLasColumnas = Array.from(vistaKanban.querySelectorAll('.shadow-lg.rounded-md'));
-                                            const indiceCategoria = {
-                                                'nuevos': 0,
-                                                'proceso': 1,
-                                                'resueltos': 2
-                                            };
-                                            const indiceNueva = indiceCategoria[nuevaCategoria];
-                                            contenedorNuevaSeccion = todasLasColumnas[indiceNueva]?.querySelector('.space-y-3');
-                                        }
+                                        // Mover en vista kanban - usar la misma función que actualizarTicketsEnDOM
+                                        contenedorNuevaSeccion = this.encontrarContenedorCategoria(nuevaCategoria, 'kanban');
                                     } else if (esVistaLista) {
-                                        // Mover en vista lista
-                                        const vistaLista = document.querySelector('[x-show*="lista"]');
-                                        if (vistaLista && vistaLista.offsetParent !== null) {
-                                            // Buscar todas las secciones de lista (divs con bg-white rounded-lg)
-                                            const todasLasSecciones = Array.from(vistaLista.querySelectorAll('.bg-white.rounded-lg.shadow-sm'));
-                                            
-                                            // Mapeo de categorías a índices de sección (orden: nuevos, proceso, resueltos)
-                                            const indiceCategoria = {
-                                                'nuevos': 0,
-                                                'proceso': 1,
-                                                'resueltos': 2
-                                            };
-                                            
-                                            const indiceNueva = indiceCategoria[nuevaCategoria];
-                                            contenedorNuevaSeccion = todasLasSecciones[indiceNueva]?.querySelector('.divide-y.divide-gray-200');
-                                        }
+                                        // Mover en vista lista - usar la misma función que actualizarTicketsEnDOM
+                                        contenedorNuevaSeccion = this.encontrarContenedorCategoria(nuevaCategoria, 'lista');
                                     }
                                     
-                                    if (contenedorNuevaSeccion) {
+                                    if (contenedorNuevaSeccion && contenedorNuevaSeccion.isConnected) {
+                                        // Marcar que este ticket se está moviendo manualmente
+                                        this.ticketsMoviendose.add(String(this.selected.id));
+                                        
+                                        // Encontrar el contenedor anterior para remover el elemento de ahí
+                                        // Para kanban: .flex-1.overflow-y-auto, para lista: .divide-y
+                                        const contenedorAnterior = ticketElement.closest('.flex-1.overflow-y-auto') || 
+                                                                  ticketElement.closest('.divide-y.divide-gray-200') ||
+                                                                  ticketElement.closest('.divide-y') ||
+                                                                  (ticketElement.parentElement ? ticketElement.parentElement : null);
+                                        
+                                        // Remover el elemento del contenedor anterior si existe y es diferente al nuevo
+                                        if (contenedorAnterior && contenedorAnterior !== contenedorNuevaSeccion && ticketElement.parentElement) {
+                                            ticketElement.remove();
+                                        }
+                                        
+                                        // Remover placeholder si existe
+                                        const placeholder = contenedorNuevaSeccion.querySelector('[data-empty-placeholder]');
+                                        if (placeholder) {
+                                            placeholder.remove();
+                                        }
+                                        
                                         // Actualizar el atributo antes de mover
-                                            ticketElement.setAttribute('data-categoria', nuevaCategoria);
-                                    
-                                        // Mover el elemento a la nueva sección
+                                        ticketElement.setAttribute('data-categoria', nuevaCategoria);
+                                        
+                                        // Actualizar wire:key con el nuevo estatus para que Livewire lo rastree correctamente
+                                        ticketElement.setAttribute('wire:key', `ticket-${this.selected.id}-${nuevoEstatusTexto}`);
+                                        
+                                        // Agregar el elemento al nuevo contenedor
                                         contenedorNuevaSeccion.appendChild(ticketElement);
                                         
-                                        // Alpine.js recalculará automáticamente x-show usando estaEnPaginaListaPorElemento
+                                        // Si el ticket se mueve a "proceso", actualizar el contenido para mostrar responsable y tiempo
+                                        if (nuevaCategoria === 'proceso') {
+                                            // Primero asegurarnos de que el atributo del responsable esté actualizado
+                                            if (this.ticketResponsableTI) {
+                                                const responsableSelect = document.getElementById('responsable-select');
+                                                if (responsableSelect) {
+                                                    const option = responsableSelect.querySelector(`option[value="${this.ticketResponsableTI}"]`);
+                                                    if (option) {
+                                                        ticketElement.setAttribute('data-ticket-responsable', option.textContent.trim());
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Usar setTimeout para asegurar que el elemento ya esté en el DOM
+                                            setTimeout(() => {
+                                                this.actualizarContenidoTicketProceso(ticketElement, ticketData);
+                                            }, 200);
+                                        } else {
+                                            // Si se mueve fuera de proceso, remover las secciones de responsable y tiempo
+                                            this.removerContenidoTicketProceso(ticketElement);
+                                        }
                                         
-                                        // Actualizar contadores
-                                        if (this.ticketsLista[categoriaAnterior] > 0) {
-                                            this.ticketsLista[categoriaAnterior]--;
-                                        }
-                                        if (!this.ticketsLista[nuevaCategoria]) {
-                                            this.ticketsLista[nuevaCategoria] = 0;
-                                        }
-                                        this.ticketsLista[nuevaCategoria]++;
+                                        // Pequeña animación de entrada
+                                        ticketElement.style.transition = 'all 0.25s ease';
+                                        ticketElement.style.opacity = '0.85';
+                                        requestAnimationFrame(() => {
+                                            if (ticketElement && ticketElement.parentElement) {
+                                                ticketElement.style.opacity = '1';
+                                            }
+                                            // Remover de la lista de tickets moviéndose después de la animación
+                                            setTimeout(() => {
+                                                this.ticketsMoviendose.delete(String(this.selected.id));
+                                            }, 500);
+                                        });
                                     } else {
                                         // Si no se encuentra el contenedor, solo actualizar el atributo
                                         ticketElement.setAttribute('data-categoria', nuevaCategoria);
