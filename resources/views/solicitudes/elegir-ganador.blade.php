@@ -48,7 +48,7 @@
                             <i class="fas fa-trophy text-amber-500"></i>
                             Elegir Ganador - Solicitud #{{ $solicitud->SolicitudID }}
                         </h1>
-                        <p class="text-sm text-gray-600 mt-1">Los 3 responsables ya firmaron. Revisa las propuestas y selecciona la cotización ganadora.</p>
+                        <p class="text-sm text-gray-600 mt-1">Hay varios productos (ej. laptop, mouse, teclado). Cada uno tiene 3 propuestas de 3 proveedores. Elige <strong>un ganador por cada producto</strong>.</p>
                     </div>
                 </div>
             </div>
@@ -75,56 +75,75 @@
                 </div>
             </div>
 
-            <!-- Cotizaciones -->
+            <!-- Cotizaciones por producto -->
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                     <i class="fas fa-file-invoice-dollar text-violet-500"></i>
                     Propuestas de Cotización
                 </h2>
-                <p class="text-sm text-gray-600 mb-4">Selecciona la propuesta ganadora haciendo clic en el botón "Elegir ganador".</p>
-                
-                <div class="space-y-4" id="cotizaciones-container">
-                    @foreach($cotizaciones as $cotizacion)
-                    <div class="p-4 rounded-xl border-2 transition {{ $cotizacion->Estatus === 'Seleccionada' ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200 hover:border-sky-200' }}" 
-                         data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
-                        <div class="grid grid-cols-4 gap-4 mb-3">
-                            <div>
-                                <label class="text-xs font-medium text-gray-500">Proveedor</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ $cotizacion->Proveedor }}</p>
-                            </div>
-                            <div>
-                                <label class="text-xs font-medium text-gray-500">NO. PARTE</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ $cotizacion->NumeroParte ?? 'N/A' }}</p>
-                            </div>
-                            <div>
-                                <label class="text-xs font-medium text-gray-500">Precio</label>
-                                <p class="text-sm font-semibold text-gray-900">${{ number_format($cotizacion->Precio, 2, '.', ',') }}</p>
-                            </div>
-                            <div>
-                                <label class="text-xs font-medium text-gray-500">Numero de Parte</label>
-                                <p class="text-sm font-semibold text-gray-900">{{ $cotizacion->NumeroParte ?? 'N/A' }}</p>
-                            </div>
+                <p class="text-sm text-gray-600 mb-4">Elige <strong>un ganador por cada producto</strong> (las 3 propuestas son de proveedores distintos).</p>
+
+                @if(isset($error) && $error)
+                <div class="p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">{{ $error }}</div>
+                @else
+                <div class="space-y-8" id="cotizaciones-container">
+                    @foreach($productos as $idx => $prod)
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                            <h3 class="text-base font-semibold text-gray-900">
+                                {{ $idx + 1 }}. {{ $prod['descripcion'] }}
+                                @if(!empty($prod['numeroParte']))
+                                <span class="text-gray-500 font-normal">(No. parte: {{ $prod['numeroParte'] }})</span>
+                                @endif
+                                @if(($prod['cantidad'] ?? 1) > 1)
+                                <span class="text-gray-500 font-normal"> × {{ $prod['cantidad'] }}</span>
+                                @endif
+                            </h3>
                         </div>
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <div class="flex-1 min-w-0">
-                                <label class="text-xs font-medium text-gray-500">Descripción</label>
-                                <p class="text-sm text-gray-700">{{ $cotizacion->Descripcion }}</p>
+                        <div class="divide-y divide-gray-100">
+                            @foreach($prod['cotizaciones'] as $cotizacion)
+                            <div class="p-4 rounded-none border-0 transition {{ $cotizacion->Estatus === 'Seleccionada' ? 'bg-emerald-50' : 'bg-white hover:bg-gray-50' }}"
+                                 data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
+                                <div class="flex flex-wrap items-center justify-between gap-4">
+                                    <div class="flex flex-wrap gap-6 min-w-0">
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">Proveedor</label>
+                                            <p class="text-sm font-semibold text-gray-900">{{ $cotizacion->Proveedor }}</p>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">Precio</label>
+                                            <p class="text-sm font-semibold text-gray-900">${{ number_format($cotizacion->Precio, 2, '.', ',') }}</p>
+                                        </div>
+                                        @if($cotizacion->TiempoEntrega)
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-500">Entrega</label>
+                                            <p class="text-sm text-gray-700">{{ $cotizacion->TiempoEntrega }} días</p>
+                                        </div>
+                                        @endif
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        @if($cotizacion->Estatus === 'Pendiente')
+                                        <button
+                                            onclick="seleccionarCotizacion({{ $cotizacion->CotizacionID }}, '{{ $token ?? '' }}')"
+                                            class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition shadow-sm">
+                                            <i class="fas fa-trophy mr-1"></i> Elegir ganador
+                                        </button>
+                                        @elseif($cotizacion->Estatus === 'Seleccionada')
+                                        <span class="px-4 py-2 bg-emerald-500 text-white text-sm font-semibold rounded-lg">
+                                            <i class="fas fa-check-circle mr-1"></i> Ganador
+                                        </span>
+                                        @else
+                                        <span class="px-4 py-2 bg-gray-200 text-gray-600 text-sm rounded-lg">No seleccionada</span>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
-                            @if($cotizacion->Estatus === 'Pendiente')
-                            <button 
-                                onclick="seleccionarCotizacion({{ $cotizacion->CotizacionID }}, '{{ $token }}')"
-                                class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition shadow-sm">
-                                <i class="fas fa-trophy mr-1"></i> Elegir ganador
-                            </button>
-                            @elseif($cotizacion->Estatus === 'Seleccionada')
-                            <span class="px-4 py-2 bg-emerald-500 text-white text-sm font-semibold rounded-lg">
-                                <i class="fas fa-check-circle mr-1"></i> Ganador seleccionado
-                            </span>
-                            @endif
+                            @endforeach
                         </div>
                     </div>
                     @endforeach
                 </div>
+                @endif
             </div>
         </div>
     </div>
@@ -133,7 +152,7 @@
         async function seleccionarCotizacion(cotizacionId, token) {
             const ok = await Swal.fire({
                 title: '¿Elegir esta propuesta como ganador?',
-                text: 'La solicitud pasará a Aprobada y se procederá a la compra.',
+                text: 'Se marcará como ganadora para este producto. Debes elegir un ganador en cada producto para completar.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, elegir ganador',
@@ -194,7 +213,7 @@
                 if (responseData.success) {
                     await Swal.fire({
                         title: '¡Éxito!',
-                        text: responseData.message || 'Ganador seleccionado. La solicitud está Aprobada y se procederá a la compra.',
+                        text: responseData.message || 'Ganador seleccionado para este producto.',
                         icon: 'success',
                         confirmButtonColor: '#0F766E'
                     });

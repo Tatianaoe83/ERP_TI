@@ -24,7 +24,8 @@ class Cotizacion extends Model
         'Observaciones',
         'Estatus',
         'NumeroPropuesta',
-        'NumeroParte'
+        'NumeroParte',
+        'Cantidad'
     ];
 
     protected $casts = [
@@ -32,7 +33,8 @@ class Cotizacion extends Model
         'SolicitudID' => 'integer',
         'Precio' => 'decimal:2',
         'TiempoEntrega' => 'integer',
-        'NumeroPropuesta' => 'integer'
+        'NumeroPropuesta' => 'integer',
+        'Cantidad' => 'integer'
     ];
 
     /**

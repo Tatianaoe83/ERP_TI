@@ -129,11 +129,10 @@
                                         </button>
 
                                         @if($solicitud->puedeCotizar)
-                                            <button
-                                                @click="abrirModalCotizacion({{ $solicitud->SolicitudID }})"
-                                                class="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium transition-colors">
+                                            <a href="{{ route('solicitudes.cotizar', $solicitud->SolicitudID) }}"
+                                                class="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium transition-colors no-underline">
                                                 <i class="fas fa-file-invoice-dollar mr-1"></i> Cotizar
-                                            </button>
+                                            </a>
                                         @endif
 
                                         @if($solicitud->puedeSubirFactura)
@@ -269,11 +268,11 @@
                                 </div>
                                 
                                 <div class="mt-4 flex flex-wrap gap-2" x-show="solicitudSeleccionada?.puedeCotizar && solicitudSeleccionada?.estatusDisplay !== 'Aprobada' && solicitudSeleccionada?.estatusDisplay !== 'Cotizaciones Enviadas'">
-                                    <button @click="abrirModalCotizacion(solicitudSeleccionada?.SolicitudID)"
-                                        class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-600 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                                    <a :href="'/solicitudes/' + (solicitudSeleccionada?.SolicitudID || '') + '/cotizar'"
+                                        class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-600 text-white text-sm font-medium rounded-lg transition shadow-sm no-underline">
                                         <i class="fas fa-file-invoice-dollar"></i>
                                         <span x-text="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0 ? 'Editar cotizaciones' : 'Cotizar'"></span>
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -361,195 +360,6 @@
                             </div>
                         </div>
 
-                    </div>
-                </div>
-            </div>
-        </div>
-    </template>
-
-    <template x-teleport="body">
-        <div
-            x-show="modalCotizacionAbierto"
-            x-transition:enter="ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
-            class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm overflow-y-auto h-full w-full z-[9999]"
-            @click.self="cerrarModalCotizacion()"
-            style="display: none;">
-            
-            <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-7xl shadow-2xl rounded-lg max-h-[90vh] overflow-y-auto bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-                
-                <div class="flex justify-between items-center pb-3 border-b sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-                    <h3 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                        Cotización - Solicitud #<span x-text="solicitudCotizacionId"></span>
-                        <span class="text-xs font-normal text-slate-500 dark:text-slate-400 ml-2">PRECIO IVA INCLUIDO</span>
-                    </h3>
-                    <button @click="cerrarModalCotizacion()" class="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-
-                <div class="mt-4">
-                    <div x-show="cargandoCotizaciones" class="text-center py-8">
-                        <i class="fas fa-spinner fa-spin text-3xl text-slate-400 dark:text-slate-600"></i>
-                        <p class="mt-2 text-slate-600 dark:text-slate-400">Cargando cotizaciones...</p>
-                    </div>
-
-                    <div x-show="!cargandoCotizaciones" style="display: none;">
-                        
-                        <div x-show="tieneCotizacionesEnviadas || solicitudSeleccionada?.estatusDisplay === 'Cotizaciones Enviadas'" 
-                             class="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-info-circle text-blue-500 dark:text-blue-400"></i>
-                                <p class="text-sm text-blue-800 dark:text-blue-200">
-                                    <strong>Cotizaciones enviadas:</strong> Ya se han enviado cotizaciones al gerente para su revisión.
-                                    Puedes agregar o editar nuevas cotizaciones si es necesario.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="mb-4 flex justify-between items-center flex-wrap gap-3">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-semibold text-slate-700 dark:text-slate-300">Proveedores:</h4>
-                                <template x-for="(prov, index) in proveedores" :key="index">
-                                    <span class="px-3 py-1 rounded text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200 border border-blue-200 dark:border-blue-800"
-                                          x-text="prov"></span>
-                                </template>
-                            </div>
-                            <button
-                                @click="agregarProveedor()"
-                                class="px-3 py-1 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white text-sm rounded transition shadow-sm">
-                                <i class="fas fa-plus mr-1"></i> Agregar Proveedor
-                            </button>
-                        </div>
-
-                        <div class="overflow-x-auto border rounded-lg border-slate-200 dark:border-slate-700">
-                            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm">
-                                <thead class="bg-slate-100 dark:bg-slate-800">
-                                    <tr>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">CANT.</th>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">NO. PARTE</th>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">DESCRIPCIÓN</th>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">Unidad</th>
-                                        <template x-for="(proveedor, provIndex) in proveedores" :key="provIndex">
-                                            <th class="px-3 py-2 text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase relative min-w-[120px]">
-                                                <div class="flex flex-col items-center">
-                                                    <span x-text="proveedor" class="text-slate-800 dark:text-slate-200 font-semibold"></span>
-                                                    <button
-                                                        @click.stop="eliminarProveedor(provIndex)"
-                                                        class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs mt-1 transition-colors"
-                                                        x-show="proveedores.length > 1"
-                                                        title="Eliminar proveedor">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            </th>
-                                        </template>
-                                        <th class="px-3 py-2 text-center text-xs font-medium text-slate-600 dark:text-slate-400 uppercase">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-transparent">
-                                    <template x-for="(producto, prodIndex) in productos" :key="prodIndex">
-                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td class="px-3 py-2 align-top">
-                                                <input
-                                                    type="number"
-                                                    x-model="producto.cantidad"
-                                                    min="1"
-                                                    class="w-16 px-2 py-1 border rounded text-center text-sm bg-gray-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="1">
-                                            </td>
-                                            <td class="px-3 py-2 align-top">
-                                                <input
-                                                    type="text"
-                                                    x-model="producto.numeroParte"
-                                                    class="w-full px-2 py-1 border rounded text-sm bg-gray-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="Número de parte">
-                                            </td>
-                                            <td class="px-3 py-2 align-top">
-                                                <textarea
-                                                    x-model="producto.descripcion"
-                                                    rows="2"
-                                                    class="w-full px-2 py-1 border rounded text-sm bg-gray-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                                    placeholder="Descripción del producto"></textarea>
-                                            </td>
-                                            <td class="px-3 py-2 align-top">
-                                                <input
-                                                    type="text"
-                                                    x-model="producto.unidad"
-                                                    class="w-20 px-2 py-1 border rounded text-center text-sm bg-gray-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="PIEZA">
-                                            </td>
-                                            <template x-for="(proveedor, provIndex) in proveedores" :key="provIndex">
-                                                <td class="px-3 py-2 align-top">
-                                                    <div class="space-y-1">
-                                                        <div class="relative">
-                                                            <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-500 dark:text-slate-400 text-sm">$</span>
-                                                            <input
-                                                                type="number"
-                                                                step="0.01"
-                                                                min="0"
-                                                                :value="producto.precios[proveedor] || ''"
-                                                                @input="producto.precios[proveedor] = $event.target.value"
-                                                                @blur="if(producto.precios[proveedor]) { const val = parseFloat(producto.precios[proveedor]); producto.precios[proveedor] = isNaN(val) ? '' : val.toFixed(2); }"
-                                                                class="w-full pl-6 pr-2 py-1 border rounded text-sm text-right bg-gray-50 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                                                :class="{
-                                                                    'border-red-300 bg-red-50 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300 font-semibold': obtenerPrecioMinimo(producto) && parseFloat(producto.precios[proveedor] || 0) === obtenerPrecioMinimo(producto) && obtenerPrecioMinimo(producto) > 0
-                                                                }"
-                                                                placeholder="0.00">
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </template>
-                                            <td class="px-3 py-2 text-center align-top">
-                                                <button
-                                                    @click="eliminarProducto(prodIndex)"
-                                                    class="text-red-600 hover:text-red-800 dark:text-red-500 dark:hover:text-red-400 transition-colors pt-1">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                    
-                                    <tr x-show="productos.length === 0">
-                                        <td :colspan="proveedores.length + 5" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                                            <i class="fas fa-inbox text-4xl mb-3 block text-slate-300 dark:text-slate-600"></i>
-                                            <p class="text-base">No hay productos agregados. Haz clic en "Agregar Producto" para comenzar.</p>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="mt-4 flex justify-between items-center flex-wrap gap-4">
-                            <button
-                                @click="agregarProducto()"
-                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition shadow-sm">
-                                <i class="fas fa-plus mr-2"></i> Agregar Producto
-                            </button>
-                            
-                            <div class="flex gap-2">
-                                <button
-                                    @click="cerrarModalCotizacion()"
-                                    class="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg transition">
-                                    Cancelar
-                                </button>
-                                <button
-                                    @click="guardarCotizaciones()"
-                                    class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white rounded-lg transition shadow-sm">
-                                    <i class="fas fa-save mr-2"></i> Guardar Cotizaciones
-                                </button>
-                                <button
-                                    x-show="tieneCotizacionesGuardadas"
-                                    @click="enviarCotizacionesAlGerente()"
-                                    class="px-4 py-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-600 text-white rounded-lg transition shadow-sm">
-                                    <i class="fas fa-envelope mr-2"></i> Enviar al Gerente
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

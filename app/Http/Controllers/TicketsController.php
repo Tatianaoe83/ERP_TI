@@ -1985,9 +1985,9 @@ class TicketsController extends Controller
                 if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                     if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                         if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
-                            $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+                            $todosGanadoresElegidos = $solicitud->todosProductosTienenGanador();
                             $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
-                            $estatusReal = $tieneSeleccionada ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
+                            $estatusReal = $todosGanadoresElegidos ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
                         } else {
                             $estatusReal = 'Pendiente Aprobación Administración';
                         }
@@ -2001,7 +2001,7 @@ class TicketsController extends Controller
             
                     if ($estatusReal === 'Rechazada') {
                         $estatusDisplay = 'Rechazada';
-                    } elseif ($estatusReal === 'Aprobado' || ($solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty())) {
+                    } elseif ($estatusReal === 'Aprobado' || $solicitud->todosProductosTienenGanador()) {
                         $estatusDisplay = 'Aprobada';
                     } elseif ($estatusReal === 'Cotizaciones Enviadas') {
                         $estatusDisplay = 'Cotizaciones Enviadas';
@@ -2151,7 +2151,42 @@ class TicketsController extends Controller
     }
 
     /**
-     * Seleccionar cotización ganadora
+     * Clave única de producto: Descripcion + NumeroParte (mismo ítem = mismas cotizaciones por proveedor).
+     */
+    private function claveProducto(Cotizacion $c): string
+    {
+        return trim($c->Descripcion ?? '') . '|' . trim($c->NumeroParte ?? '');
+    }
+
+    /**
+     * Agrupar cotizaciones por producto (Descripcion + NumeroParte).
+     * Cada producto tiene 3 propuestas (una por proveedor). Se elige un ganador por producto.
+     *
+     * @return array<int, array{clave: string, descripcion: string, numeroParte: string, cantidad: int, cotizaciones: \Illuminate\Support\Collection}>
+     */
+    private function agruparCotizacionesPorProducto($cotizaciones): array
+    {
+        $grupos = [];
+        foreach ($cotizaciones as $c) {
+            $clave = $this->claveProducto($c);
+            if (!isset($grupos[$clave])) {
+                $grupos[$clave] = [
+                    'clave' => $clave,
+                    'descripcion' => $c->Descripcion ?? '',
+                    'numeroParte' => $c->NumeroParte ?? '',
+                    'cantidad' => (int) ($c->Cantidad ?? 1),
+                    'cotizaciones' => collect([]),
+                ];
+            }
+            $grupos[$clave]['cotizaciones']->push($c);
+        }
+        return array_values($grupos);
+    }
+
+    /**
+     * Seleccionar cotización ganadora.
+     * Hay un ganador por producto (ej. laptop, mouse, teclado). Se rechazan solo las del mismo producto.
+     * La solicitud pasa a Aprobado cuando todos los productos tienen ganador.
      */
     public function seleccionarCotizacion(Request $request, $id)
     {
@@ -2164,7 +2199,6 @@ class TicketsController extends Controller
             $solicitud = Solicitud::with(['empleadoid', 'cotizaciones'])->findOrFail($id);
             $cotizacionGanadora = Cotizacion::findOrFail($request->input('cotizacion_id'));
 
-            // Verificar que la cotización pertenece a la solicitud
             if ($cotizacionGanadora->SolicitudID != $solicitud->SolicitudID) {
                 return response()->json([
                     'success' => false,
@@ -2172,16 +2206,13 @@ class TicketsController extends Controller
                 ], 400);
             }
 
-            // Verificar que la cotización no esté ya seleccionada o rechazada
             if ($cotizacionGanadora->Estatus === 'Seleccionada') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Esta cotización ya fue seleccionada anteriormente'
+                    'message' => 'Esta cotización ya fue seleccionada como ganadora para este producto.'
                 ], 400);
             }
-            
-            // Permitir seleccionar cotizaciones con estatus "Pendiente", "Seleccionada" o "Rechazada"
-            // El estatus "Enviada" se maneja en la tabla solicitudes
+
             if (!in_array($cotizacionGanadora->Estatus, ['Pendiente', 'Seleccionada', 'Rechazada'])) {
                 return response()->json([
                     'success' => false,
@@ -2189,27 +2220,43 @@ class TicketsController extends Controller
                 ], 400);
             }
 
-            // Marcar la cotización ganadora como seleccionada
+            $claveProducto = $this->claveProducto($cotizacionGanadora);
+
+            $cotizacionesMismoProducto = $solicitud->cotizaciones->filter(function ($c) use ($claveProducto) {
+                return $this->claveProducto($c) === $claveProducto;
+            });
+
             $cotizacionGanadora->Estatus = 'Seleccionada';
             $cotizacionGanadora->save();
 
-            // Marcar las demás cotizaciones de la solicitud como rechazadas
-            Cotizacion::where('SolicitudID', $solicitud->SolicitudID)
+            $idsRechazar = $cotizacionesMismoProducto
                 ->where('CotizacionID', '!=', $cotizacionGanadora->CotizacionID)
-                ->where('Estatus', '!=', 'Rechazada')
-                ->update(['Estatus' => 'Rechazada']);
+                ->pluck('CotizacionID');
+            if ($idsRechazar->isNotEmpty()) {
+                Cotizacion::whereIn('CotizacionID', $idsRechazar)->update(['Estatus' => 'Rechazada']);
+            }
 
-            // Actualizar el estatus de la solicitud a Aprobado
-            $solicitud->Estatus = 'Aprobado';
-            $solicitud->save();
+            $solicitud->refresh();
+            $solicitud->load('cotizaciones');
+            $todosGanadores = $solicitud->todosProductosTienenGanador();
 
-            // Enviar correo a tordonez@proser.com.mx
-            $emailService = new \App\Services\SolicitudAprobacionEmailService();
-            $emailService->enviarGanadorSeleccionado($solicitud, $cotizacionGanadora, 'tordonez@proser.com.mx');
+            if ($todosGanadores) {
+                $solicitud->Estatus = 'Aprobado';
+                $solicitud->save();
+
+                $ganadores = $solicitud->cotizaciones->where('Estatus', 'Seleccionada');
+                $emailService = new \App\Services\SolicitudAprobacionEmailService();
+                $emailService->enviarGanadoresSeleccionados($solicitud, $ganadores, 'tordonez@proser.com.mx');
+            }
+
+            $mensaje = $todosGanadores
+                ? 'Ganadores seleccionados para todos los productos. La solicitud está Aprobada y se ha notificado para proceder con la compra.'
+                : 'Ganador seleccionado para este producto. Elige el ganador de los demás productos para completar.';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Ganador seleccionado correctamente. Se ha notificado para proceder con la compra.'
+                'message' => $mensaje,
+                'todos_completos' => $todosGanadores,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -2228,6 +2275,53 @@ class TicketsController extends Controller
                 'success' => false,
                 'message' => 'Error al seleccionar la cotización: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Mostrar página de cotización (vista aparte por equipos y cotizaciones por equipo).
+     */
+    public function mostrarPaginaCotizacion($id)
+    {
+        try {
+            $solicitud = Solicitud::with([
+                'empleadoid',
+                'gerenciaid',
+                'obraid',
+                'puestoid',
+                'pasoSupervisor',
+                'pasoGerencia',
+                'pasoAdministracion',
+                'cotizaciones'
+            ])->findOrFail($id);
+
+            $pasoSupervisor = $solicitud->pasoSupervisor;
+            $pasoGerencia = $solicitud->pasoGerencia;
+            $pasoAdministracion = $solicitud->pasoAdministracion;
+            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
+                && ($pasoGerencia && $pasoGerencia->status === 'approved')
+                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+
+            $estaRechazada = ($pasoSupervisor && $pasoSupervisor->status === 'rejected')
+                || ($pasoGerencia && $pasoGerencia->status === 'rejected')
+                || ($pasoAdministracion && $pasoAdministracion->status === 'rejected');
+
+            $todosGanadores = $solicitud->todosProductosTienenGanador();
+            $puedeCotizar = $todasFirmaron && auth()->check() && !$estaRechazada
+                && $solicitud->Estatus !== 'Aprobado' && $solicitud->Estatus !== 'Cotizaciones Enviadas'
+                && !$todosGanadores;
+
+            if (!$puedeCotizar) {
+                return redirect()->route('tickets.index')
+                    ->with('error', 'No puedes cotizar esta solicitud o ya fue completada.');
+            }
+
+            return view('solicitudes.cotizar', ['solicitud' => $solicitud]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('tickets.index')->with('error', 'Solicitud no encontrada.');
+        } catch (\Exception $e) {
+            Log::error("Error mostrando página cotizar solicitud #{$id}: " . $e->getMessage());
+            return redirect()->route('tickets.index')->with('error', 'Error al cargar la página de cotización.');
         }
     }
 
@@ -2251,51 +2345,51 @@ class TicketsController extends Controller
             // Obtener todos los proveedores únicos
             $proveedores = $solicitud->cotizaciones->pluck('Proveedor')->unique()->values()->toArray();
             
-            // Agrupar cotizaciones por descripción (producto)
-            // Usamos descripción + número de parte como clave única para identificar productos
+            // Agrupar cotizaciones por producto (NumeroParte si existe, si no Descripcion)
+            // La descripción puede variar por proveedor; se devuelve en descripciones[proveedor]
             $productosMap = [];
             
             foreach ($solicitud->cotizaciones as $cotizacion) {
-                // Usar descripción como clave principal para agrupar
-                $claveProducto = trim($cotizacion->Descripcion);
+                $np = trim($cotizacion->NumeroParte ?? '');
+                $claveProducto = $np !== '' ? $np : trim($cotizacion->Descripcion ?? '');
+                $cantidad = isset($cotizacion->Cantidad) ? (int) $cotizacion->Cantidad : 1;
                 
-                // Si no existe el producto, crearlo
                 if (!isset($productosMap[$claveProducto])) {
                     $productosMap[$claveProducto] = [
-                        'cantidad' => 1, // Por defecto, ya que no guardamos cantidad
+                        'cantidad' => max(1, $cantidad),
                         'numeroParte' => $cotizacion->NumeroParte ?? '',
                         'descripcion' => $cotizacion->Descripcion,
-                        'unidad' => 'PIEZA', // Por defecto
+                        'unidad' => 'PIEZA',
                         'precios' => [],
+                        'descripciones' => [],
                         'tiempoEntrega' => [],
                         'observaciones' => []
                     ];
                 }
-                
-                // Agregar precio de este proveedor
-                // El precio guardado es el precio total, asumimos cantidad = 1
-                $precioUnitario = (float)$cotizacion->Precio;
+                $productosMap[$claveProducto]['cantidad'] = max(1, $cantidad);
+
+                $precioTotal = (float) $cotizacion->Precio;
+                $precioUnitario = $precioTotal / max(1, $cantidad);
                 $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = $precioUnitario;
+                $productosMap[$claveProducto]['descripciones'][$cotizacion->Proveedor] = $cotizacion->Descripcion ?? '';
                 
-                // Agregar tiempo de entrega si existe
                 if ($cotizacion->TiempoEntrega !== null) {
                     $productosMap[$claveProducto]['tiempoEntrega'][$cotizacion->Proveedor] = (int)$cotizacion->TiempoEntrega;
                 }
-                
-                // Agregar observaciones si existen
                 if ($cotizacion->Observaciones !== null && trim($cotizacion->Observaciones) !== '') {
                     $productosMap[$claveProducto]['observaciones'][$cotizacion->Proveedor] = $cotizacion->Observaciones;
                 }
             }
             
-            // Convertir el mapa a array indexado
             $productos = array_values($productosMap);
             
-            // Asegurar que todos los productos tengan precios para todos los proveedores (inicializar vacíos si no existen)
             foreach ($productos as &$producto) {
                 foreach ($proveedores as $proveedor) {
                     if (!isset($producto['precios'][$proveedor])) {
                         $producto['precios'][$proveedor] = '';
+                    }
+                    if (!isset($producto['descripciones'][$proveedor])) {
+                        $producto['descripciones'][$proveedor] = $producto['descripcion'] ?? '';
                     }
                 }
             }
@@ -2348,39 +2442,40 @@ class TicketsController extends Controller
             $cotizacionesCreadas = 0;
             
             // Crear una cotización por cada combinación de producto y proveedor con precio
+            // La descripción puede variar por proveedor (descripciones[proveedor]); si no, se usa producto.descripcion
             foreach ($productos as $producto) {
-                if (empty($producto['descripcion']) || trim($producto['descripcion']) === '') {
-                    continue; // Saltar productos sin descripción
-                }
-                
+                $descBase = trim($producto['descripcion'] ?? '');
+                $descripciones = $producto['descripciones'] ?? [];
                 $precios = $producto['precios'] ?? [];
                 $cantidad = isset($producto['cantidad']) ? (int)$producto['cantidad'] : 1;
                 
                 foreach ($proveedores as $proveedor) {
                     $precio = $precios[$proveedor] ?? null;
-                    
-                    // Solo crear cotización si hay un precio válido
-                    if ($precio !== null && $precio !== '' && (float)$precio > 0) {
-                        // Calcular precio total (precio unitario * cantidad)
-                        $precioTotal = (float)$precio * $cantidad;
-                        
-                        Cotizacion::create([
-                            'SolicitudID' => $solicitud->SolicitudID,
-                            'Proveedor' => $proveedor,
-                            'Descripcion' => $producto['descripcion'],
-                            'Precio' => $precioTotal,
-                            'NumeroParte' => $producto['numero_parte'] ?? $producto['numeroParte'] ?? null,
-                            'TiempoEntrega' => isset($producto['tiempo_entrega'][$proveedor]) ? (int)$producto['tiempo_entrega'][$proveedor] : null,
-                            'Observaciones' => isset($producto['observaciones'][$proveedor]) ? $producto['observaciones'][$proveedor] : null,
-                            'Estatus' => 'Pendiente',
-                            'NumeroPropuesta' => $numeroPropuesta
-                        ]);
-                        
-                        $cotizacionesCreadas++;
+                    if ($precio === null || $precio === '' || (float)$precio <= 0) {
+                        continue;
                     }
+                    
+                    $desc = trim($descripciones[$proveedor] ?? '') ?: $descBase;
+                    if ($desc === '') {
+                        continue;
+                    }
+                    
+                    $precioTotal = (float)$precio * $cantidad;
+                    Cotizacion::create([
+                        'SolicitudID' => $solicitud->SolicitudID,
+                        'Proveedor' => $proveedor,
+                        'Descripcion' => $desc,
+                        'Precio' => $precioTotal,
+                        'NumeroParte' => $producto['numero_parte'] ?? $producto['numeroParte'] ?? null,
+                        'Cantidad' => $cantidad,
+                        'TiempoEntrega' => isset($producto['tiempo_entrega'][$proveedor]) ? (int)$producto['tiempo_entrega'][$proveedor] : null,
+                        'Observaciones' => isset($producto['observaciones'][$proveedor]) ? $producto['observaciones'][$proveedor] : null,
+                        'Estatus' => 'Pendiente',
+                        'NumeroPropuesta' => $numeroPropuesta
+                    ]);
+                    $cotizacionesCreadas++;
                 }
                 
-                // Incrementar número de propuesta solo si se crearon cotizaciones para este producto
                 if ($cotizacionesCreadas > 0) {
                     $numeroPropuesta++;
                 }
@@ -2565,48 +2660,31 @@ class TicketsController extends Controller
             $solicitud->load([
                 'empleadoid',
                 'cotizaciones' => function($query) {
-                    $query->orderBy('Proveedor')->orderBy('Precio');
+                    $query->orderBy('Descripcion')->orderBy('NumeroParte')->orderBy('Proveedor');
                 }
             ]);
 
-            // Verificar si ya se seleccionó un ganador
-            $tieneGanadorSeleccionado = false;
-            $cotizacionGanadora = null;
-            
-            // Verificar si hay una cotización con estatus "Seleccionada"
-            if ($solicitud->cotizaciones) {
-                $cotizacionGanadora = $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->first();
-                if ($cotizacionGanadora) {
-                    $tieneGanadorSeleccionado = true;
-                }
-            }
-            
-            // También verificar si la solicitud tiene estatus "Aprobado"
-            if ($solicitud->Estatus === 'Aprobado') {
-                $tieneGanadorSeleccionado = true;
-            }
+            $productos = $this->agruparCotizacionesPorProducto($solicitud->cotizaciones ?? collect());
+            $todosConGanador = $solicitud->todosProductosTienenGanador();
+            $ganadores = $solicitud->cotizaciones ? $solicitud->cotizaciones->where('Estatus', 'Seleccionada') : collect();
 
-            // Si ya se seleccionó un ganador, mostrar vista de token inválido
-            if ($tieneGanadorSeleccionado) {
+            if ($solicitud->Estatus === 'Aprobado' || $todosConGanador) {
                 $tokenInfo = [
-                    'razon' => 'Ya se ha seleccionado un ganador para esta solicitud. El proceso de elección ya fue completado.',
+                    'razon' => 'Ya se han seleccionado los ganadores de todos los productos de esta solicitud. El proceso de elección ya fue completado.',
                 ];
-                
-                if ($cotizacionGanadora) {
-                    $tokenInfo['proveedor_ganador'] = $cotizacionGanadora->Proveedor;
-                    $tokenInfo['precio_ganador'] = number_format($cotizacionGanadora->Precio, 2, '.', ',');
+                if ($ganadores->isNotEmpty()) {
+                    $lista = $ganadores->map(fn ($g) => $g->Descripcion . ' – ' . $g->Proveedor . ' ($' . number_format($g->Precio, 2, '.', ',') . ')')->implode('; ');
+                    $tokenInfo['proveedor_ganador'] = $lista;
+                    $tokenInfo['multiple_ganadores'] = $ganadores->count() > 1;
                 }
-                
-                Log::info("Intento de acceder a elegir ganador con token {$token} para solicitud #{$solicitud->SolicitudID} que ya tiene ganador seleccionado");
-                
+                Log::info("Intento de acceder a elegir ganador con token {$token} para solicitud #{$solicitud->SolicitudID} que ya tiene ganadores seleccionados");
                 return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
             }
 
-            // Verificar que haya cotizaciones
             if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
                 return view('solicitudes.elegir-ganador', [
                     'solicitud' => $solicitud,
-                    'cotizaciones' => collect([]),
+                    'productos' => [],
                     'token' => $token,
                     'error' => 'No hay cotizaciones disponibles para esta solicitud'
                 ]);
@@ -2614,7 +2692,7 @@ class TicketsController extends Controller
 
             return view('solicitudes.elegir-ganador', [
                 'solicitud' => $solicitud,
-                'cotizaciones' => $solicitud->cotizaciones,
+                'productos' => $productos,
                 'token' => $token
             ]);
         } catch (\Exception $e) {

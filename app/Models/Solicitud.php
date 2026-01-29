@@ -140,6 +140,34 @@ class Solicitud extends Model
     }
 
     /**
+     * Indica si todos los productos (agrupados por Descripcion+NumeroParte) tienen exactamente un ganador (Estatus Seleccionada).
+     * Se usa para saber si la solicitud está totalmente aprobada (un ganador por producto).
+     */
+    public function todosProductosTienenGanador(): bool
+    {
+        $cotizaciones = $this->cotizaciones ?? collect();
+        if ($cotizaciones->isEmpty()) {
+            return false;
+        }
+        $porProducto = [];
+        foreach ($cotizaciones as $c) {
+            $clave = trim($c->Descripcion ?? '') . '|' . trim($c->NumeroParte ?? '');
+            if (! isset($porProducto[$clave])) {
+                $porProducto[$clave] = 0;
+            }
+            if ($c->Estatus === 'Seleccionada') {
+                $porProducto[$clave]++;
+            }
+        }
+        foreach ($porProducto as $count) {
+            if ($count !== 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Relación con pasos de aprobación
      */
     public function pasosAprobacion()

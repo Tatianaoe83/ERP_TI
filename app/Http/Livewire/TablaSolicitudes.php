@@ -69,9 +69,9 @@ class TablaSolicitudes extends Component
                 if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                     if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                         if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
-                            $tieneSeleccionada = $solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty();
+                            $todosGanadoresElegidos = $solicitud->todosProductosTienenGanador();
                             $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
-                            $estatusReal = $tieneSeleccionada ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
+                            $estatusReal = $todosGanadoresElegidos ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
                         } else {
                             $estatusReal = 'Pendiente Aprobación Administración';
                         }
@@ -87,7 +87,7 @@ class TablaSolicitudes extends Component
             if ($estatusReal === 'Rechazada') {
                 $estatusDisplay = 'Rechazada';
                 $colorEstatus = 'bg-red-50 text-red-800 border border-red-200';
-            } elseif ($estatusReal === 'Aprobado' || ($solicitud->cotizaciones && $solicitud->cotizaciones->where('Estatus', 'Seleccionada')->isNotEmpty())) {
+            } elseif ($estatusReal === 'Aprobado' || $solicitud->todosProductosTienenGanador()) {
                 $estatusDisplay = 'Aprobada';
                 $colorEstatus = 'bg-emerald-50 text-emerald-800 border border-emerald-200';
             } elseif ($estatusReal === 'Cotizaciones Enviadas') {

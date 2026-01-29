@@ -4,155 +4,133 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Token Inválido - Revisión de Solicitud</title>
+    <title>Firma Autorizada o Vencida - Revisión de Solicitud</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#0F766E",
-                        "primary-hover": "#115E59",
-                        "danger": "#EF4444",
-                    },
-                },
-            },
-        };
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; }
     </style>
 </head>
 
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-2xl w-full">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            
-            <!-- Header con código de error -->
-            <div class="bg-gradient-to-r from-red-500 to-red-600 px-8 py-6 text-center">
-                <div class="flex justify-center mb-4">
-                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                        <i class="fas fa-shield-alt text-white text-4xl"></i>
-                    </div>
-                </div>
-                <h1 class="text-6xl font-bold text-white mb-2">401</h1>
-                <h2 class="text-xl text-white/90 font-semibold">Firma Autorizada o Vencida</h2>
+<body class="bg-[#F9FAFB] dark:bg-neutral-950 text-[#333] dark:text-neutral-200 min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div class="w-full max-w-4xl flex flex-col lg:flex-row gap-8 lg:gap-12 items-center lg:items-stretch">
+        
+        <!-- Columna izquierda: imagen -->
+        <div class="flex-1 flex items-center justify-center w-full">
+            <img src="{{ asset('img/invalid.png') }}" alt="Enlace no disponible" class="w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[360px] h-auto object-contain" />
+        </div>
+
+        <!-- Columna derecha: panel de contenido -->
+        <div class="flex-1 w-full max-w-xl">
+            <div class="mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-[#333] dark:text-white mb-1">
+                    Firma Autorizada
+                </h1>
+                <p class="text-[#555] dark:text-neutral-400 text-sm md:text-base">
+                    Este enlace de aprobación ya no es válido.
+                </p>
             </div>
 
-            <!-- Contenido principal -->
-            <div class="p-8">
-                <div class="mb-6">
-                    <div class="flex items-start gap-4 mb-4">
-                        <div class="flex-shrink-0">
-                            <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl"></i>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                Enlace de Aprobación Inválido
-                            </h3>
-                            <p class="text-gray-600 dark:text-gray-300 mb-4">
-                                Este enlace de revisión de solicitud ya no es válido. Esto puede deberse a que:
-                            </p>
-                            <ul class="space-y-2 text-gray-600 dark:text-gray-300 text-sm mb-4">
-                                <li class="flex items-start gap-2">
-                                    <i class="fas fa-check-circle text-red-500 mt-1"></i>
-                                    <span><strong>La solicitud ya fue firmada</strong> - El enlace fue utilizado para aprobar o rechazar la solicitud</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <i class="fas fa-check-circle text-red-500 mt-1"></i>
-                                    <span><strong>El enlace fue revocado</strong> - La aprobación fue transferida a otra persona</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <i class="fas fa-check-circle text-red-500 mt-1"></i>
-                                    <span><strong>El enlace expiró</strong> - Ha pasado el tiempo límite para revisar esta solicitud</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+            <div class="bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-700 shadow-sm overflow-hidden">
+                
+                <!-- Sección: Enlace de Aprobación Inválido -->
+                <div class="p-6 md:p-8">
+                    <h2 class="text-base font-bold text-[#333] dark:text-white mb-2">
+                        Enlace de Aprobación Inválido
+                    </h2>
+                    <p class="text-sm text-[#555] dark:text-neutral-400 mb-4">
+                        Este enlace de revisión de solicitud ya no es válido. Esto puede deberse a que:
+                    </p>
+                    <ul class="space-y-3 text-sm text-[#555] dark:text-neutral-400">
+                        <li class="flex items-start gap-2">
+                            <span class="text-neutral-400 dark:text-neutral-500 mt-0.5">×</span>
+                            <span>
+                                <strong class="text-[#333] dark:text-neutral-200">La solicitud ya fue firmada.</strong><br />
+                                <span class="text-[#555] dark:text-neutral-500">El enlace fue utilizado para aprobar o rechazar la solicitud.</span>
+                            </span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-neutral-400 dark:text-neutral-500 mt-0.5">×</span>
+                            <span>
+                                <strong class="text-[#333] dark:text-neutral-200">El enlace fue revocado.</strong><br />
+                                <span class="text-[#555] dark:text-neutral-500">La aprobación fue transferida a otra persona.</span>
+                            </span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-neutral-400 dark:text-neutral-500 mt-0.5">×</span>
+                            <span>
+                                <strong class="text-[#333] dark:text-neutral-200">El enlace expiró.</strong><br />
+                                <span class="text-[#555] dark:text-neutral-500">Ha pasado el tiempo límite para revisar esta solicitud.</span>
+                            </span>
+                        </li>
+                    </ul>
                 </div>
 
-                <!-- Información adicional -->
+                <hr class="border-neutral-100 dark:border-neutral-700" />
+
+                <!-- Sección: Información del Token -->
                 @if(isset($tokenInfo))
-                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-600">
-                    <div class="flex items-center gap-2 mb-2">
-                        <i class="fas fa-info-circle text-blue-500"></i>
-                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Información del Token</span>
-                    </div>
-                    @if(isset($tokenInfo['razon']))
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        <strong>Razón:</strong> {{ $tokenInfo['razon'] }}
-                    </p>
-                    @endif
-                    @if(isset($tokenInfo['proveedor_ganador']))
-                    <div class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-trophy text-green-600 dark:text-green-400"></i>
-                            <span class="text-sm font-semibold text-green-800 dark:text-green-200">Ganador Seleccionado</span>
+                <div class="px-6 md:px-8 py-5">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full border-2 border-neutral-300 dark:border-neutral-600 flex items-center justify-center flex-shrink-0">
+                            <span class="text-sm font-semibold text-neutral-500 dark:text-neutral-400">i</span>
                         </div>
-                        <p class="text-sm text-green-700 dark:text-green-300">
-                            <strong>Proveedor:</strong> {{ $tokenInfo['proveedor_ganador'] }}
-                        </p>
-                        @if(isset($tokenInfo['precio_ganador']))
-                        <p class="text-sm text-green-700 dark:text-green-300">
-                            <strong>Precio:</strong> ${{ $tokenInfo['precio_ganador'] }}
-                        </p>
-                        @endif
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-[#333] dark:text-neutral-200 mb-2">Información del Token</p>
+                            @if(isset($tokenInfo['razon']))
+                            <p class="text-sm text-[#555] dark:text-neutral-400">Razón: {{ $tokenInfo['razon'] }}</p>
+                            @endif
+                            @if(isset($tokenInfo['fecha_usado']))
+                            <p class="text-sm text-[#555] dark:text-neutral-400 mt-1">Fecha de uso: {{ $tokenInfo['fecha_usado'] }}</p>
+                            @endif
+                            @if(isset($tokenInfo['fecha_expiracion']))
+                            <p class="text-sm text-[#555] dark:text-neutral-400 mt-0.5">Fecha de expiración: {{ $tokenInfo['fecha_expiracion'] }}</p>
+                            @endif
+                            @if(isset($tokenInfo['proveedor_ganador']))
+                            <div class="mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-700">
+                                <p class="text-sm text-[#555] dark:text-neutral-400"><strong>{{ isset($tokenInfo['multiple_ganadores']) && $tokenInfo['multiple_ganadores'] ? 'Ganadores por producto:' : 'Proveedor:' }}</strong> {{ $tokenInfo['proveedor_ganador'] }}</p>
+                                @if(isset($tokenInfo['precio_ganador']) && $tokenInfo['precio_ganador'] !== '')
+                                <p class="text-sm text-[#555] dark:text-neutral-400"><strong>Precio:</strong> ${{ $tokenInfo['precio_ganador'] }}</p>
+                                @endif
+                            </div>
+                            @endif
+                        </div>
                     </div>
-                    @endif
-                    @if(isset($tokenInfo['fecha_usado']))
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        <strong>Fecha de uso:</strong> {{ $tokenInfo['fecha_usado'] }}
-                    </p>
-                    @endif
-                    @if(isset($tokenInfo['fecha_expiracion']))
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        <strong>Fecha de expiración:</strong> {{ $tokenInfo['fecha_expiracion'] }}
-                    </p>
-                    @endif
                 </div>
+                <hr class="border-neutral-100 dark:border-neutral-700" />
                 @endif
 
-                <!-- Mensaje de ayuda -->
-                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                <!-- Sección: ¿Qué puedes hacer? -->
+                <div class="px-6 md:px-8 py-5">
                     <div class="flex items-start gap-3">
-                        <i class="fas fa-lightbulb text-blue-500 mt-1"></i>
-                        <div>
-                            <h4 class="font-semibold text-blue-900 dark:text-blue-200 mb-1">¿Qué puedes hacer?</h4>
-                            <p class="text-sm text-blue-800 dark:text-blue-300">
+                        <div class="w-8 h-8 rounded-full bg-[#E8EEF5] dark:bg-neutral-700 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-[#6B8FC4]" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-bold text-[#333] dark:text-white mb-1">¿Qué puedes hacer?</h3>
+                            <p class="text-sm text-[#4682B4] dark:text-blue-400">
                                 Si necesitas revisar o aprobar esta solicitud, contacta con el administrador del sistema o solicita un nuevo enlace de aprobación.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Botones de acción -->
-                <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <button onclick="window.close()" class="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
-                        <i class="fas fa-times"></i>
+                <!-- Botones al pie, alineados a la derecha -->
+                <div class="px-6 md:px-8 pb-6 md:pb-8 flex flex-col sm:flex-row gap-3 justify-end">
+                    <button type="button" onclick="window.close()" class="px-5 py-2.5 bg-white dark:bg-transparent border border-neutral-300 dark:border-neutral-600 text-[#333] dark:text-neutral-300 rounded-lg text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                         Cerrar
                     </button>
                     @auth
-                    <a href="{{ route('home') }}" class="px-6 py-3 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
-                        <i class="fas fa-home"></i>
+                    <a href="{{ route('home') }}" class="px-5 py-2.5 bg-[#2C3E50] hover:bg-[#34495e] text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11v2a1 1 0 01-1 1h-2m-6-1a1 1 0 001-1v-1a1 1 0 011-1h2a1 1 0 011 1v1a1 1 0 001 1m-6-1h6" /></svg>
                         Ir al Dashboard
                     </a>
                     @endauth
                 </div>
             </div>
-
         </div>
-
-       
-     
     </div>
 </body>
 

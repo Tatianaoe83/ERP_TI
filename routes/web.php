@@ -179,6 +179,7 @@ Route::post('/revision-solicitud/{token}/decide', [SolicitudAprobacionController
 Route::post('/revision-solicitud/{token}/transferir', [SolicitudAprobacionController::class, 'transferir'])->name('solicitudes.public.transferir');
 Route::get('/solicitudes/empleados-transferir', [SolicitudAprobacionController::class, 'obtenerEmpleadosParaTransferir'])->name('solicitudes.empleados-transferir');
 Route::get('/solicitudes/{id}/datos', [App\Http\Controllers\TicketsController::class, 'obtenerDatosSolicitud'])->name('solicitudes.datos');
+Route::get('/solicitudes/{id}/cotizar', [App\Http\Controllers\TicketsController::class, 'mostrarPaginaCotizacion'])->name('solicitudes.cotizar')->middleware('auth');
 Route::get('/solicitudes/{id}/cotizaciones', [App\Http\Controllers\TicketsController::class, 'obtenerCotizaciones'])->name('solicitudes.cotizaciones');
 Route::post('/solicitudes/{id}/guardar-cotizaciones', [App\Http\Controllers\TicketsController::class, 'guardarCotizaciones'])->name('solicitudes.guardar-cotizaciones');
 Route::post('/solicitudes/{id}/enviar-cotizaciones-gerente', [App\Http\Controllers\TicketsController::class, 'enviarCotizacionesAlGerente'])->name('solicitudes.enviar-cotizaciones-gerente');
