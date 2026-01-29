@@ -84,6 +84,22 @@ class Tickets extends Model
     ];
 
     /**
+     * Alias para Livewire wire:key (id único del ticket).
+     */
+    public function getIdAttribute(): int
+    {
+        return $this->TicketID;
+    }
+
+    /**
+     * Alias para Livewire wire:key (estado para detectar re-render).
+     */
+    public function getEstadoAttribute(): string
+    {
+        return $this->Estatus ?? '';
+    }
+
+    /**
      * Validation rules
      *
      * @var array

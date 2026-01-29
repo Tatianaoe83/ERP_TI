@@ -330,9 +330,9 @@
     @stack('third_party_stylesheets')
     @livewireStyles
 </head>
-@livewireScripts
 
 <body class="bg-gray-100 dark:bg-[#0F1116] text-gray-800 dark:text-gray-200 transition-colors duration-500 ease-in-out">
+    @livewireScripts
     <div id="app">
         <nav class="bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
         </nav>

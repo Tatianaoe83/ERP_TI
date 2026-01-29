@@ -25,10 +25,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // Verificar tickets excedidos cada 15 minutos
-        $schedule->command('tickets:verificar-excedidos')
+        /*$schedule->command('tickets:verificar-excedidos')
             ->everyFifteenMinutes()
             ->withoutOverlapping()
-            ->runInBackground();
+            ->runInBackground();*/
         
         // Procesar respuestas automáticas cada 5 minutos
         $schedule->command('tickets:procesar-respuestas-automaticas')

@@ -1,22 +1,46 @@
 "use strict";
 
-// ChartJS
+// ChartJS - Compatible con Chart.js v2 y v3+
 if(window.Chart) {
-  Chart.defaults.global.defaultFontFamily = "'Nunito', 'Segoe UI', 'Arial'";
-  Chart.defaults.global.defaultFontSize = 12;
-  Chart.defaults.global.defaultFontStyle = 500;
-  Chart.defaults.global.defaultFontColor = "#999";
-  Chart.defaults.global.tooltips.backgroundColor = "#000";
-  Chart.defaults.global.tooltips.bodyFontColor = "rgba(255,255,255,.7)";
-  Chart.defaults.global.tooltips.titleMarginBottom = 10;
-  Chart.defaults.global.tooltips.titleFontSize = 14;
-  Chart.defaults.global.tooltips.titleFontFamily = "'Nunito', 'Segoe UI', 'Arial'";
-  Chart.defaults.global.tooltips.titleFontColor = '#fff';
-  Chart.defaults.global.tooltips.xPadding = 15;
-  Chart.defaults.global.tooltips.yPadding = 15;
-  Chart.defaults.global.tooltips.displayColors = false;
-  Chart.defaults.global.tooltips.intersect = false;
-  Chart.defaults.global.tooltips.mode = 'nearest';
+  try {
+    // Chart.js v3+ usa Chart.defaults en lugar de Chart.defaults.global
+    if (Chart.defaults && Chart.defaults.font) {
+      // Chart.js v3+
+      Chart.defaults.font.family = "'Nunito', 'Segoe UI', 'Arial'";
+      Chart.defaults.font.size = 12;
+      Chart.defaults.font.style = 500;
+      Chart.defaults.color = "#999";
+      Chart.defaults.plugins.tooltip.backgroundColor = "#000";
+      Chart.defaults.plugins.tooltip.bodyColor = "rgba(255,255,255,.7)";
+      Chart.defaults.plugins.tooltip.titleMarginBottom = 10;
+      Chart.defaults.plugins.tooltip.titleFont = { size: 14, family: "'Nunito', 'Segoe UI', 'Arial'", style: 500 };
+      Chart.defaults.plugins.tooltip.titleColor = '#fff';
+      Chart.defaults.plugins.tooltip.padding = { x: 15, y: 15 };
+      Chart.defaults.plugins.tooltip.displayColors = false;
+      Chart.defaults.plugins.tooltip.intersect = false;
+      Chart.defaults.plugins.tooltip.mode = 'nearest';
+    } else if (Chart.defaults && Chart.defaults.global) {
+      // Chart.js v2 (API antigua)
+      Chart.defaults.global.defaultFontFamily = "'Nunito', 'Segoe UI', 'Arial'";
+      Chart.defaults.global.defaultFontSize = 12;
+      Chart.defaults.global.defaultFontStyle = 500;
+      Chart.defaults.global.defaultFontColor = "#999";
+      Chart.defaults.global.tooltips.backgroundColor = "#000";
+      Chart.defaults.global.tooltips.bodyFontColor = "rgba(255,255,255,.7)";
+      Chart.defaults.global.tooltips.titleMarginBottom = 10;
+      Chart.defaults.global.tooltips.titleFontSize = 14;
+      Chart.defaults.global.tooltips.titleFontFamily = "'Nunito', 'Segoe UI', 'Arial'";
+      Chart.defaults.global.tooltips.titleFontColor = '#fff';
+      Chart.defaults.global.tooltips.xPadding = 15;
+      Chart.defaults.global.tooltips.yPadding = 15;
+      Chart.defaults.global.tooltips.displayColors = false;
+      Chart.defaults.global.tooltips.intersect = false;
+      Chart.defaults.global.tooltips.mode = 'nearest';
+    }
+  } catch (error) {
+    console.warn('Error configurando Chart.js:', error);
+    // No detener la ejecución si hay un error con Chart.js
+  }
 }
 
 // DropzoneJS

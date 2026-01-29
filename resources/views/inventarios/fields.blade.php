@@ -363,8 +363,8 @@
                             <td>{{ $LineasAsignado->CostoRentaMensual}}</td>
                             <td>{{ $LineasAsignado->CuentaPadre}}</td>
                             <td>{{ $LineasAsignado->CuentaHija}}</td>
-                            <td>{{ $LineasAsignado->TipoLinea}}</td>
-                            <td>{{ $LineasAsignado->lineas->obras->NombreObra}}</td>
+                            <td>{{ $LineasAsignado->TipoLinea}}</td>  
+                            <td>{{ $LineasAsignado->lineastelefonicas->obras->NombreObra ?? 'Sin asignar'}}</td>
                             <td>{{ $LineasAsignado->FechaFianza}}</td>
                             <td>{{ $LineasAsignado->CostoFianza}}</td>
                             <td>{{ $LineasAsignado->FechaAsignacion}}</td>
