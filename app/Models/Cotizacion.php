@@ -24,8 +24,10 @@ class Cotizacion extends Model
         'Observaciones',
         'Estatus',
         'NumeroPropuesta',
+        'NombreEquipo',
         'NumeroParte',
-        'Cantidad'
+        'Cantidad',
+        'Unidad'
     ];
 
     protected $casts = [

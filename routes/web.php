@@ -185,6 +185,7 @@ Route::post('/solicitudes/{id}/guardar-cotizaciones', [App\Http\Controllers\Tick
 Route::post('/solicitudes/{id}/enviar-cotizaciones-gerente', [App\Http\Controllers\TicketsController::class, 'enviarCotizacionesAlGerente'])->name('solicitudes.enviar-cotizaciones-gerente');
 Route::get('/elegir-ganador/{token}', [App\Http\Controllers\TicketsController::class, 'elegirGanadorConToken'])->name('solicitudes.elegir-ganador-token');
 Route::post('/solicitudes/{id}/seleccionar-cotizacion', [App\Http\Controllers\TicketsController::class, 'seleccionarCotizacion'])->name('solicitudes.seleccionar-cotizacion');
+Route::post('/solicitudes/{id}/confirmar-ganadores', [App\Http\Controllers\TicketsController::class, 'confirmarGanadores'])->name('solicitudes.confirmar-ganadores');
 Route::post('/solicitudes/{id}/aprobar-{nivel}', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarPorNivel'])->name('solicitudes.aprobar-nivel');
 Route::post('/solicitudes/{id}/rechazar-{nivel}', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarPorNivel'])->name('solicitudes.rechazar-nivel');
 /* Route::post('/solicitudes/{id}/rechazar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarSupervisor'])->name('solicitudes.rechazar-supervisor');

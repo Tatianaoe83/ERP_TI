@@ -93,8 +93,8 @@
                 <div x-show="equipo.abierto" x-collapse class="border-t border-slate-200 dark:border-slate-700">
                     <div class="p-4">
                         <div class="mb-3 flex flex-wrap gap-3">
-                            <div class="flex-1 min-w-[140px]">
-                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nombre del equipo</label>
+                            <div class="flex-1 min-w-[160px]">
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Unidad</label>
                                 <input type="text" x-model="equipo.nombre" placeholder="Ej. Mouse, Laptop"
                                     class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
@@ -103,17 +103,13 @@
                                 <input type="number" min="1" x-model.number="equipo.cantidad"
                                     class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
-                            <div class="flex-1 min-w-[140px]">
-                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">No. Parte</label>
-                                <input type="text" x-model="equipo.numeroParte" placeholder="Opcional"
-                                    class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
                         </div>
 
                         <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
                             <table class="min-w-full text-sm">
                                 <thead class="bg-slate-100 dark:bg-slate-700">
                                     <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">Unidad</th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">Proveedor</th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">No. Parte</th>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">Descripción</th>
@@ -127,11 +123,15 @@
                                     <template x-for="(cot, cotIndex) in equipo.cotizaciones" :key="cotIndex">
                                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                             <td class="px-3 py-2">
+                                                <input type="text" x-model="equipo.unidad" placeholder="Pieza"
+                                                    class="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+                                            </td>
+                                            <td class="px-3 py-2">
                                                 <input type="text" x-model="cot.proveedor" placeholder="Proveedor"
                                                     class="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                                             </td>
                                             <td class="px-3 py-2">
-                                                <input type="text" x-model="cot.numeroParte" :placeholder="equipo.numeroParte || 'No. Parte'"
+                                                <input type="text" x-model="cot.numeroParte" placeholder="No. Parte"
                                                     class="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                                             </td>
                                             <td class="px-3 py-2">
@@ -161,7 +161,7 @@
                                         </tr>
                                     </template>
                                     <tr x-show="equipo.cotizaciones.length === 0">
-                                        <td colspan="7" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
+                                        <td colspan="8" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
                                             No hay cotizaciones para este equipo. Haz clic en &quot;Agregar Cotización&quot;.
                                         </td>
                                     </tr>
@@ -239,6 +239,7 @@ document.addEventListener('alpine:init', () => {
                 nombre,
                 numeroParte: '',
                 cantidad: 1,
+                unidad: 'PIEZA',
                 cotizaciones: []
             };
         },
@@ -281,18 +282,21 @@ document.addEventListener('alpine:init', () => {
 
                 if (productos.length) {
                     this.equipos = productos.map(p => {
-                        const eq = this.nuevoEquipo(p.descripcion || '');
+                        const nombreEq = (p.nombreEquipo || p.descripcion || '').trim() || (p.descripcion || '');
+                        const eq = this.nuevoEquipo(nombreEq);
                         eq.numeroParte = p.numeroParte || '';
                         eq.cantidad = Math.max(1, parseInt(p.cantidad) || 1);
+                        eq.unidad = (p.unidad || 'PIEZA').trim() || 'PIEZA';
                         const precios = p.precios || {};
                         const descripciones = p.descripciones || {};
+                        const numeroPartes = p.numeroPartes || {};
                         eq.cotizaciones = proveedores.map(prov => {
                             const u = precios[prov];
                             const uv = (typeof u === 'number' ? u : parseFloat(u)) || 0;
                             if (uv <= 0) return null;
                             return {
                                 proveedor: prov,
-                                numeroParte: p.numeroParte || '',
+                                numeroParte: (numeroPartes[prov] ?? p.numeroParte ?? '').trim() || (p.numeroParte || ''),
                                 descripcion: (descripciones[prov] || p.descripcion || '').trim() || (p.descripcion || ''),
                                 precioUnitario: uv,
                                 total: (eq.cantidad * uv).toFixed(2)
@@ -322,6 +326,7 @@ document.addEventListener('alpine:init', () => {
                 if (!descBase) return;
                 const precios = {};
                 const descripciones = {};
+                const numerosParte = {};
                 equipo.cotizaciones.forEach(c => {
                     const prov = (c.proveedor || '').trim();
                     const u = parseFloat(c.precioUnitario) || 0;
@@ -330,14 +335,18 @@ document.addEventListener('alpine:init', () => {
                     precios[prov] = u;
                     const d = (c.descripcion || '').trim() || descBase;
                     descripciones[prov] = d;
+                    const np = (c.numeroParte || '').trim() || (equipo.numeroParte || '').trim();
+                    numerosParte[prov] = np;
                 });
                 if (Object.keys(precios).length) {
                     productos.push({
                         cantidad: Math.max(1, parseInt(equipo.cantidad) || 1),
                         numero_parte: (equipo.numeroParte || '').trim(),
                         descripcion: descBase,
+                        nombre_equipo: descBase,
                         descripciones,
-                        unidad: 'PIEZA',
+                        numeros_parte: numerosParte,
+                        unidad: (equipo.unidad || 'PIEZA').trim() || 'PIEZA',
                         precios,
                         tiempo_entrega: {},
                         observaciones: {}

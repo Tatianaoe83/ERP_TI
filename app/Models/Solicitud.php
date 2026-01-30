@@ -140,7 +140,7 @@ class Solicitud extends Model
     }
 
     /**
-     * Indica si todos los productos (agrupados por Descripcion+NumeroParte) tienen exactamente un ganador (Estatus Seleccionada).
+     * Indica si todos los productos (agrupados por NumeroPropuesta / NombreEquipo) tienen exactamente un ganador (Estatus Seleccionada).
      * Se usa para saber si la solicitud está totalmente aprobada (un ganador por producto).
      */
     public function todosProductosTienenGanador(): bool
@@ -151,7 +151,7 @@ class Solicitud extends Model
         }
         $porProducto = [];
         foreach ($cotizaciones as $c) {
-            $clave = trim($c->Descripcion ?? '') . '|' . trim($c->NumeroParte ?? '');
+            $clave = 'np_' . (int) ($c->NumeroPropuesta ?? 0);
             if (! isset($porProducto[$clave])) {
                 $porProducto[$clave] = 0;
             }
