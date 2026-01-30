@@ -94,7 +94,7 @@
                     <div class="p-4">
                         <div class="mb-3 flex flex-wrap gap-3">
                             <div class="flex-1 min-w-[160px]">
-                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Unidad</label>
+                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nombre del equipo</label>
                                 <input type="text" x-model="equipo.nombre" placeholder="Ej. Mouse, Laptop"
                                     class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
