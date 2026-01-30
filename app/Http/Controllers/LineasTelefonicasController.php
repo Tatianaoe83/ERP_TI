@@ -57,8 +57,8 @@ class LineasTelefonicasController extends AppBaseController
                     'lineastelefonicas.CostoFianza',
                     'lineastelefonicas.Disponible',
                     'lineastelefonicas.Activo',
-                    'lineastelefonicas.MontoRenovacionFianza'
-
+                    'lineastelefonicas.MontoRenovacionFianza',
+                    \DB::raw("(SELECT e.tipo_persona FROM inventariolineas il INNER JOIN empleados e ON e.EmpleadoID = il.EmpleadoID WHERE il.LineaID = lineastelefonicas.LineaID ORDER BY il.FechaAsignacion DESC LIMIT 1) as tipo_asignacion"),
                 ]);
 
             return DataTables::of($unidades)
@@ -68,9 +68,11 @@ class LineasTelefonicasController extends AppBaseController
                 ->addColumn('estado_disponibilidad', function ($row) {
                     if ($row->Disponible == 1) {
                         return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Disponible</span>';
-                    } else {
-                        return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
                     }
+                    if ($row->Disponible == 0 && $row->tipo_asignacion === 'REFERENCIADO') {
+                        return '<span class="badge badge-warning" style="background-color: #fd7e14; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada (Referenciado)</span>';
+                    }
+                    return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
                 })
                 ->addColumn('estado_activo', function ($row) {
                     if ($row->Activo == 1) {

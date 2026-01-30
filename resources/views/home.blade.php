@@ -7,54 +7,73 @@
     <!-- Estadísticas Principales -->
 
     
-    <div class="grid grid-cols-2 gap-4 mb-8">
-        <!-- Empleados Activos y fisicos -->
-        <div class="bg-blue-500 rounded-xl p-6 text-white shadow-lg">
-            <div class="flex justify-between items-end">
-                <div>
-                    <p class="text-sm font-medium mb-2">Total de empleados activos</p>
-                    <p class="text-2xl font-bold">{{ $stats['empleados']['activos'] }}</p>
-                   
+    <!-- Dos columnas: izquierda (líneas naranjas), derecha (empleados + equipos). Columna derecha más ancha. -->
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 mb-8">
+        <!-- Columna izquierda: Líneas (parte superior) -->
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg p-5 flex flex-col min-h-0">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+            <div class="absolute bottom-2 right-2 text-white/30"><i class="fas fa-phone text-3xl"></i></div>
+            <div class="relative flex-1 flex flex-col">
+                <p class="text-sm font-semibold">Líneas que puedes asignar</p>
+                <p class="text-xs opacity-90 mt-0.5">Libres + referenciadas</p>
+                <p class="text-3xl font-bold mt-2">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
+                <div class="w-12 h-0.5 bg-orange-400 mt-1 rounded-full"></div>
+                <div class="mt-4 flex items-center justify-between py-2.5 px-3 bg-white/15 rounded-lg backdrop-blur-sm">
+                    <span class="text-sm font-medium">Asignadas a persona física</span>
+                    <span class="text-lg font-bold">{{ $stats['inventario']['lineas']['asignadas'] }}</span>
                 </div>
-                <div class="bg-blue-400 rounded-full p-3">
+            </div>
+        </div>
+
+        <!-- Columna derecha: Empleados (misma altura que tarjeta naranja superior) -->
+        <div class="bg-blue-500 rounded-xl p-5 text-white shadow-lg flex flex-col min-h-0">
+            <div class="flex justify-between items-start flex-1">
+                <div>
+                    <p class="text-sm font-medium mb-1">Total de empleados activos</p>
+                    <p class="text-3xl font-bold">{{ $stats['empleados']['activos'] }}</p>
+                </div>
+                <div class="bg-blue-400/80 rounded-full p-3 shrink-0">
                     <i class="fas fa-users text-xl"></i>
                 </div>
             </div>
         </div>
 
-        <!-- Líneas Disponibles -->
-        <div class="bg-orange-500 rounded-xl p-6 text-white shadow-lg">
-            <div class="flex justify-between items-end">
-                <div>
-                    <p class="text-sm font-medium mb-2">Líneas Disponibles</p>
-                    <p class="text-3xl font-bold">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
-                    <p class="text-sm opacity-90">{{ $stats['inventario']['lineas']['asignadas'] }} asignadas</p>
+        <!-- Columna izquierda: Líneas (parte inferior - Sin asignar / Referenciadas) -->
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg p-5 flex flex-col min-h-0">
+            <div class="absolute bottom-0 left-0 w-28 h-28 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+            <div class="relative flex-1 flex flex-col gap-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="py-4 px-3 bg-white/15 rounded-lg backdrop-blur-sm text-center">
+                        <p class="text-xs font-medium opacity-90">Sin asignar</p>
+                        <p class="text-2xl font-bold mt-0.5">{{ $stats['inventario']['lineas']['libres'] }}</p>
+                    </div>
+                    <div class="py-4 px-3 bg-white/15 rounded-lg backdrop-blur-sm text-center">
+                        <p class="text-xs font-medium opacity-90">Referenciadas</p>
+                        <p class="text-2xl font-bold mt-0.5">{{ $stats['inventario']['lineas']['referenciados'] }}</p>
+                    </div>
                 </div>
-                <div class="bg-orange-400 rounded-full p-3">
-                    <i class="fas fa-phone text-xl"></i>
-                </div>
+                @if($stats['inventario']['lineas']['referenciados'] > 0)
+                    <p class="text-xs opacity-85 italic">Referenciadas = asignadas pero no a persona física</p>
+                @endif
             </div>
         </div>
-    </div>
 
-    <!-- Resumen equipos Compacto -->
-    <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 lg:p-6 text-white shadow-lg mb-4">
-        <p class="text-green-100 text-xs lg:text-sm font-medium">Equipos asignados en inventario</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
-
-            @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
-            <div class="flex items-center justify-between p-3 bg-green-500 dark:bg-green-700 rounded-lg border border-white">
-                <div class="flex items-center">
-                    <i class="fas fa-desktop text-white mr-3"></i>
-                    <span class="text-green-100 font-medium">{{ Str::limit($equipo->CategoriaEquipo, 15) }}</span>
+        <!-- Columna derecha: Equipos (misma altura que tarjeta naranja inferior) -->
+        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-5 text-white shadow-lg flex flex-col min-h-0">
+            <p class="text-green-100 text-sm font-medium mb-3">Equipos asignados en inventario</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
+                @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
+                <div class="flex items-center justify-between p-3 bg-green-500/80 dark:bg-green-700 rounded-lg border border-white/30">
+                    <div class="flex items-center">
+                        <i class="fas fa-desktop text-white mr-3"></i>
+                        <span class="text-green-100 font-medium">{{ Str::limit($equipo->CategoriaEquipo, 15) }}</span>
+                    </div>
+                    <span class="font-bold text-xl text-green-100">{{ $equipo->total_inventario }}</span>
                 </div>
-                <span class="font-bold text-xl text-green-100">{{ $equipo->total_inventario }}</span>
+                @empty
+                <p class="text-green-100 text-center py-4 text-sm col-span-3">No hay equipos disponibles</p>
+                @endforelse
             </div>
-            @empty
-            <p class="text-green-100 text-center py-4 text-sm">No hay equipos disponibles</p>
-            @endforelse
-
-        
         </div>
     </div>
 

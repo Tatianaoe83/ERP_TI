@@ -27,9 +27,11 @@ class LineasTelefonicasDataTable extends DataTable
         ->addColumn('estado_disponibilidad', function ($row) {
             if ($row->Disponible == 1) {
                 return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Disponible</span>';
-            } else {
-                return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
             }
+            if ($row->Disponible == 0 && ($row->tipo_asignacion ?? null) === 'REFERENCIADO') {
+                return '<span class="badge badge-warning" style="background-color: #fd7e14; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada (Referenciado)</span>';
+            }
+            return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Asignada</span>';
         })
         ->addColumn('estado_activo', function ($row) {
             if ($row->Activo == 1) {
@@ -41,6 +43,15 @@ class LineasTelefonicasDataTable extends DataTable
         ->filterColumn('estado_disponibilidad', function($query, $keyword) {
             if ($keyword === 'Disponible' || $keyword === 'disponible') {
                 $query->where('lineastelefonicas.Disponible', 1);
+            } elseif (stripos($keyword, 'referenciado') !== false) {
+                $query->where('lineastelefonicas.Disponible', 0)
+                    ->whereExists(function ($q) {
+                        $q->select(\DB::raw(1))
+                            ->from('inventariolineas as il_f')
+                            ->join('empleados as e_f', 'e_f.EmpleadoID', '=', 'il_f.EmpleadoID')
+                            ->whereColumn('il_f.LineaID', 'lineastelefonicas.LineaID')
+                            ->where('e_f.tipo_persona', 'REFERENCIADO');
+                    });
             } elseif ($keyword === 'Asignada' || $keyword === 'asignada') {
                 $query->where('lineastelefonicas.Disponible', 0);
             } else {
@@ -85,8 +96,8 @@ class LineasTelefonicasDataTable extends DataTable
                 'lineastelefonicas.CostoFianza',
                 'lineastelefonicas.Disponible',
                 'lineastelefonicas.Activo',
-                'lineastelefonicas.MontoRenovacionFianza'
-
+                'lineastelefonicas.MontoRenovacionFianza',
+                \DB::raw("(SELECT e.tipo_persona FROM inventariolineas il INNER JOIN empleados e ON e.EmpleadoID = il.EmpleadoID WHERE il.LineaID = lineastelefonicas.LineaID ORDER BY il.FechaAsignacion DESC LIMIT 1) as tipo_asignacion"),
             ]);
     }
 

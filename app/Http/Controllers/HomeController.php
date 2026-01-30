@@ -48,9 +48,33 @@ class HomeController extends Controller
         $insumosAsignados = InventarioInsumo::count();
         
 
-        $totalLineas = LineasTelefonicas::where('Activo',true)->count();
-        $lineasAsignadas = InventarioLineas::count();
-        $lineasDisponibles = $totalLineas - $lineasAsignadas;
+        $totalLineas = LineasTelefonicas::where('Activo', true)->count();
+        // Libres: líneas con Disponible=1
+        $lineasLibres = LineasTelefonicas::where('Activo', true)->where('Disponible', 1)->count();
+        // Asignadas a empleado REFERENCIADO (cuentan como disponibles, pero se muestra que están asignadas)
+        $lineasReferenciados = LineasTelefonicas::where('lineastelefonicas.Activo', true)
+            ->where('lineastelefonicas.Disponible', 0)
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('inventariolineas as il')
+                    ->join('empleados as e', 'e.EmpleadoID', '=', 'il.EmpleadoID')
+                    ->whereColumn('il.LineaID', 'lineastelefonicas.LineaID')
+                    ->where('e.tipo_persona', 'REFERENCIADO');
+            })
+            ->count();
+        // Asignadas solo a persona física (las que "realmente" ocupan una línea para un físico)
+        $lineasAsignadasPersonaFisica = LineasTelefonicas::where('lineastelefonicas.Activo', true)
+            ->where('lineastelefonicas.Disponible', 0)
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('inventariolineas as il')
+                    ->join('empleados as e', 'e.EmpleadoID', '=', 'il.EmpleadoID')
+                    ->whereColumn('il.LineaID', 'lineastelefonicas.LineaID')
+                    ->where('e.tipo_persona', 'FISICA');
+            })
+            ->count();
+        // Disponibles = libres + referenciados (los referenciados se cuentan como disponibles)
+        $lineasDisponibles = $lineasLibres + $lineasReferenciados;
 
         // Estadísticas de obras y gerencias
         $totalObras = Obras::where('Estado', true)->count();
@@ -97,8 +121,10 @@ class HomeController extends Controller
                 ],
                 'lineas' => [
                     'total' => $totalLineas,
-                    'asignadas' => $lineasAsignadas,
+                    'asignadas' => $lineasAsignadasPersonaFisica,
                     'disponibles' => $lineasDisponibles,
+                    'libres' => $lineasLibres,
+                    'referenciados' => $lineasReferenciados,
                 ],
             ],
             'organizacion' => [
@@ -124,7 +150,7 @@ class HomeController extends Controller
                 'inventario' => [
                     'equipos' => ['total' => 0, 'asignados' => 0],
                     'insumos' => ['total' => 0, 'asignados' => 0],
-                    'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0],
+                    'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0],
                 ],
                 'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
                 'insumos_por_licencia' => collect(),
