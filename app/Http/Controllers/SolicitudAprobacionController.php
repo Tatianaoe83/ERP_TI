@@ -84,12 +84,8 @@ class SolicitudAprobacionController extends Controller
 
         $canDecide = ! $prevNotApproved && $step->status === 'pending';
 
-        // Obtener nombre completo del proyecto basado en la nomenclatura
-        // Si hay una obra relacionada directamente, priorizarla
-       
         $proyectoNombre = $this->obtenerNombreProyecto($solicitud->Proyecto);
         
-       
         return view('solicitudes.revision-publica', [
             'solicitud' => $solicitud,
             'step'      => $step,
@@ -112,7 +108,7 @@ class SolicitudAprobacionController extends Controller
             'supervisor' => 'Esperando aprobación del Supervisor',
             'gerencia' => 'Esperando aprobación de Gerencia',
             'administracion' => 'Esperando aprobación de Administración',
-            default => 'Esperando aprobación previa',
+            'default' => 'Esperando aprobación previa',
         };
     }
 
@@ -133,32 +129,17 @@ class SolicitudAprobacionController extends Controller
 
         try {
             DB::transaction(function () use ($data, $token, &$emailRevisionData) {
-                // Buscar el token sin filtrar por activo para poder detectar el motivo
+                // Buscar el token
                 $tokenRow = SolicitudTokens::query()
                     ->where('token', $token)
                     ->lockForUpdate()
                     ->with(['approvalStep', 'approvalStep.solicitud', 'approvalStep.approverEmpleado'])
                     ->first();
                 
-                // Si no existe el token
-                if (!$tokenRow) {
-                    throw new \RuntimeException('Token no encontrado');
-                }
-                
-                // Verificar si el token está usado
-                if ($tokenRow->used_at) {
-                    throw new \RuntimeException('Este enlace ya fue utilizado para firmar la solicitud');
-                }
-                
-                // Verificar si el token está revocado
-                if ($tokenRow->revoked_at) {
-                    throw new \RuntimeException('Este enlace fue revocado. La aprobación fue transferida a otra persona');
-                }
-                
-                // Verificar si el token expiró
-                if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) {
-                    throw new \RuntimeException('Este enlace ha expirado. El tiempo límite para revisar esta solicitud ha finalizado');
-                }
+                if (!$tokenRow) throw new \RuntimeException('Token no encontrado');
+                if ($tokenRow->used_at) throw new \RuntimeException('Este enlace ya fue utilizado para firmar la solicitud');
+                if ($tokenRow->revoked_at) throw new \RuntimeException('Este enlace fue revocado.');
+                if ($tokenRow->expires_at && now()->greaterThan($tokenRow->expires_at)) throw new \RuntimeException('Este enlace ha expirado.');
 
                 $step = $tokenRow->approvalStep;
                 $solicitud = $step->solicitud;
@@ -176,6 +157,7 @@ class SolicitudAprobacionController extends Controller
                     throw new \RuntimeException('Aún faltan aprobaciones previas antes de poder firmar esta etapa.');
                 }
 
+                // 1. Actualizar el paso actual
                 $step->update([
                     'status' => $data['decision'],
                     'comment' => $data['comment'] ?? null,
@@ -187,11 +169,19 @@ class SolicitudAprobacionController extends Controller
                     'used_at' => now(),
                 ]);
 
+                // Si se rechaza, se cancela todo el flujo
                 if ($data['decision'] === 'rejected') {
                     $solicitud->update(['Estatus' => 'Rechazada']);
                     return;
                 }
 
+                // =====================================================================
+                // NUEVA LÓGICA: AUTO-APROBACIÓN EN CASCADA
+                // Si aprobó, verificamos si el siguiente paso lo tiene la misma persona
+                // =====================================================================
+                $this->procesarAutoAprobacionEnCascada($solicitud->SolicitudID, $step->approver_empleado_id);
+
+                // 2. Buscar pasos pendientes (después de la posible cascada)
                 $pending = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
                     ->where('status', 'pending')
                     ->orderBy('step_order')
@@ -201,9 +191,11 @@ class SolicitudAprobacionController extends Controller
                     'Estatus' => $pending->isNotEmpty() ? 'En revisión' : 'Aprobada',
                 ]);
 
+                // 3. Preparar correo para el SIGUIENTE aprobador REAL (si existe)
                 if ($pending->isNotEmpty()) {
                     $nextStep = $pending->first();
                     $nextStep->load('approverEmpleado');
+                    
                     $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
                         ->whereNull('used_at')
                         ->whereNull('revoked_at')
@@ -211,6 +203,16 @@ class SolicitudAprobacionController extends Controller
                             $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
                         })
                         ->first();
+                    
+                    // Si no existe token activo (por ejemplo, si se generó uno viejo revocado), crear uno nuevo
+                    if (!$nextTokenRow) {
+                        $nextTokenRow = SolicitudTokens::create([
+                            'approval_step_id' => $nextStep->id,
+                            'token' => \Illuminate\Support\Str::uuid(),
+                            'expires_at' => now()->addDays(7)
+                        ]);
+                    }
+
                     if ($nextTokenRow && $nextStep->approverEmpleado) {
                         $stageLabel = self::STAGE_LABELS[$nextStep->stage] ?? $nextStep->stage;
                         $emailRevisionData = [
@@ -248,7 +250,6 @@ class SolicitudAprobacionController extends Controller
         } catch (\Throwable $e) {
             $message = $e->getMessage();
             
-            // Si el error es relacionado con token expirado/usado/revocado, mostrar vista de token inválido
             if (str_contains($message, 'expirado') || 
                 str_contains($message, 'utilizado') || 
                 str_contains($message, 'revocado') ||
@@ -256,7 +257,6 @@ class SolicitudAprobacionController extends Controller
                 return $this->handleTokenError($request, $token, $message);
             }
             
-            // Si es una petición AJAX, retornar JSON
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -344,6 +344,7 @@ class SolicitudAprobacionController extends Controller
                     throw new \RuntimeException('Aún faltan aprobaciones previas.');
                 }
 
+                // 1. Aprobar paso actual
                 $step->update([
                     'status' => 'approved',
                     'comment' => $data['comentario'] ?? null,
@@ -351,6 +352,16 @@ class SolicitudAprobacionController extends Controller
                     'decided_by_empleado_id' => $usuarioEmpleado->EmpleadoID,
                 ]);
 
+                // Invalidad token de este paso si existiera (limpieza)
+                SolicitudTokens::where('approval_step_id', $step->id)->update(['revoked_at' => now()]);
+
+                // =====================================================================
+                // NUEVA LÓGICA: AUTO-APROBACIÓN EN CASCADA
+                // Verifica si el mismo empleado es el aprobador del siguiente paso
+                // =====================================================================
+                $this->procesarAutoAprobacionEnCascada($solicitud->SolicitudID, $usuarioEmpleado->EmpleadoID);
+
+                // 2. Actualizar estado global
                 $pending = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
                     ->where('status', 'pending')
                     ->exists();
@@ -600,8 +611,6 @@ class SolicitudAprobacionController extends Controller
             $prefijo = strtoupper($matches[1]);
             $id = (int) $matches[2];
 
-         
-
             try {
                 switch ($prefijo) {
                     case 'PR':
@@ -629,11 +638,51 @@ class SolicitudAprobacionController extends Controller
                         break;
                 }
             } catch (\Exception $e) {
-              
+                // En caso de error, retornar el valor original
             }
         }
 
         // Si no se pudo parsear o no se encontró, retornar el valor original
         return $proyecto;
+    }
+
+    /**
+     * Lógica de efecto dominó (Cascada)
+     * Revisa los pasos siguientes pendientes. Si el aprobador es el mismo que acaba de firmar,
+     * se auto-aprueba. Se detiene en cuanto encuentra a alguien diferente.
+     */
+    private function procesarAutoAprobacionEnCascada($solicitudId, $empleadoIdQueAprobo)
+    {
+        // Buscamos TODOS los pasos pendientes de esta solicitud, ordenados por secuencia
+        $pasosPendientes = SolicitudPasos::where('solicitud_id', $solicitudId)
+            ->where('status', 'pending')
+            ->orderBy('step_order', 'asc')
+            ->get();
+
+        foreach ($pasosPendientes as $siguientePaso) {
+            // Verificamos si el responsable de este siguiente paso es LA MISMA PERSONA
+            if ($siguientePaso->approver_empleado_id == $empleadoIdQueAprobo) {
+                
+                // ¡ES EL MISMO! Auto-aprobar
+                $siguientePaso->update([
+                    'status' => 'approved',
+                    'comment' => 'Aprobación automática: Validado previamente por el mismo usuario en el nivel anterior.',
+                    'decided_at' => now(),
+                    'decided_by_empleado_id' => $empleadoIdQueAprobo
+                ]);
+
+                // IMPORTANTE: Revocar cualquier token existente para este paso, 
+                // para que no le llegue un correo invitándolo a firmar algo que el sistema ya firmó.
+                SolicitudTokens::where('approval_step_id', $siguientePaso->id)
+                    ->whereNull('revoked_at')
+                    ->whereNull('used_at')
+                    ->update(['revoked_at' => now()]); // Los marcamos como revocados o usados para invalidar el link
+
+            } else {
+                // Si encontramos un paso donde el responsable es DIFERENTE, rompemos el ciclo.
+                // El flujo normal (enviar correo) se encargará de este paso.
+                break;
+            }
+        }
     }
 }

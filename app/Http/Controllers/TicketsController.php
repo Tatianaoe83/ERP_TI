@@ -316,12 +316,16 @@ class TicketsController extends Controller
                     'Prioridad' => $ticket->Prioridad,
                     'Estatus' => $ticket->Estatus,
                     'Clasificacion' => $ticket->Clasificacion,
+                    
+                    // 👇👇👇 AGREGA ESTA LÍNEA AQUÍ 👇👇👇
+                    'Resolucion' => $ticket->Resolucion,
+                    // 👆👆👆 ----------------------- 👆👆👆
+
                     'ResponsableTI' => $ticket->ResponsableTI,
                     'TipoID' => $ticket->TipoID,
                     'SubtipoID' => $ticket->SubtipoID,
                     'TertipoID' => $ticket->TertipoID,
                     'imagen' => $ticket->imagen,
-                    
                     
                     // Nombre y Correo sí vienen del empleado (usamos operador ternario por seguridad)
                     'empleado' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin asignar',
@@ -340,7 +344,7 @@ class TicketsController extends Controller
         }
     }
 
-    public function update(Request $request)
+public function update(Request $request)
     {
         try {
             $ticketId = $request->input('ticketId');
@@ -357,6 +361,8 @@ class TicketsController extends Controller
             $nuevoEstatus = $request->input('estatus', $estatusAnterior);
 
             // REGLA 4: Si está Cerrado, bloquear todos los cambios
+            // Excepción: Permitir si se está enviando solo para actualizar datos internos sin cambiar estatus crítico
+            // Pero bajo tu lógica actual, si ya está cerrado, retorna error.
             if ($estatusAnterior === 'Cerrado') {
                 return response()->json([
                     'success' => false,
@@ -368,11 +374,10 @@ class TicketsController extends Controller
             $transicionesValidas = [
                 'Pendiente' => ['En progreso'],
                 'En progreso' => ['Cerrado'],
-                'Cerrado' => [] // No se puede cambiar desde Cerrado
+                'Cerrado' => [] 
             ];
 
             if ($nuevoEstatus !== $estatusAnterior) {
-                // Validar que la transición sea válida
                 if (!in_array($nuevoEstatus, $transicionesValidas[$estatusAnterior] ?? [])) {
                     return response()->json([
                         'success' => false,
@@ -381,7 +386,7 @@ class TicketsController extends Controller
                 }
             }
 
-            // REGLA 1: Si pasa de "Pendiente" a "En progreso", se requieren ResponsableTI, TipoID y Clasificacion
+            // REGLA 1: Validación Pendiente -> En progreso
             if ($estatusAnterior === 'Pendiente' && $nuevoEstatus === 'En progreso') {
                 $responsableTI = $request->input('responsableTI');
                 $tipoID = $request->input('tipoID');
@@ -395,11 +400,10 @@ class TicketsController extends Controller
                 }
             }
 
-            // REGLA 2: Si está en "En progreso", no se puede modificar el ResponsableTI
+            // REGLA 2: Validación Responsable en En progreso
             if ($estatusAnterior === 'En progreso') {
                 if ($request->has('responsableTI')) {
                     $nuevoResponsable = $request->input('responsableTI');
-                    // Solo permitir si el nuevo responsable es el mismo o si está pasando a Cerrado
                     if ($nuevoEstatus !== 'Cerrado' && $nuevoResponsable != $ticket->ResponsableTI) {
                         return response()->json([
                             'success' => false,
@@ -409,7 +413,8 @@ class TicketsController extends Controller
                 }
             }
 
-            // Actualizar los campos permitidos
+            // --- ACTUALIZACIÓN DE CAMPOS ---
+
             if ($request->has('prioridad')) {
                 $ticket->Prioridad = $request->input('prioridad');
             }
@@ -419,7 +424,6 @@ class TicketsController extends Controller
             }
 
             if ($request->has('responsableTI')) {
-                // Solo actualizar si no está en "En progreso" o si está pasando a Cerrado
                 if ($estatusAnterior !== 'En progreso' || $nuevoEstatus === 'Cerrado') {
                     $ticket->ResponsableTI = $request->input('responsableTI') ?: null;
                 }
@@ -429,17 +433,24 @@ class TicketsController extends Controller
                 $ticket->Estatus = $request->input('estatus');
             }
 
+            // =========================================================
+            //  AQUÍ ESTÁ LO QUE FALTABA: GUARDAR LA RESOLUCIÓN
+            // =========================================================
+            if ($request->has('resolucion')) {
+                // Guardamos la resolución si viene en el request (incluso si es null o vacía se actualiza)
+                $ticket->Resolucion = $request->input('resolucion');
+            }
+            // =========================================================
+
             if ($request->has('tipoID')) {
                 $tipoID = $request->input('tipoID') ? (int)$request->input('tipoID') : null;
                 $ticket->TipoID = $tipoID;
                 
-                // Si no se proporciona subtipoID, obtenerlo automáticamente de la relación con Tipoticket
                 if (!$request->has('subtipoID') || !$request->input('subtipoID')) {
                     if ($tipoID) {
                         $tipoticket = Tipoticket::find($tipoID);
                         if ($tipoticket && $tipoticket->SubtipoID) {
                             $ticket->SubtipoID = $tipoticket->SubtipoID;
-                            // Si no se proporciona tertipoID, obtenerlo automáticamente de la relación con Subtipo
                             if (!$request->has('tertipoID') || !$request->input('tertipoID')) {
                                 $subtipo = Subtipos::find($tipoticket->SubtipoID);
                                 if ($subtipo && $subtipo->TertipoID) {
@@ -451,11 +462,8 @@ class TicketsController extends Controller
                 }
             }
 
-            // Guardar SubtipoID si se proporciona directamente
             if ($request->has('subtipoID')) {
                 $ticket->SubtipoID = $request->input('subtipoID') ? (int)$request->input('subtipoID') : null;
-                
-                // Si se cambia el subtipoID y no se proporciona tertipoID, obtenerlo automáticamente
                 if ($ticket->SubtipoID && (!$request->has('tertipoID') || !$request->input('tertipoID'))) {
                     $subtipo = Subtipos::find($ticket->SubtipoID);
                     if ($subtipo && $subtipo->TertipoID) {
@@ -464,25 +472,18 @@ class TicketsController extends Controller
                 }
             }
 
-            // Guardar TertipoID si se proporciona directamente
             if ($request->has('tertipoID')) {
                 $ticket->TertipoID = $request->input('tertipoID') ? (int)$request->input('tertipoID') : null;
             }
 
             $ticket->save();
 
-            // Si el ticket está o cambió a "En progreso", verificar si excede el tiempo de respuesta
+            // Lógica de notificación de tiempo
             if ($nuevoEstatus === 'En progreso') {
-                // Recargar el ticket con relaciones para calcular tiempos
                 $ticket->refresh();
                 $ticket->load(['tipoticket', 'responsableTI']);
-                
-                // Verificar y enviar notificación si excede el tiempo
-                // Nota: Esto verificará después de que se haya actualizado FechaInicioProgreso en el modelo
                 try {
                     $notificationService = new TicketNotificationService();
-                    // El modelo Tickets tiene un boot() que actualiza FechaInicioProgreso cuando cambia a "En progreso"
-                    // Verificar si excede el tiempo estimado según la métrica de la categoría
                     $notificationService->verificarYNotificarExceso($ticket);
                 } catch (\Exception $e) {
                     Log::error("Error verificando exceso de tiempo al cambiar a En progreso: " . $e->getMessage());
@@ -497,6 +498,7 @@ class TicketsController extends Controller
                     'Prioridad' => $ticket->Prioridad,
                     'Estatus' => $ticket->Estatus,
                     'Clasificacion' => $ticket->Clasificacion,
+                    'Resolucion' => $ticket->Resolucion, // <--- AGREGADO PARA RETORNAR AL FRONTEND
                     'ResponsableTI' => $ticket->ResponsableTI,
                     'TipoID' => $ticket->TipoID,
                     'SubtipoID' => $ticket->SubtipoID,

@@ -21,6 +21,20 @@
                             <option value="Rechazada">Rechazada</option>
                         </select>
                     </div>
+                                     <div class="flex-1 max-w-sm relative">
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Buscar</label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                wire:model.live.debounce.300ms="search" 
+                                placeholder="Buscar por ID, empleado o motivo..." 
+                                class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200"
+                            >
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-slate-400"></i>
+                            </div>
+                        </div>
+                    </div>
                     
                     @if($filtroEstatus)
                         <button wire:click="$set('filtroEstatus', '')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-6">

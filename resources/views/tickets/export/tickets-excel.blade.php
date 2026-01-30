@@ -31,7 +31,7 @@
         <th>Clasificación</th>
         <th>Categoría</th>
         <th>Subtipo</th>
-        <th>Tertipo</th>
+        <th>Incidencia</th>
         <th>Código AnyDesk</th>
         <th>Número</th>
     </tr>
