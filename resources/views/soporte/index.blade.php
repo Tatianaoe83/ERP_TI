@@ -182,6 +182,15 @@
                         <option value="Ticket">Ticket</option>
                         <option value="Solicitud">Solicitud</option>
                     </select>
+                    <div id="info-section" class="hidden w-full p-4 rounded-lg border border-gray-200 bg-gray-50 text-black">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                            <div>
+                                <p class="font-semibold text-sm text-gray-700 mb-1">Info</p>
+                                <p id="info-text" class="text-sm text-gray-600 leading-relaxed"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div id="ticket-form" class="hidden flex flex-col gap-3 p-4">
                     <div class="flex flex-row gap-3 items-center">
@@ -365,11 +374,29 @@ $(document).ready(function() {
     // =========================================================
     // 2. LÓGICA DE PESTAÑAS (TICKET vs SOLICITUD)
     // =========================================================
+    function actualizarInfoTipo(seleccion) {
+        var $info = $('#info-section');
+        var $text = $('#info-text');
+        if (!seleccion) {
+            $info.addClass('hidden');
+            return;
+        }
+        $info.removeClass('hidden');
+        if (seleccion === 'Ticket') {
+            $text.html('Ticket para soporte: reporta incidencias técnicas, solicita asistencia remota (AnyDesk) o consultas de soporte. El equipo de TI atenderá tu solicitud.');
+        } else if (seleccion === 'Solicitud') {
+            $text.html('Solicitud de recursos tecnológicos: solicita equipos o recursos (nuevo ingreso, equipo nuevo, reemplazo, renovación). Una vez aprobada por los niveles correspondientes, se procede a la compra.');
+        } else {
+            $text.text('');
+        }
+    }
+
     $('#type').on('change', function() {
         var seleccion = $(this).val();
 
         $('#ticket-form').addClass('hidden');
         $('#solicitud-form').addClass('hidden');
+        actualizarInfoTipo(seleccion);
 
         if (seleccion === 'Ticket') {
             $('#ticket-form').removeClass('hidden');
@@ -806,6 +833,7 @@ function buscarEmpleadoTicket(correo) {
                     ticket.classList.remove("hidden");
                     manejarRequired(ticket, true); // Agregar required cuando se muestra
                     title.textContent = "Crear Nuevo Ticket";
+                    if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                     // Deshabilitar campos del formulario de Ticket
                     if (typeof deshabilitarCampos === 'function') {
                         deshabilitarCampos();
@@ -814,10 +842,13 @@ function buscarEmpleadoTicket(correo) {
                     solicitud.classList.remove("hidden");
                     manejarRequired(solicitud, true); // Agregar required cuando se muestra
                     title.textContent = "Crear Nueva Solicitud";
+                    if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                     // Deshabilitar campos del formulario de Solicitud
                     if (typeof deshabilitarCamposSolicitud === 'function') {
                         deshabilitarCamposSolicitud();
                     }
+                } else {
+                    if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                 }
 
                 title.classList.remove("fade-change");
@@ -1495,6 +1526,7 @@ function buscarEmpleadoTicket(correo) {
             // Ocultar todo primero
             $('#ticket-form').addClass('hidden');
             $('#solicitud-form').addClass('hidden');
+            if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(seleccion);
 
             if (seleccion === 'Ticket') {
                 $('#ticket-form').removeClass('hidden');

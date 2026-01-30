@@ -2088,7 +2088,7 @@ class TicketsController extends Controller
                 }
             }
 
-            // Preparar cotizaciones (incluir todas, incluyendo las enviadas)
+            // Preparar cotizaciones (incluir todas, incluyendo las enviadas), con datos para agrupar por producto
             $cotizaciones = $solicitud->cotizaciones ? $solicitud->cotizaciones->map(function($cot) {
                 return [
                     'CotizacionID' => $cot->CotizacionID,
@@ -2098,7 +2098,9 @@ class TicketsController extends Controller
                     'NumeroParte' => $cot->NumeroParte,
                     'Estatus' => $cot->Estatus,
                     'TiempoEntrega' => $cot->TiempoEntrega,
-                    'Observaciones' => $cot->Observaciones
+                    'Observaciones' => $cot->Observaciones,
+                    'NumeroPropuesta' => (int)($cot->NumeroPropuesta ?? 0),
+                    'NombreEquipo' => $cot->NombreEquipo ?? ''
                 ];
             })->toArray() : [];
             
