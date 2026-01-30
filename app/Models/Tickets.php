@@ -5,7 +5,6 @@ namespace App\Models;
 use Eloquent as Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-
 /**
  * Class Tickets
  * @package App\Models
@@ -15,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \App\Models\Empleado $empleadoid
  * @property integer $CodeAnyDesk
  * @property string $Descripcion
+ * @property string $Resolucion  // <--- AGREGADO AQUÍ
  * @property string $imagen
  * @property integer $Numero
  * @property string $Prioridad
@@ -36,14 +36,12 @@ class Tickets extends Model
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
-
     protected $dates = ['deleted_at'];
-
-
 
     public $fillable = [
         'CodeAnyDesk',
         'Descripcion',
+        'Resolucion', // <--- AGREGADO AQUÍ PARA PERMITIR GUARDADO
         'imagen',
         'Numero',
         'Prioridad',
@@ -68,6 +66,7 @@ class Tickets extends Model
         'TicketID' => 'integer',
         'CodeAnyDesk' => 'integer',
         'Descripcion' => 'string',
+        'Resolucion' => 'string', // <--- AGREGADO AQUÍ
         'imagen' => 'string',
         'Numero' => 'integer',
         'Prioridad' => 'string',
@@ -107,6 +106,7 @@ class Tickets extends Model
     public static $rules = [
         'CodeAnyDesk' => 'nullable',
         'Descripcion' => 'required|string',
+        'Resolucion' => 'nullable|string', // <--- AGREGADO AQUÍ (Opcional)
         'imagen' => 'nullable|string',
         'Numero' => 'nullable',
         'Prioridad' => 'required|string',
@@ -200,8 +200,7 @@ class Tickets extends Model
     /**
      * Calcular horas laborales entre dos fechas
      * Horarios: L-V 9:00-18:00, Sábado 9:00-14:00, Domingo no cuenta
-     * 
-     * @param \Carbon\Carbon $fechaInicio
+     * * @param \Carbon\Carbon $fechaInicio
      * @param \Carbon\Carbon $fechaFin
      * @return float Horas laborales en decimal
      */
@@ -284,8 +283,7 @@ class Tickets extends Model
 
     /**
      * Normalizar fecha de inicio al horario laboral más cercano
-     * 
-     * @param \Carbon\Carbon $fecha
+     * * @param \Carbon\Carbon $fecha
      * @return \Carbon\Carbon
      */
     protected function normalizarFechaInicio($fecha)
@@ -375,8 +373,7 @@ class Tickets extends Model
 
     /**
      * Formatear horas laborales a formato legible
-     * 
-     * @param float $horas
+     * * @param float $horas
      * @return string
      */
     protected function formatearHoras($horas)

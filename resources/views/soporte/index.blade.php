@@ -179,8 +179,8 @@
                     <h2 class="text-black text-2xl font-semibold">¿Qué deseas enviar?</h2>
                     <select name="type" id="type" class="cursor-pointer border border-gray-300 rounded-md text-lg text-black w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition duration-200">
                         <option value="" selected disabled>Selecciona una opción</option>
-                        <option value="Ticket">Ticket</option>
-                        <option value="Solicitud">Solicitud</option>
+                        <option value="Ticket">Ticket para soporte</option>
+                        <option value="Solicitud">Solicitud de recursos tecnológicos</option>
                     </select>
                     <div id="info-section" class="hidden w-full p-4 rounded-lg border border-gray-200 bg-gray-50 text-black">
                         <div class="flex items-start gap-2">

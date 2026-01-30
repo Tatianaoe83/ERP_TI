@@ -37,6 +37,10 @@
         background: #9ca3af;
     }
 
+    .swal2-container {
+        z-index: 20000 !important;
+    }
+
     /* =========================================
        2. MODO OSCURO (Se activa con la clase .dark)
        ========================================= */
@@ -662,7 +666,7 @@
             <table class="min-w-full border-collapse">
                 <thead class="bg-gray-100 dark:bg-[#242933]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-gray-50/5"
                             @click="cambiarOrden('id')">
                             <div class="flex items-center gap-2">
                                 <span>ID</span>
@@ -671,7 +675,7 @@
                             </div>
                         </th>
 
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-gray-50/5"
                             @click="cambiarOrden('descripcion')">
                             <div class="flex items-center gap-2">
                                 <span>Descripción</span>
@@ -680,7 +684,7 @@
                             </div>
                         </th>
 
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-gray-50/5"
                             @click="cambiarOrden('empleado')">
                             <div class="flex items-center gap-2">
                                 <span>Empleado</span>
@@ -689,7 +693,7 @@
                             </div>
                         </th>
 
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-gray-50/5"
                             @click="cambiarOrden('prioridad')">
                             <div class="flex items-center gap-2">
                                 <span>Prioridad</span>
@@ -698,7 +702,7 @@
                             </div>
                         </th>
 
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-gray-50/5"
                             @click="cambiarOrden('estado')">
                             <div class="flex items-center gap-2">
                                 <span>Estado</span>
@@ -707,7 +711,7 @@
                             </div>
                         </th>
 
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-white/5"
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer transition text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-[#2A2F3A] hover:bg-gray-200 dark:hover:bg-gray-50/5"
                             @click="cambiarOrden('fecha')">
                             <div class="flex items-center gap-2">
                                 <span>Fecha</span>
@@ -813,7 +817,7 @@
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition border"
                     :class="paginaTabla === 1 
                         ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200 dark:bg-[#1F2937] dark:text-gray-500 dark:border-[#2A2F3A]' 
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
+                        : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
                     <i class="fas fa-chevron-left text-xs"></i> Anterior
                 </button>
 
@@ -830,7 +834,7 @@
                         class="px-3 py-1.5 text-sm font-medium border rounded-md transition"
                         :class="paginaTabla === pagina 
                             ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-600' 
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
+                            : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
                         <span x-text="pagina"></span>
                     </button>
                 </template>
@@ -841,7 +845,7 @@
                     class="px-3 py-1.5 text-sm font-medium rounded-md transition border"
                     :class="paginaTabla === obtenerTotalPaginasTabla()
                         ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400 border-gray-200 dark:bg-[#1F2937] dark:text-gray-500 dark:border-[#2A2F3A]' 
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
+                        : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-[#1F2937] dark:text-gray-200 dark:border-[#2A2F3A] dark:hover:bg-[#242933]'">
                     Siguiente <i class="fas fa-chevron-right text-xs"></i>
                 </button>
             </div>
@@ -865,7 +869,7 @@
         x-cloak>
         <div
             class="w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
-           bg-white dark:bg-[#1A1D24] 
+           bg-gray-50 dark:bg-[#1A1D24] 
            border border-transparent dark:border-gray-700"
             @click.stop>
 
@@ -1004,7 +1008,7 @@
                                     x-model="ticketPrioridad"
                                     :disabled="selected.estatus === 'Cerrado'"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-white text-gray-900 
+                   border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1018,10 +1022,11 @@
                             <div>
                                 <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</label>
                                 <select
-                                    x-model="ticketEstatus"
+                                    x-model="ticketEstatus" 
+                                    @change="verificarCambioEstatus($event.target.value)" 
                                     :disabled="selected.estatus === 'Cerrado'"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-white text-gray-900 
+                   border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1040,7 +1045,7 @@
                                     x-model="ticketClasificacion"
                                     :disabled="selected.estatus === 'Cerrado'"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-white text-gray-900 
+                   border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1067,7 +1072,7 @@
                                     x-model="ticketResponsableTI"
                                     :disabled="selected.estatus === 'Cerrado' || (selected.estatus === 'En progreso' && ticketEstatus !== 'Cerrado')"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-white text-gray-900 
+                   border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1088,7 +1093,7 @@
                                     x-model="ticketTipoID"
                                     :disabled="selected.estatus === 'Cerrado'"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-white text-gray-900 
+                   border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1106,7 +1111,7 @@
                                     x-model="ticketSubtipoID"
                                     :disabled="!ticketTipoID || selected.estatus === 'Cerrado'"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-white text-gray-900 
+                   border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1122,7 +1127,7 @@
                                     x-model="ticketTertipoID"
                                     :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-white text-gray-900 
+                   border-gray-300 bg-gray-50 text-gray-900 
                    focus:border-blue-500 focus:ring-blue-500 
                    dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1155,7 +1160,8 @@
                     </div>
                 </aside>
 
-                <main class="flex flex-col overflow-hidden  dark:bg-[#1A1D24]">
+<main class="flex flex-col overflow-hidden dark:bg-[#1A1D24]">
+                    
                     <div class="flex justify-between items-start p-6 border-b border-gray-200 dark:border-gray-700 dark:bg-[#1A1D24]">
                         <div>
                             <h1 class="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100"
@@ -1195,6 +1201,33 @@
                             </div>
                         </div>
                     </div>
+
+                    <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" 
+                         x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 -translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="mx-4 mt-4 rounded-lg border overflow-hidden shadow-sm bg-green-50 dark:bg-[#1C1F26] border-green-200 dark:border-green-800">
+                        
+                        <div class="px-4 py-3 bg-green-100 dark:bg-green-900/40 border-b border-green-200 dark:border-green-800 flex items-center gap-2">
+                            <div class="p-1 bg-green-200 dark:bg-green-800 rounded-full text-green-700 dark:text-green-300">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <h3 class="font-bold text-green-800 dark:text-green-200 text-sm">Ticket Resuelto</h3>
+                        </div>
+
+                        <div class="p-4">
+                            <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                                Detalle de la solución:
+                            </div>
+                            <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed"
+                                 x-text="selected.resolucion">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container">
 
 
 
@@ -1390,7 +1423,7 @@
                                         x-model="nuevoMensaje"
                                         :disabled="(selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') && ticketEstatus !== 'Cerrado' && selected.estatus !== 'Cerrado'"
                                         class="w-full rounded-md border shadow-sm p-3 min-h-[300px] transition-colors resize-y
-                   bg-white border-gray-300 text-gray-900 placeholder-gray-400
+                   bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400
                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                    dark:bg-[#0F1115] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500
                    disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
@@ -1437,7 +1470,7 @@
                                 <div x-show="archivosAdjuntos.length > 0" class="mt-3 space-y-2">
                                     <template x-for="(archivo, index) in archivosAdjuntos" :key="index">
                                         <div class="flex items-center gap-3 p-2 rounded-lg border transition-colors
-                    bg-white border-gray-200 hover:bg-gray-50
+                    bg-gray-50 border-gray-200 hover:bg-gray-50
                     dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:hover:bg-[#242933]">
 
                                             <div class="flex-shrink-0">
@@ -1574,7 +1607,7 @@
                                             x-model="respuestaManual.nombre"
                                             type="text"
                                             class="w-full p-2 rounded text-sm border shadow-sm transition-colors
-                       bg-white border-gray-300 text-gray-900 placeholder-gray-400
+                       bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400
                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
                        dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500"
                                             placeholder="Nombre del usuario">
@@ -1585,7 +1618,7 @@
                                             x-model="respuestaManual.correo"
                                             type="email"
                                             class="w-full p-2 rounded text-sm border shadow-sm transition-colors
-                       bg-white border-gray-300 text-gray-900 placeholder-gray-400
+                       bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400
                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
                        dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500"
                                             placeholder="correo@usuario.com">
@@ -1595,7 +1628,7 @@
                                 <textarea
                                     x-model="respuestaManual.mensaje"
                                     class="w-full h-20 p-3 rounded-lg resize-none text-sm border shadow-sm transition-colors
-               bg-white border-gray-300 text-gray-900 placeholder-gray-400
+               bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400
                focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500
                dark:bg-[#1F2937] dark:border-[#2A2F3A] dark:text-gray-100 dark:placeholder-gray-500"
                                     placeholder="Copia y pega aquí la respuesta que recibiste por correo..."></textarea>
@@ -2294,6 +2327,8 @@
                         window.location.reload();
                     }
                 };
+
+
                 
                 // Función auxiliar para encontrar el contenedor de una categoría.
                 // vistaOpcional: 'kanban'|'lista' — si se pasa, se usa en lugar de this.vista (para el evento diferido).
@@ -3301,16 +3336,17 @@
                 });
             },
 
-            async cargarDatosTicket(ticketId) {
+async cargarDatosTicket(ticketId) {
                 try {
                     const response = await fetch(`/tickets/${ticketId}`, {
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
                     });
+                    
                     if (response.ok) {
                         const data = await response.json();
+                        
                         if (data.success && data.ticket) {
+                            // ... tus otras asignaciones ...
                             this.ticketPrioridad = data.ticket.Prioridad || '';
                             this.ticketEstatus = data.ticket.Estatus || '';
                             this.ticketClasificacion = data.ticket.Clasificacion || '';
@@ -3318,85 +3354,68 @@
                             this.ticketTipoID = data.ticket.TipoID ? String(data.ticket.TipoID) : '';
                             this.ticketSubtipoID = data.ticket.SubtipoID ? String(data.ticket.SubtipoID) : '';
                             this.ticketTertipoID = data.ticket.TertipoID ? String(data.ticket.TertipoID) : '';
-                            this.selected.numero = data.ticket.numero || '';  // Actualiza el número con lo que viene del server
-                            this.selected.anydesk = data.ticket.anydesk || '';
                             
-                            // Actualizar también el estatus e imagen en selected para el bloqueo visual
+                            // Actualizar selected
                             if (this.selected) {
+                                this.selected.numero = data.ticket.numero || ''; 
+                                this.selected.anydesk = data.ticket.anydesk || '';
                                 this.selected.estatus = data.ticket.Estatus || '';
                                 this.selected.imagen = data.ticket.imagen || '';
+
+                                // 3. CORRECCIÓN: Leer la resolución del servidor
+                                this.selected.resolucion = data.ticket.Resolucion || data.ticket.resolucion || '';
                             }
                             
-                            // Deshabilitar/habilitar editor según el estado
-                            this.$nextTick(() => {
-                                this.actualizarEstadoEditor();
-                            });
-                            
-                            // Esperar a que los selects estén cargados y luego establecer valores
+                            // ... resto de tu lógica de selects y nextTick ...
+                            this.$nextTick(() => { this.actualizarEstadoEditor(); });
+                            // ... (copia el resto de la lógica de los selects anidados aquí si la borraste) ...
                             this.$nextTick(() => {
                                 setTimeout(() => {
                                     const tipoSelect = document.getElementById('tipo-select');
                                     if (tipoSelect && this.ticketTipoID) {
                                         tipoSelect.value = this.ticketTipoID;
-                                        const changeEvent = new Event('change', { bubbles: true });
-                                        tipoSelect.dispatchEvent(changeEvent);
+                                        tipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
                                         
-                                        // Esperar a que se carguen los subtipos y establecer el valor
                                         setTimeout(() => {
                                             const subtipoSelect = document.getElementById('subtipo-select');
                                             if (subtipoSelect && this.ticketSubtipoID) {
-                                                // Cargar las opciones si no están cargadas (importante para tickets cerrados)
-                                                if (subtipoSelect.options.length <= 1) {
-                                                    // Forzar la carga de subtipos
-                                                    if (typeof loadSubtipos === 'function') {
-                                                        loadSubtipos(this.ticketTipoID);
-                                                    }
-                                                }
+                                                if(subtipoSelect.options.length <= 1 && typeof loadSubtipos === 'function') loadSubtipos(this.ticketTipoID);
                                                 
-                                                // Esperar un poco más para que se carguen las opciones
                                                 setTimeout(() => {
-                                                    if (subtipoSelect.options.length > 1) {
-                                                subtipoSelect.value = this.ticketSubtipoID;
-                                                const subtipoChangeEvent = new Event('change', { bubbles: true });
-                                                subtipoSelect.dispatchEvent(subtipoChangeEvent);
-                                                
-                                                // Esperar a que se carguen los tertipos y establecer el valor
-                                                setTimeout(() => {
-                                                    const tertipoSelect = document.getElementById('tertipo-select');
-                                                    if (tertipoSelect && this.ticketTertipoID) {
-                                                                // Cargar las opciones si no están cargadas
-                                                                if (tertipoSelect.options.length <= 1) {
-                                                                    // Forzar la carga de tertipos
-                                                                    if (typeof loadTertipos === 'function') {
-                                                                        loadTertipos(this.ticketSubtipoID);
-                                                                    }
-                                                                }
-                                                                
-                                                                setTimeout(() => {
-                                                                    if (tertipoSelect.options.length > 1) {
-                                                        tertipoSelect.value = this.ticketTertipoID;
-                                                                    }
-                                                                }, 300);
+                                                    if(subtipoSelect.options.length > 1) {
+                                                        subtipoSelect.value = this.ticketSubtipoID;
+                                                        subtipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                                                        
+                                                        setTimeout(() => {
+                                                            const tertipoSelect = document.getElementById('tertipo-select');
+                                                            if (tertipoSelect && this.ticketTertipoID) {
+                                                                if(tertipoSelect.options.length <= 1 && typeof loadTertipos === 'function') loadTertipos(this.ticketSubtipoID);
+                                                                setTimeout(() => { if(tertipoSelect.options.length > 1) tertipoSelect.value = this.ticketTertipoID; }, 300);
                                                             }
                                                         }, 500);
                                                     }
-                                                }, 300);
+                                                }, 500);
                                             }
-                                        }, 500);
+                                        }, 300);
                                     }
-                                }, 300);
+                                }, 200);
                             });
                         }
                     }
                 } catch (error) {
-                    console.error('Error cargando datos del ticket:', error);
+                    console.error('Error cargando datos:', error);
                 }
             },
-
-            async guardarCambiosTicket() {
+async guardarCambiosTicket() {
                 if (!this.selected.id) {
                     this.mostrarNotificacion('No hay ticket seleccionado', 'error');
                     return;
+                }
+
+                // Validación extra: Si está marcado como cerrado pero no hay resolución (por si acaso)
+                if (this.ticketEstatus === 'Cerrado' && !this.selected.resolucion_temporal && !this.selected.resolucion) {
+                     this.mostrarNotificacion('Error: Falta la resolución para cerrar el ticket', 'error');
+                     return;
                 }
 
                 this.guardandoTicket = true;
@@ -3410,7 +3429,9 @@
                         responsableTI: this.ticketResponsableTI || null,
                         tipoID: this.ticketTipoID || null,
                         subtipoID: this.ticketSubtipoID || null,
-                        tertipoID: this.ticketTertipoID || null
+                        tertipoID: this.ticketTertipoID || null,
+                        // ENVIAR LA RESOLUCIÓN
+                        resolucion: this.selected.resolucion_temporal || null 
                     };
 
                     const response = await fetch('/tickets/update', {
@@ -3812,6 +3833,40 @@
                 const adjuntosInput = document.getElementById('adjuntos');
                 if (adjuntosInput) {
                     adjuntosInput.value = '';
+                }
+            },
+
+                            verificarCambioEstatus(nuevoEstatus) {
+                if (nuevoEstatus === 'Cerrado') {
+                    Swal.fire({
+                        title: 'Cerrar Ticket',
+                        text: 'Por favor, describe la resolución del problema:',
+                        input: 'textarea',
+                        inputPlaceholder: 'Escribe aquí cómo se solucionó...',
+                        showCancelButton: true,
+                        confirmButtonText: 'Cerrar Ticket',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#10b981',
+                        cancelButtonColor: '#ef4444',
+                        inputValidator: (value) => {
+                            if (!value) return 'Debes escribir una resolución';
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // 1. Guardar en temporal para enviar al backend
+                            this.selected.resolucion_temporal = result.value;
+                            
+                            // 2. CORRECCIÓN IMPORTANTE: Actualizar la vista inmediatamente
+                            this.selected.resolucion = result.value; 
+                            
+                            this.ticketEstatus = 'Cerrado';
+                            // Forzamos actualización de Alpine para que detecte el cambio de estatus
+                            this.selected.estatus = 'Cerrado'; 
+                        } else {
+                            // Si cancela, regresamos el select al estado anterior
+                            this.ticketEstatus = this.selected.estatus; 
+                        }
+                    });
                 }
             },
 

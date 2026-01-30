@@ -48,42 +48,6 @@
 </script>
 @endverbatim
 
-<div
-    x-data="solicitudesData()"
-    class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-    
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-        <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
-    </div>
-
-    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-        <div class="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100/50 dark:bg-slate-800/50">
-            <i class="fas fa-filter text-slate-400 dark:text-slate-500"></i>
-            <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Filtros</h3>
-            <button
-                @click="filtros = { estatus: '' }"
-                x-show="filtros.estatus"
-                class="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors duration-200">
-                Limpiar filtro
-            </button>
-        </div>
-        <div class="flex gap-3">
-            <div class="flex-1 max-w-xs">
-                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Estatus</label>
-                <select
-                    x-model="filtros.estatus"
-                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">Todos los estatus</option>
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En revisión">En revisión</option>
-                    <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
-                    <option value="Aprobada">Aprobada</option>
-                    <option value="Rechazada">Rechazada</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
     <div class="overflow-x-auto">
         <livewire:tabla-solicitudes />
     </div>
