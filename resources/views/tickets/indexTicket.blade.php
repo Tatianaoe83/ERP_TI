@@ -864,25 +864,33 @@
         x-transition:leave="transition ease-in duration-200"
         x-transition:leave-start="opacity-100 translate-y-0"
         x-transition:leave-end="opacity-0 translate-y-10"
-        class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm"
+        class="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-3 md:p-0 bg-gray-900/60 backdrop-blur-sm mt-0"
         @click.self="cerrarModal"
         x-cloak>
         <div
-            class="w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
+            class="flex flex-col w-[95%] md:w-[90%] lg:w-[40%] xl:w-[86%] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300
            bg-gray-50 dark:bg-[#1A1D24] 
-           border border-transparent dark:border-gray-700"
+           border border-transparent dark:border-gray-700
+           max-h-[calc(100vh-1.5rem)] md:max-h-[95vh] mt-0 min-h-0"
             @click.stop>
 
-            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] h-[95vh] rounded-2xl overflow-hidden">
+            <!-- Header fijo: Propiedades del Ticket + botón cerrar -->
+            <div class="flex justify-between items-center p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1A1D24] flex-shrink-0">
+                <h2 class="text-sm font-semibold uppercase text-gray-900 dark:text-gray-100">
+                    Ticket #<span x-text="selected.id"></span> - <span x-text="select.fecha"></span>
+                </h2>
+                <button @click="cerrarModal"
+                    class="transition p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 touch-manipulation"
+                    aria-label="Cerrar">
+                    <span class="text-xl leading-none">×</span>
+                </button>
+            </div>
 
-                <aside class="p-6 flex flex-col overflow-y-auto
-                      border-r border-gray-200 dark:border-gray-700
-                      bg-gray-50 dark:bg-[#0F1116] ">
-
-                    <h2 class="text-sm font-semibold mb-4 uppercase text-gray-900 dark:text-gray-100">
+            <div class="grid grid-cols-1 md:grid-cols-[35%_65%] min-h-0 flex-1 rounded-2xl overflow-hidden">
+                <aside class="p-4 md:p-6 flex flex-col overflow-y-auto min-h-0 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#0F1116]">
+                    <h3 class="text-sm font-semibold mb-4 uppercase text-gray-900 dark:text-gray-100">
                         Propiedades del Ticket
-                    </h2>
-
+                    </h3>
                     <div class="space-y-5 text-sm flex-1">
 
                         <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
@@ -1160,76 +1168,11 @@
                     </div>
                 </aside>
 
-<main class="flex flex-col overflow-hidden dark:bg-[#1A1D24]">
-                    
-                    <div class="flex justify-between items-start p-6 border-b border-gray-200 dark:border-gray-700 dark:bg-[#1A1D24]">
-                        <div>
-                            <h1 class="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100"
-                                x-text="selected.asunto"></h1>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                <span x-text="selected.fecha"></span>
-                            </p>
-                        </div>
+<main class="flex flex-col overflow-hidden min-h-0 dark:bg-[#1A1D24]">
 
-                        <div class="flex items-center gap-3">
-                            <button @click="cerrarModal"
-                                class="transition p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700">
-                                <span class="text-xl">×</span>
-                            </button>
-                        </div>
-                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-4 md:pb-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container">
 
-                    <div class="border-b border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-[#0F1116]">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4 text-sm">
-
-                                <span class="flex items-center gap-1">
-                                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-                                    <span class="text-gray-600 dark:text-gray-300">Correos Enviados:</span>
-                                    <span class="font-semibold text-gray-900 dark:text-gray-100" x-text="estadisticas?.correos_enviados || 0"></span>
-                                </span>
-
-                                <span class="flex items-center gap-1">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                                    <span class="text-gray-600 dark:text-gray-300">Respuestas:</span>
-                                    <span class="font-semibold text-gray-900 dark:text-gray-100" x-text="estadisticas?.correos_recibidos || 0"></span>
-                                </span>
-                            </div>
-
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                Total: <span class="font-semibold text-gray-700 dark:text-gray-200" x-text="estadisticas?.total_correos || 0"></span> correos
-                            </div>
-                        </div>
-                    </div>
-
-                    <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'" 
-                         x-transition:enter="transition ease-out duration-300"
-                         x-transition:enter-start="opacity-0 -translate-y-2"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         class="mx-4 mt-4 rounded-lg border overflow-hidden shadow-sm bg-green-50 dark:bg-[#1C1F26] border-green-200 dark:border-green-800">
-                        
-                        <div class="px-4 py-3 bg-green-100 dark:bg-green-900/40 border-b border-green-200 dark:border-green-800 flex items-center gap-2">
-                            <div class="p-1 bg-green-200 dark:bg-green-800 rounded-full text-green-700 dark:text-green-300">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                            </div>
-                            <h3 class="font-bold text-green-800 dark:text-green-200 text-sm">Ticket Resuelto</h3>
-                        </div>
-
-                        <div class="p-4">
-                            <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
-                                Detalle de la solución:
-                            </div>
-                            <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed"
-                                 x-text="selected.resolucion">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container">
-
-
+                    <p> Area de Conversaciones </p>
 
                     <!-- Área de Conversaciones -->
 
@@ -1287,7 +1230,61 @@
                focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-500">
                     </div>
-                    <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container"> <!-- Mensajes dinámicos del chat -->
+                    <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-4 md:pb-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container"> <!-- Mensajes dinámicos del chat -->
+
+                        <!-- Título del ticket (en scroll) -->
+                        <div class="pb-4 mb-4 border-b border-gray-200 dark:border-gray-700">
+                            <h1 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 break-words"
+                                x-text="selected.asunto"></h1>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="selected.fecha"></p>
+                        </div>
+
+                        <!-- Barra de estadísticas y Ticket Resuelto (scroll con mensajes) -->
+                        <div class="space-y-4 mb-6">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
+                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                                        <span class="flex items-center gap-1 whitespace-nowrap">
+                                            <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                                            <span class="text-gray-600 dark:text-gray-300">Correos Enviados:</span>
+                                            <span class="font-semibold text-gray-900 dark:text-gray-100" x-text="estadisticas?.correos_enviados || 0"></span>
+                                        </span>
+                                        <span class="flex items-center gap-1 whitespace-nowrap">
+                                            <span class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></span>
+                                            <span class="text-gray-600 dark:text-gray-300">Respuestas:</span>
+                                            <span class="font-semibold text-gray-900 dark:text-gray-100" x-text="estadisticas?.correos_recibidos || 0"></span>
+                                        </span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                                        Total: <span class="font-semibold text-gray-700 dark:text-gray-200" x-text="estadisticas?.total_correos || 0"></span> correos
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div x-show="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado'"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 -translate-y-2"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 class="rounded-lg border overflow-hidden shadow-sm bg-green-50 dark:bg-[#1C1F26] border-green-200 dark:border-green-800">
+                                <div class="px-4 py-3 bg-green-100 dark:bg-green-900/40 border-b border-green-200 dark:border-green-800 flex items-center gap-2">
+                                    <div class="p-1 bg-green-200 dark:bg-green-800 rounded-full text-green-700 dark:text-green-300">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="font-bold text-green-800 dark:text-green-200 text-sm">Ticket Resuelto</h3>
+                                </div>
+                                <div class="p-4">
+                                    <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 mb-1">
+                                        Detalle de la solución:
+                                    </div>
+                                    <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed"
+                                         x-text="selected.resolucion">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <template x-for="mensaje in mensajes" :key="mensaje.id">
                             <div class="flex gap-4 mb-4" :class="mensaje.remitente === 'soporte' ? 'justify-end' : 'justify-start'">
 
@@ -1314,20 +1311,11 @@
                                             📥 Recibido
                                         </span>
 
-                                        <span x-show="!mensaje.es_correo"
-                                            class="text-xs px-2 py-0.5 rounded flex items-center gap-1 border border-gray-200 bg-gray-100 text-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                                            💬 Nota Interna
-                                        </span>
+                                      
 
-                                        <span x-show="mensaje.thread_id"
-                                            class="text-xs px-2 py-0.5 rounded flex items-center gap-1 border border-purple-200 bg-purple-50 text-purple-600 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
-                                            🔗 En Hilo
-                                        </span>
+                                       
 
-                                        <span x-show="!mensaje.leido"
-                                            class="text-xs px-2 py-0.5 rounded flex items-center gap-1 border border-orange-200 bg-orange-50 text-orange-600 dark:border-orange-800 dark:bg-orange-900/20 dark:text-orange-300">
-                                            ⚠ No Leído
-                                        </span>
+                                        
                                     </div>
 
                                     <div class="rounded-lg p-4 border shadow-sm w-full text-left"
