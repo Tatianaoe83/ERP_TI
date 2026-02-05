@@ -876,9 +876,12 @@
 
             <!-- Header fijo: Propiedades del Ticket + botón cerrar -->
             <div class="flex justify-between items-center p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1A1D24] flex-shrink-0">
-                <h2 class="text-sm font-semibold uppercase text-gray-900 dark:text-gray-100">
-                    Ticket #<span x-text="selected.id"></span> - <span x-text="select.fecha"></span>
-                </h2>
+                <!-- Título del ticket (en scroll) -->
+                <div class="pb-4 mb-4 border-b border-gray-200 dark:border-gray-700">
+                    <h1 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 break-words"
+                        x-text="selected.asunto"></h1>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="selected.fecha"></p>
+                </div>
                 <button @click="cerrarModal"
                     class="transition p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 touch-manipulation"
                     aria-label="Cerrar">
@@ -1172,7 +1175,9 @@
 
                     <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-4 md:pb-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container">
 
-                    <p> Area de Conversaciones </p>
+                        <h3 class="text-sm font-semibold mb-4 uppercase text-gray-900 dark:text-gray-100">
+                            Area de Conversaciones
+                        </h3>
 
                     <!-- Área de Conversaciones -->
 
@@ -1232,12 +1237,6 @@
                     </div>
                     <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 pb-4 md:pb-6 bg-gray-50 dark:bg-[#0F1116]" id="chat-container"> <!-- Mensajes dinámicos del chat -->
 
-                        <!-- Título del ticket (en scroll) -->
-                        <div class="pb-4 mb-4 border-b border-gray-200 dark:border-gray-700">
-                            <h1 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 break-words"
-                                x-text="selected.asunto"></h1>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="selected.fecha"></p>
-                        </div>
 
                         <!-- Barra de estadísticas y Ticket Resuelto (scroll con mensajes) -->
                         <div class="space-y-4 mb-6">
@@ -1847,6 +1846,7 @@
             ticketsExcedidos: [],
             timerPopupExcedidos: null,
             intervaloContadorPopup: null,
+            intervaloExcedidos5min: null,
             tiempoRestantePopup: 10,
             cargandoExcedidos: false,
             intervaloVerificacionExcedidos: null,
@@ -1889,12 +1889,8 @@
                     
                     if (datos && datos.ticketsExcedidos) {
                         this.ticketsExcedidos = datos.ticketsExcedidos;
-                        if (this.ticketsExcedidos.length > 0) {
-                            this.mostrarPopupExcedidos = true;
-                            this.iniciarTimerPopup();
-                        } else {
-                            this.mostrarPopupExcedidos = false;
-                        }
+                        // No abrir el popup aquí: Livewire actualiza cada 3s/30s.
+                        // El popup solo se abre cada 5 min vía verificarTicketsExcedidos().
                     }
                     if (datos && datos.tiemposProgreso) {
                         // Actualizar indicadores de tiempo usando la función auxiliar
@@ -2838,8 +2834,12 @@
                 // Verificar tickets excedidos al cargar
                 this.verificarTicketsExcedidos();
                 
-                // La verificación de tickets excedidos ahora se maneja con wire:poll
-                // Se elimina el setInterval ya que wire:poll actualiza automáticamente cada 30 segundos
+                // Verificación automática cada 5 minutos (abre popup si hay tickets excedidos)
+                this.intervaloExcedidos5min = setInterval(() => {
+                    if (!document.hidden) {
+                        this.verificarTicketsExcedidos();
+                    }
+                }, 5 * 60 * 1000); // 5 minutos
                 
                 // Reiniciar verificación si la página vuelve a estar visible (cuando el usuario regresa a la pestaña)
                 document.addEventListener('visibilitychange', () => {
@@ -4306,11 +4306,13 @@ async guardarCambiosTicket() {
                         this.ticketsExcedidos = data.tickets;
                         
                         // Mostrar popup si hay tickets excedidos
-                        // Si hay nuevos tickets o cambió la cantidad, mostrar/actualizar el popup
+                        // Solo iniciar timer cuando se abre por primera vez, no al actualizar
                         if (this.ticketsExcedidos.length > 0) {
+                            const yaEstabaAbierto = this.mostrarPopupExcedidos;
                             this.mostrarPopupExcedidos = true;
-                            // Iniciar timer para cerrar automáticamente
-                            this.iniciarTimerPopup();
+                            if (!yaEstabaAbierto) {
+                                this.iniciarTimerPopup();
+                            }
                         }
                     } else {
                         // Si no hay tickets excedidos, ocultar el popup
@@ -4360,6 +4362,11 @@ async guardarCambiosTicket() {
                     if (this.tiempoRestantePopup <= 0) {
                         clearInterval(this.intervaloContadorPopup);
                         this.intervaloContadorPopup = null;
+                        if (this.timerPopupExcedidos) {
+                            clearTimeout(this.timerPopupExcedidos);
+                            this.timerPopupExcedidos = null;
+                        }
+                        this.cerrarPopupExcedidos();
                     }
                 }, 1000);
                 

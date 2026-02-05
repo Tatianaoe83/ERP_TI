@@ -125,9 +125,13 @@
                                         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0">
                                             <span class="text-sm font-semibold text-gray-900">Proveedor: {{ $cotizacion->Proveedor }}</span>
                                             <span class="text-sm font-semibold text-gray-900">Precio: ${{ number_format($cotizacion->Precio, 2, '.', ',') }}</span>
+                                            <span class="text-sm font-semibold text-gray-900">Cantidad: {{ $prod['cantidad'] ?? 1 }}</span>
                                         </div>
                                         @if(!empty($cotizacion->NumeroParte))
                                         <p class="text-xs text-gray-500">No. parte: {{ $cotizacion->NumeroParte }}</p>
+                                        @endif
+                                        @if(!empty($cotizacion->Descripcion))
+                                        <p class="text-xs text-gray-500">Descripción: {{ $cotizacion->Descripcion }}</p>
                                         @endif
                                     </div>
                                     <div class="flex-shrink-0">
