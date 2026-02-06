@@ -9,8 +9,13 @@ use App\Http\Requests\UpdateDepartamentosRequest;
 use App\Repositories\DepartamentosRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
+use App\Models\DepartamentoRequerimientos;
 use Response;
 use App\Models\Departamentos;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
+use Normalizer;
 use Yajra\DataTables\DataTables;
 
 class DepartamentosController extends AppBaseController
@@ -23,10 +28,9 @@ class DepartamentosController extends AppBaseController
         $this->departamentosRepository = $departamentosRepo;
 
         $this->middleware('permission:ver-departamentos|crear-departamentos|editar-departamentos|borrar-departamentos')->only('index');
-        $this->middleware('permission:crear-departamentos', ['only' => ['create','store']]);
-        $this->middleware('permission:editar-departamentos', ['only' => ['edit','update']]);
+        $this->middleware('permission:crear-departamentos', ['only' => ['create', 'store']]);
+        $this->middleware('permission:editar-departamentos', ['only' => ['edit', 'update']]);
         $this->middleware('permission:borrar-departamentos', ['only' => ['destroy']]);
-        
     }
 
     /**
@@ -46,9 +50,9 @@ class DepartamentosController extends AppBaseController
                     'gerencia.NombreGerencia as nombre_gerencia'
                 ]);
 
-            
+
             return DataTables::of($unidades)
-                ->addColumn('action', function($row){
+                ->addColumn('action', function ($row) {
                     return view('departamentos.datatables_actions', ['id' => $row->DepartamentoID])->render();
                 })
                 ->rawColumns(['action'])
@@ -65,7 +69,9 @@ class DepartamentosController extends AppBaseController
      */
     public function create()
     {
-        return view('departamentos.create');
+        $requerimientos = $this->requerimientosBase();
+
+        return view('departamentos.create', compact('requerimientos'));
     }
 
     /**
@@ -75,15 +81,138 @@ class DepartamentosController extends AppBaseController
      *
      * @return Response
      */
-    public function store(CreateDepartamentosRequest $request)
+
+    public function store(CreateDepartamentosRequest $request): RedirectResponse
     {
         $input = $request->all();
 
-        $departamentos = $this->departamentosRepository->create($input);
+        $normalize = static function (string $v): string {
+            $v = trim($v);
 
-        Flash::success('Departamentos saved successfully.');
+            $v = str_replace("\u{00A0}", ' ', $v);
 
-        return redirect(route('departamentos.index'));
+            $v = preg_replace('/\s+/u', ' ', $v) ?? $v;
+
+            if (class_exists(Normalizer::class)) {
+                $v = Normalizer::normalize($v, Normalizer::FORM_C) ?? $v;
+            }
+
+            return $v;
+        };
+
+        $selectedRaw = (array) $request->input('requerimientos', []);
+
+        $selectedSet = [];
+        foreach ($selectedRaw as $v) {
+            if (!is_string($v)) continue;
+            $k = $normalize($v);
+            if ($k !== '') $selectedSet[$k] = true;
+        }
+
+        $departamentos = null;
+
+        DB::transaction(function () use ($input, $selectedSet, $normalize, &$departamentos) {
+
+            $departamentos = $this->departamentosRepository->create($input);
+            $departamentoId = (int) $departamentos->DepartamentoID;
+
+            $base = $this->requerimientosBase();
+
+            $rows = [];
+            foreach ($base as $categoria => $items) {
+                foreach ($items as $item) {
+                    $nombre = (string) $item['nombre'];
+                    $nombreNorm = $normalize($nombre);
+
+                    $rows[] = [
+                        'DepartamentoID' => $departamentoId,
+                        'categoria'      => $categoria,
+                        'nombre'         => $nombre,
+                        'seleccionado'   => isset($selectedSet[$nombreNorm]) ? 1 : 0,
+                        'realizado'      => 0,
+                        'opcional'       => !empty($item['opcional']) ? 1 : 0,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
+                }
+            }
+
+            DB::table('departamento_requerimientos')->upsert(
+                $rows,
+                ['DepartamentoID', 'nombre'],
+                ['categoria', 'seleccionado', 'realizado', 'opcional', 'updated_at']
+            );
+        });
+
+        return redirect()
+            ->route('departamentos.index')
+            ->with('swal', [
+                'icon'  => 'success',
+                'title' => 'Departamento creado',
+                'text'  => 'Se guardó el departamento y se generó su perfil de requerimientos.',
+            ]);
+    }
+
+    private function requerimientosBase(): array
+    {
+        return [
+            'Productos base' => [
+                ['nombre' => 'Usuario Dominio'],
+                ['nombre' => 'Net Driver'],
+                ['nombre' => 'Office 365'],
+                ['nombre' => 'VPN'],
+                ['nombre' => 'Correo'],
+                ['nombre' => 'Navegadores'],
+                ['nombre' => 'Winrar'],
+                ['nombre' => 'OneDrive'],
+                ['nombre' => 'Adobe Reader'],
+            ],
+
+            'Programas Especiales' => [
+                ['nombre' => 'ERP NEODATA'],
+                ['nombre' => 'VS CONTROL'],
+                ['nombre' => 'PU neodata'],
+                ['nombre' => 'Adobe Cloud'],
+                ['nombre' => 'Nomipaq'],
+                ['nombre' => 'SUA'],
+                ['nombre' => 'IDSE'],
+                ['nombre' => 'Autocad LT'],
+                ['nombre' => 'ERP VSCONTROL TOTAL'],
+                ['nombre' => 'Acceso al OneDrive carpeta de control'],
+                ['nombre' => 'Autocad Full', 'opcional' => true],
+                ['nombre' => 'Revit', 'opcional' => true],
+                ['nombre' => 'Project', 'opcional' => true],
+                ['nombre' => 'Monday'],
+                ['nombre' => 'COMPAQ I FACTURACIÓN'],
+                ['nombre' => 'MIADMIN XML PRO'],
+                ['nombre' => 'Acceso al NASS de Presupuestos'],
+                ['nombre' => 'Cuenta en modo visor de Monday'],
+            ],
+
+            'Carpetas' => [
+                ['nombre' => 'Comprobantes de pago ext(1.9)'],
+                ['nombre' => 'Capeta de Compras 0301_Compras'],
+                ['nombre' => '0301_Compras_of'],
+                ['nombre' => 'Gestión de proveedores (SharePoint Compras > Proveedores)'],
+                ['nombre' => 'Carpeta de cierre de obra (Sharepoint CIERRE DE OBRA)'],
+                ['nombre' => 'Acceso a todas las carpetas del onedrive de Jurídico'],
+            ],
+
+            'Escaner' => [
+                ['nombre' => 'Escáner'],
+            ],
+
+            'Impresora' => [
+                ['nombre' => 'Impresora ext (2.43)'],
+                ['nombre' => 'Impresora ext (2.42)'],
+                ['nombre' => 'Impresora ext (2.41)'],
+                ['nombre' => 'Brother DCP-L2540DW'],
+                ['nombre' => 'Epson L355'],
+                ['nombre' => 'Brother MFC-L8900cdw'],
+                ['nombre' => 'HP LASERJET M141W'],
+                ['nombre' => 'Impresora ext (1.253)'],
+            ],
+        ];
     }
 
     /**
@@ -93,17 +222,35 @@ class DepartamentosController extends AppBaseController
      *
      * @return Response
      */
-    public function show($id)
+
+    public function show($id): View|RedirectResponse
     {
         $departamentos = $this->departamentosRepository->find($id);
 
         if (empty($departamentos)) {
-            Flash::error('Departamentos not found');
-
-            return redirect(route('departamentos.index'));
+            return redirect()
+                ->route('departamentos.index')
+                ->with('swal', [
+                    'icon'  => 'error',
+                    'title' => 'No encontrado',
+                    'text'  => 'El departamento no existe.',
+                ]);
         }
 
-        return view('departamentos.show')->with('departamentos', $departamentos);
+        $requerimientosSeleccionados = DepartamentoRequerimientos::query()
+            ->byDepartamentos((int) $id)
+            ->seleccionados()
+            ->orderBy('categoria')
+            ->orderBy('nombre')
+            ->get(['categoria', 'nombre', 'opcional', 'realizado']);
+
+        $seleccionadosPorCategoria = $requerimientosSeleccionados->groupBy('categoria');
+
+        return view('departamentos.show', [
+            'departamentos' => $departamentos,
+            'requerimientosSeleccionados' => $requerimientosSeleccionados,
+            'seleccionadosPorCategoria' => $seleccionadosPorCategoria,
+        ]);
     }
 
     /**
@@ -111,19 +258,47 @@ class DepartamentosController extends AppBaseController
      *
      * @param int $id
      *
-     * @return Response
+     * @return RedirectResponse
      */
-    public function edit($id)
+    public function edit($id): View|RedirectResponse
     {
         $departamentos = $this->departamentosRepository->find($id);
 
         if (empty($departamentos)) {
-            Flash::error('Departamentos not found');
-
-            return redirect(route('departamentos.index'));
+            return redirect()
+                ->route('departamentos.index')
+                ->with('swal', [
+                    'icon'  => 'error',
+                    'title' => 'No encontrado',
+                    'text'  => 'El departamento no existe.',
+                ]);
         }
 
-        return view('departamentos.edit')->with('departamentos', $departamentos);
+        $departamentoId = (int) $departamentos->DepartamentoID;
+
+        $base = $this->requerimientosBase();
+
+        $seleccionados = DepartamentoRequerimientos::query()
+            ->byDepartamentos($departamentoId)
+            ->seleccionados()
+            ->pluck('nombre')
+            ->map(fn($v) => is_string($v) ? trim($v) : $v)
+            ->toArray();
+
+        $seleccionadosSet = array_fill_keys($seleccionados, true);
+
+        foreach ($base as $categoria => &$items) {
+            foreach ($items as &$item) {
+                $nombre = $item['nombre'];
+                $item['seleccionado'] = isset($seleccionadosSet[$nombre]);
+            }
+        }
+        unset($items, $item);
+
+        return view('departamentos.edit', [
+            'departamentos'  => $departamentos,
+            'requerimientos' => $base,
+        ]);
     }
 
     /**
@@ -134,21 +309,52 @@ class DepartamentosController extends AppBaseController
      *
      * @return Response
      */
-    public function update($id, UpdateDepartamentosRequest $request)
+    public function update($id, UpdateDepartamentosRequest $request): RedirectResponse
     {
         $departamentos = $this->departamentosRepository->find($id);
 
         if (empty($departamentos)) {
-            Flash::error('Departamentos not found');
-
-            return redirect(route('departamentos.index'));
+            return redirect()
+                ->route('departamentos.index')
+                ->with('swal', [
+                    'icon'  => 'error',
+                    'title' => 'No encontrado',
+                    'text'  => 'El departamento no existe.',
+                ]);
         }
 
-        $departamentos = $this->departamentosRepository->update($request->all(), $id);
+        $input = $request->all();
 
-        Flash::success('Departamentos updated successfully.');
+        $selectedNames = collect($request->input('requerimientos', []))
+            ->filter(fn($v) => is_string($v) && trim($v) !== '')
+            ->map(fn($v) => trim($v))
+            ->unique()
+            ->values()
+            ->all();
 
-        return redirect(route('departamentos.index'));
+        DB::transaction(function () use ($id, $input, $selectedNames) {
+
+            $this->departamentosRepository->update($input, $id);
+
+            DepartamentoRequerimientos::query()
+                ->byDepartamentos((int)$id)
+                ->update(['seleccionado' => 0]);
+
+            if (!empty($selectedNames)) {
+                DepartamentoRequerimientos::query()
+                    ->byDepartamentos((int)$id)
+                    ->whereIn('nombre', $selectedNames)
+                    ->update(['seleccionado' => 1]);
+            }
+        });
+
+        return redirect()
+            ->route('departamentos.index')
+            ->with('swal', [
+                'icon'  => 'success',
+                'title' => 'Departamento actualizado',
+                'text'  => 'Se actualizó el departamento y su perfil de requerimientos.',
+            ]);
     }
 
     /**

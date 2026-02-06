@@ -3,25 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\DataTables\CortesDataTable;
-use App\Http\Requests;
-use App\Http\Requests\CreateCortesRequest;
 use App\Http\Requests\UpdateCortesRequest;
 use App\Repositories\CortesRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Cortes;
-use App\Models\Empleados;
 use App\Models\Gerencia;
 use App\Models\Insumos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Js;
 use Response;
 use Yajra\DataTables\Facades\DataTables;
-use Yajra\DataTables\Html\Editor\Fields\Select;
 
 class CortesController extends AppBaseController
 {
@@ -90,6 +84,94 @@ class CortesController extends AppBaseController
         }
 
         return view('cortes.index');
+    }
+
+    public function obtenerInsumos(Request $request)
+    {
+        $gerenciaID = $request->input('gerenciaID');
+
+        if (empty($gerenciaID)) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Por favor, selecciona una gerencia',
+                    'data'    => [],
+                ], 422);
+            }
+            return back()->with('error', 'Por favor, selecciona una gerencia');
+        }
+
+        try {
+            $rows = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]));
+
+            if ($rows->isEmpty()) {
+                return $request->expectsJson()
+                    ? response()->json(['data' => []])
+                    : back()->with('warning', 'No hay datos para la gerencia');
+            }
+
+            $mesMap = [
+                'enero' => 1,
+                'febrero' => 2,
+                'marzo' => 3,
+                'abril' => 4,
+                'mayo' => 5,
+                'junio' => 6,
+                'julio' => 7,
+                'agosto' => 8,
+                'septiembre' => 9,
+                'octubre' => 10,
+                'noviembre' => 11,
+                'diciembre' => 12
+            ];
+
+            $resultado = $rows
+                ->groupBy('NombreInsumo')
+                ->map(function (Collection $items, $nombre) use ($mesMap) {
+                    $montosPorMes = $items
+                        ->map(function ($r) use ($mesMap) {
+                            $costo = round((float) ($r->Costo ?? 0), 2);
+                            if ($costo <= 0) return null;
+
+                            $mesRaw = $r->Mes ?? null;
+                            $mesNum = is_numeric($mesRaw)
+                                ? max(1, min(12, (int) $mesRaw))
+                                : ($mesMap[strtolower((string) $mesRaw)] ?? null);
+
+                            if (!$mesNum) return null;
+
+                            return ['Mes' => $mesNum, 'Costo' => $costo];
+                        })
+                        ->filter()
+                        ->values();
+
+                    if ($montosPorMes->isEmpty()) {
+                        return null;
+                    }
+
+                    $distintos = $montosPorMes->pluck('Costo')->unique()->sort()->values()->all();
+
+                    return [
+                        'NombreInsumo'  => (string) $nombre,
+                        'MontosPorMes'  => $montosPorMes->all(),
+                        'Distintos'     => $distintos,
+                        'SelectedIndex' => 0,
+                        'Margen'        => 0,
+                    ];
+                })
+                ->filter()
+                ->values();
+
+            return DataTables::of($resultado)->make(true);
+        } catch (\Throwable $th) {
+            report($th);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'No se pudo procesar los insumos presupuestados',
+                    'data'    => [],
+                ], 500);
+            }
+            return back()->with('error', 'No se pudo procesar los insumos presupuestados');
+        }
     }
 
     public function readXml(Request $request)
@@ -211,94 +293,6 @@ class CortesController extends AppBaseController
         return null;
     }
 
-    public function obtenerInsumos(Request $request)
-    {
-        $gerenciaID = $request->input('gerenciaID');
-
-        if (empty($gerenciaID)) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Por favor, selecciona una gerencia',
-                    'data'    => [],
-                ], 422);
-            }
-            return back()->with('error', 'Por favor, selecciona una gerencia');
-        }
-
-        try {
-            $rows = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]));
-
-            if ($rows->isEmpty()) {
-                return $request->expectsJson()
-                    ? response()->json(['data' => []])
-                    : back()->with('warning', 'No hay datos para la gerencia');
-            }
-
-            $mesMap = [
-                'enero' => 1,
-                'febrero' => 2,
-                'marzo' => 3,
-                'abril' => 4,
-                'mayo' => 5,
-                'junio' => 6,
-                'julio' => 7,
-                'agosto' => 8,
-                'septiembre' => 9,
-                'octubre' => 10,
-                'noviembre' => 11,
-                'diciembre' => 12
-            ];
-
-            $resultado = $rows
-                ->groupBy('NombreInsumo')
-                ->map(function (Collection $items, $nombre) use ($mesMap) {
-                    $montosPorMes = $items
-                        ->map(function ($r) use ($mesMap) {
-                            $costo = round((float) ($r->Costo ?? 0), 2);
-                            if ($costo <= 0) return null;
-
-                            $mesRaw = $r->Mes ?? null;
-                            $mesNum = is_numeric($mesRaw)
-                                ? max(1, min(12, (int) $mesRaw))
-                                : ($mesMap[strtolower((string) $mesRaw)] ?? null);
-
-                            if (!$mesNum) return null;
-
-                            return ['Mes' => $mesNum, 'Costo' => $costo];
-                        })
-                        ->filter()
-                        ->values();
-
-                    if ($montosPorMes->isEmpty()) {
-                        return null;
-                    }
-
-                    $distintos = $montosPorMes->pluck('Costo')->unique()->sort()->values()->all();
-
-                    return [
-                        'NombreInsumo'  => (string) $nombre,
-                        'MontosPorMes'  => $montosPorMes->all(),
-                        'Distintos'     => $distintos,
-                        'SelectedIndex' => 0,
-                        'Margen'        => 0,
-                    ];
-                })
-                ->filter()
-                ->values();
-
-            return DataTables::of($resultado)->make(true);
-        } catch (\Throwable $th) {
-            report($th);
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'No se pudo procesar los insumos presupuestados',
-                    'data'    => [],
-                ], 500);
-            }
-            return back()->with('error', 'No se pudo procesar los insumos presupuestados');
-        }
-    }
-
     public function store(Request $request)
     {
 
@@ -325,7 +319,7 @@ class CortesController extends AppBaseController
         $año = Carbon::now()->format('Y') + 1;
 
         $yaExiste = \App\Models\Cortes::where('GerenciaID', $gerenciaID)
-            ->where('Año', $año)
+            ->where('Anio', $año)
             ->exists();
 
         if ($yaExiste) {
@@ -361,7 +355,7 @@ class CortesController extends AppBaseController
                 'Costo'        => $costo,
                 'Margen'       => $margen,
                 'CostoTotal'   => $calc,
-                'Año'          => $año,
+                'Anio'          => $año,
                 'GerenciaID'   => (int) $r['GerenciaID'],
             ];
         });

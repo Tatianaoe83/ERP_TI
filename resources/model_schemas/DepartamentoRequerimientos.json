@@ -1,6 +1,6 @@
 [
     {
-        "name": "CortesID",
+        "name": "id",
         "dbType": "bigInteger,true,true",
         "htmlType": null,
         "validations": null,
@@ -12,10 +12,10 @@
         "inView": false
     },
     {
-        "name": "NombreInsumo",
-        "dbType": "string,100:nullable",
+        "name": "categoria",
+        "dbType": "string",
         "htmlType": "text",
-        "validations": "nullable|string|max:100",
+        "validations": "required|string",
         "searchable": true,
         "fillable": true,
         "primary": false,
@@ -24,10 +24,10 @@
         "inView": true
     },
     {
-        "name": "Mes",
-        "dbType": "string,100:nullable",
+        "name": "nombre",
+        "dbType": "string,150",
         "htmlType": "text",
-        "validations": "nullable|string|max:100",
+        "validations": "required|string|max:150",
         "searchable": true,
         "fillable": true,
         "primary": false,
@@ -36,58 +36,58 @@
         "inView": true
     },
     {
-        "name": "A\u00f1o",
-        "dbType": "date:nullable",
-        "htmlType": "date",
-        "validations": "nullable",
-        "searchable": true,
-        "fillable": true,
-        "primary": false,
-        "inForm": true,
-        "inIndex": true,
-        "inView": true
-    },
-    {
-        "name": "Costo",
-        "dbType": "decimal,10,2",
-        "htmlType": null,
-        "validations": "nullable|numeric",
-        "searchable": true,
-        "fillable": true,
-        "primary": false,
-        "inForm": true,
-        "inIndex": true,
-        "inView": true
-    },
-    {
-        "name": "CostoTotal",
-        "dbType": "decimal,10,2",
-        "htmlType": null,
-        "validations": "nullable|numeric",
-        "searchable": true,
-        "fillable": true,
-        "primary": false,
-        "inForm": true,
-        "inIndex": true,
-        "inView": true
-    },
-    {
-        "name": "Margen",
-        "dbType": "decimal,10,2",
-        "htmlType": null,
-        "validations": "nullable|numeric",
-        "searchable": true,
-        "fillable": true,
-        "primary": false,
-        "inForm": true,
-        "inIndex": true,
-        "inView": true
-    },
-    {
-        "name": "GerenciaID",
+        "name": "DepartamentoID",
         "dbType": "integer,false",
         "htmlType": null,
-        "validations": "nullable|integer",
+        "validations": "required|integer",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "name": "activo",
+        "dbType": "boolean",
+        "htmlType": "checkbox,1",
+        "validations": "required|boolean",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "name": "seleccionado",
+        "dbType": "boolean",
+        "htmlType": "checkbox,1",
+        "validations": "required|boolean",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "name": "realizado",
+        "dbType": "boolean",
+        "htmlType": "checkbox,1",
+        "validations": "required|boolean",
+        "searchable": true,
+        "fillable": true,
+        "primary": false,
+        "inForm": true,
+        "inIndex": true,
+        "inView": true
+    },
+    {
+        "name": "opcional",
+        "dbType": "boolean",
+        "htmlType": "checkbox,1",
+        "validations": "required|boolean",
         "searchable": true,
         "fillable": true,
         "primary": false,
@@ -120,15 +120,7 @@
         "inView": false
     },
     {
-        "name": "deleted_at",
-        "dbType": "datetime:nullable",
-        "htmlType": "date",
-        "validations": "nullable",
-        "searchable": false,
-        "fillable": false,
-        "primary": false,
-        "inForm": false,
-        "inIndex": false,
-        "inView": false
+        "type": "relation",
+        "relation": "mt1,Departamento,DepartamentoID"
     }
 ]

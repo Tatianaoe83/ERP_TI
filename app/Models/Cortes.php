@@ -9,13 +9,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Class Cortes
  * @package App\Models
- * @version July 23, 2025, 5:19 pm UTC
+ * @version February 5, 2026, 12:32 pm CST
  *
- * @property \App\Models\Gerencium $gerenciaid
- * @property \App\Models\Insumo $insumoid
+ * @property string $NombreInsumo
  * @property string $Mes
+ * @property string $Año
+ * @property number $Costo
+ * @property number $CostoTotal
+ * @property number $Margen
  * @property integer $GerenciaID
- * @property integer $InsumoID
  */
 class Cortes extends Model
 {
@@ -23,7 +25,7 @@ class Cortes extends Model
 
 
     public $table = 'cortes';
-
+    
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
@@ -35,10 +37,10 @@ class Cortes extends Model
     public $fillable = [
         'NombreInsumo',
         'Mes',
-        'Costo',
-        'Margen',
-        'CostoTotal',
         'Año',
+        'Costo',
+        'CostoTotal',
+        'Margen',
         'GerenciaID'
     ];
 
@@ -51,11 +53,11 @@ class Cortes extends Model
         'CortesID' => 'integer',
         'NombreInsumo' => 'string',
         'Mes' => 'string',
-        'Costo' => 'float',
-        'Margen' => 'float',
-        'CostoTotal' => 'float',
         'Año' => 'date',
-        'GerenciaID' => 'integer',
+        'Costo' => 'decimal:2',
+        'CostoTotal' => 'decimal:2',
+        'Margen' => 'decimal:2',
+        'GerenciaID' => 'integer'
     ];
 
     /**
@@ -64,28 +66,15 @@ class Cortes extends Model
      * @var array
      */
     public static $rules = [
-        'NombreInsumo' => 'required|string|100',
-        'Mes' => 'required|string|max:100',
-        'Costo' => 'required|float',
-        'Margen' => 'required|float',
-        'CostoTotal' => 'required|float',
-        'Año' => 'required|date',
+        'NombreInsumo' => 'nullable|string|max:100',
+        'Mes' => 'nullable|string|max:100',
+        'Año' => 'nullable',
+        'Costo' => 'nullable|numeric',
+        'CostoTotal' => 'nullable|numeric',
+        'Margen' => 'nullable|numeric',
         'GerenciaID' => 'nullable|integer',
+        'created_at' => 'required',
+        'updated_at' => 'required',
+        'deleted_at' => 'nullable'
     ];
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     **/
-    public function gerenciaid()
-    {
-        return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
-    }
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     **/
-    public function insumoid()
-    {
-        return $this->belongsTo(\App\Models\Insumo::class, 'InsumoID');
-    }
 }
