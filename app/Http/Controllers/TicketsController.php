@@ -2088,6 +2088,7 @@ class TicketsController extends Controller
                     'Proveedor' => $cot->Proveedor,
                     'Descripcion' => $cot->Descripcion,
                     'Precio' => (float)$cot->Precio,
+                    'CostoEnvio' => (float)($cot->CostoEnvio ?? 0),
                     'NumeroParte' => $cot->NumeroParte,
                     'Estatus' => $cot->Estatus,
                     'TiempoEntrega' => $cot->TiempoEntrega,

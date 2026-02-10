@@ -6,8 +6,7 @@
             <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
         </div>
 
-        <div wire:poll.15s>
-
+        <div wire:poll.15s class="bg-transparent">
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
                 <div class="flex gap-3">
                     <div class="flex-1 max-w-xs">
@@ -355,7 +354,7 @@
                                                         <span class="text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40 px-2 py-1 rounded">Propuesta <span x-text="pIndex + 1"></span></span>
                                                         <span class="text-sm font-semibold text-slate-800 dark:text-slate-100" x-text="cotizacion.Proveedor || 'Sin proveedor'"></span>
                                                     </div>
-                                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                                         <div>
                                                             <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Proveedor</label>
                                                             <p class="text-sm text-slate-900 dark:text-slate-200 font-medium break-words" x-text="cotizacion.Proveedor || '—'"></p>
@@ -363,10 +362,6 @@
                                                         <div>
                                                             <label class="text-xs font-medium text-slate-500 dark:text-slate-400">NO. PARTE</label>
                                                             <p class="text-sm text-slate-900 dark:text-slate-200 font-medium break-words" x-text="cotizacion.NumeroParte || '—'"></p>
-                                                        </div>
-                                                        <div>
-                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Precio</label>
-                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-medium" x-text="'$' + (cotizacion.Precio != null ? parseFloat(cotizacion.Precio).toLocaleString('es-MX', {minimumFractionDigits: 2}) : '0.00')"></p>
                                                         </div>
                                                         <div>
                                                             <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Estatus</label>
@@ -377,6 +372,18 @@
                                                                    'text-slate-600 dark:text-slate-400': cotizacion.Estatus === 'Pendiente'
                                                                }"
                                                                 x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : (cotizacion.Estatus || '—')"></p>
+                                                        </div>
+                                                        <div>
+                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Precio</label>
+                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-medium" x-text="'$' + (cotizacion.Precio != null ? parseFloat(cotizacion.Precio).toLocaleString('es-MX', {minimumFractionDigits: 2}) : '0.00')"></p>
+                                                        </div>
+                                                        <div>
+                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Costo Envío</label>
+                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-medium" x-text="'$' + (cotizacion.CostoEnvio != null ? parseFloat(cotizacion.CostoEnvio).toLocaleString('es-MX', {minimumFractionDigits: 2}) : '0.00')"></p>
+                                                        </div>
+                                                        <div>
+                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Total General</label>
+                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-bold" x-text="'$' + ((cotizacion.Precio != null ? parseFloat(cotizacion.Precio) : 0) + (cotizacion.CostoEnvio != null ? parseFloat(cotizacion.CostoEnvio) : 0)).toLocaleString('es-MX', {minimumFractionDigits: 2})"></p>
                                                         </div>
                                                     </div>
                                                     <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
@@ -729,10 +736,8 @@
                                                     type="text"
                                                     wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.responsable"
                                                     readonly
-                                                    class="h-8 w-24 px-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50
-                                               dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300
-                                               text-center font-medium"
-                                                    placeholder="—">
+                                                    class="h-8 w-24 px-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 text-center font-medium"
+                                                    placeholder="-">
                                             </div>
 
                                             @error("propuestasAsignacion.$pIndex.unidades.$uIndex.checklist.$catKey.$idx.responsable")

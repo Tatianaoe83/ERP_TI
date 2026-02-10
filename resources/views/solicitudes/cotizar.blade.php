@@ -147,21 +147,21 @@
                                             <td class="px-3 py-2">
                                                 <div class="flex items-center justify-end gap-1">
                                                     <span class="text-slate-500">$</span>
-                                                    <input type="number" step="0" min="0" x-model.number="cot.precioUnitario" placeholder="0"
-                                                        @input="cot.total = (equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)).toFixed(2)"
+                                                    <input type="number" step="0.01" min="0" x-model.number="cot.precioUnitario" placeholder="0"
+                                                        @input="cot.total = ((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
                                                         class="w-full px-2 py-1 text-sm text-right border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                                                 </div>
                                             </td>
                                             <td class="px-3 py-2">
                                                 <div class="flex items-center justify-end gap-1">
                                                     <span class="text-slate-500">$</span>
-                                                    <input type="number" step="0" min="0" x-model.number="cot.costoEnvio" placeholder="0"
-                                                        @input="cot.total = (equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)).toFixed(2)"
+                                                    <input type="number" step="0.01" min="0" x-model.number="cot.costoEnvio" placeholder="0"
+                                                        @input="cot.total = ((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
                                                         class="w-full px-2 py-1 text-sm text-right border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                                                 </div>
                                             </td>
                                             <td class="px-3 py-2 text-right font-medium text-slate-900 dark:text-slate-100">
-                                                $<span x-text="(equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)).toFixed(2)"></span>
+                                                $<span x-text="((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"></span>
                                             </td>
                                             <td class="px-3 py-2">
                                                 <button type="button" @click="eliminarCotizacion(equipo, cotIndex)"
