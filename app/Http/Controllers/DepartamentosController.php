@@ -316,36 +316,51 @@ class DepartamentosController extends AppBaseController
         if (empty($departamentos)) {
             return redirect()
                 ->route('departamentos.index')
-                ->with('swal', [
-                    'icon'  => 'error',
-                    'title' => 'No encontrado',
-                    'text'  => 'El departamento no existe.',
-                ]);
+                ->with('swal', ['icon' => 'error', 'title' => 'No encontrado', 'text' => 'El departamento no existe.']);
         }
 
         $input = $request->all();
 
-        $selectedNames = collect($request->input('requerimientos', []))
-            ->filter(fn($v) => is_string($v) && trim($v) !== '')
-            ->map(fn($v) => trim($v))
-            ->unique()
-            ->values()
-            ->all();
+        $rawSelected = (array) $request->input('requerimientos', []);
 
-        DB::transaction(function () use ($id, $input, $selectedNames) {
+        $normalize = function ($v) {
+            return trim(preg_replace('/\s+/u', ' ', str_replace("\u{00A0}", ' ', $v)));
+        };
 
+        $selectedSet = [];
+        foreach ($rawSelected as $v) {
+            if (is_string($v) && $v !== '') {
+                $selectedSet[$normalize($v)] = true;
+            }
+        }
+
+        $base = $this->requerimientosBase();
+        $rows = [];
+        $now = now();
+
+        foreach ($base as $categoria => $items) {
+            foreach ($items as $item) {
+                $nombre = (string) $item['nombre'];
+                $nombreNorm = $normalize($nombre);
+
+                $rows[] = [
+                    'DepartamentoID' => (int) $id,
+                    'categoria'      => $categoria,
+                    'nombre'         => $nombre,
+                    'seleccionado'   => isset($selectedSet[$nombreNorm]) ? 1 : 0,
+                    'opcional'       => !empty($item['opcional']) ? 1 : 0,
+                ];
+            }
+        }
+
+        DB::transaction(function () use ($id, $input, $rows) {
             $this->departamentosRepository->update($input, $id);
 
-            DepartamentoRequerimientos::query()
-                ->byDepartamentos((int)$id)
-                ->update(['seleccionado' => 0]);
-
-            if (!empty($selectedNames)) {
-                DepartamentoRequerimientos::query()
-                    ->byDepartamentos((int)$id)
-                    ->whereIn('nombre', $selectedNames)
-                    ->update(['seleccionado' => 1]);
-            }
+            DB::table('departamento_requerimientos')->upsert(
+                $rows,
+                ['DepartamentoID', 'nombre'],
+                ['seleccionado', 'categoria', 'opcional', 'updated_at']
+            );
         });
 
         return redirect()
@@ -353,7 +368,7 @@ class DepartamentosController extends AppBaseController
             ->with('swal', [
                 'icon'  => 'success',
                 'title' => 'Departamento actualizado',
-                'text'  => 'Se actualizó el departamento y su perfil de requerimientos.',
+                'text'  => 'Se actualizó el departamento y sus requerimientos correctamente.',
             ]);
     }
 

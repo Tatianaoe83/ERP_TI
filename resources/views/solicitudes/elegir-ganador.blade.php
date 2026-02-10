@@ -39,18 +39,18 @@
 
 <body class="bg-gray-50">
     @php
-        $productos = $productos ?? [];
-        $totalProductos = count($productos);
-        $nombresProductos = [];
-        $todosProveedores = collect();
-        foreach ($productos as $p) {
-            $nombresProductos[] = $p['descripcion'] ?: 'Producto';
-            foreach ($p['cotizaciones'] ?? [] as $c) { $todosProveedores->push($c->Proveedor); }
-        }
-        $numProveedores = $todosProveedores->unique()->count();
-        $numPropuestas = $totalProductos > 0 && !empty($productos[0]['cotizaciones'])
-            ? count($productos[0]['cotizaciones']) : 0;
-        $nombresStr = implode(', ', $nombresProductos);
+    $productos = $productos ?? [];
+    $totalProductos = count($productos);
+    $nombresProductos = [];
+    $todosProveedores = collect();
+    foreach ($productos as $p) {
+    $nombresProductos[] = $p['descripcion'] ?: 'Producto';
+    foreach ($p['cotizaciones'] ?? [] as $c) { $todosProveedores->push($c->Proveedor); }
+    }
+    $numProveedores = $todosProveedores->unique()->count();
+    $numPropuestas = $totalProductos > 0 && !empty($productos[0]['cotizaciones'])
+    ? count($productos[0]['cotizaciones']) : 0;
+    $nombresStr = implode(', ', $nombresProductos);
     @endphp
     <div class="min-h-screen py-8 px-4">
         <div class="max-w-4xl mx-auto">
@@ -117,15 +117,23 @@
                         </h3>
                         <div class="grid gap-3 sm:grid-cols-2">
                             @foreach($prod['cotizaciones'] as $cotizacion)
+
+                            @php
+                            $cantidad = $prod['cantidad'] ?? 1;
+                            $precioUnitario = $cotizacion->Precio;
+                            $total = $cantidad * $precioUnitario;
+                            @endphp
+
                             <div class="propuesta-card p-4 rounded-xl border-2 transition bg-gray-50/50 border-gray-200 hover:border-amber-300 cursor-pointer"
-                                 data-numero-propuesta="{{ $prod['numeroPropuesta'] ?? ($idx + 1) }}"
-                                 data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
+                                data-numero-propuesta="{{ $prod['numeroPropuesta'] ?? ($idx + 1) }}"
+                                data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div class="min-w-0 space-y-1">
                                         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0">
                                             <span class="text-sm font-semibold text-gray-900">Proveedor: {{ $cotizacion->Proveedor }}</span>
-                                            <span class="text-sm font-semibold text-gray-900">Precio: ${{ number_format($cotizacion->Precio, 2, '.', ',') }}</span>
+                                            <span class="text-sm font-semibold text-gray-900">Precio Unitario: ${{ number_format($cotizacion->Precio, 2, '.', ',') }}</span>
                                             <span class="text-sm font-semibold text-gray-900">Cantidad: {{ $prod['cantidad'] ?? 1 }}</span>
+                                            <span class="text-sm font-semibold text-gray-900">Total: ${{ number_format($total, 2, '.', ',') }}</span>
                                         </div>
                                         @if(!empty($cotizacion->NumeroParte))
                                         <p class="text-xs text-gray-500">No. parte: {{ $cotizacion->NumeroParte }}</p>
@@ -135,7 +143,7 @@
                                         @endif
                                     </div>
                                     <div class="flex-shrink-0">
-                                        <span class="propuesta-btn px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg inline-flex items-center gap-1.5">
+                                        <span class="propuesta-btn pointer-events-none px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg inline-flex items-center gap-1.5">
                                             <i class="fas fa-trophy"></i> <span class="btn-label">Elegir ganador</span>
                                         </span>
                                     </div>
@@ -172,7 +180,7 @@
 
     <script>
         window.ELECTOR_TOKEN = @json($token ?? '');
-        window.ELECTOR_SOLICITUD_ID = {{ (int) ($solicitud->SolicitudID ?? 0) }};
+        window.ELECTOR_SOLICITUD_ID = {{ (int)($solicitud->SolicitudID ?? 0) }};
         window.ELECTOR_TOTAL = {{ $totalProductos ?? 0 }};
         window.ELECTOR_CSRF = @json(csrf_token());
 
@@ -191,7 +199,7 @@
             if (progressFill) progressFill.style.width = total ? (100 * n / total) + '%' : '0%';
             if (progressText) progressText.textContent = n + '/' + total;
 
-            document.querySelectorAll('.propuesta-card').forEach(function (card) {
+            document.querySelectorAll('.propuesta-card').forEach(function(card) {
                 const np = parseInt(card.dataset.numeroPropuesta, 10);
                 const cid = parseInt(card.dataset.cotizacionId, 10);
                 const esGanador = selecciones[np] === cid;
@@ -255,22 +263,46 @@
                 confirmButtonText: 'Sí, confirmar',
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#0F766E'
-            }).then(function (r) {
+            }).then(function(r) {
                 if (!r.isConfirmed) return;
-                Swal.fire({ title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const body = { ganadores };
+                Swal.fire({
+                    title: 'Guardando...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                const body = {
+                    ganadores
+                };
                 const token = (window.ELECTOR_TOKEN || '').trim();
                 if (token) body.token = token;
                 fetch('/solicitudes/' + window.ELECTOR_SOLICITUD_ID + '/confirmar-ganadores', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.ELECTOR_CSRF, 'Accept': 'application/json' },
-                    body: JSON.stringify(body)
-                })
-                    .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data }; }); })
-                    .then(function ({ ok, data }) {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': window.ELECTOR_CSRF,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    })
+                    .then(function(res) {
+                        return res.json().then(function(data) {
+                            return {
+                                ok: res.ok,
+                                data
+                            };
+                        });
+                    })
+                    .then(function({
+                        ok,
+                        data
+                    }) {
                         Swal.close();
                         if (!ok) {
-                            Swal.fire({ title: 'Error', text: (data && data.message) || 'Error al confirmar.', icon: 'error' });
+                            Swal.fire({
+                                title: 'Error',
+                                text: (data && data.message) || 'Error al confirmar.',
+                                icon: 'error'
+                            });
                             return;
                         }
                         Swal.fire({
@@ -278,21 +310,25 @@
                             text: (data && data.message) || 'Ganadores confirmados.',
                             icon: 'success',
                             confirmButtonColor: '#0F766E'
-                        }).then(function () {
+                        }).then(function() {
                             const url = (data && data.redirect) || ('/elegir-ganador/' + (token || ''));
                             window.location.href = url;
                         });
                     })
-                    .catch(function (e) {
+                    .catch(function(e) {
                         Swal.close();
                         console.error(e);
-                        Swal.fire({ title: 'Error', text: 'Error al confirmar ganadores.', icon: 'error' });
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error al confirmar ganadores.',
+                            icon: 'error'
+                        });
                     });
             });
         }
 
-        document.querySelectorAll('.propuesta-card').forEach(function (card) {
-            card.addEventListener('click', function () {
+        document.querySelectorAll('.propuesta-card').forEach(function(card) {
+            card.addEventListener('click', function() {
                 const np = parseInt(this.dataset.numeroPropuesta, 10);
                 const cid = parseInt(this.dataset.cotizacionId, 10);
                 elegirGanador(np, cid);

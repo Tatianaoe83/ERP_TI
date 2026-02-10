@@ -6,7 +6,7 @@
 </h3>
 
 <div class="content px-3">
-    <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden
+    <div class="rounded-2xl border border-slate-200 bg-slate-50 shadow-sm overflow-hidden
                 dark:border-slate-800 dark:bg-slate-900">
 
         <div class="p-4 border-b border-slate-100 dark:border-slate-800">
@@ -41,7 +41,7 @@
             @else
                 <div class="grid gap-4 lg:grid-cols-2">
                     @foreach ($seleccionadosPorCategoria as $categoria => $items)
-                        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden
+                        <section class="rounded-2xl border border-slate-200 bg-slate-50 shadow-sm overflow-hidden
                                         dark:border-slate-800 dark:bg-slate-900">
                             <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
                                 <div class="flex items-center justify-between gap-3">
@@ -59,7 +59,7 @@
                             <div class="p-4">
                                 <div class="grid gap-2 grid-cols-1 sm:grid-cols-2">
                                     @foreach ($items as $req)
-                                        <div class="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2
+                                        <div class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2
                                                     dark:border-slate-700 dark:bg-slate-800">
                                             <div class="mt-1 flex h-5 w-5 items-center justify-center rounded-md bg-indigo-600">
                                                 <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -77,18 +77,6 @@
                                                         <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-extrabold text-indigo-600
                                                                      dark:bg-indigo-500/10 dark:text-indigo-300">
                                                             Opcional
-                                                        </span>
-                                                    @endif
-
-                                                    @if (!empty($req->realizado))
-                                                        <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-extrabold text-emerald-600
-                                                                     dark:bg-emerald-500/10 dark:text-emerald-300">
-                                                            Realizado
-                                                        </span>
-                                                    @else
-                                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-600
-                                                                     dark:bg-slate-700 dark:text-slate-200">
-                                                            Pendiente
                                                         </span>
                                                     @endif
                                                 </div>

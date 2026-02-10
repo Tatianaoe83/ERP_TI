@@ -27,7 +27,8 @@ class Cotizacion extends Model
         'NombreEquipo',
         'NumeroParte',
         'Cantidad',
-        'Unidad'
+        'Unidad',
+        'CostoEnvio'
     ];
 
     protected $casts = [
@@ -36,7 +37,8 @@ class Cotizacion extends Model
         'Precio' => 'decimal:2',
         'TiempoEntrega' => 'integer',
         'NumeroPropuesta' => 'integer',
-        'Cantidad' => 'integer'
+        'Cantidad' => 'integer',
+        'CostoEnvio' => 'decimal:2'
     ];
 
     /**

@@ -1,13 +1,13 @@
 <div x-data="solicitudesData()">
-    
+
     <div class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-        
+
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
             <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
         </div>
 
         <div wire:poll.15s>
-            
+
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
                 <div class="flex gap-3">
                     <div class="flex-1 max-w-xs">
@@ -21,25 +21,24 @@
                             <option value="Rechazada">Rechazada</option>
                         </select>
                     </div>
-                                     <div class="flex-1 max-w-sm relative">
+                    <div class="flex-1 max-w-sm relative">
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Buscar</label>
                         <div class="relative">
-                            <input 
-                                type="text" 
-                                wire:model.live.debounce.300ms="search" 
-                                placeholder="Buscar por ID, empleado o motivo..." 
-                                class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200"
-                            >
+                            <input
+                                type="text"
+                                wire:model.live.debounce.300ms="search"
+                                placeholder="Buscar por ID, empleado o motivo..."
+                                class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-search text-slate-400"></i>
                             </div>
                         </div>
                     </div>
-                    
+
                     @if($filtroEstatus)
-                        <button wire:click="$set('filtroEstatus', '')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-6">
-                            Limpiar filtro
-                        </button>
+                    <button wire:click="$set('filtroEstatus', '')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-6">
+                        Limpiar filtro
+                    </button>
                     @endif
                 </div>
             </div>
@@ -59,111 +58,114 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-transparent">
-                        
+
                         @forelse ($todasSolicitudes as $solicitud)
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800">
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800">
 
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">#{{ $solicitud->SolicitudID }}</div>
-                                </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-slate-900 dark:text-slate-100">#{{ $solicitud->SolicitudID }}</div>
+                            </td>
 
-                                <td class="px-4 py-3">
-                                    <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->nombreFormateado }}</div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($solicitud->empleadoid->Correo ?? 'N/A', 25) }}</div>
-                                </td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->nombreFormateado }}</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($solicitud->empleadoid->Correo ?? 'N/A', 25) }}</div>
+                            </td>
 
-                                <td class="px-4 py-3">
-                                    <div class="text-sm text-slate-700 dark:text-slate-300">{{ Str::limit($solicitud->Motivo ?? 'N/A', 30) }}</div>
-                                </td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm text-slate-700 dark:text-slate-300">{{ Str::limit($solicitud->Motivo ?? 'N/A', 30) }}</div>
+                            </td>
 
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold {{ $solicitud->colorEstatus }}">
-                                        {{ $solicitud->estatusDisplay }}
-                                    </span>
-                                </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold {{ $solicitud->colorEstatus }}">
+                                    {{ $solicitud->estatusDisplay }}
+                                </span>
+                            </td>
 
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        @if($solicitud->pasoSupervisor)
-                                            @if($solicitud->pasoSupervisor->status === 'approved')
-                                                <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Supervisor: Aprobado"></i>
-                                            @elseif($solicitud->pasoSupervisor->status === 'rejected')
-                                                <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Supervisor: Rechazado"></i>
-                                            @else
-                                                <i class="far fa-circle text-yellow-500 dark:text-yellow-400" title="Supervisor: Pendiente"></i>
-                                            @endif
-                                        @else
-                                            <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Supervisor: Pendiente"></i>
-                                        @endif
-
-                                        @if($solicitud->pasoGerencia)
-                                            @if($solicitud->pasoGerencia->status === 'approved')
-                                                <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Gerencia: Aprobado"></i>
-                                            @elseif($solicitud->pasoGerencia->status === 'rejected')
-                                                <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Gerencia: Rechazado"></i>
-                                            @else
-                                                <i class="far fa-circle text-orange-500 dark:text-orange-400" title="Gerencia: Pendiente"></i>
-                                            @endif
-                                        @else
-                                            <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Gerencia: Esperando"></i>
-                                        @endif
-
-                                        @if($solicitud->pasoAdministracion)
-                                            @if($solicitud->pasoAdministracion->status === 'approved')
-                                                <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Administración: Aprobado"></i>
-                                            @elseif($solicitud->pasoAdministracion->status === 'rejected')
-                                                <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Administración: Rechazado"></i>
-                                            @else
-                                                <i class="far fa-circle text-purple-500 dark:text-purple-400" title="Administración: Pendiente"></i>
-                                            @endif
-                                        @else
-                                            <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Administración: Esperando"></i>
-                                        @endif
-                                    </div>
-                                </td>
-
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    @if($solicitud->cotizaciones && $solicitud->cotizaciones->count() > 0)
-                                        <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->cotizaciones->count() }}/3</span>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    @if($solicitud->pasoSupervisor)
+                                    @if($solicitud->pasoSupervisor->status === 'approved')
+                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Supervisor: Aprobado"></i>
+                                    @elseif($solicitud->pasoSupervisor->status === 'rejected')
+                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Supervisor: Rechazado"></i>
                                     @else
-                                        <span class="text-sm text-slate-400 dark:text-slate-500">0/3</span>
+                                    <i class="far fa-circle text-yellow-500 dark:text-yellow-400" title="Supervisor: Pendiente"></i>
                                     @endif
-                                </td>
+                                    @else
+                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Supervisor: Pendiente"></i>
+                                    @endif
 
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="text-sm text-slate-700 dark:text-slate-300">{{ $solicitud->created_at->format('d/m/Y') }}</div>
-                                </td>
+                                    @if($solicitud->pasoGerencia)
+                                    @if($solicitud->pasoGerencia->status === 'approved')
+                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Gerencia: Aprobado"></i>
+                                    @elseif($solicitud->pasoGerencia->status === 'rejected')
+                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Gerencia: Rechazado"></i>
+                                    @else
+                                    <i class="far fa-circle text-orange-500 dark:text-orange-400" title="Gerencia: Pendiente"></i>
+                                    @endif
+                                    @else
+                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Gerencia: Esperando"></i>
+                                    @endif
 
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <button
-                                            @click="abrirModal({{ $solicitud->SolicitudID }})"
-                                            class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium transition-colors">
-                                            <i class="fas fa-eye mr-1"></i> Ver
-                                        </button>
+                                    @if($solicitud->pasoAdministracion)
+                                    @if($solicitud->pasoAdministracion->status === 'approved')
+                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Administración: Aprobado"></i>
+                                    @elseif($solicitud->pasoAdministracion->status === 'rejected')
+                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Administración: Rechazado"></i>
+                                    @else
+                                    <i class="far fa-circle text-purple-500 dark:text-purple-400" title="Administración: Pendiente"></i>
+                                    @endif
+                                    @else
+                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Administración: Esperando"></i>
+                                    @endif
+                                </div>
+                            </td>
 
-                                        @if($solicitud->puedeCotizar)
-                                            <a href="{{ route('solicitudes.cotizar', $solicitud->SolicitudID) }}"
-                                                class="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium transition-colors no-underline">
-                                                <i class="fas fa-file-invoice-dollar mr-1"></i> Cotizar
-                                            </a>
-                                        @endif
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                @if($solicitud->cotizaciones && $solicitud->cotizaciones->count() > 0)
+                                <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->cotizaciones->count() }}/3</span>
+                                @else
+                                <span class="text-sm text-slate-400 dark:text-slate-500">0/3</span>
+                                @endif
+                            </td>
 
-                                        @if($solicitud->puedeSubirFactura)
-                                            <span class="text-emerald-600 dark:text-emerald-400 text-sm font-medium cursor-default">
-                                                <i class="fas fa-file-invoice mr-1"></i> Factura
-                                            </span>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-sm text-slate-700 dark:text-slate-300">{{ $solicitud->created_at->format('d/m/Y') }}</div>
+                            </td>
+
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <button
+                                        @click="abrirModal({{ $solicitud->SolicitudID }})"
+                                        class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium transition-colors">
+                                        <i class="fas fa-eye mr-1"></i> Ver
+                                    </button>
+
+                                    @if($solicitud->puedeCotizar)
+                                    <a href="{{ route('solicitudes.cotizar', $solicitud->SolicitudID) }}"
+                                        class="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium transition-colors no-underline">
+                                        <i class="fas fa-file-invoice-dollar mr-1"></i> Cotizar
+                                    </a>
+                                    @endif
+
+                                    @if($solicitud->puedeSubirFactura)
+                                    <button
+                                        type="button"
+                                        wire:click="abrirModalAsignacion({{ $solicitud->SolicitudID }})"
+                                        class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 text-sm font-medium transition-colors">
+                                        <i class="fas fa-file-invoice mr-1"></i> Asignacion
+                                    </button>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="8" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                                    <i class="fas fa-inbox text-4xl mb-3 block text-slate-300 dark:text-slate-600"></i>
-                                    <p class="text-lg font-medium">No hay solicitudes registradas</p>
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="8" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                <i class="fas fa-inbox text-4xl mb-3 block text-slate-300 dark:text-slate-600"></i>
+                                <p class="text-lg font-medium">No hay solicitudes registradas</p>
+                            </td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -183,9 +185,9 @@
             class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm overflow-y-auto h-full w-full z-[9999]"
             @click.self="cerrarModal()"
             style="display: none;">
-            
+
             <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-xl rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-                
+
                 <div class="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-slate-700">
                     <h3 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
                         Detalles de Solicitud
@@ -209,7 +211,7 @@
                     </div>
 
                     <div x-show="!cargando && solicitudSeleccionada" style="display: none;">
-                        
+
                         <div class="mb-6">
                             <h4 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
                                 <i class="fas fa-user text-blue-500 dark:text-blue-400"></i>
@@ -265,7 +267,7 @@
                                     <div>
                                         <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Estatus</label>
                                         <p class="text-sm font-semibold"
-                                           :class="{
+                                            :class="{
                                                'text-amber-600 dark:text-amber-400': (solicitudSeleccionada?.estatusDisplay || '') === 'Pendiente',
                                                'text-red-600 dark:text-red-400': (solicitudSeleccionada?.estatusDisplay || '') === 'Rechazada',
                                                'text-sky-600 dark:text-sky-400': (solicitudSeleccionada?.estatusDisplay || '') === 'En revisión',
@@ -273,14 +275,14 @@
                                                'text-blue-600 dark:text-blue-400': (solicitudSeleccionada?.estatusDisplay || '') === 'Cotizaciones Enviadas',
                                                'text-slate-900 dark:text-slate-100': !['Pendiente','Rechazada','En revisión','Aprobada','Cotizaciones Enviadas'].includes(solicitudSeleccionada?.estatusDisplay || '')
                                            }"
-                                           x-text="solicitudSeleccionada?.estatusDisplay || 'Pendiente'"></p>
+                                            x-text="solicitudSeleccionada?.estatusDisplay || 'Pendiente'"></p>
                                     </div>
                                     <div>
                                         <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Fecha de Creación</label>
                                         <p class="text-sm text-slate-900 dark:text-slate-200" x-text="solicitudSeleccionada?.fechaCreacion || 'N/A'"></p>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mt-4 flex flex-wrap gap-2" x-show="solicitudSeleccionada?.puedeCotizar && solicitudSeleccionada?.estatusDisplay !== 'Aprobada' && solicitudSeleccionada?.estatusDisplay !== 'Cotizaciones Enviadas'">
                                     <a :href="'/solicitudes/' + (solicitudSeleccionada?.SolicitudID || '') + '/cotizar'"
                                         class="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-600 text-white text-sm font-medium rounded-lg transition shadow-sm no-underline">
@@ -299,7 +301,7 @@
                             <div class="space-y-4">
                                 <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="index">
                                     <div class="p-4 rounded-lg border-l-4 bg-slate-50 dark:bg-slate-800 shadow-sm border-t border-r border-b border-slate-200 dark:border-slate-700"
-                                         :class="{
+                                        :class="{
                                              'border-l-green-500': paso.status === 'approved',
                                              'border-l-red-500': paso.status === 'rejected',
                                              'border-l-yellow-500': paso.status === 'pending'
@@ -307,7 +309,7 @@
                                         <div class="flex items-center justify-between mb-2">
                                             <div class="flex items-center gap-2">
                                                 <i class="fas"
-                                                   :class="{
+                                                    :class="{
                                                        'fa-check-circle text-green-500 dark:text-green-400': paso.status === 'approved',
                                                        'fa-times-circle text-red-500 dark:text-red-400': paso.status === 'rejected',
                                                        'fa-circle text-yellow-500 dark:text-yellow-400': paso.status === 'pending'
@@ -315,12 +317,12 @@
                                                 <span class="font-semibold text-slate-900 dark:text-slate-100" x-text="paso.stageLabel"></span>
                                             </div>
                                             <span class="text-xs px-2 py-1 rounded font-medium"
-                                                  :class="{
+                                                :class="{
                                                       'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300': paso.status === 'approved',
                                                       'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': paso.status === 'rejected',
                                                       'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': paso.status === 'pending'
                                                   }"
-                                                  x-text="paso.statusLabel"></span>
+                                                x-text="paso.statusLabel"></span>
                                         </div>
                                         <div class="text-sm text-slate-600 dark:text-slate-400 space-y-1">
                                             <p><span class="font-medium text-slate-700 dark:text-slate-300">Aprobador asignado:</span> <span x-text="paso.approverNombre || 'N/A'"></span></p>
@@ -369,12 +371,12 @@
                                                         <div>
                                                             <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Estatus</label>
                                                             <p class="text-sm font-medium"
-                                                               :class="{
+                                                                :class="{
                                                                    'text-emerald-600 dark:text-emerald-400': cotizacion.Estatus === 'Seleccionada',
                                                                    'text-red-600 dark:text-red-400': cotizacion.Estatus === 'Rechazada',
                                                                    'text-slate-600 dark:text-slate-400': cotizacion.Estatus === 'Pendiente'
                                                                }"
-                                                               x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : (cotizacion.Estatus || '—')"></p>
+                                                                x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : (cotizacion.Estatus || '—')"></p>
                                                         </div>
                                                     </div>
                                                     <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
@@ -394,5 +396,405 @@
             </div>
         </div>
     </template>
+
+    @if($modalAsignacionAbierto)
+    <div
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
+        wire:click.self="closeAsignacion"
+        wire:keydown.escape.window="closeAsignacion">
+
+        <div class="relative w-full max-w-6xl mx-4 bg-slate-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden">
+
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                            Asignación y Provisión de Activos
+                        </h3>
+
+                        @if($asignacionSolicitudId)
+                        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold
+                             bg-sky-50 text-sky-700 border border-sky-100
+                             dark:bg-sky-900/25 dark:text-sky-200 dark:border-sky-800/60">
+                            <span class="text-sky-700/70 dark:text-sky-200/70">Solicitud</span>
+                            <span class="font-bold">#{{ $asignacionSolicitudId }}</span>
+                        </span>
+                        @endif
+                    </div>
+
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Defina responsables técnicos por ítem y complete checklist.
+                    </p>
+                </div>
+
+                <button type="button"
+                    class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+                    wire:click="closeAsignacion"
+                    aria-label="Cerrar">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            @php
+            $proveedoresAgrupados = collect($propuestasAsignacion)->groupBy('proveedor')->filter(fn($g) => $g->count() > 1);
+            $tieneProveedoresRepetidos = $proveedoresAgrupados->isNotEmpty();
+            @endphp
+
+            @if($tieneProveedoresRepetidos)
+            <div class="px-6 py-4 bg-slate-50 border-b border-blue-100/60 dark:border-blue-800/30 dark:bg-slate-800/50 dark:text-slate-200">
+                <div class="flex flex-row items-start gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                Cualquier propuesta que comparta el mismo proveedor se adjuntará automáticamente la misma factura. Proveedores con múltiples propuestas:
+                            </span>
+                            @foreach($proveedoresAgrupados->keys() as $proveedor)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-800/50 shadow-sm">
+                                <div class="w-2 h-2 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600"></div>
+                                <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $proveedor }}</span>
+                            </span>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+                @if(empty($propuestasAsignacion))
+                <div class="py-10 text-center text-slate-500 dark:text-slate-400">
+                    No hay datos para asignación.
+                </div>
+                @else
+
+                @foreach($propuestasAsignacion as $pIndex => $p)
+                <div class="group rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-gradient-to-b from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-800/30 shadow-sm hover:shadow-md transition-all duration-300"
+                    wire:key="prop-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $p['cotizacionId'] ?? 'x' }}">
+
+                    <!-- Header del producto -->
+                    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r rounded-t-2xl from-slate-50/80 to-white dark:from-slate-800/50 dark:to-slate-900">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="min-w-0">
+                                    <h4 class="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">
+                                        {{ $p['nombreEquipo'] ?? 'Sin nombre' }}
+                                    </h4>
+                                    <div class="flex items-center gap-3 mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <i class="fas fa-building text-xs"></i>
+                                            {{ $p['proveedor'] ?? 'Sin proveedor' }}
+                                        </span>
+                                        <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <i class="fas fa-boxes text-xs"></i>
+                                            {{ (int)($p['itemsTotal'] ?? 0) }} unidades
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
+                                <span class="text-xs font-medium uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                    Precio unitario
+                                </span>
+                                <span class="text-xl font-bold text-emerald-700 dark:text-emerald-300">
+                                    ${{ number_format((float)($p['precioUnitario'] ?? 0), 2, '.', ',') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Encabezado de columnas -->
+                    <div class="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-slate-100/60 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
+                        <div class="col-span-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">#</div>
+                        <div class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Descripción</div>
+                        <div class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Factura</div>
+                        <div class="col-span-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Fecha de entrega</div>
+                        <div class="col-span-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Usuario final</div>
+                    </div>
+
+                    <!-- Unidades -->
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800/60">
+                        @foreach(($p['unidades'] ?? []) as $uIndex => $u)
+                        <div class="px-6 py-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors duration-200 relative z-[{{ 100 - $uIndex }}]"
+                            wire:key="unit-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}-{{ $u['unidadIndex'] ?? ($uIndex+1) }}">
+
+                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+                                <!-- Número de unidad -->
+                                <div class="col-span-1 flex lg:justify-center">
+                                    <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold shadow-inner">
+                                        {{ $u['unidadIndex'] ?? ($uIndex + 1) }}
+                                    </span>
+                                </div>
+
+                                <!-- Descripción del item -->
+                                <div class="col-span-2">
+                                    <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Descripción</label>
+                                    <div class="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                                        {{ $p['nombreEquipo'] ?? 'Producto' }}
+                                    </div>
+                                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Unidad {{ $u['unidadIndex'] ?? ($uIndex + 1) }}
+                                    </div>
+                                </div>
+
+                                <!-- Factura -->
+                                <div class="col-span-2">
+                                    <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Factura</label>
+                                    @php
+                                    $facturaPath = $u['factura_path'] ?? null;
+                                    $hasPath = !empty($facturaPath);
+                                    $hasNew = isset($facturas[$pIndex][$uIndex]) && $facturas[$pIndex][$uIndex];
+                                    $fileLabel = $hasPath ? basename($facturaPath) : null;
+
+                                    $proveedorUnico = collect($propuestasAsignacion)->pluck('proveedor')->unique();
+                                    $tieneProveedorUnico = $proveedorUnico->count() === 1;
+                                    @endphp
+
+                                    <div class="flex items-center gap-2">
+                                        <label class="group/btn relative inline-flex items-center gap-2.5 h-11 px-4 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200
+                                              {{ ($hasNew || $hasPath)
+                                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400 dark:bg-emerald-900/20 dark:border-emerald-700/50 dark:text-emerald-300 dark:hover:bg-emerald-900/30'
+                                                    : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500' }}">
+                                            <input type="file" class="hidden" accept="application/pdf" wire:model="facturas.{{ $pIndex }}.{{ $uIndex }}">
+                                            <i class="fas {{ ($hasNew || $hasPath) ? 'fa-check-circle' : 'fa-cloud-upload-alt' }} text-base transition-transform group-hover/btn:scale-110"></i>
+                                            <span class="text-sm font-medium truncate max-w-[7rem]">
+                                                {{ ($hasNew || $hasPath) ? ($fileLabel ?: 'Adjunto') : 'Subir PDF' }}
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    @error("facturas.$pIndex.$uIndex")
+                                    <p class="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                                    </p>
+                                    @enderror
+
+                                    <div wire:loading wire:target="facturas.{{ $pIndex }}.{{ $uIndex }}" class="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        {{ $tieneProveedorUnico ? 'Aplicando a todas las unidades...' : 'Subiendo archivo...' }}
+                                    </div>
+                                </div>
+
+                                <!-- Fecha de entrega -->
+                                <div class="col-span-3">
+                                    <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Fecha de entrega</label>
+                                    <div class="relative">
+
+                                        <input
+                                            type="date"
+                                            wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.fecha_entrega"
+                                            class="h-11 w-full pl-3 pr-4 text-sm border-2 border-slate-200 rounded-xl bg-slate-50 shadow-sm
+                                                   focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all
+                                                   dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:focus:border-blue-400">
+                                    </div>
+
+                                    @error("propuestasAsignacion.$pIndex.unidades.$uIndex.fecha_entrega")
+                                    <p class="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                                        <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                                    </p>
+                                    @enderror
+                                </div>
+
+                                <!-- Usuario final -->
+                                <div class="col-span-4 relative">
+                                    <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">
+                                        Usuario final
+                                    </label>
+
+                                    <div class="relative">
+                                        <input
+                                            type="text"
+                                            wire:model.live.debounce.250ms="usuarioSearch.{{ $pIndex }}.{{ $uIndex }}"
+                                            autocomplete="off"
+                                            class="h-11 w-full pl-7 pr-4 text-sm border-2 border-slate-200 rounded-xl bg-slate-50 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all relative z-20 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:focus:border-blue-400"
+                                            placeholder="Buscar empleado...">
+
+                                        @php
+                                        $opts = $usuarioOptions[$pIndex][$uIndex] ?? [];
+                                        @endphp
+
+                                        @if(!empty($opts))
+                                        <div
+                                            class="absolute top-full left-0 right-0 z-[99999] mt-1 max-h-64 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 shadow-2xl overflow-y-auto">
+                                            @foreach($opts as $opt)
+                                            <button
+                                                type="button"
+                                                wire:click.prevent="seleccionarEmpleado({{ $pIndex }}, {{ $uIndex }}, {{ (int) $opt['id'] }})"
+                                                class="w-full px-3 py-2.5 text-left hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0">
+                                                <div class="text-sm font-medium text-slate-900 dark:text-slate-100 leading-tight truncate">
+                                                    {{ $opt['name'] }}
+                                                </div>
+                                                <div class="text-xs text-slate-500 dark:text-slate-400 leading-tight truncate mt-0.5">
+                                                    {{ $opt['correo'] }}
+                                                </div>
+                                            </button>
+                                            @endforeach
+                                        </div>
+                                        @endif
+
+                                    </div>
+
+                                    <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 text-xs dark:from-slate-800 dark:to-slate-800/50 dark:border-slate-700">
+                                        <i class="fas fa-sitemap text-slate-400 dark:text-slate-500"></i>
+                                        <span class="text-slate-500 dark:text-slate-400">Departamento:</span>
+                                        <span class="font-semibold text-slate-700 dark:text-slate-200">
+                                            {{ $u['departamento_nombre'] ?? '-' }}
+                                        </span>
+                                    </div>
+
+                                    @error("propuestasAsignacion.$pIndex.unidades.$uIndex.empleado_id")
+                                    <p class="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ $message }}
+                                    </p>
+                                    @enderror
+                                </div>
+
+                            </div>
+
+                            @php
+                            $hasChecklistItems = !empty($u['checklist'] ?? []);
+                            @endphp
+
+                            @if($hasChecklistItems)
+                            <div
+                                class="group/details mt-5"
+                                x-data="{ open: false }"
+                                wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
+                                <button
+                                    type="button"
+                                    @click="open = !open"
+                                    class="w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-gradient-to-r from-slate-100/80 to-slate-50/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-slate-700/60 hover:from-slate-100 hover:to-slate-50 dark:hover:from-slate-800 dark:hover:to-slate-800/50 cursor-pointer transition-all duration-200">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-md shadow-purple-500/20">
+                                            <i class="fas fa-tasks text-sm"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-sm font-bold text-slate-800 dark:text-slate-200">Checklist de configuración</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-3">
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                            <i class="fas fa-chevron-down text-xs text-slate-500 dark:text-slate-400 transition-transform duration-300" :class="{ 'rotate-180': open }"></i>
+                                        </span>
+                                    </div>
+                                </button>
+
+                                <div x-show="open" x-transition class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    @foreach(($u['checklist'] ?? []) as $catKey => $items)
+                                    @if(!empty($items))
+                                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                        <div class="px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b border-slate-100 dark:border-slate-800">
+                                            <div class="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+                                                {{ $catKey }}
+                                            </div>
+                                        </div>
+
+                                        <div class="p-4 space-y-3">
+                                            @foreach($items as $idx => $item)
+                                            <div class="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                                <label class="relative flex items-center justify-center cursor-pointer mt-0.5">
+                                                    <input
+                                                        type="checkbox"
+                                                        wire:model.live="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.realizado"
+                                                        class="peer sr-only">
+
+                                                    <div
+                                                        class="relative w-5 h-5 rounded-md border-2 border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800 peer-focus:ring-2 peer-focus:ring-green-500/20 peer-checked:bg-green-500 peer-checked:border-green-500 transition-all duration-200 flex items-center justify-center">
+
+                                                        <svg
+                                                            class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+                                                            viewBox="0 0 20 20"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            stroke-width="3"
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round">
+                                                            <polyline points="4 11 8 15 16 6"></polyline>
+                                                        </svg>
+                                                    </div>
+                                                </label>
+
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-sm text-slate-800 dark:text-slate-200">
+                                                        {{ $item['nombre'] ?? '—' }}
+                                                    </div>
+                                                </div>
+
+                                                <input
+                                                    type="text"
+                                                    wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.responsable"
+                                                    readonly
+                                                    class="h-8 w-24 px-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50
+                                               dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300
+                                               text-center font-medium"
+                                                    placeholder="—">
+                                            </div>
+
+                                            @error("propuestasAsignacion.$pIndex.unidades.$uIndex.checklist.$catKey.$idx.responsable")
+                                            <p class="text-xs text-red-600 dark:text-red-400 px-2">{{ $message }}</p>
+                                            @enderror
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+
+
+                        </div>
+                        @endforeach
+                    </div>
+
+                </div>
+                @endforeach
+
+                @endif
+            </div>
+
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3 bg-slate-50 dark:bg-slate-900">
+                <button
+                    type="button"
+                    wire:click="closeAsignacion"
+                    class="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700"
+                    wire:loading.attr="disabled">
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    wire:click="guardarAsignacion"
+                    class="px-4 py-2 text-sm rounded-lg bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600"
+                    wire:loading.attr="disabled">
+                    Guardar avance
+                </button>
+
+                <button
+                    type="button"
+                    wire:click="finalizarAsignacion"
+                    class="px-4 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                    wire:loading.attr="disabled">
+                    Finalizar
+                </button>
+            </div>
+
+            <div wire:loading wire:target="guardarAsignacion,finalizarAsignacion" class="absolute inset-0 bg-white/60 dark:bg-slate-900/60 flex items-center justify-center z-50">
+                <div class="flex flex-col items-center gap-3">
+                    <i class="fas fa-spinner fa-spin text-3xl text-slate-600 dark:text-slate-300"></i>
+                    <div class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        Guardando...
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    @endif
 
 </div>

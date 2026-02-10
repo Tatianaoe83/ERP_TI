@@ -31,7 +31,7 @@ class TicketsController extends Controller
         $anio = $request->input('anio', now()->year);
 
         // Si se solicita un mes específico para productividad, filtrar tickets
-        $ticketsQuery = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'chat' => function($query) {
+        $ticketsQuery = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }]);
 
@@ -63,8 +63,8 @@ class TicketsController extends Controller
             'pasoAdministracion',
             'cotizaciones'
         ])
-        ->orderBy('created_at', 'desc')
-        ->get();
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // Estructurar las solicitudes para compatibilidad con la vista
         // La vista hace collect($solicitudesStatus)->flatten()->unique('SolicitudID')
@@ -81,7 +81,7 @@ class TicketsController extends Controller
     {
         // Tickets resueltos en los últimos 30 días
         $fechaInicio = now()->subDays(30);
-        $ticketsUltimos30Dias = $tickets->filter(function($ticket) use ($fechaInicio) {
+        $ticketsUltimos30Dias = $tickets->filter(function ($ticket) use ($fechaInicio) {
             return $ticket->created_at >= $fechaInicio;
         });
 
@@ -96,43 +96,43 @@ class TicketsController extends Controller
         $resueltosPorDia = [];
         for ($i = 29; $i >= 0; $i--) {
             $fecha = now()->subDays($i)->format('Y-m-d');
-            $resueltosPorDia[$fecha] = $tickets->filter(function($ticket) use ($fecha) {
-                return $ticket->Estatus === 'Cerrado' && 
-                       $ticket->FechaFinProgreso && 
-                       $ticket->FechaFinProgreso->format('Y-m-d') === $fecha;
+            $resueltosPorDia[$fecha] = $tickets->filter(function ($ticket) use ($fecha) {
+                return $ticket->Estatus === 'Cerrado' &&
+                    $ticket->FechaFinProgreso &&
+                    $ticket->FechaFinProgreso->format('Y-m-d') === $fecha;
             })->count();
         }
 
         // Tiempo promedio de resolución (solo tickets cerrados)
-        $ticketsCerrados = $tickets->filter(function($ticket) {
+        $ticketsCerrados = $tickets->filter(function ($ticket) {
             return $ticket->Estatus === 'Cerrado' && $ticket->FechaInicioProgreso && $ticket->FechaFinProgreso;
         });
-        
+
         $tiempoPromedioResolucion = 0;
         if ($ticketsCerrados->count() > 0) {
-            $sumaTiempos = $ticketsCerrados->sum(function($ticket) {
+            $sumaTiempos = $ticketsCerrados->sum(function ($ticket) {
                 return $ticket->tiempo_resolucion ?? 0;
             });
             $tiempoPromedioResolucion = round($sumaTiempos / $ticketsCerrados->count(), 2);
         }
 
         // Tiempo promedio de respuesta (tickets en progreso)
-        $ticketsEnProgreso = $tickets->filter(function($ticket) {
+        $ticketsEnProgreso = $tickets->filter(function ($ticket) {
             return $ticket->Estatus === 'En progreso' && $ticket->FechaInicioProgreso;
         });
-        
+
         $tiempoPromedioRespuesta = 0;
         if ($ticketsEnProgreso->count() > 0) {
-            $sumaTiempos = $ticketsEnProgreso->sum(function($ticket) {
+            $sumaTiempos = $ticketsEnProgreso->sum(function ($ticket) {
                 return $ticket->tiempo_respuesta ?? 0;
             });
             $tiempoPromedioRespuesta = round($sumaTiempos / $ticketsEnProgreso->count(), 2);
         }
 
         // Tickets por responsable TI
-        $ticketsPorResponsable = $tickets->filter(function($ticket) {
+        $ticketsPorResponsable = $tickets->filter(function ($ticket) {
             return $ticket->ResponsableTI !== null;
-        })->groupBy('ResponsableTI')->map(function($grupo) {
+        })->groupBy('ResponsableTI')->map(function ($grupo) {
             $responsable = $grupo->first()->responsableTI;
             return [
                 'nombre' => $responsable ? $responsable->NombreEmpleado : 'Sin asignar',
@@ -149,15 +149,15 @@ class TicketsController extends Controller
         $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($tickets);
 
         // Tickets por prioridad
-        $ticketsPorPrioridad = $tickets->groupBy('Prioridad')->map(function($grupo) {
+        $ticketsPorPrioridad = $tickets->groupBy('Prioridad')->map(function ($grupo) {
             return $grupo->count();
         });
 
         // Tickets por clasificación (solo los que están en progreso o cerrados)
-        $ticketsEnProgresoYCerrados = $tickets->filter(function($ticket) {
+        $ticketsEnProgresoYCerrados = $tickets->filter(function ($ticket) {
             return $ticket->Estatus === 'En progreso' || $ticket->Estatus === 'Cerrado';
         });
-        $ticketsPorClasificacion = $ticketsEnProgresoYCerrados->groupBy('Clasificacion')->map(function($grupo) {
+        $ticketsPorClasificacion = $ticketsEnProgresoYCerrados->groupBy('Clasificacion')->map(function ($grupo) {
             return $grupo->count();
         });
 
@@ -167,16 +167,16 @@ class TicketsController extends Controller
             $semanaInicio = now()->subWeeks($i)->startOfWeek();
             $semanaFin = now()->subWeeks($i)->endOfWeek();
             $semanaLabel = $semanaInicio->format('d/m') . ' - ' . $semanaFin->format('d/m');
-            
+
             $tendenciasSemanales[$semanaLabel] = [
-                'creados' => $tickets->filter(function($ticket) use ($semanaInicio, $semanaFin) {
+                'creados' => $tickets->filter(function ($ticket) use ($semanaInicio, $semanaFin) {
                     return $ticket->created_at >= $semanaInicio && $ticket->created_at <= $semanaFin;
                 })->count(),
-                'resueltos' => $tickets->filter(function($ticket) use ($semanaInicio, $semanaFin) {
-                    return $ticket->Estatus === 'Cerrado' && 
-                           $ticket->FechaFinProgreso && 
-                           $ticket->FechaFinProgreso >= $semanaInicio && 
-                           $ticket->FechaFinProgreso <= $semanaFin;
+                'resueltos' => $tickets->filter(function ($ticket) use ($semanaInicio, $semanaFin) {
+                    return $ticket->Estatus === 'Cerrado' &&
+                        $ticket->FechaFinProgreso &&
+                        $ticket->FechaFinProgreso >= $semanaInicio &&
+                        $ticket->FechaFinProgreso <= $semanaFin;
                 })->count(),
             ];
         }
@@ -210,7 +210,7 @@ class TicketsController extends Controller
         $metricas = [];
 
         foreach ($empleados as $empleado) {
-            $ticketsEmpleado = $tickets->filter(function($ticket) use ($empleado) {
+            $ticketsEmpleado = $tickets->filter(function ($ticket) use ($empleado) {
                 return $ticket->ResponsableTI == $empleado->EmpleadoID;
             });
 
@@ -224,21 +224,21 @@ class TicketsController extends Controller
             $pendientes = $ticketsEmpleado->where('Estatus', 'Pendiente');
 
             // Tiempo promedio de resolución (solo tickets cerrados con fechas)
-            $ticketsConResolucion = $cerrados->filter(function($ticket) {
+            $ticketsConResolucion = $cerrados->filter(function ($ticket) {
                 return $ticket->FechaInicioProgreso && $ticket->FechaFinProgreso;
             });
 
             $tiempoPromedioResolucion = 0;
             if ($ticketsConResolucion->count() > 0) {
-                $sumaTiempos = $ticketsConResolucion->sum(function($ticket) {
+                $sumaTiempos = $ticketsConResolucion->sum(function ($ticket) {
                     return $ticket->tiempo_resolucion ?? 0;
                 });
                 $tiempoPromedioResolucion = round($sumaTiempos / $ticketsConResolucion->count(), 2);
             }
 
             // Tasa de cierre
-            $tasaCierre = $ticketsEmpleado->count() > 0 
-                ? round(($cerrados->count() / $ticketsEmpleado->count()) * 100, 1) 
+            $tasaCierre = $ticketsEmpleado->count() > 0
+                ? round(($cerrados->count() / $ticketsEmpleado->count()) * 100, 1)
                 : 0;
 
             // Tickets por mes (últimos 6 meses)
@@ -247,27 +247,27 @@ class TicketsController extends Controller
                 $mesInicio = now()->subMonths($i)->startOfMonth();
                 $mesFin = now()->subMonths($i)->endOfMonth();
                 $mesLabel = $mesInicio->format('M Y');
-                
+
                 $ticketsPorMes[$mesLabel] = [
-                    'total' => $ticketsEmpleado->filter(function($ticket) use ($mesInicio, $mesFin) {
+                    'total' => $ticketsEmpleado->filter(function ($ticket) use ($mesInicio, $mesFin) {
                         return $ticket->created_at >= $mesInicio && $ticket->created_at <= $mesFin;
                     })->count(),
-                    'cerrados' => $ticketsEmpleado->filter(function($ticket) use ($mesInicio, $mesFin) {
-                        return $ticket->Estatus === 'Cerrado' && 
-                               $ticket->FechaFinProgreso && 
-                               $ticket->FechaFinProgreso >= $mesInicio && 
-                               $ticket->FechaFinProgreso <= $mesFin;
+                    'cerrados' => $ticketsEmpleado->filter(function ($ticket) use ($mesInicio, $mesFin) {
+                        return $ticket->Estatus === 'Cerrado' &&
+                            $ticket->FechaFinProgreso &&
+                            $ticket->FechaFinProgreso >= $mesInicio &&
+                            $ticket->FechaFinProgreso <= $mesFin;
                     })->count(),
                 ];
             }
 
             // Tickets por prioridad
-            $ticketsPorPrioridad = $ticketsEmpleado->groupBy('Prioridad')->map(function($grupo) {
+            $ticketsPorPrioridad = $ticketsEmpleado->groupBy('Prioridad')->map(function ($grupo) {
                 return $grupo->count();
             });
 
             // Tickets por clasificación
-            $ticketsPorClasificacion = $ticketsEmpleado->groupBy('Clasificacion')->map(function($grupo) {
+            $ticketsPorClasificacion = $ticketsEmpleado->groupBy('Clasificacion')->map(function ($grupo) {
                 return $grupo->count();
             });
 
@@ -289,7 +289,7 @@ class TicketsController extends Controller
         }
 
         // Ordenar por total de tickets descendente
-        usort($metricas, function($a, $b) {
+        usort($metricas, function ($a, $b) {
             return $b['total'] <=> $a['total'];
         });
 
@@ -316,7 +316,7 @@ class TicketsController extends Controller
                     'Prioridad' => $ticket->Prioridad,
                     'Estatus' => $ticket->Estatus,
                     'Clasificacion' => $ticket->Clasificacion,
-                    
+
                     // 👇👇👇 AGREGA ESTA LÍNEA AQUÍ 👇👇👇
                     'Resolucion' => $ticket->Resolucion,
                     // 👆👆👆 ----------------------- 👆👆👆
@@ -326,14 +326,14 @@ class TicketsController extends Controller
                     'SubtipoID' => $ticket->SubtipoID,
                     'TertipoID' => $ticket->TertipoID,
                     'imagen' => $ticket->imagen,
-                    
+
                     // Nombre y Correo sí vienen del empleado (usamos operador ternario por seguridad)
                     'empleado' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin asignar',
                     'correo' => $ticket->empleado ? $ticket->empleado->Correo : '',
-                    
+
                     // Numero y Anydesk vienen directo de la tabla TICKETS
-                    'numero' => $ticket->Numero, 
-                    'anydesk' => $ticket->CodeAnyDesk, 
+                    'numero' => $ticket->Numero,
+                    'anydesk' => $ticket->CodeAnyDesk,
                 ]
             ]);
         } catch (\Exception $e) {
@@ -344,7 +344,7 @@ class TicketsController extends Controller
         }
     }
 
-public function update(Request $request)
+    public function update(Request $request)
     {
         try {
             $ticketId = $request->input('ticketId');
@@ -374,7 +374,7 @@ public function update(Request $request)
             $transicionesValidas = [
                 'Pendiente' => ['En progreso'],
                 'En progreso' => ['Cerrado'],
-                'Cerrado' => [] 
+                'Cerrado' => []
             ];
 
             if ($nuevoEstatus !== $estatusAnterior) {
@@ -445,7 +445,7 @@ public function update(Request $request)
             if ($request->has('tipoID')) {
                 $tipoID = $request->input('tipoID') ? (int)$request->input('tipoID') : null;
                 $ticket->TipoID = $tipoID;
-                
+
                 if (!$request->has('subtipoID') || !$request->input('subtipoID')) {
                     if ($tipoID) {
                         $tipoticket = Tipoticket::find($tipoID);
@@ -520,11 +520,11 @@ public function update(Request $request)
     {
         try {
             $ticketId = $request->input('ticket_id');
-            
+
             $messages = TicketChat::where('ticket_id', $ticketId)
                 ->orderBy('created_at', 'asc')
                 ->get()
-                ->map(function($message) {
+                ->map(function ($message) {
                     return [
                         'id' => $message->id,
                         'mensaje' => $message->mensaje,
@@ -544,7 +544,6 @@ public function update(Request $request)
                 'success' => true,
                 'messages' => $messages
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error obteniendo mensajes del chat: " . $e->getMessage());
             return response()->json([
@@ -562,19 +561,19 @@ public function update(Request $request)
         try {
             $ticketId = $request->input('ticket_id');
             $ultimoMensajeId = $request->input('ultimo_mensaje_id', 0);
-            
+
             if (!$ticketId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ticket ID es requerido'
                 ], 400);
             }
-            
+
             // Obtener el último mensaje del ticket
             $ultimoMensaje = TicketChat::where('ticket_id', $ticketId)
                 ->orderBy('id', 'desc')
                 ->first();
-            
+
             if (!$ultimoMensaje) {
                 return response()->json([
                     'success' => true,
@@ -582,17 +581,16 @@ public function update(Request $request)
                     'ultimo_mensaje_id' => 0
                 ]);
             }
-            
+
             // Verificar si hay mensajes nuevos comparando IDs
             $tieneNuevos = $ultimoMensaje->id > (int)$ultimoMensajeId;
-            
+
             return response()->json([
                 'success' => true,
                 'tiene_nuevos' => $tieneNuevos,
                 'ultimo_mensaje_id' => $ultimoMensaje->id,
                 'total_mensajes' => TicketChat::where('ticket_id', $ticketId)->count()
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error verificando mensajes nuevos: " . $e->getMessage());
             return response()->json([
@@ -655,7 +653,6 @@ public function update(Request $request)
                     'message' => 'Error enviando respuesta por correo'
                 ], 500);
             }
-
         } catch (\Exception $e) {
             Log::error("Error enviando respuesta: " . $e->getMessage());
             return response()->json([
@@ -704,7 +701,6 @@ public function update(Request $request)
                     'created_at' => $chatMessage->created_at->format('d/m/Y H:i:s')
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error agregando mensaje interno: " . $e->getMessage());
             return response()->json([
@@ -730,7 +726,6 @@ public function update(Request $request)
                 'success' => true,
                 'message' => 'Mensajes marcados como leídos'
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error marcando mensajes como leídos: " . $e->getMessage());
             return response()->json([
@@ -770,14 +765,14 @@ public function update(Request $request)
     {
         try {
             $tipoId = $request->input('tipo_id');
-            
+
             if (!$tipoId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ID de tipo requerido'
                 ], 400);
             }
-            
+
             // Filtrar subtipos por el TipoID seleccionado
             $subtipos = Subtipos::select('SubtipoID', 'NombreSubtipo', 'TipoID')
                 ->where('TipoID', $tipoId)
@@ -804,14 +799,14 @@ public function update(Request $request)
     {
         try {
             $subtipoId = $request->input('subtipo_id');
-            
+
             if (!$subtipoId) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ID de subtipo requerido'
                 ], 400);
             }
-            
+
             // Filtrar tertipos por el SubtipoID seleccionado
             $tertipos = Tertipos::select('TertipoID', 'NombreTertipo', 'SubtipoID')
                 ->where('SubtipoID', $subtipoId)
@@ -838,7 +833,7 @@ public function update(Request $request)
     {
         try {
             $ticketId = $request->input('ticket_id');
-            
+
             if (!$ticketId) {
                 return response()->json([
                     'success' => false,
@@ -864,7 +859,7 @@ public function update(Request $request)
                 $mensajes = TicketChat::where('ticket_id', $ticketId)
                     ->orderBy('created_at', 'asc')
                     ->get()
-                    ->map(function($message) {
+                    ->map(function ($message) {
                         return [
                             'id' => $message->id,
                             'mensaje' => $message->mensaje,
@@ -892,7 +887,6 @@ public function update(Request $request)
                     'message' => 'Error sincronizando correos'
                 ], 500);
             }
-
         } catch (\Exception $e) {
             Log::error("Error sincronizando correos: " . $e->getMessage());
             return response()->json([
@@ -914,15 +908,15 @@ public function update(Request $request)
                 ->get();
 
             $tiempos = [];
-            
+
             foreach ($ticketsEnProgreso as $ticket) {
                 $tiempoInfo = null;
-                
+
                 if ($ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
                     $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
                     $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
                     $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
-                    
+
                     $tiempoInfo = [
                         'transcurrido' => round($tiempoTranscurrido, 1),
                         'estimado' => round($tiempoEstimadoHoras, 1),
@@ -930,7 +924,7 @@ public function update(Request $request)
                         'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
                     ];
                 }
-                
+
                 $tiempos[$ticket->TicketID] = $tiempoInfo;
             }
 
@@ -954,7 +948,7 @@ public function update(Request $request)
     {
         try {
             $ticketId = $request->input('ticket_id');
-            
+
             if (!$ticketId) {
                 return response()->json([
                     'success' => false,
@@ -984,7 +978,6 @@ public function update(Request $request)
                 'success' => true,
                 'estadisticas' => $estadisticas
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error obteniendo estadísticas de correos: " . $e->getMessage());
             return response()->json([
@@ -1001,7 +994,7 @@ public function update(Request $request)
     {
         try {
             $diagnostico = [];
-            
+
             // Verificar configuración SMTP
             $smtpConfig = [
                 'host' => config('mail.mailers.smtp.host'),
@@ -1010,7 +1003,7 @@ public function update(Request $request)
                 'encryption' => config('mail.mailers.smtp.encryption'),
             ];
             $diagnostico['smtp'] = $smtpConfig;
-            
+
             // Verificar configuración IMAP
             $imapConfig = [
                 'host' => config('mail.imap.host', 'proser.com.mx'),
@@ -1020,19 +1013,19 @@ public function update(Request $request)
                 'servidor' => 'proser.com.mx (Personalizado)',
             ];
             $diagnostico['imap'] = $imapConfig;
-            
+
             // Probar conexión IMAP
             try {
                 $imapService = new \App\Services\ImapEmailReceiver();
                 $connection = $imapService->conectarIMAP();
-                
+
                 if ($connection) {
                     $diagnostico['imap_connection'] = 'success';
-                    
+
                     // Probar obtener correos
                     $emails = imap_search($connection, 'UNSEEN');
                     $diagnostico['correos_no_leidos'] = $emails ? count($emails) : 0;
-                    
+
                     imap_close($connection);
                 } else {
                     $diagnostico['imap_connection'] = 'failed';
@@ -1041,7 +1034,7 @@ public function update(Request $request)
             } catch (\Exception $e) {
                 $diagnostico['imap_connection'] = 'error: ' . $e->getMessage();
             }
-            
+
             // Verificar correos en la base de datos
             $ticketId = $request->input('ticket_id');
             if ($ticketId) {
@@ -1053,12 +1046,11 @@ public function update(Request $request)
                     'correos' => $mensajes->where('es_correo', true)->count(),
                 ];
             }
-            
+
             return response()->json([
                 'success' => true,
                 'diagnostico' => $diagnostico
             ]);
-            
         } catch (\Exception $e) {
             Log::error("Error en diagnóstico: " . $e->getMessage());
             return response()->json([
@@ -1113,7 +1105,7 @@ public function update(Request $request)
             $mensajes = TicketChat::where('ticket_id', $ticketId)
                 ->orderBy('created_at', 'asc')
                 ->get()
-                ->map(function($message) {
+                ->map(function ($message) {
                     return [
                         'id' => $message->id,
                         'mensaje' => $message->mensaje,
@@ -1134,7 +1126,6 @@ public function update(Request $request)
                 'message' => 'Respuesta agregada exitosamente',
                 'mensajes' => $mensajes
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error agregando respuesta manual: " . $e->getMessage());
             return response()->json([
@@ -1151,7 +1142,7 @@ public function update(Request $request)
     {
         try {
             $ticketId = $request->input('ticket_id');
-            
+
             if (!$ticketId) {
                 return response()->json([
                     'success' => false,
@@ -1175,7 +1166,6 @@ public function update(Request $request)
                     'message' => 'Error enviando instrucciones'
                 ], 500);
             }
-
         } catch (\Exception $e) {
             Log::error("Error enviando instrucciones: " . $e->getMessage());
             return response()->json([
@@ -1222,7 +1212,7 @@ public function update(Request $request)
             $tipos = Tipoticket::select('TipoID', 'NombreTipo', 'TiempoEstimadoMinutos')
                 ->orderBy('NombreTipo')
                 ->get()
-                ->map(function($tipo) {
+                ->map(function ($tipo) {
                     return [
                         'TipoID' => $tipo->TipoID,
                         'NombreTipo' => $tipo->NombreTipo,
@@ -1255,7 +1245,7 @@ public function update(Request $request)
             ]);
 
             $tipo = Tipoticket::where('TipoID', $request->input('tipo_id'))->first();
-            
+
             if (!$tipo) {
                 return response()->json([
                     'success' => false,
@@ -1265,7 +1255,7 @@ public function update(Request $request)
 
             $tiempoAnterior = $tipo->TiempoEstimadoMinutos;
             $nuevoTiempo = $request->input('tiempo_estimado_minutos');
-            
+
             $tipo->TiempoEstimadoMinutos = $nuevoTiempo;
             $tipo->save();
 
@@ -1273,7 +1263,7 @@ public function update(Request $request)
             if ($tiempoAnterior != $nuevoTiempo) {
                 $notificationService = new \App\Services\TicketNotificationService();
                 $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo(
-                    $tipo->TipoID, 
+                    $tipo->TipoID,
                     $nuevoTiempo
                 );
                 Log::info("Tipo {$tipo->TipoID}: Intervalo actualizado de {$tiempoAnterior} a {$nuevoTiempo} minutos. {$ticketsActualizados} tickets actualizados.");
@@ -1315,10 +1305,10 @@ public function update(Request $request)
             foreach ($request->input('metricas') as $metrica) {
                 try {
                     $tipoId = $metrica['tipo_id'];
-                    $tiempoEstimado = isset($metrica['tiempo_estimado_minutos']) && $metrica['tiempo_estimado_minutos'] !== '' 
-                        ? (int)$metrica['tiempo_estimado_minutos'] 
+                    $tiempoEstimado = isset($metrica['tiempo_estimado_minutos']) && $metrica['tiempo_estimado_minutos'] !== ''
+                        ? (int)$metrica['tiempo_estimado_minutos']
                         : null;
-                    
+
                     $tipo = Tipoticket::where('TipoID', $tipoId)->first();
                     if (!$tipo) {
                         $errores[] = [
@@ -1327,24 +1317,24 @@ public function update(Request $request)
                         ];
                         continue;
                     }
-                    
+
                     // Obtener el tiempo anterior antes de actualizar
                     $tiempoAnterior = $tipo->TiempoEstimadoMinutos;
-                    
+
                     // Usar update() para forzar la actualización en la base de datos
                     $filasAfectadas = Tipoticket::where('TipoID', $tipoId)
                         ->update(['TiempoEstimadoMinutos' => $tiempoEstimado]);
-                    
+
                     // Recalcular fechas de notificación si cambió el intervalo
                     if ($tiempoAnterior != $tiempoEstimado) {
                         $notificationService = new \App\Services\TicketNotificationService();
                         $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo(
-                            $tipoId, 
+                            $tipoId,
                             $tiempoEstimado
                         );
                         Log::info("Tipo {$tipoId}: Intervalo actualizado de {$tiempoAnterior} a {$tiempoEstimado} minutos. {$ticketsActualizados} tickets actualizados.");
                     }
-                    
+
                     // Si update() se ejecutó sin excepciones, la operación fue exitosa
                     // Incluso si retorna 0 (valor ya era el mismo), la operación fue correcta
                     $actualizados++;
@@ -1385,12 +1375,12 @@ public function update(Request $request)
         $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
 
         // Obtener tickets del mes
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'chat' => function($query) {
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])
-        ->whereBetween('created_at', [$fechaInicio, $fechaFin])
-        ->orderBy('created_at', 'desc')
-        ->get();
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // Métricas de productividad
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets);
@@ -1430,8 +1420,8 @@ public function update(Request $request)
             'subtipo',
             'tertipo'
         ])
-        ->whereBetween('created_at', [$fechaInicio, $fechaFin])
-        ->get();
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->get();
 
         // Calcular datos para el resumen
         $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
@@ -1467,15 +1457,15 @@ public function update(Request $request)
             'subtipo',
             'tertipo'
         ])
-        ->whereBetween('created_at', [$fechaInicio, $fechaFin])
-        ->get();
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->get();
 
         // Calcular datos para el resumen
         $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
-        
+
         // Calcular tiempo de resolución por empleado agrupado por responsable
         $tiempoPorEmpleado = $this->calcularTiempoResolucionPorEmpleado($tickets);
-        
+
         // Calcular tiempo por categoría y responsable
         $tiempoPorCategoria = $this->calcularTiempoPorCategoriaResponsable($tickets);
 
@@ -1542,32 +1532,32 @@ public function update(Request $request)
         }
 
         // Promedios de tiempos
-        $ticketsConRespuesta = $tickets->filter(function($t) {
+        $ticketsConRespuesta = $tickets->filter(function ($t) {
             return $t->FechaInicioProgreso && $t->tiempo_respuesta !== null;
         });
 
-        $ticketsConResolucion = $tickets->filter(function($t) {
+        $ticketsConResolucion = $tickets->filter(function ($t) {
             return $t->FechaInicioProgreso && $t->FechaFinProgreso && $t->tiempo_resolucion !== null;
         });
 
         $promedioRespuesta = 0;
         if ($ticketsConRespuesta->count() > 0) {
-            $promedioRespuesta = $ticketsConRespuesta->avg(function($t) {
+            $promedioRespuesta = $ticketsConRespuesta->avg(function ($t) {
                 return $t->tiempo_respuesta ?? 0;
             });
         }
 
         $promedioResolucion = 0;
         if ($ticketsConResolucion->count() > 0) {
-            $promedioResolucion = $ticketsConResolucion->avg(function($t) {
+            $promedioResolucion = $ticketsConResolucion->avg(function ($t) {
                 return $t->tiempo_resolucion ?? 0;
             });
         }
 
         // Porcentaje de cumplimiento (tickets cerrados vs total)
         $ticketsCerrados = $tickets->where('Estatus', 'Cerrado')->count();
-        $porcentajeCumplimiento = $tickets->count() > 0 
-            ? round(($ticketsCerrados / $tickets->count()) * 100, 2) 
+        $porcentajeCumplimiento = $tickets->count() > 0
+            ? round(($ticketsCerrados / $tickets->count()) * 100, 2)
             : 0;
 
         // Totales por empleado
@@ -1628,7 +1618,7 @@ public function update(Request $request)
             }
 
             $key = $gerenciaNombre . '|' . $responsableNombre;
-            
+
             if (!isset($ticketsPorGerenciaResponsable[$key])) {
                 $ticketsPorGerenciaResponsable[$key] = [
                     'gerencia' => $gerenciaNombre,
@@ -1661,7 +1651,7 @@ public function update(Request $request)
         }
 
         // Ordenar por gerencia y luego por responsable
-        usort($ticketsPorGerenciaResponsable, function($a, $b) {
+        usort($ticketsPorGerenciaResponsable, function ($a, $b) {
             if ($a['gerencia'] === $b['gerencia']) {
                 return strcmp($a['responsable'], $b['responsable']);
             }
@@ -1686,29 +1676,29 @@ public function update(Request $request)
     private function calcularTiempoResolucionPorEmpleado($tickets)
     {
         $datos = [];
-        
+
         // Filtrar solo tickets cerrados con tiempo de resolución
-        $ticketsCerrados = $tickets->filter(function($ticket) {
-            return $ticket->Estatus === 'Cerrado' 
-                && $ticket->FechaInicioProgreso 
-                && $ticket->FechaFinProgreso 
+        $ticketsCerrados = $tickets->filter(function ($ticket) {
+            return $ticket->Estatus === 'Cerrado'
+                && $ticket->FechaInicioProgreso
+                && $ticket->FechaFinProgreso
                 && $ticket->tiempo_resolucion !== null
                 && $ticket->responsableTI
                 && $ticket->empleado;
         });
-        
+
         // Agrupar por responsable y luego por empleado
         $agrupados = [];
-        
+
         foreach ($ticketsCerrados as $ticket) {
             $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin responsable';
             $empleadoNombre = $ticket->empleado->NombreEmpleado ?? 'Sin empleado';
             $tiempoResolucion = $ticket->tiempo_resolucion ?? 0;
-            
+
             if (!isset($agrupados[$responsableNombre])) {
                 $agrupados[$responsableNombre] = [];
             }
-            
+
             if (!isset($agrupados[$responsableNombre][$empleadoNombre])) {
                 $agrupados[$responsableNombre][$empleadoNombre] = [
                     'responsable' => $responsableNombre,
@@ -1717,23 +1707,23 @@ public function update(Request $request)
                     'tiempos' => []
                 ];
             }
-            
+
             $agrupados[$responsableNombre][$empleadoNombre]['tickets'][] = $ticket;
             $agrupados[$responsableNombre][$empleadoNombre]['tiempos'][] = $tiempoResolucion;
         }
-        
+
         // Calcular estadísticas para cada combinación responsable-empleado
         foreach ($agrupados as $responsableNombre => $empleados) {
             foreach ($empleados as $empleadoNombre => $datosEmpleado) {
                 $tiempos = $datosEmpleado['tiempos'];
                 $totalTickets = count($tiempos);
-                
+
                 if ($totalTickets > 0) {
                     $tiempoPromedio = round(array_sum($tiempos) / $totalTickets, 2);
                     $tiempoMinimo = round(min($tiempos), 2);
                     $tiempoMaximo = round(max($tiempos), 2);
                     $tiempoTotal = round(array_sum($tiempos), 2);
-                    
+
                     $datos[] = [
                         'responsable' => $responsableNombre,
                         'empleado' => $empleadoNombre,
@@ -1746,16 +1736,16 @@ public function update(Request $request)
                 }
             }
         }
-        
+
         // Ordenar por responsable y luego por empleado
-        usort($datos, function($a, $b) {
+        usort($datos, function ($a, $b) {
             $cmp = strcmp($a['responsable'], $b['responsable']);
             if ($cmp === 0) {
                 return strcmp($a['empleado'], $b['empleado']);
             }
             return $cmp;
         });
-        
+
         return $datos;
     }
 
@@ -1765,50 +1755,50 @@ public function update(Request $request)
     private function calcularTiempoPorCategoriaResponsable($tickets)
     {
         $datos = [];
-        
+
         // Filtrar solo tickets cerrados con tiempo de resolución
-        $ticketsCerrados = $tickets->filter(function($ticket) {
-            return $ticket->Estatus === 'Cerrado' 
-                && $ticket->FechaInicioProgreso 
-                && $ticket->FechaFinProgreso 
+        $ticketsCerrados = $tickets->filter(function ($ticket) {
+            return $ticket->Estatus === 'Cerrado'
+                && $ticket->FechaInicioProgreso
+                && $ticket->FechaFinProgreso
                 && $ticket->tiempo_resolucion !== null
                 && $ticket->responsableTI;
         });
-        
+
         // Agrupar por TipoID, SubtipoID, TertipoID y luego por responsable
         $agrupados = [];
-        
+
         foreach ($ticketsCerrados as $ticket) {
             // Obtener información de categoría completa
             $tipoNombre = 'Sin tipo';
             $subtipoNombre = 'Sin subtipo';
             $tertipoNombre = 'Sin tertipo';
-            
+
             if ($ticket->tipoticket && $ticket->tipoticket->NombreTipo) {
                 $tipoNombre = $ticket->tipoticket->NombreTipo;
             }
-            
+
             if ($ticket->subtipo && $ticket->subtipo->NombreSubtipo) {
                 $subtipoNombre = $ticket->subtipo->NombreSubtipo;
             }
-            
+
             if ($ticket->tertipo && $ticket->tertipo->NombreTertipo) {
                 $tertipoNombre = $ticket->tertipo->NombreTertipo;
             }
-            
+
             // Crear clave única para agrupar por TipoID, SubtipoID, TertipoID
             $tipoID = $ticket->TipoID ?? 'null';
             $subtipoID = $ticket->SubtipoID ?? 'null';
             $tertipoID = $ticket->TertipoID ?? 'null';
             $claveCategoria = $tipoID . '_' . $subtipoID . '_' . $tertipoID;
-            
+
             $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin responsable';
             $tiempoResolucion = $ticket->tiempo_resolucion ?? 0;
-            
+
             if (!isset($agrupados[$claveCategoria])) {
                 $agrupados[$claveCategoria] = [];
             }
-            
+
             if (!isset($agrupados[$claveCategoria][$responsableNombre])) {
                 $agrupados[$claveCategoria][$responsableNombre] = [
                     'tipo_id' => $tipoID,
@@ -1822,23 +1812,23 @@ public function update(Request $request)
                     'tiempos' => []
                 ];
             }
-            
+
             $agrupados[$claveCategoria][$responsableNombre]['tickets'][] = $ticket;
             $agrupados[$claveCategoria][$responsableNombre]['tiempos'][] = $tiempoResolucion;
         }
-        
+
         // Calcular estadísticas para cada combinación categoría-responsable
         foreach ($agrupados as $claveCategoria => $responsables) {
             foreach ($responsables as $responsableNombre => $datosResponsable) {
                 $tiempos = $datosResponsable['tiempos'];
                 $totalTickets = count($tiempos);
-                
+
                 if ($totalTickets > 0) {
                     $tiempoPromedio = round(array_sum($tiempos) / $totalTickets, 2);
                     $tiempoMinimo = round(min($tiempos), 2);
                     $tiempoMaximo = round(max($tiempos), 2);
                     $tiempoTotal = round(array_sum($tiempos), 2);
-                    
+
                     $datos[] = [
                         'tipo_id' => $datosResponsable['tipo_id'],
                         'tipo_nombre' => $datosResponsable['tipo_nombre'],
@@ -1856,9 +1846,9 @@ public function update(Request $request)
                 }
             }
         }
-        
+
         // Ordenar por tipo, subtipo, tertipo y luego por responsable
-        usort($datos, function($a, $b) {
+        usort($datos, function ($a, $b) {
             $cmp = strcmp($a['tipo_nombre'], $b['tipo_nombre']);
             if ($cmp === 0) {
                 $cmp = strcmp($a['subtipo_nombre'], $b['subtipo_nombre']);
@@ -1871,7 +1861,7 @@ public function update(Request $request)
             }
             return $cmp;
         });
-        
+
         return $datos;
     }
 
@@ -1909,7 +1899,7 @@ public function update(Request $request)
                 if ($tiempoRespuesta > $tiempoEstimadoHoras) {
                     $tiempoExcedido = round($tiempoRespuesta - $tiempoEstimadoHoras, 2);
                     $porcentajeExcedido = round(($tiempoRespuesta / $tiempoEstimadoHoras) * 100, 1);
-                    
+
                     $ticketsExcedidos[] = [
                         'id' => $ticket->TicketID,
                         'descripcion' => \Illuminate\Support\Str::limit($ticket->Descripcion, 80),
@@ -1926,7 +1916,7 @@ public function update(Request $request)
             }
 
             // Ordenar por tiempo excedido (mayor a menor)
-            usort($ticketsExcedidos, function($a, $b) {
+            usort($ticketsExcedidos, function ($a, $b) {
                 return $b['tiempo_excedido'] <=> $a['tiempo_excedido'];
             });
 
@@ -1970,20 +1960,21 @@ public function update(Request $request)
             $pasoSupervisor = $solicitud->pasoSupervisor;
             $pasoGerencia = $solicitud->pasoGerencia;
             $pasoAdministracion = $solicitud->pasoAdministracion;
-            
+
             $estatusReal = $solicitud->Estatus ?? 'Pendiente';
             $estaRechazada = false;
-            
+
             if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
                 ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
-                ($pasoAdministracion && $pasoAdministracion->status === 'rejected')) {
+                ($pasoAdministracion && $pasoAdministracion->status === 'rejected')
+            ) {
                 $estatusReal = 'Rechazada';
                 $estaRechazada = true;
-                    } elseif ($solicitud->Estatus === 'Aprobado') {
-                        $estatusReal = 'Aprobado';
-                    } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
-                        $estatusReal = 'Cotizaciones Enviadas';
-                    } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
+            } elseif ($solicitud->Estatus === 'Aprobado') {
+                $estatusReal = 'Aprobado';
+            } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
+                $estatusReal = 'Cotizaciones Enviadas';
+            } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
                 if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                     if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                         if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
@@ -2000,34 +1991,34 @@ public function update(Request $request)
                     $estatusReal = 'Pendiente Aprobación Supervisor';
                 }
             }
-            
-                    if ($estatusReal === 'Rechazada') {
-                        $estatusDisplay = 'Rechazada';
-                    } elseif ($estatusReal === 'Aprobado' || $solicitud->todosProductosTienenGanador()) {
-                        $estatusDisplay = 'Aprobada';
-                    } elseif ($estatusReal === 'Cotizaciones Enviadas') {
-                        $estatusDisplay = 'Cotizaciones Enviadas';
-                    } elseif ($estatusReal === 'Completada') {
-                        $estatusDisplay = 'En revisión';
-                    } elseif ($estatusReal === 'Pendiente Cotización TI') {
-                        $estatusDisplay = 'Pendiente';
-                    } elseif (in_array($estatusReal, ['Pendiente Aprobación Supervisor', 'Pendiente Aprobación Gerencia', 'Pendiente Aprobación Administración'], true)) {
-                        $estatusDisplay = 'En revisión';
-                    } else {
-                        $estatusDisplay = 'Pendiente';
-                    }
-            
+
+            if ($estatusReal === 'Rechazada') {
+                $estatusDisplay = 'Rechazada';
+            } elseif ($estatusReal === 'Aprobado' || $solicitud->todosProductosTienenGanador()) {
+                $estatusDisplay = 'Aprobada';
+            } elseif ($estatusReal === 'Cotizaciones Enviadas') {
+                $estatusDisplay = 'Cotizaciones Enviadas';
+            } elseif ($estatusReal === 'Completada') {
+                $estatusDisplay = 'En revisión';
+            } elseif ($estatusReal === 'Pendiente Cotización TI') {
+                $estatusDisplay = 'Pendiente';
+            } elseif (in_array($estatusReal, ['Pendiente Aprobación Supervisor', 'Pendiente Aprobación Gerencia', 'Pendiente Aprobación Administración'], true)) {
+                $estatusDisplay = 'En revisión';
+            } else {
+                $estatusDisplay = 'Pendiente';
+            }
+
             $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
                 && ($pasoGerencia && $pasoGerencia->status === 'approved')
                 && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
             $puedeCotizar = $todasFirmaron && auth()->check() && $estatusDisplay !== 'Aprobada' && $estatusDisplay !== 'Cotizaciones Enviadas';
-            
+
             // Verificar si puede elegir cotización (gerente con todas las firmas y cotizaciones cargadas o enviadas)
-            $puedeElegirCotizacion = $todasFirmaron 
-                && $solicitud->cotizaciones 
+            $puedeElegirCotizacion = $todasFirmaron
+                && $solicitud->cotizaciones
                 && $solicitud->cotizaciones->count() > 0
                 && ($estatusDisplay === 'Cotizaciones Enviadas' || $estatusDisplay === 'En revisión')
-                && auth()->check() 
+                && auth()->check()
                 && auth()->user()->can('aprobar-solicitudes-gerencia');
 
             // Construir pasos de aprobación
@@ -2063,7 +2054,7 @@ public function update(Request $request)
             if (!empty($proyectoNombre) && preg_match('/^([A-Z]{2})(\d+)$/i', $proyectoNombre, $matches)) {
                 $prefijo = strtoupper($matches[1]);
                 $proyectoId = (int)$matches[2];
-                
+
                 try {
                     switch ($prefijo) {
                         case 'PR':
@@ -2091,7 +2082,7 @@ public function update(Request $request)
             }
 
             // Preparar cotizaciones (incluir todas, incluyendo las enviadas), con datos para agrupar por producto
-            $cotizaciones = $solicitud->cotizaciones ? $solicitud->cotizaciones->map(function($cot) {
+            $cotizaciones = $solicitud->cotizaciones ? $solicitud->cotizaciones->map(function ($cot) {
                 return [
                     'CotizacionID' => $cot->CotizacionID,
                     'Proveedor' => $cot->Proveedor,
@@ -2105,10 +2096,10 @@ public function update(Request $request)
                     'NombreEquipo' => $cot->NombreEquipo ?? ''
                 ];
             })->toArray() : [];
-            
+
             // Verificar si las cotizaciones fueron enviadas (basado en el estatus de la solicitud)
             $cotizacionesEnviadas = ($solicitud->Estatus === 'Cotizaciones Enviadas') ? 1 : 0;
-            
+
             return response()->json([
                 'SolicitudID' => $solicitud->SolicitudID,
                 'Motivo' => $solicitud->Motivo,
@@ -2186,7 +2177,7 @@ public function update(Request $request)
             $grupos[$clave]['cotizaciones']->push($c);
         }
         $result = array_values($grupos);
-        usort($result, fn ($a, $b) => $a['numeroPropuesta'] <=> $b['numeroPropuesta']);
+        usort($result, fn($a, $b) => $a['numeroPropuesta'] <=> $b['numeroPropuesta']);
         return $result;
     }
 
@@ -2445,7 +2436,7 @@ public function update(Request $request)
     {
         try {
             $solicitud = Solicitud::with('cotizaciones')->findOrFail($id);
-            
+
             // Si no hay cotizaciones, retornar estructura vacía
             if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
                 return response()->json([
@@ -2454,14 +2445,14 @@ public function update(Request $request)
                     'tieneCotizacionesEnviadas' => $solicitud->Estatus === 'Cotizaciones Enviadas'
                 ]);
             }
-            
+
             // Obtener todos los proveedores únicos
             $proveedores = $solicitud->cotizaciones->pluck('Proveedor')->unique()->values()->toArray();
-            
+
             // Agrupar por NumeroPropuesta (1 equipo = 1 NumeroPropuesta; varias cotizaciones por proveedor)
             // Así "2 equipos con 2 cotizaciones cada uno" se muestran como 2 secciones con 2 filas cada una
             $productosMap = [];
-            $cotizacionesOrdenadas = $solicitud->cotizaciones->sortBy(fn ($c) => [(int) ($c->NumeroPropuesta ?? 0), (int) ($c->CotizacionID ?? 0)])->values();
+            $cotizacionesOrdenadas = $solicitud->cotizaciones->sortBy(fn($c) => [(int) ($c->NumeroPropuesta ?? 0), (int) ($c->CotizacionID ?? 0)])->values();
 
             foreach ($cotizacionesOrdenadas as $cotizacion) {
                 $numProp = (int) ($cotizacion->NumeroPropuesta ?? 0);
@@ -2496,7 +2487,7 @@ public function update(Request $request)
                 $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = $precioUnitario;
                 $productosMap[$claveProducto]['descripciones'][$cotizacion->Proveedor] = $cotizacion->Descripcion ?? '';
                 $productosMap[$claveProducto]['numeroPartes'][$cotizacion->Proveedor] = $cotizacion->NumeroParte ?? '';
-                
+
                 if ($cotizacion->TiempoEntrega !== null) {
                     $productosMap[$claveProducto]['tiempoEntrega'][$cotizacion->Proveedor] = (int) $cotizacion->TiempoEntrega;
                 }
@@ -2506,7 +2497,7 @@ public function update(Request $request)
             }
 
             $productos = array_values($productosMap);
-            
+
             foreach ($productos as &$producto) {
                 foreach ($proveedores as $proveedor) {
                     if (!isset($producto['precios'][$proveedor])) {
@@ -2520,10 +2511,10 @@ public function update(Request $request)
                     }
                 }
             }
-            
+
             // Verificar si las cotizaciones fueron enviadas (basado en el estatus de la solicitud)
             $tieneCotizacionesEnviadas = $solicitud->Estatus === 'Cotizaciones Enviadas';
-            
+
             return response()->json([
                 'proveedores' => $proveedores,
                 'productos' => $productos,
@@ -2547,27 +2538,27 @@ public function update(Request $request)
     {
         // Forzar respuesta JSON
         $request->headers->set('Accept', 'application/json');
-        
+
         try {
             // Validar que la solicitud existe primero
             $solicitud = Solicitud::findOrFail($id);
-            
+
             // Validar datos de entrada
             $validated = $request->validate([
                 'proveedores' => 'required|array|min:1',
                 'productos' => 'required|array|min:1'
             ]);
-            
+
             // Eliminar todas las cotizaciones existentes de esta solicitud
             // El estatus de "enviadas" se maneja en la tabla solicitudes, no en cotizaciones
             Cotizacion::where('SolicitudID', $solicitud->SolicitudID)->delete();
-            
+
             $proveedores = $validated['proveedores'] ?? $request->input('proveedores', []);
             $productos = $validated['productos'] ?? $request->input('productos', []);
-            
+
             $numeroPropuesta = 1;
             $cotizacionesCreadas = 0;
-            
+
             // Crear una cotización por cada combinación de producto y proveedor con precio
             // Descripción y No. Parte pueden variar por proveedor (descripciones / numeros_parte); si no, se usa el del producto
             foreach ($productos as $producto) {
@@ -2577,27 +2568,38 @@ public function update(Request $request)
                 $precios = $producto['precios'] ?? [];
                 $cantidad = isset($producto['cantidad']) ? (int)$producto['cantidad'] : 1;
                 $numeroParteBase = $producto['numero_parte'] ?? $producto['numeroParte'] ?? null;
-                
+
                 foreach ($proveedores as $proveedor) {
-                    $precio = $precios[$proveedor] ?? null;
-                    if ($precio === null || $precio === '' || (float)$precio <= 0) {
+                    // 🔥 CAMBIO AQUÍ: Obtener precio_unitario y costo_envio correctamente
+                    $datosPrecios = $precios[$proveedor] ?? null;
+
+                    if (!is_array($datosPrecios)) {
+                        // Si por alguna razón no es array, intentar usarlo directamente
+                        $precioUnitario = (float)($datosPrecios ?? 0);
+                        $costoEnvio = 0;
+                    } else {
+                        $precioUnitario = (float)($datosPrecios['precio_unitario'] ?? 0);
+                        $costoEnvio = (float)($datosPrecios['costo_envio'] ?? 0);
+                    }
+
+                    if ($precioUnitario <= 0) {
                         continue;
                     }
-                    
+
                     $desc = trim($descripciones[$proveedor] ?? '') ?: $descBase;
                     if ($desc === '') {
                         continue;
                     }
-                    
+
                     $np = trim($numerosParte[$proveedor] ?? '') ?: ($numeroParteBase !== null ? trim($numeroParteBase) : '');
                     $nombreEquipo = trim($producto['nombre_equipo'] ?? $producto['nombreEquipo'] ?? $producto['descripcion'] ?? '');
                     $unidad = trim($producto['unidad'] ?? '') ?: 'PIEZA';
-                    $precioTotal = (float)$precio * $cantidad;
                     Cotizacion::create([
                         'SolicitudID' => $solicitud->SolicitudID,
                         'Proveedor' => $proveedor,
                         'Descripcion' => $desc,
-                        'Precio' => $precioTotal,
+                        'Precio' => $precioUnitario,
+                        'CostoEnvio' => $costoEnvio,
                         'NumeroParte' => $np !== '' ? $np : null,
                         'Cantidad' => $cantidad,
                         'NombreEquipo' => $nombreEquipo !== '' ? $nombreEquipo : null,
@@ -2609,19 +2611,19 @@ public function update(Request $request)
                     ]);
                     $cotizacionesCreadas++;
                 }
-                
+
                 if ($cotizacionesCreadas > 0) {
                     $numeroPropuesta++;
                 }
             }
-            
+
             if ($cotizacionesCreadas === 0) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No se crearon cotizaciones. Verifica que haya al menos un precio válido.'
                 ], 400);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => "Se guardaron {$cotizacionesCreadas} cotización(es) correctamente."
@@ -2654,7 +2656,7 @@ public function update(Request $request)
     {
         try {
             $solicitud = Solicitud::with(['empleadoid', 'cotizaciones'])->findOrFail($id);
-            
+
             // Verificar que haya cotizaciones
             if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
                 return response()->json([
@@ -2662,27 +2664,27 @@ public function update(Request $request)
                     'message' => 'No hay cotizaciones guardadas para esta solicitud'
                 ], 400);
             }
-            
+
             // Verificar que todas las aprobaciones estén completas
             $pasoSupervisor = $solicitud->pasoSupervisor;
             $pasoGerencia = $solicitud->pasoGerencia;
             $pasoAdministracion = $solicitud->pasoAdministracion;
-            
+
             $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
                 && ($pasoGerencia && $pasoGerencia->status === 'approved')
                 && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
-            
+
             if (!$todasFirmaron) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Todas las aprobaciones deben estar completas antes de enviar al gerente'
                 ], 400);
             }
-            
+
             // Actualizar el estatus de la solicitud a "Cotizaciones Enviadas"
             $solicitud->Estatus = 'Cotizaciones Enviadas';
             $solicitud->save();
-            
+
             // Crear token para elegir ganador
             $pasoGerencia = $solicitud->pasoGerencia;
             if (!$pasoGerencia) {
@@ -2691,12 +2693,12 @@ public function update(Request $request)
                     'message' => 'No se encontró el paso de aprobación de gerencia'
                 ], 400);
             }
-            
+
             // Cargar la relación del approver
             $pasoGerencia->load('approverEmpleado');
-            
+
             $token = \Illuminate\Support\Str::uuid()->toString();
-            
+
             // Guardar token en la tabla de tokens
             try {
                 \App\Models\SolicitudTokens::create([
@@ -2712,10 +2714,10 @@ public function update(Request $request)
                     'message' => 'Error al crear el token de acceso: ' . $e->getMessage()
                 ], 500);
             }
-            
+
             // Obtener el gerente del paso de aprobación
             $gerente = $pasoGerencia->approverEmpleado;
-            
+
             // Si no hay gerente en el paso, intentar obtenerlo de otras formas
             if (!$gerente) {
                 // Intentar obtener del usuario autenticado con permiso
@@ -2723,7 +2725,7 @@ public function update(Request $request)
                     $gerente = Empleados::where('Correo', auth()->user()->email)->first();
                 }
             }
-            
+
             // Si aún no hay gerente, usar correo por defecto
             if (!$gerente || empty($gerente->Correo)) {
                 // Crear un objeto Empleados temporal con correo por defecto
@@ -2732,11 +2734,11 @@ public function update(Request $request)
                 $gerente->Correo = config('email_tickets.default_gerente_email', 'tordonez@proser.com.mx');
                 Log::warning("No se encontró gerente para solicitud #{$id}, usando correo por defecto: {$gerente->Correo}");
             }
-            
+
             // Enviar correo usando el servicio
             $emailService = new \App\Services\SolicitudAprobacionEmailService();
             $emailEnviado = $emailService->enviarCotizacionesListasParaElegir($gerente, $solicitud, $token);
-            
+
             if (!$emailEnviado) {
                 Log::error("No se pudo enviar el correo al gerente para solicitud #{$id}");
                 return response()->json([
@@ -2744,9 +2746,9 @@ public function update(Request $request)
                     'message' => 'Error al enviar el correo al gerente. El token fue creado pero el correo no se pudo enviar.'
                 ], 500);
             }
-            
+
             Log::info("Correo enviado al gerente para elegir ganador - Solicitud #{$id} - Token: {$token} - Email: {$gerente->Correo}");
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Cotizaciones enviadas al gerente correctamente'
@@ -2770,7 +2772,7 @@ public function update(Request $request)
             $tokenRow = \App\Models\SolicitudTokens::where('token', $token)
                 ->whereNull('used_at')
                 ->whereNull('revoked_at')
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
                 })
                 ->with(['approvalStep.solicitud.cotizaciones'])
@@ -2793,7 +2795,7 @@ public function update(Request $request)
             // Cargar relaciones necesarias
             $solicitud->load([
                 'empleadoid',
-                'cotizaciones' => function($query) {
+                'cotizaciones' => function ($query) {
                     $query->orderBy('NumeroPropuesta')->orderBy('Proveedor');
                 }
             ]);
@@ -2807,7 +2809,7 @@ public function update(Request $request)
                     'razon' => 'Ya se han seleccionado los ganadores de todos los productos de esta solicitud. El proceso de elección ya fue completado.',
                 ];
                 if ($ganadores->isNotEmpty()) {
-                    $lista = $ganadores->map(fn ($g) => $g->Descripcion . ' – ' . $g->Proveedor . ' ($' . number_format($g->Precio, 2, '.', ',') . ')')->implode('; ');
+                    $lista = $ganadores->map(fn($g) => $g->Descripcion . ' – ' . $g->Proveedor . ' ($' . number_format($g->Precio, 2, '.', ',') . ')')->implode('; ');
                     $tokenInfo['proveedor_ganador'] = $lista;
                     $tokenInfo['multiple_ganadores'] = $ganadores->count() > 1;
                 }

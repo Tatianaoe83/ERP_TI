@@ -43,7 +43,7 @@
 
                     <div
                         class="req-card cursor-pointer rounded-xl border border-slate-200 dark:border-slate-700
-                                       bg-white dark:bg-slate-900 px-4 py-3 transition-all duration-200 hover:shadow-sm"
+                                       bg-slate-50 dark:bg-slate-900 px-4 py-3 transition-all duration-200 hover:shadow-sm"
                         data-target="{{ $id }}"
                         data-checked="{{ $checked ? '1' : '0' }}"
                         role="button"
