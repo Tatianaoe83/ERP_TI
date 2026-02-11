@@ -1956,6 +1956,11 @@ class TicketsController extends Controller
                 'cotizaciones'
             ])->findOrFail($id);
 
+            // Cargar activos asignados con sus relaciones
+            $activosAsignados = \App\Models\SolicitudActivo::where('SolicitudID', $id)
+                ->with(['empleadoAsignado', 'departamentos', 'cotizacion'])
+                ->get();
+
             // Calcular estatus real (similar a la vista)
             $pasoSupervisor = $solicitud->pasoSupervisor;
             $pasoGerencia = $solicitud->pasoGerencia;
@@ -2090,6 +2095,7 @@ class TicketsController extends Controller
                     'Precio' => (float)$cot->Precio,
                     'CostoEnvio' => (float)($cot->CostoEnvio ?? 0),
                     'NumeroParte' => $cot->NumeroParte,
+                    'Cantidad' => (int)($cot->Cantidad ?? 1),
                     'Estatus' => $cot->Estatus,
                     'TiempoEntrega' => $cot->TiempoEntrega,
                     'Observaciones' => $cot->Observaciones,
@@ -2100,6 +2106,24 @@ class TicketsController extends Controller
 
             // Verificar si las cotizaciones fueron enviadas (basado en el estatus de la solicitud)
             $cotizacionesEnviadas = ($solicitud->Estatus === 'Cotizaciones Enviadas') ? 1 : 0;
+
+            // Preparar activos asignados (ganadores) con fechas de entrega
+            $activosConFechas = $activosAsignados->map(function ($activo) {
+                return [
+                    'SolicitudActivoID' => $activo->SolicitudActivoID,
+                    'NumeroPropuesta' => $activo->NumeroPropuesta,
+                    'UnidadIndex' => $activo->UnidadIndex,
+                    'FechaEntrega' => $activo->FechaEntrega ? $activo->FechaEntrega->format('d/m/Y') : null,
+                    'EmpleadoAsignado' => $activo->empleadoAsignado ? [
+                        'EmpleadoID' => $activo->empleadoAsignado->EmpleadoID,
+                        'NombreEmpleado' => $activo->empleadoAsignado->NombreEmpleado
+                    ] : null,
+                    'CotizacionID' => $activo->CotizacionID
+                ];
+            })->toArray();
+
+            // Crear un mapa de activos por CotizacionID para vincular fechas
+            $activosPorCotizacion = collect($activosConFechas)->groupBy('CotizacionID');
 
             return response()->json([
                 'SolicitudID' => $solicitud->SolicitudID,
@@ -2130,6 +2154,8 @@ class TicketsController extends Controller
                 ] : null,
                 'pasosAprobacion' => $pasosAprobacion,
                 'cotizaciones' => $cotizaciones,
+                'activosAsignados' => $activosConFechas,
+                'activosPorCotizacion' => $activosPorCotizacion->toArray(),
                 'puedeCotizar' => $puedeCotizar,
                 'puedeElegirCotizacion' => $puedeElegirCotizacion,
                 'cotizacionesEnviadas' => $cotizacionesEnviadas
@@ -2485,7 +2511,13 @@ class TicketsController extends Controller
 
                 $precioTotal = (float) $cotizacion->Precio;
                 $precioUnitario = $precioTotal / max(1, $cantidad);
-                $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = $precioUnitario;
+                $costoEnvio = (float) ($cotizacion->CostoEnvio ?? 0);
+                
+                // Guardar como objeto con precio_unitario y costo_envio
+                $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = [
+                    'precio_unitario' => $precioUnitario,
+                    'costo_envio' => $costoEnvio
+                ];
                 $productosMap[$claveProducto]['descripciones'][$cotizacion->Proveedor] = $cotizacion->Descripcion ?? '';
                 $productosMap[$claveProducto]['numeroPartes'][$cotizacion->Proveedor] = $cotizacion->NumeroParte ?? '';
 
@@ -2502,7 +2534,10 @@ class TicketsController extends Controller
             foreach ($productos as &$producto) {
                 foreach ($proveedores as $proveedor) {
                     if (!isset($producto['precios'][$proveedor])) {
-                        $producto['precios'][$proveedor] = '';
+                        $producto['precios'][$proveedor] = [
+                            'precio_unitario' => 0,
+                            'costo_envio' => 0
+                        ];
                     }
                     if (!isset($producto['descripciones'][$proveedor])) {
                         $producto['descripciones'][$proveedor] = $producto['descripcion'] ?? '';

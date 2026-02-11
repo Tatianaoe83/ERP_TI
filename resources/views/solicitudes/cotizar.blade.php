@@ -30,7 +30,7 @@
                 </div>
             </div>
             <div class="text-lg font-bold text-slate-900 dark:text-slate-100" x-show="!cargando">
-                Total General: <span x-text="'$' + totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })"></span>
+                Total General: <span x-text="'$' + totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
             </div>
         </div>
     </div>
@@ -80,7 +80,7 @@
                     <div class="flex items-center gap-3">
                         <span class="text-sm text-slate-600 dark:text-slate-400">
                             Cotizaciones: <span x-text="cotizacionesConPrecio(equipo).length"></span>
-                            Total: <span x-text="'$' + totalEquipo(equipo).toLocaleString('es-MX', { minimumFractionDigits: 2 })"></span>
+                            Total: <span x-text="'$' + totalEquipo(equipo).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
                         </span>
                         <button
                             @click.stop="eliminarEquipo(eqIndex)"
@@ -161,7 +161,7 @@
                                                 </div>
                                             </td>
                                             <td class="px-3 py-2 text-right font-medium text-slate-900 dark:text-slate-100">
-                                                $<span x-text="((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"></span>
+                                                $<span x-text="((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
                                             </td>
                                             <td class="px-3 py-2">
                                                 <button type="button" @click="eliminarCotizacion(equipo, cotIndex)"
@@ -304,15 +304,22 @@
                             const descripciones = p.descripciones || {};
                             const numeroPartes = p.numeroPartes || {};
                             eq.cotizaciones = proveedores.map(prov => {
-                                const u = precios[prov];
-                                const uv = (typeof u === 'number' ? u : parseFloat(u)) || 0;
+                                const precioData = precios[prov];
+                                // Detectar si es un objeto con precio_unitario y costo_envio o solo un número
+                                const uv = typeof precioData === 'object' && precioData !== null
+                                    ? (parseFloat(precioData.precio_unitario) || 0)
+                                    : (typeof precioData === 'number' ? precioData : parseFloat(precioData) || 0);
+                                const costoEnvio = typeof precioData === 'object' && precioData !== null
+                                    ? (parseFloat(precioData.costo_envio) || 0)
+                                    : 0;
                                 if (uv <= 0) return null;
                                 return {
                                     proveedor: prov,
                                     numeroParte: (numeroPartes[prov] ?? p.numeroParte ?? '').trim() || (p.numeroParte || ''),
                                     descripcion: (descripciones[prov] || p.descripcion || '').trim() || (p.descripcion || ''),
                                     precioUnitario: uv,
-                                    total: (eq.cantidad * uv).toFixed(2)
+                                    costoEnvio: costoEnvio,
+                                    total: ((eq.cantidad * uv) + costoEnvio).toFixed(2)
                                 };
                             }).filter(Boolean);
                             if (eq.cotizaciones.length === 0) eq.cotizaciones.push(this.nuevaCotizacion(eq));
