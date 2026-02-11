@@ -211,6 +211,10 @@ class TablaSolicitudes extends Component
 
         $solicitud->puedeAprobar = false;
         $solicitud->nivelAprobacion = '';
+        
+        [$facturasSubidas, $totalNecesarias] = $this->contarFacturas($solicitud);
+        $solicitud->facturasSubidas = $facturasSubidas;
+        $solicitud->totalFacturasNecesarias = $totalNecesarias;
 
         $pasoSupervisor = $solicitud->pasoSupervisor;
         $pasoGerencia = $solicitud->pasoGerencia;
@@ -348,6 +352,58 @@ class TablaSolicitudes extends Component
         return ($pasoSupervisor && $pasoSupervisor->status === 'approved')
             && ($pasoGerencia && $pasoGerencia->status === 'approved')
             && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+    }
+
+    private function contarFacturas($solicitud): array
+    {
+        if (!$solicitud->cotizaciones || $solicitud->cotizaciones->isEmpty()) {
+            return [0, 0];
+        }
+
+        $seleccionadas = $solicitud->cotizaciones->where('Estatus', 'Seleccionada');
+
+        if ($seleccionadas->isEmpty()) {
+            return [0, 0];
+        }
+
+        // Contar proveedores únicos (total de facturas necesarias)
+        $proveedoresUnicos = $seleccionadas->pluck('Proveedor')->filter()->unique();
+        $totalNecesarias = $proveedoresUnicos->count();
+
+        if ($totalNecesarias === 0) {
+            return [0, 0];
+        }
+
+        // Obtener los IDs de las cotizaciones seleccionadas
+        $cotizacionIds = $seleccionadas->pluck('CotizacionID')->filter()->unique()->toArray();
+
+        if (empty($cotizacionIds)) {
+            return [0, $totalNecesarias];
+        }
+
+        // Buscar en solicitud_activos qué proveedores ya tienen factura subida
+        $activos = SolicitudActivo::query()
+            ->whereIn('CotizacionID', $cotizacionIds)
+            ->whereNotNull('FacturaPath')
+            ->where('FacturaPath', '!=', '')
+            ->select('CotizacionID')
+            ->distinct()
+            ->get();
+
+        if ($activos->isEmpty()) {
+            return [0, $totalNecesarias];
+        }
+
+        // Obtener los proveedores de las cotizaciones que tienen factura
+        $cotizacionesConFactura = $activos->pluck('CotizacionID')->toArray();
+        $proveedoresConFactura = $seleccionadas
+            ->whereIn('CotizacionID', $cotizacionesConFactura)
+            ->pluck('Proveedor')
+            ->filter()
+            ->unique()
+            ->count();
+
+        return [$proveedoresConFactura, $totalNecesarias];
     }
 
     public function aprobar($id, $nivel, $comentario)
@@ -633,11 +689,6 @@ class TablaSolicitudes extends Component
     public function guardarAsignacion(): void
     {
         $this->persistAsignacion(false, false);
-    }
-
-    public function finalizarAsignacion(): void
-    {
-        $this->persistAsignacion(true, true);
     }
 
     private function persistAsignacion(bool $strict, bool $closeAfter): void

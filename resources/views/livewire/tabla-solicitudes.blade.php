@@ -6,7 +6,7 @@
             <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
         </div>
 
-        <div wire:poll.15s class="bg-transparent">
+        <div wire:poll.15s>
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
                 <div class="flex gap-3">
                     <div class="flex-1 max-w-xs">
@@ -51,8 +51,8 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Motivo</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estatus</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aprobaciones</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cotiz.</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fecha</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Facturas</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Creado</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
@@ -121,10 +121,10 @@
                             </td>
 
                             <td class="px-4 py-3 whitespace-nowrap">
-                                @if($solicitud->cotizaciones && $solicitud->cotizaciones->count() > 0)
-                                <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->cotizaciones->count() }}/3</span>
+                                @if($solicitud->totalFacturasNecesarias > 0)
+                                <span class="text-sm font-medium text-slate-900 dark:text-slate-100">{{ $solicitud->facturasSubidas }}/{{ $solicitud->totalFacturasNecesarias }}</span>
                                 @else
-                                <span class="text-sm text-slate-400 dark:text-slate-500">0/3</span>
+                                <span class="text-sm text-slate-400 dark:text-slate-500">0/0</span>
                                 @endif
                             </td>
 
@@ -334,65 +334,194 @@
                             </div>
                         </div>
 
-                        <div class="mb-6" x-show="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0">
+                        <div class="mb-6" x-show="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0" x-data="{
+                            selectedIndexes: {},
+                            getCotizacionesAgrupadasPorPropuesta() {
+                                const cots = solicitudSeleccionada?.cotizaciones || [];
+                                const activosPorCot = solicitudSeleccionada?.activosPorCotizacion || {};
+                                
+                                // Agrupar por NumeroPropuesta
+                                const grupos = {};
+                                cots.forEach(c => {
+                                    const propuesta = c.NumeroPropuesta || 0;
+                                    if (!grupos[propuesta]) {
+                                        grupos[propuesta] = {
+                                            numeroPropuesta: propuesta,
+                                            nombreEquipo: c.NombreEquipo || 'Equipo',
+                                            cotizaciones: []
+                                        };
+                                    }
+                                    
+                                    const activos = activosPorCot[c.CotizacionID] || [];
+                                    grupos[propuesta].cotizaciones.push({
+                                        ...c,
+                                        activos: activos,
+                                        esGanador: c.Estatus === 'Seleccionada'
+                                    });
+                                });
+                                
+                                // Convertir a array y ordenar cotizaciones dentro de cada grupo
+                                return Object.values(grupos).map(grupo => {
+                                    // Ordenar: ganadoras primero, luego las demás
+                                    grupo.cotizaciones.sort((a, b) => {
+                                        if (a.esGanador && !b.esGanador) return -1;
+                                        if (!a.esGanador && b.esGanador) return 1;
+                                        return 0;
+                                    });
+                                    return grupo;
+                                }).sort((a, b) => a.numeroPropuesta - b.numeroPropuesta);
+                            },
+                            selectCotizacion(propuesta, index) {
+                                this.selectedIndexes[propuesta] = index;
+                            },
+                            getSelectedIndex(propuesta) {
+                                return this.selectedIndexes[propuesta] || 0;
+                            }
+                        }">
                             <h4 class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
-                                <i class="fas fa-file-invoice-dollar text-violet-500 dark:text-violet-400"></i>
-                                Cotizaciones por producto (<span x-text="solicitudSeleccionada?.cotizaciones?.length || 0"></span>)
+                                <i class="fas fa-trophy text-amber-500 dark:text-amber-400"></i>
+                                Cotizaciones y Asignaciones
                             </h4>
                             <div class="space-y-6">
-                                <template x-for="(grupo, gIndex) in getCotizacionesAgrupadasPorProducto()" :key="gIndex">
-                                    <div class="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800/50">
-                                        <div class="px-4 py-2 bg-violet-100 dark:bg-violet-900/30 border-b border-slate-200 dark:border-slate-600">
-                                            <span class="text-xs font-semibold text-violet-700 dark:text-violet-300">Producto <span x-text="grupo.numeroPropuesta"></span></span>
-                                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-100 ml-2" x-text="grupo.nombreEquipo"></span>
-                                            <span class="text-xs text-slate-500 dark:text-slate-400 ml-2">(<span x-text="grupo.cotizaciones.length"></span> propuesta(s))</span>
+                                <template x-for="(grupo, gIndex) in getCotizacionesAgrupadasPorPropuesta()" :key="'grupo-' + grupo.numeroPropuesta">
+                                    <div class="rounded-lg border-2 border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800/30">
+                                        <!-- Header del grupo -->
+                                        <div class="px-4 py-3 bg-gradient-to-r from-violet-100 to-violet-50 dark:from-violet-900/30 dark:to-violet-800/20 border-b-2 border-violet-200 dark:border-violet-800">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300">
+                                                        Producto <span x-text="grupo.numeroPropuesta"></span>
+                                                    </span>
+                                                    <span class="text-sm font-semibold text-slate-800 dark:text-slate-100" x-text="grupo.nombreEquipo"></span>
+                                                </div>
+                                                <span class="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                                    <span x-text="grupo.cotizaciones.length"></span> cotización(es)
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div class="p-3 space-y-3">
-                                            <template x-for="(cotizacion, pIndex) in grupo.cotizaciones" :key="cotizacion.CotizacionID || pIndex">
-                                                <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
-                                                    <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-200 dark:border-slate-600">
-                                                        <span class="text-xs font-semibold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40 px-2 py-1 rounded">Propuesta <span x-text="pIndex + 1"></span></span>
-                                                        <span class="text-sm font-semibold text-slate-800 dark:text-slate-100" x-text="cotizacion.Proveedor || 'Sin proveedor'"></span>
-                                                    </div>
-                                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                                        <div>
-                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Proveedor</label>
-                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-medium break-words" x-text="cotizacion.Proveedor || '—'"></p>
+
+                                        <!-- Botones de navegación si hay múltiples cotizaciones -->
+                                        <template x-if="grupo.cotizaciones.length > 1">
+                                            <div class="px-4 py-3 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                                                <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                                                    <template x-for="(cot, idx) in grupo.cotizaciones" :key="'btn-' + cot.CotizacionID">
+                                                        <button
+                                                            type="button"
+                                                            @click="selectCotizacion(grupo.numeroPropuesta, idx)"
+                                                            class="flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                                                            :class="getSelectedIndex(grupo.numeroPropuesta) === idx 
+                                                                ? (cot.esGanador 
+                                                                    ? 'bg-emerald-500 text-white shadow-md' 
+                                                                    : 'bg-red-500 text-white shadow-md')
+                                                                : (cot.esGanador 
+                                                                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' 
+                                                                    : 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300')">
+                                                            <i :class="cot.esGanador ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="mr-2"></i>
+                                                            <span x-text="cot.Proveedor || 'Opción ' + (idx + 1)"></span>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Cotización seleccionada -->
+                                        <template x-for="(cotizacion, cIndex) in grupo.cotizaciones" :key="cotizacion.CotizacionID || cIndex">
+                                            <div x-show="getSelectedIndex(grupo.numeroPropuesta) === cIndex"
+                                                class="p-5 transition-opacity duration-200">
+                                                <div class="bg-slate-50 dark:bg-slate-800 rounded-lg border-2 shadow-sm p-4"
+                                                    :class="cotizacion.esGanador ? 'border-emerald-400 dark:border-emerald-600' : 'border-red-400 dark:border-red-600'">
+                                        
+                                        <div class="flex items-center gap-2 mb-3 pb-2 border-b"
+                                            :class="cotizacion.esGanador ? 'border-emerald-100 dark:border-emerald-800/30' : 'border-red-100 dark:border-red-800/30'">
+                                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded"
+                                                :class="cotizacion.esGanador ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40' : 'text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40'">
+                                                <i :class="cotizacion.esGanador ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                                                <span x-text="cotizacion.Estatus || 'Pendiente'"></span>
+                                            </span>
+                                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-100" x-text="cotizacion.NombreEquipo || 'Equipo'"></span>
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                            <div>
+                                                <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Proveedor</label>
+                                                <p class="text-sm text-slate-900 dark:text-slate-200 font-semibold" x-text="cotizacion.Proveedor || 'N/A'"></p>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs font-medium text-slate-500 dark:text-slate-400">No. Parte</label>
+                                                <p class="text-sm text-slate-900 dark:text-slate-200 font-mono" x-text="cotizacion.NumeroParte || 'N/A'"></p>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Cantidad</label>
+                                                <p class="text-sm text-slate-900 dark:text-slate-200 font-bold" x-text="cotizacion.Cantidad || 1"></p>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Precio Unitario</label>
+                                                <p class="text-sm text-slate-900 dark:text-slate-200 font-semibold" x-text="cotizacion.Precio != null ? ('$' + parseFloat(cotizacion.Precio).toLocaleString('es-MX', {minimumFractionDigits: 2})) : 'N/A'"></p>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Costo Envío</label>
+                                                <p class="text-sm text-slate-900 dark:text-slate-200 font-semibold" x-text="cotizacion.CostoEnvio != null ? ('$' + parseFloat(cotizacion.CostoEnvio).toLocaleString('es-MX', {minimumFractionDigits: 2})) : '$0.00'"></p>
+                                            </div>
+                                            <div>
+                                                <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Total Final</label>
+                                                <p class="text-sm font-bold"
+                                                    :class="cotizacion.esGanador ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-slate-200'"
+                                                    x-text="(() => {
+                                                        const precio = parseFloat(cotizacion.Precio || 0);
+                                                        const cantidad = parseInt(cotizacion.Cantidad || 1);
+                                                        const envio = parseFloat(cotizacion.CostoEnvio || 0);
+                                                        const total = (precio * cantidad) + envio;
+                                                        return '$' + total.toLocaleString('es-MX', {minimumFractionDigits: 2});
+                                                    })()"></p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Fechas de entrega solo para ganadores -->
+                                        <template x-if="cotizacion.esGanador && cotizacion.activos && cotizacion.activos.length > 0">
+                                            <div class="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800">
+                                                <h5 class="text-xs font-bold uppercase text-emerald-700 dark:text-emerald-300 mb-3 flex items-center gap-2">
+                                                    <i class="fas fa-calendar-check"></i>
+                                                    Asignaciones y Fechas de Entrega
+                                                </h5>
+                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <template x-for="(activo, aIdx) in cotizacion.activos" :key="activo.SolicitudActivoID || aIdx">
+                                                        <div class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                                                            <div class="flex items-center justify-between mb-2">
+                                                                <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                                                    Unidad <span x-text="activo.UnidadIndex + 1"></span>
+                                                                </span>
+                                                                <span class="text-xs font-bold"
+                                                                    :class="activo.FechaEntrega ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'">
+                                                                    <i class="fas fa-calendar-alt mr-1"></i>
+                                                                    <span x-text="activo.FechaEntrega || 'Pendiente'"></span>
+                                                                </span>
+                                                            </div>
+                                                            <div class="text-xs text-slate-600 dark:text-slate-400">
+                                                                <span class="font-medium">Asignado a:</span>
+                                                                <span x-text="activo.EmpleadoAsignado?.NombreEmpleado || 'Sin asignar'"></span>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">NO. PARTE</label>
-                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-medium break-words" x-text="cotizacion.NumeroParte || '—'"></p>
-                                                        </div>
-                                                        <div>
-                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Estatus</label>
-                                                            <p class="text-sm font-medium"
-                                                                :class="{
-                                                                   'text-emerald-600 dark:text-emerald-400': cotizacion.Estatus === 'Seleccionada',
-                                                                   'text-red-600 dark:text-red-400': cotizacion.Estatus === 'Rechazada',
-                                                                   'text-slate-600 dark:text-slate-400': cotizacion.Estatus === 'Pendiente'
-                                                               }"
-                                                                x-text="cotizacion.Estatus === 'Seleccionada' ? 'Ganador' : (cotizacion.Estatus || '—')"></p>
-                                                        </div>
-                                                        <div>
-                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Precio</label>
-                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-medium" x-text="'$' + (cotizacion.Precio != null ? parseFloat(cotizacion.Precio).toLocaleString('es-MX', {minimumFractionDigits: 2}) : '0.00')"></p>
-                                                        </div>
-                                                        <div>
-                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Costo Envío</label>
-                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-medium" x-text="'$' + (cotizacion.CostoEnvio != null ? parseFloat(cotizacion.CostoEnvio).toLocaleString('es-MX', {minimumFractionDigits: 2}) : '0.00')"></p>
-                                                        </div>
-                                                        <div>
-                                                            <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Total General</label>
-                                                            <p class="text-sm text-slate-900 dark:text-slate-200 font-bold" x-text="'$' + ((cotizacion.Precio != null ? parseFloat(cotizacion.Precio) : 0) + (cotizacion.CostoEnvio != null ? parseFloat(cotizacion.CostoEnvio) : 0)).toLocaleString('es-MX', {minimumFractionDigits: 2})"></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                                                        <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Descripción</label>
-                                                        <p class="text-sm text-slate-700 dark:text-slate-300 mt-0.5 min-h-[1.25rem] break-words" x-text="(cotizacion.Descripcion && cotizacion.Descripcion.trim()) ? cotizacion.Descripcion : '—'"></p>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- Descripción -->
+                                        <template x-if="cotizacion.Descripcion && cotizacion.Descripcion.trim()">
+                                            <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                                <div class="flex items-start gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                                    <div class="flex-1 min-w-0">
+                                                        <h6 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
+                                                            Descripción del Producto
+                                                        </h6>
+                                                        <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap" x-text="cotizacion.Descripcion"></p>
                                                     </div>
                                                 </div>
-                                            </template>
-                                        </div>
+                                            </div>
+                                        </template>
+
+                                                </div>
+                                            </div>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
@@ -779,17 +908,9 @@
                     wire:loading.attr="disabled">
                     Guardar avance
                 </button>
-
-                <button
-                    type="button"
-                    wire:click="finalizarAsignacion"
-                    class="px-4 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-                    wire:loading.attr="disabled">
-                    Finalizar
-                </button>
             </div>
 
-            <div wire:loading wire:target="guardarAsignacion,finalizarAsignacion" class="absolute inset-0 bg-white/60 dark:bg-slate-900/60 flex items-center justify-center z-50">
+            <div wire:loading wire:target="guardarAsignacion" class="absolute inset-0 bg-white/60 dark:bg-slate-900/60 flex items-center justify-center z-50">
                 <div class="flex flex-col items-center gap-3">
                     <i class="fas fa-spinner fa-spin text-3xl text-slate-600 dark:text-slate-300"></i>
                     <div class="text-sm font-medium text-slate-700 dark:text-slate-200">
