@@ -4,212 +4,323 @@
 <div
     x-data="cotizarPagina({{ $solicitud->SolicitudID }}, '{{ route('tickets.index') }}')"
     x-init="init()"
-    class="px-2 w-full max-w-6xl mx-auto py-4">
+    class="px-3 md:px-4 lg:px-6 w-full max-w-7xl mx-auto py-3 md:py-4 lg:py-6">
     <style>
         [x-cloak] {
             display: none !important;
         }
     </style>
 
-    <!-- Header -->
-    <div class="dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3 flex-wrap">
-                <a href="{{ route('tickets.index') }}"
-                    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium no-underline">
-                    <i class="fas fa-arrow-left"></i> Regresar
-                </a>
-                <div>
-                    <h1 class="text-xl font-bold text-slate-900 dark:text-slate-100">
-                        Cotización - Solicitud #{{ $solicitud->SolicitudID }}
+    <div x-show="cargando" class="text-center py-16">
+        <div class="inline-flex flex-col items-center gap-4">
+            <div class="relative">
+                <i class="fas fa-spinner fa-spin text-5xl text-slate-400"></i>
+                <div class="absolute inset-0 blur-xl bg-slate-400/20 rounded-full"></div>
+            </div>
+            <p class="text-slate-600 dark:text-slate-400 font-medium">Cargando cotizaciones...</p>
+        </div>
+    </div>
+
+    <div x-show="!cargando" x-cloak class="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-5 lg:gap-6 items-start">
+        
+        <div class="xl:col-span-3 space-y-4 md:space-y-5">
+            
+            <!-- Header Principal -->
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-black rounded-2xl shadow-xl border border-slate-700 dark:border-slate-800 p-5 md:p-6 overflow-hidden relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-slate-700/10 rounded-full blur-2xl"></div>
+                <div class="absolute bottom-0 left-0 w-24 h-24 bg-slate-600/10 rounded-full blur-2xl"></div>
+
+                <div class="relative z-10">
+                    <h1 class="text-xl md:text-2xl font-bold text-white mb-3">
+                        Cotización #{{ $solicitud->SolicitudID }}
                     </h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">PRECIO SIN IVA INCLUIDO</p>
-                </div>
-                <div class="text-sm text-slate-600 dark:text-slate-300" x-show="!cargando">
-                    Total de equipos: <span class="font-semibold" x-text="equipos.length"></span>
-                </div>
-            </div>
-            <div class="text-lg font-bold text-slate-900 dark:text-slate-100" x-show="!cargando">
-                Total General: <span x-text="'$' + totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Información de la Solicitud: Requerimientos y Descripción del motivo -->
-    <div class="dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-5 mb-4">
-        <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-            <i class="fas fa-info-circle text-blue-500 dark:text-blue-400"></i>
-            Información de la Solicitud
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Descripción del motivo</label>
-                <p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ $solicitud->DescripcionMotivo ?? 'N/A' }}</p>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Requerimientos</label>
-                <p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{{ $solicitud->Requerimientos ?? 'N/A' }}</p>
-            </div>
-        </div>
-    </div>
-
-    <div x-show="cargando" class="text-center py-12">
-        <i class="fas fa-spinner fa-spin text-4xl text-slate-400"></i>
-        <p class="mt-2 text-slate-600 dark:text-slate-400">Cargando cotizaciones...</p>
-    </div>
-
-    <div x-show="tieneCotizacionesEnviadas && !cargando" x-cloak class="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-        <div class="flex items-center gap-2">
-            <i class="fas fa-info-circle text-blue-500 dark:text-blue-400"></i>
-            <p class="text-sm text-blue-800 dark:text-blue-200">
-                <strong>Cotizaciones enviadas:</strong> Ya se enviaron al gerente. Puedes agregar o editar cotizaciones si es necesario.
-            </p>
-        </div>
-    </div>
-
-    <div x-show="!cargando" x-cloak class="space-y-4">
-        <template x-for="(equipo, eqIndex) in equipos" :key="equipo.id">
-            <div class="bg-gray-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <div
-                    @click="equipo.abierto = !equipo.abierto"
-                    class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-200/50 dark:hover:bg-slate-700/50 transition-colors">
-                    <div class="flex items-center gap-2">
-                        <i class="fas text-slate-500 transition-transform" :class="equipo.abierto ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                        <span class="font-semibold text-slate-900 dark:text-slate-100" x-text="equipo.nombre || 'Nuevo Equipo'"></span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm text-slate-600 dark:text-slate-400">
-                            Cotizaciones: <span x-text="cotizacionesConPrecio(equipo).length"></span>
-                            Total: <span x-text="'$' + totalEquipo(equipo).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                    <div class="flex flex-wrap gap-2 text-slate-300 text-sm mb-4">
+                        <span class="inline-flex items-center gap-2 bg-slate-700/50 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                            <i class="fas fa-info-circle text-xs"></i>
+                            Precios sin IVA
                         </span>
-                        <button
-                            @click.stop="eliminarEquipo(eqIndex)"
-                            x-show="equipos.length > 1"
-                            class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                            title="Eliminar equipo">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <span class="inline-flex items-center gap-2 bg-slate-700/50 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                            <i class="fas fa-layer-group text-xs"></i>
+                            <span class="font-semibold" x-text="propuestas.length"></span> propuestas
+                        </span>
+                    </div>
+
+                    <div class="bg-slate-700/30 backdrop-blur-sm rounded-xl px-4 py-3 border border-slate-600/50 mt-4">
+                        <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+                            Total Estimado
+                        </div>
+                        <div class="text-lg md:text-xl font-bold text-white">
+                            <span x-text="'$' + totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 md:p-5">
+                <div class="flex items-center gap-3 mb-3 md:mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-lightbulb text-white text-base"></i>
+                    </div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-slate-100">¿Cómo funciona?</h2>
+                </div>
+
+                <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <div class="space-y-2 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                        <p><span class="font-semibold text-slate-800 dark:text-slate-200">1.</span> Crea <span class="font-semibold text-blue-600 dark:text-blue-400">Propuestas</span> (diferentes opciones)</p>
+                        <p><span class="font-semibold text-slate-800 dark:text-slate-200">2.</span> Agrega <span class="font-semibold text-purple-600 dark:text-purple-400">Productos</span> en cada propuesta</p>
+                        <p><span class="font-semibold text-slate-800 dark:text-slate-200">3.</span> Registra <span class="font-semibold text-green-600 dark:text-green-400">Cotizaciones</span> de proveedores</p>
+                        <p><span class="font-semibold text-slate-800 dark:text-slate-200">4.</span> Guarda y envía al gerente</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 md:p-5">
+                <div class="flex items-center gap-3 mb-3 md:mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-clipboard-list text-white text-base"></i>
+                    </div>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-slate-100">Detalles</h2>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                            <i class="fas fa-align-left text-xs"></i>
+                            Motivo
+                        </label>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ $solicitud->DescripcionMotivo ?? 'N/A' }}</p>
+                    </div>
+                    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                            <i class="fas fa-list-check text-xs"></i>
+                            Requerimientos
+                        </label>
+                        <p class="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{{ $solicitud->Requerimientos ?? 'N/A' }}</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="xl:col-span-9 space-y-4 md:space-y-5">
+            
+            <div x-show="tieneCotizacionesEnviadas" x-cloak class="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl md:rounded-2xl p-4 md:p-5 border border-blue-200 dark:border-blue-700/50 shadow-lg">
+                <div class="flex items-start gap-3 md:gap-4">
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <i class="fas fa-paper-plane text-white text-base md:text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-sm md:text-base font-bold text-blue-900 dark:text-blue-200 mb-1">Cotizaciones Enviadas</h3>
+                        <p class="text-xs md:text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
+                            Las propuestas han sido enviadas al gerente para su revisión. Aún puedes editarlas si es necesario.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROPUESTAS -->
+            <template x-for="(propuesta, propIndex) in propuestas" :key="propuesta.id">
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden shadow-sm">
+
+                <!-- Header de Propuesta -->
+                <div class="bg-slate-700 dark:bg-slate-700 px-4 md:px-5 py-3 md:py-4">
+                    <div class="flex items-center justify-between gap-3 md:gap-4 flex-wrap">
+                        <div class="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+                            <i class="fas fa-layer-group text-slate-300 text-base md:text-lg flex-shrink-0"></i>
+                            <div class="flex-1 min-w-0">
+                                <input type="text" x-model="propuesta.nombre" placeholder="Nombre de la propuesta (ej. Opción A)"
+                                    class="w-full font-semibold text-sm md:text-base px-3 py-1.5 md:py-2 border border-slate-500 rounded-lg bg-slate-800 dark:bg-slate-900 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
+                                <p class="text-xs text-slate-300 mt-1 md:mt-1.5">Propuesta #<span x-text="propuesta.numero"></span> • Selecciona 1 ganador</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 md:gap-4 flex-shrink-0">
+                            <div class="text-right">
+                                <p class="text-xs text-slate-300"><span class="font-semibold" x-text="propuesta.productos.length"></span> productos</p>
+                                <p class="text-base md:text-lg font-bold text-slate-100">
+                                    <span x-text="'$' + totalPropuesta(propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                </p>
+                            </div>
+                            <button
+                                @click="eliminarPropuesta(propIndex)"
+                                x-show="propuestas.length > 1"
+                                class="text-slate-300 hover:text-red-400 transition-colors p-2 hover:bg-slate-600 rounded-lg"
+                                title="Eliminar propuesta">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div x-show="equipo.abierto" x-collapse class="border-t border-slate-200 dark:border-slate-700">
-                    <div class="p-4">
-                        <div class="mb-3 flex flex-wrap gap-3">
-                            <div class="flex-1 min-w-[160px]">
-                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Nombre del equipo</label>
-                                <input type="text" x-model="equipo.nombre" placeholder="Ej. Mouse, Laptop"
-                                    class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                            <div class="w-24">
-                                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Cantidad</label>
-                                <input type="number" min="1" x-model.number="equipo.cantidad"
-                                    class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            </div>
-                        </div>
+                <!-- PRODUCTOS de la Propuesta -->
+                <div class="p-4 md:p-5 space-y-3 md:space-y-4">
+                    <template x-for="(producto, prodIndex) in propuesta.productos" :key="producto.id">
+                        <div class="bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden">
 
-                        <div class="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
-                            <table class="min-w-full text-sm">
-                                <thead class="bg-slate-100 dark:bg-slate-700">
-                                    <tr>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">Unidad</th>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">Proveedor</th>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">No. Parte</th>
-                                        <th class="px-3 py-2 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase">Descripción</th>
-                                        <th class="px-3 py-2 text-center text-xs font-medium text-slate-600 dark:text-slate-300 uppercase w-20">Cantidad</th>
-                                        <th class="px-3 py-2 text-right text-xs font-medium text-slate-600 dark:text-slate-300 uppercase w-32">Precio Unit.</th>
-                                        <th class="px-3 py-2 text-right text-xs font-medium text-slate-600 dark:text-slate-300 uppercase w-32">Envío</th>
-                                        <th class="px-3 py-2 text-right text-xs font-medium text-slate-600 dark:text-slate-300 uppercase w-28">Total</th>
-                                        <th class="px-3 py-2 w-10"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                                    <template x-for="(cot, cotIndex) in equipo.cotizaciones" :key="cotIndex">
-                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                                            <td class="px-3 py-2">
-                                                <input type="text" x-model="equipo.unidad" placeholder="Pieza"
-                                                    class="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                <input type="text" x-model="cot.proveedor" placeholder="Proveedor"
-                                                    class="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                <input type="text" x-model="cot.numeroParte" placeholder="No. Parte"
-                                                    class="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                <input type="text" x-model="cot.descripcion" :placeholder="equipo.nombre || 'Descripción'"
-                                                    class="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                                            </td>
-                                            <td class="px-3 py-2 text-center">
-                                                <span x-text="equipo.cantidad"></span>
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <span class="text-slate-500">$</span>
-                                                    <input type="number" step="0.01" min="0" x-model.number="cot.precioUnitario" placeholder="0"
-                                                        @input="cot.total = ((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
-                                                        class="w-full px-2 py-1 text-sm text-right border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                                                </div>
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <span class="text-slate-500">$</span>
-                                                    <input type="number" step="0.01" min="0" x-model.number="cot.costoEnvio" placeholder="0"
-                                                        @input="cot.total = ((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
-                                                        class="w-full px-2 py-1 text-sm text-right border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-                                                </div>
-                                            </td>
-                                            <td class="px-3 py-2 text-right font-medium text-slate-900 dark:text-slate-100">
-                                                $<span x-text="((equipo.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
-                                            </td>
-                                            <td class="px-3 py-2">
-                                                <button type="button" @click="eliminarCotizacion(equipo, cotIndex)"
-                                                    class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                                                    <i class="fas fa-trash text-sm"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                    <tr x-show="equipo.cotizaciones.length === 0">
-                                        <td colspan="8" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
-                                            No hay cotizaciones para este equipo. Haz clic en &quot;Agregar Cotización&quot;.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <!-- Header del Producto -->
+                            <div
+                                @click="producto.abierto = !producto.abierto"
+                                class="flex items-center justify-between px-3 md:px-4 py-2.5 md:py-3 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
+                                <div class="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                                    <i class="fas transition-transform text-slate-600 dark:text-slate-300 text-sm" :class="producto.abierto ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                    <i class="fas fa-box text-slate-600 dark:text-slate-300 text-sm"></i>
+                                    <span class="font-medium text-sm md:text-base text-slate-900 dark:text-slate-100 truncate" x-text="producto.nombre || 'Nuevo Producto'"></span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-600 px-2 py-0.5 rounded flex-shrink-0"><span x-text="producto.cantidad"></span> <span x-text="producto.unidad"></span></span>
+                                </div>
+                                <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                                    <span class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
+                                        <span x-text="cotizacionesConPrecio(producto).length"></span> cot. •
+                                        <span class="font-semibold" x-text="'$' + totalProducto(producto).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                    </span>
+                                    <button
+                                        @click.stop="eliminarProducto(propuesta, prodIndex)"
+                                        x-show="propuesta.productos.length > 1"
+                                        class="text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-slate-300 dark:hover:bg-slate-500 rounded"
+                                        title="Eliminar producto">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Detalles del Producto -->
+                            <div x-show="producto.abierto" x-collapse class="border-t border-slate-300 dark:border-slate-600">
+                                <div class="p-3 md:p-4 bg-slate-50 dark:bg-slate-800">
+                                    <!-- Datos del Producto -->
+                                    <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Nombre del producto</label>
+                                            <input type="text" x-model="producto.nombre" placeholder="Ej. Laptop HP Pavilion, Mouse Logitech"
+                                                class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Unidad</label>
+                                                <select x-model="producto.unidad"
+                                                    class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
+                                                    <option value="PIEZA">PIEZA</option>
+                                                    <option value="LOTE">LOTE</option>
+                                                    <option value="SERVICIO">SERVICIO</option>
+                                                    <option value="KIT">KIT</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Cantidad</label>
+                                                <input type="number" min="1" x-model.number="producto.cantidad"
+                                                    class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tabla de Cotizaciones -->
+                                    <div class="overflow-x-auto border border-slate-300 dark:border-slate-600 rounded-lg -mx-1">
+                                        <table class="min-w-full text-xs md:text-sm">
+                                            <thead class="bg-slate-200 dark:bg-slate-700">
+                                                <tr>
+                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-left text-xs font-semibold text-slate-700 dark:text-slate-200">Proveedor</th>
+                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-left text-xs font-semibold text-slate-700 dark:text-slate-200">No. Parte</th>
+                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-left text-xs font-semibold text-slate-700 dark:text-slate-200">Descripción</th>
+                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">Precio Unit.</th>
+                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">Envío</th>
+                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">Total</th>
+                                                    <th class="px-2 md:px-3 py-2 md:py-2.5 text-center text-xs font-semibold text-slate-700 dark:text-slate-200 w-12 md:w-16"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-200 dark:divide-slate-600 bg-slate-100 dark:bg-slate-700">
+                                                <template x-for="(cot, cotIndex) in producto.cotizaciones" :key="cotIndex">
+                                                    <tr class="hover:bg-slate-200 dark:hover:bg-slate-600/50 transition-colors">
+                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
+                                                            <input type="text" x-model="cot.proveedor" placeholder="Proveedor"
+                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
+                                                        </td>
+                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
+                                                            <input type="text" x-model="cot.numeroParte" placeholder="#"
+                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
+                                                        </td>
+                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
+                                                            <input type="text" x-model="cot.descripcion" placeholder="Descripción"
+                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
+                                                        </td>
+                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
+                                                            <input type="number" step="0.01" min="0" x-model.number="cot.precioUnitario" placeholder="0.00"
+                                                                @input="cot.total = ((producto.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
+                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 text-right focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
+                                                        </td>
+                                                        <td class="px-2 md:px-3 py-1.5 md:py-2">
+                                                            <input type="number" step="0.01" min="0" x-model.number="cot.costoEnvio" placeholder="0.00"
+                                                                @input="cot.total = ((producto.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
+                                                                class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 text-right focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
+                                                        </td>
+                                                        <td class="px-2 md:px-3 py-1.5 md:py-2 text-right font-semibold text-xs md:text-sm text-slate-900 dark:text-slate-100">
+                                                            <span x-text="'$' + ((producto.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                                        </td>
+                                                        <td class="px-2 md:px-3 py-1.5 md:py-2 text-center">
+                                                            <button @click="eliminarCotizacion(producto, cotIndex)"
+                                                                class="text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 p-1 hover:bg-slate-300 dark:hover:bg-slate-500 rounded transition-all text-xs md:text-sm">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                                <tr x-show="producto.cotizaciones.length === 0">
+                                                    <td colspan="7" class="px-3 py-6 md:py-8 text-center text-slate-500 dark:text-slate-400 text-xs md:text-sm">
+                                                        Sin cotizaciones. Agrega una nueva cotización.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <button type="button" @click="agregarCotizacion(producto)"
+                                        class="mt-3 px-3 md:px-4 py-1.5 md:py-2 bg-slate-600 hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-xs md:text-sm font-medium rounded-lg transition-all shadow-sm">
+                                        <i class="fas fa-plus mr-2"></i> Agregar Cotización
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <button type="button" @click="agregarCotizacion(equipo)"
-                            class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors">
-                            <i class="fas fa-plus mr-2"></i> Agregar Cotización
+                    </template>
+
+                    <!-- Botón Agregar Producto dentro de la propuesta -->
+                    <div class="flex justify-center pt-2">
+                        <button type="button" @click="agregarProducto(propuesta)"
+                            class="px-4 md:px-5 py-2 md:py-2.5 bg-slate-600 hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-xs md:text-sm font-medium rounded-lg transition-all shadow-sm">
+                            <i class="fas fa-plus mr-2"></i> Agregar Producto
                         </button>
                     </div>
                 </div>
             </div>
         </template>
 
-        <div class="flex justify-center pt-2">
-            <button type="button" @click="agregarEquipo()"
-                class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors">
-                <i class="fas fa-plus mr-2"></i> Agregar Equipo
-            </button>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-200 dark:border-slate-700 mt-6">
-
-            <div class="flex gap-2 flex-wrap">
-                <button type="button" x-show="tieneCotizacionesGuardadas"
-                    @click="enviarAlGerente()"
-                    class="px-4 py-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-700 dark:hover:bg-violet-600 text-white text-sm font-medium rounded-lg transition-colors">
-                    <i class="fas fa-envelope mr-2"></i> Enviar al Gerente
-                </button>
-                <button type="button" @click="guardar()"
-                    class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors">
-                    <i class="fas fa-save mr-2"></i> Guardar Cotizaciones
+            <!-- Botón Agregar Nueva Propuesta -->
+            <div class="flex justify-center pt-3">
+                <button type="button" @click="agregarPropuesta()"
+                    class="px-5 md:px-6 py-2.5 md:py-3 bg-slate-700 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-sm md:text-base font-semibold rounded-lg transition-all shadow-md">
+                    <i class="fas fa-layer-group mr-2"></i> Nueva Propuesta
                 </button>
             </div>
+
+            <!-- Botones de acción -->
+            <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3 md:gap-4 pt-4 md:pt-6 border-t-2 border-slate-300 dark:border-slate-600 mt-4 md:mt-6">
+                <div class="flex gap-2 md:gap-3 flex-wrap justify-center">
+                    <button type="button" x-show="tieneCotizacionesGuardadas"
+                        @click="enviarAlGerente()"
+                        class="px-4 md:px-5 py-2 md:py-2.5 bg-slate-700 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs md:text-sm font-semibold rounded-lg transition-all shadow-sm">
+                        <i class="fas fa-paper-plane mr-2"></i> Enviar al Gerente
+                    </button>
+                    <button type="button" @click="guardar()"
+                        class="px-4 md:px-5 py-2 md:py-2.5 bg-slate-600 hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500 text-white text-xs md:text-sm font-semibold rounded-lg transition-all shadow-sm">
+                        <i class="fas fa-save mr-2"></i> Guardar
+                    </button>
+                    <a href="{{ route('tickets.index') }}"
+                        class="inline-flex items-center justify-center gap-2 px-4 md:px-5 py-2 md:py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500 text-white text-xs md:text-sm font-semibold rounded-lg transition-all shadow-sm no-underline">
+                        Volver
+                    </a>
+                </div>
+            </div>
+
         </div>
+        <!-- FIN COLUMNA DERECHA -->
+        
     </div>
+    <!-- FIN GRID PRINCIPAL -->
 </div>
 
 @verbatim
@@ -219,7 +330,7 @@
             solicitudId,
             ticketsUrl,
             cargando: true,
-            equipos: [],
+            propuestas: [],
             nextId: 1,
             tieneCotizacionesGuardadas: false,
             tieneCotizacionesEnviadas: false,
@@ -229,58 +340,92 @@
             },
 
             get totalGeneral() {
-                return this.equipos.reduce((sum, eq) => sum + this.totalEquipo(eq), 0);
+                return this.propuestas.reduce((sum, prop) => sum + this.totalPropuesta(prop), 0);
             },
 
-            totalEquipo(equipo) {
-                return equipo.cotizaciones.reduce((s, c) => {
+            totalPropuesta(propuesta) {
+                return propuesta.productos.reduce((sum, prod) => sum + this.totalProducto(prod), 0);
+            },
+
+            totalProducto(producto) {
+                return producto.cotizaciones.reduce((s, c) => {
                     const u = parseFloat(c.precioUnitario) || 0;
                     const envio = parseFloat(c.costoEnvio) || 0;
-                    return s + (equipo.cantidad * u) + envio;
+                    return s + (producto.cantidad * u) + envio;
                 }, 0);
             },
 
-            cotizacionesConPrecio(equipo) {
-                return equipo.cotizaciones.filter(c => (parseFloat(c.precioUnitario) || 0) > 0);
+            cotizacionesConPrecio(producto) {
+                return producto.cotizaciones.filter(c => (parseFloat(c.precioUnitario) || 0) > 0);
             },
 
-            nuevoEquipo(nombre = 'Nuevo Equipo') {
+            nuevaPropuesta(numero) {
+                return {
+                    id: this.nextId++,
+                    numero: numero,
+                    nombre: `Propuesta ${numero}`,
+                    productos: []
+                };
+            },
+
+            nuevoProducto(nombre = 'Nuevo Producto') {
                 return {
                     id: this.nextId++,
                     abierto: true,
                     nombre,
-                    numeroParte: '',
                     cantidad: 1,
                     unidad: 'PIEZA',
                     cotizaciones: []
                 };
             },
 
-            nuevaCotizacion(equipo) {
+            nuevaCotizacion(producto) {
                 return {
                     proveedor: '',
-                    numeroParte: equipo.numeroParte || '',
-                    descripcion: equipo.nombre || '',
+                    numeroParte: '',
+                    descripcion: producto.nombre || '',
                     precioUnitario: '',
                     costoEnvio: 0,
                     total: '0.00'
                 };
             },
 
-            agregarEquipo() {
-                this.equipos.push(this.nuevoEquipo());
+            agregarPropuesta() {
+                const numero = this.propuestas.length + 1;
+                const prop = this.nuevaPropuesta(numero);
+                const prod = this.nuevoProducto();
+                prod.cotizaciones.push(this.nuevaCotizacion(prod));
+                prop.productos.push(prod);
+                this.propuestas.push(prop);
             },
 
-            eliminarEquipo(index) {
-                this.equipos.splice(index, 1);
+            eliminarPropuesta(index) {
+                this.propuestas.splice(index, 1);
+                // Renumerar propuestas
+                this.propuestas.forEach((prop, i) => {
+                    prop.numero = i + 1;
+                    if (!prop.nombre || prop.nombre.match(/^Propuesta \d+$/)) {
+                        prop.nombre = `Propuesta ${i + 1}`;
+                    }
+                });
             },
 
-            agregarCotizacion(equipo) {
-                equipo.cotizaciones.push(this.nuevaCotizacion(equipo));
+            agregarProducto(propuesta) {
+                const prod = this.nuevoProducto();
+                prod.cotizaciones.push(this.nuevaCotizacion(prod));
+                propuesta.productos.push(prod);
             },
 
-            eliminarCotizacion(equipo, index) {
-                equipo.cotizaciones.splice(index, 1);
+            eliminarProducto(propuesta, index) {
+                propuesta.productos.splice(index, 1);
+            },
+
+            agregarCotizacion(producto) {
+                producto.cotizaciones.push(this.nuevaCotizacion(producto));
+            },
+
+            eliminarCotizacion(producto, index) {
+                producto.cotizaciones.splice(index, 1);
             },
 
             async cargar() {
@@ -294,45 +439,72 @@
                     this.tieneCotizacionesGuardadas = productos.length > 0;
 
                     if (productos.length) {
-                        this.equipos = productos.map(p => {
-                            const nombreEq = (p.nombreEquipo || p.descripcion || '').trim() || (p.descripcion || '');
-                            const eq = this.nuevoEquipo(nombreEq);
-                            eq.numeroParte = p.numeroParte || '';
-                            eq.cantidad = Math.max(1, parseInt(p.cantidad) || 1);
-                            eq.unidad = (p.unidad || 'PIEZA').trim() || 'PIEZA';
-                            const precios = p.precios || {};
-                            const descripciones = p.descripciones || {};
-                            const numeroPartes = p.numeroPartes || {};
-                            eq.cotizaciones = proveedores.map(prov => {
-                                const precioData = precios[prov];
-                                // Detectar si es un objeto con precio_unitario y costo_envio o solo un número
-                                const uv = typeof precioData === 'object' && precioData !== null
-                                    ? (parseFloat(precioData.precio_unitario) || 0)
-                                    : (typeof precioData === 'number' ? precioData : parseFloat(precioData) || 0);
-                                const costoEnvio = typeof precioData === 'object' && precioData !== null
-                                    ? (parseFloat(precioData.costo_envio) || 0)
-                                    : 0;
-                                if (uv <= 0) return null;
-                                return {
-                                    proveedor: prov,
-                                    numeroParte: (numeroPartes[prov] ?? p.numeroParte ?? '').trim() || (p.numeroParte || ''),
-                                    descripcion: (descripciones[prov] || p.descripcion || '').trim() || (p.descripcion || ''),
-                                    precioUnitario: uv,
-                                    costoEnvio: costoEnvio,
-                                    total: ((eq.cantidad * uv) + costoEnvio).toFixed(2)
-                                };
-                            }).filter(Boolean);
-                            if (eq.cotizaciones.length === 0) eq.cotizaciones.push(this.nuevaCotizacion(eq));
-                            return eq;
+                        // Agrupar productos por NumeroPropuesta
+                        const propuestasMap = {};
+
+                        productos.forEach(p => {
+                            const numProp = p.numeroPropuesta || 1;
+
+                            if (!propuestasMap[numProp]) {
+                                propuestasMap[numProp] = [];
+                            }
+
+                            propuestasMap[numProp].push(p);
+                        });
+
+                        // Crear estructura de propuestas
+                        this.propuestas = Object.keys(propuestasMap).sort((a, b) => a - b).map((numProp) => {
+                            const productosEnPropuesta = propuestasMap[numProp];
+                            const prop = this.nuevaPropuesta(parseInt(numProp));
+                            prop.nombre = `Propuesta ${numProp}`;
+
+                            // Ordenar productos por NumeroProducto
+                            productosEnPropuesta.sort((a, b) => (a.numeroProducto || 0) - (b.numeroProducto || 0));
+
+                            prop.productos = productosEnPropuesta.map(p => {
+                                const prod = this.nuevoProducto(p.nombreEquipo || p.descripcion || 'Producto');
+                                prod.cantidad = Math.max(1, parseInt(p.cantidad) || 1);
+                                prod.unidad = (p.unidad || 'PIEZA').trim() || 'PIEZA';
+
+                                const precios = p.precios || {};
+                                const descripciones = p.descripciones || {};
+                                const numeroPartes = p.numeroPartes || {};
+
+                                prod.cotizaciones = proveedores.map(prov => {
+                                    const precioData = precios[prov];
+                                    const uv = typeof precioData === 'object' && precioData !== null ?
+                                        (parseFloat(precioData.precio_unitario) || 0) :
+                                        (typeof precioData === 'number' ? precioData : parseFloat(precioData) || 0);
+                                    const costoEnvio = typeof precioData === 'object' && precioData !== null ?
+                                        (parseFloat(precioData.costo_envio) || 0) :
+                                        0;
+                                    if (uv <= 0) return null;
+                                    return {
+                                        proveedor: prov,
+                                        numeroParte: (numeroPartes[prov] ?? p.numeroParte ?? '').trim() || (p.numeroParte || ''),
+                                        descripcion: (descripciones[prov] || p.descripcion || '').trim() || (p.descripcion || ''),
+                                        precioUnitario: uv,
+                                        costoEnvio: costoEnvio,
+                                        total: ((prod.cantidad * uv) + costoEnvio).toFixed(2)
+                                    };
+                                }).filter(Boolean);
+
+                                if (prod.cotizaciones.length === 0) {
+                                    prod.cotizaciones.push(this.nuevaCotizacion(prod));
+                                }
+
+                                return prod;
+                            });
+
+                            return prop;
                         });
                     } else {
-                        this.equipos = [this.nuevoEquipo()];
-                        this.equipos[0].cotizaciones.push(this.nuevaCotizacion(this.equipos[0]));
+                        // Inicializar con una propuesta vacía
+                        this.agregarPropuesta();
                     }
                 } catch (e) {
                     console.error(e);
-                    this.equipos = [this.nuevoEquipo()];
-                    this.equipos[0].cotizaciones.push(this.nuevaCotizacion(this.equipos[0]));
+                    this.agregarPropuesta();
                 }
                 this.cargando = false;
             },
@@ -341,40 +513,48 @@
                 const proveedoresSet = new Set();
                 const productos = [];
 
-                this.equipos.forEach(equipo => {
-                    const descBase = (equipo.nombre || '').trim();
-                    if (!descBase) return;
-                    const precios = {};
-                    const descripciones = {};
-                    const numerosParte = {};
-                    equipo.cotizaciones.forEach(c => {
-                        const prov = (c.proveedor || '').trim();
-                        const u = parseFloat(c.precioUnitario) || 0;
-                        if (!prov || u <= 0) return;
-                        proveedoresSet.add(prov);
-                        precios[prov] = {
-                            precio_unitario: u,
-                            costo_envio: parseFloat(c.costoEnvio) || 0
-                        };
-                        const d = (c.descripcion || '').trim() || descBase;
-                        descripciones[prov] = d;
-                        const np = (c.numeroParte || '').trim() || (equipo.numeroParte || '').trim();
-                        numerosParte[prov] = np;
-                    });
-                    if (Object.keys(precios).length) {
-                        productos.push({
-                            cantidad: Math.max(1, parseInt(equipo.cantidad) || 1),
-                            numero_parte: (equipo.numeroParte || '').trim(),
-                            descripcion: descBase,
-                            nombre_equipo: descBase,
-                            descripciones,
-                            numeros_parte: numerosParte,
-                            unidad: (equipo.unidad || 'PIEZA').trim() || 'PIEZA',
-                            precios,
-                            tiempo_entrega: {},
-                            observaciones: {}
+                this.propuestas.forEach(propuesta => {
+                    let contadorProducto = 1; // Contador por propuesta
+
+                    propuesta.productos.forEach((producto) => {
+                        const nombreProd = (producto.nombre || '').trim();
+                        if (!nombreProd) return;
+
+                        const precios = {};
+                        const descripciones = {};
+                        const numerosParte = {};
+
+                        producto.cotizaciones.forEach(c => {
+                            const prov = (c.proveedor || '').trim();
+                            const u = parseFloat(c.precioUnitario) || 0;
+                            if (!prov || u <= 0) return;
+
+                            proveedoresSet.add(prov);
+                            precios[prov] = {
+                                precio_unitario: u,
+                                costo_envio: parseFloat(c.costoEnvio) || 0
+                            };
+                            descripciones[prov] = (c.descripcion || '').trim() || nombreProd;
+                            numerosParte[prov] = (c.numeroParte || '').trim();
                         });
-                    }
+
+                        if (Object.keys(precios).length) {
+                            productos.push({
+                                numero_propuesta: propuesta.numero,
+                                numero_producto: contadorProducto++,
+                                cantidad: Math.max(1, parseInt(producto.cantidad) || 1),
+                                numero_parte: '',
+                                descripcion: nombreProd,
+                                nombre_equipo: nombreProd,
+                                descripciones,
+                                numeros_parte: numerosParte,
+                                unidad: (producto.unidad || 'PIEZA').trim() || 'PIEZA',
+                                precios,
+                                tiempo_entrega: {},
+                                observaciones: {}
+                            });
+                        }
+                    });
                 });
 
                 const proveedores = Array.from(proveedoresSet);
@@ -389,8 +569,9 @@
                     proveedores,
                     productos
                 } = this.buildPayload();
+
                 if (!productos.length) {
-                    Swal.fire('Aviso', 'Agrega al menos un equipo con nombre y al menos una cotización con precio.', 'warning');
+                    Swal.fire('Aviso', 'Agrega al menos una propuesta con productos y cotizaciones con precio.', 'warning');
                     return;
                 }
 
@@ -399,6 +580,7 @@
                     allowOutsideClick: false,
                     didOpen: () => Swal.showLoading()
                 });
+
                 try {
                     const res = await fetch(`/solicitudes/${this.solicitudId}/guardar-cotizaciones`, {
                         method: 'POST',
@@ -414,6 +596,7 @@
                     });
                     const data = await res.json().catch(() => ({}));
                     Swal.close();
+
                     if (data.success) {
                         this.tieneCotizacionesGuardadas = true;
                         await Swal.fire('Éxito', data.message || 'Cotizaciones guardadas.', 'success');
@@ -430,13 +613,14 @@
             async enviarAlGerente() {
                 const ok = await Swal.fire({
                     title: '¿Enviar cotizaciones al gerente?',
-                    text: 'Se enviará un correo para que elija el ganador de cada equipo.',
+                    text: 'Se enviará un correo para que elija 1 ganador por propuesta.',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonText: 'Sí, enviar',
                     cancelButtonText: 'Cancelar',
                     confirmButtonColor: '#0F766E'
                 }).then(r => r.isConfirmed);
+
                 if (!ok) return;
 
                 Swal.fire({
@@ -444,6 +628,7 @@
                     allowOutsideClick: false,
                     didOpen: () => Swal.showLoading()
                 });
+
                 try {
                     const res = await fetch(`/solicitudes/${this.solicitudId}/enviar-cotizaciones-gerente`, {
                         method: 'POST',
@@ -456,6 +641,7 @@
                     });
                     const data = await res.json().catch(() => ({}));
                     Swal.close();
+
                     if (data.success) {
                         await Swal.fire('Éxito', data.message || 'Enviado al gerente.', 'success');
                         window.location.href = this.ticketsUrl;

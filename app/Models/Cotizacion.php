@@ -25,6 +25,7 @@ class Cotizacion extends Model
         'Estatus',
         'NumeroPropuesta',
         'NombreEquipo',
+        'NumeroProducto',
         'NumeroParte',
         'Cantidad',
         'Unidad',
@@ -38,7 +39,8 @@ class Cotizacion extends Model
         'TiempoEntrega' => 'integer',
         'NumeroPropuesta' => 'integer',
         'Cantidad' => 'integer',
-        'CostoEnvio' => 'decimal:2'
+        'CostoEnvio' => 'decimal:2',
+        'NumeroProducto' => 'integer',
     ];
 
     /**

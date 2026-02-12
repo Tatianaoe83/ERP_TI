@@ -2016,7 +2016,17 @@ class TicketsController extends Controller
             $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
                 && ($pasoGerencia && $pasoGerencia->status === 'approved')
                 && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
-            $puedeCotizar = $todasFirmaron && auth()->check() && $estatusDisplay !== 'Aprobada' && $estatusDisplay !== 'Cotizaciones Enviadas';
+            
+            // Verificar si todos los productos tienen ganador (consistente con mostrarPaginaCotizacion y TablaSolicitudes)
+            $todosGanadores = $solicitud->todosProductosTienenGanador();
+            
+            // Validación consistente con mostrarPaginaCotizacion
+            $puedeCotizar = $todasFirmaron 
+                && auth()->check() 
+                && !$estaRechazada
+                && $estatusDisplay !== 'Aprobada' 
+                && $estatusDisplay !== 'Cotizaciones Enviadas'
+                && !$todosGanadores;
 
             // Verificar si puede elegir cotización (gerente con todas las firmas y cotizaciones cargadas o enviadas)
             $puedeElegirCotizacion = $todasFirmaron
@@ -2173,38 +2183,66 @@ class TicketsController extends Controller
     }
 
     /**
-     * Clave única de producto: NumeroPropuesta. Se agrupa por NombreEquipo (cada equipo tiene su NumeroPropuesta).
+     * Clave única de producto: NumeroPropuesta + NumeroProducto. Cada producto dentro de una propuesta se agrupa por separado.
      */
     private function claveProducto(Cotizacion $c): string
     {
-        return 'np_' . (int) ($c->NumeroPropuesta ?? 0);
+        return 'np_' . (int)($c->NumeroPropuesta ?? 0) . '_prod_' . (int)($c->NumeroProducto ?? 1);
     }
 
     /**
-     * Agrupar cotizaciones por producto (NombreEquipo / NumeroPropuesta).
-     * Cada producto tiene su NumeroPropuesta y varias propuestas (una por proveedor). Se elige un ganador por producto.
+     * Agrupar cotizaciones jerárquicamente: Propuesta -> Producto -> Cotizaciones.
+     * Estructura: [propuesta1 => [producto1 => [cotizaciones], producto2 => [...]], propuesta2 => [...]]
      *
-     * @return array<int, array{clave: string, descripcion: string, numeroPropuesta: int, cantidad: int, cotizaciones: \Illuminate\Support\Collection}>
+     * @return array<int, array{numeroPropuesta: int, productos: array}>
      */
     private function agruparCotizacionesPorProducto($cotizaciones): array
     {
-        $grupos = [];
+        // Paso 1: Agrupar por NumeroPropuesta
+        $propuestas = [];
         foreach ($cotizaciones as $c) {
-            $clave = $this->claveProducto($c);
-            if (!isset($grupos[$clave])) {
-                $nombre = trim(preg_replace('/\|+$/', '', trim($c->NombreEquipo ?? '')));
-                $grupos[$clave] = [
-                    'clave' => $clave,
-                    'descripcion' => $nombre !== '' ? $nombre : ('Producto ' . (int) ($c->NumeroPropuesta ?? 0)),
-                    'numeroPropuesta' => (int) ($c->NumeroPropuesta ?? 0),
-                    'cantidad' => (int) ($c->Cantidad ?? 1),
-                    'cotizaciones' => collect([]),
+            $numPropuesta = (int)($c->NumeroPropuesta ?? 1);
+            $numProducto = (int)($c->NumeroProducto ?? 1);
+            
+            if (!isset($propuestas[$numPropuesta])) {
+                $propuestas[$numPropuesta] = [
+                    'numeroPropuesta' => $numPropuesta,
+                    'productos' => []
                 ];
             }
-            $grupos[$clave]['cotizaciones']->push($c);
+            
+            // Paso 2: Agrupar por NumeroProducto dentro de cada propuesta
+            $claveProducto = 'prod_' . $numProducto;
+            if (!isset($propuestas[$numPropuesta]['productos'][$claveProducto])) {
+                // Limpiar el nombre: quitar pipes y números al final
+                $nombre = trim($c->NombreEquipo ?? '');
+                $nombre = preg_replace('/\|+$/', '', $nombre); // Quitar pipes al final
+                $nombre = preg_replace('/\s*\d+\s*$/', '', $nombre); // Quitar números al final
+                $nombre = trim($nombre);
+                
+                $propuestas[$numPropuesta]['productos'][$claveProducto] = [
+                    'numeroProducto' => $numProducto,
+                    'descripcion' => $nombre !== '' ? $nombre : ('Producto ' . $numProducto),
+                    'cotizaciones' => collect([])
+                ];
+            }
+            
+            // Paso 3: Agregar cotización al producto
+            $propuestas[$numPropuesta]['productos'][$claveProducto]['cotizaciones']->push($c);
         }
-        $result = array_values($grupos);
+        
+        // Convertir a arrays y ordenar
+        $result = [];
+        foreach ($propuestas as $propuesta) {
+            $propuesta['productos'] = array_values($propuesta['productos']);
+            // Ordenar productos por numeroProducto
+            usort($propuesta['productos'], fn($a, $b) => $a['numeroProducto'] <=> $b['numeroProducto']);
+            $result[] = $propuesta;
+        }
+        
+        // Ordenar propuestas por numeroPropuesta
         usort($result, fn($a, $b) => $a['numeroPropuesta'] <=> $b['numeroPropuesta']);
+        
         return $result;
     }
 
@@ -2304,7 +2342,8 @@ class TicketsController extends Controller
     }
 
     /**
-     * Confirmar todos los ganadores en bloque. Se envía un ganador por producto (NombreEquipo/NumeroPropuesta).
+     * Confirmar todos los ganadores en bloque. Se envía un ganador por propuesta.
+     * Cada propuesta puede tener múltiples productos, pero solo una cotización gana por propuesta.
      * No se persiste nada hasta que se llame este endpoint.
      */
     public function confirmarGanadores(Request $request, $id)
@@ -2320,24 +2359,26 @@ class TicketsController extends Controller
             $ids = array_map('intval', $request->input('ganadores'));
             $cotizaciones = $solicitud->cotizaciones ?? collect();
 
-            $productos = [];
+            // Agrupar por NumeroPropuesta
+            $propuestas = [];
             foreach ($cotizaciones as $c) {
-                $clave = $this->claveProducto($c);
-                if (!isset($productos[$clave])) {
-                    $productos[$clave] = [];
+                $numPropuesta = (int)($c->NumeroPropuesta ?? 1);
+                if (!isset($propuestas[$numPropuesta])) {
+                    $propuestas[$numPropuesta] = [];
                 }
-                $productos[$clave][] = $c;
+                $propuestas[$numPropuesta][] = $c;
             }
 
-            $productosKeys = array_keys($productos);
-            if (count($ids) !== count($productosKeys)) {
+            $propuestasKeys = array_keys($propuestas);
+            if (count($ids) !== count($propuestasKeys)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Debes enviar exactamente un ganador por cada producto.',
+                    'message' => 'Debes enviar exactamente un ganador por cada propuesta.',
                 ], 422);
             }
 
-            $porProducto = [];
+            // Validar que cada ganador pertenezca a una propuesta distinta
+            $porPropuesta = [];
             foreach ($ids as $cid) {
                 $cot = $cotizaciones->firstWhere('CotizacionID', $cid);
                 if (!$cot || $cot->SolicitudID != $solicitud->SolicitudID) {
@@ -2346,36 +2387,53 @@ class TicketsController extends Controller
                         'message' => 'Una o más cotizaciones no pertenecen a esta solicitud.',
                     ], 400);
                 }
-                $clave = $this->claveProducto($cot);
-                if (!isset($productos[$clave])) {
+                $numPropuesta = (int)($cot->NumeroPropuesta ?? 1);
+                if (!isset($propuestas[$numPropuesta])) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Cotización no coincide con ningún producto de la solicitud.',
+                        'message' => 'Cotización no coincide con ninguna propuesta de la solicitud.',
                     ], 400);
                 }
-                if (isset($porProducto[$clave])) {
+                if (isset($porPropuesta[$numPropuesta])) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Solo puede haber un ganador por producto.',
+                        'message' => 'Solo puede haber un ganador por propuesta.',
                     ], 422);
                 }
-                $porProducto[$clave] = $cot;
+                $porPropuesta[$numPropuesta] = $cot;
             }
 
-            \DB::transaction(function () use ($solicitud, $porProducto, $productos) {
-                foreach ($porProducto as $clave => $ganador) {
+            // Guardar ganadores y rechazar las demás cotizaciones de cada propuesta
+            \DB::transaction(function () use ($solicitud, $porPropuesta, $propuestas) {
+                foreach ($porPropuesta as $numPropuesta => $ganador) {
+                    // Marcar ganador
                     $ganador->Estatus = 'Seleccionada';
                     $ganador->save();
-                    $idsRechazar = collect($productos[$clave])
+                    
+                    // Rechazar todas las demás cotizaciones de esta propuesta
+                    $idsRechazar = collect($propuestas[$numPropuesta])
                         ->where('CotizacionID', '!=', $ganador->CotizacionID)
                         ->pluck('CotizacionID');
+                    
                     if ($idsRechazar->isNotEmpty()) {
                         Cotizacion::whereIn('CotizacionID', $idsRechazar)->update(['Estatus' => 'Rechazada']);
                     }
                 }
+                
+                // Verificar si todas las propuestas tienen ganador
                 $solicitud->refresh();
                 $solicitud->load('cotizaciones');
-                if ($solicitud->todosProductosTienenGanador()) {
+                
+                $todasPropuestasConGanador = true;
+                foreach ($propuestas as $numPropuesta => $cotis) {
+                    $tieneGanador = collect($cotis)->contains('Estatus', 'Seleccionada');
+                    if (!$tieneGanador) {
+                        $todasPropuestasConGanador = false;
+                        break;
+                    }
+                }
+                
+                if ($todasPropuestasConGanador) {
                     $solicitud->Estatus = 'Aprobado';
                     $solicitud->save();
                     $ganadores = $solicitud->cotizaciones->where('Estatus', 'Seleccionada');
@@ -2443,8 +2501,21 @@ class TicketsController extends Controller
                 && !$todosGanadores;
 
             if (!$puedeCotizar) {
-                return redirect()->route('tickets.index')
-                    ->with('error', 'No puedes cotizar esta solicitud o ya fue completada.');
+                $mensaje = 'No puedes cotizar esta solicitud.';
+                
+                if ($estaRechazada) {
+                    $mensaje = 'No puedes cotizar una solicitud rechazada.';
+                } elseif (!$todasFirmaron) {
+                    $mensaje = 'La solicitud aún no ha sido aprobada por todos los niveles.';
+                } elseif ($todosGanadores) {
+                    $mensaje = 'Esta solicitud ya tiene cotizaciones ganadoras seleccionadas.';
+                } elseif ($solicitud->Estatus === 'Aprobado') {
+                    $mensaje = 'Esta solicitud ya fue aprobada completamente.';
+                } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
+                    $mensaje = 'Las cotizaciones ya han sido enviadas al gerente para revisión.';
+                }
+                
+                return redirect()->route('tickets.index')->with('error', $mensaje);
             }
 
             return view('solicitudes.cotizar', ['solicitud' => $solicitud]);
@@ -2476,19 +2547,24 @@ class TicketsController extends Controller
             // Obtener todos los proveedores únicos
             $proveedores = $solicitud->cotizaciones->pluck('Proveedor')->unique()->values()->toArray();
 
-            // Agrupar por NumeroPropuesta (1 equipo = 1 NumeroPropuesta; varias cotizaciones por proveedor)
-            // Así "2 equipos con 2 cotizaciones cada uno" se muestran como 2 secciones con 2 filas cada una
+            // Agrupar por NumeroPropuesta + NumeroProducto
             $productosMap = [];
-            $cotizacionesOrdenadas = $solicitud->cotizaciones->sortBy(fn($c) => [(int) ($c->NumeroPropuesta ?? 0), (int) ($c->CotizacionID ?? 0)])->values();
+            $cotizacionesOrdenadas = $solicitud->cotizaciones->sortBy(fn($c) => [
+                (int) ($c->NumeroPropuesta ?? 0), 
+                (int) ($c->NumeroProducto ?? 0),
+                (int) ($c->CotizacionID ?? 0)
+            ])->values();
 
             foreach ($cotizacionesOrdenadas as $cotizacion) {
-                $numProp = (int) ($cotizacion->NumeroPropuesta ?? 0);
-                $claveProducto = 'np_' . $numProp;
-                $cantidad = isset($cotizacion->Cantidad) ? (int) $cotizacion->Cantidad : 1;
-                $cantidad = max(1, $cantidad);
+                $numProp = (int) ($cotizacion->NumeroPropuesta ?? 1);
+                $numProd = (int) ($cotizacion->NumeroProducto ?? 1);
+                $claveProducto = 'prop_' . $numProp . '_prod_' . $numProd;
+                $cantidad = max(1, (int) ($cotizacion->Cantidad ?? 1));
 
                 if (!isset($productosMap[$claveProducto])) {
                     $productosMap[$claveProducto] = [
+                        'numeroPropuesta' => $numProp,
+                        'numeroProducto' => $numProd,
                         'cantidad' => $cantidad,
                         'numeroParte' => $cotizacion->NumeroParte ?? '',
                         'descripcion' => $cotizacion->Descripcion ?? '',
@@ -2501,6 +2577,7 @@ class TicketsController extends Controller
                         'observaciones' => []
                     ];
                 }
+                
                 $productosMap[$claveProducto]['cantidad'] = max(1, $cantidad);
                 if ($cotizacion->NombreEquipo !== null && trim($cotizacion->NombreEquipo) !== '') {
                     $productosMap[$claveProducto]['nombreEquipo'] = $cotizacion->NombreEquipo;
@@ -2513,7 +2590,6 @@ class TicketsController extends Controller
                 $precioUnitario = $precioTotal / max(1, $cantidad);
                 $costoEnvio = (float) ($cotizacion->CostoEnvio ?? 0);
                 
-                // Guardar como objeto con precio_unitario y costo_envio
                 $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = [
                     'precio_unitario' => $precioUnitario,
                     'costo_envio' => $costoEnvio
@@ -2531,6 +2607,7 @@ class TicketsController extends Controller
 
             $productos = array_values($productosMap);
 
+            // Completar con valores por defecto para proveedores sin precio
             foreach ($productos as &$producto) {
                 foreach ($proveedores as $proveedor) {
                     if (!isset($producto['precios'][$proveedor])) {
@@ -2548,7 +2625,7 @@ class TicketsController extends Controller
                 }
             }
 
-            // Verificar si las cotizaciones fueron enviadas (basado en el estatus de la solicitud)
+            // Verificar si las cotizaciones fueron enviadas
             $tieneCotizacionesEnviadas = $solicitud->Estatus === 'Cotizaciones Enviadas';
 
             return response()->json([
@@ -2586,17 +2663,13 @@ class TicketsController extends Controller
             ]);
 
             // Eliminar todas las cotizaciones existentes de esta solicitud
-            // El estatus de "enviadas" se maneja en la tabla solicitudes, no en cotizaciones
             Cotizacion::where('SolicitudID', $solicitud->SolicitudID)->delete();
 
             $proveedores = $validated['proveedores'] ?? $request->input('proveedores', []);
             $productos = $validated['productos'] ?? $request->input('productos', []);
 
-            $numeroPropuesta = 1;
             $cotizacionesCreadas = 0;
 
-            // Crear una cotización por cada combinación de producto y proveedor con precio
-            // Descripción y No. Parte pueden variar por proveedor (descripciones / numeros_parte); si no, se usa el del producto
             foreach ($productos as $producto) {
                 $descBase = trim($producto['descripcion'] ?? '');
                 $descripciones = $producto['descripciones'] ?? [];
@@ -2604,13 +2677,14 @@ class TicketsController extends Controller
                 $precios = $producto['precios'] ?? [];
                 $cantidad = isset($producto['cantidad']) ? (int)$producto['cantidad'] : 1;
                 $numeroParteBase = $producto['numero_parte'] ?? $producto['numeroParte'] ?? null;
+                
+                $numeroPropuesta = (int)($producto['numero_propuesta'] ?? 1);
+                $numeroProducto = (int)($producto['numero_producto'] ?? 1);
 
                 foreach ($proveedores as $proveedor) {
-                    // 🔥 CAMBIO AQUÍ: Obtener precio_unitario y costo_envio correctamente
                     $datosPrecios = $precios[$proveedor] ?? null;
 
                     if (!is_array($datosPrecios)) {
-                        // Si por alguna razón no es array, intentar usarlo directamente
                         $precioUnitario = (float)($datosPrecios ?? 0);
                         $costoEnvio = 0;
                     } else {
@@ -2630,6 +2704,7 @@ class TicketsController extends Controller
                     $np = trim($numerosParte[$proveedor] ?? '') ?: ($numeroParteBase !== null ? trim($numeroParteBase) : '');
                     $nombreEquipo = trim($producto['nombre_equipo'] ?? $producto['nombreEquipo'] ?? $producto['descripcion'] ?? '');
                     $unidad = trim($producto['unidad'] ?? '') ?: 'PIEZA';
+                    
                     Cotizacion::create([
                         'SolicitudID' => $solicitud->SolicitudID,
                         'Proveedor' => $proveedor,
@@ -2643,13 +2718,10 @@ class TicketsController extends Controller
                         'TiempoEntrega' => isset($producto['tiempo_entrega'][$proveedor]) ? (int)$producto['tiempo_entrega'][$proveedor] : null,
                         'Observaciones' => isset($producto['observaciones'][$proveedor]) ? $producto['observaciones'][$proveedor] : null,
                         'Estatus' => 'Pendiente',
-                        'NumeroPropuesta' => $numeroPropuesta
+                        'NumeroPropuesta' => $numeroPropuesta,
+                        'NumeroProducto' => $numeroProducto
                     ]);
                     $cotizacionesCreadas++;
-                }
-
-                if ($cotizacionesCreadas > 0) {
-                    $numeroPropuesta++;
                 }
             }
 

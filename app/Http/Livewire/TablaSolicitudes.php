@@ -204,8 +204,19 @@ class TablaSolicitudes extends Component
 
         $todasFirmaron = $this->allStepsApproved($solicitud);
         $tieneSeleccionada = $this->hasSelectedCotizacion($solicitud);
+        
+        // Verificar si todos los productos tienen ganador (consistente con el controller)
+        $todosGanadores = $solicitud->todosProductosTienenGanador();
 
-        $solicitud->puedeCotizar = (bool) ($todasFirmaron && $user && $estatusDisplay !== 'Aprobada');
+        // Validación consistente con TicketsController::mostrarPaginaCotizacion
+        $solicitud->puedeCotizar = (bool) (
+            $todasFirmaron 
+            && $user 
+            && !$estaRechazada
+            && $estatusDisplay !== 'Aprobada'
+            && $estatusDisplay !== 'Cotizaciones Enviadas'
+            && !$todosGanadores
+        );
         $solicitud->puedeSubirFactura = (bool) ($todasFirmaron && $tieneSeleccionada && $user);
         $solicitud->puedeAsignar = (bool) ($todasFirmaron && $tieneSeleccionada && $user);
 
@@ -318,7 +329,7 @@ class TablaSolicitudes extends Component
         }
 
         if ($estatusReal === 'Completada') {
-            return ['En revisión', 'bg-sky-50 text-sky-800 border border-sky-200'];
+            return ['En revisión', 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700'];
         }
 
         if ($estatusReal === 'Pendiente Cotización TI') {
@@ -330,7 +341,7 @@ class TablaSolicitudes extends Component
             'Pendiente Aprobación Gerencia',
             'Pendiente Aprobación Administración',
         ], true)) {
-            return ['En revisión', 'bg-sky-50 text-sky-800 border border-sky-200'];
+            return ['En revisión', 'bg-white text-purple-700 border border-purple-200 dark:text-purple-700 dark:border-purple-700'];
         }
 
         return ['Pendiente', 'bg-gray-50 text-gray-700 border border-gray-200'];
