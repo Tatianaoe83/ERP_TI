@@ -207,20 +207,20 @@
         </button>
         <ul x-show="open === 5" x-collapse class="px-3 md:px-4 pt-1 space-y-1 text-xs md:text-sm">
             <li>
+                @if(auth()->user()->can('cortes.view'))
                 <a href="/cortes" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
-                    @if(auth()->user()->can('ver-cortes'))
                     <span class="sidebar-text">Cortes</span>
-                    @endif
                 </a>
+                @endif
             </li>
             <li>
+                @if(auth()->user()->can('facturas.view'))
                 <a href="/facturas" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
-                    @if(auth()->user()->can('ver-cortes'))
                     <span class="sidebar-text">Facturas</span>
-                    @endif
                 </a>
+                @endif
             </li>
         </ul>
     </li>

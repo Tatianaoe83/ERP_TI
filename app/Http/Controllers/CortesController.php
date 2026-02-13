@@ -25,6 +25,8 @@ class CortesController extends AppBaseController
     public function __construct(CortesRepository $cortesRepo)
     {
         $this->cortesRepository = $cortesRepo;
+
+        $this->middleware('permission:cortes.view', ['only' => ['index']]);
     }
 
     /**
