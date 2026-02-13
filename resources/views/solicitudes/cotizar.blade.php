@@ -123,29 +123,49 @@
             <div class="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden shadow-sm">
 
                 <!-- Header de Propuesta -->
-                <div class="bg-slate-700 dark:bg-slate-700 px-4 md:px-5 py-3 md:py-4">
-                    <div class="flex items-center justify-between gap-3 md:gap-4 flex-wrap">
-                        <div class="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
-                            <i class="fas fa-layer-group text-slate-300 text-base md:text-lg flex-shrink-0"></i>
-                            <div class="flex-1 min-w-0">
-                                <input type="text" x-model="propuesta.nombre" placeholder="Nombre de la propuesta (ej. Opción A)"
-                                    class="w-full font-semibold text-sm md:text-base px-3 py-1.5 md:py-2 border border-slate-500 rounded-lg bg-slate-800 dark:bg-slate-900 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
-                                <p class="text-xs text-slate-300 mt-1 md:mt-1.5">Propuesta #<span x-text="propuesta.numero"></span> • Selecciona 1 ganador</p>
-                            </div>
+                <div class="bg-gradient-to-r from-slate-700 via-slate-750 to-slate-800 dark:from-slate-700 dark:via-slate-750 dark:to-slate-800 px-5 md:px-6 py-4 md:py-5">
+                    <div class="flex items-center justify-between gap-4 md:gap-6">
+                        <div class="flex-1 min-w-0 max-w-md">
+                            <input type="text" x-model="propuesta.nombre" placeholder="Nombre de la propuesta"
+                                class="w-full font-semibold text-base md:text-lg px-4 py-2.5 border-2 border-slate-500/30 rounded-xl bg-slate-800/50 dark:bg-slate-900/50 text-slate-50 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all shadow-inner backdrop-blur-sm">
                         </div>
-                        <div class="flex items-center gap-3 md:gap-4 flex-shrink-0">
-                            <div class="text-right">
-                                <p class="text-xs text-slate-300"><span class="font-semibold" x-text="propuesta.productos.length"></span> productos</p>
-                                <p class="text-base md:text-lg font-bold text-slate-100">
-                                    <span x-text="'$' + totalPropuesta(propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
-                                </p>
+
+                        <!-- Metricas & Acciones -->
+                        <div class="flex items-center gap-4 md:gap-6">
+                            <div class="flex items-center gap-3 bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-4 py-2 backdrop-blur-sm border border-slate-600/30">
+                                <div class="text-right">
+                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-0.5">Cantidad</p>
+                                    <input type="number" min="1" x-model.number="propuesta.cantidad"
+                                        class="w-16 px-2 py-1 text-sm border border-slate-500/30 rounded-lg bg-slate-700/50 dark:bg-slate-800/50 text-slate-50 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all text-center font-bold shadow-inner">
+                                </div>
                             </div>
+
+                            <!-- Stats -->
+                            <div class="hidden sm:flex items-center gap-5 bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-5 py-2.5 backdrop-blur-sm border border-slate-600/30">
+                                <div class="text-center">
+                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-0.5">Productos</p>
+                                    <p class="text-lg font-bold text-slate-50" x-text="propuesta.productos.length"></p>
+                                </div>
+                                
+                                <div class="w-px h-8 bg-slate-600/50"></div>
+                                
+                                <div class="text-right">
+                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-0.5">Total</p>
+                                    <p class="text-lg font-bold text-emerald-400" x-text="'$' + totalPropuesta(propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></p>
+                                </div>
+                            </div>
+
+                            <div class="flex sm:hidden flex-col items-end gap-1 bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-4 py-2 backdrop-blur-sm border border-slate-600/30 min-w-[100px]">
+                                <p class="text-[10px] text-slate-400"><span class="font-bold text-slate-200" x-text="propuesta.productos.length"></span> prod.</p>
+                                <p class="text-sm font-bold text-emerald-400" x-text="'$' + totalPropuesta(propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></p>
+                            </div>
+
                             <button
                                 @click="eliminarPropuesta(propIndex)"
                                 x-show="propuestas.length > 1"
-                                class="text-slate-300 hover:text-red-400 transition-colors p-2 hover:bg-slate-600 rounded-lg"
+                                class="text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all p-2.5 rounded-lg border border-transparent hover:border-red-500/30"
                                 title="Eliminar propuesta">
-                                <i class="fas fa-trash"></i>
+                                <i class="fas fa-trash text-sm"></i>
                             </button>
                         </div>
                     </div>
@@ -164,12 +184,12 @@
                                     <i class="fas transition-transform text-slate-600 dark:text-slate-300 text-sm" :class="producto.abierto ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
                                     <i class="fas fa-box text-slate-600 dark:text-slate-300 text-sm"></i>
                                     <span class="font-medium text-sm md:text-base text-slate-900 dark:text-slate-100 truncate" x-text="producto.nombre || 'Nuevo Producto'"></span>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-600 px-2 py-0.5 rounded flex-shrink-0"><span x-text="producto.cantidad"></span> <span x-text="producto.unidad"></span></span>
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-600 px-2 py-0.5 rounded flex-shrink-0"><span x-text="propuesta.cantidad"></span> <span x-text="producto.unidad"></span></span>
                                 </div>
                                 <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
                                     <span class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
                                         <span x-text="cotizacionesConPrecio(producto).length"></span> cot. •
-                                        <span class="font-semibold" x-text="'$' + totalProducto(producto).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                        <span class="font-semibold" x-text="'$' + totalProducto(producto, propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
                                     </span>
                                     <button
                                         @click.stop="eliminarProducto(propuesta, prodIndex)"
@@ -184,29 +204,21 @@
                             <!-- Detalles del Producto -->
                             <div x-show="producto.abierto" x-collapse class="border-t border-slate-300 dark:border-slate-600">
                                 <div class="p-3 md:p-4 bg-slate-50 dark:bg-slate-800">
-                                    <!-- Datos del Producto -->
-                                    <div class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <div class="md:col-span-2">
+                                    <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
                                             <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Nombre del producto</label>
                                             <input type="text" x-model="producto.nombre" placeholder="Ej. Laptop HP Pavilion, Mouse Logitech"
                                                 class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
                                         </div>
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Unidad</label>
-                                                <select x-model="producto.unidad"
-                                                    class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
-                                                    <option value="PIEZA">PIEZA</option>
-                                                    <option value="LOTE">LOTE</option>
-                                                    <option value="SERVICIO">SERVICIO</option>
-                                                    <option value="KIT">KIT</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Cantidad</label>
-                                                <input type="number" min="1" x-model.number="producto.cantidad"
-                                                    class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
-                                            </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Unidad</label>
+                                            <select x-model="producto.unidad"
+                                                class="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-slate-400 focus:border-slate-400 transition-all">
+                                                <option value="PIEZA">PIEZA</option>
+                                                <option value="LOTE">LOTE</option>
+                                                <option value="SERVICIO">SERVICIO</option>
+                                                <option value="KIT">KIT</option>
+                                            </select>
                                         </div>
                                     </div>
 
@@ -241,16 +253,16 @@
                                                         </td>
                                                         <td class="px-2 md:px-3 py-1.5 md:py-2">
                                                             <input type="number" step="0.01" min="0" x-model.number="cot.precioUnitario" placeholder="0.00"
-                                                                @input="cot.total = ((producto.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
+                                                                @input="cot.total = ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
                                                                 class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 text-right focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
                                                         </td>
                                                         <td class="px-2 md:px-3 py-1.5 md:py-2">
                                                             <input type="number" step="0.01" min="0" x-model.number="cot.costoEnvio" placeholder="0.00"
-                                                                @input="cot.total = ((producto.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
+                                                                @input="cot.total = ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toFixed(2)"
                                                                 class="w-full px-2 py-1.5 text-xs md:text-sm border border-slate-300 dark:border-slate-500 rounded bg-slate-50 dark:bg-slate-600 text-slate-900 dark:text-slate-100 text-right focus:ring-1 focus:ring-slate-400 focus:border-slate-400">
                                                         </td>
                                                         <td class="px-2 md:px-3 py-1.5 md:py-2 text-right font-semibold text-xs md:text-sm text-slate-900 dark:text-slate-100">
-                                                            <span x-text="'$' + ((producto.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
+                                                            <span x-text="'$' + ((propuesta.cantidad * (parseFloat(cot.precioUnitario) || 0)) + (parseFloat(cot.costoEnvio) || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
                                                         </td>
                                                         <td class="px-2 md:px-3 py-1.5 md:py-2 text-center">
                                                             <button @click="eliminarCotizacion(producto, cotIndex)"
@@ -344,14 +356,15 @@
             },
 
             totalPropuesta(propuesta) {
-                return propuesta.productos.reduce((sum, prod) => sum + this.totalProducto(prod), 0);
+                return propuesta.productos.reduce((sum, prod) => sum + this.totalProducto(prod, propuesta), 0);
             },
 
-            totalProducto(producto) {
+            totalProducto(producto, propuesta) {
+                const cantidad = propuesta ? propuesta.cantidad : 1;
                 return producto.cotizaciones.reduce((s, c) => {
                     const u = parseFloat(c.precioUnitario) || 0;
                     const envio = parseFloat(c.costoEnvio) || 0;
-                    return s + (producto.cantidad * u) + envio;
+                    return s + (cantidad * u) + envio;
                 }, 0);
             },
 
@@ -364,6 +377,7 @@
                     id: this.nextId++,
                     numero: numero,
                     nombre: `Propuesta ${numero}`,
+                    cantidad: 1,
                     productos: []
                 };
             },
@@ -373,7 +387,6 @@
                     id: this.nextId++,
                     abierto: true,
                     nombre,
-                    cantidad: 1,
                     unidad: 'PIEZA',
                     cotizaciones: []
                 };
@@ -461,9 +474,11 @@
                             // Ordenar productos por NumeroProducto
                             productosEnPropuesta.sort((a, b) => (a.numeroProducto || 0) - (b.numeroProducto || 0));
 
+                            // Obtener la cantidad del primer producto para la propuesta
+                            prop.cantidad = productosEnPropuesta.length > 0 ? Math.max(1, parseInt(productosEnPropuesta[0].cantidad) || 1) : 1;
+
                             prop.productos = productosEnPropuesta.map(p => {
                                 const prod = this.nuevoProducto(p.nombreEquipo || p.descripcion || 'Producto');
-                                prod.cantidad = Math.max(1, parseInt(p.cantidad) || 1);
                                 prod.unidad = (p.unidad || 'PIEZA').trim() || 'PIEZA';
 
                                 const precios = p.precios || {};
@@ -485,7 +500,7 @@
                                         descripcion: (descripciones[prov] || p.descripcion || '').trim() || (p.descripcion || ''),
                                         precioUnitario: uv,
                                         costoEnvio: costoEnvio,
-                                        total: ((prod.cantidad * uv) + costoEnvio).toFixed(2)
+                                        total: ((prop.cantidad * uv) + costoEnvio).toFixed(2)
                                     };
                                 }).filter(Boolean);
 
@@ -542,7 +557,7 @@
                             productos.push({
                                 numero_propuesta: propuesta.numero,
                                 numero_producto: contadorProducto++,
-                                cantidad: Math.max(1, parseInt(producto.cantidad) || 1),
+                                cantidad: Math.max(1, parseInt(propuesta.cantidad) || 1),
                                 numero_parte: '',
                                 descripcion: nombreProd,
                                 nombre_equipo: nombreProd,

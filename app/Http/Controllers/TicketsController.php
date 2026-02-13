@@ -2587,7 +2587,7 @@ class TicketsController extends Controller
                 }
 
                 $precioTotal = (float) $cotizacion->Precio;
-                $precioUnitario = $precioTotal / max(1, $cantidad);
+                $precioUnitario = $precioTotal;
                 $costoEnvio = (float) ($cotizacion->CostoEnvio ?? 0);
                 
                 $productosMap[$claveProducto]['precios'][$cotizacion->Proveedor] = [
