@@ -13,16 +13,25 @@
     <link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: "Electrolize", sans-serif;
             font-weight: 400;
             font-style: normal;
+            overflow: hidden;
+            height: 100vh;
         }
 
         .glass-effect {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
         }
 
         .fade-in {
@@ -30,7 +39,7 @@
         }
 
         .fade-change {
-            animation: fadeChange 0.5s ease;
+            animation: fadeChange 0.3s ease;
         }
 
         @keyframes fadeIn {
@@ -57,13 +66,86 @@
             }
         }
 
-        /* Estilos personalizados para Select2 más amigable */
+        .scroll-container {
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+
+        .scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scroll-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Estilos para botones */
+        #btnEnviar:not(:disabled) {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+
+        #btnEnviar:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -1px rgba(59, 130, 246, 0.4);
+        }
+
+        #btnEnviarSolicitud:not(:disabled) {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        }
+
+        #btnEnviarSolicitud:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -1px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Inputs focus mejorados */
+        input:focus,
+        textarea:focus,
+        select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Animación sutil para formularios */
+        #ticket-form,
+        #solicitud-form {
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Estilos modernos para Select2 */
         .select2-container--default .select2-selection--single {
-            height: 42px !important;
-            border: 1px solid #d1d5db !important;
-            border-radius: 0.375rem !important;
+            height: 44px !important;
+            border: 2px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
             padding: 0.5rem !important;
-            transition: all 0.2s ease !important;
+            transition: all 0.3s ease !important;
+            background: white !important;
         }
 
         .select2-container--default .select2-selection--single:hover {
@@ -71,9 +153,8 @@
         }
 
         .select2-container--default.select2-container--focus .select2-selection--single {
-            border-color: #000 !important;
-            outline: 2px solid rgba(0, 0, 0, 0.1) !important;
-            outline-offset: 2px !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
         }
 
         .select2-container--default .select2-selection--single .select2-selection__rendered {
@@ -161,186 +242,205 @@
     </style>
 </head>
 
-<body class="min-h-screen py-8 px-4">
-    <div id="tsparticles" class="absolute top-0 left-0 w-full h-full -z-10"></div>
-    <div class="max-w-2xl mx-auto">
-        <div class="text-center mb-8 fade-in">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-lg mb-4 p-2">
-                <img src="{{ asset('img/LogoAzul.png') }}" alt="Logo Proser" class="w-full h-full object-contain">
+<body class="h-screen flex items-center justify-center p-4 md:p-6">
+    <div id="tsparticles" class="fixed inset-0 -z-10"></div>
+
+    <div class="w-full max-w-4xl flex flex-col" id="main-container">
+        <!-- Header Compacto -->
+        <div class="text-center mb-4 md:mb-6 fade-in flex-shrink-0">
+            <div class="inline-flex items-center gap-3 mb-3">
+                <div class="w-12 h-12 md:w-14 md:h-14 bg-white rounded-2xl shadow-lg p-2">
+                    <img src="{{ asset('img/LogoAzul.png') }}" alt="Logo Proser" class="w-full h-full object-contain">
+                </div>
+                <div class="text-left">
+                    <h1 class="text-2xl md:text-3xl font-bold text-white" id="title">Soporte TI</h1>
+                    <p class="text-xs md:text-sm text-indigo-200">Sistema de tickets y solicitudes</p>
+                </div>
             </div>
-            <h1 class="text-3xl font-bold text-white mb-2" id="title">Selecciona una opción</h1>
-            <p class="text-indigo-100">Selecciona una opción para continuar</p>
         </div>
 
-        <form action="{{ route('soporte.ticket') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="glass-effect rounded-2xl shadow-2xl p-5 w-full fade-in">
-                <div class=" flex flex-col p-3 gap-5 items-start justify-center">
-                    <h2 class="text-black text-2xl font-semibold">¿Qué deseas enviar?</h2>
-                    <select name="type" id="type" class="cursor-pointer border border-gray-300 rounded-md text-lg text-black w-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition duration-200">
-                        <option value="" selected disabled>Selecciona una opción</option>
-                        <option value="Ticket">Ticket para soporte</option>
-                        <option value="Solicitud">Solicitud de recursos tecnológicos</option>
-                    </select>
-                    <div id="info-section" class="hidden w-full p-4 rounded-lg border border-gray-200 bg-gray-50 text-black">
-                        <div class="flex items-start gap-2">
-                            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
-                            <div>
-                                <p class="font-semibold text-sm text-gray-700 mb-1">Info</p>
-                                <p id="info-text" class="text-sm text-gray-600 leading-relaxed"></p>
+        <!-- Contenedor Principal con Scroll -->
+        <div class="glass-effect rounded-3xl shadow-2xl overflow-hidden flex flex-col" id="form-container">
+            <div class="scroll-container p-4 md:p-6" id="scroll-content">
+                <form action="{{ route('soporte.ticket') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    @csrf
+
+                    <!-- Selector de Tipo -->
+                    <div class="bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de solicitud</label>
+                        <select name="type" id="type" class="cursor-pointer border-2 border-gray-200 rounded-xl text-base text-black w-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white">
+                            <option value="" selected disabled>Selecciona una opción</option>
+                            <option value="Ticket">Ticket para soporte</option>
+                            <option value="Solicitud">Solicitud de recursos tecnológicos</option>
+                        </select>
+                        <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                            <div class="flex items-start gap-2">
+                                <div class="text-blue-500 text-lg mt-0.5 flex-shrink-0">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <p class="text-xs md:text-sm leading-relaxed text-gray-700" id="info-text"></p>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div id="ticket-form" class="hidden flex flex-col gap-3 p-4">
-                    <div class="flex flex-row gap-3 items-center">
-                        <div class="bg-green-500 rounded-full w-10 h-10 flex items-center justify-center text-white">
-                            <i class="fas fa-file-alt"></i>
+                    <!-- Formulario Ticket -->
+                    <div id="ticket-form" class="hidden bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100 space-y-3">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <div class="bg-blue-500 rounded-xl w-10 h-10 flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-ticket-alt"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Nuevo Ticket de Soporte</h3>
                         </div>
-                        <h3 class="text-xl font-bold text-black text-lg mb-2">Formulario de Ticket</h3>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label for="correoEmpleado">Correo Electrónico *</label>
-                            <input type="email" id="correoEmpleado" placeholder="Correo Electrónico" name="Correo" class="w-full p-2 border rounded mb-2" required />
-                            <div id="correo-error" class="text-red-500 text-sm hidden mb-2"></div>
-                        </div>
-                        <div class="relative w-full">
-                            <label for="autoEmpleadosTicket">Empleado</label>
-                            <input type="text" id="autoEmpleadosTicket" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                            <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoID">
-                            <div id="suggestions" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
-                        </div>
-                        <div>
-                            <label for="numeroTelefono">Número Telefónico *</label>
-                            <input type="number" id="numeroTelefono" placeholder="Número Telefónico" name="Numero" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
-                        </div>
-                        <div>
-                            <label for="codeAnyDesk">Código AnyDesk</label>
-                            <input type="number" id="codeAnyDesk" placeholder="Código AnyDesk" name="CodeAnyDesk" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled />
-                        </div>
-                        <div>
-                            <label for="descripcionTicket">Descripción *</label>
-                            <textarea id="descripcionTicket" placeholder="Descripción" name="Descripcion" class="w-full p-2 border rounded bg-gray-100" disabled></textarea>
-                        </div>
-                        <div
-                            id="dropzone"
-                            class="w-full border-2 border-dashed border-gray-400 rounded-md p-6 text-center transition bg-gray-100 opacity-50">
-                            <input type="file" id="fileInput" name="imagen[]" class="hidden" multiple disabled />
-                            <p class="text-gray-600">
-                                Arrastra tus archivos aquí o
-                                <span class="text-blue-600 underline">haz clic para subir</span>
-                            </p>
-                            <p id="counter" class="text-sm text-black mt-1">0/4 Imágenes</p>
-                            <div id="previewGrid" class="grid grid-cols-2 gap-3 mt-3"></div>
-                        </div>
-                        <button type="submit" id="btnEnviar" class="w-20 h-10 bg-gray-400 text-white rounded-md transition-all duration-300 cursor-not-allowed" disabled>Enviar</button>
-                    </div>
-                </div>
-
-                <div id="solicitud-form" class="hidden w-full p-4 flex flex-col gap-3">
-                    <div class="flex flex-row gap-3 items-center">
-                        <div class="bg-red-500 rounded-full w-10 h-10 flex items-center justify-center text-white">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-black text-lg mb-2">Formulario de Solicitud</h3>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3 text-black">
-                        <div>
-                            <label for="correoEmpleadoSolicitud">Correo Electrónico *</label>
-                            <input type="email" id="correoEmpleadoSolicitud" placeholder="Correo Electrónico" name="Correo" class="w-full p-2 border rounded mb-2" required />
-                            <div id="correo-solicitud-error" class="text-red-500 text-sm hidden mb-2"></div>
-                        </div>
-                        <div class="relative w-full">
-                            <label for="autoEmpleadosSolicitud">Empleado</label>
-                            <input type="text" id="autoEmpleadosSolicitud" placeholder="Nombre Empleado" autocomplete="off" class="autoEmpleados w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                            <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoIDSolicitud">
-                            <div id="suggestionsEmpleados" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
-                        </div>
-                        <div>
-                            <label for="NombreGerencia">Gerencia</label>
-                            <input type="text" placeholder="Gerencia" name="NombreGerencia" id="NombreGerencia" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                            <input type="hidden" name="GerenciaID" id="GerenciaID">
-                        </div>
-                        <div>
-                            <label for="NombreObra">Obra</label>
-                            <input type="text" placeholder="Obra" name="NombreObra" id="NombreObra" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                            <input type="hidden" name="ObraID" id="ObraID">
-                        </div>
-                        <div>
-                            <label for="NombrePuesto">Puesto</label>
-                            <input type="text" placeholder="Puesto" id="NombrePuesto" name="NombrePuesto" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                            <input type="hidden" name="PuestoID" id="PuestoID">
-                        </div>
-                        <div class="relative w-full">
-                            <label for="SupervisorNombre">Supervisor/Jefe Inmediato</label>
-                            <input type="text" id="SupervisorNombre" placeholder="Supervisor" autocomplete="off" class="autoSupervisor w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                            <input type="hidden" name="SupervisorID" id="SupervisorID" class="SupervisorID">
-                            <div id="suggestionsSupervisor" class="suggestionsSupervisor absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
-                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label for="Motivo">Selecciona el motivo de la solicitud</label>
-                                <select name="Motivo" id="Motivo" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled>
-                                    <option value="">Selecciona el motivo de la solicitud</option>
+                                <label for="correoEmpleado" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Correo Electrónico *</label>
+                                <input type="email" id="correoEmpleado" placeholder="tucorreo@ejemplo.com" name="Correo" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm md:text-base" required />
+                                <div id="correo-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                            </div>
+                            <div class="relative w-full">
+                                <label for="autoEmpleadosTicket" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Empleado</label>
+                                <input type="text" id="autoEmpleadosTicket" placeholder="Nombre del empleado" autocomplete="off" class="autoEmpleados w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoID">
+                                <div id="suggestions" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
+                            </div>
+                            <div>
+                                <label for="numeroTelefono" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Número Telefónico *</label>
+                                <input type="number" id="numeroTelefono" placeholder="10 dígitos" name="Numero" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 text-sm md:text-base" disabled />
+                            </div>
+                            <div>
+                                <label for="codeAnyDesk" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Código AnyDesk</label>
+                                <input type="number" id="codeAnyDesk" placeholder="Ej: 123456789" name="CodeAnyDesk" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 text-sm md:text-base" disabled />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="descripcionTicket" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Descripción del problema *</label>
+                                <textarea id="descripcionTicket" placeholder="Describe tu problema con el mayor detalle posible..." name="Descripcion" rows="3" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 text-sm md:text-base resize-none overflow-hidden" disabled></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Archivos adjuntos (opcional)</label>
+                                <div id="dropzone" class="w-full border-2 border-dashed border-gray-300 rounded-xl p-4 md:p-6 text-center transition bg-gray-50 opacity-50 hover:border-blue-400 hover:bg-blue-50">
+                                    <input type="file" id="fileInput" name="imagen[]" class="hidden" multiple disabled />
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-xs md:text-sm text-gray-600">
+                                        Arrastra archivos aquí o <span class="text-blue-600 font-medium cursor-pointer">haz clic para subir</span>
+                                    </p>
+                                    <p id="counter" class="text-xs text-gray-500 mt-1">0 / 4 archivos</p>
+                                    <div id="previewGrid" class="grid grid-cols-2 gap-2 mt-3"></div>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <button type="submit" id="btnEnviar" class="w-full md:w-auto px-8 py-3 bg-gray-400 text-white rounded-xl font-medium transition-all duration-300 cursor-not-allowed" disabled>
+                                    <i class="fas fa-paper-plane mr-2"></i>Enviar Ticket
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulario Solicitud -->
+                    <div id="solicitud-form" class="hidden bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100 space-y-3">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <div class="bg-green-500 rounded-xl w-10 h-10 flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-laptop"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Nueva Solicitud de Recursos</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-black">
+                            <div>
+                                <label for="correoEmpleadoSolicitud" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Correo Electrónico *</label>
+                                <input type="email" id="correoEmpleadoSolicitud" placeholder="tucorreo@ejemplo.com" name="Correo" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm md:text-base" required />
+                                <div id="correo-solicitud-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                            </div>
+                            <div class="relative w-full">
+                                <label for="autoEmpleadosSolicitud" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Empleado</label>
+                                <input type="text" id="autoEmpleadosSolicitud" placeholder="Nombre del empleado" autocomplete="off" class="autoEmpleados w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <input type="hidden" class="EmpleadoID" name="EmpleadoID" id="EmpleadoIDSolicitud">
+                                <div id="suggestionsEmpleados" class="suggestions absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
+                            </div>
+                            <div>
+                                <label for="NombreGerencia" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Gerencia</label>
+                                <input type="text" placeholder="Gerencia" name="NombreGerencia" id="NombreGerencia" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <input type="hidden" name="GerenciaID" id="GerenciaID">
+                            </div>
+                            <div>
+                                <label for="NombreObra" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Obra</label>
+                                <input type="text" placeholder="Obra" name="NombreObra" id="NombreObra" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <input type="hidden" name="ObraID" id="ObraID">
+                            </div>
+                            <div>
+                                <label for="NombrePuesto" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Puesto</label>
+                                <input type="text" placeholder="Puesto" id="NombrePuesto" name="NombrePuesto" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <input type="hidden" name="PuestoID" id="PuestoID">
+                            </div>
+                            <div class="relative w-full">
+                                <label for="SupervisorNombre" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Supervisor/Jefe Inmediato</label>
+                                <input type="text" id="SupervisorNombre" placeholder="Nombre del supervisor" autocomplete="off" class="autoSupervisor w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled>
+                                <input type="hidden" name="SupervisorID" id="SupervisorID" class="SupervisorID">
+                                <div id="suggestionsSupervisor" class="suggestionsSupervisor absolute top-full left-0 w-full bg-white border border-gray-300 rounded shadow hidden z-50"></div>
+                            </div>
+                            <div>
+                                <label for="Motivo" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Motivo de la solicitud</label>
+                                <select name="Motivo" id="Motivo" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-gray-50 text-sm md:text-base" disabled>
+                                    <option value="">Selecciona el motivo</option>
                                     <option value="Nuevo Ingreso">Nuevo Ingreso</option>
-                                    <option value="Equipo Nuevo">Equipo Nuevo</option> <option value="Reemplazo por fallo o descompostura">Reemplazo por fallo o descompostura</option>
+                                    <option value="Equipo Nuevo">Equipo Nuevo</option>
+                                    <option value="Reemplazo por fallo o descompostura">Reemplazo por fallo o descompostura</option>
                                     <option value="Renovación">Renovación</option>
                                 </select>
                             </div>
-                        <div>
-                            <label for="DescripcionMotivo">Describe el motivo de la solicitud</label>
-                            <textarea id="DescripcionMotivo" placeholder="Describe Motivo" name="DescripcionMotivo" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled></textarea>
+                            <div>
+                                <label for="Proyecto" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">
+                                    Ubicación
+                                    <i class="fas fa-info-circle text-blue-500 text-xs ml-1" title="Selecciona la ubicación donde se ubicará el equipo"></i>
+                                </label>
+                                <select name="Proyecto" id="Proyecto" class="cursor-pointer w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-gray-50 text-sm md:text-base js-example-basic-single">
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="DescripcionMotivo" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Descripción del motivo</label>
+                                <textarea id="DescripcionMotivo" placeholder="Describe detalladamente el motivo de tu solicitud..." name="DescripcionMotivo" rows="2" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-gray-50 text-sm md:text-base resize-none overflow-hidden" disabled></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="Requerimientos" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Requerimientos específicos</label>
+                                <textarea name="Requerimientos" id="Requerimientos" placeholder="Especifica los requerimientos técnicos necesarios..." rows="2" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-gray-50 text-sm md:text-base resize-none overflow-hidden" disabled></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <button type="submit" id="btnEnviarSolicitud" class="w-full md:w-auto px-8 py-3 bg-gray-400 text-white rounded-xl font-medium transition-all duration-300 cursor-not-allowed" disabled>
+                                    <i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <label for="Proyecto">
-                                Selecciona Ubicación
-                                <span
-                                    class="d-inline-block ms-1"
-                                    tabindex="0"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="Selecciona la ubicación donde se ubicará el equipo">
-                                    <i class="fas fa-info-circle text-primary"></i>
-                                </span>
-                            </label>
-                            <select name="Proyecto" style="width:100%" id="Proyecto" class="cursor-pointer w-full text-black js-example-basic-single">
-                            </select>
-                        </div>
-                        <div>
-                            <label for="Requerimientos">Requerimientos</label>
-                            <textarea name="Requerimientos" id="Requerimientos" placeholder="Requerimientos" class="w-full p-2 border rounded mb-2 bg-gray-100" disabled></textarea>
-                        </div>
-                        <button type="submit" id="btnEnviarSolicitud" class="w-20 h-10 bg-gray-400 text-white rounded-md transition-all duration-300 cursor-not-allowed" disabled>Enviar</button>
                     </div>
-                </div>
-            </div>
-        </form>
 
-        <!-- Sección de Extensiones de Soporte -->
-        <div class="glass-effect rounded-2xl shadow-2xl p-5 w-full fade-in mt-8">
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-blue-500 rounded-full w-10 h-10 flex items-center justify-center text-white">
-                        <i class="fas fa-phone-alt"></i>
+                    <!-- Información de Contacto -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="bg-blue-500 rounded-full w-8 h-8 flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-headset text-sm"></i>
+                            </div>
+                            <h4 class="text-sm md:text-base font-bold text-gray-800">¿Necesitas ayuda inmediata?</h4>
+                        </div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fas fa-phone-alt text-green-500 flex-shrink-0"></i>
+                            <span class="text-sm md:text-base font-mono font-semibold text-gray-800">Ext. 211</span>
+                            <span class="text-gray-400 mx-2">/</span>
+                            <i class="fas fa-mobile-alt text-blue-500 flex-shrink-0"></i>
+                            <span class="text-sm md:text-base font-mono font-semibold text-gray-800">Tel. 999 445 7355</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-sm font-semibold text-gray-700">
+                                <i class="fas fa-calendar-alt mr-1"></i>Horario de Atención:
+                            </span>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-gray-600 text-xs md:text-sm">
+                                <i class="fas fa-clock flex-shrink-0"></i>
+                                <span>Lunes a Viernes: 9:00 AM - 6:00 PM</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-gray-600 text-xs md:text-sm">
+                                <i class="fas fa-clock flex-shrink-0"></i>
+                                <span>Sábados: 9:00 AM - 2:00 PM</span>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="text-xl font-bold text-black">¿Necesitas ayuda? Contacta a Soporte</h3>
-                </div>
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-                    <div class="flex items-center gap-3 mb-3">
-                        <i class="fas fa-headset text-blue-600 text-xl"></i>
-                        <h4 class="font-semibold text-black">Soporte Técnico</h4>
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-700">
-                        <i class="fas fa-phone text-blue-600"></i>
-                        <span class="font-medium text-lg">Ext. 211</span>
-                    </div>
-                </div>
-                <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p class="text-sm text-gray-700 flex items-center gap-2">
-                        <i class="fas fa-info-circle text-yellow-600"></i>
-                        <span>Horario de atención: Lunes a Viernes de 9:00 AM a 6:00 PM | Sábados de 9:00 AM a 2:00 PM</span>
-                    </p>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -349,323 +449,403 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script>
-// =========================================================
-// 1. VARIABLES GLOBALES (Usamos window para evitar conflictos)
-// =========================================================
-window.datosUbicacion = []; 
-window.correoSolicitudValido = false; // Para el formulario Solicitud
-window.correoTicketValido = false;    // Para el formulario Ticket
+    <script>
+        // =========================================================
+        // 1. VARIABLES GLOBALES (Usamos window para evitar conflictos)
+        // =========================================================
+        window.datosUbicacion = [];
+        window.correoSolicitudValido = false; // Para el formulario Solicitud
+        window.correoTicketValido = false; // Para el formulario Ticket
 
-$(document).ready(function() {
-    
-    // Carga inicial de datos de ubicación
-    $.ajax({
-        url: "/getTypes",
-        method: "GET",
-        success: function(data) {
-            window.datosUbicacion = data;
-        }
-    });
+        $(document).ready(function() {
 
-    // Inicializar Select2 básico (si hay alguno en el Ticket)
-    $('.js-example-basic-single').select2();
+            // Carga inicial de datos de ubicación
+            $.ajax({
+                url: "/getTypes",
+                method: "GET",
+                success: function(data) {
+                    window.datosUbicacion = data;
+                }
+            });
 
-    // =========================================================
-    // 2. LÓGICA DE PESTAÑAS (TICKET vs SOLICITUD)
-    // =========================================================
-    function actualizarInfoTipo(seleccion) {
-        var $info = $('#info-section');
-        var $text = $('#info-text');
-        if (!seleccion) {
-            $info.addClass('hidden');
-            return;
-        }
-        $info.removeClass('hidden');
-        if (seleccion === 'Ticket') {
-            $text.html('Ticket para soporte: reporta incidencias técnicas, solicita asistencia remota (AnyDesk) o consultas de soporte. El equipo de TI atenderá tu solicitud.');
-        } else if (seleccion === 'Solicitud') {
-            $text.html('Solicitud de recursos tecnológicos: solicita equipos o recursos (nuevo ingreso, equipo nuevo, reemplazo, renovación). Una vez aprobada por los niveles correspondientes, se procede a la compra.');
-        } else {
-            $text.text('');
-        }
-    }
-
-    $('#type').on('change', function() {
-        var seleccion = $(this).val();
-
-        $('#ticket-form').addClass('hidden');
-        $('#solicitud-form').addClass('hidden');
-        actualizarInfoTipo(seleccion);
-
-        if (seleccion === 'Ticket') {
-            $('#ticket-form').removeClass('hidden');
-        } 
-        else if (seleccion === 'Solicitud') {
-            $('#solicitud-form').removeClass('hidden');
-            // ARREGLO VISUAL: Reiniciar Select2 al mostrar el formulario
-            setTimeout(function() { revivirSelect2(); }, 50);
-        }
-    });
-
-    // =========================================================
-    // 3. LÓGICA DEL FORMULARIO "SOLICITUD"
-    // =========================================================
-    var $inputCorreoSol = $('#correoEmpleadoSolicitud');
-
-    // Deshabilitar campos de solicitud al inicio
-    deshabilitarCamposSolicitud();
-
-    // Detección de correo (Solicitud)
-    $inputCorreoSol.on('change blur', function() {
-        var correo = $(this).val().trim();
-        if (correo && esCorreoValido(correo)) {
-            buscarEmpleadoSolicitud(correo);
-        }
-    });
-    
-    // Enter en correo (Solicitud)
-    $inputCorreoSol.on('keypress', function(e) {
-        if(e.which === 13) { e.preventDefault(); $(this).blur(); }
-    });
-
-    // =========================================================
-    // 4. LÓGICA DEL FORMULARIO "TICKET" (Tu código original integrado)
-    // =========================================================
-    
-    // Validar Correo Ticket
-    $('#correoEmpleado').on('change blur', function() {
-        var correo = $(this).val().trim();
-        var $error = $('#correo-error');
-        
-        if (!correo) {
-             deshabilitarCamposTicket();
-             return;
-        }
-        
-        if (!esCorreoValido(correo)) {
-            $error.removeClass('hidden').text('Correo inválido');
-            deshabilitarCamposTicket();
-        } else {
-            $error.addClass('hidden');
-            // Aquí llamarías a tu búsqueda de Ticket si existe
-            // Por ahora simulamos que busca:
-            buscarEmpleadoTicket(correo); 
-        }
-    });
-
-    // Validar Teléfono
-    $('#numeroTelefono').on('input', function() {
-        var val = $(this).val().replace(/\D/g, '');
-        $(this).val(val);
-        var $err = $('#telefono-error');
-        if(!$err.length) $(this).after('<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>');
-        
-        if (val.length === 10) {
-            $('#telefono-error').addClass('hidden');
-            $(this).removeClass('border-red-500').addClass('border-green-500');
-        } else {
-            $('#telefono-error').removeClass('hidden').text('Debe tener 10 dígitos');
-            $(this).addClass('border-red-500');
-        }
-    });
-
-    // Validar AnyDesk y Descripción (Visual)
-    $('#codeAnyDesk, #descripcionTicket').on('input', function() {
-        if($(this).val().trim().length > 0) $(this).removeClass('border-red-500').addClass('border-green-500');
-        else $(this).removeClass('border-green-500').addClass('border-red-500');
-    });
-
-    // =========================================================
-    // 5. EVENTO ENVIAR (VALIDACIÓN FINAL PARA AMBOS)
-    // =========================================================
-    $('form').on('submit', function(e) {
-        var errores = [];
-        var esSolicitud = $('#solicitud-form').is(':visible');
-        var esTicket = $('#ticket-form').is(':visible');
-
-        // --- VALIDACIÓN SOLICITUD ---
-        if (esSolicitud) {
-            var correo = $('#correoEmpleadoSolicitud').val().trim();
-            var empleadoID = $('#EmpleadoIDSolicitud').val();
-            var proyecto = $('#Proyecto').val();
-
-            if (!correo) errores.push('El correo es requerido.');
-            else if (!window.correoSolicitudValido || !empleadoID) errores.push('Debes validar el correo del empleado primero.');
-            
-            if (!proyecto) errores.push('Debes seleccionar una ubicación (Proyecto).');
-        }
-
-        // --- VALIDACIÓN TICKET ---
-        else if (esTicket) {
-            var correoT = $('#correoEmpleado').val().trim();
-            var tel = $('#numeroTelefono').val().replace(/\D/g, '');
-            var desc = $('#descripcionTicket').val().trim();
-
-            if (!correoT) errores.push('El correo es requerido.');
-            // Si tienes validación de empleado para ticket, agrégala aquí:
-            // else if (!window.correoTicketValido) errores.push('Empleado no encontrado.');
-
-            if (tel.length !== 10) errores.push('El teléfono debe tener 10 dígitos.');
-            if (!desc) errores.push('La descripción es requerida.');
-        }
-
-        // --- MANEJO DE ERRORES ---
-        if (errores.length > 0) {
-            e.preventDefault();
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'error', title: 'Faltan datos', html: errores.join('<br>'), confirmButtonColor: '#ef4444' });
-            } else {
-                alert(errores.join('\n'));
-            }
-            return false;
-        }
-
-        // Habilitar campos deshabilitados para que se envíen en el POST
-        $('input, select, textarea').prop('disabled', false);
-    });
-});
-
-// =========================================================
-// FUNCIONES AUXILIARES
-// =========================================================
-
-function esCorreoValido(correo) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
-}
-
-// --- SOLICITUD ---
-function deshabilitarCamposSolicitud() {
-    window.correoSolicitudValido = false;
-    $('#autoEmpleadosSolicitud, #NombreGerencia, #NombreObra, #NombrePuesto, #Motivo, #DescripcionMotivo, #SupervisorNombre, #Requerimientos')
-        .prop('disabled', true).addClass('bg-gray-100');
-    $('#btnEnviarSolicitud').prop('disabled', true).addClass('bg-gray-400 cursor-not-allowed').removeClass('bg-red-500');
-    console.log('deshabilitarCamposSolicitud');
-
-    // Deshabilitar Select2 de forma segura
-    var $p = $('#Proyecto');
-    $p.prop('disabled', true);
-    if ($p.hasClass('select2-hidden-accessible')) { try{ $p.select2('enable', false); }catch(e){} }
-    var $cont = $p.next('.select2-container');
-    if($cont.length) $cont.addClass('select2-container--disabled');
-}
-function buscarEmpleadoSolicitud(correo) {
-    $('#autoEmpleadosSolicitud').val('Buscando...');
-    
-    $.ajax({
-        url: '/buscarEmpleadoPorCorreo',
-        method: 'GET',
-        data: { correo: correo, type: 'Solicitud' },
-        success: function(data) {
-            window.correoSolicitudValido = true;
-            
-            // 1. Llenar campos visuales
-            $('#autoEmpleadosSolicitud').val(data.NombreEmpleado).removeClass('border-blue-500').addClass('border-green-500');
-            $('#NombreGerencia').val(data.NombreGerencia);
-            $('#NombreObra').val(data.NombreObra);
-            $('#NombrePuesto').val(data.NombrePuesto);
-            
-            // 2. Llenar IDs ocultos
-            $('#EmpleadoIDSolicitud').val(data.EmpleadoID);
-            $('#GerenciaID').val(data.GerenciaID);
-            $('#ObraID').val(data.ObraID);
-            $('#PuestoID').val(data.PuestoID);
+            // Inicializar Select2 básico (si hay alguno en el Ticket)
+            $('.js-example-basic-single').select2();
 
             // =========================================================
-            // 3. LÓGICA PARA OCULTAR SUPERVISOR SI ES GERENTE
+            // 2. LÓGICA DE PESTAÑAS (TICKET vs SOLICITUD)
             // =========================================================
-            let puesto = (data.NombrePuesto || '').toUpperCase();
-            let $supervisorInput = $('#SupervisorNombre');
-            let $supervisorContainer = $supervisorInput.closest('div'); // Selecciona el contenedor (label + input)
-
-            // Lista de palabras clave para identificar jefes que no requieren supervisor
-            if (puesto.includes('GERENTE') || puesto.includes('DIRECTOR')) {
-                // CASO GERENTE: Ocultamos el campo
-                $supervisorContainer.addClass('hidden'); 
-                
-                // Le ponemos un valor automático y quitamos el required para que el formulario pase
-                $supervisorInput
-                    .val('N/A - Jerarquía Gerencial')
-                    .prop('required', false)
-                    .prop('disabled', false); // Debe estar habilitado para que se envíe el valor "N/A"
-            } else {
-                // CASO NORMAL: Mostramos el campo
-                $supervisorContainer.removeClass('hidden');
-                
-                // Limpiamos, habilitamos y hacemos obligatorio
-                $supervisorInput
-                    .val('')
-                    .prop('required', true)
-                    .prop('disabled', false)
-                    .removeClass('bg-gray-100');
+            function actualizarInfoTipo(seleccion) {
+                var $info = $('#info-section');
+                var $text = $('#info-text');
+                if (!seleccion) {
+                    $info.addClass('hidden');
+                    return;
+                }
+                $info.removeClass('hidden');
+                if (seleccion === 'Ticket') {
+                    $text.html('<strong class="uppercase">Reporta incidencias técnicas, solicita asistencia remota o consulta al equipo de soporte TI.</strong>');
+                } else if (seleccion === 'Solicitud') {
+                    $text.html('<strong class="uppercase">Solicita recursos tecnológicos que requieran un proceso de compra.</strong>');
+                } else {
+                    $text.text('');
+                }
             }
 
-            // 4. Habilitar el resto de los campos (Nota: Quité #SupervisorNombre de aquí porque ya se manejó arriba)
-            $('#Motivo, #DescripcionMotivo, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
-            
-            // 5. Activar botón de envío
-            $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500');
-            
-            console.log('habilitarCamposSolicitud con lógica de jerarquía');
-            
-            // 6. Desbloquear ubicación (Select2)
-            revivirSelect2(); 
-        },
-        error: function() {
+            $('#type').on('change', function() {
+                var seleccion = $(this).val();
+                var $mainContainer = $('#main-container');
+                var $formContainer = $('#form-container');
+                var $scrollContent = $('#scroll-content');
+
+                $('#ticket-form').addClass('hidden');
+                $('#solicitud-form').addClass('hidden');
+                actualizarInfoTipo(seleccion);
+
+                if (seleccion === 'Ticket') {
+                    $('#ticket-form').removeClass('hidden');
+                    // Agregar clases para altura completa y scroll
+                    $mainContainer.addClass('h-full max-h-[95vh]');
+                    $formContainer.addClass('flex-1');
+                    $scrollContent.addClass('h-full');
+                } else if (seleccion === 'Solicitud') {
+                    $('#solicitud-form').removeClass('hidden');
+                    // Agregar clases para altura completa y scroll
+                    $mainContainer.addClass('h-full max-h-[95vh]');
+                    $formContainer.addClass('flex-1');
+                    $scrollContent.addClass('h-full');
+                    // ARREGLO VISUAL: Reiniciar Select2 al mostrar el formulario
+                    setTimeout(function() {
+                        revivirSelect2();
+                    }, 50);
+                } else {
+                    // Remover clases para permitir altura automática
+                    $mainContainer.removeClass('h-full max-h-[95vh]');
+                    $formContainer.removeClass('flex-1');
+                    $scrollContent.removeClass('h-full');
+                }
+            });
+
+            // =========================================================
+            // 3. LÓGICA DEL FORMULARIO "SOLICITUD"
+            // =========================================================
+            var $inputCorreoSol = $('#correoEmpleadoSolicitud');
+
+            // Deshabilitar campos de solicitud al inicio
             deshabilitarCamposSolicitud();
-            $('#autoEmpleadosSolicitud').val('').addClass('border-red-500');
-            $('#correo-solicitud-error').removeClass('hidden').text('No encontrado');
-        }
-    });
-}
 
-function revivirSelect2() {
-    var $p = $('#Proyecto');
-    if ($p.hasClass("select2-hidden-accessible")) $p.select2('destroy');
-    
-    $p.empty().append('<option></option>');
-    if (window.datosUbicacion.length) {
-        $.each(window.datosUbicacion, function(i, g) {
-            var $opt = $('<optgroup>', { label: g.text });
-            var pre = g.text.includes("Proyecto") ? "PR" : (g.text.includes("Obra") ? "OB" : "GE");
-            if(g.children) $.each(g.children, function(j,item){ $opt.append($('<option>',{value:pre+item.id, text:item.text})); });
-            $p.append($opt);
+            // Detección de correo (Solicitud)
+            $inputCorreoSol.on('change blur', function() {
+                var correo = $(this).val().trim();
+                if (correo && esCorreoValido(correo)) {
+                    buscarEmpleadoSolicitud(correo);
+                }
+            });
+
+            // Enter en correo (Solicitud)
+            $inputCorreoSol.on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    $(this).blur();
+                }
+            });
+
+            // =========================================================
+            // 4. LÓGICA DEL FORMULARIO "TICKET" (Tu código original integrado)
+            // =========================================================
+
+            // Validar Correo Ticket
+            $('#correoEmpleado').on('change blur', function() {
+                var correo = $(this).val().trim();
+                var $error = $('#correo-error');
+
+                if (!correo) {
+                    deshabilitarCamposTicket();
+                    return;
+                }
+
+                if (!esCorreoValido(correo)) {
+                    $error.removeClass('hidden').text('Correo inválido');
+                    deshabilitarCamposTicket();
+                } else {
+                    $error.addClass('hidden');
+                    // Aquí llamarías a tu búsqueda de Ticket si existe
+                    // Por ahora simulamos que busca:
+                    buscarEmpleadoTicket(correo);
+                }
+            });
+
+            // Validar Teléfono
+            $('#numeroTelefono').on('input', function() {
+                var val = $(this).val().replace(/\D/g, '');
+                $(this).val(val);
+                var $err = $('#telefono-error');
+                if (!$err.length) $(this).after('<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>');
+
+                if (val.length === 10) {
+                    $('#telefono-error').addClass('hidden');
+                    $(this).removeClass('border-red-500').addClass('border-green-500');
+                } else {
+                    $('#telefono-error').removeClass('hidden').text('Debe tener 10 dígitos');
+                    $(this).addClass('border-red-500');
+                }
+            });
+
+            // Validar AnyDesk y Descripción (Visual)
+            $('#codeAnyDesk, #descripcionTicket').on('input', function() {
+                if ($(this).val().trim().length > 0) $(this).removeClass('border-red-500').addClass('border-green-500');
+                else $(this).removeClass('border-green-500').addClass('border-red-500');
+            });
+
+            // =========================================================
+            // AUTO-EXPANDIR TEXTAREAS
+            // =========================================================
+            function autoExpandTextarea(element) {
+                element.style.height = 'auto';
+                element.style.height = element.scrollHeight + 'px';
+            }
+
+            // Aplicar auto-expand a los textareas de descripción
+            const descripcionTicket = document.getElementById('descripcionTicket');
+            const descripcionMotivo = document.getElementById('DescripcionMotivo');
+            const requerimientos = document.getElementById('Requerimientos');
+
+            if (descripcionTicket) {
+                descripcionTicket.addEventListener('input', function() {
+                    autoExpandTextarea(this);
+                });
+            }
+
+            if (descripcionMotivo) {
+                descripcionMotivo.addEventListener('input', function() {
+                    autoExpandTextarea(this);
+                });
+            }
+
+            if (requerimientos) {
+                requerimientos.addEventListener('input', function() {
+                    autoExpandTextarea(this);
+                });
+            }
+
+            // =========================================================
+            // 5. EVENTO ENVIAR (VALIDACIÓN FINAL PARA AMBOS)
+            // =========================================================
+            $('form').on('submit', function(e) {
+                var errores = [];
+                var esSolicitud = $('#solicitud-form').is(':visible');
+                var esTicket = $('#ticket-form').is(':visible');
+
+                // --- VALIDACIÓN SOLICITUD ---
+                if (esSolicitud) {
+                    var correo = $('#correoEmpleadoSolicitud').val().trim();
+                    var empleadoID = $('#EmpleadoIDSolicitud').val();
+                    var proyecto = $('#Proyecto').val();
+
+                    if (!correo) errores.push('El correo es requerido.');
+                    else if (!window.correoSolicitudValido || !empleadoID) errores.push('Debes validar el correo del empleado primero.');
+
+                    if (!proyecto) errores.push('Debes seleccionar una ubicación (Proyecto).');
+                }
+
+                // --- VALIDACIÓN TICKET ---
+                else if (esTicket) {
+                    var correoT = $('#correoEmpleado').val().trim();
+                    var tel = $('#numeroTelefono').val().replace(/\D/g, '');
+                    var desc = $('#descripcionTicket').val().trim();
+
+                    if (!correoT) errores.push('El correo es requerido.');
+                    // Si tienes validación de empleado para ticket, agrégala aquí:
+                    // else if (!window.correoTicketValido) errores.push('Empleado no encontrado.');
+
+                    if (tel.length !== 10) errores.push('El teléfono debe tener 10 dígitos.');
+                    if (!desc) errores.push('La descripción es requerida.');
+                }
+
+                // --- MANEJO DE ERRORES ---
+                if (errores.length > 0) {
+                    e.preventDefault();
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Faltan datos',
+                            html: errores.join('<br>'),
+                            confirmButtonColor: '#ef4444'
+                        });
+                    } else {
+                        alert(errores.join('\n'));
+                    }
+                    return false;
+                }
+
+                // Habilitar campos deshabilitados para que se envíen en el POST
+                $('input, select, textarea').prop('disabled', false);
+            });
         });
-    }
-    
-    $p.prop('disabled', false).removeAttr('disabled');
-    $p.select2({
-        placeholder: "Selecciona ubicación...", allowClear: true, width: '100%',
-        templateResult: function(d){ return d.id?$('<span>'+d.text+'</span>'):d.text; },
-        templateSelection: function(d){ return d.text; }
-    });
-}
 
-// --- TICKET (Funciones básicas) ---
-function deshabilitarCamposTicket() {
-    window.correoTicketValido = false;
-    $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', true).addClass('bg-gray-100');
-    $('#btnEnviar').prop('disabled', true);
-}
+        // =========================================================
+        // FUNCIONES AUXILIARES
+        // =========================================================
 
-function buscarEmpleadoTicket(correo) {
-    // Aquí puedes poner tu AJAX para ticket si es distinto al de solicitud
-    // Por ahora solo habilitamos para que funcione el ejemplo
-    $.ajax({
-        url: '/buscarEmpleadoPorCorreo',
-        method: 'GET',
-        data: { correo: correo, type: 'Ticket' },
-        success: function(data) {
-             window.correoTicketValido = true;
-             $('#autoEmpleadosTicket').val(data.NombreEmpleado).addClass('border-green-500');
-             $('#EmpleadoID').val(data.EmpleadoID);
-             // Habilitar campos
-             $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', false).removeClass('bg-gray-100');
-             $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400').addClass('bg-red-500');
+        function esCorreoValido(correo) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
         }
-    });
-}
-</script>    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+        // --- SOLICITUD ---
+        function deshabilitarCamposSolicitud() {
+            window.correoSolicitudValido = false;
+            $('#autoEmpleadosSolicitud, #NombreGerencia, #NombreObra, #NombrePuesto, #Motivo, #DescripcionMotivo, #SupervisorNombre, #Requerimientos')
+                .prop('disabled', true).addClass('bg-gray-100');
+            $('#btnEnviarSolicitud').prop('disabled', true).addClass('cursor-not-allowed');
+            console.log('deshabilitarCamposSolicitud');
+
+            // Deshabilitar Select2 de forma segura
+            var $p = $('#Proyecto');
+            $p.prop('disabled', true);
+            if ($p.hasClass('select2-hidden-accessible')) {
+                try {
+                    $p.select2('enable', false);
+                } catch (e) {}
+            }
+            var $cont = $p.next('.select2-container');
+            if ($cont.length) $cont.addClass('select2-container--disabled');
+        }
+
+        function buscarEmpleadoSolicitud(correo) {
+            $('#autoEmpleadosSolicitud').val('Buscando...');
+
+            $.ajax({
+                url: '/buscarEmpleadoPorCorreo',
+                method: 'GET',
+                data: {
+                    correo: correo,
+                    type: 'Solicitud'
+                },
+                success: function(data) {
+                    window.correoSolicitudValido = true;
+
+                    // 1. Llenar campos visuales
+                    $('#autoEmpleadosSolicitud').val(data.NombreEmpleado).removeClass('border-blue-500').addClass('border-green-500');
+                    $('#NombreGerencia').val(data.NombreGerencia);
+                    $('#NombreObra').val(data.NombreObra);
+                    $('#NombrePuesto').val(data.NombrePuesto);
+
+                    // 2. Llenar IDs ocultos
+                    $('#EmpleadoIDSolicitud').val(data.EmpleadoID);
+                    $('#GerenciaID').val(data.GerenciaID);
+                    $('#ObraID').val(data.ObraID);
+                    $('#PuestoID').val(data.PuestoID);
+
+                    // =========================================================
+                    // 3. LÓGICA PARA OCULTAR SUPERVISOR SI ES GERENTE
+                    // =========================================================
+                    let puesto = (data.NombrePuesto || '').toUpperCase();
+                    let $supervisorInput = $('#SupervisorNombre');
+                    let $supervisorContainer = $supervisorInput.closest('div'); // Selecciona el contenedor (label + input)
+
+                    // Lista de palabras clave para identificar jefes que no requieren supervisor
+                    if (puesto.includes('GERENTE') || puesto.includes('DIRECTOR')) {
+                        // CASO GERENTE: Ocultamos el campo
+                        $supervisorContainer.addClass('hidden');
+
+                        // Le ponemos un valor automático y quitamos el required para que el formulario pase
+                        $supervisorInput
+                            .val('N/A - Jerarquía Gerencial')
+                            .prop('required', false)
+                            .prop('disabled', false); // Debe estar habilitado para que se envíe el valor "N/A"
+                    } else {
+                        // CASO NORMAL: Mostramos el campo
+                        $supervisorContainer.removeClass('hidden');
+
+                        // Limpiamos, habilitamos y hacemos obligatorio
+                        $supervisorInput
+                            .val('')
+                            .prop('required', true)
+                            .prop('disabled', false)
+                            .removeClass('bg-gray-100');
+                    }
+
+                    // 4. Habilitar el resto de los campos (Nota: Quité #SupervisorNombre de aquí porque ya se manejó arriba)
+                    $('#Motivo, #DescripcionMotivo, #Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
+
+                    // 5. Activar botón de envío
+                    $('#btnEnviarSolicitud').prop('disabled', false).removeClass('cursor-not-allowed');
+
+                    console.log('habilitarCamposSolicitud con lógica de jerarquía');
+
+                    // 6. Desbloquear ubicación (Select2)
+                    revivirSelect2();
+                },
+                error: function() {
+                    deshabilitarCamposSolicitud();
+                    $('#autoEmpleadosSolicitud').val('').addClass('border-red-500');
+                    $('#correo-solicitud-error').removeClass('hidden').text('No encontrado');
+                }
+            });
+        }
+
+        function revivirSelect2() {
+            var $p = $('#Proyecto');
+            if ($p.hasClass("select2-hidden-accessible")) $p.select2('destroy');
+
+            $p.empty().append('<option></option>');
+            if (window.datosUbicacion.length) {
+                $.each(window.datosUbicacion, function(i, g) {
+                    var $opt = $('<optgroup>', {
+                        label: g.text
+                    });
+                    var pre = g.text.includes("Proyecto") ? "PR" : (g.text.includes("Obra") ? "OB" : "GE");
+                    if (g.children) $.each(g.children, function(j, item) {
+                        $opt.append($('<option>', {
+                            value: pre + item.id,
+                            text: item.text
+                        }));
+                    });
+                    $p.append($opt);
+                });
+            }
+
+            $p.prop('disabled', false).removeAttr('disabled');
+            $p.select2({
+                placeholder: "Selecciona ubicación...",
+                allowClear: true,
+                width: '100%',
+                templateResult: function(d) {
+                    return d.id ? $('<span>' + d.text + '</span>') : d.text;
+                },
+                templateSelection: function(d) {
+                    return d.text;
+                }
+            });
+        }
+
+        // --- TICKET ---
+        function deshabilitarCamposTicket() {
+            window.correoTicketValido = false;
+            $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', true).addClass('bg-gray-100');
+            $('#btnEnviar').prop('disabled', true);
+        }
+
+        function buscarEmpleadoTicket(correo) {
+            $.ajax({
+                url: '/buscarEmpleadoPorCorreo',
+                method: 'GET',
+                data: {
+                    correo: correo,
+                    type: 'Ticket'
+                },
+                success: function(data) {
+                    window.correoTicketValido = true;
+                    $('#autoEmpleadosTicket').val(data.NombreEmpleado).addClass('border-green-500');
+                    $('#EmpleadoID').val(data.EmpleadoID);
+                    $('#numeroTelefono').val(data.NumTelefono).removeClass('border-red-500').addClass('border-green-500');
+                    // Habilitar campos
+                    $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', false).removeClass('bg-gray-100');
+                    $('#btnEnviar').prop('disabled', false).removeClass('cursor-not-allowed');
+                }
+            });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @if (session('success'))
     @php
     $tipo = session('tipo', 'Ticket'); // Por defecto es Ticket si no se especifica
@@ -818,6 +998,9 @@ function buscarEmpleadoTicket(correo) {
 
             select.addEventListener("change", function() {
                 const value = this.value;
+                const mainContainer = document.getElementById('main-container');
+                const formContainer = document.getElementById('form-container');
+                const scrollContent = document.getElementById('scroll-content');
 
                 // Remover required de ambos formularios antes de ocultarlos
                 manejarRequired(ticket, false);
@@ -832,7 +1015,11 @@ function buscarEmpleadoTicket(correo) {
                 if (value === "Ticket") {
                     ticket.classList.remove("hidden");
                     manejarRequired(ticket, true); // Agregar required cuando se muestra
-                    title.textContent = "Crear Nuevo Ticket";
+                    title.textContent = "Ticket de Soporte";
+                    // Agregar clases para altura completa y scroll
+                    mainContainer.classList.add('h-full', 'max-h-[95vh]');
+                    formContainer.classList.add('flex-1');
+                    scrollContent.classList.add('h-full');
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                     // Deshabilitar campos del formulario de Ticket
                     if (typeof deshabilitarCampos === 'function') {
@@ -841,13 +1028,21 @@ function buscarEmpleadoTicket(correo) {
                 } else if (value === "Solicitud") {
                     solicitud.classList.remove("hidden");
                     manejarRequired(solicitud, true); // Agregar required cuando se muestra
-                    title.textContent = "Crear Nueva Solicitud";
+                    title.textContent = "Solicitud de Recursos";
+                    // Agregar clases para altura completa y scroll
+                    mainContainer.classList.add('h-full', 'max-h-[95vh]');
+                    formContainer.classList.add('flex-1');
+                    scrollContent.classList.add('h-full');
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                     // Deshabilitar campos del formulario de Solicitud
                     if (typeof deshabilitarCamposSolicitud === 'function') {
                         deshabilitarCamposSolicitud();
                     }
                 } else {
+                    // Remover clases para permitir altura automática
+                    mainContainer.classList.remove('h-full', 'max-h-[95vh]');
+                    formContainer.classList.remove('flex-1');
+                    scrollContent.classList.remove('h-full');
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                 }
 
@@ -857,8 +1052,6 @@ function buscarEmpleadoTicket(correo) {
             });
         });
     </script>
-
-
 
     <script>
         (() => {
@@ -893,7 +1086,6 @@ function buscarEmpleadoTicket(correo) {
 
             const getFileIconInfo = (file) => {
                 const ext = getExt(file.name);
-                // Intentar usar iconos específicos primero, con fallback a iconos básicos
                 if (file.type === "application/pdf" || ext === "pdf") {
                     return {
                         icon: "fa-file-pdf",
@@ -971,25 +1163,24 @@ function buscarEmpleadoTicket(correo) {
                     card.className = "relative rounded-md overflow-hidden border border-gray-200 shadow-sm flex flex-col";
 
                     const visual = document.createElement("div");
-                    visual.className = "w-full h-32 flex items-center justify-center bg-gray-50";
+                    visual.className = "w-full h-20 flex items-center justify-center bg-gray-50";
 
                     if (isImage(file)) {
                         const url = URL.createObjectURL(file);
                         const img = document.createElement("img");
                         img.src = url;
                         img.alt = file.name;
-                        img.className = "w-full h-32 object-cover";
+                        img.className = "w-full h-20 object-cover";
                         img.onload = () => URL.revokeObjectURL(url);
                         visual.appendChild(img);
                     } else {
                         const fileInfo = getFileIconInfo(file);
-                        visual.className = `w-full h-32 flex flex-col items-center justify-center ${fileInfo.bgColor}`;
+                        visual.className = `w-full h-20 flex flex-col items-center justify-center ${fileInfo.bgColor}`;
 
-                        // Usar emoji como icono principal (más confiable y universal)
                         const emoji = document.createElement("div");
-                        emoji.className = "text-6xl mb-2";
+                        emoji.className = "text-4xl mb-1";
                         emoji.textContent = fileInfo.emoji;
-                        emoji.style.fontSize = "3.5rem";
+                        emoji.style.fontSize = "2rem";
                         visual.appendChild(emoji);
 
                         // Agregar extensión como texto
@@ -1087,10 +1278,56 @@ function buscarEmpleadoTicket(correo) {
                 //fileInput.value = "";
             });
 
+            // Evento para pegar imágenes con Ctrl+V
+            document.addEventListener("paste", (e) => {
+                // Solo funcionar si el dropzone está habilitado (no deshabilitado)
+                if (dropzone.classList.contains('cursor-not-allowed')) return;
+
+                const items = e.clipboardData?.items;
+                if (!items) return;
+
+                const files = [];
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.startsWith('image/')) {
+                        const file = items[i].getAsFile();
+                        if (file) {
+                            // Generar un nombre único para la imagen pegada
+                            const timestamp = new Date().getTime();
+                            const extension = file.type.split('/')[1] || 'png';
+                            const newFile = new File([file], `imagen-pegada-${timestamp}.${extension}`, {
+                                type: file.type,
+                                lastModified: file.lastModified
+                            });
+                            files.push(newFile);
+                        }
+                    }
+                }
+
+                if (files.length > 0) {
+                    e.preventDefault(); // Prevenir el pegado por defecto
+                    const dt = new DataTransfer();
+                    files.forEach(f => dt.items.add(f));
+                    addFiles(dt.files);
+
+                    // Mostrar notificación visual
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: `${files.length} imagen(es) pegada(s)`,
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        });
+                    }
+                }
+            });
+
             updateCounter();
         })();
     </script>
-  
+
     <script>
         $(document).ready(function() {
             const $input = $(".autoSupervisor");
@@ -1151,8 +1388,6 @@ function buscarEmpleadoTicket(correo) {
 
         // Script para validar correo y llenar datos automáticamente
         $(document).ready(function() {
-            let correoTimeout;
-
             // Función para deshabilitar todos los campos excepto el correo
             function deshabilitarCampos() {
                 correoValido = false; // Marcar correo como inválido
@@ -1161,8 +1396,8 @@ function buscarEmpleadoTicket(correo) {
                 $('#codeAnyDesk').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
                 $('#descripcionTicket').prop('disabled', true).prop('required', false).addClass('bg-gray-100');
                 $('#fileInput').prop('disabled', true);
-                $('#btnEnviar').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
-                $('#dropzone').addClass('bg-gray-100 opacity-50').removeClass('hover:bg-gray-100');
+                $('#btnEnviar').prop('disabled', true).addClass('cursor-not-allowed');
+                $('#dropzone').addClass('opacity-50 cursor-not-allowed').removeClass('hover:border-blue-400 hover:bg-blue-50');
             }
 
             // Función para habilitar solo campos específicos
@@ -1176,22 +1411,20 @@ function buscarEmpleadoTicket(correo) {
                 $('#codeAnyDesk').prop('disabled', false).removeClass('bg-gray-100');
                 $('#descripcionTicket').prop('disabled', false).prop('required', true).removeClass('bg-gray-100');
                 $('#fileInput').prop('disabled', false);
-                $('#btnEnviar').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
-                $('#dropzone').removeClass('bg-gray-100 opacity-50').addClass('hover:bg-gray-100');
+                $('#btnEnviar').prop('disabled', false).removeClass('cursor-not-allowed');
+                $('#dropzone').removeClass('opacity-50 cursor-not-allowed').addClass('hover:border-blue-400 hover:bg-blue-50');
             }
 
             // Deshabilitar campos inicialmente
             deshabilitarCampos();
 
-            $('#correoEmpleado').on('input', function() {
+            // Validar correo en Tickets (solo cuando pierde el foco o cambia)
+            $('#correoEmpleado').on('change blur', function() {
                 const correo = $(this).val().trim();
                 const $errorDiv = $('#correo-error');
                 const $empleadoInput = $('#autoEmpleadosTicket');
                 const $numeroInput = $('#numeroTelefono');
                 const $empleadoIDInput = $('#EmpleadoID');
-
-                // Limpiar timeout anterior
-                clearTimeout(correoTimeout);
 
                 // Deshabilitar campos si el correo está vacío
                 if (correo === '') {
@@ -1214,34 +1447,45 @@ function buscarEmpleadoTicket(correo) {
                     return;
                 }
 
-                // Esperar 500ms después de que el usuario deje de escribir
-                correoTimeout = setTimeout(function() {
-                    // Buscar empleado por correo para tickets
-                    $.ajax({
-                        url: '/buscarEmpleadoPorCorreo',
-                        method: 'GET',
-                        data: { correo: correo, type: 'Ticket' },
-                        success: function(data) {
-                            window.correoTicketValido = true;
-                            correoValido = true;
-                            $('#autoEmpleadosTicket').val(data.NombreEmpleado).addClass('border-green-500');
-                            $('#EmpleadoID').val(data.EmpleadoID);
-                            $errorDiv.addClass('hidden');
-                            
-                            // Habilitar campos
-                            habilitarCamposEspecificos();
-                        },
-                        error: function() {
-                            deshabilitarCampos();
-                            $errorDiv.removeClass('hidden').text('No se encontró el empleado');
-                            $empleadoInput.val('').addClass('border-red-500');
-                        }
-                    });
-                }, 500);
+                // Buscar empleado inmediatamente
+                $empleadoInput.val('Buscando...').addClass('border-blue-500');
+                $errorDiv.addClass('hidden').text('');
+
+                $.ajax({
+                    url: '/buscarEmpleadoPorCorreo',
+                    method: 'GET',
+                    data: {
+                        correo: correo,
+                        type: 'Ticket'
+                    },
+                    success: function(data) {
+                        window.correoTicketValido = true;
+                        correoValido = true;
+                        $('#autoEmpleadosTicket').val(data.NombreEmpleado).removeClass('border-blue-500').addClass('border-green-500');
+                        $('#EmpleadoID').val(data.EmpleadoID);
+                        $('#numeroTelefono').val(data.NumTelefono).removeClass('border-red-500').addClass('border-green-500');
+                        $errorDiv.addClass('hidden');
+
+                        // Habilitar campos
+                        habilitarCamposEspecificos();
+                    },
+                    error: function() {
+                        deshabilitarCampos();
+                        $errorDiv.removeClass('hidden').text('No se encontró el empleado');
+                        $empleadoInput.val('').removeClass('border-blue-500').addClass('border-red-500');
+                    }
+                });
             });
 
-            // Función corregida para buscar empleado (SOLICITUD)
-            // Función corregida para buscar empleado (SOLICITUD)
+            // Enter en correo (Ticket)
+            $('#correoEmpleado').on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    $(this).blur();
+                }
+            });
+
+            // Función para buscar empleado (SOLICITUD)
             function buscarEmpleadoPorCorreoSolicitud(correo) {
                 const $errorDiv = $('#correo-solicitud-error');
                 // Referencias a campos
@@ -1254,12 +1498,9 @@ function buscarEmpleadoTicket(correo) {
                 const $obraIDInput = $('#ObraID');
                 const $puestoIDInput = $('#PuestoID');
 
-                // Referencias al Supervisor
                 const $supervisorInput = $('#SupervisorNombre');
-                // Buscamos el contenedor padre (el div que envuelve el input y el label) para ocultar todo
-                const $supervisorContainer = $supervisorInput.closest('div'); 
+                const $supervisorContainer = $supervisorInput.closest('div');
 
-                // Indicadores visuales de carga
                 $empleadoInput.val('Buscando...').addClass('border-blue-500');
                 $gerenciaInput.val('Buscando...').addClass('border-blue-500');
                 $obraInput.val('Buscando...').addClass('border-blue-500');
@@ -1274,17 +1515,14 @@ function buscarEmpleadoTicket(correo) {
                         type: 'Solicitud'
                     },
                     success: function(data) {
-                        // MARCAR COMO VÁLIDO INMEDIATAMENTE
                         correoSolicitudValido = true;
                         window.correoSolicitudValido = true;
 
-                        // Llenar datos visuales
                         $empleadoInput.val(data.NombreEmpleado).removeClass('border-blue-500 border-red-500').addClass('border-green-500');
                         $gerenciaInput.val(data.NombreGerencia || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
                         $obraInput.val(data.NombreObra || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
                         $puestoInput.val(data.NombrePuesto || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
 
-                        // Llenar IDs
                         $empleadoIDInput.val(data.EmpleadoID);
                         $gerenciaIDInput.val(data.GerenciaID || '');
                         $obraIDInput.val(data.ObraID || '');
@@ -1294,18 +1532,18 @@ function buscarEmpleadoTicket(correo) {
                         // LÓGICA DE JERARQUÍA (GERENTE vs SUPERVISOR)
                         // =======================================================
                         let nombrePuesto = (data.NombrePuesto || '').toUpperCase();
-                        
+
                         // Si el puesto contiene GERENTE o DIRECTOR, ocultamos supervisor
                         if (nombrePuesto.includes('GERENTE') || nombrePuesto.includes('DIRECTOR')) {
                             // Ocultar contenedor visualmente
                             $supervisorContainer.addClass('hidden');
-                            
+
                             // Deshabilitar validación y poner valor por defecto para que el backend no falle
                             $supervisorInput.prop('required', false).prop('disabled', false).val('N/A - Jerarquía Gerencial');
                         } else {
                             // Si NO es gerente, mostramos el campo
                             $supervisorContainer.removeClass('hidden');
-                            
+
                             // Habilitar campo, limpiar valor anterior y hacerlo requerido
                             $supervisorInput.prop('disabled', false).prop('required', true).val('').removeClass('bg-gray-100');
                         }
@@ -1314,8 +1552,8 @@ function buscarEmpleadoTicket(correo) {
                         $('#Motivo').prop('disabled', false).removeClass('bg-gray-100');
                         $('#DescripcionMotivo').prop('disabled', false).removeClass('bg-gray-100');
                         $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
-                        
-                        $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
+
+                        $('#btnEnviarSolicitud').prop('disabled', false).removeClass('cursor-not-allowed');
 
                         // =======================================================
                         // ZONA CRÍTICA: DESBLOQUEO DE UBICACIÓN (PROYECTO)
@@ -1350,7 +1588,7 @@ function buscarEmpleadoTicket(correo) {
                         // Bloquear ubicación y Supervisor
                         $('#Proyecto').prop('disabled', true);
                         $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
-                        
+
                         try {
                             $('#Proyecto').select2('enable', false);
                         } catch (e) {}
@@ -1592,7 +1830,7 @@ function buscarEmpleadoTicket(correo) {
                 $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
                 console.log('deshabilitarCamposSolicitud');
 
-                $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
+                $('#btnEnviarSolicitud').prop('disabled', true).addClass('cursor-not-allowed');
                 console.log('deshabilitarCamposSolicitud');
             }
 
@@ -1673,7 +1911,6 @@ function buscarEmpleadoTicket(correo) {
 
             // Función para habilitar campo de ubicación
             function habilitarCampoUbicacion() {
-
 
                 if (!correoSolicitudValido) {
                     return;
@@ -1779,7 +2016,7 @@ function buscarEmpleadoTicket(correo) {
 
                 $('#Requerimientos').prop('disabled', false).removeClass('bg-gray-100');
                 console.log('habilitarCamposSolicitud');
-                $('#btnEnviarSolicitud').prop('disabled', false).removeClass('bg-gray-400 cursor-not-allowed').addClass('bg-red-500 hover:scale-105');
+                $('#btnEnviarSolicitud').prop('disabled', false).removeClass('cursor-not-allowed');
             }
 
             // Deshabilitar campos inicialmente
@@ -1787,42 +2024,42 @@ function buscarEmpleadoTicket(correo) {
 
             // Función para deshabilitar campo de ubicación
             function deshabilitarCamposSolicitud() {
-    correoSolicitudValido = false; // Marcar correo como inválido
+                correoSolicitudValido = false; // Marcar correo como inválido
 
-    // Deshabilitar inputs normales (Esto está bien, no da error)
-    $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
-    $('#NombreGerencia').prop('disabled', true).addClass('bg-gray-100');
-    $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
-    $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
-    $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
-    $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
-    $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
-    $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
-    console.log('deshabilitarCamposSolicitud');
-    $('#btnEnviarSolicitud').prop('disabled', true).removeClass('bg-red-500 hover:scale-105').addClass('bg-gray-400 cursor-not-allowed');
+                // Deshabilitar inputs normales (Esto está bien, no da error)
+                $('#autoEmpleadosSolicitud').prop('disabled', true).addClass('bg-gray-100');
+                $('#NombreGerencia').prop('disabled', true).addClass('bg-gray-100');
+                $('#NombreObra').prop('disabled', true).addClass('bg-gray-100');
+                $('#NombrePuesto').prop('disabled', true).addClass('bg-gray-100');
+                $('#Motivo').prop('disabled', true).addClass('bg-gray-100');
+                $('#DescripcionMotivo').prop('disabled', true).addClass('bg-gray-100');
+                $('#SupervisorNombre').prop('disabled', true).addClass('bg-gray-100');
+                $('#Requerimientos').prop('disabled', true).addClass('bg-gray-100');
+                console.log('deshabilitarCamposSolicitud');
+                $('#btnEnviarSolicitud').prop('disabled', true).addClass('cursor-not-allowed');
 
-    var $proyecto = $('#Proyecto');
+                var $proyecto = $('#Proyecto');
 
-    // 1. Siempre deshabilitamos el HTML nativo (esto nunca falla y es seguro)
-    $proyecto.prop('disabled', true);
+                // 1. Siempre deshabilitamos el HTML nativo (esto nunca falla y es seguro)
+                $proyecto.prop('disabled', true);
 
-    // 2. Solo llamamos a Select2 SI ya fue inicializado.
-    // La clase 'select2-hidden-accessible' es la marca de que Select2 está vivo.
-    if ($proyecto.hasClass('select2-hidden-accessible')) {
-        try {
-            $proyecto.select2('enable', false);
-        } catch (e) {
-            console.warn("Select2 aún no listo, ignorando comando disable.");
-        }
-    }
+                // 2. Solo llamamos a Select2 SI ya fue inicializado.
+                // La clase 'select2-hidden-accessible' es la marca de que Select2 está vivo.
+                if ($proyecto.hasClass('select2-hidden-accessible')) {
+                    try {
+                        $proyecto.select2('enable', false);
+                    } catch (e) {
+                        console.warn("Select2 aún no listo, ignorando comando disable.");
+                    }
+                }
 
-    // 3. Forzamos el estilo visual gris al contenedor (si existe)
-    // Esto asegura que se vea bloqueado aunque el JS de Select2 no haya cargado aún
-    var $select2Container = $proyecto.next('.select2-container');
-    if ($select2Container.length) {
-        $select2Container.addClass('select2-container--disabled');
-    }
-}
+                // 3. Forzamos el estilo visual gris al contenedor (si existe)
+                // Esto asegura que se vea bloqueado aunque el JS de Select2 no haya cargado aún
+                var $select2Container = $proyecto.next('.select2-container');
+                if ($select2Container.length) {
+                    $select2Container.addClass('select2-container--disabled');
+                }
+            }
 
 
             function buscarEmpleadoPorCorreoSolicitud(correo) {

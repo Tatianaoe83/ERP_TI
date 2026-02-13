@@ -4,6 +4,7 @@ namespace App\Http\Livewire;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 use App\Models\Solicitud;
 use App\Models\Cotizacion;
@@ -21,9 +22,13 @@ use Illuminate\Validation\ValidationException;
 class TablaSolicitudes extends Component
 {
     use WithFileUploads;
+    use WithPagination;
 
     public string $filtroEstatus = '';
     public string $search = '';
+    public int $perPage = 10;
+
+    protected $paginationTheme = 'tailwind';
 
     public bool $modalAsignacionAbierto = false;
     public ?int $asignacionSolicitudId = null;
@@ -99,6 +104,21 @@ class TablaSolicitudes extends Component
         $this->serialColumn = $this->detectSerialColumn();
     }
 
+    public function updatingFiltroEstatus(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage(): void
+    {
+        $this->resetPage();
+    }
+
     public function updated($name, $value): void
     {
         $name = (string) $name;
@@ -156,37 +176,54 @@ class TablaSolicitudes extends Component
         $empleadoActual = $user ? Empleados::query()->where('Correo', $user->email)->first() : null;
         $empleadoActualId = $empleadoActual ? (int) $empleadoActual->EmpleadoID : null;
 
-        $solicitudesRaw = Solicitud::with([
+        $query = Solicitud::with([
             'empleadoid',
             'cotizaciones',
             'pasoSupervisor',
             'pasoGerencia',
             'pasoAdministracion',
-        ])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        ]);
 
+        if ($this->search) {
+            $term = trim((string) $this->search);
+            $query->where(function ($q) use ($term) {
+                $q->where('SolicitudID', 'like', "%{$term}%")
+                    ->orWhere('Motivo', 'like', "%{$term}%")
+                    ->orWhereHas('empleadoid', function ($subQ) use ($term) {
+                        $subQ->where('NombreEmpleado', 'like', "%{$term}%");
+                    });
+            });
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        // Obtener todas las solicitudes (para poder filtrar por estatusDisplay)
+        $solicitudesRaw = $query->get();
+
+        // Procesar solicitudes
         $solicitudesProcesadas = $solicitudesRaw->map(function ($solicitud) use ($user, $empleadoActualId) {
             return $this->hydrateSolicitudRow($solicitud, $user, $empleadoActualId);
         });
 
+        // Filtrar por estatus display si es necesario
         if ($this->filtroEstatus) {
             $solicitudesProcesadas = $solicitudesProcesadas->filter(function ($item) {
                 return $item->estatusDisplay === $this->filtroEstatus;
-            });
+            })->values();
         }
 
-        if ($this->search) {
-            $term = strtolower(trim((string) $this->search));
-            $solicitudesProcesadas = $solicitudesProcesadas->filter(function ($item) use ($term) {
-                return str_contains(strtolower((string) $item->SolicitudID), $term)
-                    || str_contains(strtolower((string) $item->nombreFormateado), $term)
-                    || str_contains(strtolower((string) ($item->Motivo ?? '')), $term);
-            });
-        }
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');
+        $items = $solicitudesProcesadas->slice(($currentPage - 1) * $this->perPage, $this->perPage)->values();
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $solicitudesProcesadas->count(),
+            $this->perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
 
         return view('livewire.tabla-solicitudes', [
-            'todasSolicitudes' => $solicitudesProcesadas,
+            'todasSolicitudes' => $paginator,
         ]);
     }
 
@@ -204,14 +241,14 @@ class TablaSolicitudes extends Component
 
         $todasFirmaron = $this->allStepsApproved($solicitud);
         $tieneSeleccionada = $this->hasSelectedCotizacion($solicitud);
-        
+
         // Verificar si todos los productos tienen ganador (consistente con el controller)
         $todosGanadores = $solicitud->todosProductosTienenGanador();
 
         // Validación consistente con TicketsController::mostrarPaginaCotizacion
         $solicitud->puedeCotizar = (bool) (
-            $todasFirmaron 
-            && $user 
+            $todasFirmaron
+            && $user
             && !$estaRechazada
             && $estatusDisplay !== 'Aprobada'
             && $estatusDisplay !== 'Cotizaciones Enviadas'
@@ -222,7 +259,7 @@ class TablaSolicitudes extends Component
 
         $solicitud->puedeAprobar = false;
         $solicitud->nivelAprobacion = '';
-        
+
         [$facturasSubidas, $totalNecesarias] = $this->contarFacturas($solicitud);
         $solicitud->facturasSubidas = $facturasSubidas;
         $solicitud->totalFacturasNecesarias = $totalNecesarias;

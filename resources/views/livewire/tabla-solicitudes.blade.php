@@ -8,7 +8,7 @@
 
         <div wire:poll.15s>
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-                <div class="flex gap-3">
+                <div class="flex gap-3 flex-wrap">
                     <div class="flex-1 max-w-xs">
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Estatus</label>
                         <select wire:model.live="filtroEstatus" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200">
@@ -32,6 +32,17 @@
                                 <i class="fas fa-search text-slate-400"></i>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="flex-shrink-0">
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Mostrar</label>
+                        <select wire:model.live="perPage" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
                     </div>
 
                     @if($filtroEstatus)
@@ -168,6 +179,79 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            {{-- Paginación --}}
+            <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <!-- Info de resultados -->
+                    <div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                        <i class="fas fa-list-ul text-slate-400"></i>
+                        <span>
+                            Mostrando 
+                            <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $todasSolicitudes->firstItem() ?? 0 }}</span>
+                            a 
+                            <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $todasSolicitudes->lastItem() ?? 0 }}</span>
+                            de 
+                            <span class="font-semibold text-slate-900 dark:text-slate-100">{{ $todasSolicitudes->total() }}</span>
+                            solicitudes
+                        </span>
+                    </div>
+
+                    <!-- Navegación de páginas -->
+                    @if($todasSolicitudes->hasPages())
+                    <nav class="flex items-center gap-1">
+                        @if($todasSolicitudes->onFirstPage())
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </span>
+                        @else
+                            <button 
+                                wire:click="previousPage" 
+                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </button>
+                        @endif
+
+                        @foreach($todasSolicitudes->getUrlRange(max(1, $todasSolicitudes->currentPage() - 1), min($todasSolicitudes->lastPage(), $todasSolicitudes->currentPage() + 1)) as $page => $url)
+                            @if($page == $todasSolicitudes->currentPage())
+                                <span class="inline-flex items-center justify-center min-w-[2.5rem] h-10 px-3 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white font-semibold shadow-md shadow-blue-500/25 dark:from-blue-600 dark:to-blue-700">
+                                    {{ $page }}
+                                </span>
+                            @else
+                                <button 
+                                    wire:click="gotoPage({{ $page }})" 
+                                    class="inline-flex items-center justify-center min-w-[2.5rem] h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all duration-200 font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100">
+                                    {{ $page }}
+                                </button>
+                            @endif
+                        @endforeach
+
+                        @if($todasSolicitudes->currentPage() < $todasSolicitudes->lastPage() - 2)
+                            <span class="inline-flex items-center justify-center w-10 h-10 text-slate-400 dark:text-slate-500">
+                                <i class="fas fa-ellipsis-h text-xs"></i>
+                            </span>
+                            <button 
+                                wire:click="gotoPage({{ $todasSolicitudes->lastPage() }})" 
+                                class="inline-flex items-center justify-center min-w-[2.5rem] h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 transition-all duration-200 font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100">
+                                {{ $todasSolicitudes->lastPage() }}
+                            </button>
+                        @endif
+
+                        @if($todasSolicitudes->hasMorePages())
+                            <button 
+                                wire:click="nextPage" 
+                                class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </button>
+                        @else
+                            <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed dark:border-slate-700 dark:bg-slate-800 dark:text-slate-600">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </span>
+                        @endif
+                    </nav>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -910,7 +994,7 @@
                 </button>
             </div>
 
-            <div wire:loading wire:target="guardarAsignacion" class="absolute inset-0 bg-white/60 dark:bg-slate-900/60 flex items-center justify-center z-50">
+            <div wire:loading wire:target="guardarAsignacion" class="absolute inset-0 bg-slate-500/60 dark:bg-slate-900/60 flex items-center justify-center z-50">
                 <div class="flex flex-col items-center gap-3">
                     <i class="fas fa-spinner fa-spin text-3xl text-slate-600 dark:text-slate-300"></i>
                     <div class="text-sm font-medium text-slate-700 dark:text-slate-200">
