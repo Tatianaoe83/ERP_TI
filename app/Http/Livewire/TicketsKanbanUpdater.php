@@ -4,68 +4,75 @@ namespace App\Http\Livewire;
 
 use App\Models\Tickets;
 use Livewire\Component;
+use Illuminate\Support\Str;
 
 class TicketsKanbanUpdater extends Component
 {
+    public $ticketsStatus = [
+        'nuevos' => [],
+        'proceso' => [],
+        'resueltos' => [],
+    ];
+
     public $ticketsExcedidos = [];
     public $tiemposProgreso = [];
-    
+
+    protected $listeners = ['ticket-estatus-actualizado' => 'actualizarDatos'];
+
     public function mount()
     {
         $this->actualizarDatos();
     }
-    
-    protected $listeners = ['ticket-estatus-actualizado' => 'actualizarDatos'];
-    
+
     public function actualizarDatos()
     {
-        // Recargar todos los tickets
-        $ticketsQuery = \App\Models\Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'chat' => function($query) {
-            $query->orderBy('created_at', 'desc')->limit(1);
-        }]);
+        // QUERY
+        $tickets = Tickets::with([
+            'empleado',
+            'responsableTI',
+            'tipoticket',
+            'chat' => function ($query) {
+                $query->latest()->limit(1);
+            }
+        ])
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        $tickets = $ticketsQuery->orderBy('created_at', 'desc')->get();
+        // Clasificación por estatus
+        $this->ticketsStatus = [
+            'nuevos' => $this->formatearTickets(
+                $tickets->where('Estatus', 'Pendiente')->values()
+            ),
+            'proceso' => $this->formatearTickets(
+                $tickets->where('Estatus', 'En progreso')->values()
+            ),
+            'resueltos' => $this->formatearTickets(
+                $tickets->where('Estatus', 'Cerrado')->values()
+            ),
+        ];
 
-        $ticketsStatus = [
-            'nuevos' => $tickets->where('Estatus', 'Pendiente')->values(),
-            'proceso' => $tickets->where('Estatus', 'En progreso')->values(),
-            'resueltos' => $tickets->where('Estatus', 'Cerrado')->values(),
-        ];
-        
-        // Actualizar tickets excedidos
-        $this->actualizarTicketsExcedidos();
-        
-        // Actualizar tiempos de progreso
-        $this->actualizarTiemposProgreso();
-        
-        // Generar un hash de los datos para detectar cambios
-        $ticketsFormateados = [
-            'nuevos' => $this->formatearTickets($ticketsStatus['nuevos']),
-            'proceso' => $this->formatearTickets($ticketsStatus['proceso']),
-            'resueltos' => $this->formatearTickets($ticketsStatus['resueltos']),
-        ];
-        
-        // Generar hash incluyendo todos los datos relevantes para detectar cambios
-        // NO incluir timestamp en el hash para que solo cambie cuando hay cambios reales
-        $datosParaHash = [
-            'tickets' => $ticketsFormateados,
+        // Procesar tiempos y excedidos usando la misma colección
+        $this->procesarTiempos($tickets);
+
+        // Hash optimizado
+        $hashDatos = hash('xxh3', json_encode([
+            'tickets' => $this->ticketsStatus,
             'tiempos' => $this->tiemposProgreso
-        ];
-        $hashDatos = md5(json_encode($datosParaHash));
-        
-        // Emitir evento para que Alpine.js actualice los datos completos
+        ]));
+
+        // Emitir evento para Alpine
         $this->emit('tickets-actualizados-kanban', [
-            'ticketsStatus' => $ticketsFormateados,
+            'ticketsStatus' => $this->ticketsStatus,
             'ticketsExcedidos' => $this->ticketsExcedidos,
             'tiemposProgreso' => $this->tiemposProgreso,
             'hash' => $hashDatos,
             'timestamp' => now()->toIso8601String()
         ]);
     }
-    
+
     private function formatearTickets($tickets)
     {
-        return $tickets->map(function($ticket) {
+        return $tickets->map(function ($ticket) {
             return [
                 'id' => $ticket->TicketID,
                 'descripcion' => $ticket->Descripcion,
@@ -80,90 +87,89 @@ class TicketsKanbanUpdater extends Component
                 'responsable' => $ticket->responsableTI ? [
                     'nombre' => $ticket->responsableTI->NombreEmpleado,
                 ] : null,
-                'created_at' => $ticket->created_at->toIso8601String(),
-                'fecha_inicio_progreso' => $ticket->FechaInicioProgreso ? $ticket->FechaInicioProgreso->toIso8601String() : null,
-                'updated_at' => $ticket->updated_at->toIso8601String(),
+                'created_at' => optional($ticket->created_at)->toIso8601String(),
+                'fecha_inicio_progreso' => optional($ticket->FechaInicioProgreso)->toIso8601String(),
+                'updated_at' => optional($ticket->updated_at)->toIso8601String(),
             ];
         })->toArray();
     }
-    
-    private function actualizarTicketsExcedidos()
+
+    private function procesarTiempos($tickets)
     {
-        $tickets = Tickets::with(['tipoticket', 'responsableTI', 'empleado'])
-            ->where('Estatus', 'En progreso')
-            ->whereNotNull('FechaInicioProgreso')
-            ->whereNotNull('TipoID')
-            ->get();
-
         $this->ticketsExcedidos = [];
+        $this->tiemposProgreso = [];
 
-        foreach ($tickets as $ticket) {
+        $ticketsEnProgreso = $tickets
+            ->where('Estatus', 'En progreso')
+            ->whereNotNull('FechaInicioProgreso');
+
+        foreach ($ticketsEnProgreso as $ticket) {
+
             if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) {
-                continue;
-            }
-
-            $tiempoRespuesta = $ticket->tiempo_respuesta;
-            if ($tiempoRespuesta === null) {
+                $this->tiemposProgreso[$ticket->TicketID] = null;
                 continue;
             }
 
             $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
 
-            if ($tiempoRespuesta > $tiempoEstimadoHoras) {
-                $tiempoExcedido = round($tiempoRespuesta - $tiempoEstimadoHoras, 2);
-                $porcentajeExcedido = round(($tiempoRespuesta / $tiempoEstimadoHoras) * 100, 1);
-                
+            // Cálculo directo sin depender de accessor pesado
+            $tiempoTranscurrido = $ticket->FechaInicioProgreso
+                ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
+                : 0;
+
+            $porcentajeUsado = $tiempoEstimadoHoras > 0
+                ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100
+                : 0;
+
+            // Guardar progreso
+            $this->tiemposProgreso[$ticket->TicketID] = [
+                'transcurrido' => round($tiempoTranscurrido, 1),
+                'estimado' => round($tiempoEstimadoHoras, 1),
+                'porcentaje' => round($porcentajeUsado, 1),
+                'estado' => $porcentajeUsado >= 100
+                    ? 'agotado'
+                    : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
+            ];
+
+            // Detectar excedidos
+            if ($tiempoTranscurrido > $tiempoEstimadoHoras) {
+
+                $tiempoExcedido = round($tiempoTranscurrido - $tiempoEstimadoHoras, 2);
+                $porcentajeExcedido = round(($tiempoTranscurrido / $tiempoEstimadoHoras) * 100, 1);
+
                 $this->ticketsExcedidos[] = [
                     'id' => $ticket->TicketID,
-                    'descripcion' => \Illuminate\Support\Str::limit($ticket->Descripcion, 80),
-                    'responsable' => $ticket->responsableTI ? $ticket->responsableTI->NombreEmpleado : 'Sin asignar',
-                    'empleado' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin empleado',
+                    'descripcion' => Str::limit($ticket->Descripcion, 80),
+                    'responsable' => $ticket->responsableTI
+                        ? $ticket->responsableTI->NombreEmpleado
+                        : 'Sin asignar',
+                    'empleado' => $ticket->empleado
+                        ? $ticket->empleado->NombreEmpleado
+                        : 'Sin empleado',
                     'prioridad' => $ticket->Prioridad,
                     'tiempo_estimado' => round($tiempoEstimadoHoras, 2),
-                    'tiempo_respuesta' => round($tiempoRespuesta, 2),
+                    'tiempo_respuesta' => round($tiempoTranscurrido, 2),
                     'tiempo_excedido' => $tiempoExcedido,
                     'porcentaje_excedido' => $porcentajeExcedido,
-                    'categoria' => $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'Sin categoría'
+                    'categoria' => $ticket->tipoticket
+                        ? $ticket->tipoticket->NombreTipo
+                        : 'Sin categoría'
                 ];
             }
         }
 
-        usort($this->ticketsExcedidos, function($a, $b) {
+        // Ordenar excedidos por mayor tiempo excedido
+        usort($this->ticketsExcedidos, function ($a, $b) {
             return $b['tiempo_excedido'] <=> $a['tiempo_excedido'];
         });
     }
-    
-    private function actualizarTiemposProgreso()
-    {
-        $ticketsEnProgreso = Tickets::with(['tipoticket', 'responsableTI'])
-            ->where('Estatus', 'En progreso')
-            ->whereNotNull('FechaInicioProgreso')
-            ->get();
 
-        $this->tiemposProgreso = [];
-        
-        foreach ($ticketsEnProgreso as $ticket) {
-            $tiempoInfo = null;
-            
-            if ($ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
-                $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
-                $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
-                
-                $tiempoInfo = [
-                    'transcurrido' => round($tiempoTranscurrido, 1),
-                    'estimado' => round($tiempoEstimadoHoras, 1),
-                    'porcentaje' => round($porcentajeUsado, 1),
-                    'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
-                ];
-            }
-            
-            $this->tiemposProgreso[$ticket->TicketID] = $tiempoInfo;
-        }
-    }
-    
     public function render()
     {
-        return view('livewire.tickets-kanban-updater');
+        return view('livewire.tickets-kanban-updater', [
+            'ticketsStatus' => $this->ticketsStatus,
+            'ticketsExcedidos' => $this->ticketsExcedidos,
+            'tiemposProgreso' => $this->tiemposProgreso,
+        ]);
     }
 }

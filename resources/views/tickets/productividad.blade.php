@@ -42,64 +42,67 @@
                  }
              }">
             <!-- Selector de mes y año -->
-<div class="flex items-center gap-2">
-    <select
-        x-model="mes"
-        @change="cargarProductividad()"
-        :disabled="cargando"
-        class="
-            px-3 py-2 rounded-lg
-            text-gray-800 border border-gray-300
-            dark:bg-[#1F2937] dark dark:border-[#2A2F3A]
-            focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB]
-            disabled:bg-gray-100 disabled:text-gray-400
-            dark:disabled:dark:disabled:text-[#6B7280]
-            disabled:cursor-not-allowed
-        "
-    >
-        @for($i = 1; $i <= 12; $i++)
-            <option value="{{ $i }}">
-                {{ \Carbon\Carbon::create(now()->year, $i, 1)->locale('es')->isoFormat('MMMM') }}
-            </option>
-        @endfor
-    </select>
+        <div class="flex items-center gap-2">
+            <select
+                x-model="mes"
+                @change="cargarProductividad()"
+                :disabled="cargando"
+                class="
+                    px-3 py-2 rounded-lg
+                    text-gray-800 border border-gray-300
+                    dark:bg-[#1F2937] dark dark:border-[#2A2F3A]
+                    focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB]
+                    disabled:bg-gray-100 disabled:text-gray-400
+                    dark:disabled:dark:disabled:text-[#6B7280]
+                    disabled:cursor-not-allowed
+                "
+            >
+                @for($i = 1; $i <= 12; $i++)
+                    <option value="{{ $i }}">
+                        {{ \Carbon\Carbon::create(now()->year, $i, 1)->locale('es')->isoFormat('MMMM') }}
+                    </option>
+                @endfor
+            </select>
 
-    <select
-        x-model="anio"
-        @change="cargarProductividad()"
-        :disabled="cargando"
-        class="
-            px-3 py-2 rounded-lg
-            text-gray-800 border border-gray-300
-            dark:bg-[#1F2937] dark dark:border-[#2A2F3A]
-            focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB]
-            disabled:bg-gray-100 disabled:text-gray-400
-            dark:disabled:dark:disabled:text-[#6B7280]
-            disabled:cursor-not-allowed
-        "
-    >
-        @for($i = now()->year; $i >= now()->year - 5; $i--)
-            <option value="{{ $i }}">{{ $i }}</option>
-        @endfor
-    </select>
+            <select
+                x-model="anio"
+                @change="cargarProductividad()"
+                :disabled="cargando"
+                class="
+                    px-3 py-2 rounded-lg
+                    text-gray-800 border border-gray-300
+                    dark:bg-[#1F2937] dark dark:border-[#2A2F3A]
+                    focus:ring-2 focus:ring-[#2563EB] focus:border-[#2563EB]
+                    disabled:bg-gray-100 disabled:text-gray-400
+                    dark:disabled:dark:disabled:text-[#6B7280]
+                    disabled:cursor-not-allowed
+                "
+            >
+                @for($i = now()->year; $i >= now()->year - 5; $i--)
+                    <option value="{{ $i }}">{{ $i }}</option>
+                @endfor
+            </select>
 
-    <div x-show="cargando" class="ml-2">
-        <i class="fas fa-spinner fa-spin text-[#2563EB]"></i>
+            <div x-show="cargando" class="ml-2">
+                <i class="fas fa-spinner fa-spin text-[#2563EB]"></i>
+            </div>
+        </div>
+
+                
+                <!-- Botón de exportar a Excel -->
+        <a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year]) }}"
+        class="
+                px-4 py-2 rounded-lg font-medium transition-colors
+                flex items-center gap-2
+                bg-green-500 hover:bg-green-600 text-white
+        ">
+            <i class="fas fa-file-excel mr-2"></i>
+            Exportar a Excel
+        </a>
     </div>
-</div>
-
-            
-            <!-- Botón de exportar a Excel -->
-<a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year]) }}"
-   class="
-        px-4 py-2 rounded-lg font-medium transition-colors
-        flex items-center gap-2
-        bg-green-500 hover:bg-green-600 text-white
-   ">
-    <i class="fas fa-file-excel mr-2"></i>
-    Exportar a Excel
-</a>
-</div>
+    <script id="productividad-json-data" type="application/json">
+            {!! json_encode($metricasProductividad) !!}
+        </script>
 </div>
 
 <!-- Tarjetas de resumen -->
@@ -578,11 +581,9 @@
     </div>
 </div>
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 
 <script>
-
 function isDarkMode() {
     return document.documentElement.classList.contains('dark');
 }
@@ -590,21 +591,40 @@ function isDarkMode() {
 // Variables globales para almacenar las instancias de gráficas
 let chartEstado, chartResueltos, chartTendencias, chartPrioridad, chartClasificacion;
 
+// ==========================================
+// FUNCIÓN PARA LEER DATOS FRESCOS DEL AJAX
+// ==========================================
+function obtenerDatosFrescos() {
+    const rawData = document.getElementById('productividad-json-data');
+    if (!rawData) return null;
+    try {
+        return JSON.parse(rawData.textContent);
+    } catch (e) {
+        console.error("Error leyendo JSON de gráficas:", e);
+        return null;
+    }
+}
+
 function inicializarGraficas() {
     // Verificar que los elementos existan
     if (!document.getElementById('chartEstado')) {
         return;
     }
     
+    // Obtener los datos frescos actualizados
+    const metricasData = obtenerDatosFrescos();
+    if (!metricasData) return; // Si no hay datos, no intentamos dibujar
+
     const dark = isDarkMode();
 
-        const colores = {
+    const colores = {
         texto: dark ? '#F3F4F6' : '#111827',
         textoSecundario: dark ? '#9CA3AF' : '#6B7280',
         grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
         tooltipBg: dark ? 'rgba(15,17,21,0.95)' : '#FFFFFF',
         tooltipTexto: dark ? '#F3F4F6' : '#111827',
-        tooltipBorder: dark ? '#2A2F3A' : '#E5E7EB'
+        tooltipBorder: dark ? '#2A2F3A' : '#E5E7EB',
+        emptyDoughnut: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
     };  
 
     // Destruir gráficas existentes si ya están creadas
@@ -614,68 +634,63 @@ function inicializarGraficas() {
     if (chartPrioridad) chartPrioridad.destroy();
     if (chartClasificacion) chartClasificacion.destroy();
 
-    // Datos para las gráficas
-    const distribucionEstado = @json($metricasProductividad['distribucion_estado']);
-    const resueltosPorDia = @json($metricasProductividad['resueltos_por_dia']);
-    const tendenciasSemanales = @json($metricasProductividad['tendencias_semanales']);
-    const ticketsPorPrioridad = @json($metricasProductividad['tickets_por_prioridad']);
-    const ticketsPorClasificacion = @json(isset($metricasProductividad['tickets_por_clasificacion']) ? $metricasProductividad['tickets_por_clasificacion'] : []);
+    // Datos para las gráficas extraídos dinámicamente
+    const distribucionEstado = metricasData.distribucion_estado || {};
+    const resueltosPorDia = metricasData.resueltos_por_dia || {};
+    const tendenciasSemanales = metricasData.tendencias_semanales || {};
+    const ticketsPorPrioridad = metricasData.tickets_por_prioridad || {};
+    const ticketsPorClasificacion = metricasData.tickets_por_clasificacion || {};
 
+    // -----------------------------------------------------
     // Gráfica de distribución por estado (Doughnut)
-// Gráfica de distribución por estado (Doughnut)
-const ctxEstado = document.getElementById('chartEstado').getContext('2d');
+    // -----------------------------------------------------
+    const ctxEstado = document.getElementById('chartEstado').getContext('2d');
+    const valoresEstado = Object.values(distribucionEstado);
+    const sumaEstados = valoresEstado.reduce((a, b) => a + b, 0);
 
-chartEstado = new Chart(ctxEstado, {
-    type: 'doughnut',
-    data: {
-        labels: Object.keys(distribucionEstado),
-        datasets: [{
-            data: Object.values(distribucionEstado),
-            backgroundColor: [
-                '#F87171', // Pendiente
-                '#FBBF24', // En progreso
-                '#4ADE80'  // Cerrado
-            ],
-            borderColor: colores.tooltipBorder,
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '65%', // ✅ evita efecto raro en dark
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    color: colores.textoSecundario,
-                    padding: 15
-                }
-            },
-            tooltip: {
-                backgroundColor: colores.tooltipBg,
-                titleColor: colores.tooltipTexto,
-                bodyColor: colores.tooltipTexto,
+    chartEstado = new Chart(ctxEstado, {
+        type: 'doughnut',
+        data: {
+            labels: sumaEstados > 0 ? Object.keys(distribucionEstado) : ['Sin tickets este mes'],
+            datasets: [{
+                data: sumaEstados > 0 ? valoresEstado : [1],
+                backgroundColor: sumaEstados > 0 ? ['#F87171', '#FBBF24', '#4ADE80'] : [colores.emptyDoughnut], 
                 borderColor: colores.tooltipBorder,
-                borderWidth: 1,
-                padding: 12,
-                callbacks: {
-                    label(context) {
-                        return `${context.label}: ${context.parsed} tickets`;
+                borderWidth: sumaEstados > 0 ? 2 : 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: colores.textoSecundario, padding: 15 }
+                },
+                tooltip: {
+                    enabled: sumaEstados > 0,
+                    backgroundColor: colores.tooltipBg,
+                    titleColor: colores.tooltipTexto,
+                    bodyColor: colores.tooltipTexto,
+                    borderColor: colores.tooltipBorder,
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                        label(context) { return `${context.label}: ${context.parsed} tickets`; }
                     }
                 }
             }
         }
-    }
-});
+    });
 
-
+    // -----------------------------------------------------
     // Gráfica de tickets resueltos por día (Line)
+    // -----------------------------------------------------
     const ctxResueltos = document.getElementById('chartResueltosPorDia').getContext('2d');
     const fechas = Object.keys(resueltosPorDia);
     const valores = Object.values(resueltosPorDia);
     
-    // Formatear fechas para mostrar solo día/mes
     const fechasFormateadas = fechas.map(fecha => {
         const d = new Date(fecha);
         return d.getDate() + '/' + (d.getMonth() + 1);
@@ -699,46 +714,19 @@ chartEstado = new Chart(ctxEstado, {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        color: '#6B7280'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                },
-                x: {
-                    ticks: {
-                        color: '#6B7280'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                }
+                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#6B7280' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                x: { ticks: { color: '#6B7280' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
             },
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: '#9CA3AF'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
-                    titleColor: '#F3F4F6',
-                    bodyColor: '#F3F4F6',
-                    borderColor: '#2A2F3A',
-                    borderWidth: 1,
-                    padding: 12
-                }
+                legend: { display: true, position: 'top', labels: { color: '#9CA3AF' } },
+                tooltip: { backgroundColor: 'rgba(15, 17, 21, 0.95)', titleColor: '#F3F4F6', bodyColor: '#F3F4F6', borderColor: '#2A2F3A', borderWidth: 1, padding: 12 }
             }
         }
     });
 
+    // -----------------------------------------------------
     // Gráfica de tendencias semanales (Bar)
+    // -----------------------------------------------------
     const ctxTendencias = document.getElementById('chartTendenciasSemanales').getContext('2d');
     const semanas = Object.keys(tendenciasSemanales);
     const creados = semanas.map(semana => tendenciasSemanales[semana].creados);
@@ -749,84 +737,40 @@ chartEstado = new Chart(ctxEstado, {
         data: {
             labels: semanas,
             datasets: [
-                {
-                    label: 'Creados',
-                    data: creados,
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderColor: '#3B82F6',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Resueltos',
-                    data: resueltos,
-                    backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                    borderColor: '#22C55E',
-                    borderWidth: 1
-                }
+                { label: 'Creados', data: creados, backgroundColor: 'rgba(59, 130, 246, 0.8)', borderColor: '#3B82F6', borderWidth: 1 },
+                { label: 'Resueltos', data: resueltos, backgroundColor: 'rgba(34, 197, 94, 0.8)', borderColor: '#22C55E', borderWidth: 1 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        color: '#6B7280'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                },
-                x: {
-                    ticks: {
-                        color: '#6B7280'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                }
+                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#6B7280' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } },
+                x: { ticks: { color: '#6B7280' }, grid: { color: 'rgba(255, 255, 255, 0.05)' } }
             },
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                    labels: {
-                        color: '#9CA3AF'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
-                    titleColor: '#F3F4F6',
-                    bodyColor: '#F3F4F6',
-                    borderColor: '#2A2F3A',
-                    borderWidth: 1,
-                    padding: 12
-                }
+                legend: { display: true, position: 'top', labels: { color: '#9CA3AF' } },
+                tooltip: { backgroundColor: 'rgba(15, 17, 21, 0.95)', titleColor: '#F3F4F6', bodyColor: '#F3F4F6', borderColor: '#2A2F3A', borderWidth: 1, padding: 12 }
             }
         }
     });
 
+    // -----------------------------------------------------
     // Gráfica de tickets por prioridad (Bar horizontal)
+    // -----------------------------------------------------
     const ctxPrioridad = document.getElementById('chartPrioridad').getContext('2d');
+    const clavesPrioridad = Object.keys(ticketsPorPrioridad);
+    const hasPrioridad = clavesPrioridad.length > 0;
+
     chartPrioridad = new Chart(ctxPrioridad, {
         type: 'bar',
         data: {
-            labels: Object.keys(ticketsPorPrioridad),
+            labels: hasPrioridad ? clavesPrioridad : ['Sin tickets este mes'],
             datasets: [{
                 label: 'Tickets',
-                data: Object.values(ticketsPorPrioridad),
-                backgroundColor: [
-                    '#F87171',  // Alta
-                    '#FBBF24',  // Media
-                    '#4ADE80'   // Baja
-                ],
-                borderColor: [
-                    '#F87171',
-                    '#FBBF24',
-                    '#4ADE80'
-                ],
+                data: hasPrioridad ? Object.values(ticketsPorPrioridad) : [0],
+                backgroundColor: hasPrioridad ? ['#F87171', '#FBBF24', '#4ADE80'] : [colores.grid], 
+                borderColor: hasPrioridad ? ['#F87171', '#FBBF24', '#4ADE80'] : ['transparent'],
                 borderWidth: 1
             }]
         },
@@ -835,88 +779,56 @@ chartEstado = new Chart(ctxEstado, {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        color: '#6B7280'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                },
-                y: {
-                    ticks: {
-                        color: '#6B7280'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    }
-                }
+                x: { beginAtZero: true, ticks: { stepSize: 1, color: colores.textoSecundario }, grid: { color: colores.grid } },
+                y: { ticks: { color: colores.textoSecundario }, grid: { color: colores.grid } }
             },
             plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
-                    titleColor: '#F3F4F6',
-                    bodyColor: '#F3F4F6',
-                    borderColor: '#2A2F3A',
-                    borderWidth: 1,
-                    padding: 12
-                }
+                legend: { display: false },
+                tooltip: { enabled: hasPrioridad, backgroundColor: colores.tooltipBg, titleColor: colores.tooltipTexto, bodyColor: colores.tooltipTexto, borderColor: colores.tooltipBorder, borderWidth: 1, padding: 12 }
             }
         }
     });
 
+    // -----------------------------------------------------
     // Gráfica de tickets por clasificación (Doughnut)
+    // -----------------------------------------------------
     const ctxClasificacion = document.getElementById('chartClasificacion');
     if (ctxClasificacion) {
+        const valoresClasificacion = Object.values(ticketsPorClasificacion);
+        const sumaClasificacion = valoresClasificacion.reduce((a, b) => a + b, 0);
+
         chartClasificacion = new Chart(ctxClasificacion.getContext('2d'), {
             type: 'doughnut',
             data: {
-                labels: Object.keys(ticketsPorClasificacion),
+                labels: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion) : ['Sin tickets este mes'],
                 datasets: [{
-                    data: Object.values(ticketsPorClasificacion),
-                    backgroundColor: [
-                        '#F87171',  // Rojo para Problema
-                        '#3B82F6'   // Azul para Servicio
-                    ],
-                    borderColor: [
-                        '#F87171',
-                        '#3B82F6'
-                    ],
-                    borderWidth: 2
+                    data: sumaClasificacion > 0 ? valoresClasificacion : [1],
+                    backgroundColor: sumaClasificacion > 0 ? ['#F87171', '#3B82F6'] : [colores.emptyDoughnut], 
+                    borderColor: sumaClasificacion > 0 ? ['#F87171', '#3B82F6'] : [colores.tooltipBorder], 
+                    borderWidth: sumaClasificacion > 0 ? 2 : 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '65%',
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: {
-                            color: '#9CA3AF',
-                            padding: 15,
-                            font: {
-                                size: 12
-                            }
-                        }
+                        labels: { color: colores.textoSecundario, padding: 15, font: { size: 12 } }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(15, 17, 21, 0.95)',
-                        titleColor: '#F3F4F6',
-                        bodyColor: '#F3F4F6',
-                        borderColor: '#2A2F3A',
+                        enabled: sumaClasificacion > 0, 
+                        backgroundColor: colores.tooltipBg,
+                        titleColor: colores.tooltipTexto,
+                        bodyColor: colores.tooltipTexto,
+                        borderColor: colores.tooltipBorder,
                         borderWidth: 1,
                         padding: 12,
                         callbacks: {
                             label: function(context) {
                                 let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
+                                if (label) { label += ': '; }
                                 label += context.parsed + ' tickets';
                                 return label;
                             }
@@ -943,14 +855,12 @@ function inicializarCuandoVisible() {
     let inicializado = false;
     
     if (canvasEstado && isElementVisible(canvasEstado)) {
-        // Verificar que no se hayan inicializado ya
         if (!chartEstado) {
             inicializarGraficas();
             inicializado = true;
         }
     }
     
-    // Inicializar gráficas de empleados si hay canvas visibles
     const canvasEmpleado = document.querySelector('[id^="chartEmpleado"]');
     if (canvasEmpleado && isElementVisible(canvasEmpleado)) {
         inicializarGraficasEmpleados();
@@ -962,7 +872,6 @@ function inicializarCuandoVisible() {
 
 // Intentar inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
-    // Intentar múltiples veces para asegurar que Alpine.js haya renderizado
     let intentos = 0;
     const maxIntentos = 10;
     
@@ -973,7 +882,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 200);
     
-    // También intentar inmediatamente
     setTimeout(inicializarCuandoVisible, 100);
 });
 
@@ -982,7 +890,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const container = document.querySelector('[x-data*="tab"]');
     if (container) {
         const observer = new MutationObserver(function() {
-            // Intentar inicializar gráficas cuando el tab cambie
             setTimeout(function() {
             if (!chartEstado) {
                     inicializarGraficas();
@@ -999,7 +906,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Observar cambios en el atributo x-show del div de productividad
     const productividadDiv = document.querySelector('[x-show*="tab === 2"]');
     if (productividadDiv) {
         const productividadObserver = new MutationObserver(function(mutations) {
@@ -1007,7 +913,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                     const style = window.getComputedStyle(productividadDiv);
                     if (style.display !== 'none' && !productividadDiv.hasAttribute('x-cloak')) {
-                        // El tab de productividad está visible
                         setTimeout(function() {
                             if (!chartEstado) {
                                 inicializarGraficas();
@@ -1027,15 +932,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // También escuchar eventos de Alpine.js cuando cambie el tab
     if (window.Alpine) {
-        // Esperar a que Alpine esté listo
         setTimeout(function() {
             inicializarCuandoVisible();
         }, 300);
     }
     
-    // Intentar múltiples veces para asegurar que se inicialicen
     let intentosGraficas = 0;
     const maxIntentosGraficas = 20;
     const intervaloGraficas = setInterval(function() {
@@ -1057,10 +959,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 300);
 });
 
+// =======================================================
 // Función para inicializar gráficas de empleados
+// =======================================================
 function inicializarGraficasEmpleados() {
     try {
-        const metricasEmpleados = @json($metricasProductividad['metricas_por_empleado']);
+        // Obtener la data fresca dinámica
+        const metricasData = obtenerDatosFrescos();
+        if (!metricasData) return;
+        
+        const metricasEmpleados = metricasData.metricas_por_empleado || [];
         
         if (!metricasEmpleados || metricasEmpleados.length === 0) {
             return;
@@ -1077,23 +985,21 @@ function inicializarGraficasEmpleados() {
             const canvasId = 'chartEmpleado' + empleado.empleado_id;
             const canvas = document.getElementById(canvasId);
             
-         
-            
-
-            
             // Verificar si ya existe una gráfica para este canvas
             const chartKey = 'chartEmpleado' + empleado.empleado_id;
             if (window[chartKey]) {
-                // Verificar que sea una instancia válida de Chart antes de destruir
                 if (window[chartKey] instanceof Chart && typeof window[chartKey].destroy === 'function') {
                     try {
                         window[chartKey].destroy();
-                    } catch (e) {
-                    }
+                    } catch (e) {}
                 }
                 window[chartKey] = null;
             }
             
+            if (!canvas) {
+                return;
+            }
+
             const ctx = canvas.getContext('2d');
             if (!ctx) {
                 return;
@@ -1101,7 +1007,6 @@ function inicializarGraficasEmpleados() {
     
             // Obtener meses en orden (de más antiguo a más reciente)
             const meses = Object.keys(empleado.tickets_por_mes).reverse();
-            // Convertir a español
             const mesesEspanolLabels = meses.map(mes => {
                 const partes = mes.split(' ');
                 if (partes.length === 2) {
@@ -1182,12 +1087,8 @@ function inicializarGraficasEmpleados() {
                                 borderColor: '#2A2F3A',
                                 borderWidth: 1,
                                 padding: 12,
-                                titleFont: {
-                                    size: 14
-                                },
-                                bodyFont: {
-                                    size: 13
-                                },
+                                titleFont: { size: 14 },
+                                bodyFont: { size: 13 },
                                 callbacks: {
                                     label: function(context) {
                                         let label = context.dataset.label || '';
@@ -1214,8 +1115,10 @@ function inicializarGraficasEmpleados() {
 
 // Función para forzar reinicialización de gráficas de empleados
 function reinicializarGraficasEmpleados() {
-    // Destruir todas las gráficas de empleados existentes
-    const metricasEmpleados = @json($metricasProductividad['metricas_por_empleado']);
+    const metricasData = obtenerDatosFrescos();
+    if (!metricasData) return;
+    const metricasEmpleados = metricasData.metricas_por_empleado || [];
+    
     if (metricasEmpleados) {
         metricasEmpleados.forEach(empleado => {
             const chartKey = 'chartEmpleado' + empleado.empleado_id;
@@ -1255,5 +1158,4 @@ if (window.Alpine) {
         }, 200);
     });
 }
-</script>
-
+</script>   
