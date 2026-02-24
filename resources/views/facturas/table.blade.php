@@ -50,7 +50,7 @@
                     <div class="w-full lg:w-1/3 group">
                         <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Gerencia</label>
                         <div class="relative">
-                            {!! Form::select('gerenci_id', ['' => 'Selecciona una opción'] + App\Models\Gerencia::all()->pluck('NombreGerencia', 'GerenciaID')->toArray(), null, [
+                            {!! Form::select('gerenci_id', $gerencia ?? ['' => 'Selecciona una opción'] + \App\Models\Gerencia::where('estado', 1)->pluck('NombreGerencia', 'GerenciaID')->toArray(), null, [
                                 'class' => 'w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all',
                                 'id' => 'gerenci_id'
                             ]) !!}

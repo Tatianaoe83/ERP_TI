@@ -112,11 +112,12 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('facturas', App\Http\Controllers\FacturasController::class);
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
 
-    Route::resource('cortes', App\Http\Controllers\CortesController::class);
+    Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
     Route::get('/verInsumos', [CortesController::class, 'obtenerInsumos'])->name('cortes.ver');
     Route::get('indexVista', [App\Http\Controllers\CortesController::class, 'indexVista'])->name('cortes.indexVista');
     Route::post('/cortes/saveXML', [CortesController::class, 'saveXML'])->name('cortes.saveXML');
     Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
+    Route::resource('cortes', App\Http\Controllers\CortesController::class);
 
     Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/productividad-ajax', [App\Http\Controllers\TicketsController::class, 'obtenerProductividadAjax'])->name('tickets.productividad-ajax');

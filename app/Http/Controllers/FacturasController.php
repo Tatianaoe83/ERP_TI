@@ -49,35 +49,97 @@ class FacturasController extends AppBaseController
             'Diciembre'
         ];
 
-        $currentDate = Carbon::now()->format('Y') + 1;
+        $currentDate = (int) Carbon::now()->format('Y');
         $years = range($currentDate, $currentDate + 8);
 
-        return view('facturas.index', compact('meses', 'years'));
+        // Gerencias que tienen al menos una solicitud_activo con factura y empleado con gerencia (solo estado = 1)
+        $gerenciasConFacturas = Gerencia::query()
+            ->where('estado', 1)
+            ->whereIn('GerenciaID', function ($q) {
+                $q->select('departamentos.GerenciaID')
+                    ->from('solicitud_activos')
+                    ->join('empleados', 'solicitud_activos.EmpleadoID', '=', 'empleados.EmpleadoID')
+                    ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                    ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+                    ->whereNotNull('solicitud_activos.FacturaPath')
+                    ->where('solicitud_activos.FacturaPath', '!=', '')
+                    ->whereNull('solicitud_activos.deleted_at');
+            })
+            ->orderBy('NombreGerencia')
+            ->pluck('NombreGerencia', 'GerenciaID')
+            ->toArray();
+
+        $gerencia = ['' => 'Selecciona una opción'] + $gerenciasConFacturas;
+
+        return view('facturas.index', compact('meses', 'years', 'gerencia'));
     }
 
+    /**
+     * Datos para la tabla de facturas: solicitud_activos con factura asignada a empleado con gerencia.
+     */
     public function indexVista(Request $request)
     {
         $gerenciaID = $request->input('gerenci_id');
         $mes = $request->input('mes');
+        $año = $request->input('año');
 
         if ($request->ajax()) {
-            if ($gerenciaID && $mes) {
-                $query = DB::table('cortes')
-                    ->where('GerenciaID', $gerenciaID)
-                    ->where('Mes', $mes);
+            $query = DB::table('solicitud_activos')
+                ->select([
+                    'solicitud_activos.SolicitudActivoID',
+                    'solicitud_activos.FacturaPath',
+                    'solicitud_activos.FechaEntrega',
+                    'solicitud_activos.CotizacionID',
+                    'departamentos.GerenciaID',
+                    'gerencia.NombreGerencia',
+                    DB::raw('COALESCE(cotizaciones.Descripcion, cotizaciones.NombreEquipo, \'—\') as NombreInsumo'),
+                    DB::raw('COALESCE(cotizaciones.Precio, 0) as Costo'),
+                ])
+                ->join('empleados', 'solicitud_activos.EmpleadoID', '=', 'empleados.EmpleadoID')
+                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+                ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+                ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+                ->join('cotizaciones', 'solicitud_activos.CotizacionID', '=', 'cotizaciones.CotizacionID')
+                ->whereNotNull('solicitud_activos.FacturaPath')
+                ->where('solicitud_activos.FacturaPath', '!=', '')
+                ->whereNull('solicitud_activos.deleted_at');
 
-                return DataTables::of($query)
-                    ->addColumn('action', function ($row) {
-                        return view('cortes.datatables_actions', ['id' => $row->CortesID])->render();
-                    })
-                    ->rawColumns(['action'])
-                    ->make(true);
-            } else {
-                return DataTables::of(collect([]))->make(true);
+            if ($gerenciaID) {
+                $query->where('departamentos.GerenciaID', $gerenciaID);
             }
+            if ($mes) {
+                $mesesNum = [
+                    'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4, 'Mayo' => 5, 'Junio' => 6,
+                    'Julio' => 7, 'Agosto' => 8, 'Septiembre' => 9, 'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12,
+                ];
+                $numMes = $mesesNum[$mes] ?? null;
+                if ($numMes) {
+                    $query->whereMonth('solicitud_activos.FechaEntrega', $numMes);
+                }
+            }
+            if ($año) {
+                $query->whereYear('solicitud_activos.FechaEntrega', $año);
+            }
+
+            $query->orderBy('solicitud_activos.FechaEntrega', 'desc');
+
+            return DataTables::of($query)
+                ->addColumn('Mes', function ($row) {
+                    if (empty($row->FechaEntrega)) {
+                        return '—';
+                    }
+                    $fecha = \Carbon\Carbon::parse($row->FechaEntrega);
+                    $meses = [
+                        1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril', 5 => 'Mayo', 6 => 'Junio',
+                        7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+                    ];
+                    return $meses[(int) $fecha->format('n')] ?? $row->FechaEntrega;
+                })
+                ->rawColumns(['Mes'])
+                ->make(true);
         }
 
-        return view('cortes.index');
+        return redirect()->route('facturas.index');
     }
 
     /**

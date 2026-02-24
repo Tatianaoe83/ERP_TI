@@ -41,6 +41,30 @@
             </div>
 
             <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 w-full lg:w-auto">
+                <div class="w-full sm:w-48 group">
+                    <label for="anioCorte" class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 ml-1">
+                        Año
+                    </label>
+                    <div class="relative">
+                        <select name="anioCorte" id="anioCorte"
+                            class="w-full h-11 pl-4 pr-10 appearance-none cursor-pointer rounded-xl outline-none transition-all duration-200
+                                   bg-gray-50 dark:bg-slate-900 
+                                   border-2 border-slate-200 dark:border-slate-700 
+                                   text-slate-700 dark:text-slate-200 text-sm font-medium
+                                   hover:border-indigo-400 dark:hover:border-indigo-500
+                                   focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
+                            @foreach($years as $y)
+                            <option value="{{ $y }}" {{ $y == $anioConsulta ? 'selected' : '' }}>{{ $y }}</option>
+                            @endforeach
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="w-full sm:w-72 group">
                     <label for="gerenciaID" class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 ml-1">
                         Gerencia
@@ -66,7 +90,11 @@
                     </div>
                 </div>
 
-                <div class="flex gap-3 w-full sm:w-auto">
+                <div class="flex flex-wrap gap-3 w-full sm:w-auto">
+                    <button type="button" id="verGuardado"
+                        class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
+                        <i class="fas fa-folder-open"></i> <span>Ver corte guardado</span>
+                    </button>
                     <button type="button" id="enviar"
                         class="h-11 px-6 flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-900/40 transition-all duration-200 
                                bg-indigo-600 hover:bg-indigo-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
@@ -78,6 +106,35 @@
                                bg-emerald-600 hover:bg-emerald-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
                         <i class="fas fa-save"></i> <span>Guardar</span>
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-6 md:px-8 pb-6 flex flex-wrap gap-4 items-stretch">
+            <div class="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20">
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Gerencias con corte {{ $anioConsulta }}</span>
+                    <span class="ml-2 text-slate-500 dark:text-slate-400 text-sm">({{ count($gerenciasConCorte) }})</span>
+                </div>
+                <div class="p-3 max-h-28 overflow-y-auto custom-scroll">
+                    @forelse($gerenciasConCorte as $g)
+                        <span class="inline-block px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-800/40 text-emerald-800 dark:text-emerald-200 text-xs font-medium mr-1.5 mb-1">{{ $g->NombreGerencia }}</span>
+                    @empty
+                        <p class="text-sm text-slate-400 dark:text-slate-500 italic">Ninguna gerencia con corte en este año.</p>
+                    @endforelse
+                </div>
+            </div>
+            <div class="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Gerencias sin corte {{ $anioConsulta }}</span>
+                    <span class="ml-2 text-slate-500 dark:text-slate-400 text-sm">({{ count($gerenciasSinCorte) }})</span>
+                </div>
+                <div class="p-3 max-h-28 overflow-y-auto custom-scroll">
+                    @forelse($gerenciasSinCorte as $g)
+                        <span class="inline-block px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-200 text-xs font-medium mr-1.5 mb-1">{{ $g->NombreGerencia }}</span>
+                    @empty
+                        <p class="text-sm text-slate-400 dark:text-slate-500 italic">Todas las gerencias tienen corte.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -105,6 +162,38 @@
             <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">Esperando datos</h3>
             <p class="text-sm text-slate-400 dark:text-slate-500 mt-2">Selecciona una gerencia arriba para comenzar.</p>
         </div>
+    </div>
+
+    <!-- Bloque: Corte guardado (costo, costo total, costo + margen) -->
+    <div id="bloque-corte-guardado" class="hidden mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
+        <div class="px-6 md:px-8 mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <i class="fas fa-folder-open text-indigo-500"></i>
+                Corte guardado (solo lectura)
+            </h3>
+            <button type="button" id="cerrar-corte-guardado" class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                <i class="fas fa-times mr-1"></i> Cerrar
+            </button>
+        </div>
+        <div class="relative w-full custom-scroll overflow-x-auto bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+            <table id="tabla-guardados" class="w-full text-left border-collapse">
+                <thead class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50 dark:bg-slate-950 z-10">Insumo</th>
+                        @foreach(['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] as $m)
+                        <th class="py-3 px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">{{ $m }}</th>
+                        @endforeach
+                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo</th>
+                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Margen (%)</th>
+                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo + margen</th>
+                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo total (año)</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-guardados-body" class="divide-y divide-slate-100 dark:divide-slate-800">
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 px-6">Costo = base; Costo + margen = precio aplicado por mes; Costo total (año) = suma anual a considerar.</p>
     </div>
 </div>
 @endsection
@@ -304,6 +393,76 @@
             table.ajax.reload(null, false);
         });
 
+        $('#anioCorte').on('change', function() {
+            var anio = $(this).val();
+            if (anio) {
+                window.location.href = '{{ route("cortes.index") }}?anio=' + anio;
+            }
+        });
+
+        const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        $('#verGuardado').on('click', async function() {
+            const gid = $('#gerenciaID').val();
+            const anio = $('#anioCorte').val();
+            if (!gid) {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Selecciona una gerencia', confirmButtonColor: '#4f46e5' });
+                return;
+            }
+            const $btn = $(this);
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cargando...');
+            try {
+                const res = await fetch('{{ route("cortes.guardados") }}?anio=' + encodeURIComponent(anio) + '&gerenciaID=' + encodeURIComponent(gid), {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const json = await res.json().catch(() => ({}));
+                const data = json.data || [];
+                const tbody = $('#tabla-guardados-body');
+                tbody.empty();
+                if (data.length === 0) {
+                    tbody.append('<tr><td colspan="17" class="py-8 text-center text-slate-500 dark:text-slate-400">No hay corte guardado para esta gerencia y año.</td></tr>');
+                } else {
+                    data.forEach(function(row) {
+                        const meses = row.Meses || {};
+                        let costoMasMargenSum = 0;
+                        let costoMasMargenCount = 0;
+                        const celdasMes = MESES.map(function(m) {
+                            const v = (meses[m] && meses[m].CostoTotal) ? Number(meses[m].CostoTotal) : 0;
+                            if (v > 0) { costoMasMargenSum += v; costoMasMargenCount++; }
+                            return '<td class="py-2 px-3 text-right text-sm font-mono text-slate-700 dark:text-slate-300">' + (v > 0 ? currencyFmt.format(v) : '—') + '</td>';
+                        }).join('');
+                        const costoBase = Number(row.Costo) || 0;
+                        const margen = Number(row.Margen) || 0;
+                        const costoMasMargenProm = costoMasMargenCount > 0 ? costoMasMargenSum / costoMasMargenCount : 0;
+                        const costoTotalAnual = Number(row.CostoTotalAnual) || 0;
+                        const tr = '<tr class="bg-gray-50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">' +
+                            '<td class="py-2 px-4 text-sm font-semibold text-slate-800 dark:text-white sticky left-0 bg-inherit">' + escapeHtml(row.NombreInsumo || '') + '</td>' +
+                            celdasMes +
+                            '<td class="py-2 px-4 text-right text-sm font-mono text-slate-600 dark:text-slate-300">' + (costoBase > 0 ? currencyFmt.format(costoBase) : '—') + '</td>' +
+                            '<td class="py-2 px-4 text-center text-sm font-mono text-slate-600 dark:text-slate-300">' + (margen > 0 ? margen + '%' : '—') + '</td>' +
+                            '<td class="py-2 px-4 text-right text-sm font-mono text-emerald-600 dark:text-emerald-400">' + (costoMasMargenProm > 0 ? currencyFmt.format(costoMasMargenProm) : '—') + '</td>' +
+                            '<td class="py-2 px-4 text-right text-sm font-mono font-bold text-slate-800 dark:text-white">' + (costoTotalAnual > 0 ? currencyFmt.format(costoTotalAnual) : '—') + '</td>' +
+                            '</tr>';
+                        tbody.append(tr);
+                    });
+                }
+                $('#bloque-corte-guardado').removeClass('hidden');
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error', text: e && e.message ? e.message : 'No se pudo cargar el corte guardado', confirmButtonColor: '#4f46e5' });
+            }
+            $btn.prop('disabled', false).html('<i class="fas fa-folder-open"></i> <span>Ver corte guardado</span>');
+        });
+
+        $('#cerrar-corte-guardado').on('click', function() {
+            $('#bloque-corte-guardado').addClass('hidden');
+        });
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         $('#guardar').on('click', async function() {
             const gid = $('#gerenciaID').val();
             if (!gid) {
@@ -367,7 +526,8 @@
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({
-                        rows: payload
+                        rows: payload,
+                        anio: parseInt($('#anioCorte').val(), 10) || new Date().getFullYear()
                     })
                 });
 
