@@ -19,7 +19,7 @@
             <i :class="{ 'rotate-90': open === 1 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
         <ul x-show="open === 1" x-collapse class="px-3 md:px-4 pt-1 space-y-1 text-xs md:text-sm">
-            @if(auth()->user()->can('ver-unidadesdenegocio'))
+            @if(auth()->check() && auth()->user()->can('ver-unidadesdenegocio'))
             <li>
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/unidadesDeNegocios">
@@ -28,7 +28,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-gerencias'))
+            @if(auth()->check() && auth()->user()->can('ver-gerencias'))
             <li>
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/gerencias">
@@ -37,7 +37,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-obras'))
+            @if(auth()->check() && auth()->user()->can('ver-obras'))
             <li>
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/obras">
@@ -46,7 +46,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-departamentos'))
+            @if(auth()->check() && auth()->user()->can('ver-departamentos'))
             <li>
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/departamentos">
@@ -55,7 +55,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-puestos'))
+            @if(auth()->check() && auth()->user()->can('ver-puestos'))
             <li>
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/puestos">
@@ -64,7 +64,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-empleados'))
+            @if(auth()->check() && auth()->user()->can('ver-empleados'))
             <li>
                 <a class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white"
                     href="/empleados">
@@ -86,7 +86,7 @@
             <i :class="{ 'rotate-90': open === 2 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
         <ul x-show="open === 2" x-collapse class="px-3 md:px-4 pt-1 space-y-1 text-xs md:text-sm">
-            @if(auth()->user()->can('ver-Lineastelefonicas'))
+            @if(auth()->check() && auth()->user()->can('ver-Lineastelefonicas'))
             <li>
                 <a href="/lineasTelefonicas"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -95,7 +95,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-equipos'))
+            @if(auth()->check() && auth()->user()->can('ver-equipos'))
             <li>
                 <a href="/equipos"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -104,7 +104,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-insumos'))
+            @if(auth()->check() && auth()->user()->can('ver-insumos'))
             <li>
                 <a href="/insumos"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -113,7 +113,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-categorias'))
+            @if(auth()->check() && auth()->user()->can('ver-categorias'))
             <li>
                 <a href="/categorias"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -122,7 +122,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-planes'))
+            @if(auth()->check() && auth()->user()->can('ver-planes'))
             <li>
                 <a href="/planes"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -144,7 +144,7 @@
             <i :class="{ 'rotate-90': open === 3 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
         <ul x-show="open === 3" x-collapse class="px-3 md:px-4 pt-1 space-y-1 text-xs md:text-sm">
-            @if(auth()->user()->can('transferir-inventario'))
+            @if(auth()->check() && auth()->user()->can('transferir-inventario'))
             <li>
                 <a href="/inventarios"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -166,7 +166,7 @@
             <i :class="{ 'rotate-90': open === 4 }" class="fas fa-chevron-right transition-transform duration-300 text-xs md:text-sm"></i>
         </button>
         <ul x-show="open === 4" x-collapse class="px-3 md:px-4 pt-1 space-y-1 text-xs md:text-sm">
-            @if(auth()->user()->can('ver-presupuesto'))
+            @if(auth()->check() && auth()->user()->can('ver-presupuesto'))
             <li>
                 <a href="/presupuesto"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -175,7 +175,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-reportes'))
+            @if(auth()->check() && auth()->user()->can('ver-reportes'))
             <li>
                 <a href="/reportes"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -184,7 +184,7 @@
                 </a>
             </li>
             @endif
-            @if(auth()->user()->can('ver-informe'))
+            @if(auth()->check() && auth()->user()->can('ver-informe'))
             <li>
                 <a href="/informe"
                     class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
@@ -207,7 +207,7 @@
         </button>
         <ul x-show="open === 5" x-collapse class="px-3 md:px-4 pt-1 space-y-1 text-xs md:text-sm">
             <li>
-                @if(auth()->user()->can('cortes.view'))
+                @if(auth()->check() && auth()->user()->can('cortes.view'))
                 <a href="/cortes" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
                     <span class="sidebar-text">Cortes</span>
@@ -215,7 +215,7 @@
                 @endif
             </li>
             <li>
-                @if(auth()->user()->can('facturas.view'))
+                @if(auth()->check() && auth()->user()->can('facturas.view'))
                 <a href="/facturas" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
                     <span class="sidebar-text">Facturas</span>
@@ -226,7 +226,7 @@
     </li>
 
     <li>
-        @if(auth()->user()->can('ver-usuarios'))
+        @if(auth()->check() && auth()->user()->can('ver-usuarios'))
         <a href="/usuarios"
             class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
             <i class="fas fa-users text-center w-5 md:w-auto text-base"></i>
@@ -236,7 +236,7 @@
     </li>
 
     <li>
-        @if(auth()->user()->can('ver-rol'))
+        @if(auth()->check() && auth()->user()->can('ver-rol'))
         <a href="/roles"
             class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
             <i class="fas fa-shield-alt text-center w-5 md:w-auto text-base"></i>

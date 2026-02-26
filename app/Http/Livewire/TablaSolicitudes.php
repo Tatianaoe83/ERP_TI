@@ -238,6 +238,15 @@ class TablaSolicitudes extends Component
         $solicitud->estatusReal = $estatusReal;
         $solicitud->estatusDisplay = $estatusDisplay;
         $solicitud->colorEstatus = $colorEstatus;
+        $solicitud->recotizarPropuestasText = '';
+        if ($estatusReal === 'Re-cotizar' && $solicitud->pasoGerencia && $solicitud->pasoGerencia->comment) {
+            $comment = $solicitud->pasoGerencia->comment;
+            if (str_starts_with($comment, 'RECOTIZAR|')) {
+                $parts = explode('|', $comment, 3);
+                $nums = isset($parts[1]) ? array_filter(array_map('trim', explode(',', $parts[1]))) : [];
+                $solicitud->recotizarPropuestasText = $nums ? ' (Prop. ' . implode(', ', $nums) . ')' : '';
+            }
+        }
 
         $todasFirmaron = $this->allStepsApproved($solicitud);
         $supervisorAprobado = $solicitud->pasoSupervisor && $solicitud->pasoSupervisor->status === 'approved';
@@ -325,6 +334,10 @@ class TablaSolicitudes extends Component
             return ['Aprobado', false];
         }
 
+        if ($solicitud->Estatus === 'Re-cotizar') {
+            return ['Re-cotizar', false];
+        }
+
         if (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
             if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                 if ($pasoGerencia && $pasoGerencia->status === 'approved') {
@@ -363,6 +376,10 @@ class TablaSolicitudes extends Component
 
         if ($estatusReal === 'Cotizaciones Enviadas') {
             return ['Cotizaciones Enviadas', 'bg-blue-50 text-blue-800 border border-blue-200'];
+        }
+
+        if ($estatusReal === 'Re-cotizar') {
+            return ['Re-cotizar', 'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700'];
         }
 
         if ($estatusReal === 'Completada') {

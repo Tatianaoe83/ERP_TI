@@ -16,6 +16,7 @@
                             <option value="Pendiente">Pendiente</option>
                             <option value="En revisión">En revisión</option>
                             <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
+                            <option value="Re-cotizar">Re-cotizar</option>
                             <option value="Aprobada">Aprobada</option>
                             <option value="Rechazada">Rechazada</option>
                         </select>
@@ -86,8 +87,8 @@
                             </td>
 
                             <td class="px-4 py-3 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold {{ $solicitud->colorEstatus }}">
-                                    {{ $solicitud->estatusDisplay }}
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold {{ $solicitud->colorEstatus }}" @if($solicitud->estatusDisplay === 'Re-cotizar' && !empty($solicitud->recotizarPropuestasText)) title="Recotizar propuesta(s): {{ trim($solicitud->recotizarPropuestasText, ' ()') }}" @endif>
+                                    {{ $solicitud->estatusDisplay }}{{ $solicitud->recotizarPropuestasText ?? '' }}
                                 </span>
                             </td>
 
