@@ -3,7 +3,7 @@
 <div wire:poll.15s="actualizarDatos" wire:poll.keep-alive>
 
 
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full" wire:loading.class="opacity-75 transition-opacity">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full" >
 
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
 

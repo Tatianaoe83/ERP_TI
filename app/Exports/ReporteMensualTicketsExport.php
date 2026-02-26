@@ -26,7 +26,14 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            new ResumenSheetExport($this->resumen, $this->mes, $this->anio),
+            new ResumenSheetExport(
+                $this->tickets, 
+                $this->resumen, 
+                $this->tiempoPorEmpleado, 
+                $this->tiempoPorCategoria, 
+                $this->mes, 
+                $this->anio
+            ),
             new TicketsSheetExport($this->tickets, $this->resumen, $this->mes, $this->anio),
             new TiempoResolucionPorEmpleadoSheetExport($this->tiempoPorEmpleado, $this->mes, $this->anio),
             new TiempoPorCategoriaResponsableSheetExport($this->tiempoPorCategoria, $this->mes, $this->anio),

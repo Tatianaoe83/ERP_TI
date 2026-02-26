@@ -166,6 +166,24 @@
                                         <i class="fas fa-file-invoice mr-1"></i> Asignacion
                                     </button>
                                     @endif
+
+                                    <!-- {{-- Botón Reenviar --}}
+                                    <button
+                                        type="button"
+                                        wire:click="reenviarCorreo({{ $solicitud->SolicitudID }})"
+                                        class="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 text-sm font-medium transition-colors"
+                                        title="Reenviar correos a pendientes">
+                                        <i class="fas fa-paper-plane mr-1"></i> Reenviar
+                                    </button>
+
+                                    {{-- Botón Cerrar/Cancelar Solicitud --}}
+                                    <button
+                                        type="button"
+                                        wire:click="abrirModalCancelacion({{ $solicitud->SolicitudID }})"
+                                        class="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 text-sm font-medium transition-colors"
+                                        title="Cerrar solicitud por parte de TI">
+                                        <i class="fas fa-ban mr-1"></i> Cerrar
+                                    </button> -->
                                 </div>
                             </td>
                         </tr>

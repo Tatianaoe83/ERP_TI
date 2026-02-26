@@ -139,6 +139,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/tickets/actualizar-metricas-masivo', [App\Http\Controllers\TicketsController::class, 'actualizarMetricasMasivo']);
     Route::get('/tickets/reporte-mensual', [App\Http\Controllers\TicketsController::class, 'reporteMensual'])->name('tickets.reporte-mensual');
     Route::get('/tickets/exportar-reporte-mensual-excel', [App\Http\Controllers\TicketsController::class, 'exportarReporteMensualExcel'])->name('tickets.exportar-reporte-mensual-excel');
+    Route::post('/tickets/subir-imagen-tinymce', [App\Http\Controllers\TicketsController::class, 'subirImagenTinyMCE']);
     // Ruta con parámetro dinámico debe ir AL FINAL
     Route::get('/tickets/{id}', [App\Http\Controllers\TicketsController::class, 'show']);
 

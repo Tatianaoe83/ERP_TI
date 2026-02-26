@@ -1442,39 +1442,76 @@ class TicketsController extends Controller
         $mes = $request->input('mes', now()->month);
         $anio = $request->input('anio', now()->year);
 
-        // Fechas del mes seleccionado
-        $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
-        $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+        // Fechas del mes seleccionado (Actual)
+        $fechaInicioActual = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+        $fechaFinActual = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
 
-        // Obtener tickets del mes con todas las relaciones necesarias
-        $tickets = Tickets::with([
+        // Fecha de inicio del mes anterior (Para traer 2 meses de datos)
+        $fechaInicioAnterior = \Carbon\Carbon::create($anio, $mes, 1)->subMonth()->startOfMonth();
+
+        // 1. Obtener tickets de AMBOS MESES (Desde el inicio del mes anterior hasta el fin del mes actual)
+        $ticketsDosMeses = Tickets::with([
             'empleado.puestos.departamentos.gerencia',
-            'empleado.gerencia', // Fallback por si la relación directa funciona
+            'empleado.gerencia', 
             'responsableTI.gerencia',
             'tipoticket',
             'subtipo',
             'tertipo'
         ])
-            ->whereBetween('created_at', [$fechaInicio, $fechaFin])
+            ->whereBetween('created_at', [$fechaInicioAnterior, $fechaFinActual])
             ->get();
 
-        // Calcular datos para el resumen
-        $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
+        // 2. Filtrar SOLO los tickets del mes actual para calcular el resumen de las otras funciones sin romperlas
+        $ticketsMesActual = $ticketsDosMeses->filter(function($ticket) use ($fechaInicioActual, $fechaFinActual) {
+            return $ticket->created_at->between($fechaInicioActual, $fechaFinActual);
+        });
+
+        // =========================================================================
+        // Construir el catálogo maestro de Tipoticket -> Tertipo
+        // =========================================================================
+        $todosTipos = \App\Models\Tipoticket::all();
+        $todosSubtipos = \App\Models\Subtipos::all();
+        $todosTertipos = \App\Models\Tertipos::all();
+
+        $catalogo = [];
+        foreach ($todosTipos as $tipo) {
+            $catalogo[$tipo->NombreTipo] = [];
+            
+            // Buscar los subtipos de este tipo
+            $subtiposDelTipo = $todosSubtipos->where('TipoID', $tipo->TipoID);
+            foreach ($subtiposDelTipo as $sub) {
+                // Buscar los tertipos de este subtipo
+                $tertiposDelSub = $todosTertipos->where('SubtipoID', $sub->SubtipoID);
+                foreach ($tertiposDelSub as $ter) {
+                    if (!in_array($ter->NombreTertipo, $catalogo[$tipo->NombreTipo])) {
+                        $catalogo[$tipo->NombreTipo][] = $ter->NombreTertipo;
+                    }
+                }
+            }
+            // Ordenar alfabéticamente los tertipos para que se vean bien en Excel
+            sort($catalogo[$tipo->NombreTipo]);
+        }
+        ksort($catalogo); // Ordenar los Tipos principales alfabéticamente
+        // =========================================================================
+
+        // Calcular datos para el resumen (usamos $ticketsMesActual para no afectar tus métricas originales)
+        $resumen = $this->calcularResumenMensual($ticketsMesActual, $fechaInicioActual, $fechaFinActual);
 
         // Calcular tiempo de resolución por empleado agrupado por responsable
-        $tiempoPorEmpleado = $this->calcularTiempoResolucionPorEmpleado($tickets);
+        $tiempoPorEmpleado = $this->calcularTiempoResolucionPorEmpleado($ticketsMesActual);
 
         // Calcular tiempo por categoría y responsable
-        $tiempoPorCategoria = $this->calcularTiempoPorCategoriaResponsable($tickets);
+        $tiempoPorCategoria = $this->calcularTiempoPorCategoriaResponsable($ticketsMesActual);
 
         $nombreArchivo = 'reporte_tickets_' . date('d-m-Y-H-i') . '.xlsx';
 
         return Excel::download(
-            new \App\Exports\ReporteMensualTicketsExport($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio),
+            // ¡AQUÍ ESTÁ LA MAGIA! Le pasamos a tu Excel los tickets de los DOS meses ($ticketsDosMeses)
+            new \App\Exports\ReporteMensualTicketsExport($ticketsDosMeses, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo),
             $nombreArchivo
         );
     }
-
+    
     /**
      * Calcular resumen mensual de tickets
      */
