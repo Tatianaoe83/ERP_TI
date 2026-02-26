@@ -214,6 +214,71 @@
                             </div>
                         </div>
 
+                        @if(($step->stage ?? '') === 'administracion' && isset($ganadores) && $ganadores->isNotEmpty())
+                        @php
+                            $totalFinalGanadores = 0;
+                            foreach ($ganadores as $g) {
+                                $cant = (float)($g->Cantidad ?? 1);
+                                $precio = (float)($g->Precio ?? 0);
+                                $envio = (float)($g->CostoEnvio ?? 0);
+                                $totalFinalGanadores += ($cant * $precio) + $envio;
+                            }
+                        @endphp
+                        <div class="mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                <h4 class="text-sm font-bold uppercase tracking-wide text-slate-900 dark:text-white">Productos ganadores</h4>
+                            </div>
+                            <div class="space-y-4">
+                                @foreach($ganadores as $ganador)
+                                @php
+                                    $cantidad = (float)($ganador->Cantidad ?? 1);
+                                    $precioUnitario = (float)($ganador->Precio ?? 0);
+                                    $costoEnvio = (float)($ganador->CostoEnvio ?? 0);
+                                    $totalProducto = ($cantidad * $precioUnitario) + $costoEnvio;
+                                @endphp
+                                <div class="bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+                                    <div class="space-y-2">
+                                        <p class="font-semibold text-slate-900 dark:text-white">{{ $ganador->NombreEquipo ?? $ganador->Descripcion ?? 'Producto' }}</p>
+                                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                                            <div>
+                                                <span class="text-slate-500 dark:text-slate-400">Proveedor:</span>
+                                                <span class="text-slate-900 dark:text-white">{{ $ganador->Proveedor ?? 'N/A' }}</span>
+                                            </div>
+                                            @if(!empty($ganador->NumeroParte))
+                                            <div>
+                                                <span class="text-slate-500 dark:text-slate-400">No. Parte:</span>
+                                                <span class="text-slate-900 dark:text-white">{{ $ganador->NumeroParte }}</span>
+                                            </div>
+                                            @endif
+                                            <div>
+                                                <span class="text-slate-500 dark:text-slate-400">Cantidad:</span>
+                                                <span class="text-slate-900 dark:text-white font-medium">{{ (int)$cantidad }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-slate-500 dark:text-slate-400">Precio Unitario:</span>
+                                                <span class="text-slate-900 dark:text-white font-medium">${{ number_format($precioUnitario, 2, '.', ',') }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-slate-500 dark:text-slate-400">Costo Envío:</span>
+                                                <span class="text-slate-900 dark:text-white font-medium">${{ number_format($costoEnvio, 2, '.', ',') }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="text-slate-500 dark:text-slate-400">Total Final:</span>
+                                                <span class="text-emerald-700 dark:text-emerald-400 font-bold">${{ number_format($totalProducto, 2, '.', ',') }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                            <div class="mt-4 pt-4 border-t-2 border-emerald-300 dark:border-emerald-700 flex justify-between items-center">
+                                <span class="text-base font-bold text-slate-900 dark:text-white">Total final</span>
+                                <span class="text-xl font-bold text-emerald-700 dark:text-emerald-400">${{ number_format($totalFinalGanadores, 2, '.', ',') }}</span>
+                            </div>
+                        </div>
+                        @endif
+
                         @if(!empty($step->comment))
                         <div class="mt-6 bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-100 dark:border-slate-700">
                             <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">

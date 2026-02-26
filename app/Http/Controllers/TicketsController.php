@@ -2010,13 +2010,13 @@ class TicketsController extends Controller
             ) {
                 $estatusReal = 'Rechazada';
                 $estaRechazada = true;
-            } elseif ($solicitud->Estatus === 'Aprobado') {
+            } elseif (in_array($solicitud->Estatus, ['Aprobado', 'Aprobada'], true)) {
                 $estatusReal = 'Aprobado';
             } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
                 $estatusReal = 'Cotizaciones Enviadas';
             } elseif ($solicitud->Estatus === 'Re-cotizar') {
                 $estatusReal = 'Re-cotizar';
-            } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
+            } elseif (in_array($solicitud->Estatus, ['Pendiente', 'En revisión', null, ''], true) || empty($solicitud->Estatus)) {
                 if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                     if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                         if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
@@ -2036,7 +2036,7 @@ class TicketsController extends Controller
 
             if ($estatusReal === 'Rechazada') {
                 $estatusDisplay = 'Rechazada';
-            } elseif ($estatusReal === 'Aprobado' || $solicitud->todosProductosTienenGanador()) {
+            } elseif ($estatusReal === 'Aprobado') {
                 $estatusDisplay = 'Aprobada';
             } elseif ($estatusReal === 'Cotizaciones Enviadas') {
                 $estatusDisplay = 'Cotizaciones Enviadas';

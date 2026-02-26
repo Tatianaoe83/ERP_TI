@@ -402,7 +402,7 @@
                             </h4>
                             <div class="mb-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 space-y-2">
                                 <p><strong>1. Solicitud</strong> → Vo.bo de supervisor</p>
-                                <p><strong>2. TI</strong> → Envía cotización → <strong>Gerente</strong> ve propuestas, elige ganador o regresa a TI para cotizar de nuevo (al aprobar pasa a Administración)</p>
+                                <p><strong>2. TI</strong> → Envía cotización → <strong>Gerente</strong> ve propuestas, elige ganador o regresa a TI para cotizar de nuevo</p>
                                 <p><strong>3. Administración</strong> → Ve los ganadores y aprueba la solicitud</p>
                             </div>
                             <div class="space-y-4">

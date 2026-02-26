@@ -72,10 +72,14 @@ class SolicitudAprobacionController extends Controller
             'approvalStep.solicitud.obraid',
             'approvalStep.solicitud.gerenciaid',
             'approvalStep.solicitud.puestoid',
+            'approvalStep.solicitud.cotizaciones',
         ]);
 
         $step = $tokenRow->approvalStep;
         $solicitud = $step->solicitud;
+        $ganadores = ($step->stage === 'administracion' && $solicitud->cotizaciones)
+            ? $solicitud->cotizaciones->where('Estatus', 'Seleccionada')
+            : collect();
 
         $prevNotApproved = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
             ->where('step_order', '<', $step->step_order)
@@ -93,6 +97,7 @@ class SolicitudAprobacionController extends Controller
             'canDecide' => $canDecide,
             'waitingFor' => $prevNotApproved ? $this->waitingLabel($solicitud, $step) : null,
             'proyectoNombre' => $proyectoNombre,
+            'ganadores' => $ganadores,
         ]);
     }
 

@@ -330,7 +330,7 @@ class TablaSolicitudes extends Component
             return ['Rechazada', true];
         }
 
-        if ($solicitud->Estatus === 'Aprobado') {
+        if (in_array($solicitud->Estatus, ['Aprobado', 'Aprobada'], true)) {
             return ['Aprobado', false];
         }
 
@@ -338,7 +338,7 @@ class TablaSolicitudes extends Component
             return ['Re-cotizar', false];
         }
 
-        if (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
+        if (in_array($solicitud->Estatus, ['Pendiente', 'En revisión', null, ''], true) || empty($solicitud->Estatus)) {
             if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                 if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                     if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
@@ -370,7 +370,7 @@ class TablaSolicitudes extends Component
             return ['Rechazada', 'bg-red-50 text-red-800 border border-red-200'];
         }
 
-        if ($estatusReal === 'Aprobado' || $tieneSeleccionada) {
+        if ($estatusReal === 'Aprobado') {
             return ['Aprobada', 'bg-emerald-50 text-emerald-800 border border-emerald-200'];
         }
 
