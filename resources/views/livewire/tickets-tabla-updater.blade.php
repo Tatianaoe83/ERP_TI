@@ -103,6 +103,9 @@
                             }
 
                             $tiempoInfo = $tiemposProgreso[$ticket->TicketID] ?? null;
+                            
+                            // Atrapamos el estado correctamente
+                            $estadoActual = $ticket->Estatus ?? $ticket->Estado ?? $ticket->estatus ?? '-';
                         @endphp
 
                         <tr wire:key="ticket-tabla-{{ $ticket->TicketID }}"
@@ -119,6 +122,7 @@
                             data-ticket-numero="{{ $ticket->numero ?? $ticket->Numero ?? '' }}"
                             data-ticket-anydesk="{{ $ticket->code_anydesk ?? $ticket->CodeAnydesk ?? '' }}"
                             data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
+                            data-ticket-estado="{{ $estadoActual }}"
 
                             @click="abrirModalDesdeElemento($el)">
 
@@ -154,14 +158,16 @@
                             {{-- ESTADO --}}
                             <td class="px-6 py-4">
                                 <span class="text-xs font-semibold px-2 py-1 rounded-full
-                                    @if($ticket->estatus == 'Pendiente')
+                                    @if($estadoActual == 'Pendiente')
                                         text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/20
-                                    @elseif($ticket->estatus == 'En progreso')
+                                    @elseif($estadoActual == 'En progreso')
                                         text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-500/20
-                                    @else
+                                    @elseif($estadoActual == 'Resuelto')
                                         text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/20
+                                    @else
+                                        text-gray-700 bg-gray-100 dark:text-gray-400 dark:bg-gray-500/20
                                     @endif">
-                                    {{ $ticket->estatus ?? '-' }}
+                                    {{ $estadoActual }}
                                 </span>
                             </td>
 

@@ -788,11 +788,15 @@
                                             <div class="text-xs mb-2 font-semibold text-gray-500 dark:text-gray-400">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="adjunto in mensaje.adjuntos" :key="adjunto.name">
-                                                    <span class="text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors
-                                         bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200
-                                         dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                                                        📎 <span x-text="adjunto.name"></span>
-                                                    </span>
+                                                    <a :href="obtenerUrlArchivo(adjunto)" 
+                                                    target="_blank" 
+                                                    class="text-xs px-3 py-1.5 rounded flex items-center gap-2 transition-colors bg-GRAY-50 border border-gray-300 text-blue-600 hover:bg-blue-50 dark:bg-[#2A2F3A] dark:border-gray-600 dark:text-blue-400 dark:hover:bg-gray-700 cursor-pointer shadow-sm">
+                                                        
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                                                        </svg>
+                                                        <span x-text="adjunto.name" class="font-medium hover:underline"></span>
+                                                    </a>
                                                 </template>
                                             </div>
                                         </div>
@@ -2463,6 +2467,42 @@
                         : 'body { font-family: Arial, sans-serif; font-size: 14px; }',
                     language: 'es',
                     placeholder: 'Escribe tu mensaje aquí...',
+                    
+                    automatic_uploads: true,
+                    paste_data_images: true, 
+
+                    // REEMPLAZO: Manejador de subida de imágenes con Fetch y Token CSRF de Laravel
+                    images_upload_handler: (blobInfo, progress) => new Promise((resolve, reject) => {
+                        const formData = new FormData();
+                        formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+                        fetch('/tickets/subir-imagen-tinymce', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.json().then(err => reject({ message: err.error || 'Error HTTP: ' + response.status, remove: true }));
+                            }
+                            return response.json();
+                        })
+                        .then(result => {
+                            if (!result || !result.location) {
+                                reject({ message: 'Error: Respuesta inválida del servidor.', remove: true });
+                                return;
+                            }
+                            // Devuelve la URL de la imagen a TinyMCE
+                            resolve(result.location);
+                        })
+                        .catch(error => {
+                            reject({ message: 'Falló la subida: ' + error.message, remove: true });
+                        });
+                    }),
+
                     setup: (editor) => {
                         this.tinyMCEInstance = editor;
                         
@@ -2523,7 +2563,6 @@
                     }
                 });
             },
-
             prepararDatosLista() {
                 // Los contadores ya están inicializados desde el servidor
                 // Esta función solo se usa para recalcular si es necesario
@@ -2839,13 +2878,90 @@ async cargarDatosTicket(ticketId) {
                     console.error('Error cargando datos:', error);
                 }
             },
-async guardarCambiosTicket() {
+
+            async cargarDatosTicket(ticketId) {
+                try {
+                    const response = await fetch(`/tickets/${ticketId}`, {
+                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.success && data.ticket) {
+                            this.ticketPrioridad = data.ticket.Prioridad || '';
+                            this.ticketEstatus = data.ticket.Estatus || '';
+                            this.ticketClasificacion = data.ticket.Clasificacion || '';
+                            this.ticketResponsableTI = data.ticket.ResponsableTI ? String(data.ticket.ResponsableTI) : '';
+                            this.ticketTipoID = data.ticket.TipoID ? String(data.ticket.TipoID) : '';
+                            this.ticketSubtipoID = data.ticket.SubtipoID ? String(data.ticket.SubtipoID) : '';
+                            this.ticketTertipoID = data.ticket.TertipoID ? String(data.ticket.TertipoID) : '';
+                            
+                            // Actualizar selected
+                            if (this.selected) {
+                                this.selected.numero = data.ticket.numero || ''; 
+                                this.selected.anydesk = data.ticket.anydesk || '';
+                                this.selected.estatus = data.ticket.Estatus || '';
+                                this.selected.imagen = data.ticket.imagen || '';
+                                this.selected.resolucion = data.ticket.Resolucion || data.ticket.resolucion || '';
+                            }
+                            
+                            this.$nextTick(() => { this.actualizarEstadoEditor(); });
+                            
+                            // Lógica completa y limpia de los selects anidados
+                            this.$nextTick(() => {
+                                setTimeout(() => {
+                                    const tipoSelect = document.getElementById('tipo-select');
+                                    if (tipoSelect && this.ticketTipoID) {
+                                        tipoSelect.value = this.ticketTipoID;
+                                        tipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                                        
+                                        setTimeout(() => {
+                                            const subtipoSelect = document.getElementById('subtipo-select');
+                                            if (subtipoSelect && this.ticketSubtipoID) {
+                                                if (subtipoSelect.options.length <= 1 && typeof loadSubtipos === 'function') {
+                                                    loadSubtipos(this.ticketTipoID);
+                                                }
+                                                
+                                                setTimeout(() => {
+                                                    if (subtipoSelect.options.length > 1) {
+                                                        subtipoSelect.value = this.ticketSubtipoID;
+                                                        subtipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                                                        
+                                                        setTimeout(() => {
+                                                            const tertipoSelect = document.getElementById('tertipo-select');
+                                                            if (tertipoSelect && this.ticketTertipoID) {
+                                                                if (tertipoSelect.options.length <= 1 && typeof loadTertipos === 'function') {
+                                                                    loadTertipos(this.ticketSubtipoID);
+                                                                }
+                                                                setTimeout(() => { 
+                                                                    if (tertipoSelect.options.length > 1) {
+                                                                        tertipoSelect.value = this.ticketTertipoID; 
+                                                                    }
+                                                                }, 300);
+                                                            }
+                                                        }, 500);
+                                                    }
+                                                }, 500);
+                                            }
+                                        }, 300);
+                                    }
+                                }, 200);
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error cargando datos:', error);
+                }
+            },
+
+            async guardarCambiosTicket() {
                 if (!this.selected.id) {
                     this.mostrarNotificacion('No hay ticket seleccionado', 'error');
                     return;
                 }
 
-                // Validación extra: Si está marcado como cerrado pero no hay resolución (por si acaso)
+                // Validación extra: Si está marcado como cerrado pero no hay resolución
                 if (this.ticketEstatus === 'Cerrado' && !this.selected.resolucion_temporal && !this.selected.resolucion) {
                      this.mostrarNotificacion('Error: Falta la resolución para cerrar el ticket', 'error');
                      return;
@@ -2863,7 +2979,6 @@ async guardarCambiosTicket() {
                         tipoID: this.ticketTipoID || null,
                         subtipoID: this.ticketSubtipoID || null,
                         tertipoID: this.ticketTertipoID || null,
-                        // ENVIAR LA RESOLUCIÓN
                         resolucion: this.selected.resolucion_temporal || null 
                     };
 
@@ -2907,7 +3022,6 @@ async guardarCambiosTicket() {
                             this.actualizarVistasDespuesDeGuardar(data.ticket, estatusAnterior, nuevaCategoria, nuevoEstatusTexto);
                             
                             // Forzar actualización del componente Livewire después de mover
-                            // Esto asegura que los datos del servidor se actualicen para futuras actualizaciones
                             setTimeout(() => {
                                 if (typeof Livewire !== 'undefined') {
                                     Livewire.emit('ticket-estatus-actualizado');
@@ -3552,25 +3666,29 @@ async guardarCambiosTicket() {
             },
 
             async enviarRespuesta() {
-                // Validar que el ticket no esté en Pendiente
+                // 1. Validar que el ticket no esté en Pendiente
                 if (this.selected.estatus === 'Pendiente' || this.ticketEstatus === 'Pendiente') {
-                    this.mostrarNotificacion('No se pueden enviar mensajes cuando el ticket está en estado "Pendiente". Cambia el estado a "En progreso" para enviar mensajes.', 'error');
+                    this.mostrarNotificacion('No se pueden enviar mensajes cuando el ticket está en estado "Pendiente". Cambia el estado a "En progreso".', 'error');
                     return;
                 }
                 
-                // Obtener el contenido HTML de TinyMCE
+                // 2. Obtener el contenido HTML de TinyMCE de forma segura
                 let contenidoMensaje = '';
                 if (this.tinyMCEInstance) {
                     contenidoMensaje = this.tinyMCEInstance.getContent();
-                    // Limpiar contenido vacío
-                    if (contenidoMensaje === '<p><br></p>' || contenidoMensaje.trim() === '') {
+                    if (contenidoMensaje === '<p><br></p>' || contenidoMensaje === '<p></p>' || contenidoMensaje.trim() === '') {
                         contenidoMensaje = '';
                     }
                 } else {
                     contenidoMensaje = this.nuevoMensaje;
                 }
 
-                if (!contenidoMensaje.trim()) return;
+                // 3. Validaciones antes de enviar
+                if (!contenidoMensaje.trim()) {
+                    this.mostrarNotificacion('El mensaje no puede estar vacío', 'error');
+                    return;
+                }
+                
                 if (!this.asuntoCorreo.trim()) {
                     this.mostrarNotificacion('El asunto es requerido', 'error');
                     return;
@@ -3579,9 +3697,7 @@ async guardarCambiosTicket() {
                 this.cargando = true;
 
                 try {
-                    // Normalizar el asunto para mantener la nomenclatura con el ID
                     const asuntoNormalizado = this.normalizarAsunto(this.asuntoCorreo);
-                    // Actualizar el campo con el asunto normalizado
                     this.asuntoCorreo = asuntoNormalizado;
                     
                     const formData = new FormData();
@@ -3589,51 +3705,57 @@ async guardarCambiosTicket() {
                     formData.append('mensaje', contenidoMensaje);
                     formData.append('asunto', asuntoNormalizado);
 
-                    
-                    const adjuntosInput = document.getElementById('adjuntos');
-                    if (adjuntosInput && adjuntosInput.files && adjuntosInput.files.length > 0) {
-                        for (let i = 0; i < adjuntosInput.files.length; i++) {
-                            formData.append('adjuntos[]', adjuntosInput.files[i]);
-                        }
+                    if (this.archivosAdjuntos && this.archivosAdjuntos.length > 0) {
+                        this.archivosAdjuntos.forEach((archivoProxy) => {
+                            // Alpine.raw() saca el archivo real de la variable reactiva
+                            const archivoReal = (typeof Alpine !== 'undefined' && Alpine.raw) 
+                                ? Alpine.raw(archivoProxy) 
+                                : archivoProxy;
+                            formData.append('adjuntos[]', archivoReal);
+                        });
                     }
 
+                    // 5. Enviar la petición
                     const response = await fetch('/tickets/enviar-respuesta', {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json' // OBLIGA al backend a responder el error real
                         }
                     });
 
                     const data = await response.json();
 
-                    if (data.success) {
+                    // 6. Procesar la respuesta
+                    if (response.ok && data.success) {
+                        // Limpiar campos y editor
                         this.nuevoMensaje = '';
-                        // Limpiar el editor TinyMCE
                         if (this.tinyMCEInstance) {
                             this.tinyMCEInstance.setContent('');
                         }
-                        // Limpiar archivos adjuntos
+                        
+                        // Limpiar estado de adjuntos
                         this.archivosAdjuntos = [];
-                        if (adjuntosInput) {
-                            adjuntosInput.value = '';
-                        }
+                        const adjuntosInput = document.getElementById('adjuntos');
+                        if (adjuntosInput) adjuntosInput.value = '';
                         
-                       
-                        this.mostrarNotificacion(data.message, 'success');
+                        this.mostrarNotificacion(data.message || 'Respuesta enviada exitosamente', 'success');
                         
-                
+                        // Refrescar el chat
                         await this.cargarMensajes();
                     } else {
-                        this.mostrarNotificacion(data.message, 'error');
+                        // Muestra el mensaje de error EXACTO del servidor
+                        throw new Error(data.message || 'Error del servidor al procesar la solicitud');
                     }
                 } catch (error) {
                     console.error('Error enviando respuesta:', error);
-                    this.mostrarNotificacion('Error enviando respuesta', 'error');
+                    this.mostrarNotificacion(error.message || 'Error enviando respuesta. Verifica tu conexión.', 'error');
                 } finally {
                     this.cargando = false;
                 }
             },
+
 
             async marcarMensajesComoLeidos() {
                 if (!this.selected.id) return;
@@ -3843,7 +3965,13 @@ async guardarCambiosTicket() {
             formatearMensaje(mensaje) {
                 if (!mensaje) return '';
                 
-                // Convertir saltos de línea a <br>
+                // Si el mensaje contiene código HTML (como el que genera TinyMCE con la imagen), 
+                // lo retornamos tal cual para que el navegador lo dibuje correctamente.
+                if (/<[a-z][\s\S]*>/i.test(mensaje)) {
+                    return mensaje;
+                }
+                
+                // Solo si es texto plano (ej. correos recibidos sin formato), aplicamos los saltos de línea
                 let mensajeFormateado = mensaje.replace(/\n/g, '<br>');
                 
                 // Detectar URLs y convertirlas en enlaces
@@ -3897,58 +4025,40 @@ async guardarCambiosTicket() {
 
             obtenerUrlArchivo(ruta) {
                 if (!ruta) return '#';
-                // Si la ruta ya es una URL completa, retornarla
-                if (ruta.startsWith('http://') || ruta.startsWith('https://')) {
+                
+                // 1. Si ya es una URL web válida, retornarla directamente
+                if (typeof ruta === 'string' && (ruta.startsWith('http://') || ruta.startsWith('https://') || ruta.startsWith('/storage/'))) {
                     return ruta;
                 }
                 
-                // Si la ruta es un objeto con propiedades (como los adjuntos del chat)
+                let pathToParse = '';
+
+                // 2. Si la ruta es un objeto (como viene de la BD)
                 if (typeof ruta === 'object' && ruta !== null) {
-                    // Si tiene una propiedad 'url', usarla directamente
+                    // Si el backend nos mandó la URL pública ya armada, es la mejor opción
                     if (ruta.url) {
                         return ruta.url;
                     }
-                    // Si tiene 'storage_path', construir la URL desde ahí
-                    if (ruta.storage_path) {
-                        ruta = ruta.storage_path;
-                    }
-                    // Si tiene 'path', intentar extraer la ruta relativa
-                    else if (ruta.path) {
-                        // Si path es una ruta absoluta del sistema, extraer solo el nombre del archivo
-                        const pathParts = ruta.path.split(/[\\/]/);
-                        const fileName = pathParts[pathParts.length - 1];
-                        // Buscar si hay un nombre de archivo en el objeto
-                        ruta = ruta.name || fileName;
-                    }
-                    // Si tiene 'name', usarlo como nombre de archivo
-                    else if (ruta.name) {
-                        ruta = ruta.name;
+                    // Si no, tomamos la ruta física (path) o la relativa (storage_path) o el nombre
+                    pathToParse = ruta.storage_path || ruta.path || ruta.name || '';
+                } 
+                // 3. Si es un string normal
+                else if (typeof ruta === 'string') {
+                    pathToParse = ruta;
+                }
+
+                if (pathToParse) {
+                    let partes = pathToParse.toString().split(/[\\/]/);
+                    let nombreArchivo = partes[partes.length - 1];
+                    
+                    // Asegurarnos de que no esté vacío
+                    if (nombreArchivo) {
+                        // Retornamos la URL web estándar y limpia de Laravel
+                        return `/storage/tickets/adjuntos/${nombreArchivo}`;
                     }
                 }
                 
-                // Limpiar la ruta: remover prefijos comunes de storage
-                let rutaLimpia = ruta.toString();
-                rutaLimpia = rutaLimpia.replace(/^storage\/app\/public\//, '');
-                rutaLimpia = rutaLimpia.replace(/^storage\//, '');
-                rutaLimpia = rutaLimpia.replace(/^public\//, '');
-                
-                // Si la ruta ya incluye 'tickets/', mantenerla tal cual (puede ser tickets/ o tickets/adjuntos/)
-                if (!rutaLimpia.startsWith('tickets/')) {
-                    // Si es solo el nombre del archivo, agregar 'tickets/' (archivos antiguos)
-                    if (!rutaLimpia.includes('/')) {
-                        rutaLimpia = `tickets/${rutaLimpia}`;
-                    } else {
-                        // Si tiene subcarpetas pero no incluye 'tickets', agregarlo
-                        if (!rutaLimpia.includes('tickets/')) {
-                            rutaLimpia = `tickets/${rutaLimpia}`;
-                        }
-                    }
-                }
-                
-                // Generar URL con la ruta completa /storage/app/public/tickets/...
-                // Formato: /storage/app/public/tickets/archivo.xlsx
-                // Esta es la ruta que funciona según el usuario
-                return `/storage/app/public/${rutaLimpia}`;
+                return '#';
             },
 
             aplicarFormato(tipo) {

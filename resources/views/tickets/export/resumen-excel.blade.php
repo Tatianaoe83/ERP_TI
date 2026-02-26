@@ -1,133 +1,254 @@
-<table>
+@php
+    $usuarios = $usuariosUnicos ?? [];
+    
+    // 1. Aplanar la jerarquía (2 Niveles: Gerencia -> Tertipo)
+    $filasGerencia = [];
+    if (isset($tablaAgrupada)) {
+        foreach ($tablaAgrupada as $principal => $datos) {
+            $filasGerencia[] = [
+                'tipo'    => 'padre',
+                'nombre'  => $principal,
+                'totales' => $datos['total_principal'] ?? []
+            ];
+            
+            if (isset($datos['tertipos'])) {
+                foreach ($datos['tertipos'] as $ter => $totalesTer) {
+                    $filasGerencia[] = [
+                        'tipo'    => 'hijo',
+                        'nombre'  => $ter,
+                        'totales' => $totalesTer
+                    ];
+                }
+            }
+        }
+    } else {
+        $gerencias = $tablaGerencia ?? [];
+        foreach ($gerencias as $g => $usrs) {
+            $filasGerencia[] = ['tipo' => 'padre', 'nombre' => $g, 'totales' => $usrs];
+        }
+    }
+
+    $categoriaNombres = array_keys($tablaCategoria ?? []);
+
+    $tableStyle  = "border-collapse:collapse; font-family:Calibri,Arial,sans-serif; font-size:11px; width:100%;";
+    $border      = "1px solid #9EA4BC";
+
+    $thStyle     = "font-weight:bold; background-color:#DAE1F3; color:#000000; border:{$border}; padding:4px 8px; text-align:left; white-space:nowrap;";
+    $thCenter    = "font-weight:bold; background-color:#DAE1F3; color:#000000; border:{$border}; padding:4px 8px; text-align:center; white-space:nowrap;";
+
+    $thTitle     = "font-weight:bold; font-size:12px; background-color:#DAE1F3; color:#000000; border:{$border}; padding:5px 8px; text-align:center;";
+    $tdPadre     = "font-weight:bold; background-color:#FFFFFF; color:#000000; border:{$border}; padding:4px 8px; text-transform:uppercase;";
+    $tdPadreVal  = "font-weight:bold; background-color:#FFFFFF; color:#000000; border:{$border}; padding:4px 8px; text-align:center;";
+    $tdHijo      = "background-color:#FFFFFF; color:#000000; border:{$border}; padding:3px 8px; padding-left:24px;";
+    $tdHijoVal   = "background-color:#FFFFFF; color:#000000; border:{$border}; padding:3px 8px; text-align:center;";
+    $tdTotal     = "font-weight:bold; background-color:#DAE1F3; color:#000000; border:{$border}; padding:4px 8px;";
+    $tdTotalVal  = "font-weight:bold; background-color:#DAE1F3; color:#000000; border:{$border}; padding:4px 8px; text-align:center;";
+    $tdNormal    = "background-color:#FFFFFF; color:#000000; border:{$border}; padding:4px 8px;";
+    $tdNormalVal = "background-color:#FFFFFF; color:#000000; border:{$border}; padding:4px 8px; text-align:center;";
+    $tdLabel     = "font-weight:bold; background-color:#FFFFFF; color:#000000; border:{$border}; padding:4px 8px;";
+    $tdNote      = "font-style:italic; color:#555555; background-color:#FFFFFF; border:{$border}; padding:4px 8px; font-size:10px;";
+    $tdGreen     = "font-weight:bold; color:#375623; background-color:#E2EFDA; border:{$border}; padding:4px 8px;";
+    $tdGreenVal  = "font-weight:bold; color:#375623; background-color:#E2EFDA; border:{$border}; padding:4px 8px; text-align:center;";
+@endphp
+
+{{-- ══════════════════════════════════════════════════════════════════
+     TABLA 1 · Incidencias por gerencia por usuario asignado
+══════════════════════════════════════════════════════════════════ --}}
+<div style="display:block; clear:both; margin-bottom:20px;">
+<table style="{{ $tableStyle }}">
     <tr>
-        <td colspan="8" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #1E40AF;">
-            REPORTE MENSUAL DE TICKETS - RESUMEN
+        <td colspan="{{ count($usuarios) + 2 }}" style="{{ $thTitle }}">
+            Incidencias por gerencia por usuario asignado
         </td>
     </tr>
     <tr>
-        <td colspan="8" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
-            <strong>Período:</strong> {{ \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} | 
-            <strong>Total de Tickets:</strong> <span style="color: #1E40AF; font-weight: bold;">{{ $resumen['total_tickets'] }}</span> | 
-            <strong>Cerrados:</strong> <span style="color: #059669; font-weight: bold;">{{ $resumen['tickets_cerrados'] }}</span> | 
-            <strong>Promedio Respuesta:</strong> <span style="color: #D97706; font-weight: bold;">{{ number_format($resumen['promedio_tiempo_respuesta'] ?? 0, 2) }}h</span> | 
-            <strong>Promedio Resolución:</strong> <span style="color: #2563EB; font-weight: bold;">{{ number_format($resumen['promedio_tiempo_resolucion'] ?? 0, 2) }}h</span>
-        </td>
+        <td style="{{ $thStyle }}">Etiquetas de fila</td>
+        <td style="{{ $thCenter }}">Total general</td>
+        @foreach($usuarios as $usr)
+            <td style="{{ $thCenter }}">{{ $usr }}</td>
+        @endforeach
     </tr>
+
+    @foreach ($filasGerencia as $filaActual)
+        @php
+            $esPadre           = $filaActual['tipo'] === 'padre';
+            $estiloNombre      = $esPadre ? $tdPadre  : $tdHijo;
+            $estiloValor       = $esPadre ? $tdPadreVal : $tdHijoVal;
+            $totalFilaGerencia = 0;
+        @endphp
+        <tr>
+            <td style="{{ $estiloNombre }}">{{ $filaActual['nombre'] }}</td>
+
+            @foreach($usuarios as $usr)
+                @php $totalFilaGerencia += ($filaActual['totales'][$usr] ?? 0); @endphp
+            @endforeach
+            <td style="{{ $estiloValor }}">{{ $totalFilaGerencia > 0 ? $totalFilaGerencia : '' }}</td>
+
+            @foreach($usuarios as $usr)
+                @php $valG = $filaActual['totales'][$usr] ?? 0; @endphp
+                <td style="{{ $estiloValor }}">{{ $valG > 0 ? $valG : '' }}</td>
+            @endforeach
+        </tr>
+    @endforeach
+
     <tr>
-        <td colspan="8" style="background-color: #EFF6FF; padding: 12px; border: 1px solid #BFDBFE; font-weight: bold; text-align: center;">
-            Total de Tickets: <span style="color: #1E40AF;">{{ $resumen['total_tickets'] }}</span> | 
-            Tickets Cerrados: <span style="color: #059669;">{{ $resumen['tickets_cerrados'] }}</span> | 
-            Promedio Tiempo Respuesta: <span style="color: #D97706;">{{ number_format($resumen['promedio_tiempo_respuesta'], 2) }} horas</span> | 
-            Promedio Tiempo Resolución: <span style="color: #2563EB;">{{ number_format($resumen['promedio_tiempo_resolucion'], 2) }} horas</span> | 
-            Porcentaje de Cumplimiento: <span style="color: #059669;">{{ $resumen['porcentaje_cumplimiento'] }}%</span>
-        </td>
+        <td style="{{ $tdTotal }}">Total general</td>
+        @php $granTotalGerencias = 0; @endphp
+        @foreach($usuarios as $usr)
+            @php
+                foreach($filasGerencia as $fila) {
+                    if ($fila['tipo'] === 'padre') {
+                        $granTotalGerencias += ($fila['totales'][$usr] ?? 0);
+                    }
+                }
+            @endphp
+        @endforeach
+        <td style="{{ $tdTotalVal }}">{{ $granTotalGerencias }}</td>
+
+        @foreach($usuarios as $usr)
+            @php
+                $totUsr = 0;
+                foreach($filasGerencia as $fila) {
+                    if ($fila['tipo'] === 'padre') {
+                        $totUsr += ($fila['totales'][$usr] ?? 0);
+                    }
+                }
+            @endphp
+            <td style="{{ $tdTotalVal }}">{{ $totUsr > 0 ? $totUsr : '' }}</td>
+        @endforeach
     </tr>
-    <tr>
-        <td colspan="8" style="height: 10px;"></td>
-    </tr>
-    <tr>
-        <th>Gerencia</th>
-        <th>Total Incidencias</th>
-        <th>Resueltos</th>
-        <th>En Progreso</th>
-        <th>Pendientes</th>
-        <th>Problemas</th>
-        <th>Servicios</th>
-        <th>Responsable de Resolución</th>
-    </tr>
-    @forelse($resumen['incidencias_por_gerencia'] as $gerenciaData)
-    <tr style="{{ $loop->even ? 'background-color: #F9FAFB;' : 'background-color: #FFFFFF;' }}">
-        <td style="padding: 8px; border: 1px solid #E5E7EB; font-weight: bold;">Todas las Gerencias</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $gerenciaData['total'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #059669; font-weight: bold;">{{ $gerenciaData['resueltos'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $gerenciaData['en_progreso'] ?? 0 }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #D97706; font-weight: bold;">{{ $gerenciaData['pendientes'] ?? 0 }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #DC2626; font-weight: bold;">{{ $gerenciaData['problemas'] ?? 0 }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $gerenciaData['servicios'] ?? 0 }}</td>
-        <td style="padding: 10px; border: 1px solid #E5E7EB;">
-            @if(!empty($gerenciaData['por_responsable']))
-                @foreach($gerenciaData['por_responsable'] as $responsable => $cantidad)
-                    {{ strip_tags($responsable) }} → {{ $cantidad }} ticket(s)@if(!$loop->last){{ "\n" }}@endif
-                @endforeach
-            @else
-                Sin responsable asignado
-            @endif
-        </td>
-    </tr>
-    @empty
-    <tr>
-        <td colspan="8" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
-    </tr>
-    @endforelse
-    <tr>
-        <td colspan="8" style="height: 20px;"></td>
-    </tr>
-    <tr>
-        <td colspan="8" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 14px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid #1E40AF;">TICKETS POR GERENCIA Y RESPONSABLE</td>
-    </tr>
-    <tr>
-        <th>Gerencia</th>
-        <th>Responsable</th>
-        <th>Total</th>
-        <th>Cerrados</th>
-        <th>En Progreso</th>
-        <th>Pendientes</th>
-        <th>Problemas</th>
-        <th>Servicios</th>
-    </tr>
-    @forelse($resumen['tickets_por_gerencia_responsable'] ?? [] as $item)
-    <tr style="{{ $loop->even ? 'background-color: #F9FAFB;' : 'background-color: #FFFFFF;' }}">
-        <td style="padding: 8px; border: 1px solid #E5E7EB; font-weight: bold;">{{ strip_tags($item['gerencia']) }}</td>
-        <td style="padding: 8px; border: 1px solid #E5E7EB;">{{ strip_tags($item['responsable']) }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $item['total'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #059669; font-weight: bold;">{{ $item['cerrados'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $item['en_progreso'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #D97706; font-weight: bold;">{{ $item['pendientes'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #DC2626; font-weight: bold;">{{ $item['problemas'] ?? 0 }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $item['servicios'] ?? 0 }}</td>
-    </tr>
-    @empty
-    <tr>
-        <td colspan="8" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
-    </tr>
-    @endforelse
-    <tr>
-        <td colspan="8" style="height: 20px;"></td>
-    </tr>
-    <tr>
-        <td colspan="8" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 14px; font-weight: bold; text-align: center; padding: 12px; border: 2px solid #1E40AF;">TOTALES POR EMPLEADO</td>
-    </tr>
-    <tr>
-        <th>Empleado</th>
-        <th>Total</th>
-        <th>Cerrados</th>
-        <th>En Progreso</th>
-        <th>Pendientes</th>
-        <th>Problemas</th>
-        <th>Servicios</th>
-        <th>% Cierre</th>
-    </tr>
-    @forelse($resumen['totales_por_empleado'] as $empleado)
-    @php
-        $porcentajeCierre = $empleado['total'] > 0 ? round(($empleado['cerrados'] / $empleado['total']) * 100, 1) : 0;
-    @endphp
-    <tr style="{{ $loop->even ? 'background-color: #F9FAFB;' : 'background-color: #FFFFFF;' }}">
-        <td style="padding: 8px; border: 1px solid #E5E7EB; font-weight: bold;">{{ strip_tags($empleado['empleado']) }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $empleado['total'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #059669; font-weight: bold;">{{ $empleado['cerrados'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $empleado['en_progreso'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #D97706; font-weight: bold;">{{ $empleado['pendientes'] }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #DC2626; font-weight: bold;">{{ $empleado['problemas'] ?? 0 }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; color: #2563EB; font-weight: bold;">{{ $empleado['servicios'] ?? 0 }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; font-weight: bold; 
-            @if($porcentajeCierre >= 80) color: #059669; 
-            @elseif($porcentajeCierre >= 50) color: #D97706; 
-            @else color: #DC2626; 
-            @endif">{{ $porcentajeCierre }}%</td>
-    </tr>
-    @empty
-    <tr>
-        <td colspan="8" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay datos disponibles</td>
-    </tr>
-    @endforelse
 </table>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════════
+     GRÁFICA — Movida debajo de la Tabla 1
+══════════════════════════════════════════════════════════════════ --}}
+<div style="display:block; clear:both; width:100%; margin-top:10px; margin-bottom:28px;">
+    {{-- Ejemplo: <img src="{{ $graficaUrl }}" style="max-width:100%; height:auto;"> --}}
+    {{-- O tu componente Blade/Livewire de gráfica aquí --}}
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════════
+     TABLA 2 · Incidencias por categoría
+══════════════════════════════════════════════════════════════════ --}}
+<div style="display:block; clear:both; margin-bottom:20px;">
+<table style="{{ $tableStyle }}">
+    <tr>
+        <td colspan="3" style="{{ $thTitle }}">
+            Incidencias por categoría - {{ $mesNombreTarget }}
+        </td>
+    </tr>
+    <tr>
+        <td style="{{ $thStyle }}">Etiquetas de fila</td>
+        <td style="{{ $thCenter }}">Cuenta de ID</td>
+        <td style="{{ $thCenter }}">Tiempo Prom. de Resolución</td>
+    </tr>
+
+    @foreach($categoriaNombres as $categoria)
+        <tr>
+            <td style="{{ $tdNormal }}">{{ $categoria }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $tablaCategoria[$categoria]['total'] }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $tablaCategoria[$categoria]['promedio_resolucion'] }}</td>
+        </tr>
+    @endforeach
+
+    <tr>
+        <td style="{{ $tdTotal }}">Total general</td>
+        <td style="{{ $tdTotalVal }}">{{ $totalTickets }}</td>
+        <td style="{{ $tdTotal }}"></td>
+    </tr>
+</table>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════════
+     TABLA 3 · Tiempos de respuesta promedio
+══════════════════════════════════════════════════════════════════ --}}
+<div style="display:block; clear:both; margin-bottom:20px;">
+<table style="{{ $tableStyle }}">
+    <tr>
+        <td colspan="3" style="{{ $thTitle }}">
+            Tiempos de respuesta promedio {{ $mesNombreTarget }}
+        </td>
+    </tr>
+    <tr>
+        <td style="{{ $tdLabel }}">Tiempo Promedio de primer respuesta</td>
+        <td style="{{ $tdNormalVal }}">{{ $promPrimerRespuesta }}</td>
+        <td style="{{ $tdNote }}">Tiempo de respuesta promedio de tickets normales</td>
+    </tr>
+    <tr>
+        <td style="{{ $tdLabel }}">Tiempo promedio de resolución</td>
+        <td style="{{ $tdNormalVal }}">{{ $promResolucionNormal }}</td>
+        <td style="{{ $tdNote }}">Tiempo de resolución promedio (tickets menores a 8 horas)</td>
+    </tr>
+    <tr>
+        <td style="{{ $tdLabel }}">Tiempo promedio Total</td>
+        <td style="{{ $tdNormalVal }}">{{ $promResolucionTotal }}</td>
+        <td style="{{ $tdNote }}">Tiempo total (incluyendo tickets de duración anormal)</td>
+    </tr>
+    <tr>
+        <td style="{{ $tdGreen }}">Porcentaje de cumplimiento</td>
+        <td style="{{ $tdGreenVal }}">{{ $cumplimiento }}</td>
+        <td style="{{ $tdNote }}">{{ collect(explode(' ', $textoAnormales))->take(10)->implode(' ') }}...</td>
+    </tr>
+
+    <tr><td colspan="3" style="padding:4px; border:none; background:#FFFFFF;"></td></tr>
+
+    <tr>
+        <td colspan="3" style="{{ $thTitle }}">
+            Tiempos de respuesta promedio {{ $mesNombreAnterior }}
+        </td>
+    </tr>
+    <tr>
+        <td style="{{ $tdLabel }}">Tiempo Promedio de primer respuesta</td>
+        <td style="{{ $tdNormalVal }}">{{ $promPrimerRespuestaAnt }}</td>
+        <td style="{{ $tdNote }}">Tiempo de respuesta promedio de tickets normales</td>
+    </tr>
+    <tr>
+        <td style="{{ $tdLabel }}">Tiempo promedio de resolución</td>
+        <td style="{{ $tdNormalVal }}">{{ $promResolucionNormalAnt }}</td>
+        <td style="{{ $tdNote }}">Tiempo de resolución promedio (tickets menores a 8 horas)</td>
+    </tr>
+    <tr>
+        <td style="{{ $tdLabel }}">Tiempo promedio Total</td>
+        <td style="{{ $tdNormalVal }}">{{ $promResolucionTotalAnt }}</td>
+        <td style="{{ $tdNote }}">Tiempo total (incluyendo tickets de duración anormal)</td>
+    </tr>
+    <tr>
+        <td style="{{ $tdGreen }}">Porcentaje de cumplimiento</td>
+        <td style="{{ $tdGreenVal }}">{{ $cumplimientoAnt }}</td>
+        <td style="{{ $tdNote }}">{{ collect(explode(' ', $textoAnormales))->take(10)->implode(' ') }}...</td>
+    </tr>
+    <tr>
+        <td colspan="3" style="font-style:italic; font-size:10px; color:#555555; text-align:justify; border:{{ $border }}; padding:5px; background-color:#FFFFFF;">
+            "{{ $textoAnormales }}"
+        </td>
+    </tr>
+</table>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════════
+     TABLA 4 · Comparativo de meses por usuario
+══════════════════════════════════════════════════════════════════ --}}
+<div style="display:block; clear:both; margin-bottom:20px;">
+<table style="{{ $tableStyle }}">
+    <tr>
+        <td style="{{ $thStyle }}">Etiquetas de fila</td>
+        <td style="{{ $thCenter }}; text-transform:capitalize;">{{ $mesAnteriorCorto }}</td>
+        <td style="{{ $thCenter }}; text-transform:capitalize;">{{ $mesActualCorto }}</td>
+        <td style="{{ $thCenter }}">Total general</td>
+    </tr>
+
+    @foreach($usuariosAmbosMeses as $usrM)
+        @php
+            $valAnt = $tablaMesesUsuarios[$usrM][$mesAnteriorCorto] ?? 0;
+            $valAct = $tablaMesesUsuarios[$usrM][$mesActualCorto] ?? 0;
+        @endphp
+        <tr>
+            <td style="{{ $tdLabel }}">{{ $usrM }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $valAnt > 0 ? $valAnt : '' }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $valAct > 0 ? $valAct : '' }}</td>
+            <td style="{{ $tdTotalVal }}">{{ $valAnt + $valAct }}</td>
+        </tr>
+    @endforeach
+</table>
+</div>

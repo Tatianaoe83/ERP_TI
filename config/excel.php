@@ -5,7 +5,8 @@ use PhpOffice\PhpSpreadsheet\Reader\Csv;
 
 return [
     'exports' => [
-
+        
+        'include_charts' => true,
         /*
         |--------------------------------------------------------------------------
         | Chunk size
