@@ -2017,13 +2017,13 @@ class TicketsController extends Controller
             
             // Verificar si todos los productos tienen ganador (consistente con mostrarPaginaCotizacion y TablaSolicitudes)
             $todosGanadores = $solicitud->todosProductosTienenGanador();
-            
-            // Validación consistente con mostrarPaginaCotizacion
-            $puedeCotizar = $todasFirmaron 
-                && auth()->check() 
+            $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
+
+            // Cotizar se habilita cuando el supervisor aprobó: TI sube cotizaciones y envía al gerente
+            $puedeCotizar = $supervisorAprobado
+                && auth()->check()
                 && !$estaRechazada
-                && $estatusDisplay !== 'Aprobada' 
-                && $estatusDisplay !== 'Cotizaciones Enviadas'
+                && $estatusDisplay !== 'Aprobada'
                 && !$todosGanadores;
 
             // Verificar si puede elegir cotización (gerente con todas las firmas y cotizaciones cargadas o enviadas)
@@ -2037,9 +2037,9 @@ class TicketsController extends Controller
             // Construir pasos de aprobación
             $pasosAprobacion = [];
             $stageLabels = [
-                'supervisor' => 'Supervisor',
-                'gerencia' => 'Gerencia',
-                'administracion' => 'Administración'
+                'supervisor' => 'Vo.bo de supervisor',
+                'gerencia' => 'Gerente: ve propuestas, elige ganador o regresa a TI para cotizar',
+                'administracion' => 'Administración: ve ganadores y aprueba la solicitud'
             ];
             $statusLabels = [
                 'approved' => 'Aprobado',
@@ -2485,34 +2485,30 @@ class TicketsController extends Controller
             $pasoSupervisor = $solicitud->pasoSupervisor;
             $pasoGerencia = $solicitud->pasoGerencia;
             $pasoAdministracion = $solicitud->pasoAdministracion;
-            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
-                && ($pasoGerencia && $pasoGerencia->status === 'approved')
-                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+            $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
 
             $estaRechazada = ($pasoSupervisor && $pasoSupervisor->status === 'rejected')
                 || ($pasoGerencia && $pasoGerencia->status === 'rejected')
                 || ($pasoAdministracion && $pasoAdministracion->status === 'rejected');
 
             $todosGanadores = $solicitud->todosProductosTienenGanador();
-            $puedeCotizar = $todasFirmaron && auth()->check() && !$estaRechazada
-                && $solicitud->Estatus !== 'Aprobado' && $solicitud->Estatus !== 'Cotizaciones Enviadas'
+            $puedeCotizar = $supervisorAprobado && auth()->check() && !$estaRechazada
+                && $solicitud->Estatus !== 'Aprobado'
                 && !$todosGanadores;
 
             if (!$puedeCotizar) {
                 $mensaje = 'No puedes cotizar esta solicitud.';
-                
+
                 if ($estaRechazada) {
                     $mensaje = 'No puedes cotizar una solicitud rechazada.';
-                } elseif (!$todasFirmaron) {
-                    $mensaje = 'La solicitud aún no ha sido aprobada por todos los niveles.';
+                } elseif (!$supervisorAprobado) {
+                    $mensaje = 'El Vo.bo de supervisor debe estar aprobado para poder cotizar.';
                 } elseif ($todosGanadores) {
                     $mensaje = 'Esta solicitud ya tiene cotizaciones ganadoras seleccionadas.';
                 } elseif ($solicitud->Estatus === 'Aprobado') {
                     $mensaje = 'Esta solicitud ya fue aprobada completamente.';
-                } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
-                    $mensaje = 'Las cotizaciones ya han sido enviadas al gerente para revisión.';
                 }
-                
+
                 return redirect()->route('tickets.index')->with('error', $mensaje);
             }
 
@@ -2771,19 +2767,22 @@ class TicketsController extends Controller
                 ], 400);
             }
 
-            // Verificar que todas las aprobaciones estén completas
+            // El gerente recibe el correo solo cuando TI envía las cotizaciones.
+            // Requerir: Vo.bo de supervisor aprobado y paso de gerencia aún pendiente.
             $pasoSupervisor = $solicitud->pasoSupervisor;
             $pasoGerencia = $solicitud->pasoGerencia;
-            $pasoAdministracion = $solicitud->pasoAdministracion;
 
-            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
-                && ($pasoGerencia && $pasoGerencia->status === 'approved')
-                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
-
-            if (!$todasFirmaron) {
+            if (!$pasoSupervisor || $pasoSupervisor->status !== 'approved') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Todas las aprobaciones deben estar completas antes de enviar al gerente'
+                    'message' => 'El Vo.bo de supervisor debe estar aprobado antes de enviar cotizaciones al gerente.'
+                ], 400);
+            }
+
+            if (!$pasoGerencia || $pasoGerencia->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El paso de gerencia ya fue resuelto. No se puede reenviar cotizaciones en este estado.'
                 ], 400);
             }
 

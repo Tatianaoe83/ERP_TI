@@ -83,9 +83,9 @@
 
     @php
     $stageLabels = [
-        'supervisor' => 'Supervisor',
-        'gerencia' => 'Gerencia',
-        'administracion' => 'Administración',
+        'supervisor' => 'Vo.bo de supervisor',
+        'gerencia' => 'Gerente: ve propuestas, elige ganador o regresa a TI para cotizar',
+        'administracion' => 'Administración: ve ganadores y aprueba la solicitud',
     ];
 
     $stageLabel = $stageLabels[$step->stage ?? ''] ?? 'Aprobación';

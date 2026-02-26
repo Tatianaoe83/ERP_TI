@@ -24,24 +24,29 @@
 
 <div class="w-full mx-auto bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors duration-300">
 
-    <div class="p-6 md:p-8 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950 backdrop-blur-sm">
-        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-            <div class="flex-1 space-y-2">
-                <div class="flex items-center gap-3">
-                    <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                        <i class="fas fa-file-invoice-dollar text-xl"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">
-                        Generar Corte Anual
-                    </h2>
-                </div>
-                <p class="text-sm text-slate-500 dark:text-slate-400 pl-14 font-medium">
+    <!-- Encabezado: título y descripción -->
+    <div class="px-6 md:px-8 pt-6 md:pt-8 pb-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950">
+        <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
+                <i class="fas fa-file-invoice-dollar text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">
+                    Generar Corte Anual
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                     Gestión visual de costos y variantes por gerencia.
                 </p>
             </div>
+        </div>
+    </div>
 
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 w-full lg:w-auto">
-                <div class="w-full sm:w-48 group">
+    <!-- Filtros y acciones -->
+    <div class="px-6 md:px-8 py-5 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/30">
+        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Filtros y acciones</p>
+        <div class="flex flex-col lg:flex-row lg:items-end gap-4 lg:gap-6">
+            <div class="flex flex-wrap items-end gap-4 flex-1">
+                <div class="w-full sm:w-40 group">
                     <label for="anioCorte" class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 ml-1">
                         Año
                     </label>
@@ -64,8 +69,7 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="w-full sm:w-72 group">
+                <div class="w-full sm:flex-1 sm:min-w-[200px] sm:max-w-sm group">
                     <label for="gerenciaID" class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 ml-1">
                         Gerencia
                     </label>
@@ -89,34 +93,31 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="flex flex-wrap gap-3 w-full sm:w-auto">
-                    <button type="button" id="verGuardado"
-                        class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
-                        <i class="fas fa-folder-open"></i> <span>Ver corte guardado</span>
-                    </button>
-                    <button type="button" id="enviar"
-                        class="h-11 px-6 flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-900/40 transition-all duration-200 
-                               bg-indigo-600 hover:bg-indigo-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
-                        <i class="fas fa-eye"></i> <span>Preview</span>
-                    </button>
-
-                    <button type="button" id="guardar"
-                        class="h-11 px-6 flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-emerald-500/20 dark:shadow-emerald-900/40 transition-all duration-200 
-                               bg-emerald-600 hover:bg-emerald-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
-                        <i class="fas fa-save"></i> <span>Guardar</span>
-                    </button>
-                </div>
+            </div>
+            <div class="flex flex-wrap gap-3 items-center lg:pb-0.5">
+                <button type="button" id="verGuardado"
+                    class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
+                    <i class="fas fa-folder-open"></i> <span>Ver corte guardado</span>
+                </button>
+                <button type="button" id="enviar"
+                    class="h-11 px-6 flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-900/40 transition-all duration-200 
+                           bg-indigo-600 hover:bg-indigo-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
+                    <i class="fas fa-calculator"></i> <span>Generar corte</span>
+                </button>
             </div>
         </div>
+    </div>
 
-        <div class="px-6 md:px-8 pb-6 flex flex-wrap gap-4 items-stretch">
-            <div class="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden">
-                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20">
-                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Gerencias con corte {{ $anioConsulta }}</span>
+    <!-- Estado por gerencia -->
+    <div class="px-6 md:px-8 py-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-950/50">
+        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Estado por gerencia ({{ $anioConsulta }})</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden min-h-[120px] flex flex-col">
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20 shrink-0">
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Con corte</span>
                     <span class="ml-2 text-slate-500 dark:text-slate-400 text-sm">({{ count($gerenciasConCorte) }})</span>
                 </div>
-                <div class="p-3 max-h-28 overflow-y-auto custom-scroll">
+                <div class="p-3 flex-1 overflow-y-auto custom-scroll min-h-0">
                     @forelse($gerenciasConCorte as $g)
                         <span class="inline-block px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-800/40 text-emerald-800 dark:text-emerald-200 text-xs font-medium mr-1.5 mb-1">{{ $g->NombreGerencia }}</span>
                     @empty
@@ -124,12 +125,12 @@
                     @endforelse
                 </div>
             </div>
-            <div class="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden">
-                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Gerencias sin corte {{ $anioConsulta }}</span>
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 overflow-hidden min-h-[120px] flex flex-col">
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20 shrink-0">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Sin corte</span>
                     <span class="ml-2 text-slate-500 dark:text-slate-400 text-sm">({{ count($gerenciasSinCorte) }})</span>
                 </div>
-                <div class="p-3 max-h-28 overflow-y-auto custom-scroll">
+                <div class="p-3 flex-1 overflow-y-auto custom-scroll min-h-0">
                     @forelse($gerenciasSinCorte as $g)
                         <span class="inline-block px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-200 text-xs font-medium mr-1.5 mb-1">{{ $g->NombreGerencia }}</span>
                     @empty
@@ -140,7 +141,11 @@
         </div>
     </div>
 
-    <div class="relative w-full custom-scroll overflow-x-auto bg-gray-50 dark:bg-slate-900">
+    <!-- Tabla de datos del corte -->
+    <div class="px-6 md:px-8 py-5">
+        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Datos del corte</p>
+    </div>
+    <div class="relative w-full custom-scroll overflow-x-auto bg-gray-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
         <table id="tabla" class="w-full text-left border-collapse">
             <thead class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
                 <tr>
@@ -162,38 +167,53 @@
             <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">Esperando datos</h3>
             <p class="text-sm text-slate-400 dark:text-slate-500 mt-2">Selecciona una gerencia arriba para comenzar.</p>
         </div>
-    </div>
-
-    <!-- Bloque: Corte guardado (costo, costo total, costo + margen) -->
-    <div id="bloque-corte-guardado" class="hidden mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
-        <div class="px-6 md:px-8 mb-4 flex items-center justify-between">
-            <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <i class="fas fa-folder-open text-indigo-500"></i>
-                Corte guardado (solo lectura)
-            </h3>
-            <button type="button" id="cerrar-corte-guardado" class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-                <i class="fas fa-times mr-1"></i> Cerrar
+        <!-- Botón Guardar se mueve aquí por JS (al pie de la tabla) -->
+        <div id="guardar-en-footer" class="hidden">
+            <button type="button" id="guardar"
+                class="h-10 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-emerald-500/20 dark:shadow-emerald-900/40 transition-all duration-200 
+                       bg-emerald-600 hover:bg-emerald-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
+                <i class="fas fa-save"></i> <span>Guardar</span>
             </button>
         </div>
-        <div class="relative w-full custom-scroll overflow-x-auto bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-            <table id="tabla-guardados" class="w-full text-left border-collapse">
-                <thead class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-                    <tr>
-                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider sticky left-0 bg-slate-50 dark:bg-slate-950 z-10">Insumo</th>
-                        @foreach(['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] as $m)
-                        <th class="py-3 px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">{{ $m }}</th>
-                        @endforeach
-                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo</th>
-                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Margen (%)</th>
-                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo + margen</th>
-                        <th class="py-3 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo total (año)</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-guardados-body" class="divide-y divide-slate-100 dark:divide-slate-800">
-                </tbody>
-            </table>
+    </div>
+
+    <!-- Modal: Corte guardado (preview, tabla responsive) -->
+    <div id="bloque-corte-guardado" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog" aria-labelledby="modal-corte-guardado-title">
+        <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="modal-corte-guardado-backdrop"></div>
+        <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+            <div class="relative w-full max-w-6xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div class="flex items-center justify-between shrink-0 px-5 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                    <h2 id="modal-corte-guardado-title" class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-folder-open text-indigo-500"></i>
+                        Corte guardado (solo lectura)
+                    </h2>
+                    <button type="button" id="cerrar-corte-guardado" class="rounded-lg p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors" aria-label="Cerrar">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                <div class="flex-1 min-h-0 overflow-auto p-4 sm:p-6">
+                    <div class="overflow-x-auto custom-scroll -mx-2 sm:mx-0">
+                        <table id="tabla-guardados" class="w-full text-left border-collapse min-w-[700px]">
+                            <thead class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+                                <tr>
+                                    <th class="py-3 px-3 sm:px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider sticky left-0 z-10 bg-slate-50 dark:bg-slate-950 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Insumo</th>
+                                    @foreach(['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] as $m)
+                                    <th class="py-3 px-2 sm:px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right whitespace-nowrap">{{ $m }}</th>
+                                    @endforeach
+                                    <th class="py-3 px-3 sm:px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo</th>
+                                    <th class="py-3 px-2 sm:px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Margen (%)</th>
+                                    <th class="py-3 px-3 sm:px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo + margen</th>
+                                    <th class="py-3 px-3 sm:px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo total (año)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-guardados-body" class="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-4">Costo = base; Costo + margen = precio aplicado por mes; Costo total (año) = suma anual a considerar.</p>
+                </div>
+            </div>
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 px-6">Costo = base; Costo + margen = precio aplicado por mes; Costo total (año) = suma anual a considerar.</p>
     </div>
 </div>
 @endsection
@@ -219,7 +239,7 @@
             serverSide: true,
             pageLength: 25,
             deferLoading: 0,
-            dom: 'rt<"flex flex-col sm:flex-row justify-between items-center p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950"ip>',
+            dom: 'rt<"dt-corte-footer flex flex-col sm:flex-row justify-between items-center p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950"ip>',
             language: {
                 zeroRecords: "<div class='py-8 text-center text-slate-400 dark:text-slate-500 italic'>Sin resultados</div>",
                 info: "<span class='text-xs font-medium text-slate-500 dark:text-slate-400'>Viendo <span class='text-slate-800 dark:text-white font-bold'>_START_</span> - <span class='text-slate-800 dark:text-white font-bold'>_END_</span> de <span class='text-slate-800 dark:text-white font-bold'>_TOTAL_</span></span>",
@@ -343,6 +363,12 @@
                 $('.dataTables_paginate .paginate_button').addClass(btnClass + normal);
                 $('.dataTables_paginate .paginate_button.current').removeClass(normal).addClass(active);
                 $('.dataTables_paginate .paginate_button.disabled').addClass(disabled);
+            },
+            initComplete: function() {
+                var $footer = $('.dt-corte-footer');
+                if ($footer.length && $('#guardar').length) {
+                    $('#guardar').appendTo($footer).removeClass('hidden').show();
+                }
             }
         });
 
@@ -436,7 +462,7 @@
                         const costoMasMargenProm = costoMasMargenCount > 0 ? costoMasMargenSum / costoMasMargenCount : 0;
                         const costoTotalAnual = Number(row.CostoTotalAnual) || 0;
                         const tr = '<tr class="bg-gray-50 dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50">' +
-                            '<td class="py-2 px-4 text-sm font-semibold text-slate-800 dark:text-white sticky left-0 bg-inherit">' + escapeHtml(row.NombreInsumo || '') + '</td>' +
+                            '<td class="py-2 px-3 sm:px-4 text-sm font-semibold text-slate-800 dark:text-white sticky left-0 z-[1] bg-gray-50 dark:bg-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">' + escapeHtml(row.NombreInsumo || '') + '</td>' +
                             celdasMes +
                             '<td class="py-2 px-4 text-right text-sm font-mono text-slate-600 dark:text-slate-300">' + (costoBase > 0 ? currencyFmt.format(costoBase) : '—') + '</td>' +
                             '<td class="py-2 px-4 text-center text-sm font-mono text-slate-600 dark:text-slate-300">' + (margen > 0 ? margen + '%' : '—') + '</td>' +
@@ -447,6 +473,7 @@
                     });
                 }
                 $('#bloque-corte-guardado').removeClass('hidden');
+                document.body.classList.add('overflow-hidden');
             } catch (e) {
                 Swal.fire({ icon: 'error', title: 'Error', text: e && e.message ? e.message : 'No se pudo cargar el corte guardado', confirmButtonColor: '#4f46e5' });
             }
@@ -455,6 +482,19 @@
 
         $('#cerrar-corte-guardado').on('click', function() {
             $('#bloque-corte-guardado').addClass('hidden');
+            document.body.classList.remove('overflow-hidden');
+        });
+
+        $('#modal-corte-guardado-backdrop').on('click', function() {
+            $('#bloque-corte-guardado').addClass('hidden');
+            document.body.classList.remove('overflow-hidden');
+        });
+
+        $(document).on('keydown', function(e) {
+            if (e.key === 'Escape' && !$('#bloque-corte-guardado').hasClass('hidden')) {
+                $('#bloque-corte-guardado').addClass('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
         });
 
         function escapeHtml(str) {

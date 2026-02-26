@@ -113,9 +113,9 @@ class SolicitudAprobacionController extends Controller
     }
 
     private const STAGE_LABELS = [
-        'supervisor' => 'Supervisor',
-        'gerencia' => 'Gerencia',
-        'administracion' => 'Administración',
+        'supervisor' => 'Vo.bo de supervisor',
+        'gerencia' => 'Gerente: ve propuestas, elige ganador o regresa a TI para cotizar',
+        'administracion' => 'Administración: ve ganadores y aprueba la solicitud',
     ];
 
     public function decide(Request $request, string $token)
@@ -192,35 +192,56 @@ class SolicitudAprobacionController extends Controller
                 ]);
 
                 // 3. Preparar correo para el SIGUIENTE aprobador REAL (si existe)
+                // No se envía correo al gerente aquí: el gerente recibe el correo cuando TI sube
+                // cotizaciones y las envía (enviarCotizacionesAlGerente). Así el gerente solo ve
+                // la solicitud cuando ya hay propuestas para elegir ganador o devolver a TI.
                 if ($pending->isNotEmpty()) {
                     $nextStep = $pending->first();
                     $nextStep->load('approverEmpleado');
-                    
-                    $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
-                        ->whereNull('used_at')
-                        ->whereNull('revoked_at')
-                        ->where(function ($q) {
-                            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-                        })
-                        ->first();
-                    
-                    // Si no existe token activo (por ejemplo, si se generó uno viejo revocado), crear uno nuevo
-                    if (!$nextTokenRow) {
-                        $nextTokenRow = SolicitudTokens::create([
-                            'approval_step_id' => $nextStep->id,
-                            'token' => \Illuminate\Support\Str::uuid(),
-                            'expires_at' => now()->addDays(7)
-                        ]);
-                    }
 
-                    if ($nextTokenRow && $nextStep->approverEmpleado) {
-                        $stageLabel = self::STAGE_LABELS[$nextStep->stage] ?? $nextStep->stage;
-                        $emailRevisionData = [
-                            'aprobador' => $nextStep->approverEmpleado,
-                            'solicitud' => $solicitud->load('empleadoid'),
-                            'token' => $nextTokenRow->token,
-                            'stageLabel' => $stageLabel,
-                        ];
+                    // No enviar correo si el siguiente paso es gerencia: se enviará cuando TI suba cotizaciones
+                    if ($nextStep->stage === 'gerencia') {
+                        // Opcional: crear/renovar token para cuando TI envíe las cotizaciones
+                        $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
+                            ->whereNull('used_at')
+                            ->whereNull('revoked_at')
+                            ->where(function ($q) {
+                                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                            })
+                            ->first();
+                        if (!$nextTokenRow) {
+                            SolicitudTokens::create([
+                                'approval_step_id' => $nextStep->id,
+                                'token' => \Illuminate\Support\Str::uuid(),
+                                'expires_at' => now()->addDays(7)
+                            ]);
+                        }
+                    } else {
+                        $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
+                            ->whereNull('used_at')
+                            ->whereNull('revoked_at')
+                            ->where(function ($q) {
+                                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                            })
+                            ->first();
+
+                        if (!$nextTokenRow) {
+                            $nextTokenRow = SolicitudTokens::create([
+                                'approval_step_id' => $nextStep->id,
+                                'token' => \Illuminate\Support\Str::uuid(),
+                                'expires_at' => now()->addDays(7)
+                            ]);
+                        }
+
+                        if ($nextTokenRow && $nextStep->approverEmpleado) {
+                            $stageLabel = self::STAGE_LABELS[$nextStep->stage] ?? $nextStep->stage;
+                            $emailRevisionData = [
+                                'aprobador' => $nextStep->approverEmpleado,
+                                'solicitud' => $solicitud->load('empleadoid'),
+                                'token' => $nextTokenRow->token,
+                                'stageLabel' => $stageLabel,
+                            ];
+                        }
                     }
                 }
             });
@@ -650,6 +671,8 @@ class SolicitudAprobacionController extends Controller
      * Lógica de efecto dominó (Cascada)
      * Revisa los pasos siguientes pendientes. Si el aprobador es el mismo que acaba de firmar,
      * se auto-aprueba. Se detiene en cuanto encuentra a alguien diferente.
+     * El paso "gerencia" NUNCA se auto-aprueba: el gerente debe elegir un ganador de la cotización
+     * o regresar a TI, aunque sea la misma persona que el supervisor.
      */
     private function procesarAutoAprobacionEnCascada($solicitudId, $empleadoIdQueAprobo)
     {
@@ -660,10 +683,15 @@ class SolicitudAprobacionController extends Controller
             ->get();
 
         foreach ($pasosPendientes as $siguientePaso) {
+            // Gerencia nunca se auto-aprueba: el gerente debe ver propuestas, elegir ganador o regresar a TI.
+            if ($siguientePaso->stage === 'gerencia') {
+                break;
+            }
+
             // Verificamos si el responsable de este siguiente paso es LA MISMA PERSONA
             if ($siguientePaso->approver_empleado_id == $empleadoIdQueAprobo) {
-                
-                // ¡ES EL MISMO! Auto-aprobar
+
+                // ¡ES EL MISMO! Auto-aprobar (solo para pasos que no sean gerencia)
                 $siguientePaso->update([
                     'status' => 'approved',
                     'comment' => 'Aprobación automática: Validado previamente por el mismo usuario en el nivel anterior.',
@@ -671,16 +699,15 @@ class SolicitudAprobacionController extends Controller
                     'decided_by_empleado_id' => $empleadoIdQueAprobo
                 ]);
 
-                // IMPORTANTE: Revocar cualquier token existente para este paso, 
+                // IMPORTANTE: Revocar cualquier token existente para este paso,
                 // para que no le llegue un correo invitándolo a firmar algo que el sistema ya firmó.
                 SolicitudTokens::where('approval_step_id', $siguientePaso->id)
                     ->whereNull('revoked_at')
                     ->whereNull('used_at')
-                    ->update(['revoked_at' => now()]); // Los marcamos como revocados o usados para invalidar el link
+                    ->update(['revoked_at' => now()]);
 
             } else {
                 // Si encontramos un paso donde el responsable es DIFERENTE, rompemos el ciclo.
-                // El flujo normal (enviar correo) se encargará de este paso.
                 break;
             }
         }

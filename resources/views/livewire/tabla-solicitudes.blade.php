@@ -95,38 +95,38 @@
                                 <div class="flex items-center gap-2">
                                     @if($solicitud->pasoSupervisor)
                                     @if($solicitud->pasoSupervisor->status === 'approved')
-                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Supervisor: Aprobado"></i>
+                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Vo.bo supervisor: Aprobado"></i>
                                     @elseif($solicitud->pasoSupervisor->status === 'rejected')
-                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Supervisor: Rechazado"></i>
+                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Vo.bo supervisor: Rechazado"></i>
                                     @else
-                                    <i class="far fa-circle text-yellow-500 dark:text-yellow-400" title="Supervisor: Pendiente"></i>
+                                    <i class="far fa-circle text-yellow-500 dark:text-yellow-400" title="Vo.bo supervisor: Pendiente"></i>
                                     @endif
                                     @else
-                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Supervisor: Pendiente"></i>
+                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Vo.bo supervisor: Pendiente"></i>
                                     @endif
 
                                     @if($solicitud->pasoGerencia)
                                     @if($solicitud->pasoGerencia->status === 'approved')
-                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Gerencia: Aprobado"></i>
+                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Gerente (propuestas): Aprobado"></i>
                                     @elseif($solicitud->pasoGerencia->status === 'rejected')
-                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Gerencia: Rechazado"></i>
+                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Gerente (propuestas): Rechazado"></i>
                                     @else
-                                    <i class="far fa-circle text-orange-500 dark:text-orange-400" title="Gerencia: Pendiente"></i>
+                                    <i class="far fa-circle text-orange-500 dark:text-orange-400" title="Gerente (propuestas): Pendiente"></i>
                                     @endif
                                     @else
-                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Gerencia: Esperando"></i>
+                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Gerente (propuestas): Esperando"></i>
                                     @endif
 
                                     @if($solicitud->pasoAdministracion)
                                     @if($solicitud->pasoAdministracion->status === 'approved')
-                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Administración: Aprobado"></i>
+                                    <i class="fas fa-check-circle text-green-500 dark:text-green-400" title="Administración (ganadores): Aprobado"></i>
                                     @elseif($solicitud->pasoAdministracion->status === 'rejected')
-                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Administración: Rechazado"></i>
+                                    <i class="fas fa-times-circle text-red-500 dark:text-red-400" title="Administración (ganadores): Rechazado"></i>
                                     @else
-                                    <i class="far fa-circle text-purple-500 dark:text-purple-400" title="Administración: Pendiente"></i>
+                                    <i class="far fa-circle text-purple-500 dark:text-purple-400" title="Administración (ganadores): Pendiente"></i>
                                     @endif
                                     @else
-                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Administración: Esperando"></i>
+                                    <i class="far fa-circle text-slate-300 dark:text-slate-600" title="Administración (ganadores): Esperando"></i>
                                     @endif
                                 </div>
                             </td>
@@ -381,6 +381,11 @@
                                 <i class="fas fa-tasks text-purple-500 dark:text-purple-400"></i>
                                 Flujo de Aprobación
                             </h4>
+                            <div class="mb-4 p-4 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 space-y-2">
+                                <p><strong>1. Solicitud</strong> → Vo.bo de supervisor</p>
+                                <p><strong>2. TI</strong> → Envía cotización → <strong>Gerente</strong> ve propuestas, elige ganador o regresa a TI para cotizar de nuevo (al aprobar pasa a Administración)</p>
+                                <p><strong>3. Administración</strong> → Ve los ganadores y aprueba la solicitud</p>
+                            </div>
                             <div class="space-y-4">
                                 <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="index">
                                     <div class="p-4 rounded-lg border-l-4 bg-slate-50 dark:bg-slate-800 shadow-sm border-t border-r border-b border-slate-200 dark:border-slate-700"

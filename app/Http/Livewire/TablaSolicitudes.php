@@ -240,18 +240,18 @@ class TablaSolicitudes extends Component
         $solicitud->colorEstatus = $colorEstatus;
 
         $todasFirmaron = $this->allStepsApproved($solicitud);
+        $supervisorAprobado = $solicitud->pasoSupervisor && $solicitud->pasoSupervisor->status === 'approved';
         $tieneSeleccionada = $this->hasSelectedCotizacion($solicitud);
 
         // Verificar si todos los productos tienen ganador (consistente con el controller)
         $todosGanadores = $solicitud->todosProductosTienenGanador();
 
-        // Validación consistente con TicketsController::mostrarPaginaCotizacion
+        // Cotizar se habilita cuando pasa el supervisor: TI sube cotizaciones, envía al gerente y sigue el flujo.
         $solicitud->puedeCotizar = (bool) (
-            $todasFirmaron
+            $supervisorAprobado
             && $user
             && !$estaRechazada
             && $estatusDisplay !== 'Aprobada'
-            && $estatusDisplay !== 'Cotizaciones Enviadas'
             && !$todosGanadores
         );
         $solicitud->puedeSubirFactura = (bool) ($todasFirmaron && $tieneSeleccionada && $user);
