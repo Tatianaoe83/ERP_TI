@@ -2760,7 +2760,21 @@ class TicketsController extends Controller
                 return redirect()->route('tickets.index')->with('error', $mensaje);
             }
 
-            return view('solicitudes.cotizar', ['solicitud' => $solicitud]);
+            $recotizarPropuestas = [];
+            $recotizarMotivo = '';
+            if ($solicitud->Estatus === 'Re-cotizar' && $pasoGerencia && $pasoGerencia->comment && str_starts_with($pasoGerencia->comment, 'RECOTIZAR|')) {
+                $parts = explode('|', $pasoGerencia->comment, 3);
+                if (isset($parts[1])) {
+                    $recotizarPropuestas = array_values(array_filter(array_map('intval', explode(',', $parts[1]))));
+                }
+                $recotizarMotivo = $parts[2] ?? '';
+            }
+
+            return view('solicitudes.cotizar', [
+                'solicitud' => $solicitud,
+                'recotizarPropuestas' => $recotizarPropuestas,
+                'recotizarMotivo' => $recotizarMotivo,
+            ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return redirect()->route('tickets.index')->with('error', 'Solicitud no encontrada.');
         } catch (\Exception $e) {
