@@ -4048,13 +4048,10 @@ async cargarDatosTicket(ticketId) {
                 }
 
                 if (pathToParse) {
-                    let partes = pathToParse.toString().split(/[\\/]/);
-                    let nombreArchivo = partes[partes.length - 1];
-                    
-                    // Asegurarnos de que no esté vacío
-                    if (nombreArchivo) {
-                        // Retornamos la URL web estándar y limpia de Laravel
-                        return `/storage/tickets/adjuntos/${nombreArchivo}`;
+                    // Usar la ruta real almacenada (tickets/archivos, tickets/, o tickets/adjuntos)
+                    const pathNormalized = pathToParse.toString().replace(/^[\\/]+/, '').replace(/\\/g, '/').trim();
+                    if (pathNormalized) {
+                        return `/storage/${pathNormalized}`;
                     }
                 }
                 
