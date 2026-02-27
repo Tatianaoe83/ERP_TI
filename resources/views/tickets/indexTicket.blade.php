@@ -1249,9 +1249,8 @@
             correoBcc: '',
             tinyMCEInstance: null, // Instancia del editor TinyMCE
             archivosAdjuntos: [], // Array para almacenar los archivos seleccionados
-            // URL base para archivos de storage
-            // Usar la ruta de Laravel que sirve archivos sin enlace simbólico (útil para HostGator)
-            storageBaseUrl: '{{ url("/storage") }}',
+            // URL base para archivos de storage (asset evita problemas con public/storage)
+            storageBaseUrl: '{{ asset("storage") }}',
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
@@ -4027,31 +4026,32 @@ async cargarDatosTicket(ticketId) {
                 if (!ruta) return '#';
                 
                 // 1. Si ya es una URL web válida, retornarla directamente
-                if (typeof ruta === 'string' && (ruta.startsWith('http://') || ruta.startsWith('https://') || ruta.startsWith('/storage/'))) {
+                if (typeof ruta === 'string' && (ruta.startsWith('http://') || ruta.startsWith('https://'))) {
                     return ruta;
                 }
                 
                 let pathToParse = '';
 
-                // 2. Si la ruta es un objeto (como viene de la BD)
+                // 2. Si la ruta es un objeto (como viene de la BD/tabla tickets)
                 if (typeof ruta === 'object' && ruta !== null) {
-                    // Si el backend nos mandó la URL pública ya armada, es la mejor opción
+                    // Si el backend nos mandó la URL pública ya armada
                     if (ruta.url) {
                         return ruta.url;
                     }
-                    // Si no, tomamos la ruta física (path) o la relativa (storage_path) o el nombre
+                    // Ruta física desde la tabla de tickets (path, storage_path, o name)
                     pathToParse = ruta.storage_path || ruta.path || ruta.name || '';
                 } 
-                // 3. Si es un string normal
+                // 3. Si es un string (ruta guardada en imagen/tabla tickets)
                 else if (typeof ruta === 'string') {
                     pathToParse = ruta;
                 }
 
                 if (pathToParse) {
-                    // Usar la ruta real almacenada (tickets/archivos, tickets/, o tickets/adjuntos)
                     const pathNormalized = pathToParse.toString().replace(/^[\\/]+/, '').replace(/\\/g, '/').trim();
                     if (pathNormalized) {
-                        return `/storage/${pathNormalized}`;
+                        // Usar asset (storageBaseUrl) para evitar problemas con public/storage
+                        const base = (this.storageBaseUrl || '').replace(/\/$/, '');
+                        return base ? base + '/' + pathNormalized : '/storage/' + pathNormalized;
                     }
                 }
                 
