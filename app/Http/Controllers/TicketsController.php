@@ -2055,11 +2055,13 @@ class TicketsController extends Controller
             ) {
                 $estatusReal = 'Rechazada';
                 $estaRechazada = true;
-            } elseif ($solicitud->Estatus === 'Aprobado') {
+            } elseif (in_array($solicitud->Estatus, ['Aprobado', 'Aprobada'], true)) {
                 $estatusReal = 'Aprobado';
             } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
                 $estatusReal = 'Cotizaciones Enviadas';
-            } elseif (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
+            } elseif ($solicitud->Estatus === 'Re-cotizar') {
+                $estatusReal = 'Re-cotizar';
+            } elseif (in_array($solicitud->Estatus, ['Pendiente', 'En revisión', null, ''], true) || empty($solicitud->Estatus)) {
                 if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                     if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                         if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
@@ -2079,10 +2081,12 @@ class TicketsController extends Controller
 
             if ($estatusReal === 'Rechazada') {
                 $estatusDisplay = 'Rechazada';
-            } elseif ($estatusReal === 'Aprobado' || $solicitud->todosProductosTienenGanador()) {
+            } elseif ($estatusReal === 'Aprobado') {
                 $estatusDisplay = 'Aprobada';
             } elseif ($estatusReal === 'Cotizaciones Enviadas') {
                 $estatusDisplay = 'Cotizaciones Enviadas';
+            } elseif ($estatusReal === 'Re-cotizar') {
+                $estatusDisplay = 'Re-cotizar';
             } elseif ($estatusReal === 'Completada') {
                 $estatusDisplay = 'En revisión';
             } elseif ($estatusReal === 'Pendiente Cotización TI') {
@@ -2099,13 +2103,13 @@ class TicketsController extends Controller
             
             // Verificar si todos los productos tienen ganador (consistente con mostrarPaginaCotizacion y TablaSolicitudes)
             $todosGanadores = $solicitud->todosProductosTienenGanador();
-            
-            // Validación consistente con mostrarPaginaCotizacion
-            $puedeCotizar = $todasFirmaron 
-                && auth()->check() 
+            $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
+
+            // Cotizar se habilita cuando el supervisor aprobó: TI sube cotizaciones y envía al gerente
+            $puedeCotizar = $supervisorAprobado
+                && auth()->check()
                 && !$estaRechazada
-                && $estatusDisplay !== 'Aprobada' 
-                && $estatusDisplay !== 'Cotizaciones Enviadas'
+                && $estatusDisplay !== 'Aprobada'
                 && !$todosGanadores;
 
             // Verificar si puede elegir cotización (gerente con todas las firmas y cotizaciones cargadas o enviadas)
@@ -2119,9 +2123,9 @@ class TicketsController extends Controller
             // Construir pasos de aprobación
             $pasosAprobacion = [];
             $stageLabels = [
-                'supervisor' => 'Supervisor',
-                'gerencia' => 'Gerencia',
-                'administracion' => 'Administración'
+                'supervisor' => 'Vo.bo de supervisor',
+                'gerencia' => 'Gerente: ve propuestas, elige ganador o regresa a TI para cotizar',
+                'administracion' => 'Administración: ve ganadores y aprueba la solicitud'
             ];
             $statusLabels = [
                 'approved' => 'Aprobado',
@@ -2215,6 +2219,16 @@ class TicketsController extends Controller
             // Crear un mapa de activos por CotizacionID para vincular fechas
             $activosPorCotizacion = collect($activosConFechas)->groupBy('CotizacionID');
 
+            $recotizarPropuestas = [];
+            $recotizarMotivo = '';
+            if ($solicitud->Estatus === 'Re-cotizar' && $pasoGerencia && $pasoGerencia->comment && str_starts_with($pasoGerencia->comment, 'RECOTIZAR|')) {
+                $parts = explode('|', $pasoGerencia->comment, 3);
+                if (isset($parts[1])) {
+                    $recotizarPropuestas = array_values(array_filter(array_map('intval', explode(',', $parts[1]))));
+                }
+                $recotizarMotivo = $parts[2] ?? '';
+            }
+
             return response()->json([
                 'SolicitudID' => $solicitud->SolicitudID,
                 'Motivo' => $solicitud->Motivo,
@@ -2222,6 +2236,8 @@ class TicketsController extends Controller
                 'Requerimientos' => $solicitud->Requerimientos,
                 'Estatus' => $solicitud->Estatus,
                 'estatusDisplay' => $estatusDisplay,
+                'recotizarPropuestas' => $recotizarPropuestas,
+                'recotizarMotivo' => $recotizarMotivo,
                 'fechaCreacion' => $solicitud->created_at ? $solicitud->created_at->format('d/m/Y H:i') : 'N/A',
                 'Proyecto' => $solicitud->Proyecto,
                 'ProyectoNombre' => $proyectoNombre,
@@ -2380,20 +2396,74 @@ class TicketsController extends Controller
             }
 
             $solicitud->refresh();
-            $solicitud->load('cotizaciones');
+            $solicitud->load(['cotizaciones', 'pasoGerencia', 'pasoAdministracion']);
             $todosGanadores = $solicitud->todosProductosTienenGanador();
 
+            $emailAdminData = null;
             if ($todosGanadores) {
-                $solicitud->Estatus = 'Aprobado';
-                $solicitud->save();
+                $pasoGerencia = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
 
-                $ganadores = $solicitud->cotizaciones->where('Estatus', 'Seleccionada');
-                $emailService = new \App\Services\SolicitudAprobacionEmailService();
-                $emailService->enviarGanadoresSeleccionados($solicitud, $ganadores, 'tordonez@proser.com.mx');
+                if ($pasoGerencia && $pasoGerencia->status === 'pending') {
+                    $pasoGerencia->update([
+                        'status' => 'approved',
+                        'comment' => 'Ganadores elegidos',
+                        'decided_at' => now(),
+                        'decided_by_empleado_id' => $pasoGerencia->approver_empleado_id,
+                    ]);
+
+                    $token = $request->input('token');
+                    if ($token) {
+                        \App\Models\SolicitudTokens::where('token', $token)
+                            ->where('approval_step_id', $pasoGerencia->id)
+                            ->update(['revoked_at' => now(), 'used_at' => now()]);
+                    }
+
+                    $solicitud->Estatus = 'En revisión';
+                    $solicitud->save();
+
+                    if ($pasoAdministracion && $pasoAdministracion->status === 'pending') {
+                        $pasoAdministracion->load('approverEmpleado');
+                        $adminTokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdministracion->id)
+                            ->whereNull('used_at')
+                            ->whereNull('revoked_at')
+                            ->where(function ($q) {
+                                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                            })
+                            ->first();
+
+                        if (!$adminTokenRow) {
+                            $adminTokenRow = \App\Models\SolicitudTokens::create([
+                                'approval_step_id' => $pasoAdministracion->id,
+                                'token' => \Illuminate\Support\Str::uuid(),
+                                'expires_at' => now()->addDays(7),
+                            ]);
+                        }
+
+                        if ($adminTokenRow && $pasoAdministracion->approverEmpleado) {
+                            $stageLabel = 'Administración: ve ganadores y aprueba la solicitud';
+                            $emailAdminData = [
+                                'aprobador' => $pasoAdministracion->approverEmpleado,
+                                'solicitud' => $solicitud->load('empleadoid'),
+                                'token' => $adminTokenRow->token,
+                                'stageLabel' => $stageLabel,
+                            ];
+                        }
+                    }
+                }
+            }
+
+            if ($emailAdminData) {
+                app(\App\Services\SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
+                    $emailAdminData['aprobador'],
+                    $emailAdminData['solicitud'],
+                    $emailAdminData['token'],
+                    $emailAdminData['stageLabel']
+                );
             }
 
             $mensaje = $todosGanadores
-                ? 'Ganadores seleccionados para todos los productos. La solicitud está Aprobada y se ha notificado para proceder con la compra.'
+                ? 'Ganadores seleccionados. Se ha enviado la solicitud a Administración para su aprobación final.'
                 : 'Ganador seleccionado para este producto. Elige el ganador de los demás productos para completar.';
 
             return response()->json([
@@ -2483,27 +2553,30 @@ class TicketsController extends Controller
                 $porPropuesta[$numPropuesta] = $cot;
             }
 
-            // Guardar ganadores y rechazar las demás cotizaciones de cada propuesta
-            \DB::transaction(function () use ($solicitud, $porPropuesta, $propuestas) {
+            $token = $request->input('token');
+            $emailAdminData = null;
+
+            // Guardar ganadores, marcar paso gerencia como aprobado y preparar correo a administración
+            \DB::transaction(function () use ($solicitud, $porPropuesta, $propuestas, $token, &$emailAdminData) {
                 foreach ($porPropuesta as $numPropuesta => $ganador) {
                     // Marcar ganador
                     $ganador->Estatus = 'Seleccionada';
                     $ganador->save();
-                    
+
                     // Rechazar todas las demás cotizaciones de esta propuesta
                     $idsRechazar = collect($propuestas[$numPropuesta])
                         ->where('CotizacionID', '!=', $ganador->CotizacionID)
                         ->pluck('CotizacionID');
-                    
+
                     if ($idsRechazar->isNotEmpty()) {
                         Cotizacion::whereIn('CotizacionID', $idsRechazar)->update(['Estatus' => 'Rechazada']);
                     }
                 }
-                
+
                 // Verificar si todas las propuestas tienen ganador
                 $solicitud->refresh();
-                $solicitud->load('cotizaciones');
-                
+                $solicitud->load(['cotizaciones', 'pasoGerencia', 'pasoAdministracion']);
+
                 $todasPropuestasConGanador = true;
                 foreach ($propuestas as $numPropuesta => $cotis) {
                     $tieneGanador = collect($cotis)->contains('Estatus', 'Seleccionada');
@@ -2512,20 +2585,82 @@ class TicketsController extends Controller
                         break;
                     }
                 }
-                
-                if ($todasPropuestasConGanador) {
-                    $solicitud->Estatus = 'Aprobado';
-                    $solicitud->save();
-                    $ganadores = $solicitud->cotizaciones->where('Estatus', 'Seleccionada');
-                    $emailService = new \App\Services\SolicitudAprobacionEmailService();
-                    $emailService->enviarGanadoresSeleccionados($solicitud, $ganadores, 'tordonez@proser.com.mx');
+
+                if (!$todasPropuestasConGanador) {
+                    return;
+                }
+
+                $pasoGerencia = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
+
+                if (!$pasoGerencia || $pasoGerencia->status !== 'pending') {
+                    return;
+                }
+
+                // Marcar paso gerencia como aprobado (el gerente eligió ganadores)
+                $pasoGerencia->update([
+                    'status' => 'approved',
+                    'comment' => 'Ganadores elegidos',
+                    'decided_at' => now(),
+                    'decided_by_empleado_id' => $pasoGerencia->approver_empleado_id,
+                ]);
+
+                // Revocar token usado para elegir ganador
+                if ($token) {
+                    \App\Models\SolicitudTokens::where('token', $token)
+                        ->where('approval_step_id', $pasoGerencia->id)
+                        ->update(['revoked_at' => now(), 'used_at' => now()]);
+                }
+
+                // Actualizar estatus: sigue en revisión (pendiente de administración)
+                $solicitud->Estatus = 'En revisión';
+                $solicitud->save();
+
+                // Crear token para administración y preparar correo
+                if ($pasoAdministracion && $pasoAdministracion->status === 'pending') {
+                    $pasoAdministracion->load('approverEmpleado');
+                    $adminTokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdministracion->id)
+                        ->whereNull('used_at')
+                        ->whereNull('revoked_at')
+                        ->where(function ($q) {
+                            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                        })
+                        ->first();
+
+                    if (!$adminTokenRow) {
+                        $adminTokenRow = \App\Models\SolicitudTokens::create([
+                            'approval_step_id' => $pasoAdministracion->id,
+                            'token' => \Illuminate\Support\Str::uuid(),
+                            'expires_at' => now()->addDays(7),
+                        ]);
+                    }
+
+                    if ($adminTokenRow && $pasoAdministracion->approverEmpleado) {
+                        $stageLabel = 'Administración: ve ganadores y aprueba la solicitud';
+                        $emailAdminData = [
+                            'aprobador' => $pasoAdministracion->approverEmpleado,
+                            'solicitud' => $solicitud->load('empleadoid'),
+                            'token' => $adminTokenRow->token,
+                            'stageLabel' => $stageLabel,
+                        ];
+                    }
                 }
             });
 
+            // Enviar correo a administración (fuera de la transacción)
+            if ($emailAdminData) {
+                app(\App\Services\SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
+                    $emailAdminData['aprobador'],
+                    $emailAdminData['solicitud'],
+                    $emailAdminData['token'],
+                    $emailAdminData['stageLabel']
+                );
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Ganadores confirmados. La solicitud ha sido actualizada.',
-                'redirect' => url('/elegir-ganador/' . ($request->input('token') ?? '')),
+                'message' => 'Ganadores confirmados. Se ha enviado la solicitud a Administración para su aprobación.',
+                'redirect' => route('solicitudes.ganadores-confirmados'),
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -2543,6 +2678,82 @@ class TicketsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al confirmar ganadores: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * El gerente solicita re-cotizar una o más propuestas (sin rechazar la solicitud).
+     * Guarda Estatus = 'Re-cotizar' y en el comentario del paso gerencia: qué propuestas y motivo.
+     */
+    public function solicitarRecotizacion(Request $request, $id)
+    {
+        $request->validate([
+            'propuestas' => 'required|array|min:1',
+            'propuestas.*' => 'integer|min:1',
+            'motivo' => 'required|string|max:2000',
+            'token' => 'nullable|string',
+        ]);
+
+        try {
+            $solicitud = Solicitud::with(['pasoGerencia'])->findOrFail($id);
+            $pasoGerencia = $solicitud->pasoGerencia;
+            if (!$pasoGerencia || $pasoGerencia->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El paso de gerencia no está pendiente o no existe.',
+                ], 400);
+            }
+
+            $token = $request->input('token');
+            $tokenRow = null;
+            if ($token) {
+                $tokenRow = \App\Models\SolicitudTokens::where('token', $token)
+                    ->where('approval_step_id', $pasoGerencia->id)
+                    ->whereNull('used_at')
+                    ->whereNull('revoked_at')
+                    ->where(function ($q) {
+                        $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                    })
+                    ->first();
+                if (!$tokenRow) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Token no válido o expirado.',
+                    ], 403);
+                }
+            }
+
+            $propuestas = array_values(array_unique(array_map('intval', $request->input('propuestas'))));
+            $motivo = trim($request->input('motivo'));
+            $comment = 'RECOTIZAR|' . implode(',', $propuestas) . '|' . str_replace('|', ' ', $motivo);
+
+            $solicitud->Estatus = 'Re-cotizar';
+            $solicitud->save();
+
+            $pasoGerencia->comment = $comment;
+            $pasoGerencia->save();
+
+            // Revocar el token para que el enlace actual deje de funcionar.
+            // El gerente recibirá un nuevo correo cuando TI envíe las cotizaciones actualizadas.
+            if ($tokenRow) {
+                $tokenRow->update(['revoked_at' => now()]);
+            }
+
+            Log::info("Solicitud #{$id}: gerente solicitó re-cotizar propuestas " . implode(', ', $propuestas));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Se ha registrado la solicitud de re-cotización. Recibirás un nuevo correo con las cotizaciones actualizadas cuando TI las envíe.',
+                'redirect' => $token ? route('solicitudes.recotizacion-solicitada') : null,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Solicitud no encontrada.'], 404);
+        } catch (\Exception $e) {
+            Log::error('Error solicitando recotización solicitud #' . $id . ': ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al registrar la solicitud de re-cotización.',
             ], 500);
         }
     }
@@ -2567,38 +2778,48 @@ class TicketsController extends Controller
             $pasoSupervisor = $solicitud->pasoSupervisor;
             $pasoGerencia = $solicitud->pasoGerencia;
             $pasoAdministracion = $solicitud->pasoAdministracion;
-            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
-                && ($pasoGerencia && $pasoGerencia->status === 'approved')
-                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+            $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
 
             $estaRechazada = ($pasoSupervisor && $pasoSupervisor->status === 'rejected')
                 || ($pasoGerencia && $pasoGerencia->status === 'rejected')
                 || ($pasoAdministracion && $pasoAdministracion->status === 'rejected');
 
             $todosGanadores = $solicitud->todosProductosTienenGanador();
-            $puedeCotizar = $todasFirmaron && auth()->check() && !$estaRechazada
-                && $solicitud->Estatus !== 'Aprobado' && $solicitud->Estatus !== 'Cotizaciones Enviadas'
+            $puedeCotizar = $supervisorAprobado && auth()->check() && !$estaRechazada
+                && $solicitud->Estatus !== 'Aprobado'
                 && !$todosGanadores;
 
             if (!$puedeCotizar) {
                 $mensaje = 'No puedes cotizar esta solicitud.';
-                
+
                 if ($estaRechazada) {
                     $mensaje = 'No puedes cotizar una solicitud rechazada.';
-                } elseif (!$todasFirmaron) {
-                    $mensaje = 'La solicitud aún no ha sido aprobada por todos los niveles.';
+                } elseif (!$supervisorAprobado) {
+                    $mensaje = 'El Vo.bo de supervisor debe estar aprobado para poder cotizar.';
                 } elseif ($todosGanadores) {
                     $mensaje = 'Esta solicitud ya tiene cotizaciones ganadoras seleccionadas.';
                 } elseif ($solicitud->Estatus === 'Aprobado') {
                     $mensaje = 'Esta solicitud ya fue aprobada completamente.';
-                } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
-                    $mensaje = 'Las cotizaciones ya han sido enviadas al gerente para revisión.';
                 }
-                
+
                 return redirect()->route('tickets.index')->with('error', $mensaje);
             }
 
-            return view('solicitudes.cotizar', ['solicitud' => $solicitud]);
+            $recotizarPropuestas = [];
+            $recotizarMotivo = '';
+            if ($solicitud->Estatus === 'Re-cotizar' && $pasoGerencia && $pasoGerencia->comment && str_starts_with($pasoGerencia->comment, 'RECOTIZAR|')) {
+                $parts = explode('|', $pasoGerencia->comment, 3);
+                if (isset($parts[1])) {
+                    $recotizarPropuestas = array_values(array_filter(array_map('intval', explode(',', $parts[1]))));
+                }
+                $recotizarMotivo = $parts[2] ?? '';
+            }
+
+            return view('solicitudes.cotizar', [
+                'solicitud' => $solicitud,
+                'recotizarPropuestas' => $recotizarPropuestas,
+                'recotizarMotivo' => $recotizarMotivo,
+            ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return redirect()->route('tickets.index')->with('error', 'Solicitud no encontrada.');
         } catch (\Exception $e) {
@@ -2853,25 +3074,33 @@ class TicketsController extends Controller
                 ], 400);
             }
 
-            // Verificar que todas las aprobaciones estén completas
+            // El gerente recibe el correo solo cuando TI envía las cotizaciones.
+            // Requerir: Vo.bo de supervisor aprobado y paso de gerencia aún pendiente.
             $pasoSupervisor = $solicitud->pasoSupervisor;
             $pasoGerencia = $solicitud->pasoGerencia;
-            $pasoAdministracion = $solicitud->pasoAdministracion;
 
-            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
-                && ($pasoGerencia && $pasoGerencia->status === 'approved')
-                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
-
-            if (!$todasFirmaron) {
+            if (!$pasoSupervisor || $pasoSupervisor->status !== 'approved') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Todas las aprobaciones deben estar completas antes de enviar al gerente'
+                    'message' => 'El Vo.bo de supervisor debe estar aprobado antes de enviar cotizaciones al gerente.'
                 ], 400);
             }
 
-            // Actualizar el estatus de la solicitud a "Cotizaciones Enviadas"
+            if (!$pasoGerencia || $pasoGerencia->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El paso de gerencia ya fue resuelto. No se puede reenviar cotizaciones en este estado.'
+                ], 400);
+            }
+
+            // Actualizar el estatus de la solicitud a "Cotizaciones Enviadas" y limpiar comentario de re-cotizar si existía
             $solicitud->Estatus = 'Cotizaciones Enviadas';
             $solicitud->save();
+            $pasoGerencia = $solicitud->pasoGerencia;
+            if ($pasoGerencia && $pasoGerencia->comment && str_starts_with($pasoGerencia->comment, 'RECOTIZAR|')) {
+                $pasoGerencia->comment = null;
+                $pasoGerencia->save();
+            }
 
             // Crear token para elegir ganador
             $pasoGerencia = $solicitud->pasoGerencia;

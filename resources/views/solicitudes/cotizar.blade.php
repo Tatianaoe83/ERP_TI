@@ -103,6 +103,27 @@
         </div>
 
         <div class="xl:col-span-9 space-y-4 md:space-y-5">
+
+            @if(($solicitud->Estatus ?? '') === 'Re-cotizar' && !empty($recotizarMotivo ?? ''))
+            <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl md:rounded-2xl p-4 md:p-5 border-2 border-amber-300 dark:border-amber-700/50 shadow-lg">
+                <div class="flex items-start gap-3 md:gap-4">
+                    <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <i class="fas fa-redo-alt text-white text-base md:text-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-sm md:text-base font-bold text-amber-900 dark:text-amber-200 mb-1">Re-cotizar propuestas</h3>
+                        @if(!empty($recotizarPropuestas ?? []))
+                        <p class="text-xs md:text-sm text-amber-800 dark:text-amber-300 mb-2">
+                            El gerente solicitó re-cotizar las propuestas: <strong>{{ implode(', ', array_map(fn($n) => 'Propuesta ' . $n, $recotizarPropuestas ?? [])) }}</strong>
+                        </p>
+                        @endif
+                        <p class="text-xs md:text-sm text-amber-800 dark:text-amber-300 leading-relaxed">
+                            <strong>Motivo del gerente:</strong> {{ $recotizarMotivo }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            @endif
             
             <div x-show="tieneCotizacionesEnviadas" x-cloak class="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl md:rounded-2xl p-4 md:p-5 border border-blue-200 dark:border-blue-700/50 shadow-lg">
                 <div class="flex items-start gap-3 md:gap-4">

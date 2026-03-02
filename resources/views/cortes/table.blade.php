@@ -7,7 +7,7 @@
     <form action="formFilter" method="GET" id="formFilter" class="flex flex-row justify-start gap-3 mb-4 items-center">
         <div class="flex flex-col gap-2 items-center justify-center w-[300px]">
             <label for="gerenci_id" class="text-black dark:text-white">Gerencias</label>
-            {!! Form::select('gerenci_id', ['' => 'Selecciona una opción'] + App\Models\Gerencia::all()->pluck('NombreGerencia', 'GerenciaID')->toArray(), null, [
+            {!! Form::select('gerenci_id', ['' => 'Selecciona una opción'] + App\Models\Gerencia::where('estado', 1)->pluck('NombreGerencia', 'GerenciaID')->toArray(), null, [
             'class' => 'form-control jz',
             'style' => 'width: 100%',
             'id' => 'gerenci_id'

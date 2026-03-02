@@ -238,20 +238,29 @@ class TablaSolicitudes extends Component
         $solicitud->estatusReal = $estatusReal;
         $solicitud->estatusDisplay = $estatusDisplay;
         $solicitud->colorEstatus = $colorEstatus;
+        $solicitud->recotizarPropuestasText = '';
+        if ($estatusReal === 'Re-cotizar' && $solicitud->pasoGerencia && $solicitud->pasoGerencia->comment) {
+            $comment = $solicitud->pasoGerencia->comment;
+            if (str_starts_with($comment, 'RECOTIZAR|')) {
+                $parts = explode('|', $comment, 3);
+                $nums = isset($parts[1]) ? array_filter(array_map('trim', explode(',', $parts[1]))) : [];
+                $solicitud->recotizarPropuestasText = $nums ? ' (Prop. ' . implode(', ', $nums) . ')' : '';
+            }
+        }
 
         $todasFirmaron = $this->allStepsApproved($solicitud);
+        $supervisorAprobado = $solicitud->pasoSupervisor && $solicitud->pasoSupervisor->status === 'approved';
         $tieneSeleccionada = $this->hasSelectedCotizacion($solicitud);
 
         // Verificar si todos los productos tienen ganador (consistente con el controller)
         $todosGanadores = $solicitud->todosProductosTienenGanador();
 
-        // Validación consistente con TicketsController::mostrarPaginaCotizacion
+        // Cotizar se habilita cuando pasa el supervisor: TI sube cotizaciones, envía al gerente y sigue el flujo.
         $solicitud->puedeCotizar = (bool) (
-            $todasFirmaron
+            $supervisorAprobado
             && $user
             && !$estaRechazada
             && $estatusDisplay !== 'Aprobada'
-            && $estatusDisplay !== 'Cotizaciones Enviadas'
             && !$todosGanadores
         );
         $solicitud->puedeSubirFactura = (bool) ($todasFirmaron && $tieneSeleccionada && $user);
@@ -321,11 +330,15 @@ class TablaSolicitudes extends Component
             return ['Rechazada', true];
         }
 
-        if ($solicitud->Estatus === 'Aprobado') {
+        if (in_array($solicitud->Estatus, ['Aprobado', 'Aprobada'], true)) {
             return ['Aprobado', false];
         }
 
-        if (in_array($solicitud->Estatus, ['Pendiente', null, ''], true) || empty($solicitud->Estatus)) {
+        if ($solicitud->Estatus === 'Re-cotizar') {
+            return ['Re-cotizar', false];
+        }
+
+        if (in_array($solicitud->Estatus, ['Pendiente', 'En revisión', null, ''], true) || empty($solicitud->Estatus)) {
             if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
                 if ($pasoGerencia && $pasoGerencia->status === 'approved') {
                     if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
@@ -357,12 +370,16 @@ class TablaSolicitudes extends Component
             return ['Rechazada', 'bg-red-50 text-red-800 border border-red-200'];
         }
 
-        if ($estatusReal === 'Aprobado' || $tieneSeleccionada) {
+        if ($estatusReal === 'Aprobado') {
             return ['Aprobada', 'bg-emerald-50 text-emerald-800 border border-emerald-200'];
         }
 
         if ($estatusReal === 'Cotizaciones Enviadas') {
             return ['Cotizaciones Enviadas', 'bg-blue-50 text-blue-800 border border-blue-200'];
+        }
+
+        if ($estatusReal === 'Re-cotizar') {
+            return ['Re-cotizar', 'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700'];
         }
 
         if ($estatusReal === 'Completada') {

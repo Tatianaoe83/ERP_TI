@@ -276,6 +276,9 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             'promPrimerRespuestaAnt'  => $this->formatSecondsToDays($promedioPrimerRespuestaGeneralAnt),
             'cumplimientoAnt'         => $cumplimientoAnt . '%',
             'textoAnormales'          => "Generalmente los tickets de duración anormal son aquellos que exceden el día laboral de duración ( >8 hrs) y tiene que ver con falta de respuesta del que crea el ticket, incorrecta ejecución del proceso de atención (TI; principalmente en los primeros meses de la implementación del sistema), problema de multiples respuestas, o escalado.",
+            'ticketsCerrados'         => $this->resumen['tickets_cerrados'] ?? 0,
+            'promResolucionHoras'     => number_format($promedioTotales / 3600, 1),
+            'promRespuestaHoras'      => number_format($promedioPrimerRespuestaGeneral / 3600, 1),
         ]);
     }
 
@@ -283,9 +286,18 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                if ($this->cantidadFilasGerencia === 0) return;
+                $sheet = $event->sheet->getDelegate();
 
-                $sheet  = $event->sheet->getDelegate();
+                // Anchos de columna y ajuste de texto para la tabla de resumen KPI (filas 1-4, columnas A-E)
+                foreach (['A', 'B', 'C', 'D', 'E'] as $col) {
+                    $sheet->getColumnDimension($col)->setWidth(20);
+                }
+                $sheet->getStyle('A3:E4')->getAlignment()->setWrapText(true);
+
+                if ($this->cantidadFilasGerencia === 0) {
+                    return;
+                }
+
                 $uCount = $this->cantidadUsuarios;
 
                 $sheet->setShowSummaryBelow(false);

@@ -26,7 +26,7 @@ class CortesController extends AppBaseController
     {
         $this->cortesRepository = $cortesRepo;
 
-        $this->middleware('permission:cortes.view', ['only' => ['index']]);
+        $this->middleware('permission:cortes.view', ['only' => ['index', 'obtenerCorteGuardado']]);
     }
 
     /**
@@ -43,7 +43,7 @@ class CortesController extends AppBaseController
 
     public function index(Request $request)
     {
-        $gerencia = Gerencia::all();
+        $gerencia = Gerencia::where('estado', 1)->orderBy('NombreGerencia')->get();
 
         $meses = [
             'Enero',
@@ -60,7 +60,24 @@ class CortesController extends AppBaseController
             'Diciembre'
         ];
 
-        return view('cortes.index', compact('meses', 'gerencia'));
+        $anioActual = (int) Carbon::now()->year;
+        $years = range($anioActual - 5, $anioActual + 1);
+        $years = array_reverse($years);
+
+        $anioConsulta = (int) ($request->input('anio') ?? $anioActual);
+        $anioConsulta = in_array($anioConsulta, $years, true) ? $anioConsulta : $anioActual;
+
+        $gerenciasConCorte = Cortes::where('Anio', $anioConsulta)
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->pluck('GerenciaID')
+            ->toArray();
+        $gerenciasSinCorte = $gerencia->whereNotIn('GerenciaID', $gerenciasConCorte)->values();
+
+        $gerenciasConCorteIds = $gerenciasConCorte;
+        $gerenciasConCorte = $gerencia->whereIn('GerenciaID', $gerenciasConCorteIds)->values();
+
+        return view('cortes.index', compact('meses', 'gerencia', 'years', 'anioActual', 'anioConsulta', 'gerenciasConCorte', 'gerenciasSinCorte'));
     }
 
     public function indexVista(Request $request)
@@ -318,16 +335,15 @@ class CortesController extends AppBaseController
         }
 
         $gerenciaID = (int) $ids->first();
-        $año = Carbon::now()->format('Y') + 1;
+        // Año del corte: enviado por el front o año en curso (ya no se usa +1)
+        $año = (int) ($request->input('anio') ?? Carbon::now()->year);
 
-        $yaExiste = \App\Models\Cortes::where('GerenciaID', $gerenciaID)
+        $yaExiste = Cortes::where('GerenciaID', $gerenciaID)
             ->where('Anio', $año)
             ->exists();
 
         if ($yaExiste) {
-            return response()->json([
-                'message' => 'El corte anual de la gerencia para el año indicado ya fue realizado.'
-            ], 409);
+            Cortes::where('GerenciaID', $gerenciaID)->where('Anio', $año)->delete();
         }
 
         $numToName = [
@@ -375,6 +391,88 @@ class CortesController extends AppBaseController
         return response()->json([
             'message'  => 'Corte anual registrado',
         ], 201);
+    }
+
+    /**
+     * Obtener corte ya guardado por año y gerencia (para vista de solo lectura con costo, costo total, costo + margen).
+     *
+     * @param Request $request (anio, gerenciaID)
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function obtenerCorteGuardado(Request $request)
+    {
+        $anio = (int) $request->input('anio');
+        $gerenciaID = (int) $request->input('gerenciaID');
+
+        if (!$anio || !$gerenciaID) {
+            return response()->json([
+                'message' => 'Faltan año o gerencia',
+                'data'    => [],
+            ], 422);
+        }
+
+        $mesesOrden = [
+            'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4, 'Mayo' => 5, 'Junio' => 6,
+            'Julio' => 7, 'Agosto' => 8, 'Septiembre' => 9, 'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12,
+        ];
+        $nombresMeses = array_keys($mesesOrden);
+
+        $rows = Cortes::where('GerenciaID', $gerenciaID)
+            ->where('Anio', $anio)
+            ->whereNull('deleted_at')
+            ->orderBy('NombreInsumo')
+            ->orderBy('Mes')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return response()->json([
+                'message' => 'No hay corte guardado para esta gerencia y año',
+                'data'    => [],
+            ], 200);
+        }
+
+        $agrupado = $rows->groupBy('NombreInsumo')->map(function ($registros, $nombreInsumo) use ($nombresMeses, $mesesOrden) {
+            $porMes = [];
+            $sumaCosto = 0;
+            $sumaCostoTotal = 0;
+            $margen = 0;
+            $count = 0;
+
+            foreach ($registros as $r) {
+                $mes = $r->Mes ?? '';
+                $costo = (float) ($r->Costo ?? 0);
+                $costoTotal = (float) ($r->CostoTotal ?? 0);
+                $margen = (float) ($r->Margen ?? 0);
+
+                $porMes[$mes] = [
+                    'Costo'      => round($costo, 2),
+                    'CostoTotal' => round($costoTotal, 2),
+                ];
+                $sumaCosto += $costo;
+                $sumaCostoTotal += $costoTotal;
+                $count++;
+            }
+
+            foreach ($nombresMeses as $m) {
+                if (!isset($porMes[$m])) {
+                    $porMes[$m] = ['Costo' => 0, 'CostoTotal' => 0];
+                }
+            }
+
+            return [
+                'NombreInsumo'   => $nombreInsumo,
+                'Meses'          => $porMes,
+                'Costo'          => round($sumaCosto / max(1, $count), 2),
+                'Margen'         => $margen,
+                'CostoTotalAnual' => round($sumaCostoTotal, 2),
+                'Orden'          => $count,
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'message' => 'Corte guardado',
+            'data'    => $agrupado,
+        ], 200);
     }
 
     /**

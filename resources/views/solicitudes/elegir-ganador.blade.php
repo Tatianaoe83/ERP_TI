@@ -260,14 +260,56 @@
             @if(!isset($error) || !$error)
             <!-- Botones de acción -->
             <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3 md:gap-4 mb-4">
-                <button type="button" onclick="cancelar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm md:text-base font-semibold rounded-lg transition-all">
-                    <i class="fas fa-times mr-2"></i>
-                    Cancelar
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="cancelar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm md:text-base font-semibold rounded-lg transition-all">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    @if($totalPropuestas > 0)
+                    <button type="button" onclick="abrirModalRecotizar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 text-white text-sm md:text-base font-semibold rounded-lg transition-all">
+                        <i class="fas fa-redo-alt mr-2"></i>
+                        Solicitar re-cotización
+                    </button>
+                    @endif
+                </div>
                 <button type="button" id="btn-confirmar" disabled
                     class="px-5 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition-all bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed">
                     <i class="fas fa-check mr-2"></i> Confirmar Ganadores
                 </button>
+            </div>
+
+            <!-- Modal Solicitar re-cotización -->
+            <div id="modal-recotizar" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-recotizar-title" role="dialog">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="cerrarModalRecotizar()"></div>
+                    <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-600">
+                        <h3 id="modal-recotizar-title" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                            <i class="fas fa-redo-alt text-amber-500"></i>
+                            Solicitar re-cotización
+                        </h3>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Indica qué propuesta(s) están mal o deben recotizarse y el motivo. TI verá esta información en el listado.</p>
+                        <div class="mb-4">
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Propuestas a recotizar</label>
+                            <div id="recotizar-checkboxes" class="space-y-2">
+                                @foreach($propuestas as $prop)
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="recotizar_prop" value="{{ $prop['numeroPropuesta'] }}" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+                                    <span class="text-sm text-slate-800 dark:text-slate-200">Propuesta {{ $prop['numeroPropuesta'] }}</span>
+                                </label>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="mb-5">
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Motivo (obligatorio)</label>
+                            <textarea id="recotizar-motivo" rows="3" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm" placeholder="Ej.: Precio muy alto en propuesta 2, solicito nueva cotización..."></textarea>
+                            <p id="recotizar-motivo-error" class="text-red-500 text-xs mt-1 hidden">Escribe el motivo de la re-cotización.</p>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="cerrarModalRecotizar()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500">Cerrar</button>
+                            <button type="button" onclick="enviarSolicitudRecotizacion()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold">Enviar</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             @if($totalPropuestas > 0)
             <div id="warning-box" class="flex items-start gap-3 p-4 md:p-5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700">
@@ -290,6 +332,72 @@
         function cancelar() {
             if (window.history.length > 1) window.history.back();
             else window.close();
+        }
+
+        function abrirModalRecotizar() {
+            document.getElementById('modal-recotizar').classList.remove('hidden');
+            document.querySelectorAll('#recotizar-checkboxes input').forEach(function(cb) { cb.checked = false; });
+            document.getElementById('recotizar-motivo').value = '';
+            document.getElementById('recotizar-motivo-error').classList.add('hidden');
+        }
+
+        function cerrarModalRecotizar() {
+            document.getElementById('modal-recotizar').classList.add('hidden');
+        }
+
+        function enviarSolicitudRecotizacion() {
+            var propuestas = [];
+            document.querySelectorAll('#recotizar-checkboxes input:checked').forEach(function(cb) {
+                propuestas.push(parseInt(cb.value, 10));
+            });
+            var motivo = (document.getElementById('recotizar-motivo').value || '').trim();
+            var errEl = document.getElementById('recotizar-motivo-error');
+            if (propuestas.length === 0) {
+                errEl.textContent = 'Selecciona al menos una propuesta.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            if (!motivo) {
+                errEl.textContent = 'Escribe el motivo de la re-cotización.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            errEl.classList.add('hidden');
+
+            var body = { propuestas: propuestas, motivo: motivo };
+            if (window.ELECTOR_TOKEN) body.token = window.ELECTOR_TOKEN;
+
+            fetch('/solicitudes/' + window.ELECTOR_SOLICITUD_ID + '/solicitar-recotizacion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.ELECTOR_CSRF,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(body)
+            })
+            .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+            .then(function(result) {
+                cerrarModalRecotizar();
+                if (!result.ok) {
+                    Swal.fire({ title: 'Error', text: (result.data && result.data.message) || 'No se pudo enviar la solicitud.', icon: 'error' });
+                    return;
+                }
+                Swal.fire({
+                    title: 'Enviado',
+                    text: (result.data && result.data.message) || 'TI verá qué propuestas debe recotizar.',
+                    icon: 'success',
+                    confirmButtonColor: '#0F766E'
+                }).then(function() {
+                    if (result.data && result.data.redirect) window.location.href = result.data.redirect;
+                    else window.location.reload();
+                });
+            })
+            .catch(function(e) {
+                console.error(e);
+                cerrarModalRecotizar();
+                Swal.fire({ title: 'Error', text: 'Error al enviar la solicitud de re-cotización.', icon: 'error' });
+            });
         }
 
         function actualizarUI() {

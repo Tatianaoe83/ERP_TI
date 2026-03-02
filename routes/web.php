@@ -115,11 +115,12 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('facturas', App\Http\Controllers\FacturasController::class);
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
 
-    Route::resource('cortes', App\Http\Controllers\CortesController::class);
+    Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
     Route::get('/verInsumos', [CortesController::class, 'obtenerInsumos'])->name('cortes.ver');
     Route::get('indexVista', [App\Http\Controllers\CortesController::class, 'indexVista'])->name('cortes.indexVista');
     Route::post('/cortes/saveXML', [CortesController::class, 'saveXML'])->name('cortes.saveXML');
     Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
+    Route::resource('cortes', App\Http\Controllers\CortesController::class);
 
     Route::get('/tickets', [App\Http\Controllers\TicketsController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/productividad-ajax', [App\Http\Controllers\TicketsController::class, 'obtenerProductividadAjax'])->name('tickets.productividad-ajax');
@@ -190,6 +191,9 @@ Route::post('/solicitudes/{id}/enviar-cotizaciones-gerente', [App\Http\Controlle
 Route::get('/elegir-ganador/{token}', [App\Http\Controllers\TicketsController::class, 'elegirGanadorConToken'])->name('solicitudes.elegir-ganador-token');
 Route::post('/solicitudes/{id}/seleccionar-cotizacion', [App\Http\Controllers\TicketsController::class, 'seleccionarCotizacion'])->name('solicitudes.seleccionar-cotizacion');
 Route::post('/solicitudes/{id}/confirmar-ganadores', [App\Http\Controllers\TicketsController::class, 'confirmarGanadores'])->name('solicitudes.confirmar-ganadores');
+Route::post('/solicitudes/{id}/solicitar-recotizacion', [App\Http\Controllers\TicketsController::class, 'solicitarRecotizacion'])->name('solicitudes.solicitar-recotizacion');
+Route::get('/solicitudes/recotizacion-solicitada', function () { return view('solicitudes.recotizacion-solicitada'); })->name('solicitudes.recotizacion-solicitada');
+Route::get('/solicitudes/ganadores-confirmados', function () { return view('solicitudes.ganadores-confirmados'); })->name('solicitudes.ganadores-confirmados');
 Route::post('/solicitudes/{id}/aprobar-{nivel}', [App\Http\Controllers\SolicitudAprobacionController::class, 'aprobarPorNivel'])->name('solicitudes.aprobar-nivel');
 Route::post('/solicitudes/{id}/rechazar-{nivel}', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarPorNivel'])->name('solicitudes.rechazar-nivel');
 /* Route::post('/solicitudes/{id}/rechazar-supervisor', [App\Http\Controllers\SolicitudAprobacionController::class, 'rechazarSupervisor'])->name('solicitudes.rechazar-supervisor');
