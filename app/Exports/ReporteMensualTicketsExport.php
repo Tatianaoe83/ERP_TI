@@ -7,15 +7,17 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 class ReporteMensualTicketsExport implements WithMultipleSheets
 {
     protected $tickets;
+    protected $ticketsMesActual;
     protected $resumen;
     protected $tiempoPorEmpleado;
     protected $tiempoPorCategoria;
     protected $mes;
     protected $anio;
 
-    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio)
+    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $ticketsMesActual = null)
     {
         $this->tickets = $tickets;
+        $this->ticketsMesActual = $ticketsMesActual ?? $tickets;
         $this->resumen = $resumen;
         $this->tiempoPorEmpleado = $tiempoPorEmpleado;
         $this->tiempoPorCategoria = $tiempoPorCategoria;
@@ -34,7 +36,7 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
                 $this->mes, 
                 $this->anio
             ),
-            new TicketsSheetExport($this->tickets, $this->resumen, $this->mes, $this->anio),
+            new TicketsSheetExport($this->ticketsMesActual, $this->resumen, $this->mes, $this->anio),
             new TiempoResolucionPorEmpleadoSheetExport($this->tiempoPorEmpleado, $this->mes, $this->anio),
             new TiempoPorCategoriaResponsableSheetExport($this->tiempoPorCategoria, $this->mes, $this->anio),
         ];

@@ -33,7 +33,7 @@
                         focus:ring focus:ring-blue-200">
 
             {{-- PRIORIDAD --}}
-            <select wire:model="filtroPrioridad"
+            <select wire:model.live="filtroPrioridad"
                     class="px-3 py-2 rounded-lg border text-sm
                         bg-gray-50 dark:bg-[#242933]
                         border-gray-300 dark:border-[#2A2F3A]">
@@ -44,7 +44,7 @@
             </select>
 
             {{-- ESTADO --}}
-            <select wire:model="filtroEstado"
+            <select wire:model.live="filtroEstado"
                     class="px-3 py-2 rounded-lg border text-sm
                         bg-gray-50 dark:bg-[#242933]
                         border-gray-300 dark:border-[#2A2F3A]">

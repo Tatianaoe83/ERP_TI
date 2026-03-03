@@ -1506,8 +1506,16 @@ class TicketsController extends Controller
         $nombreArchivo = 'reporte_tickets_' . date('d-m-Y-H-i') . '.xlsx';
 
         return Excel::download(
-            // ¡AQUÍ ESTÁ LA MAGIA! Le pasamos a tu Excel los tickets de los DOS meses ($ticketsDosMeses)
-            new \App\Exports\ReporteMensualTicketsExport($ticketsDosMeses, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo),
+            // Resumen usa ambos meses; la hoja Tickets solo muestra el mes seleccionado
+            new \App\Exports\ReporteMensualTicketsExport(
+                $ticketsDosMeses,
+                $resumen,
+                $tiempoPorEmpleado,
+                $tiempoPorCategoria,
+                $mes,
+                $anio,
+                $ticketsMesActual
+            ),
             $nombreArchivo
         );
     }
