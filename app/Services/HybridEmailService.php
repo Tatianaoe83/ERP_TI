@@ -27,10 +27,7 @@ class HybridEmailService
         $this->smtpEncryption = config('email_tickets.smtp.encryption');
     }
 
-    /**
-     * Enviar respuesta por correo con instrucciones claras
-     */
-    public function enviarRespuestaConInstrucciones($ticketId, $mensaje, $adjuntos = [])
+    public function enviarRespuestaConInstrucciones($ticketId, $mensaje, $adjuntos = [], $mensajeParaCorreo = null)
     {
         try {
             $ticket = Tickets::with('empleado')->find($ticketId);
@@ -38,61 +35,90 @@ class HybridEmailService
                 throw new \Exception('Ticket no encontrado');
             }
 
-            $empleado = $ticket->empleado;
+            $empleado      = $ticket->empleado;
             $correoSoporte = config('mail.from.address');
             $nombreSoporte = config('mail.from.name');
+            $messageId     = $this->generarMessageId();
+            $threadId      = $this->obtenerThreadIdDelTicket($ticketId);
+            $asunto        = "Ticket #{$ticket->TicketID} - {$ticket->Descripcion}";
 
-            // Generar IDs únicos
-            $messageId = $this->generarMessageId();
-            $threadId = $this->obtenerThreadIdDelTicket($ticketId);
+            // Usar mensajeParaCorreo (con base64) para el correo si se proporcionó,
+            // de lo contrario usar el mensaje original
+            $mensajeEmail = $mensajeParaCorreo ?? $mensaje;
+            $contenido    = $this->construirContenidoConInstrucciones($ticket, $empleado, $mensajeEmail, $threadId);
 
-            // Crear asunto con formato específico para threading
-            $asunto = "Ticket #{$ticket->TicketID} - {$ticket->Descripcion}";
-
-            // Construir contenido con instrucciones claras
-            $contenido = $this->construirContenidoConInstrucciones($ticket, $empleado, $mensaje, $threadId);
-
-            // Enviar correo
             $mail = new PHPMailer(true);
             $this->configurarMailer($mail);
-            
-            // Configurar headers para threading (sin duplicar Message-ID)
+
             $mail->addCustomHeader('In-Reply-To', $threadId);
             $mail->addCustomHeader('References', $threadId);
             $mail->addCustomHeader('Thread-Topic', "Ticket #{$ticket->TicketID}");
             $mail->addCustomHeader('Reply-To', $correoSoporte);
-            
-            // Headers adicionales para evitar interceptación
+
             $xOriginatingIp = config('email_tickets.smtp.x_originating_ip');
-            $xRemoteIp = config('email_tickets.smtp.x_remote_ip');
+            $xRemoteIp      = config('email_tickets.smtp.x_remote_ip');
             $mail->addCustomHeader('X-Originating-IP', "[{$xOriginatingIp}]");
             $mail->addCustomHeader('X-Remote-IP', "[{$xRemoteIp}]");
             $mail->addCustomHeader('X-Sender', $correoSoporte);
 
-            // FROM desde configuración
             $fromAddress = config('email_tickets.smtp.from_address');
             $mail->setFrom($fromAddress, $nombreSoporte);
             $mail->addAddress($empleado->Correo, $empleado->NombreEmpleado);
-            
+
             $mail->isHTML(true);
             $mail->Subject = $asunto;
-            $mail->Body = $contenido;
+            $mail->Body    = $contenido;
 
-            // Adjuntos
+            // Adjuntar archivos normales al correo
             foreach ($adjuntos as $adjunto) {
-                if (file_exists($adjunto['path'])) {
-                    $mail->addAttachment($adjunto['path'], $adjunto['name']);
+                $tipo = $adjunto['tipo'] ?? 'archivo';
+
+                // Las imágenes embebidas ya van en el HTML como base64, no se adjuntan
+                if ($tipo === 'imagen_embebida') {
+                    continue;
+                }
+
+                // Resolver la ruta absoluta usando Storage para evitar problemas con
+                // separadores de ruta en Windows (mezcla de / y \)
+                $rutaAbsoluta = null;
+
+                if (!empty($adjunto['storage_path'])) {
+                    // Usar Storage::disk para obtener la ruta correcta en cualquier OS
+                    try {
+                        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($adjunto['storage_path'])) {
+                            $rutaAbsoluta = \Illuminate\Support\Facades\Storage::disk('public')->path($adjunto['storage_path']);
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning("No se pudo resolver storage_path '{$adjunto['storage_path']}': " . $e->getMessage());
+                    }
+                }
+
+                // Fallback: usar el path directo si storage_path no funcionó
+                if (!$rutaAbsoluta && !empty($adjunto['path']) && file_exists($adjunto['path'])) {
+                    $rutaAbsoluta = $adjunto['path'];
+                }
+
+                if (!$rutaAbsoluta) {
+                    Log::warning("Adjunto no encontrado en disco, se omite del correo: " . ($adjunto['name'] ?? 'sin nombre'));
+                    continue;
+                }
+
+                try {
+                    $mail->addAttachment($rutaAbsoluta, $adjunto['name'] ?? basename($rutaAbsoluta));
+                    Log::info("Adjunto agregado al correo: " . ($adjunto['name'] ?? basename($rutaAbsoluta)));
+                } catch (\Exception $e) {
+                    Log::error("Error adjuntando archivo al correo '{$adjunto['name']}': " . $e->getMessage());
                 }
             }
-            
+
             $mail->send();
 
-            // Guardar en el chat
+            // Guardar en BD usando el mensaje ORIGINAL (con URLs de storage, no base64)
             $this->guardarCorreoEnviado($ticketId, $mensaje, $messageId, $threadId, $adjuntos);
 
             Log::info("Respuesta con instrucciones enviada para ticket #{$ticketId}");
             return true;
-            
+
         } catch (Exception $e) {
             Log::error("Error enviando respuesta con instrucciones: " . $e->getMessage());
             return false;
@@ -243,60 +269,43 @@ class HybridEmailService
     private function guardarCorreoEnviado($ticketId, $mensaje, $messageId, $threadId, $adjuntos = [])
     {
         try {
-            // Obtener el ticket para construir el contenido completo
-            $ticket = Tickets::with('empleado')->find($ticketId);
+            $ticket   = Tickets::with('empleado')->find($ticketId);
             $empleado = $ticket ? $ticket->empleado : null;
-            
-            // Construir el contenido HTML completo del correo
+
             $contenidoCompleto = $this->construirContenidoConInstrucciones($ticket, $empleado, $mensaje, $threadId);
-            
-            // Extraer texto plano del HTML para el campo mensaje (sin truncar tanto)
-            $mensajeTexto = strip_tags($mensaje);
-            $mensajeTexto = html_entity_decode($mensajeTexto, ENT_QUOTES, 'UTF-8');
-            // Truncar solo si es extremadamente largo (para el campo mensaje que es string)
-            $mensajeTruncado = strlen($mensajeTexto) > 500 ? substr($mensajeTexto, 0, 500) . '...' : $mensajeTexto;
-            
-            // Los adjuntos ya vienen procesados desde el controlador con toda la información
-            // Solo asegurarnos de que tengan el formato correcto
+
+            // Procesar adjuntos: guardar solo los datos necesarios para mostrarlos en el chat
             $adjuntosProcesados = [];
             foreach ($adjuntos as $adjunto) {
-                $adjuntoData = [
-                    'name' => $adjunto['name'] ?? basename($adjunto['path'] ?? ''),
-                    'path' => $adjunto['path'] ?? '',
+                $adjuntosProcesados[] = [
+                    'name'         => $adjunto['name']         ?? basename($adjunto['path'] ?? ''),
+                    'storage_path' => $adjunto['storage_path'] ?? null,
+                    'url'          => $adjunto['url']          ?? null,
+                    'size'         => $adjunto['size']         ?? null,
+                    'mime_type'    => $adjunto['mime_type']    ?? null,
+                    'tipo'         => $adjunto['tipo']         ?? 'archivo',
                 ];
-                
-                // Agregar información adicional si está disponible
-                if (isset($adjunto['storage_path'])) {
-                    $adjuntoData['storage_path'] = $adjunto['storage_path'];
-                }
-                if (isset($adjunto['url'])) {
-                    $adjuntoData['url'] = $adjunto['url'];
-                }
-                if (isset($adjunto['size'])) {
-                    $adjuntoData['size'] = $adjunto['size'];
-                }
-                if (isset($adjunto['mime_type'])) {
-                    $adjuntoData['mime_type'] = $adjunto['mime_type'];
-                }
-                
-                $adjuntosProcesados[] = $adjuntoData;
             }
-            
+
+            // Guardar el mensaje ORIGINAL sin modificar
+            // Las imágenes embebidas tienen src="/storage/tickets/adjuntos/..."
+            // que el chat renderiza correctamente con x-html="formatearMensaje(mensaje.mensaje)"
             TicketChat::create([
-                'ticket_id' => $ticketId,
-                'mensaje' => $mensajeTruncado,
-                'remitente' => 'soporte',
+                'ticket_id'        => $ticketId,
+                'mensaje'          => $mensaje, // ← sin reemplazar nada
+                'remitente'        => 'soporte',
                 'nombre_remitente' => config('mail.from.name'),
                 'correo_remitente' => config('mail.from.address'),
-                'contenido_correo' => $contenidoCompleto, // Guardar el HTML completo aquí
-                'message_id' => $messageId,
-                'thread_id' => $threadId,
-                'adjuntos' => $adjuntosProcesados, // Guardar adjuntos con más información
-                'es_correo' => true,
-                'leido' => false
+                'contenido_correo' => $contenidoCompleto,
+                'message_id'       => $messageId,
+                'thread_id'        => $threadId,
+                'adjuntos'         => $adjuntosProcesados,
+                'es_correo'        => true,
+                'leido'            => false,
             ]);
-            
-            Log::info("Correo guardado en BD | Ticket #{$ticketId} | Adjuntos: " . count($adjuntosProcesados));
+
+            Log::info("Correo guardado | Ticket #{$ticketId} | Adjuntos: " . count($adjuntosProcesados));
+
         } catch (\Exception $e) {
             Log::error("Error guardando correo enviado: " . $e->getMessage());
             Log::error("Stack trace: " . $e->getTraceAsString());

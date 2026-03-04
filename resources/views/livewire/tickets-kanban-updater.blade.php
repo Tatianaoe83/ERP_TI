@@ -1,6 +1,6 @@
 {{-- resources/views/livewire/tickets-kanban-updater.blade.php --}}
 
-<div wire:poll.15s="actualizarDatos" wire:poll.keep-alive>
+<div wire:poll.5s="actualizarDatos" wire:poll.keep-alive>
 
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full" >

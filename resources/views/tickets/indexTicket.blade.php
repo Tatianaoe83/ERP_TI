@@ -1220,6 +1220,129 @@
         </div>
     </div>
 
+<!-- Lightbox para imágenes del chat -->
+<div 
+    id="lightbox-overlay"
+    onclick="cerrarLightbox()"
+    style="display:none; position:fixed; inset:0; z-index:999999; background:rgba(0,0,0,0.92); cursor:zoom-out;"
+    class="flex items-center justify-center p-4">
+    
+    <!-- Botón cerrar -->
+    <button 
+        onclick="cerrarLightbox()" 
+        style="position:absolute; top:1rem; right:1rem; z-index:1000000; color:white; background:rgba(255,255,255,0.15); border:none; border-radius:9999px; width:2.5rem; height:2.5rem; font-size:1.25rem; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+        ×
+    </button>
+
+    <!-- Botones anterior / siguiente -->
+    <button 
+        id="lightbox-prev"
+        onclick="event.stopPropagation(); navegarLightbox(-1)"
+        style="position:absolute; left:1rem; top:50%; transform:translateY(-50%); z-index:1000000; color:white; background:rgba(255,255,255,0.15); border:none; border-radius:9999px; width:2.5rem; height:2.5rem; font-size:1.25rem; cursor:pointer; display:none; align-items:center; justify-content:center;">
+        ‹
+    </button>
+    <button 
+        id="lightbox-next"
+        onclick="event.stopPropagation(); navegarLightbox(1)"
+        style="position:absolute; right:4rem; top:50%; transform:translateY(-50%); z-index:1000000; color:white; background:rgba(255,255,255,0.15); border:none; border-radius:9999px; width:2.5rem; height:2.5rem; font-size:1.25rem; cursor:pointer; display:none; align-items:center; justify-content:center;">
+        ›
+    </button>
+
+    <!-- Imagen principal -->
+    <img 
+        id="lightbox-img" 
+        src="" 
+        alt="Imagen ampliada"
+        onclick="event.stopPropagation()"
+        style="max-width:90vw; max-height:90vh; object-fit:contain; border-radius:0.5rem; box-shadow:0 25px 60px rgba(0,0,0,0.5); cursor:default;">
+    
+    <!-- Contador -->
+    <div id="lightbox-counter" style="position:absolute; bottom:1rem; left:50%; transform:translateX(-50%); color:rgba(255,255,255,0.7); font-size:0.85rem; background:rgba(0,0,0,0.4); padding:0.25rem 0.75rem; border-radius:9999px;"></div>
+</div>
+
+<style>
+/* Miniaturas de imágenes en el chat */
+.chat-img-thumb {
+    display: inline-block;
+    cursor: zoom-in;
+    margin: 4px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    vertical-align: top;
+}
+.chat-img-thumb:hover {
+    border-color: #3B82F6;
+    transform: scale(1.03);
+    box-shadow: 0 4px 15px rgba(59,130,246,0.4);
+}
+.chat-img-thumb img {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    display: block;
+    border-radius: 6px;
+}
+.chat-img-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+</style>
+
+<script>
+// ── Lightbox global ──────────────────────────────────────────────────────────
+    let _lightboxImagenes = [];
+    let _lightboxIndice   = 0;
+
+    function abrirLightbox(srcs, indice) {
+        _lightboxImagenes = Array.isArray(srcs) ? srcs : [srcs];
+        _lightboxIndice   = indice || 0;
+
+        const overlay = document.getElementById('lightbox-overlay');
+        const img     = document.getElementById('lightbox-img');
+        const prev    = document.getElementById('lightbox-prev');
+        const next    = document.getElementById('lightbox-next');
+        const counter = document.getElementById('lightbox-counter');
+
+        img.src = _lightboxImagenes[_lightboxIndice];
+
+        // Mostrar/ocultar flechas
+        const multiple = _lightboxImagenes.length > 1;
+        prev.style.display    = multiple ? 'flex' : 'none';
+        next.style.display    = multiple ? 'flex' : 'none';
+        counter.style.display = multiple ? 'block' : 'none';
+
+        if (multiple) {
+            counter.textContent = `${_lightboxIndice + 1} / ${_lightboxImagenes.length}`;
+        }
+
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarLightbox() {
+        document.getElementById('lightbox-overlay').style.display = 'none';
+        document.getElementById('lightbox-img').src = '';
+        document.body.style.overflow = '';
+    }
+
+    function navegarLightbox(direccion) {
+        _lightboxIndice = (_lightboxIndice + direccion + _lightboxImagenes.length) % _lightboxImagenes.length;
+        document.getElementById('lightbox-img').src = _lightboxImagenes[_lightboxIndice];
+        document.getElementById('lightbox-counter').textContent = `${_lightboxIndice + 1} / ${_lightboxImagenes.length}`;
+    }
+
+    // Cerrar con Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cerrarLightbox();
+        if (e.key === 'ArrowRight') navegarLightbox(1);
+        if (e.key === 'ArrowLeft')  navegarLightbox(-1);
+    });
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js" defer></script>
 <script>
     function ticketsModal() {
@@ -1249,9 +1372,8 @@
             correoBcc: '',
             tinyMCEInstance: null, // Instancia del editor TinyMCE
             archivosAdjuntos: [], // Array para almacenar los archivos seleccionados
-            // URL base para archivos de storage
-            // Usar la ruta de Laravel que sirve archivos sin enlace simbólico (útil para HostGator)
-            storageBaseUrl: '{{ url("/storage") }}',
+            // URL base para archivos de storage (asset evita problemas con public/storage)
+            storageBaseUrl: '{{ asset("storage") }}',
             // Variables para detalles del ticket
             ticketPrioridad: '',
             ticketEstatus: '',
@@ -2463,46 +2585,56 @@
                         'bullist numlist | outdent indent | ' +
                         'removeformat | link image | code | help',
                     content_style: isDarkMode 
-                        ? 'body { font-family: Arial, sans-serif; font-size: 14px; background-color: #1f2937 !important; color: #ffffff !important; } body * { color: #ffffff !important; }' 
-                        : 'body { font-family: Arial, sans-serif; font-size: 14px; }',
+                        ? `body { font-family: Arial, sans-serif; font-size: 14px; background-color: #1f2937 !important; color: #ffffff !important; }
+                        body * { color: #ffffff !important; }
+                        img { max-width: 150px !important; max-height: 110px !important; object-fit: cover !important; border-radius: 6px !important; cursor: pointer !important; border: 2px solid #3B82F6 !important; margin: 3px !important; vertical-align: bottom !important; }`
+                        : `body { font-family: Arial, sans-serif; font-size: 14px; }
+                        img { max-width: 150px !important; max-height: 110px !important; object-fit: cover !important; border-radius: 6px !important; cursor: pointer !important; border: 2px solid #e5e7eb !important; margin: 3px !important; vertical-align: bottom !important; }`,
                     language: 'es',
                     placeholder: 'Escribe tu mensaje aquí...',
                     
                     automatic_uploads: true,
-                    paste_data_images: true, 
+                    paste_data_images: true,
+                    images_reuse_filename: false,
 
-                    // REEMPLAZO: Manejador de subida de imágenes con Fetch y Token CSRF de Laravel
                     images_upload_handler: (blobInfo, progress) => new Promise((resolve, reject) => {
-                        const formData = new FormData();
-                        formData.append('file', blobInfo.blob(), blobInfo.filename());
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (!csrfToken) {
+                        console.error('TinyMCE: No se encontró el meta CSRF token');
+                        // Sin CSRF no podemos subir, pero tampoco borramos la imagen
+                        resolve('data:' + blobInfo.blob().type + ';base64,' + blobInfo.base64());
+                        return;
+                    }
 
-                        fetch('/tickets/subir-imagen-tinymce', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'Accept': 'application/json'
-                            },
-                            body: formData
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                return response.json().then(err => reject({ message: err.error || 'Error HTTP: ' + response.status, remove: true }));
-                            }
-                            return response.json();
-                        })
-                        .then(result => {
-                            if (!result || !result.location) {
-                                reject({ message: 'Error: Respuesta inválida del servidor.', remove: true });
-                                return;
-                            }
-                            // Devuelve la URL de la imagen a TinyMCE
-                            resolve(result.location);
-                        })
-                        .catch(error => {
-                            reject({ message: 'Falló la subida: ' + error.message, remove: true });
-                        });
-                    }),
+                    const formData = new FormData();
+                    formData.append('file', blobInfo.blob(), blobInfo.filename() || 'imagen.png');
 
+                    fetch('/tickets/subir-imagen-tinymce', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                            'Accept': 'application/json',
+                            // NO agregar Content-Type aquí — el browser lo pone solo con el boundary correcto
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, data })))
+                    .then(({ status, data }) => {
+                        if (status === 200 && data.location) {
+                            console.log('TinyMCE imagen subida OK:', data.location);
+                            resolve(data.location);
+                        } else {
+                            // Error del servidor: guardar como base64 para que la imagen NO desaparezca
+                            console.warn('TinyMCE upload error servidor:', status, data);
+                            resolve('data:' + blobInfo.blob().type + ';base64,' + blobInfo.base64());
+                        }
+                    })
+                    .catch(error => {
+                        // Error de red: mismo fallback base64
+                        console.warn('TinyMCE upload error red:', error.message);
+                        resolve('data:' + blobInfo.blob().type + ';base64,' + blobInfo.base64());
+                    });
+                }),
                     setup: (editor) => {
                         this.tinyMCEInstance = editor;
                         
@@ -2563,6 +2695,7 @@
                     }
                 });
             },
+
             prepararDatosLista() {
                 // Los contadores ya están inicializados desde el servidor
                 // Esta función solo se usa para recalcular si es necesario
@@ -3963,25 +4096,56 @@ async cargarDatosTicket(ticketId) {
             },
 
             formatearMensaje(mensaje) {
-                if (!mensaje) return '';
-                
-                // Si el mensaje contiene código HTML (como el que genera TinyMCE con la imagen), 
-                // lo retornamos tal cual para que el navegador lo dibuje correctamente.
-                if (/<[a-z][\s\S]*>/i.test(mensaje)) {
-                    return mensaje;
-                }
-                
-                // Solo si es texto plano (ej. correos recibidos sin formato), aplicamos los saltos de línea
-                let mensajeFormateado = mensaje.replace(/\n/g, '<br>');
-                
-                // Detectar URLs y convertirlas en enlaces
-                mensajeFormateado = mensajeFormateado.replace(
-                    /(https?:\/\/[^\s]+)/g, 
+            if (!mensaje) return '';
+
+            // Texto plano → formatear saltos y URLs
+            if (!/<[a-z][\s\S]*>/i.test(mensaje)) {
+                let formateado = mensaje.replace(/\n/g, '<br>');
+                formateado = formateado.replace(
+                    /(https?:\/\/[^\s]+)/g,
                     '<a href="$1" target="_blank" class="text-blue-600 hover:underline">$1</a>'
                 );
-                
-                return mensajeFormateado;
-            },
+                return formateado;
+            }
+
+            // Es HTML → separar texto e imágenes
+            const parser = new DOMParser();
+            const doc    = parser.parseFromString(mensaje, 'text/html');
+            const imgs   = Array.from(doc.querySelectorAll('img'));
+
+            if (imgs.length === 0) {
+                return mensaje;
+            }
+
+            // Recopilar srcs para el lightbox
+            const srcs     = imgs.map(img => img.getAttribute('src'));
+            const srcsJson = JSON.stringify(srcs).replace(/"/g, '&quot;');
+
+            // Eliminar las imágenes del HTML para que solo quede el texto
+            imgs.forEach(img => {
+                // Si el <p> padre solo tenía la imagen, eliminar el párrafo entero para no dejar líneas vacías
+                const padre = img.parentElement;
+                img.remove();
+                if (padre && padre.tagName === 'P' && padre.innerHTML.trim() === '' || 
+                    padre && padre.tagName === 'P' && padre.textContent.trim() === '') {
+                    padre.remove();
+                }
+            });
+
+            const textoHTML = doc.body.innerHTML.trim();
+
+            // Construir el grid de miniaturas
+            let gridHTML = '<div class="chat-img-grid" style="margin-top:12px;">';
+            srcs.forEach((src, i) => {
+                gridHTML += `
+                    <span class="chat-img-thumb" title="Clic para ampliar" onclick="abrirLightbox(JSON.parse(this.dataset.srcs), ${i})" data-srcs="${srcsJson}">
+                        <img src="${src}" alt="Imagen ${i + 1}">
+                    </span>`;
+            });
+            gridHTML += '</div>';
+
+            return (textoHTML ? textoHTML : '') + gridHTML;
+        },
 
             obtenerAdjuntos() {
                 if (!this.selected || !this.selected.imagen) return [];
@@ -4027,34 +4191,32 @@ async cargarDatosTicket(ticketId) {
                 if (!ruta) return '#';
                 
                 // 1. Si ya es una URL web válida, retornarla directamente
-                if (typeof ruta === 'string' && (ruta.startsWith('http://') || ruta.startsWith('https://') || ruta.startsWith('/storage/'))) {
+                if (typeof ruta === 'string' && (ruta.startsWith('http://') || ruta.startsWith('https://'))) {
                     return ruta;
                 }
                 
                 let pathToParse = '';
 
-                // 2. Si la ruta es un objeto (como viene de la BD)
+                // 2. Si la ruta es un objeto (como viene de la BD/tabla tickets)
                 if (typeof ruta === 'object' && ruta !== null) {
-                    // Si el backend nos mandó la URL pública ya armada, es la mejor opción
+                    // Si el backend nos mandó la URL pública ya armada
                     if (ruta.url) {
                         return ruta.url;
                     }
-                    // Si no, tomamos la ruta física (path) o la relativa (storage_path) o el nombre
+                    // Ruta física desde la tabla de tickets (path, storage_path, o name)
                     pathToParse = ruta.storage_path || ruta.path || ruta.name || '';
                 } 
-                // 3. Si es un string normal
+                // 3. Si es un string (ruta guardada en imagen/tabla tickets)
                 else if (typeof ruta === 'string') {
                     pathToParse = ruta;
                 }
 
                 if (pathToParse) {
-                    let partes = pathToParse.toString().split(/[\\/]/);
-                    let nombreArchivo = partes[partes.length - 1];
-                    
-                    // Asegurarnos de que no esté vacío
-                    if (nombreArchivo) {
-                        // Retornamos la URL web estándar y limpia de Laravel
-                        return `/storage/tickets/adjuntos/${nombreArchivo}`;
+                    const pathNormalized = pathToParse.toString().replace(/^[\\/]+/, '').replace(/\\/g, '/').trim();
+                    if (pathNormalized) {
+                        // Usar asset (storageBaseUrl) para evitar problemas con public/storage
+                        const base = (this.storageBaseUrl || '').replace(/\/$/, '');
+                        return base ? base + '/' + pathNormalized : '/storage/' + pathNormalized;
                     }
                 }
                 

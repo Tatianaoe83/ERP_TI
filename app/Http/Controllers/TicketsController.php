@@ -12,6 +12,7 @@ use App\Models\Subtipos;
 use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
 use App\Services\TicketNotificationService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
@@ -603,68 +604,112 @@ class TicketsController extends Controller
         }
     }
 
-    /**
-     * Enviar respuesta por correo
-     */
     public function enviarRespuesta(Request $request)
     {
         try {
             $ticketId = $request->input('ticket_id');
-            $mensaje = $request->input('mensaje');
+            $mensaje  = $request->input('mensaje');
             $adjuntos = $request->file('adjuntos', []);
 
-            // Validar que el ticket existe
             $ticket = Tickets::find($ticketId);
             if (!$ticket) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ticket no encontrado'
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'Ticket no encontrado'], 404);
             }
 
-            // Procesar adjuntos si existen
+            // ── 1. Archivos adjuntos normales ─────────────────────────────────────────
             $adjuntosProcesados = [];
             if (!empty($adjuntos)) {
                 foreach ($adjuntos as $adjunto) {
-                    $fileName = uniqid() . '_' . $adjunto->getClientOriginalName();
-                    $path = $adjunto->storeAs('tickets/adjuntos', $fileName, 'public');
+                    $fileName    = uniqid() . '_' . $adjunto->getClientOriginalName();
+                    $path        = $adjunto->storeAs('tickets/adjuntos', $fileName, 'public');
                     $storagePath = storage_path('app/public/' . $path);
+
                     $adjuntosProcesados[] = [
-                        'name' => $adjunto->getClientOriginalName(),
-                        'path' => $storagePath,
-                        'storage_path' => $path, // Ruta relativa para acceso web
-                        'url' => asset('storage/' . $path), // URL pública
-                        'size' => $adjunto->getSize(),
-                        'mime_type' => $adjunto->getMimeType()
+                        'name'         => $adjunto->getClientOriginalName(),
+                        'path'         => $storagePath,
+                        'storage_path' => $path,
+                        'url'          => asset('storage/' . $path),
+                        'size'         => $adjunto->getSize(),
+                        'mime_type'    => $adjunto->getMimeType(),
+                        'tipo'         => 'archivo',
                     ];
                 }
             }
 
-            // Enviar correo usando el servicio híbrido (SMTP + instrucciones)
-            $hybridService = new \App\Services\HybridEmailService();
-            $resultado = $hybridService->enviarRespuestaConInstrucciones($ticketId, $mensaje, $adjuntosProcesados);
+            // ── 2. Detectar imágenes subidas por TinyMCE en el HTML ──────────────────
+            // Buscar cualquier <img src="..."> que apunte a /storage/tickets/adjuntos/
+    preg_match_all(
+        '/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i',
+        $mensaje,
+        $matches
+    );
 
-            if ($resultado) {
-                // El servicio híbrido ya guarda el mensaje en el chat
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Respuesta enviada exitosamente con instrucciones'
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error enviando respuesta por correo'
-                ], 500);
+    $mensajeParaCorreo = $mensaje;
+
+    if (!empty($matches[1])) {
+        foreach (array_unique($matches[1]) as $urlImagen) {
+            $nombreArchivo = basename(parse_url($urlImagen, PHP_URL_PATH));
+            $rutaRelativa  = 'tickets/adjuntos/' . $nombreArchivo;
+
+            // Usar \Storage::disk('public')->path() que resuelve correctamente
+            // la ruta absoluta en cualquier OS (Windows/Linux)
+            $rutaAbsoluta = \Illuminate\Support\Facades\Storage::disk('public')->path($rutaRelativa);
+
+            Log::info("Buscando imagen en disco: {$rutaAbsoluta}");
+
+            if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($rutaRelativa)) {
+                Log::warning("Imagen no encontrada: {$rutaRelativa}");
+                continue;
             }
-        } catch (\Exception $e) {
-            Log::error("Error enviando respuesta: " . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error enviando respuesta: ' . $e->getMessage()
-            ], 500);
+
+            // Agregar a adjuntos para guardar en BD
+            $yaExiste = collect($adjuntosProcesados)
+                ->contains(fn($a) => basename($a['storage_path'] ?? '') === $nombreArchivo);
+
+            if (!$yaExiste) {
+                $adjuntosProcesados[] = [
+                    'name'         => $nombreArchivo,
+                    'path'         => $rutaAbsoluta,
+                    'storage_path' => $rutaRelativa,
+                    'url'          => asset('storage/' . $rutaRelativa),
+                    'size'         => \Illuminate\Support\Facades\Storage::disk('public')->size($rutaRelativa),
+                    'mime_type'    => \Illuminate\Support\Facades\Storage::disk('public')->mimeType($rutaRelativa),
+                    'tipo'         => 'imagen_embebida',
+                ];
+            }
+
+            // Convertir a base64 para el correo
+            $contenidoArchivo = \Illuminate\Support\Facades\Storage::disk('public')->get($rutaRelativa);
+            $mimeType         = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($rutaRelativa);
+            $base64           = base64_encode($contenidoArchivo);
+            $dataUri          = "data:{$mimeType};base64,{$base64}";
+
+            $mensajeParaCorreo = str_replace($urlImagen, $dataUri, $mensajeParaCorreo);
+
+            Log::info("Imagen convertida a base64 para correo: {$nombreArchivo}");
         }
     }
 
+            // ── 3. Enviar correo con imágenes embebidas como base64 ──────────────────
+            $hybridService = new \App\Services\HybridEmailService();
+            $resultado     = $hybridService->enviarRespuestaConInstrucciones(
+                $ticketId,
+                $mensaje,           // mensaje original se guarda en BD (con URLs de storage)
+                $adjuntosProcesados,
+                $mensajeParaCorreo  // mensaje con base64 se usa solo para el correo
+            );
+
+            if ($resultado) {
+                return response()->json(['success' => true, 'message' => 'Respuesta enviada exitosamente']);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Error enviando respuesta por correo'], 500);
+
+        } catch (\Exception $e) {
+            Log::error("Error enviando respuesta: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error enviando respuesta: ' . $e->getMessage()], 500);
+        }
+    }
     /**
      * Agregar mensaje interno al chat
      */
@@ -3214,6 +3259,48 @@ class TicketsController extends Controller
         } catch (\Exception $e) {
             Log::error("Error mostrando página elegir ganador con token {$token}: " . $e->getMessage());
             abort(500, 'Error al cargar la página de elección de ganador');
+        }
+    }
+
+    public function subirImagenTinyMCE(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|file|mimes:jpeg,jpg,png,gif,webp|max:5120',
+            ]);
+
+            $file        = $request->file('file');
+            $extension   = $file->getClientOriginalExtension() ?: 'png';
+            $nombreUnico = uniqid('img_', true) . '.' . $extension;
+
+            $rutaStorage = $file->storeAs(
+                'tickets/adjuntos',
+                $nombreUnico,
+                'public'
+            );
+
+            if (!$rutaStorage) {
+                Log::error('TinyMCE upload: storeAs devolvió false');
+                return response()->json(['error' => 'No se pudo guardar el archivo'], 500);
+            }
+
+            // Usar asset() con la ruta relativa de storage para generar URL absoluta
+            $urlPublica = asset('storage/' . $rutaStorage);
+
+            Log::info("TinyMCE imagen subida OK: {$urlPublica}");
+
+            return response()->json([
+                'location' => $urlPublica,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $error = implode(', ', $e->errors()['file'] ?? ['Archivo no válido']);
+            Log::error("TinyMCE upload validación: {$error}");
+            return response()->json(['error' => $error], 422);
+
+        } catch (\Exception $e) {
+            Log::error('TinyMCE imagen upload error: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno: ' . $e->getMessage()], 500);
         }
     }
 }
