@@ -1,7 +1,7 @@
 @php
     $usuarios = $usuariosUnicos ?? [];
     
-    // 1. Aplanar la jerarquía (2 Niveles: Gerencia -> Tertipo)
+    // 1. Aplanar jerarquía (solo 2 niveles: Tipo -> Subtipo)
     $filasGerencia = [];
     if (isset($tablaAgrupada)) {
         foreach ($tablaAgrupada as $principal => $datos) {
@@ -10,13 +10,12 @@
                 'nombre'  => $principal,
                 'totales' => $datos['total_principal'] ?? []
             ];
-            
-            if (isset($datos['tertipos'])) {
-                foreach ($datos['tertipos'] as $ter => $totalesTer) {
+            if (isset($datos['subtipos'])) {
+                foreach ($datos['subtipos'] as $subtipo => $datosSub) {
                     $filasGerencia[] = [
                         'tipo'    => 'hijo',
-                        'nombre'  => $ter,
-                        'totales' => $totalesTer
+                        'nombre'  => $subtipo,
+                        'totales' => $datosSub['total_principal'] ?? []
                     ];
                 }
             }
@@ -50,10 +49,13 @@
     $thStyle     = "font-weight:600; background-color:{$lightBlue}; color:{$primaryBlue}; border:{$border}; padding:8px 12px; text-align:left; white-space:nowrap;";
     $thCenter    = "font-weight:600; background-color:{$lightBlue}; color:{$primaryBlue}; border:{$border}; padding:8px 12px; text-align:center; white-space:nowrap;";
     $thTitle     = "font-weight:700; font-size:13px; background-color:{$primaryBlue}; color:#FFFFFF; border:{$border}; padding:10px 12px; text-align:center;";
-    $tdPadre     = "font-weight:600; background-color:#F8FAFC; color:#0F172A; border:{$border}; padding:6px 12px; text-transform:uppercase;";
-    $tdPadreVal  = "font-weight:600; background-color:#F8FAFC; color:#0F172A; border:{$border}; padding:6px 12px; text-align:center;";
-    $tdHijo      = "background-color:#FFFFFF; color:{$slateText}; border:{$border}; padding:5px 12px; padding-left:28px;";
-    $tdHijoVal   = "background-color:#FFFFFF; color:{$slateText}; border:{$border}; padding:5px 12px; text-align:center;";
+    // Jerarquía clara: TIPO (nivel 0) > SUBTIPO (nivel 1) > TERTIPO/INCIDENCIA (nivel 2)
+    $tdPadre     = "font-size:15px; font-weight:700; background-color:#E0E7FF; color:#1E3A8A; border:{$border}; padding:8px 12px; text-transform:uppercase; letter-spacing:0.3px;";
+    $tdPadreVal  = "font-size:15px; font-weight:700; background-color:#E0E7FF; color:#1E3A8A; border:{$border}; padding:8px 12px; text-align:center;";
+    $tdHijo      = "font-size:12px; font-weight:600; background-color:#F1F5F9; color:{$slateText}; border:{$border}; padding:6px 12px; padding-left:36px;";
+    $tdHijoVal   = "font-size:12px; font-weight:600; background-color:#F1F5F9; color:{$slateText}; border:{$border}; padding:6px 12px; text-align:center;";
+    $tdNieto     = "font-size:11px; background-color:#FFFFFF; color:{$slateText}; border:{$border}; padding:5px 12px; padding-left:56px;";
+    $tdNietoVal  = "font-size:11px; background-color:#FFFFFF; color:{$slateText}; border:{$border}; padding:5px 12px; text-align:center;";
     $tdTotal     = "font-weight:700; background-color:{$lightBlue}; color:{$primaryBlue}; border:{$border}; padding:6px 12px;";
     $tdTotalVal  = "font-weight:700; background-color:{$lightBlue}; color:{$primaryBlue}; border:{$border}; padding:6px 12px; text-align:center;";
     $tdNormal    = "background-color:#FFFFFF; color:{$slateText}; border:{$border}; padding:6px 12px;";
@@ -64,6 +66,9 @@
     $tdGreenVal  = "font-weight:700; color:{$successGreen}; background-color:{$lightGreen}; border:{$border}; padding:6px 12px; text-align:center;";
 
     $cardStyle   = "font-size:12px; font-weight:600; padding:12px 16px; border-radius:0;";
+
+    // Colores por responsable (mismo orden que en la gráfica: 1º azul, 2º naranja, 3º verde, 4º violeta, etc.)
+    $coloresResponsables = ['#2563EB', '#EA580C', '#059669', '#7C3AED', '#DC2626', '#0891B2'];
 @endphp
 
 {{-- ══════════════════════════════════════════════════════════════════
@@ -98,6 +103,31 @@
     </tr>
 </table>
 
+{{-- Vista resumida: Tickets por Tipo (para gráfica adicional) --}}
+@if(!empty($totalesPorTipo ?? []))
+<table style="{{ $tableStyle }} margin-bottom:16px; max-width:280px;">
+    <tr>
+        <td colspan="2" style="{{ $thTitle }} font-size:12px;">Resumen por Tipo</td>
+    </tr>
+    <tr>
+        <td style="{{ $thStyle }}">Tipo</td>
+        <td style="{{ $thCenter }}">Total</td>
+    </tr>
+    @foreach($totalesPorTipo as $tipo => $total)
+    <tr>
+        <td style="{{ $tdNormal }}">{{ $tipo }}</td>
+        <td style="{{ $tdNormalVal }}">{{ $total }}</td>
+    </tr>
+    @endforeach
+</table>
+@endif
+
+@if(($ticketsSinClasificar ?? 0) > 0)
+<div style="margin-bottom:12px; padding:8px 12px; background-color:#FEF3C7; border:1px solid #F59E0B; border-radius:4px; font-size:11px;">
+    <strong>Nota:</strong> {{ $ticketsSinClasificar }} ticket(s) sin tipo asignado en este período.
+</div>
+@endif
+
 {{-- ══════════════════════════════════════════════════════════════════
      TABLA 1 · Incidencias por gerencia por usuario asignado
 ══════════════════════════════════════════════════════════════════ --}}
@@ -112,19 +142,23 @@
         <td style="{{ $thStyle }}">Etiquetas de fila</td>
         <td style="{{ $thCenter }}">Total general</td>
         @foreach($usuarios as $usr)
-            <td style="{{ $thCenter }}">{{ $usr }}</td>
+            @php $colorResp = $coloresResponsables[$loop->index % count($coloresResponsables)] ?? '#64748B'; @endphp
+            <td style="font-weight:700; border:{{ $border }}; padding:8px 12px; text-align:center; white-space:nowrap; background-color:{{ $colorResp }}; color:#FFFFFF;">{{ $usr }}</td>
         @endforeach
     </tr>
 
     @foreach ($filasGerencia as $filaActual)
         @php
-            $esPadre           = $filaActual['tipo'] === 'padre';
-            $estiloNombre      = $esPadre ? $tdPadre  : $tdHijo;
-            $estiloValor       = $esPadre ? $tdPadreVal : $tdHijoVal;
+            $esPadre  = $filaActual['tipo'] === 'padre';
+            $esHijo   = $filaActual['tipo'] === 'hijo';
+            $estiloNombre = $esPadre ? $tdPadre : $tdHijo;
+            $estiloValor  = $esPadre ? $tdPadreVal : $tdHijoVal;
             $totalFilaGerencia = 0;
+            $nivel = $esPadre ? 1 : 2;
+            $prefijo = "{$nivel}- ";
         @endphp
         <tr>
-            <td style="{{ $estiloNombre }}">{{ $filaActual['nombre'] }}</td>
+            <td style="{{ $estiloNombre }}">{{ $prefijo }}{{ $filaActual['nombre'] }}</td>
 
             @foreach($usuarios as $usr)
                 @php $totalFilaGerencia += ($filaActual['totales'][$usr] ?? 0); @endphp
@@ -176,36 +210,74 @@
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════════
-     TABLA 2 · Incidencias por categoría
+     TABLA 2 · Incidencias por categoría (Tipo | Subtipo | Tertipo)
 ══════════════════════════════════════════════════════════════════ --}}
 <div style="display:block; clear:both; margin-bottom:28px;">
 <table style="{{ $tableStyle }}">
     <tr>
-        <td colspan="3" style="font-weight:700; font-size:13px; background-color:{{ $primaryBlue ?? '#1E40AF' }}; color:#FFFFFF; border:1px solid {{ $primaryBlue ?? '#1E40AF' }}; padding:10px 12px; text-align:center;">
+        <td colspan="5" style="font-weight:700; font-size:13px; background-color:{{ $primaryBlue ?? '#1E40AF' }}; color:#FFFFFF; border:1px solid {{ $primaryBlue ?? '#1E40AF' }}; padding:10px 12px; text-align:center;">
             Incidencias por categoría — {{ $mesNombreTarget }}
         </td>
     </tr>
     <tr>
-        <td style="{{ $thStyle }}">Etiquetas de fila</td>
-        <td style="{{ $thCenter }}">Cuenta de ID</td>
-        <td style="{{ $thCenter }}">Tiempo Prom. de Resolución</td>
+        <td style="{{ $thStyle }}">Tipo</td>
+        <td style="{{ $thStyle }}">Subtipo</td>
+        <td style="{{ $thStyle }}">Incidencia</td>
+        <td style="{{ $thCenter }}">Cuenta</td>
+        <td style="{{ $thCenter }}">Tiempo Prom. Resolución</td>
     </tr>
 
-    @foreach($categoriaNombres as $categoria)
+    @foreach($tablaCategoriaDetallada ?? [] as $fila)
         <tr>
-            <td style="{{ $tdNormal }}">{{ $categoria }}</td>
-            <td style="{{ $tdNormalVal }}">{{ $tablaCategoria[$categoria]['total'] }}</td>
-            <td style="{{ $tdNormalVal }}">{{ $tablaCategoria[$categoria]['promedio_resolucion'] }}</td>
+            <td style="{{ $tdNormal }}">{{ $fila['tipo'] }}</td>
+            <td style="{{ $tdNormal }}">{{ $fila['subtipo'] }}</td>
+            <td style="{{ $tdNormal }}">{{ $fila['tertipo'] }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $fila['total'] }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $fila['tiempo_prom'] ?? '—' }}</td>
         </tr>
     @endforeach
 
     <tr>
-        <td style="{{ $tdTotal }}">Total general</td>
+        <td colspan="3" style="{{ $tdTotal }}">Total general</td>
         <td style="{{ $tdTotalVal }}">{{ $totalTickets }}</td>
         <td style="{{ $tdTotal }}"></td>
     </tr>
 </table>
 </div>
+
+{{-- ══════════════════════════════════════════════════════════════════
+     TABLA 2b · Resumen por Responsable (Tipo | Subtipo | Tertipo)
+══════════════════════════════════════════════════════════════════ --}}
+@if(!empty($tablaResponsableDetalle ?? []))
+<div style="display:block; clear:both; margin-bottom:28px;">
+<table style="{{ $tableStyle }}">
+    <tr>
+        <td colspan="6" style="font-weight:700; font-size:13px; background-color:{{ $primaryBlue ?? '#1E40AF' }}; color:#FFFFFF; border:1px solid {{ $primaryBlue ?? '#1E40AF' }}; padding:10px 12px; text-align:center;">
+            Resumen por Responsable — Tipo · Subtipo · Incidencia
+        </td>
+    </tr>
+    <tr>
+        <td style="{{ $thStyle }}">Responsable</td>
+        <td style="{{ $thStyle }}">Tipo</td>
+        <td style="{{ $thStyle }}">Subtipo</td>
+        <td style="{{ $thStyle }}">Incidencia</td>
+        <td style="{{ $thCenter }}">Total</td>
+        <td style="{{ $thCenter }}">Tiempo Prom.</td>
+    </tr>
+
+    @foreach($tablaResponsableDetalle as $fila)
+        <tr>
+            <td style="{{ $tdLabel }}">{{ $fila['responsable'] }}</td>
+            <td style="{{ $tdNormal }}">{{ $fila['tipo'] }}</td>
+            <td style="{{ $tdNormal }}">{{ $fila['subtipo'] }}</td>
+            <td style="{{ $tdNormal }}">{{ $fila['tertipo'] }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $fila['total'] }}</td>
+            <td style="{{ $tdNormalVal }}">{{ $fila['tiempo_prom'] ?? '—' }}</td>
+        </tr>
+    @endforeach
+</table>
+</div>
+@endif
 
 {{-- ══════════════════════════════════════════════════════════════════
      TABLA 3 · Tiempos de respuesta promedio

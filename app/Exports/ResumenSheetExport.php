@@ -5,6 +5,7 @@ namespace App\Exports;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
@@ -29,9 +30,12 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
     protected $mes;
     protected $anio;
     protected $catalogo;
+    protected $tertipoAPadres = [];
 
     public int $cantidadUsuarios      = 0;
     public int $cantidadFilasGerencia = 0;
+    public array $totalesPorTipo      = [];
+    public int $ticketsSinClasificar  = 0;
     public int $cantidadCategorias    = 0;
     public int $cantidadMeses         = 0;
     public int $cantidadUsuariosMeses = 0;
@@ -124,33 +128,111 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             ];
         }
 
-        // 2. Construir catálogo de 2 niveles: Gerencia -> Tertipo
+        // 2. Construir catálogo desde jerarquía MAESTRA (tipotickets -> subtipo -> tertipo)
+        // Así cada Tertipo aparece solo bajo su Subtipo correcto y no se mezclan categorías
         $this->catalogo = [];
+        $this->tertipoAPadres = []; // Mapa Tertipo => [tipo, subtipo] para reparar tickets con NULL
+        $ticketsSinClasificar = 0;
+
+        try {
+            $filasCatalogo = DB::select("
+                SELECT DISTINCT tt.NombreTipo, st.NombreSubtipo, ter.NombreTertipo
+                FROM tipotickets tt
+                INNER JOIN subtipo st ON tt.SubtipoID = st.SubtipoID
+                INNER JOIN tertipo ter ON st.TertipoID = ter.TertipoID
+                WHERE tt.deleted_at IS NULL AND st.deleted_at IS NULL AND ter.deleted_at IS NULL
+                ORDER BY tt.NombreTipo, st.NombreSubtipo, ter.NombreTertipo
+            ");
+            foreach ($filasCatalogo as $fila) {
+                $tipo    = (string) ($fila->NombreTipo ?? '');
+                $subtipo = (string) ($fila->NombreSubtipo ?? '');
+                $tertipo = (string) ($fila->NombreTertipo ?? '');
+                if ($tipo === '' || $subtipo === '' || $tertipo === '') continue;
+                if (!isset($this->catalogo[$tipo])) $this->catalogo[$tipo] = [];
+                if (!isset($this->catalogo[$tipo][$subtipo])) $this->catalogo[$tipo][$subtipo] = [];
+                if (!in_array($tertipo, $this->catalogo[$tipo][$subtipo])) {
+                    $this->catalogo[$tipo][$subtipo][] = $tertipo;
+                }
+                $this->tertipoAPadres[$tertipo] = [$tipo, $subtipo];
+            }
+        } catch (\Throwable $e) {
+            $this->tertipoAPadres = [];
+        }
+
+        $fechaInicioReporte = Carbon::create($anioTarget, $mesTarget, 1)->subMonth()->startOfMonth();
+        $fechaFinReporte    = Carbon::create($anioTarget, $mesTarget, 1)->endOfMonth();
+
+        if (empty($this->catalogo)) {
+            try {
+                $filas = DB::select("
+                    SELECT DISTINCT
+                        COALESCE(tt.NombreTipo, 'Sin tipo') AS NombreTipo,
+                        COALESCE(st.NombreSubtipo, 'Sin subtipo') AS NombreSubtipo,
+                        COALESCE(ter.NombreTertipo, 'Sin incidencia') AS NombreTertipo
+                    FROM tickets t
+                    LEFT JOIN tipotickets tt ON t.TipoID = tt.TipoID
+                    LEFT JOIN subtipo st ON t.SubtipoID = st.SubtipoID
+                    LEFT JOIN tertipo ter ON t.TertipoID = ter.TertipoID
+                    WHERE t.deleted_at IS NULL AND t.created_at >= ? AND t.created_at <= ?
+                    ORDER BY NombreTipo, NombreSubtipo, NombreTertipo
+                ", [$fechaInicioReporte, $fechaFinReporte]);
+                foreach ($filas as $f) {
+                    $t = (string) ($f->NombreTipo ?? 'Sin tipo');
+                    $s = (string) ($f->NombreSubtipo ?? 'Sin subtipo');
+                    $r = (string) ($f->NombreTertipo ?? 'Sin incidencia');
+                    if (!isset($this->catalogo[$t])) $this->catalogo[$t] = [];
+                    if (!isset($this->catalogo[$t][$s])) $this->catalogo[$t][$s] = [];
+                    if (!in_array($r, $this->catalogo[$t][$s])) $this->catalogo[$t][$s][] = $r;
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // Añadir combinaciones de tickets que falten (Sin tipo, Sin subtipo, Sin incidencia)
         foreach ($tickets as $ticket) {
-            $gerencia = (string) optional($ticket->tipoticket)->NombreTipo;
-            $tertipo  = (string) optional($ticket->tertipo)->NombreTertipo;
+            $tipo    = (string) (optional($ticket->tipoticket)->NombreTipo ?: '');
+            $subtipo = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
+            $tertipo = (string) (optional($ticket->tertipo)->NombreTertipo ?: 'Sin incidencia');
 
-            if (empty($gerencia)) continue;
-
-            if (!isset($this->catalogo[$gerencia])) {
-                $this->catalogo[$gerencia] = [];
+            if (empty($tipo)) {
+                $tipo = 'Sin tipo';
+                $ticketDate = Carbon::parse($ticket->created_at);
+                if ($ticketDate->month === $mesTarget && $ticketDate->year === $anioTarget) {
+                    $ticketsSinClasificar++;
+                }
             }
-            if (!empty($tertipo) && !in_array($tertipo, $this->catalogo[$gerencia])) {
-                $this->catalogo[$gerencia][] = $tertipo;
+
+            if (!isset($this->catalogo[$tipo])) {
+                $this->catalogo[$tipo] = [];
+            }
+            if (!isset($this->catalogo[$tipo][$subtipo])) {
+                $this->catalogo[$tipo][$subtipo] = [];
+            }
+            if (!in_array($tertipo, $this->catalogo[$tipo][$subtipo])) {
+                $this->catalogo[$tipo][$subtipo][] = $tertipo;
             }
         }
 
-        ksort($this->catalogo);
-        foreach ($this->catalogo as $gerencia => $ters) {
-            sort($this->catalogo[$gerencia]);
+        // Ordenar: poner "Sin subtipo" y "Sin incidencia" al final para que la jerarquía real quede primero
+        $sinValores = ['Sin tipo', 'Sin subtipo', 'Sin incidencia'];
+        uksort($this->catalogo, fn($a, $b) => in_array($a, $sinValores) && !in_array($b, $sinValores) ? 1 : (!in_array($a, $sinValores) && in_array($b, $sinValores) ? -1 : strcasecmp($a, $b)));
+        foreach ($this->catalogo as $tipo => $subtipos) {
+            uksort($subtipos, fn($a, $b) => ($a === 'Sin subtipo' && $b !== 'Sin subtipo') ? 1 : (($a !== 'Sin subtipo' && $b === 'Sin subtipo') ? -1 : strcasecmp($a, $b)));
+            $this->catalogo[$tipo] = $subtipos;
+            foreach ($subtipos as $subtipo => $ters) {
+                usort($ters, fn($a, $b) => ($a === 'Sin incidencia' && $b !== 'Sin incidencia') ? 1 : (($a !== 'Sin incidencia' && $b === 'Sin incidencia') ? -1 : strcasecmp($a, $b)));
+                $this->catalogo[$tipo][$subtipo] = $ters;
+            }
         }
 
-        // 3. Inicializar tabla agrupada en 0 (2 niveles)
+        // 3. Inicializar tabla agrupada en 0 (3 niveles: Tipo -> Subtipo -> Tertipo)
         $tablaAgrupada = [];
-        foreach ($this->catalogo as $gerencia => $tertipos) {
-            $tablaAgrupada[$gerencia]['total_principal'] = array_fill_keys(array_keys($usuariosUnicos), 0);
-            foreach ($tertipos as $ter) {
-                $tablaAgrupada[$gerencia]['tertipos'][$ter] = array_fill_keys(array_keys($usuariosUnicos), 0);
+        foreach ($this->catalogo as $tipo => $subtipos) {
+            $tablaAgrupada[$tipo]['total_principal'] = array_fill_keys(array_keys($usuariosUnicos), 0);
+            foreach ($subtipos as $subtipo => $tertipos) {
+                $tablaAgrupada[$tipo]['subtipos'][$subtipo]['total_principal'] = array_fill_keys(array_keys($usuariosUnicos), 0);
+                foreach ($tertipos as $ter) {
+                    $tablaAgrupada[$tipo]['subtipos'][$subtipo]['tertipos'][$ter] = array_fill_keys(array_keys($usuariosUnicos), 0);
+                }
             }
         }
 
@@ -161,19 +243,28 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             $ticketAnio   = $ticketDate->year;
             $usuario      = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
             
-            $gerencia  = (string) optional($ticket->tipoticket)->NombreTipo;
-            $tertipo   = (string) optional($ticket->tertipo)->NombreTertipo;
-            $categoria = !empty($tertipo) ? $tertipo : 'Sin Categoría'; 
+            $tipo    = (string) (optional($ticket->tipoticket)->NombreTipo ?: 'Sin tipo');
+            $subtipo = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
+            $tertipo = (string) (optional($ticket->tertipo)->NombreTertipo ?: 'Sin incidencia');
+
+            // Corregir: si ticket tiene "Sin subtipo" pero el Tertipo existe en el maestro, usar el Subtipo correcto
+            if ($subtipo === 'Sin subtipo' && $tertipo !== 'Sin incidencia' && isset($this->tertipoAPadres[$tertipo])) {
+                [$tipo, $subtipo] = $this->tertipoAPadres[$tertipo];
+            }
+            $categoria = !empty($tertipo) && $tertipo !== 'Sin incidencia' ? $tertipo : ($subtipo !== 'Sin subtipo' ? $subtipo : $tipo);
 
             // SI ES EL MES ACTUAL
             if ($ticketMes === $mesTarget && $ticketAnio === $anioTarget) {
                 $totalTicketsMesActual++;
                 $tablaMesesUsuarios[$usuario][$mesActualCorto]++;
 
-                if (!empty($gerencia) && isset($tablaAgrupada[$gerencia])) {
-                    $tablaAgrupada[$gerencia]['total_principal'][$usuario]++;
-                    if (!empty($tertipo) && isset($tablaAgrupada[$gerencia]['tertipos'][$tertipo])) {
-                        $tablaAgrupada[$gerencia]['tertipos'][$tertipo][$usuario]++;
+                if (!empty($tipo) && isset($tablaAgrupada[$tipo])) {
+                    $tablaAgrupada[$tipo]['total_principal'][$usuario]++;
+                    if (isset($tablaAgrupada[$tipo]['subtipos'][$subtipo])) {
+                        $tablaAgrupada[$tipo]['subtipos'][$subtipo]['total_principal'][$usuario]++;
+                        if (isset($tablaAgrupada[$tipo]['subtipos'][$subtipo]['tertipos'][$tertipo])) {
+                            $tablaAgrupada[$tipo]['subtipos'][$subtipo]['tertipos'][$tertipo][$usuario]++;
+                        }
                     }
                 }
 
@@ -226,11 +317,67 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         ksort($tablaAgrupada);
         ksort($tablaCategoria);
 
+        // 5. Tabla Resumen por Responsable con Tipo/Subtipo/Tertipo (vista alternativa con más valor)
+        $tablaResponsableDetalle = [];
+        foreach ($tickets as $ticket) {
+            $ticketDate = Carbon::parse($ticket->created_at);
+            if ($ticketDate->month !== $mesTarget || $ticketDate->year !== $anioTarget) continue;
+
+            $resp = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
+            $tipo = (string) (optional($ticket->tipoticket)->NombreTipo ?: 'Sin tipo');
+            $sub = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
+            $ter = (string) (optional($ticket->tertipo)->NombreTertipo ?: 'Sin incidencia');
+
+            $clave = "{$resp}|{$tipo}|{$sub}|{$ter}";
+            if (!isset($tablaResponsableDetalle[$clave])) {
+                $tablaResponsableDetalle[$clave] = ['responsable' => $resp, 'tipo' => $tipo, 'subtipo' => $sub, 'tertipo' => $ter, 'total' => 0, 'segundos' => []];
+            }
+            $tablaResponsableDetalle[$clave]['total']++;
+            if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
+                try {
+                    $tablaResponsableDetalle[$clave]['segundos'][] = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaFinProgreso));
+                } catch (\Exception $e) {}
+            }
+        }
+        foreach ($tablaResponsableDetalle as &$r) {
+            $r['tiempo_prom'] = count($r['segundos']) > 0 ? $this->formatSecondsToDays(array_sum($r['segundos']) / count($r['segundos'])) : '—';
+        }
+        uasort($tablaResponsableDetalle, fn($a, $b) => strcmp($a['responsable'], $b['responsable']) ?: (strcmp($a['tipo'], $b['tipo']) ?: (strcmp($a['subtipo'], $b['subtipo']) ?: strcmp($a['tertipo'], $b['tertipo']))));
+
+        // 6. Tabla Incidencias detallada: Tipo | Subtipo | Tertipo | Cuenta | Tiempo Prom
+        $tablaCategoriaDetallada = [];
+        foreach ($tickets as $ticket) {
+            $ticketDate = Carbon::parse($ticket->created_at);
+            if ($ticketDate->month !== $mesTarget || $ticketDate->year !== $anioTarget) continue;
+
+            $tipo = (string) (optional($ticket->tipoticket)->NombreTipo ?: 'Sin tipo');
+            $sub  = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
+            $ter  = (string) (optional($ticket->tertipo)->NombreTertipo ?: 'Sin incidencia');
+            $clave = "{$tipo}|{$sub}|{$ter}";
+
+            if (!isset($tablaCategoriaDetallada[$clave])) {
+                $tablaCategoriaDetallada[$clave] = ['tipo' => $tipo, 'subtipo' => $sub, 'tertipo' => $ter, 'total' => 0, 'segundos' => []];
+            }
+            $tablaCategoriaDetallada[$clave]['total']++;
+            if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
+                try {
+                    $tablaCategoriaDetallada[$clave]['segundos'][] = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaFinProgreso));
+                } catch (\Exception $e) {}
+            }
+        }
+        foreach ($tablaCategoriaDetallada as &$v) {
+            $v['tiempo_prom'] = count($v['segundos']) > 0 ? $this->formatSecondsToDays(array_sum($v['segundos']) / count($v['segundos'])) : '—';
+        }
+        uasort($tablaCategoriaDetallada, fn($a, $b) => strcmp($a['tipo'], $b['tipo']) ?: (strcmp($a['subtipo'], $b['subtipo']) ?: strcmp($a['tertipo'], $b['tertipo'])));
+
+        // Solo 2 niveles: Tipo + Subtipo (sin Tertipo)
         $filasJerarquia = 0;
-        foreach ($tablaAgrupada as $gerencia => $datos) {
-            $filasJerarquia++; // Padre
-            if (isset($datos['tertipos'])) {
-                $filasJerarquia += count($datos['tertipos']); // Hijo
+        foreach ($tablaAgrupada as $tipo => $datos) {
+            $filasJerarquia++; // Tipo
+            if (isset($datos['subtipos'])) {
+                foreach ($datos['subtipos'] as $subtipo => $datosSub) {
+                    $filasJerarquia++; // Subtipo
+                }
             }
         }
 
@@ -256,8 +403,21 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         $promedioPrimerRespuestaGeneralAnt = count($segundosPrimerRespGeneralesAnt) > 0 ? array_sum($segundosPrimerRespGeneralesAnt) / count($segundosPrimerRespGeneralesAnt) : 0;
         $cumplimientoAnt                   = $totalTicketsMesAnterior > 0 ? round(($cerradosMesAnterior / $totalTicketsMesAnterior) * 100, 0) : 0;
 
+        // Totales por Tipo (para gráfica resumida)
+        $totalesPorTipo = [];
+        foreach ($tablaAgrupada as $tipo => $datos) {
+            $totalesPorTipo[$tipo] = array_sum($datos['total_principal'] ?? []);
+        }
+        arsort($totalesPorTipo);
+        $this->totalesPorTipo      = $totalesPorTipo;
+        $this->ticketsSinClasificar = $ticketsSinClasificar;
+
         return view('tickets.export.resumen-excel', [
             'tablaAgrupada'           => $tablaAgrupada,
+            'tablaResponsableDetalle' => array_values($tablaResponsableDetalle),
+            'tablaCategoriaDetallada' => array_values($tablaCategoriaDetallada),
+            'totalesPorTipo'          => $totalesPorTipo,
+            'ticketsSinClasificar'    => $ticketsSinClasificar,
             'usuariosUnicos'          => $usuariosUnicos,
             'tablaCategoria'          => $tablaCategoria,
             'totalTickets'            => $totalTicketsMesActual,
@@ -300,31 +460,31 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
 
                 $uCount = $this->cantidadUsuarios;
 
-                $sheet->setShowSummaryBelow(false);
+                // Misma lógica que en charts(): filas antes de la tabla Incidencias
+                $filasResumenPorTipo = !empty($this->totalesPorTipo) ? (2 + count($this->totalesPorTipo)) : 0;
+                $filasAvisoSinClasificar = $this->ticketsSinClasificar > 0 ? 1 : 0;
+                $filasAntesTabla = 4 + $filasResumenPorTipo + $filasAvisoSinClasificar + 2;
+                $filaHeaderIncidencias = $filasAntesTabla;
+                $currentRow = $filaHeaderIncidencias;
 
-                // Fila 1 = Título, Fila 2 = Encabezados, Fila 3 = Inicio de Datos
-                // Asumimos que la Fila 1 es Título, Fila 2 son Encabezados, Fila 3 inicia Datos
-                $currentRow = 2; 
+                $colGerEnd = $uCount + 2;
+                $colLetraFin = $this->col($colGerEnd);
 
-                foreach ($this->catalogo as $gerencia => $tertipos) {
-                    $filaGerencia = ++$currentRow; // Fila Nivel 0 (Padre)
+                foreach ($this->catalogo as $tipo => $subtipos) {
+                    $filaTipo = ++$currentRow;
 
-                    if (is_array($tertipos) && count($tertipos) > 0) {
-                        foreach ($tertipos as $ter) {
-                            $filaTer = ++$currentRow; // Fila Nivel 1 (Hijo)
-                            
-                            // Agrupar y ocultar Tertipos
-                            $dimTer = $sheet->getRowDimension($filaTer);
-                            $dimTer->setOutlineLevel(1);
-                            $dimTer->setVisible(false);
+                    $sheet->getStyle("A{$filaTipo}:{$colLetraFin}{$filaTipo}")->getFont()->setSize(14)->setBold(true);
+
+                    if (is_array($subtipos) && count($subtipos) > 0) {
+                        foreach ($subtipos as $subtipo => $tertipos) {
+                            $filaSubtipo = ++$currentRow;
+
+                            $sheet->getStyle("A{$filaSubtipo}:{$colLetraFin}{$filaSubtipo}")->getFont()->setSize(12)->setBold(true);
                         }
-                        // Marcar la Gerencia para que tenga el botón [+]
-                        $sheet->getRowDimension($filaGerencia)->setCollapsed(true);
                     }
                 }
 
-                $colGerEnd = $uCount + 2; 
-                $rangeGer = "A2:" . $this->col($colGerEnd) . $currentRow;
+                $rangeGer = "A{$filaHeaderIncidencias}:" . $this->col($colGerEnd) . $currentRow;
 
                 try {
                     $tableGer = new Table($rangeGer);
@@ -335,7 +495,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
                     $sheet->setAutoFilter($rangeGer);
                 }
 
-                $sheet->freezePane('A3');
+                $sheet->freezePane('A' . ($filaHeaderIncidencias + 2));
             },
         ];
     }
@@ -346,20 +506,31 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             return [];
         }
 
-        $filaInicio = 3;
-        $filaFin    = $filaInicio + $this->cantidadFilasGerencia - 1;
+       
+
+        // Filas ANTES de la tabla Incidencias: KPI (4) + Resumen por Tipo (2 + N filas) + posible aviso sin clasificar (1) + título Incidencias (1) + encabezados (1)
+        $filasResumenPorTipo = !empty($this->totalesPorTipo) ? (2 + count($this->totalesPorTipo)) : 0; // título + header + datos
+        $filasAvisoSinClasificar = $this->ticketsSinClasificar > 0 ? 1 : 0;
+        $filasAntesTabla = 4 + $filasResumenPorTipo + $filasAvisoSinClasificar + 2; // +2 = título y encabezados de Incidencias
+        $filaEncabezados = $filasAntesTabla;      // Etiquetas de fila | Total general | usuarios
+        $filaInicioDatos = $filasAntesTabla + 2;  // Primera fila de datos (Tipo, Subtipo, Tertipo)
+
+        //print_r ($filasAntesTabla);
+        //dd ($this->cantidadFilasGerencia);
+
+        $filaFinDatos    = $filasAntesTabla + $this->cantidadFilasGerencia + 1; // Última fila de datos, ANTES de "Total general"
 
         $ejeY = [
-            new DataSeriesValues('String', "Resumen!\$A\${$filaInicio}:\$A\${$filaFin}", null, $this->cantidadFilasGerencia),
+            new DataSeriesValues('String', "Resumen!\$A\${$filaInicioDatos}:\$A\${$filaFinDatos}", null, $this->cantidadFilasGerencia),
         ];
 
         $seriesNombres = [];
         $valores       = [];
 
         for ($u = 0; $u < $this->cantidadUsuarios; $u++) {
-            $colLetra        = $this->col($u + 3); 
-            $seriesNombres[] = new DataSeriesValues('String', "Resumen!\${$colLetra}\$2", null, 1);
-            $valores[]       = new DataSeriesValues('Number', "Resumen!\${$colLetra}\${$filaInicio}:\${$colLetra}\${$filaFin}", null, $this->cantidadFilasGerencia);
+            $colLetra        = $this->col($u + 3); // Col A=Etiquetas, B=Total, C+=usuarios
+            $seriesNombres[] = new DataSeriesValues('String', "Resumen!\${$colLetra}\${$filaEncabezados}", null, 1);
+            $valores[]       = new DataSeriesValues('Number', "Resumen!\${$colLetra}\${$filaInicioDatos}:\${$colLetra}\${$filaFinDatos}", null, $this->cantidadFilasGerencia);
         }
 
         $series = new DataSeries(
@@ -374,17 +545,50 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
 
         $plotArea = new PlotArea(null, [$series]);
         $legend   = new Legend(Legend::POSITION_BOTTOM, null, false);
-        $title    = new Title('Incidencias por Tipo/Tertipo y Responsable');
+        $title    = new Title('Incidencias por Tipo y Subtipo por Responsable');
 
         $chart = new Chart('grafica_gerencias', $title, $legend, $plotArea);
 
-        $totalFilasOcupadasHaciaAbajo = $this->cantidadFilasGerencia + $this->cantidadCategorias + $this->cantidadUsuariosMeses + 15;
-        $filaDondeEmpiezaGrafica = $totalFilasOcupadasHaciaAbajo;
-        $filaDondeTerminaGrafica = $filaDondeEmpiezaGrafica + 20;
+        // Gráfica más grande: desde encabezado hasta final de datos (ANTES de "Total general")
+        $filaInicioGrafica = $filaEncabezados;
+        $alturaChart       = max($this->cantidadFilasGerencia + 6, 28);
+        $filaFinGrafica    = $filaInicioGrafica + $alturaChart;
+        $colInicioChart    = $this->cantidadUsuarios + 4; // Columna a la derecha de la tabla (2 + usuarios + 1 espacio)
+        $colFinChart       = $colInicioChart + 14;       // Gráfica más ancha (14 columnas)
+        $colLetraInicio    = $this->col($colInicioChart);
+        $colLetraFin       = $this->col($colFinChart);
 
-        $chart->setTopLeftPosition("A{$filaDondeEmpiezaGrafica}");
-        $chart->setBottomRightPosition("L{$filaDondeTerminaGrafica}");
+        $chart->setTopLeftPosition("{$colLetraInicio}{$filaInicioGrafica}");
+        $chart->setBottomRightPosition("{$colLetraFin}{$filaFinGrafica}");
 
-        return [$chart];
+        $charts = [$chart];
+
+        // Segunda gráfica: Tickets por Tipo (resumen, vista más legible)
+        if (count($this->totalesPorTipo) > 0) {
+            // KPI=4 filas, Resumen por Tipo: fila 5=título, 6=header, 7+=datos
+            $filaResumenDatos  = 7;
+            $cantTipos         = count($this->totalesPorTipo);
+            $filaResumenFin    = 6 + $cantTipos;
+
+            $ejeY2 = [new DataSeriesValues('String', "Resumen!\$A\${$filaResumenDatos}:\$A\${$filaResumenFin}", null, $cantTipos)];
+            $valores2 = [new DataSeriesValues('Number', "Resumen!\$B\${$filaResumenDatos}:\$B\${$filaResumenFin}", null, $cantTipos)];
+            $labelSerie2 = [new DataSeriesValues('String', null, null, 1, ['Tickets por Tipo'])];
+            $series2 = new DataSeries(
+                DataSeries::TYPE_BARCHART,
+                DataSeries::GROUPING_STANDARD,
+                [0],
+                $labelSerie2,
+                $ejeY2,
+                $valores2
+            );
+            $series2->setPlotDirection(DataSeries::DIRECTION_BAR);
+            $plotArea2 = new PlotArea(null, [$series2]);
+            $chart2 = new Chart('grafica_por_tipo', new Title('Tickets por Tipo'), new Legend(Legend::POSITION_BOTTOM, null, false), $plotArea2);
+            $chart2->setTopLeftPosition("{$colLetraInicio}" . ($filaFinGrafica + 2));
+            $chart2->setBottomRightPosition("{$colLetraFin}" . ($filaFinGrafica + 18));
+            $charts[] = $chart2;
+        }
+
+        return $charts;
     }
 }
