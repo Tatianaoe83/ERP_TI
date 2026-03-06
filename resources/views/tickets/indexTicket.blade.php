@@ -893,7 +893,7 @@
                                                     haz clic para seleccionar
                                                 </label>
                                             </div>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX, TXT, JPG, PNG, GIF (máx. 10MB por archivo)</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">PDF, DOC, DOCX, TXT, JPG, PNG, GIF, XLS, XLSX (máx. 10MB por archivo)</p>
                                         </div>
                                     </div>
 
@@ -958,7 +958,7 @@
                                     id="adjuntos"
                                     name="adjuntos[]"
                                     multiple
-                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.xlsx,.xls"
                                     class="hidden"
                                     :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente')"
                                     @change="manejarArchivosSeleccionados($event)">
@@ -3565,7 +3565,7 @@ async cargarDatosTicket(ticketId) {
             
             procesarArchivos(files) {
                 const archivosValidos = [];
-                const tiposPermitidos = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif'];
+                const tiposPermitidos = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.xlsx', '.xls'];
                 const maxSize = 10 * 1024 * 1024; // 10MB
                 
                 files.forEach(file => {
