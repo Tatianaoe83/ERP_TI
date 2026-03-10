@@ -181,8 +181,8 @@
                                     </button>
                                     --}}
 
-                                    {{-- FIX 2: Botón Cerrar — oculto si la solicitud ya está cancelada --}}
-                                    @if($solicitud->estatusDisplay !== 'Cancelada')
+                                    {{-- FIX 2: Botón Cerrar — oculto si la solicitud ya está cancelada o rechazada --}}
+                                    @if(!in_array($solicitud->estatusDisplay, ['Cancelada', 'Rechazada']))
                                     <button
                                         type="button"
                                         wire:click="abrirModalCancelacion({{ $solicitud->SolicitudID }})"
