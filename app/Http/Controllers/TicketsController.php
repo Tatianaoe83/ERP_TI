@@ -2024,266 +2024,292 @@ class TicketsController extends Controller
         }
     }
 
-    /**
-     * Obtener datos completos de una solicitud para el modal
-     */
+
     public function obtenerDatosSolicitud($id)
     {
-        try {
-            $solicitud = Solicitud::with([
-                'empleadoid',
-                'gerenciaid',
-                'obraid',
-                'puestoid',
-                'pasoSupervisor.approverEmpleado',
-                'pasoSupervisor.decidedByEmpleado',
-                'pasoGerencia.approverEmpleado',
-                'pasoGerencia.decidedByEmpleado',
-                'pasoAdministracion.approverEmpleado',
-                'pasoAdministracion.decidedByEmpleado',
-                'cotizaciones'
-            ])->findOrFail($id);
+            try {
+                $solicitud = Solicitud::with([
+                    'empleadoid',
+                    'gerenciaid',
+                    'obraid',
+                    'puestoid',
+                    'pasoSupervisor.approverEmpleado',
+                    'pasoSupervisor.decidedByEmpleado',
+                    'pasoGerencia.approverEmpleado',
+                    'pasoGerencia.decidedByEmpleado',
+                    'pasoAdministracion.approverEmpleado',
+                    'pasoAdministracion.decidedByEmpleado',
+                    'cotizaciones'
+                ])->findOrFail($id);
 
-            // Cargar activos asignados con sus relaciones
-            $activosAsignados = \App\Models\SolicitudActivo::where('SolicitudID', $id)
-                ->with(['empleadoAsignado', 'departamentos', 'cotizacion'])
-                ->get();
+                // Cargar activos asignados con sus relaciones
+                $activosAsignados = \App\Models\SolicitudActivo::where('SolicitudID', $id)
+                    ->with(['empleadoAsignado', 'departamentos', 'cotizacion'])
+                    ->get();
 
-            // Calcular estatus real (similar a la vista)
-            $pasoSupervisor = $solicitud->pasoSupervisor;
-            $pasoGerencia = $solicitud->pasoGerencia;
-            $pasoAdministracion = $solicitud->pasoAdministracion;
+                // Calcular estatus real (similar a la vista)
+                $pasoSupervisor     = $solicitud->pasoSupervisor;
+                $pasoGerencia       = $solicitud->pasoGerencia;
+                $pasoAdministracion = $solicitud->pasoAdministracion;
 
-            $estatusReal = $solicitud->Estatus ?? 'Pendiente';
-            $estaRechazada = false;
+                $estatusReal  = $solicitud->Estatus ?? 'Pendiente';
+                $estaRechazada  = false;
 
-            if (($pasoSupervisor && $pasoSupervisor->status === 'rejected') ||
-                ($pasoGerencia && $pasoGerencia->status === 'rejected') ||
-                ($pasoAdministracion && $pasoAdministracion->status === 'rejected')
-            ) {
-                $estatusReal = 'Rechazada';
-                $estaRechazada = true;
-            } elseif (in_array($solicitud->Estatus, ['Aprobado', 'Aprobada'], true)) {
-                $estatusReal = 'Aprobado';
-            } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
-                $estatusReal = 'Cotizaciones Enviadas';
-            } elseif ($solicitud->Estatus === 'Re-cotizar') {
-                $estatusReal = 'Re-cotizar';
-            } elseif (in_array($solicitud->Estatus, ['Pendiente', 'En revisión', null, ''], true) || empty($solicitud->Estatus)) {
-                if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
-                    if ($pasoGerencia && $pasoGerencia->status === 'approved') {
-                        if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
-                            $todosGanadoresElegidos = $solicitud->todosProductosTienenGanador();
-                            $cotizacionesCount = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
-                            $estatusReal = $todosGanadoresElegidos ? 'Aprobado' : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
+                // ── CANCELADA tiene prioridad total (igual que en TablaSolicitudes) ──
+                if (in_array($solicitud->Estatus, ['Cancelada', 'Cerrada'], true)) {
+                    $estatusReal = 'Cancelada';
+                }
+                // ────────────────────────────────────────────────────────────────────
+                elseif (
+                    ($pasoSupervisor     && $pasoSupervisor->status     === 'rejected') ||
+                    ($pasoGerencia       && $pasoGerencia->status       === 'rejected') ||
+                    ($pasoAdministracion && $pasoAdministracion->status === 'rejected')
+                ) {
+                    $estatusReal   = 'Rechazada';
+                    $estaRechazada = true;
+                } elseif (in_array($solicitud->Estatus, ['Aprobado', 'Aprobada'], true)) {
+                    $estatusReal = 'Aprobado';
+                } elseif ($solicitud->Estatus === 'Cotizaciones Enviadas') {
+                    $estatusReal = 'Cotizaciones Enviadas';
+                } elseif ($solicitud->Estatus === 'Re-cotizar') {
+                    $estatusReal = 'Re-cotizar';
+                } elseif (in_array($solicitud->Estatus, ['Pendiente', 'En revisión', null, ''], true) || empty($solicitud->Estatus)) {
+                    if ($pasoSupervisor && $pasoSupervisor->status === 'approved') {
+                        if ($pasoGerencia && $pasoGerencia->status === 'approved') {
+                            if ($pasoAdministracion && $pasoAdministracion->status === 'approved') {
+                                $todosGanadoresElegidos = $solicitud->todosProductosTienenGanador();
+                                $cotizacionesCount      = $solicitud->cotizaciones ? $solicitud->cotizaciones->count() : 0;
+                                $estatusReal            = $todosGanadoresElegidos
+                                    ? 'Aprobado'
+                                    : ($cotizacionesCount >= 1 ? 'Completada' : 'Pendiente Cotización TI');
+                            } else {
+                                $estatusReal = 'Pendiente Aprobación Administración';
+                            }
                         } else {
-                            $estatusReal = 'Pendiente Aprobación Administración';
+                            $estatusReal = 'Pendiente Aprobación Gerencia';
                         }
                     } else {
-                        $estatusReal = 'Pendiente Aprobación Gerencia';
+                        $estatusReal = 'Pendiente Aprobación Supervisor';
                     }
+                }
+
+                // ── Resolver estatusDisplay ──────────────────────────────────────────
+                if ($estatusReal === 'Cancelada') {
+                    $estatusDisplay = 'Cancelada';
+                } elseif ($estatusReal === 'Rechazada') {
+                    $estatusDisplay = 'Rechazada';
+                } elseif ($estatusReal === 'Aprobado') {
+                    $estatusDisplay = 'Aprobada';
+                } elseif ($estatusReal === 'Cotizaciones Enviadas') {
+                    $estatusDisplay = 'Cotizaciones Enviadas';
+                } elseif ($estatusReal === 'Re-cotizar') {
+                    $estatusDisplay = 'Re-cotizar';
+                } elseif ($estatusReal === 'Completada') {
+                    $estatusDisplay = 'En revisión';
+                } elseif ($estatusReal === 'Pendiente Cotización TI') {
+                    $estatusDisplay = 'Pendiente';
+                } elseif (in_array($estatusReal, [
+                    'Pendiente Aprobación Supervisor',
+                    'Pendiente Aprobación Gerencia',
+                    'Pendiente Aprobación Administración',
+                ], true)) {
+                    $estatusDisplay = 'En revisión';
                 } else {
-                    $estatusReal = 'Pendiente Aprobación Supervisor';
+                    $estatusDisplay = 'Pendiente';
                 }
-            }
+                // ────────────────────────────────────────────────────────────────────
 
-            if ($estatusReal === 'Rechazada') {
-                $estatusDisplay = 'Rechazada';
-            } elseif ($estatusReal === 'Aprobado') {
-                $estatusDisplay = 'Aprobada';
-            } elseif ($estatusReal === 'Cotizaciones Enviadas') {
-                $estatusDisplay = 'Cotizaciones Enviadas';
-            } elseif ($estatusReal === 'Re-cotizar') {
-                $estatusDisplay = 'Re-cotizar';
-            } elseif ($estatusReal === 'Completada') {
-                $estatusDisplay = 'En revisión';
-            } elseif ($estatusReal === 'Pendiente Cotización TI') {
-                $estatusDisplay = 'Pendiente';
-            } elseif (in_array($estatusReal, ['Pendiente Aprobación Supervisor', 'Pendiente Aprobación Gerencia', 'Pendiente Aprobación Administración'], true)) {
-                $estatusDisplay = 'En revisión';
-            } else {
-                $estatusDisplay = 'Pendiente';
-            }
+                $todasFirmaron = ($pasoSupervisor     && $pasoSupervisor->status     === 'approved')
+                            && ($pasoGerencia       && $pasoGerencia->status       === 'approved')
+                            && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
 
-            $todasFirmaron = ($pasoSupervisor && $pasoSupervisor->status === 'approved')
-                && ($pasoGerencia && $pasoGerencia->status === 'approved')
-                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
-            
-            // Verificar si todos los productos tienen ganador (consistente con mostrarPaginaCotizacion y TablaSolicitudes)
-            $todosGanadores = $solicitud->todosProductosTienenGanador();
-            $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
+                $todosGanadores    = $solicitud->todosProductosTienenGanador();
+                $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
 
-            // Cotizar se habilita cuando el supervisor aprobó: TI sube cotizaciones y envía al gerente
-            $puedeCotizar = $supervisorAprobado
-                && auth()->check()
-                && !$estaRechazada
-                && $estatusDisplay !== 'Aprobada'
-                && !$todosGanadores;
+                // Una solicitud cancelada bloquea cotizar (igual que en TablaSolicitudes)
+                $estaCancelada = ($estatusReal === 'Cancelada');
 
-            // Verificar si puede elegir cotización (gerente con todas las firmas y cotizaciones cargadas o enviadas)
-            $puedeElegirCotizacion = $todasFirmaron
-                && $solicitud->cotizaciones
-                && $solicitud->cotizaciones->count() > 0
-                && ($estatusDisplay === 'Cotizaciones Enviadas' || $estatusDisplay === 'En revisión')
-                && auth()->check()
-                && auth()->user()->can('aprobar-solicitudes-gerencia');
+                $puedeCotizar = !$estaCancelada
+                    && $supervisorAprobado
+                    && auth()->check()
+                    && !$estaRechazada
+                    && $estatusDisplay !== 'Aprobada'
+                    && !$todosGanadores;
 
-            // Construir pasos de aprobación
-            $pasosAprobacion = [];
-            $stageLabels = [
-                'supervisor' => 'Vo.bo de supervisor',
-                'gerencia' => 'Gerente: ve propuestas, elige ganador o regresa a TI para cotizar',
-                'administracion' => 'Administración: ve ganadores y aprueba la solicitud'
-            ];
-            $statusLabels = [
-                'approved' => 'Aprobado',
-                'rejected' => 'Rechazado',
-                'pending' => 'Pendiente'
-            ];
+                $puedeElegirCotizacion = !$estaCancelada
+                    && $todasFirmaron
+                    && $solicitud->cotizaciones
+                    && $solicitud->cotizaciones->count() > 0
+                    && ($estatusDisplay === 'Cotizaciones Enviadas' || $estatusDisplay === 'En revisión')
+                    && auth()->check()
+                    && auth()->user()->can('aprobar-solicitudes-gerencia');
 
-            foreach ([$pasoSupervisor, $pasoGerencia, $pasoAdministracion] as $paso) {
-                if ($paso) {
-                    $pasosAprobacion[] = [
-                        'stage' => $paso->stage,
-                        'stageLabel' => $stageLabels[$paso->stage] ?? ucfirst($paso->stage),
-                        'status' => $paso->status,
-                        'statusLabel' => $statusLabels[$paso->status] ?? ucfirst($paso->status),
-                        'approverNombre' => $paso->approverEmpleado ? $paso->approverEmpleado->NombreEmpleado : 'N/A',
-                        'decidedByNombre' => $paso->decidedByEmpleado ? $paso->decidedByEmpleado->NombreEmpleado : null,
-                        'decidedAt' => $paso->decided_at ? $paso->decided_at->format('d/m/Y H:i') : null,
-                        'comment' => $paso->comment
-                    ];
-                }
-            }
+                // Construir pasos de aprobación
+                $pasosAprobacion = [];
+                $stageLabels = [
+                    'supervisor'    => 'Vo.bo de supervisor',
+                    'gerencia'      => 'Gerente: ve propuestas, elige ganador o regresa a TI para cotizar',
+                    'administracion'=> 'Administración: ve ganadores y aprueba la solicitud',
+                ];
+                $statusLabels = [
+                    'approved' => 'Aprobado',
+                    'rejected' => 'Rechazado',
+                    'pending'  => 'Pendiente',
+                ];
 
-            // Obtener nombre del proyecto
-            $proyectoNombre = $solicitud->Proyecto;
-            if (!empty($proyectoNombre) && preg_match('/^([A-Z]{2})(\d+)$/i', $proyectoNombre, $matches)) {
-                $prefijo = strtoupper($matches[1]);
-                $proyectoId = (int)$matches[2];
-
-                try {
-                    switch ($prefijo) {
-                        case 'PR':
-                            $proyecto = \App\Models\Proyecto::find($proyectoId);
-                            if ($proyecto) {
-                                $proyectoNombre = $proyecto->NombreProyecto ?? $proyecto->Proyecto ?? $proyectoNombre;
-                            }
-                            break;
-                        case 'GE':
-                            $gerencia = \App\Models\Gerencia::find($proyectoId);
-                            if ($gerencia) {
-                                $proyectoNombre = $gerencia->NombreGerencia ?? $proyectoNombre;
-                            }
-                            break;
-                        case 'OB':
-                            $obra = \App\Models\Obras::find($proyectoId);
-                            if ($obra) {
-                                $proyectoNombre = $obra->NombreObra ?? $proyectoNombre;
-                            }
-                            break;
+                foreach ([$pasoSupervisor, $pasoGerencia, $pasoAdministracion] as $paso) {
+                    if ($paso) {
+                        $pasosAprobacion[] = [
+                            'stage'          => $paso->stage,
+                            'stageLabel'     => $stageLabels[$paso->stage] ?? ucfirst($paso->stage),
+                            'status'         => $paso->status,
+                            'statusLabel'    => $statusLabels[$paso->status] ?? ucfirst($paso->status),
+                            'approverNombre' => $paso->approverEmpleado  ? $paso->approverEmpleado->NombreEmpleado  : 'N/A',
+                            'decidedByNombre'=> $paso->decidedByEmpleado ? $paso->decidedByEmpleado->NombreEmpleado : null,
+                            'decidedAt'      => $paso->decided_at ? $paso->decided_at->format('d/m/Y H:i') : null,
+                            'comment'        => $paso->comment,
+                        ];
                     }
-                } catch (\Exception $e) {
-                    // Mantener el nombre original si hay error
                 }
-            }
 
-            // Preparar cotizaciones (incluir todas, incluyendo las enviadas), con datos para agrupar por producto
-            $cotizaciones = $solicitud->cotizaciones ? $solicitud->cotizaciones->map(function ($cot) {
-                return [
-                    'CotizacionID' => $cot->CotizacionID,
-                    'Proveedor' => $cot->Proveedor,
-                    'Descripcion' => $cot->Descripcion,
-                    'Precio' => (float)$cot->Precio,
-                    'CostoEnvio' => (float)($cot->CostoEnvio ?? 0),
-                    'NumeroParte' => $cot->NumeroParte,
-                    'Cantidad' => (int)($cot->Cantidad ?? 1),
-                    'Estatus' => $cot->Estatus,
-                    'TiempoEntrega' => $cot->TiempoEntrega,
-                    'Observaciones' => $cot->Observaciones,
-                    'NumeroPropuesta' => (int)($cot->NumeroPropuesta ?? 0),
-                    'NombreEquipo' => $cot->NombreEquipo ?? ''
-                ];
-            })->toArray() : [];
+                // Obtener nombre del proyecto
+                $proyectoNombre = $solicitud->Proyecto;
+                if (!empty($proyectoNombre) && preg_match('/^([A-Z]{2})(\d+)$/i', $proyectoNombre, $matches)) {
+                    $prefijo    = strtoupper($matches[1]);
+                    $proyectoId = (int) $matches[2];
+                    try {
+                        switch ($prefijo) {
+                            case 'PR':
+                                $proyecto = \App\Models\Proyecto::find($proyectoId);
+                                if ($proyecto) $proyectoNombre = $proyecto->NombreProyecto ?? $proyecto->Proyecto ?? $proyectoNombre;
+                                break;
+                            case 'GE':
+                                $gerencia = \App\Models\Gerencia::find($proyectoId);
+                                if ($gerencia) $proyectoNombre = $gerencia->NombreGerencia ?? $proyectoNombre;
+                                break;
+                            case 'OB':
+                                $obra = \App\Models\Obras::find($proyectoId);
+                                if ($obra) $proyectoNombre = $obra->NombreObra ?? $proyectoNombre;
+                                break;
+                        }
+                    } catch (\Exception $e) {
+                        // Mantener el nombre original si hay error
+                    }
+                }
 
-            // Verificar si las cotizaciones fueron enviadas (basado en el estatus de la solicitud)
-            $cotizacionesEnviadas = ($solicitud->Estatus === 'Cotizaciones Enviadas') ? 1 : 0;
+                // Preparar cotizaciones
+                $cotizaciones = $solicitud->cotizaciones
+                    ? $solicitud->cotizaciones->map(function ($cot) {
+                        return [
+                            'CotizacionID'   => $cot->CotizacionID,
+                            'Proveedor'      => $cot->Proveedor,
+                            'Descripcion'    => $cot->Descripcion,
+                            'Precio'         => (float) $cot->Precio,
+                            'CostoEnvio'     => (float) ($cot->CostoEnvio ?? 0),
+                            'NumeroParte'    => $cot->NumeroParte,
+                            'Cantidad'       => (int) ($cot->Cantidad ?? 1),
+                            'Estatus'        => $cot->Estatus,
+                            'TiempoEntrega'  => $cot->TiempoEntrega,
+                            'Observaciones'  => $cot->Observaciones,
+                            'NumeroPropuesta'=> (int) ($cot->NumeroPropuesta ?? 0),
+                            'NombreEquipo'   => $cot->NombreEquipo ?? '',
+                        ];
+                    })->toArray()
+                    : [];
 
-            // Preparar activos asignados (ganadores) con fechas de entrega
-            $activosConFechas = $activosAsignados->map(function ($activo) {
-                return [
-                    'SolicitudActivoID' => $activo->SolicitudActivoID,
-                    'NumeroPropuesta' => $activo->NumeroPropuesta,
-                    'UnidadIndex' => $activo->UnidadIndex,
-                    'FechaEntrega' => $activo->FechaEntrega ? $activo->FechaEntrega->format('d/m/Y') : null,
-                    'EmpleadoAsignado' => $activo->empleadoAsignado ? [
-                        'EmpleadoID' => $activo->empleadoAsignado->EmpleadoID,
-                        'NombreEmpleado' => $activo->empleadoAsignado->NombreEmpleado
+                $cotizacionesEnviadas = ($solicitud->Estatus === 'Cotizaciones Enviadas') ? 1 : 0;
+
+                // Preparar activos asignados con fechas de entrega
+                $activosConFechas = $activosAsignados->map(function ($activo) {
+                    return [
+                        'SolicitudActivoID' => $activo->SolicitudActivoID,
+                        'NumeroPropuesta'   => $activo->NumeroPropuesta,
+                        'UnidadIndex'       => $activo->UnidadIndex,
+                        'FechaEntrega'      => $activo->FechaEntrega ? $activo->FechaEntrega->format('d/m/Y') : null,
+                        'EmpleadoAsignado'  => $activo->empleadoAsignado ? [
+                            'EmpleadoID'     => $activo->empleadoAsignado->EmpleadoID,
+                            'NombreEmpleado' => $activo->empleadoAsignado->NombreEmpleado,
+                        ] : null,
+                        'CotizacionID' => $activo->CotizacionID,
+                    ];
+                })->toArray();
+
+                $activosPorCotizacion = collect($activosConFechas)->groupBy('CotizacionID');
+
+                $recotizarPropuestas = [];
+                $recotizarMotivo     = '';
+                if (
+                    $solicitud->Estatus === 'Re-cotizar'
+                    && $pasoGerencia
+                    && $pasoGerencia->comment
+                    && str_starts_with($pasoGerencia->comment, 'RECOTIZAR|')
+                ) {
+                    $parts = explode('|', $pasoGerencia->comment, 3);
+                    if (isset($parts[1])) {
+                        $recotizarPropuestas = array_values(array_filter(array_map('intval', explode(',', $parts[1]))));
+                    }
+                    $recotizarMotivo = $parts[2] ?? '';
+                }
+
+                // ── Nombre del usuario que canceló ───────────────────────────────────
+                $canceladoPorNombre = null;
+                if ($solicitud->cancelado_por) {
+                    $userCancelo        = \App\Models\User::find($solicitud->cancelado_por);
+                    $canceladoPorNombre = $userCancelo?->name ?? "Usuario #{$solicitud->cancelado_por}";
+                }
+                // ─────────────────────────────────────────────────────────────────────
+
+                return response()->json([
+                    'SolicitudID'          => $solicitud->SolicitudID,
+                    'Motivo'               => $solicitud->Motivo,
+                    'DescripcionMotivo'    => $solicitud->DescripcionMotivo,
+                    'Requerimientos'       => $solicitud->Requerimientos,
+                    'Estatus'              => $solicitud->Estatus,
+                    'estatusDisplay'       => $estatusDisplay,
+                    // ── campos de cancelación ──────────────────────────────────────
+                    'motivo_cancelacion'   => $solicitud->motivo_cancelacion,
+                    'canceladoPorNombre'   => $canceladoPorNombre,
+                    'fecha_cancelacion'    => $solicitud->fecha_cancelacion
+                        ? \Carbon\Carbon::parse($solicitud->fecha_cancelacion)->format('d/m/Y H:i')
+                        : null,
+                    // ──────────────────────────────────────────────────────────────
+                    'recotizarPropuestas'  => $recotizarPropuestas,
+                    'recotizarMotivo'      => $recotizarMotivo,
+                    'fechaCreacion'        => $solicitud->created_at ? $solicitud->created_at->format('d/m/Y H:i') : 'N/A',
+                    'Proyecto'             => $solicitud->Proyecto,
+                    'ProyectoNombre'       => $proyectoNombre,
+                    'empleado'             => $solicitud->empleadoid ? [
+                        'EmpleadoID'     => $solicitud->empleadoid->EmpleadoID,
+                        'NombreEmpleado' => $solicitud->empleadoid->NombreEmpleado,
+                        'Correo'         => $solicitud->empleadoid->Correo,
                     ] : null,
-                    'CotizacionID' => $activo->CotizacionID
-                ];
-            })->toArray();
+                    'gerencia'             => $solicitud->gerenciaid ? [
+                        'GerenciaID'     => $solicitud->gerenciaid->GerenciaID,
+                        'NombreGerencia' => $solicitud->gerenciaid->NombreGerencia,
+                    ] : null,
+                    'obra'                 => $solicitud->obraid ? [
+                        'ObraID'    => $solicitud->obraid->ObraID,
+                        'NombreObra'=> $solicitud->obraid->NombreObra,
+                    ] : null,
+                    'puesto'               => $solicitud->puestoid ? [
+                        'PuestoID'    => $solicitud->puestoid->PuestoID,
+                        'NombrePuesto'=> $solicitud->puestoid->NombrePuesto,
+                    ] : null,
+                    'pasosAprobacion'      => $pasosAprobacion,
+                    'cotizaciones'         => $cotizaciones,
+                    'activosAsignados'     => $activosConFechas,
+                    'activosPorCotizacion' => $activosPorCotizacion->toArray(),
+                    'puedeCotizar'         => $puedeCotizar,
+                    'puedeElegirCotizacion'=> $puedeElegirCotizacion,
+                    'cotizacionesEnviadas' => $cotizacionesEnviadas,
+                ]);
 
-            // Crear un mapa de activos por CotizacionID para vincular fechas
-            $activosPorCotizacion = collect($activosConFechas)->groupBy('CotizacionID');
-
-            $recotizarPropuestas = [];
-            $recotizarMotivo = '';
-            if ($solicitud->Estatus === 'Re-cotizar' && $pasoGerencia && $pasoGerencia->comment && str_starts_with($pasoGerencia->comment, 'RECOTIZAR|')) {
-                $parts = explode('|', $pasoGerencia->comment, 3);
-                if (isset($parts[1])) {
-                    $recotizarPropuestas = array_values(array_filter(array_map('intval', explode(',', $parts[1]))));
-                }
-                $recotizarMotivo = $parts[2] ?? '';
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                return response()->json(['error' => 'Solicitud no encontrada'], 404);
+            } catch (\Exception $e) {
+                Log::error("Error obteniendo datos de solicitud #{$id}: " . $e->getMessage());
+                return response()->json(['error' => 'Error al cargar la información de la solicitud'], 500);
             }
-
-            return response()->json([
-                'SolicitudID' => $solicitud->SolicitudID,
-                'Motivo' => $solicitud->Motivo,
-                'DescripcionMotivo' => $solicitud->DescripcionMotivo,
-                'Requerimientos' => $solicitud->Requerimientos,
-                'Estatus' => $solicitud->Estatus,
-                'estatusDisplay' => $estatusDisplay,
-                'recotizarPropuestas' => $recotizarPropuestas,
-                'recotizarMotivo' => $recotizarMotivo,
-                'fechaCreacion' => $solicitud->created_at ? $solicitud->created_at->format('d/m/Y H:i') : 'N/A',
-                'Proyecto' => $solicitud->Proyecto,
-                'ProyectoNombre' => $proyectoNombre,
-                'empleado' => $solicitud->empleadoid ? [
-                    'EmpleadoID' => $solicitud->empleadoid->EmpleadoID,
-                    'NombreEmpleado' => $solicitud->empleadoid->NombreEmpleado,
-                    'Correo' => $solicitud->empleadoid->Correo
-                ] : null,
-                'gerencia' => $solicitud->gerenciaid ? [
-                    'GerenciaID' => $solicitud->gerenciaid->GerenciaID,
-                    'NombreGerencia' => $solicitud->gerenciaid->NombreGerencia
-                ] : null,
-                'obra' => $solicitud->obraid ? [
-                    'ObraID' => $solicitud->obraid->ObraID,
-                    'NombreObra' => $solicitud->obraid->NombreObra
-                ] : null,
-                'puesto' => $solicitud->puestoid ? [
-                    'PuestoID' => $solicitud->puestoid->PuestoID,
-                    'NombrePuesto' => $solicitud->puestoid->NombrePuesto
-                ] : null,
-                'pasosAprobacion' => $pasosAprobacion,
-                'cotizaciones' => $cotizaciones,
-                'activosAsignados' => $activosConFechas,
-                'activosPorCotizacion' => $activosPorCotizacion->toArray(),
-                'puedeCotizar' => $puedeCotizar,
-                'puedeElegirCotizacion' => $puedeElegirCotizacion,
-                'cotizacionesEnviadas' => $cotizacionesEnviadas
-            ]);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'error' => 'Solicitud no encontrada'
-            ], 404);
-        } catch (\Exception $e) {
-            Log::error("Error obteniendo datos de solicitud #{$id}: " . $e->getMessage());
-            return response()->json([
-                'error' => 'Error al cargar la información de la solicitud'
-            ], 500);
-        }
     }
 
     /**
@@ -3224,6 +3250,23 @@ class TicketsController extends Controller
                     $query->orderBy('NumeroPropuesta')->orderBy('Proveedor');
                 }
             ]);
+
+            if (in_array($solicitud->Estatus, ['Cancelada', 'Cerrada'], true)) 
+            {
+                $canceladoPor = null;
+                if ($solicitud->cancelado_por) {
+                    $canceladoPor = \App\Models\User::find($solicitud->cancelado_por)?->name
+                        ?? "Usuario #{$solicitud->cancelado_por}";
+                }
+
+                return view('solicitudes.cancelada', [
+                    'motivo'           => $solicitud->motivo_cancelacion,
+                    'canceladoPor'     => $canceladoPor,
+                    'fechaCancelacion' => $solicitud->fecha_cancelacion
+                        ? \Carbon\Carbon::parse($solicitud->fecha_cancelacion)->format('d/m/Y H:i')
+                        : null,
+                ]);
+            }
 
             $productos = $this->agruparCotizacionesPorProducto($solicitud->cotizaciones ?? collect());
             $todosConGanador = $solicitud->todosProductosTienenGanador();

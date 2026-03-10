@@ -109,7 +109,12 @@ class ReporteHelper
             $query->limit($limite);
         }
 
-        Log::debug('Query generada:', [$query->toSql(), $query->getBindings()]);
+        // Reemplazamos los '?' por sus valores reales para el Log
+        $sqlCompleto = vsprintf(str_replace('?', '%s', $query->toSql()), collect($query->getBindings())->map(function ($binding) {
+            return is_numeric($binding) ? $binding : "'" . $binding . "'";
+        })->toArray());
+
+        Log::debug('Query lista para ejecutar:', [$sqlCompleto]);
 
         return $query->get();
     }

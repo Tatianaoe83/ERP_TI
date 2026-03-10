@@ -17,11 +17,10 @@ use PhpOffice\PhpSpreadsheet\Chart\Legend;
 use PhpOffice\PhpSpreadsheet\Chart\PlotArea;
 use PhpOffice\PhpSpreadsheet\Chart\Title;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Worksheet\Table;
 use Maatwebsite\Excel\Concerns\WithCharts;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
-class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCharts,WithTitle
+class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCharts, WithTitle
 {
     protected $tickets;
     protected $resumen;
@@ -39,6 +38,16 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
     public int $cantidadCategorias    = 0;
     public int $cantidadMeses         = 0;
     public int $cantidadUsuariosMeses = 0;
+
+    // Paleta de colores por responsable (misma que en Blade, SIN el #)
+    protected array $coloresResponsables = [
+        '2563EB', // azul
+        'EA580C', // naranja
+        '059669', // verde
+        '7C3AED', // violeta
+        'DC2626', // rojo
+        '0891B2', // cyan
+    ];
 
     public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [])
     {
@@ -78,7 +87,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
 
         $fechaTarget       = Carbon::create($anioTarget, $mesTarget, 1);
         $mesNombreTarget   = $fechaTarget->locale('es')->translatedFormat('F Y');
-        
+
         $mesAnterior       = $fechaTarget->copy()->subMonth()->month;
         $anioAnterior      = $fechaTarget->copy()->subMonth()->year;
         $mesNombreAnterior = $fechaTarget->copy()->subMonth()->locale('es')->translatedFormat('F Y');
@@ -90,8 +99,8 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         $mesAnteriorCorto   = $fechaTarget->copy()->subMonth()->locale('es')->translatedFormat('F');
         $usuariosAmbosMeses = [];
         $tablaMesesUsuarios = [];
-        
-        $tablaCategoria     = []; // Solo usaremos esta para el mes actual
+
+        $tablaCategoria     = [];
 
         $segundosNormales            = [];
         $segundosTotales             = [];
@@ -104,7 +113,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         $totalTicketsMesAnterior        = 0;
         $cerradosMesAnterior            = 0;
 
-        // 1. Obtener usuarios únicos y preparar tabla final
+        // 1. Obtener usuarios únicos
         foreach ($tickets as $ticket) {
             $ticketDate = Carbon::parse($ticket->created_at);
             $usuario = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
@@ -113,7 +122,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
                 $usuariosUnicos[$usuario] = $usuario;
             }
 
-            if (($ticketDate->month === $mesTarget && $ticketDate->year === $anioTarget) || 
+            if (($ticketDate->month === $mesTarget && $ticketDate->year === $anioTarget) ||
                 ($ticketDate->month === $mesAnterior && $ticketDate->year === $anioAnterior)) {
                 $usuariosAmbosMeses[$usuario] = $usuario;
             }
@@ -124,14 +133,13 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         foreach ($usuariosAmbosMeses as $usr) {
             $tablaMesesUsuarios[$usr] = [
                 $mesAnteriorCorto => 0,
-                $mesActualCorto   => 0
+                $mesActualCorto   => 0,
             ];
         }
 
-        // 2. Construir catálogo desde jerarquía MAESTRA (tipotickets -> subtipo -> tertipo)
-        // Así cada Tertipo aparece solo bajo su Subtipo correcto y no se mezclan categorías
+        // 2. Construir catálogo desde jerarquía maestra
         $this->catalogo = [];
-        $this->tertipoAPadres = []; // Mapa Tertipo => [tipo, subtipo] para reparar tickets con NULL
+        $this->tertipoAPadres = [];
         $ticketsSinClasificar = 0;
 
         try {
@@ -187,7 +195,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             } catch (\Throwable $e) {}
         }
 
-        // Añadir combinaciones de tickets que falten (Sin tipo, Sin subtipo, Sin incidencia)
+        // Añadir combinaciones de tickets que falten
         foreach ($tickets as $ticket) {
             $tipo    = (string) (optional($ticket->tipoticket)->NombreTipo ?: '');
             $subtipo = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
@@ -201,18 +209,14 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
                 }
             }
 
-            if (!isset($this->catalogo[$tipo])) {
-                $this->catalogo[$tipo] = [];
-            }
-            if (!isset($this->catalogo[$tipo][$subtipo])) {
-                $this->catalogo[$tipo][$subtipo] = [];
-            }
+            if (!isset($this->catalogo[$tipo])) $this->catalogo[$tipo] = [];
+            if (!isset($this->catalogo[$tipo][$subtipo])) $this->catalogo[$tipo][$subtipo] = [];
             if (!in_array($tertipo, $this->catalogo[$tipo][$subtipo])) {
                 $this->catalogo[$tipo][$subtipo][] = $tertipo;
             }
         }
 
-        // Ordenar: poner "Sin subtipo" y "Sin incidencia" al final para que la jerarquía real quede primero
+        // Ordenar catálogo
         $sinValores = ['Sin tipo', 'Sin subtipo', 'Sin incidencia'];
         uksort($this->catalogo, fn($a, $b) => in_array($a, $sinValores) && !in_array($b, $sinValores) ? 1 : (!in_array($a, $sinValores) && in_array($b, $sinValores) ? -1 : strcasecmp($a, $b)));
         foreach ($this->catalogo as $tipo => $subtipos) {
@@ -224,7 +228,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             }
         }
 
-        // 3. Inicializar tabla agrupada en 0 (3 niveles: Tipo -> Subtipo -> Tertipo)
+        // 3. Inicializar tabla agrupada en 0
         $tablaAgrupada = [];
         foreach ($this->catalogo as $tipo => $subtipos) {
             $tablaAgrupada[$tipo]['total_principal'] = array_fill_keys(array_keys($usuariosUnicos), 0);
@@ -242,18 +246,16 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             $ticketMes    = $ticketDate->month;
             $ticketAnio   = $ticketDate->year;
             $usuario      = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
-            
+
             $tipo    = (string) (optional($ticket->tipoticket)->NombreTipo ?: 'Sin tipo');
             $subtipo = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
             $tertipo = (string) (optional($ticket->tertipo)->NombreTertipo ?: 'Sin incidencia');
 
-            // Corregir: si ticket tiene "Sin subtipo" pero el Tertipo existe en el maestro, usar el Subtipo correcto
             if ($subtipo === 'Sin subtipo' && $tertipo !== 'Sin incidencia' && isset($this->tertipoAPadres[$tertipo])) {
                 [$tipo, $subtipo] = $this->tertipoAPadres[$tertipo];
             }
             $categoria = !empty($tertipo) && $tertipo !== 'Sin incidencia' ? $tertipo : ($subtipo !== 'Sin subtipo' ? $subtipo : $tipo);
 
-            // SI ES EL MES ACTUAL
             if ($ticketMes === $mesTarget && $ticketAnio === $anioTarget) {
                 $totalTicketsMesActual++;
                 $tablaMesesUsuarios[$usuario][$mesActualCorto]++;
@@ -268,7 +270,6 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
                     }
                 }
 
-                // Cargar datos SOLO para el mes actual en $tablaCategoria
                 if (!isset($tablaCategoria[$categoria])) {
                     $tablaCategoria[$categoria] = ['total' => 0, 'segundos_resolucion' => [], 'segundos_primer_respuesta' => []];
                 }
@@ -290,8 +291,6 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
                         if ($diffRes <= 28800) $segundosNormales[] = $diffRes;
                     } catch (\Exception $e) {}
                 }
-
-            // SI ES EL MES ANTERIOR
             } elseif ($ticketMes === $mesAnterior && $ticketAnio === $anioAnterior) {
                 $totalTicketsMesAnterior++;
                 $tablaMesesUsuarios[$usuario][$mesAnteriorCorto]++;
@@ -317,7 +316,30 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         ksort($tablaAgrupada);
         ksort($tablaCategoria);
 
-        // 5. Tabla Resumen por Responsable con Tipo/Subtipo/Tertipo (vista alternativa con más valor)
+        // ── FILTRAR TIPOS/SUBTIPOS SIN NINGÚN TICKET EN EL MES ACTUAL ────────────
+        // Quita filas completamente vacías (todas las columnas de usuarios = 0)
+        foreach ($tablaAgrupada as $tipo => $datos) {
+            $totalTipo = array_sum($datos['total_principal'] ?? []);
+
+            // Si el tipo no tiene ningún ticket, lo eliminamos
+            if ($totalTipo === 0) {
+                unset($tablaAgrupada[$tipo]);
+                continue;
+            }
+
+            // Si el tipo tiene tickets, filtramos los subtipos vacíos
+            if (isset($datos['subtipos'])) {
+                foreach ($datos['subtipos'] as $subtipo => $datosSub) {
+                    $totalSub = array_sum($datosSub['total_principal'] ?? []);
+                    if ($totalSub === 0) {
+                        unset($tablaAgrupada[$tipo]['subtipos'][$subtipo]);
+                    }
+                }
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
+        // 5. Tabla Resumen por Responsable
         $tablaResponsableDetalle = [];
         foreach ($tickets as $ticket) {
             $ticketDate = Carbon::parse($ticket->created_at);
@@ -325,8 +347,8 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
 
             $resp = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
             $tipo = (string) (optional($ticket->tipoticket)->NombreTipo ?: 'Sin tipo');
-            $sub = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
-            $ter = (string) (optional($ticket->tertipo)->NombreTertipo ?: 'Sin incidencia');
+            $sub  = (string) (optional($ticket->subtipo)->NombreSubtipo ?: 'Sin subtipo');
+            $ter  = (string) (optional($ticket->tertipo)->NombreTertipo ?: 'Sin incidencia');
 
             $clave = "{$resp}|{$tipo}|{$sub}|{$ter}";
             if (!isset($tablaResponsableDetalle[$clave])) {
@@ -344,7 +366,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         }
         uasort($tablaResponsableDetalle, fn($a, $b) => strcmp($a['responsable'], $b['responsable']) ?: (strcmp($a['tipo'], $b['tipo']) ?: (strcmp($a['subtipo'], $b['subtipo']) ?: strcmp($a['tertipo'], $b['tertipo']))));
 
-        // 6. Tabla Incidencias detallada: Tipo | Subtipo | Tertipo | Cuenta | Tiempo Prom
+        // 6. Tabla Incidencias detallada
         $tablaCategoriaDetallada = [];
         foreach ($tickets as $ticket) {
             $ticketDate = Carbon::parse($ticket->created_at);
@@ -370,7 +392,7 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         }
         uasort($tablaCategoriaDetallada, fn($a, $b) => strcmp($a['tipo'], $b['tipo']) ?: (strcmp($a['subtipo'], $b['subtipo']) ?: strcmp($a['tertipo'], $b['tertipo'])));
 
-        // Solo 2 niveles: Tipo + Subtipo (sin Tertipo)
+        // Contar filas jerarquía (solo 2 niveles: Tipo + Subtipo), ya filtrados
         $filasJerarquia = 0;
         foreach ($tablaAgrupada as $tipo => $datos) {
             $filasJerarquia++; // Tipo
@@ -387,9 +409,8 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         $this->cantidadMeses         = count($usuariosAmbosMeses);
         $this->cantidadUsuariosMeses = count($tablaMesesUsuarios);
 
-        // Calcular promedios para mes Actual
         foreach ($tablaCategoria as $key => $data) {
-            $promRes    = count($data['segundos_resolucion']) > 0 ? array_sum($data['segundos_resolucion']) / count($data['segundos_resolucion']) : 0;
+            $promRes = count($data['segundos_resolucion']) > 0 ? array_sum($data['segundos_resolucion']) / count($data['segundos_resolucion']) : 0;
             $tablaCategoria[$key]['promedio_resolucion'] = $this->formatSecondsToDays($promRes);
         }
 
@@ -403,10 +424,13 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         $promedioPrimerRespuestaGeneralAnt = count($segundosPrimerRespGeneralesAnt) > 0 ? array_sum($segundosPrimerRespGeneralesAnt) / count($segundosPrimerRespGeneralesAnt) : 0;
         $cumplimientoAnt                   = $totalTicketsMesAnterior > 0 ? round(($cerradosMesAnterior / $totalTicketsMesAnterior) * 100, 0) : 0;
 
-        // Totales por Tipo (para gráfica resumida)
+        // Totales por Tipo
         $totalesPorTipo = [];
         foreach ($tablaAgrupada as $tipo => $datos) {
-            $totalesPorTipo[$tipo] = array_sum($datos['total_principal'] ?? []);
+            $total = array_sum($datos['total_principal'] ?? []);
+            if ($total > 0) { // Solo incluir tipos con al menos 1 ticket
+                $totalesPorTipo[$tipo] = $total;
+            }
         }
         arsort($totalesPorTipo);
         $this->totalesPorTipo      = $totalesPorTipo;
@@ -448,7 +472,6 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                // Anchos de columna y ajuste de texto para la tabla de resumen KPI (filas 1-4, columnas A-E)
                 foreach (['A', 'B', 'C', 'D', 'E'] as $col) {
                     $sheet->getColumnDimension($col)->setWidth(20);
                 }
@@ -460,39 +483,44 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
 
                 $uCount = $this->cantidadUsuarios;
 
-                // Misma lógica que en charts(): filas antes de la tabla Incidencias
-                $filasResumenPorTipo = !empty($this->totalesPorTipo) ? (2 + count($this->totalesPorTipo)) : 0;
+                // ── CALCULAR OFFSET: la gráfica de Tickets por Tipo ahora va ANTES
+                // de la tabla Incidencias, en el bloque KPI/encabezado.
+                // El offset de filas es el mismo que en charts().
+                $filasResumenPorTipo     = !empty($this->totalesPorTipo) ? (2 + count($this->totalesPorTipo)) : 0;
                 $filasAvisoSinClasificar = $this->ticketsSinClasificar > 0 ? 1 : 0;
-                $filasAntesTabla = 4 + $filasResumenPorTipo + $filasAvisoSinClasificar + 2;
-                $filaHeaderIncidencias = $filasAntesTabla;
-                $currentRow = $filaHeaderIncidencias;
-
-                $colGerEnd = $uCount + 2;
+                $filasAntesTabla         = 4 + $filasResumenPorTipo + $filasAvisoSinClasificar + 2;
+                $filaHeaderIncidencias   = $filasAntesTabla;
+                $colGerEnd   = $uCount + 2;
                 $colLetraFin = $this->col($colGerEnd);
 
-                foreach ($this->catalogo as $tipo => $subtipos) {
-                    $filaTipo = ++$currentRow;
+                // Leer directamente las celdas de la hoja (datos ya filtrados)
+                // para aplicar estilos y calcular el rango real sin depender del catálogo completo.
+                $filaInicioDatos = $filaHeaderIncidencias + 2; // +1 fila título tabla, +1 encabezados
+                $filaActual      = $filaInicioDatos;
 
-                    $sheet->getStyle("A{$filaTipo}:{$colLetraFin}{$filaTipo}")->getFont()->setSize(14)->setBold(true);
+                while ($filaActual <= $filaInicioDatos + 500) {
+                    $cellVal = (string) $sheet->getCell("A{$filaActual}")->getValue();
 
-                    if (is_array($subtipos) && count($subtipos) > 0) {
-                        foreach ($subtipos as $subtipo => $tertipos) {
-                            $filaSubtipo = ++$currentRow;
-
-                            $sheet->getStyle("A{$filaSubtipo}:{$colLetraFin}{$filaSubtipo}")->getFont()->setSize(12)->setBold(true);
-                        }
+                    if ($cellVal === '' || $cellVal === 'Total general') {
+                        break;
                     }
+
+                    // Blade emite "1- NombreTipo" para padres y "2- NombreSubtipo" para hijos
+                    if (str_starts_with($cellVal, '1-')) {
+                        $sheet->getStyle("A{$filaActual}:{$colLetraFin}{$filaActual}")->getFont()->setSize(14)->setBold(true);
+                    } elseif (str_starts_with($cellVal, '2-')) {
+                        $sheet->getStyle("A{$filaActual}:{$colLetraFin}{$filaActual}")->getFont()->setSize(12)->setBold(true);
+                    }
+
+                    $filaActual++;
                 }
 
-                $rangeGer = "A{$filaHeaderIncidencias}:" . $this->col($colGerEnd) . $currentRow;
-
-                try {
-                    $tableGer = new Table($rangeGer);
-                    $tableGer->setName('TablaTiposTicket');
-                    $tableGer->setShowTotalsRow(false);
-                    $sheet->addTable($tableGer);
-                } catch (\Exception $e) {
-                    $sheet->setAutoFilter($rangeGer);
+                // setAutoFilter en lugar de Table para evitar el error de reparación de Excel
+                $filaUltimaDatos = $filaActual - 1;
+                if ($filaUltimaDatos >= $filaHeaderIncidencias) {
+                    $sheet->setAutoFilter(
+                        "A{$filaHeaderIncidencias}:" . $this->col($colGerEnd) . $filaUltimaDatos
+                    );
                 }
 
                 $sheet->freezePane('A' . ($filaHeaderIncidencias + 2));
@@ -506,20 +534,16 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
             return [];
         }
 
-       
-
-        // Filas ANTES de la tabla Incidencias: KPI (4) + Resumen por Tipo (2 + N filas) + posible aviso sin clasificar (1) + título Incidencias (1) + encabezados (1)
-        $filasResumenPorTipo = !empty($this->totalesPorTipo) ? (2 + count($this->totalesPorTipo)) : 0; // título + header + datos
+        // ── OFFSETS DE FILAS ──────────────────────────────────────────────────────
+        $filasResumenPorTipo     = !empty($this->totalesPorTipo) ? (2 + count($this->totalesPorTipo)) : 0;
         $filasAvisoSinClasificar = $this->ticketsSinClasificar > 0 ? 1 : 0;
-        $filasAntesTabla = 4 + $filasResumenPorTipo + $filasAvisoSinClasificar + 2; // +2 = título y encabezados de Incidencias
-        $filaEncabezados = $filasAntesTabla;      // Etiquetas de fila | Total general | usuarios
-        $filaInicioDatos = $filasAntesTabla + 2;  // Primera fila de datos (Tipo, Subtipo, Tertipo)
+        $filasAntesTabla         = 4 + $filasResumenPorTipo + $filasAvisoSinClasificar + 2;
+        $filaEncabezados         = $filasAntesTabla;
+        $filaInicioDatos         = $filasAntesTabla + 2;
+        $filaFinDatos            = $filasAntesTabla + $this->cantidadFilasGerencia + 1;
+        // ─────────────────────────────────────────────────────────────────────────
 
-        //print_r ($filasAntesTabla);
-        //dd ($this->cantidadFilasGerencia);
-
-        $filaFinDatos    = $filasAntesTabla + $this->cantidadFilasGerencia + 1; // Última fila de datos, ANTES de "Total general"
-
+        // ── GRÁFICA 1: Incidencias por Tipo/Subtipo por Responsable ──────────────
         $ejeY = [
             new DataSeriesValues('String', "Resumen!\$A\${$filaInicioDatos}:\$A\${$filaFinDatos}", null, $this->cantidadFilasGerencia),
         ];
@@ -528,9 +552,17 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
         $valores       = [];
 
         for ($u = 0; $u < $this->cantidadUsuarios; $u++) {
-            $colLetra        = $this->col($u + 3); // Col A=Etiquetas, B=Total, C+=usuarios
+            $colLetra        = $this->col($u + 3); // C, D, E…
             $seriesNombres[] = new DataSeriesValues('String', "Resumen!\${$colLetra}\${$filaEncabezados}", null, 1);
-            $valores[]       = new DataSeriesValues('Number', "Resumen!\${$colLetra}\${$filaInicioDatos}:\${$colLetra}\${$filaFinDatos}", null, $this->cantidadFilasGerencia);
+            $serieValores    = new DataSeriesValues('Number', "Resumen!\${$colLetra}\${$filaInicioDatos}:\${$colLetra}\${$filaFinDatos}", null, $this->cantidadFilasGerencia);
+
+            // ── ASIGNAR COLOR DE LA SERIE = color del encabezado del usuario ──
+            // setFillColor espera exactamente 6 caracteres hex RRGGBB (sin # ni prefijo FF)
+            $hexColor = strtoupper($this->coloresResponsables[$u % count($this->coloresResponsables)]);
+            $serieValores->setFillColor($hexColor);
+            // ──────────────────────────────────────────────────────────────────
+
+            $valores[] = $serieValores;
         }
 
         $series = new DataSeries(
@@ -549,12 +581,11 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
 
         $chart = new Chart('grafica_gerencias', $title, $legend, $plotArea);
 
-        // Gráfica más grande: desde encabezado hasta final de datos (ANTES de "Total general")
         $filaInicioGrafica = $filaEncabezados;
         $alturaChart       = max($this->cantidadFilasGerencia + 6, 28);
         $filaFinGrafica    = $filaInicioGrafica + $alturaChart;
-        $colInicioChart    = $this->cantidadUsuarios + 4; // Columna a la derecha de la tabla (2 + usuarios + 1 espacio)
-        $colFinChart       = $colInicioChart + 14;       // Gráfica más ancha (14 columnas)
+        $colInicioChart    = $this->cantidadUsuarios + 4;
+        $colFinChart       = $colInicioChart + 14;
         $colLetraInicio    = $this->col($colInicioChart);
         $colLetraFin       = $this->col($colFinChart);
 
@@ -563,16 +594,23 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
 
         $charts = [$chart];
 
-        // Segunda gráfica: Tickets por Tipo (resumen, vista más legible)
+        // ── GRÁFICA 2: Tickets por Tipo — MOVIDA al bloque KPI (filas 1–4) ───────
+        // Se ubica a la derecha de las tarjetas KPI (columnas F en adelante, fila 1)
         if (count($this->totalesPorTipo) > 0) {
-            // KPI=4 filas, Resumen por Tipo: fila 5=título, 6=header, 7+=datos
-            $filaResumenDatos  = 7;
-            $cantTipos         = count($this->totalesPorTipo);
-            $filaResumenFin    = 6 + $cantTipos;
+            // La tabla "Resumen por Tipo" ocupa: fila 5 (título) + fila 6 (header) + datos
+            $filaResumenDatos = 7;
+            $cantTipos        = count($this->totalesPorTipo);
+            $filaResumenFin   = 6 + $cantTipos;
 
-            $ejeY2 = [new DataSeriesValues('String', "Resumen!\$A\${$filaResumenDatos}:\$A\${$filaResumenFin}", null, $cantTipos)];
+            $ejeY2    = [new DataSeriesValues('String', "Resumen!\$A\${$filaResumenDatos}:\$A\${$filaResumenFin}", null, $cantTipos)];
             $valores2 = [new DataSeriesValues('Number', "Resumen!\$B\${$filaResumenDatos}:\$B\${$filaResumenFin}", null, $cantTipos)];
+
+            // Color único para esta gráfica: el primer color de la paleta (azul)
+            // setFillColor espera exactamente 6 caracteres hex RRGGBB
+            $valores2[0]->setFillColor(strtoupper($this->coloresResponsables[0]));
+
             $labelSerie2 = [new DataSeriesValues('String', null, null, 1, ['Tickets por Tipo'])];
+
             $series2 = new DataSeries(
                 DataSeries::TYPE_BARCHART,
                 DataSeries::GROUPING_STANDARD,
@@ -582,10 +620,23 @@ class ResumenSheetExport implements FromView, ShouldAutoSize, WithEvents, WithCh
                 $valores2
             );
             $series2->setPlotDirection(DataSeries::DIRECTION_BAR);
+
             $plotArea2 = new PlotArea(null, [$series2]);
-            $chart2 = new Chart('grafica_por_tipo', new Title('Tickets por Tipo'), new Legend(Legend::POSITION_BOTTOM, null, false), $plotArea2);
-            $chart2->setTopLeftPosition("{$colLetraInicio}" . ($filaFinGrafica + 2));
-            $chart2->setBottomRightPosition("{$colLetraFin}" . ($filaFinGrafica + 18));
+            $chart2    = new Chart(
+                'grafica_por_tipo',
+                new Title('Tickets por Tipo'),
+                new Legend(Legend::POSITION_BOTTOM, null, false),
+                $plotArea2
+            );
+
+            // ── POSICIÓN: a la derecha de las tarjetas KPI (cols F-S, filas 1-4) ──
+            // Las tarjetas KPI usan columnas A-E (filas 1-4), la gráfica va al lado
+            $colGrafTipoInicio = 'F';   // Columna F (justo después de los KPIs A-E)
+            $colGrafTipoFin    = 'T';   // Columna T (15 columnas de ancho)
+            $chart2->setTopLeftPosition("{$colGrafTipoInicio}1");
+            $chart2->setBottomRightPosition("{$colGrafTipoFin}13");
+            // ──────────────────────────────────────────────────────────────────────
+
             $charts[] = $chart2;
         }
 

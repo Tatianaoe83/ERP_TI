@@ -46,7 +46,7 @@ class Solicitud extends Model
 
 
 
-    public $fillable = [
+public $fillable = [
         'Motivo',
         'DescripcionMotivo',
         'Requerimientos',
@@ -57,13 +57,12 @@ class Solicitud extends Model
         'PuestoID',
         'EmpleadoID',
         'Proyecto',
+        // --- NUEVOS CAMPOS ---
+        'cancelado_por',
+        'motivo_cancelacion',
+        'fecha_cancelacion',
     ];
 
-    /**
-     * The attributes that should be casted to native types.
-     *
-     * @var array
-     */
     protected $casts = [
         'SolicitudID' => 'integer',
         'Motivo' => 'string',
@@ -76,6 +75,9 @@ class Solicitud extends Model
         'PuestoID' => 'integer',
         'EmpleadoID' => 'integer',
         'Proyecto' => 'string',
+        // --- NUEVOS CASTS ---
+        'cancelado_por' => 'integer',
+        'fecha_cancelacion' => 'datetime',
     ];
 
     /**
@@ -200,5 +202,12 @@ class Solicitud extends Model
     {
         return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
             ->where('stage', 'administracion');
+    }
+
+    public function cancelador()
+    {
+        // Nota: Si tus usuarios que inician sesión están en otro modelo (ej. Empleados::class), 
+        // cámbialo aquí. Asumiré que usan el User predeterminado de Laravel.
+        return $this->belongsTo(\App\Models\User::class, 'cancelado_por');
     }
 }

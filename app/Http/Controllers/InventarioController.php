@@ -509,7 +509,8 @@ class InventarioController extends AppBaseController
         $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID', '=', $id)->get();
         $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID', '=', $id)->get();
         $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID', '=', $id)->get();
-        $Empleados = Empleados::select("*")->get();
+        $Empleados = Empleados::select("*")->where('Estado', 1)->get();
+
 
 
 
