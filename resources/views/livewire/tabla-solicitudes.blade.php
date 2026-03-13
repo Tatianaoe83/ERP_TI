@@ -19,7 +19,6 @@
                             <option value="Re-cotizar">Re-cotizar</option>
                             <option value="Aprobada">Aprobada</option>
                             <option value="Rechazada">Rechazada</option>
-                            {{-- FIX 1: opción Cancelada añadida al filtro --}}
                             <option value="Cancelada">Cancelada</option>
                         </select>
                     </div>
@@ -170,18 +169,6 @@
                                     </button>
                                     @endif
 
-                                    {{-- Botón Reenviar (comentado intencionalmente) --}}
-                                    {{--
-                                    <button
-                                        type="button"
-                                        wire:click="reenviarCorreo({{ $solicitud->SolicitudID }})"
-                                        class="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 text-sm font-medium transition-colors"
-                                        title="Reenviar correos a pendientes">
-                                        <i class="fas fa-paper-plane mr-1"></i> Reenviar
-                                    </button>
-                                    --}}
-
-                                    {{-- FIX 2: Botón Cerrar — oculto si la solicitud ya está cancelada o rechazada --}}
                                     @if(!in_array($solicitud->estatusDisplay, ['Cancelada', 'Rechazada']))
                                     <button
                                         type="button"
@@ -347,7 +334,6 @@
                             </div>
                         </div>
 
-                        {{-- FIX 3: Alerta de Cancelación — ahora muestra también cancelado_por --}}
                         <template x-if="solicitudSeleccionada?.motivo_cancelacion">
                             <div class="mb-6 rounded-lg border border-rose-300 dark:border-rose-700/60 bg-rose-50 dark:bg-rose-900/20 p-4">
                                 <div class="flex items-start gap-3">
@@ -361,13 +347,10 @@
                                         <p class="mt-1 text-sm text-rose-700 dark:text-rose-300 leading-relaxed"
                                            x-text="solicitudSeleccionada?.motivo_cancelacion"></p>
                                         <div class="mt-2 flex flex-wrap items-center gap-3">
-                                            {{-- Cancelado por --}}
                                             <span class="inline-flex items-center gap-1.5 text-xs font-medium text-rose-500 dark:text-rose-400">
                                                 <i class="fas fa-user-slash"></i>
                                                 <span x-text="'Cancelado por: ' + (solicitudSeleccionada?.canceladoPorNombre || solicitudSeleccionada?.cancelado_por || 'N/A')"></span>
-
                                             </span>
-                                            {{-- Fecha de cancelación --}}
                                             <span class="inline-flex items-center gap-1.5 text-xs font-medium text-rose-500 dark:text-rose-400">
                                                 <i class="fas fa-calendar-times"></i>
                                                 <span x-text="solicitudSeleccionada?.fecha_cancelacion || 'Fecha no disponible'"></span>
@@ -400,16 +383,15 @@
                                 <div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
                                     <div>
                                         <label class="text-xs font-medium text-slate-500 dark:text-slate-400">Estatus</label>
-                                        {{-- FIX 4: color rose para Cancelada en el modal de detalles --}}
                                         <p class="text-sm font-semibold"
                                             :class="{
-                                               'text-rose-600 dark:text-rose-400':   (solicitudSeleccionada?.estatusDisplay || '') === 'Cancelada',
-                                               'text-amber-600 dark:text-amber-400': (solicitudSeleccionada?.estatusDisplay || '') === 'Pendiente',
-                                               'text-red-600 dark:text-red-400':     (solicitudSeleccionada?.estatusDisplay || '') === 'Rechazada',
-                                               'text-sky-600 dark:text-sky-400':     (solicitudSeleccionada?.estatusDisplay || '') === 'En revisión',
+                                               'text-rose-600 dark:text-rose-400':       (solicitudSeleccionada?.estatusDisplay || '') === 'Cancelada',
+                                               'text-amber-600 dark:text-amber-400':     (solicitudSeleccionada?.estatusDisplay || '') === 'Pendiente',
+                                               'text-red-600 dark:text-red-400':         (solicitudSeleccionada?.estatusDisplay || '') === 'Rechazada',
+                                               'text-sky-600 dark:text-sky-400':         (solicitudSeleccionada?.estatusDisplay || '') === 'En revisión',
                                                'text-emerald-600 dark:text-emerald-400': (solicitudSeleccionada?.estatusDisplay || '') === 'Aprobada',
-                                               'text-blue-600 dark:text-blue-400':   (solicitudSeleccionada?.estatusDisplay || '') === 'Cotizaciones Enviadas',
-                                               'text-slate-900 dark:text-slate-100': !['Cancelada','Pendiente','Rechazada','En revisión','Aprobada','Cotizaciones Enviadas'].includes(solicitudSeleccionada?.estatusDisplay || '')
+                                               'text-blue-600 dark:text-blue-400':       (solicitudSeleccionada?.estatusDisplay || '') === 'Cotizaciones Enviadas',
+                                               'text-slate-900 dark:text-slate-100':     !['Cancelada','Pendiente','Rechazada','En revisión','Aprobada','Cotizaciones Enviadas'].includes(solicitudSeleccionada?.estatusDisplay || '')
                                            }"
                                             x-text="solicitudSeleccionada?.estatusDisplay || solicitudSeleccionada?.Estatus || 'Sin estatus'"></p>
                                     </div>
@@ -670,7 +652,7 @@
             </div>
 
             @php
-            $proveedoresAgrupados    = collect($propuestasAsignacion)->groupBy('proveedor')->filter(fn($g) => $g->count() > 1);
+            $proveedoresAgrupados      = collect($propuestasAsignacion)->groupBy('proveedor')->filter(fn($g) => $g->count() > 1);
             $tieneProveedoresRepetidos = $proveedoresAgrupados->isNotEmpty();
             @endphp
 
@@ -731,47 +713,120 @@
 
                             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
+                                {{-- # --}}
                                 <div class="col-span-1 flex lg:justify-center">
                                     <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold shadow-inner">
                                         {{ $u['unidadIndex'] ?? ($uIndex + 1) }}
                                     </span>
                                 </div>
 
+                                {{-- Descripción --}}
                                 <div class="col-span-2">
                                     <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Descripción</label>
                                     <div class="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">{{ $p['nombreEquipo'] ?? 'Producto' }}</div>
                                     <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Unidad {{ $u['unidadIndex'] ?? ($uIndex + 1) }}</div>
                                 </div>
 
+                                {{-- ══════════════════════════════════════════════
+                                     Facturas: XML (columna Ruta) + PDF (columna RutaPdf)
+                                ══════════════════════════════════════════════ --}}
                                 <div class="col-span-2">
                                     <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Factura</label>
                                     @php
-                                    $facturaPath      = $u['factura_path'] ?? null;
-                                    $hasPath          = !empty($facturaPath);
-                                    $hasNew           = isset($facturas[$pIndex][$uIndex]) && $facturas[$pIndex][$uIndex];
-                                    $fileLabel        = $hasPath ? basename($facturaPath) : null;
-                                    $proveedorUnico   = collect($propuestasAsignacion)->pluck('proveedor')->unique();
-                                    $tieneProveedorUnico = $proveedorUnico->count() === 1;
+                                        // Rutas guardadas en BD: Ruta = XML, RutaPdf = PDF
+                                        $xmlSavedPath  = $u['factura_xml_path'] ?? '';
+                                        $pdfSavedPath  = $u['factura_pdf_path'] ?? '';
+
+                                        // Archivos recién subidos en esta sesión
+                                        $hasNewXml     = !empty($facturaXml[$pIndex][$uIndex]);
+                                        $hasNewPdf     = !empty($facturaPdf[$pIndex][$uIndex]);
+
+                                        // Hay archivo guardado en BD
+                                        $esXmlGuardado = !empty($xmlSavedPath);
+                                        $esPdfGuardado = !empty($pdfSavedPath);
+
+                                        // Datos del XML parseado
+                                        $parsed        = $xmlParseado[$pIndex][$uIndex] ?? null;
+                                        $parsedOk      = $parsed && empty($parsed['error']) && !empty($parsed['conceptos']);
                                     @endphp
-                                    <div class="flex items-center gap-2">
-                                        <label class="group/btn relative inline-flex items-center gap-2.5 h-11 px-4 rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200
-                                              {{ ($hasNew || $hasPath)
-                                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-400 dark:bg-emerald-900/20 dark:border-emerald-700/50 dark:text-emerald-300 dark:hover:bg-emerald-900/30'
-                                                    : 'bg-slate-50 border-slate-300 text-slate-600 hover:bg-slate-100 hover:border-slate-400 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500' }}">
-                                            <input type="file" class="hidden" accept="application/pdf" wire:model="facturas.{{ $pIndex }}.{{ $uIndex }}">
-                                            <i class="fas {{ ($hasNew || $hasPath) ? 'fa-check-circle' : 'fa-cloud-upload-alt' }} text-base transition-transform group-hover/btn:scale-110"></i>
-                                            <span class="text-sm font-medium truncate max-w-[7rem]">{{ ($hasNew || $hasPath) ? ($fileLabel ?: 'Adjunto') : 'Subir PDF' }}</span>
+
+                                    <div class="flex flex-col gap-1.5">
+
+                                        {{-- Botón XML --}}
+                                        <label class="group/btn relative inline-flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 text-xs
+                                            {{ ($hasNewXml || $esXmlGuardado)
+                                                ? 'bg-violet-50 border-violet-300 text-violet-700 hover:bg-violet-100 dark:bg-violet-900/20 dark:border-violet-700/50 dark:text-violet-300'
+                                                : 'bg-slate-50 border-slate-300 text-slate-500 hover:bg-slate-100 hover:border-slate-400 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400' }}">
+                                            <input type="file" class="hidden"
+                                                accept="text/xml,application/xml,.xml"
+                                                wire:model="facturaXml.{{ $pIndex }}.{{ $uIndex }}">
+                                            <i class="fas {{ ($hasNewXml || $esXmlGuardado) ? 'fa-code text-violet-500' : 'fa-file-code text-slate-400' }}"></i>
+                                            <span class="font-medium truncate max-w-[6rem]">
+                                                @if($hasNewXml)
+                                                    {{ $parsedOk ? 'XML ✓ ' . count($parsed['conceptos']) . ' conceptos' : 'XML cargado' }}
+                                                @elseif($esXmlGuardado)
+                                                    {{ basename($xmlSavedPath) }}
+                                                @else
+                                                    Subir XML
+                                                @endif
+                                            </span>
                                         </label>
-                                    </div>
-                                    @error("facturas.$pIndex.$uIndex")
-                                    <p class="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> {{ $message }}</p>
-                                    @enderror
-                                    <div wire:loading wire:target="facturas.{{ $pIndex }}.{{ $uIndex }}" class="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                        {{ $tieneProveedorUnico ? 'Aplicando a todas las unidades...' : 'Subiendo archivo...' }}
+                                        <div wire:loading wire:target="facturaXml.{{ $pIndex }}.{{ $uIndex }}" class="text-[10px] text-violet-500 flex items-center gap-1">
+                                            <i class="fas fa-spinner fa-spin"></i> Procesando XML...
+                                        </div>
+                                        @error("facturaXml.$pIndex.$uIndex")
+                                        <p class="text-[10px] text-red-600 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> {{ $message }}</p>
+                                        @enderror
+
+                                        {{-- Link para ver/descargar XML guardado --}}
+                                        @if($esXmlGuardado && !$hasNewXml)
+                                        <a href="{{ Storage::url($xmlSavedPath) }}"
+                                            target="_blank"
+                                            class="inline-flex items-center gap-1 text-[10px] text-violet-600 dark:text-violet-400 hover:underline">
+                                            <i class="fas fa-file-code"></i> Ver XML
+                                        </a>
+                                        @endif
+
+                                        {{-- Botón PDF --}}
+                                        <label class="group/btn relative inline-flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 text-xs
+                                            {{ ($hasNewPdf || $esPdfGuardado)
+                                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-700/50 dark:text-emerald-300'
+                                                : 'bg-slate-50 border-slate-300 text-slate-500 hover:bg-slate-100 hover:border-slate-400 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400' }}">
+                                            <input type="file" class="hidden"
+                                                accept="application/pdf,.pdf"
+                                                wire:model="facturaPdf.{{ $pIndex }}.{{ $uIndex }}">
+                                            <i class="fas {{ ($hasNewPdf || $esPdfGuardado) ? 'fa-file-pdf text-emerald-500' : 'fa-file-pdf text-slate-400' }}"></i>
+                                            <span class="font-medium truncate max-w-[6rem]">
+                                                @if($hasNewPdf)
+                                                    PDF adjunto
+                                                @elseif($esPdfGuardado)
+                                                    {{ basename($pdfSavedPath) }}
+                                                @else
+                                                    Subir PDF
+                                                @endif
+                                            </span>
+                                        </label>
+                                        <div wire:loading wire:target="facturaPdf.{{ $pIndex }}.{{ $uIndex }}" class="text-[10px] text-emerald-500 flex items-center gap-1">
+                                            <i class="fas fa-spinner fa-spin"></i> Subiendo PDF...
+                                        </div>
+                                        @error("facturaPdf.$pIndex.$uIndex")
+                                        <p class="text-[10px] text-red-600 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> {{ $message }}</p>
+                                        @enderror
+
+                                        {{-- Link para ver/descargar PDF guardado --}}
+                                        @if($esPdfGuardado || $hasNewPdf)
+                                        <a href="{{ $esPdfGuardado ? Storage::url($pdfSavedPath) : '#' }}"
+                                            target="_blank"
+                                            class="inline-flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400 hover:underline">
+                                            <i class="fas fa-external-link-alt"></i> Ver PDF
+                                        </a>
+                                        @endif
+
                                     </div>
                                 </div>
+                                {{-- /Facturas --}}
 
+                                {{-- Fecha de entrega --}}
                                 <div class="col-span-3">
                                     <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Fecha de entrega</label>
                                     <input type="date"
@@ -782,6 +837,7 @@
                                     @enderror
                                 </div>
 
+                                {{-- Usuario final --}}
                                 <div class="col-span-4 relative">
                                     <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Usuario final</label>
                                     <div class="relative">
@@ -816,64 +872,105 @@
 
                             </div>
 
+                            {{-- ══════════════════════════════════════════════════════
+                                 Toggle "Requiere configuración" + Checklist
+                            ══════════════════════════════════════════════════════ --}}
                             @php $hasChecklistItems = !empty($u['checklist'] ?? []); @endphp
                             @if($hasChecklistItems)
-                            <div class="group/details mt-5" x-data="{ open: false }"
-                                wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
-                                <button type="button" @click="open = !open"
-                                    class="w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-gradient-to-r from-slate-100/80 to-slate-50/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-slate-700/60 hover:from-slate-100 hover:to-slate-50 dark:hover:from-slate-800 dark:hover:to-slate-800/50 cursor-pointer transition-all duration-200">
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-md shadow-purple-500/20">
-                                            <i class="fas fa-tasks text-sm"></i>
-                                        </div>
-                                        <span class="text-sm font-bold text-slate-800 dark:text-slate-200">Checklist de configuración</span>
-                                    </div>
-                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <i class="fas fa-chevron-down text-xs text-slate-500 dark:text-slate-400 transition-transform duration-300" :class="{ 'rotate-180': open }"></i>
-                                    </span>
-                                </button>
+                            <div class="mt-5" wire:key="checklist-wrap-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
 
-                                <div x-show="open" x-transition class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    @foreach(($u['checklist'] ?? []) as $catKey => $items)
-                                    @if(!empty($items))
-                                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                        <div class="px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b border-slate-100 dark:border-slate-800">
-                                            <div class="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                                <span class="w-2 h-2 rounded-full bg-violet-500"></span>
-                                                {{ $catKey }}
-                                            </div>
-                                        </div>
-                                        <div class="p-4 space-y-3">
-                                            @foreach($items as $idx => $item)
-                                            <div class="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
-                                                <label class="relative flex items-center justify-center cursor-pointer mt-0.5">
-                                                    <input type="checkbox"
-                                                        wire:model.live="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.realizado"
-                                                        class="peer sr-only">
-                                                    <div class="relative w-5 h-5 rounded-md border-2 border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800 peer-focus:ring-2 peer-focus:ring-green-500/20 peer-checked:bg-green-500 peer-checked:border-green-500 transition-all duration-200 flex items-center justify-center">
-                                                        <svg class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                                            <polyline points="4 11 8 15 16 6"></polyline>
-                                                        </svg>
-                                                    </div>
-                                                </label>
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="text-sm text-slate-800 dark:text-slate-200">{{ $item['nombre'] ?? '—' }}</div>
-                                                </div>
-                                                <input type="text"
-                                                    wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.responsable"
-                                                    readonly
-                                                    class="h-8 w-24 px-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 text-center font-medium"
-                                                    placeholder="-">
-                                            </div>
-                                            @error("propuestasAsignacion.$pIndex.unidades.$uIndex.checklist.$catKey.$idx.responsable")
-                                            <p class="text-xs text-red-600 dark:text-red-400 px-2">{{ $message }}</p>
-                                            @enderror
-                                            @endforeach
-                                        </div>
+                                {{-- Toggle --}}
+                                <label class="inline-flex items-center gap-3 cursor-pointer mb-3 select-none">
+                                    <input type="checkbox"
+                                        wire:model.live="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.requiere_config"
+                                        class="peer sr-only">
+
+                                    <div class="relative w-10 h-5 rounded-full border-2 transition-all duration-200
+                                                bg-slate-200 border-slate-300
+                                                peer-checked:bg-violet-500 peer-checked:border-violet-500
+                                                dark:bg-slate-700 dark:border-slate-600
+                                                dark:peer-checked:bg-violet-600 dark:peer-checked:border-violet-600">
+                                        <span class="absolute left-0.5 top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow
+                                                     transition-transform duration-200
+                                                     peer-checked:translate-x-5"></span>
                                     </div>
+
+                                    <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        Requiere configuración
+                                    </span>
+
+                                    @if($u['requiere_config'] ?? false)
+                                    <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                                        Sí
+                                    </span>
+                                    @else
+                                    <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                        No aplica
+                                    </span>
                                     @endif
-                                    @endforeach
+                                </label>
+
+                                @if($u['requiere_config'] ?? false)
+                                <div class="group/details" x-data="{ open: false }"
+                                    wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
+
+                                    <button type="button" @click="open = !open"
+                                        class="w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-gradient-to-r from-slate-100/80 to-slate-50/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-slate-700/60 hover:from-slate-100 hover:to-slate-50 dark:hover:from-slate-800 dark:hover:to-slate-800/50 cursor-pointer transition-all duration-200">
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-md shadow-purple-500/20">
+                                                <i class="fas fa-tasks text-sm"></i>
+                                            </div>
+                                            <span class="text-sm font-bold text-slate-800 dark:text-slate-200">Checklist de configuración</span>
+                                        </div>
+                                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                            <i class="fas fa-chevron-down text-xs text-slate-500 dark:text-slate-400 transition-transform duration-300" :class="{ 'rotate-180': open }"></i>
+                                        </span>
+                                    </button>
+
+                                    <div x-show="open" x-transition class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        @foreach(($u['checklist'] ?? []) as $catKey => $items)
+                                        @if(!empty($items))
+                                        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                            <div class="px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b border-slate-100 dark:border-slate-800">
+                                                <div class="text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                                    <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+                                                    {{ $catKey }}
+                                                </div>
+                                            </div>
+                                            <div class="p-4 space-y-3">
+                                                @foreach($items as $idx => $item)
+                                                <div class="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                                                    <label class="relative flex items-center justify-center cursor-pointer mt-0.5">
+                                                        <input type="checkbox"
+                                                            wire:model.live="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.realizado"
+                                                            class="peer sr-only">
+                                                        <div class="relative w-5 h-5 rounded-md border-2 border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800 peer-focus:ring-2 peer-focus:ring-green-500/20 peer-checked:bg-green-500 peer-checked:border-green-500 transition-all duration-200 flex items-center justify-center">
+                                                            <svg class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                                <polyline points="4 11 8 15 16 6"></polyline>
+                                                            </svg>
+                                                        </div>
+                                                    </label>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="text-sm text-slate-800 dark:text-slate-200">{{ $item['nombre'] ?? '—' }}</div>
+                                                    </div>
+                                                    <input type="text"
+                                                        wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.responsable"
+                                                        readonly
+                                                        class="h-8 w-24 px-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 text-center font-medium"
+                                                        placeholder="-">
+                                                </div>
+                                                @error("propuestasAsignacion.$pIndex.unidades.$uIndex.checklist.$catKey.$idx.responsable")
+                                                <p class="text-xs text-red-600 dark:text-red-400 px-2">{{ $message }}</p>
+                                                @enderror
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        @endif
+                                        @endforeach
+                                    </div>
                                 </div>
+                                @endif
+
                             </div>
                             @endif
 
@@ -884,7 +981,121 @@
                 </div>
                 @endforeach
                 @endif
+
+                {{-- ══════════════════════════════════════════════════════════════════
+                     SECCIÓN: Insumos detectados de facturas XML
+                ══════════════════════════════════════════════════════════════════ --}}
+                @php
+                    $todasFacturasParseadas = collect();
+                    foreach ($propuestasAsignacion as $pi => $p) {
+                        foreach (($p['unidades'] ?? []) as $ui => $u) {
+                            $parsed = $xmlParseado[$pi][$ui] ?? null;
+                            if ($parsed && empty($parsed['error']) && !empty($parsed['conceptos'])) {
+                                $uuid = $parsed['uuid'] ?? '';
+                                if ($uuid && $todasFacturasParseadas->contains('uuid', $uuid)) continue;
+                                $todasFacturasParseadas->push([
+                                    'uuid'      => $uuid,
+                                    'emisor'    => $parsed['emisor'] ?? '',
+                                    'mes'       => $parsed['mes'] ?? '',
+                                    'anio'      => $parsed['anio'] ?? '',
+                                    'total'     => $parsed['total'] ?? '0',
+                                    'moneda'    => $parsed['moneda'] ?? 'MXN',
+                                    'conceptos' => $parsed['conceptos'],
+                                ]);
+                            }
+                        }
+                    }
+                @endphp
+
+                @if($todasFacturasParseadas->isNotEmpty())
+                <div class="rounded-2xl border border-violet-200 dark:border-violet-700/40 bg-violet-50/60 dark:bg-violet-950/20 overflow-hidden">
+                    <div class="px-5 py-3 bg-violet-100/80 dark:bg-violet-900/30 border-b border-violet-200 dark:border-violet-700/40 flex items-center gap-2">
+                        <i class="fas fa-file-invoice text-violet-600 dark:text-violet-400"></i>
+                        <span class="text-sm font-semibold text-violet-800 dark:text-violet-300">
+                            Insumos detectados en XML
+                            <span class="ml-1.5 text-xs font-normal text-violet-500">
+                                ({{ $todasFacturasParseadas->sum(fn($f) => count($f['conceptos'])) }} conceptos · {{ $todasFacturasParseadas->count() }} {{ $todasFacturasParseadas->count() === 1 ? 'factura' : 'facturas' }})
+                            </span>
+                        </span>
+                    </div>
+
+                    <div class="divide-y divide-violet-100 dark:divide-violet-800/30">
+                        @foreach($todasFacturasParseadas as $facturaData)
+                        <div class="px-5 py-4">
+
+                            {{-- Cabecera CFDI --}}
+                            <div class="flex flex-wrap gap-x-5 gap-y-1 mb-3">
+                                @if($facturaData['emisor'])
+                                <div class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                                    <i class="fas fa-building text-violet-400"></i>
+                                    <span class="font-medium">{{ $facturaData['emisor'] }}</span>
+                                </div>
+                                @endif
+                                @if($facturaData['uuid'])
+                                <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                                    <i class="fas fa-fingerprint text-violet-400"></i>
+                                    <span>{{ Str::upper($facturaData['uuid']) }}</span>
+                                </div>
+                                @endif
+                                @if($facturaData['mes'] && $facturaData['anio'])
+                                <div class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                                    <i class="fas fa-calendar-alt text-violet-400"></i>
+                                    <span>{{ $facturaData['mes'] }} {{ $facturaData['anio'] }}</span>
+                                </div>
+                                @endif
+                                @if($facturaData['total'])
+                                <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                    <i class="fas fa-dollar-sign text-violet-400"></i>
+                                    <span>Total: ${{ number_format((float)$facturaData['total'], 2) }} {{ $facturaData['moneda'] }}</span>
+                                </div>
+                                @endif
+                            </div>
+
+                            {{-- Tabla conceptos --}}
+                            <div class="rounded-xl overflow-hidden border border-violet-200 dark:border-violet-700/30">
+                                <table class="w-full text-xs">
+                                    <thead>
+                                        <tr class="bg-violet-100/70 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300">
+                                            <th class="text-left px-3 py-2 font-semibold">Descripción</th>
+                                            <th class="text-right px-3 py-2 font-semibold w-16">Cant.</th>
+                                            <th class="text-right px-3 py-2 font-semibold w-28">Costo unit.</th>
+                                            <th class="text-right px-3 py-2 font-semibold w-28">Importe</th>
+                                            <th class="text-center px-3 py-2 font-semibold w-32">Catálogo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-violet-100 dark:divide-violet-800/20">
+                                        @foreach($facturaData['conceptos'] as $concepto)
+                                        <tr class="bg-white/70 dark:bg-slate-800/40 hover:bg-violet-50/60 transition-colors">
+                                            <td class="px-3 py-2.5 text-slate-700 dark:text-slate-200">{{ $concepto['nombre'] }}</td>
+                                            <td class="px-3 py-2.5 text-right text-slate-500 dark:text-slate-400">{{ $concepto['cantidad'] }}</td>
+                                            <td class="px-3 py-2.5 text-right text-slate-600 dark:text-slate-300 font-mono">${{ number_format((float)($concepto['costo'] ?? 0), 2) }}</td>
+                                            <td class="px-3 py-2.5 text-right font-semibold text-slate-700 dark:text-slate-200 font-mono">${{ number_format((float)($concepto['importe'] ?? 0), 2) }}</td>
+                                            <td class="px-3 py-2.5 text-center">
+                                                @if($concepto['insumoId'])
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/30">
+                                                        <i class="fas fa-check-circle"></i> Encontrado
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-700/30">
+                                                        <i class="fas fa-question-circle"></i> Sin match
+                                                    </span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+                {{-- /Insumos detectados --}}
+
             </div>
+            {{-- /fin overflow-y-auto --}}
 
             <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3 bg-gray-50 dark:bg-slate-900">
                 <button type="button" wire:click="closeAsignacion"
@@ -920,7 +1131,6 @@
 
         <div class="relative w-full max-w-lg mx-4 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
 
-            {{-- Cabecera --}}
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-start justify-between gap-4 bg-gray-50 dark:bg-slate-900">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30">
@@ -943,7 +1153,6 @@
                 </button>
             </div>
 
-            {{-- Cuerpo --}}
             <div class="px-6 py-5 bg-gray-50 dark:bg-slate-900">
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Motivo de cancelación <span class="text-red-500">*</span>
@@ -961,7 +1170,6 @@
                 @enderror
             </div>
 
-            {{-- Pie --}}
             <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3 bg-gray-50 dark:bg-slate-900">
                 <button type="button" wire:click="cerrarModalCancelacion" wire:loading.attr="disabled"
                     class="px-4 py-2.5 text-sm font-medium rounded-lg border border-slate-300 bg-gray-50 text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50">
@@ -985,3 +1193,68 @@
     @endif
 
 </div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// Alpine.js — solicitudesData() + listeners de eventos Livewire (swal)
+// ═══════════════════════════════════════════════════════════════════════════
+function solicitudesData() {
+    return {
+        modalAbierto: false,
+        cargando: false,
+        solicitudSeleccionada: null,
+
+        abrirModal(id) {
+            this.modalAbierto = true;
+            this.cargando = true;
+            this.solicitudSeleccionada = null;
+            fetch(`/solicitudes/${id}/datos`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => { this.solicitudSeleccionada = data; this.cargando = false; })
+            .catch(() => { this.cargando = false; });
+        },
+
+        cerrarModal() {
+            this.modalAbierto = false;
+            this.solicitudSeleccionada = null;
+        }
+    }
+}
+
+// ── Listeners de eventos Livewire ──────────────────────────────────────────
+document.addEventListener('livewire:load', () => {
+
+    Livewire.on('swal:success', data => {
+        const msg = (typeof data === 'string') ? data : (data?.message ?? 'Operación exitosa');
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'success', title: '¡Listo!', text: msg,
+                timer: 3500, showConfirmButton: false,
+                toast: true, position: 'top-end'
+            });
+        } else { alert('✅ ' + msg); }
+    });
+
+    Livewire.on('swal:error', data => {
+        const msg = (typeof data === 'string') ? data : (data?.message ?? 'Error desconocido');
+        if (window.Swal) {
+            Swal.fire({ icon: 'error', title: 'Error', text: msg });
+        } else { alert('❌ ' + msg); }
+    });
+
+    Livewire.on('swal:info', data => {
+        const msg = (typeof data === 'string') ? data : (data?.message ?? '');
+        if (!msg) return;
+        if (window.Swal) {
+            Swal.fire({
+                icon: 'info', text: msg,
+                timer: 3000, showConfirmButton: false,
+                toast: true, position: 'top-end'
+            });
+        }
+    });
+
+});
+</script>

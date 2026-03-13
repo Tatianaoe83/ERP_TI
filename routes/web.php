@@ -114,6 +114,7 @@ Route::group(['middleware' => ['auth']], function () {
 
     Route::resource('facturas', App\Http\Controllers\FacturasController::class);
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
+    Route::post('facturas/parsear-xml', [FacturasController::class, 'parsearXml'])->name('facturas.parsear-xml');
 
     Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
     Route::get('/verInsumos', [CortesController::class, 'obtenerInsumos'])->name('cortes.ver');

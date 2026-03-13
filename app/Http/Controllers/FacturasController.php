@@ -8,8 +8,8 @@ use App\Repositories\FacturasRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use App\Models\Gerencia;
+use App\Models\Insumos;
 use Carbon\Carbon;
-use App\Http\Requests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Response;
@@ -17,53 +17,159 @@ use Yajra\DataTables\Facades\DataTables;
 
 class FacturasController extends AppBaseController
 {
-    /** @var FacturasRepository $facturasRepository*/
+    /** @var FacturasRepository */
     private $facturasRepository;
 
     public function __construct(FacturasRepository $facturasRepo)
     {
         $this->facturasRepository = $facturasRepo;
 
-        $this->middleware('permission:facturas.view', ['only' => ['index']]);
+        $this->middleware('permission:facturas.view',   ['only' => ['index']]);
         $this->middleware('permission:facturas.create', ['only' => ['create', 'store']]);
     }
-    /**
-     * Display a listing of the Facturas.
-     * 
-     * @return Response
-     */
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Parseo de XML CFDI
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public function parsearXml(Request $request)
+    {
+        $request->validate([
+            'xml' => 'required|file|mimes:xml,text/xml|max:2048',
+        ]);
+
+        try {
+            $contenido = file_get_contents($request->file('xml')->getRealPath());
+
+            libxml_use_internal_errors(true);
+            $xml = simplexml_load_string($contenido, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+            if ($xml === false) {
+                $errores = array_map(fn($e) => $e->message, libxml_get_errors());
+                libxml_clear_errors();
+                return response()->json(['error' => 'XML inválido: ' . implode(', ', $errores)], 422);
+            }
+
+            $xml->registerXPathNamespace('cfdi',  'http://www.sat.gob.mx/cfd/4');
+            $xml->registerXPathNamespace('cfdi3', 'http://www.sat.gob.mx/cfd/3');
+            $xml->registerXPathNamespace('tfd',   'http://www.sat.gob.mx/TimbreFiscalDigital');
+
+            $attrs   = $xml->attributes();
+            $version = (string) ($attrs['Version'] ?? $attrs['version'] ?? '3.3');
+            $nsCfdi  = str_starts_with($version, '4') ? 'cfdi' : 'cfdi3';
+
+            $fecha  = (string) ($attrs['Fecha']  ?? $attrs['fecha']  ?? '');
+            $total  = (string) ($attrs['Total']  ?? $attrs['total']  ?? '0');
+            $moneda = (string) ($attrs['Moneda'] ?? $attrs['moneda'] ?? 'MXN');
+
+            $emisorNombre = '';
+            $emisorNodes  = $xml->xpath("//{$nsCfdi}:Emisor") ?: $xml->xpath('//cfdi:Emisor') ?: $xml->xpath('//cfdi3:Emisor');
+            if (!empty($emisorNodes)) {
+                $ea           = $emisorNodes[0]->attributes();
+                $emisorNombre = (string) ($ea['Nombre'] ?? $ea['nombre'] ?? '');
+            }
+
+            $uuid        = '';
+            $timbreNodes = $xml->xpath('//tfd:TimbreFiscalDigital');
+            if (!empty($timbreNodes)) {
+                $ta   = $timbreNodes[0]->attributes();
+                $uuid = (string) ($ta['UUID'] ?? $ta['uuid'] ?? '');
+            }
+
+            // Mes como número 1-12
+            $mes  = null;
+            $anio = null;
+            if ($fecha) {
+                try {
+                    $cf   = Carbon::parse($fecha);
+                    $mes  = (int) $cf->format('n');
+                    $anio = (int) $cf->format('Y');
+                } catch (\Throwable) {}
+            }
+
+            $conceptoNodes = $xml->xpath("//{$nsCfdi}:Concepto")
+                ?: $xml->xpath('//cfdi:Concepto')
+                ?: $xml->xpath('//cfdi3:Concepto')
+                ?: [];
+
+            $catalogoInsumos = Insumos::query()
+                ->whereNull('deleted_at')
+                ->get(['ID', 'NombreInsumo'])
+                ->map(fn($i) => [
+                    'id'     => (int) $i->ID,
+                    'nombre' => mb_strtolower(trim((string) $i->NombreInsumo)),
+                ])
+                ->toArray();
+
+            $conceptos = [];
+            foreach ($conceptoNodes as $concepto) {
+                $cAttr       = $concepto->attributes();
+                $descripcion = (string) ($cAttr['Descripcion'] ?? $cAttr['descripcion'] ?? '');
+                $valorUnit   = (string) ($cAttr['ValorUnitario'] ?? $cAttr['valorUnitario'] ?? '0');
+                $importe     = (string) ($cAttr['Importe']      ?? $cAttr['importe']      ?? '0');
+                $cantidad    = (string) ($cAttr['Cantidad']     ?? $cAttr['cantidad']     ?? '1');
+
+                $insumoId  = null;
+                $descLower = mb_strtolower(trim($descripcion));
+                foreach ($catalogoInsumos as $cat) {
+                    if ($cat['nombre'] === $descLower) { $insumoId = $cat['id']; break; }
+                    if ($cat['nombre'] !== '' && (str_contains($descLower, $cat['nombre']) || str_contains($cat['nombre'], $descLower))) {
+                        $insumoId = $cat['id'];
+                    }
+                }
+
+                $conceptos[] = [
+                    'nombre'   => $descripcion,
+                    'costo'    => $valorUnit,
+                    'importe'  => $importe,
+                    'cantidad' => $cantidad,
+                    'insumoId' => $insumoId,
+                ];
+            }
+
+            return response()->json([
+                'ok'        => true,
+                'version'   => $version,
+                'uuid'      => $uuid,
+                'emisor'    => $emisorNombre,
+                'fecha'     => $fecha,
+                'mes'       => $mes,
+                'anio'      => $anio,
+                'total'     => $total,
+                'moneda'    => $moneda,
+                'conceptos' => $conceptos,
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Error procesando XML: ' . $e->getMessage()], 500);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // index — vista principal
+    // ══════════════════════════════════════════════════════════════════════════
+
     public function index()
     {
         $meses = [
-            'Enero',
-            'Febrero',
-            'Marzo',
-            'Abril',
-            'Mayo',
-            'Junio',
-            'Julio',
-            'Agosto',
-            'Septiembre',
-            'Octubre',
-            'Noviembre',
-            'Diciembre'
+            1  => 'Enero',    2  => 'Febrero',   3  => 'Marzo',
+            4  => 'Abril',    5  => 'Mayo',       6  => 'Junio',
+            7  => 'Julio',    8  => 'Agosto',     9  => 'Septiembre',
+            10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
         ];
 
-        $currentDate = (int) Carbon::now()->format('Y');
-        $years = range($currentDate, $currentDate + 8);
+        $currentYear = (int) Carbon::now()->format('Y');
+        $years       = range($currentYear - 2, $currentYear + 3);
 
-        // Gerencias que tienen al menos una solicitud_activo con factura y empleado con gerencia (solo estado = 1)
+        // Solo gerencias que tienen facturas registradas
         $gerenciasConFacturas = Gerencia::query()
             ->where('estado', 1)
             ->whereIn('GerenciaID', function ($q) {
-                $q->select('departamentos.GerenciaID')
-                    ->from('solicitud_activos')
-                    ->join('empleados', 'solicitud_activos.EmpleadoID', '=', 'empleados.EmpleadoID')
-                    ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-                    ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
-                    ->whereNotNull('solicitud_activos.FacturaPath')
-                    ->where('solicitud_activos.FacturaPath', '!=', '')
-                    ->whereNull('solicitud_activos.deleted_at');
+                $q->select('solicitudes.GerenciaID')
+                    ->from('facturas')
+                    ->join('solicitudes', 'facturas.SolicitudID', '=', 'solicitudes.SolicitudID')
+                    ->whereNull('facturas.deleted_at')
+                    ->whereNotNull('solicitudes.GerenciaID');
             })
             ->orderBy('NombreGerencia')
             ->pluck('NombreGerencia', 'GerenciaID')
@@ -74,188 +180,124 @@ class FacturasController extends AppBaseController
         return view('facturas.index', compact('meses', 'years', 'gerencia'));
     }
 
-    /**
-     * Datos para la tabla de facturas: solicitud_activos con factura asignada a empleado con gerencia.
-     */
+    // ══════════════════════════════════════════════════════════════════════════
+    // indexVista — DataTables AJAX
+    // Query: facturas → solicitudes → gerencia → insumos
+    // Columnas devueltas:
+    //   Nombre, SolicitudID, NombreGerencia, Costo, Mes (número), Anio,
+    //   NombreInsumo, PdfRuta
+    // ══════════════════════════════════════════════════════════════════════════
+
     public function indexVista(Request $request)
     {
-        $gerenciaID = $request->input('gerenci_id');
-        $mes = $request->input('mes');
-        $año = $request->input('año');
-
-        if ($request->ajax()) {
-            $query = DB::table('solicitud_activos')
-                ->select([
-                    'solicitud_activos.SolicitudActivoID',
-                    'solicitud_activos.FacturaPath',
-                    'solicitud_activos.FechaEntrega',
-                    'solicitud_activos.CotizacionID',
-                    'departamentos.GerenciaID',
-                    'gerencia.NombreGerencia',
-                    DB::raw('COALESCE(cotizaciones.Descripcion, cotizaciones.NombreEquipo, \'—\') as NombreInsumo'),
-                    DB::raw('COALESCE(cotizaciones.Precio, 0) as Costo'),
-                ])
-                ->join('empleados', 'solicitud_activos.EmpleadoID', '=', 'empleados.EmpleadoID')
-                ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-                ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
-                ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
-                ->join('cotizaciones', 'solicitud_activos.CotizacionID', '=', 'cotizaciones.CotizacionID')
-                ->whereNotNull('solicitud_activos.FacturaPath')
-                ->where('solicitud_activos.FacturaPath', '!=', '')
-                ->whereNull('solicitud_activos.deleted_at');
-
-            if ($gerenciaID) {
-                $query->where('departamentos.GerenciaID', $gerenciaID);
-            }
-            if ($mes) {
-                $mesesNum = [
-                    'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4, 'Mayo' => 5, 'Junio' => 6,
-                    'Julio' => 7, 'Agosto' => 8, 'Septiembre' => 9, 'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12,
-                ];
-                $numMes = $mesesNum[$mes] ?? null;
-                if ($numMes) {
-                    $query->whereMonth('solicitud_activos.FechaEntrega', $numMes);
-                }
-            }
-            if ($año) {
-                $query->whereYear('solicitud_activos.FechaEntrega', $año);
-            }
-
-            $query->orderBy('solicitud_activos.FechaEntrega', 'desc');
-
-            return DataTables::of($query)
-                ->addColumn('Mes', function ($row) {
-                    if (empty($row->FechaEntrega)) {
-                        return '—';
-                    }
-                    $fecha = \Carbon\Carbon::parse($row->FechaEntrega);
-                    $meses = [
-                        1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril', 5 => 'Mayo', 6 => 'Junio',
-                        7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
-                    ];
-                    return $meses[(int) $fecha->format('n')] ?? $row->FechaEntrega;
-                })
-                ->rawColumns(['Mes'])
-                ->make(true);
+        if (!$request->ajax()) {
+            return redirect()->route('facturas.index');
         }
 
-        return redirect()->route('facturas.index');
+        $gerenciaID = $request->input('gerenci_id');
+        $mesParam   = $request->input('mes');    // puede llegar como número o nombre
+        $año        = $request->input('año');
+
+        // Convertir mes a número si llega como nombre
+        $mesesNum = [
+            'Enero'=>1,'Febrero'=>2,'Marzo'=>3,'Abril'=>4,
+            'Mayo'=>5,'Junio'=>6,'Julio'=>7,'Agosto'=>8,
+            'Septiembre'=>9,'Octubre'=>10,'Noviembre'=>11,'Diciembre'=>12,
+        ];
+        $numMes = is_numeric($mesParam)
+            ? (int) $mesParam
+            : ($mesesNum[$mesParam] ?? null);
+
+        $query = DB::table('facturas')
+            ->select([
+                'facturas.FacturasID',
+                'facturas.Nombre',
+                'facturas.SolicitudID',
+                'facturas.Costo',
+                'facturas.Mes',
+                'facturas.Anio',
+                'facturas.PdfRuta',
+                'gerencia.NombreGerencia',
+                'insumos.NombreInsumo',
+            ])
+            ->join('solicitudes', 'facturas.SolicitudID', '=', 'solicitudes.SolicitudID')
+            ->join('gerencia',    'solicitudes.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('insumos', 'facturas.InsumoID', '=', 'insumos.ID')
+            ->whereNull('facturas.deleted_at');
+
+        if ($gerenciaID) {
+            $query->where('solicitudes.GerenciaID', $gerenciaID);
+        }
+
+        if ($numMes) {
+            $query->where('facturas.Mes', $numMes);
+        }
+
+        if ($año) {
+            $query->where('facturas.Anio', (int) $año);
+        }
+
+        $query->orderBy('facturas.created_at', 'desc');
+
+        $mesesNombres = [
+            1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',
+            5=>'Mayo',6=>'Junio',7=>'Julio',8=>'Agosto',
+            9=>'Septiembre',10=>'Octubre',11=>'Noviembre',12=>'Diciembre',
+        ];
+
+        return DataTables::of($query)
+            ->addColumn('MesNombre', function ($row) use ($mesesNombres) {
+                return $mesesNombres[(int) $row->Mes] ?? '—';
+            })
+            ->rawColumns(['MesNombre'])
+            ->make(true);
     }
 
-    /**
-     * Show the form for creating a new Facturas.
-     *
-     * @return Response
-     */
+    // ══════════════════════════════════════════════════════════════════════════
+    // CRUD original
+    // ══════════════════════════════════════════════════════════════════════════
+
     public function create()
     {
         return view('facturas.create');
     }
 
-    /**
-     * Store a newly created Facturas in storage.
-     *
-     * @param CreateFacturasRequest $request
-     *
-     * @return Response
-     */
     public function store(CreateFacturasRequest $request)
     {
-        $input = $request->all();
-
-        $facturas = $this->facturasRepository->create($input);
-
-        Flash::success('Facturas saved successfully.');
-
+        $this->facturasRepository->create($request->all());
+        Flash::success('Factura guardada correctamente.');
         return redirect(route('facturas.index'));
     }
 
-    /**
-     * Display the specified Facturas.
-     *
-     * @param int $id
-     *
-     * @return Response
-     */
     public function show($id)
     {
         $facturas = $this->facturasRepository->find($id);
-
-        if (empty($facturas)) {
-            Flash::error('Facturas not found');
-
-            return redirect(route('facturas.index'));
-        }
-
+        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
         return view('facturas.show')->with('facturas', $facturas);
     }
 
-    /**
-     * Show the form for editing the specified Facturas.
-     *
-     * @param int $id
-     *
-     * @return Response
-     */
     public function edit($id)
     {
         $facturas = $this->facturasRepository->find($id);
-
-        if (empty($facturas)) {
-            Flash::error('Facturas not found');
-
-            return redirect(route('facturas.index'));
-        }
-
+        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
         return view('facturas.edit')->with('facturas', $facturas);
     }
 
-    /**
-     * Update the specified Facturas in storage.
-     *
-     * @param int $id
-     * @param UpdateFacturasRequest $request
-     *
-     * @return Response
-     */
     public function update($id, UpdateFacturasRequest $request)
     {
         $facturas = $this->facturasRepository->find($id);
-
-        if (empty($facturas)) {
-            Flash::error('Facturas not found');
-
-            return redirect(route('facturas.index'));
-        }
-
-        $facturas = $this->facturasRepository->update($request->all(), $id);
-
-        Flash::success('Facturas updated successfully.');
-
+        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
+        $this->facturasRepository->update($request->all(), $id);
+        Flash::success('Factura actualizada correctamente.');
         return redirect(route('facturas.index'));
     }
 
-    /**
-     * Remove the specified Facturas from storage.
-     *
-     * @param int $id
-     *
-     * @return Response
-     */
     public function destroy($id)
     {
         $facturas = $this->facturasRepository->find($id);
-
-        if (empty($facturas)) {
-            Flash::error('Facturas not found');
-
-            return redirect(route('facturas.index'));
-        }
-
+        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
         $this->facturasRepository->delete($id);
-
-        Flash::success('Facturas deleted successfully.');
-
+        Flash::success('Factura eliminada correctamente.');
         return redirect(route('facturas.index'));
     }
 }
