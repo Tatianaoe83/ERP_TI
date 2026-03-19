@@ -1,242 +1,95 @@
-@extends('layouts.app')
+{{--
+    Partial: facturas/_tab_facturas.blade.php
+    Incluido desde: facturas/index.blade.php
+    Variables esperadas: $gerencia, $meses, $years
+--}}
 
-@section('content')
-<style>
-    .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
-    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-    .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-    .dark .custom-scroll::-webkit-scrollbar-thumb { background-color: #475569; }
+<div class="bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
 
-    .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
-    .tab-content.active { display: block; opacity: 1; }
+    {{-- Filtros --}}
+    <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+        <form id="formFilter" class="flex flex-col lg:flex-row items-end gap-4">
 
-    /* DataTable overrides */
-    #facturasTable_wrapper .dataTables_processing {
-        background: transparent;
-        color: #6366f1;
-        font-size: 0.8rem;
-    }
-</style>
-
-<div class="w-full mx-auto max-w-7xl">
-
-    {{-- Header --}}
-    <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                <i class="fas fa-file-invoice text-xl"></i>
-            </div>
-            <div>
-                <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Gestión de Facturas</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Administra y visualiza el historial.</p>
-            </div>
-        </div>
-
-        <div class="flex p-1 bg-gray-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <button onclick="switchTab('facturas')" id="tab-facturas"
-                class="px-6 py-2 text-sm font-bold rounded-lg transition-all duration-300 flex items-center gap-2 bg-indigo-600 text-white shadow-md">
-                <i class="fas fa-receipt"></i> Facturas
-            </button>
-            <button onclick="switchTab('historial')" id="tab-historial"
-                class="px-6 py-2 text-sm font-bold rounded-lg transition-all duration-300 flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">
-                <i class="fas fa-history"></i> Historial
-            </button>
-        </div>
-    </div>
-
-    {{-- Tab Facturas --}}
-    <div id="content-facturas" class="tab-content active">
-        <div class="bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-
-            {{-- Filtros --}}
-            <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
-                <form id="formFilter" class="flex flex-col lg:flex-row items-end gap-4">
-
-                    {{-- Gerencia --}}
-                    <div class="w-full lg:w-1/3">
-                        <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Gerencia</label>
-                        <div class="relative">
-                            {!! Form::select('gerenci_id', $gerencia, null, [
-                                'class' => 'w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all',
-                                'id' => 'gerenci_id'
-                            ]) !!}
-                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-chevron-down text-xs"></i></div>
-                        </div>
-                    </div>
-
-                    {{-- Mes --}}
-                    <div class="w-full lg:w-1/5">
-                        <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mes</label>
-                        <div class="relative">
-                            <select id="mesFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
-                                <option value="">Todos los meses</option>
-                                @foreach($meses as $num => $nombre)
-                                    <option value="{{ $num }}">{{ $nombre }}</option>
-                                @endforeach
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar-alt text-xs"></i></div>
-                        </div>
-                    </div>
-
-                    {{-- Año --}}
-                    <div class="w-full lg:w-1/5">
-                        <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Año</label>
-                        <div class="relative">
-                            <select id="añoFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
-                                <option value="">Todos los años</option>
-                                @foreach($years as $año)
-                                    <option value="{{ $año }}">{{ $año }}</option>
-                                @endforeach
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar text-xs"></i></div>
-                        </div>
-                    </div>
-
-                    {{-- Botón --}}
-                    <div class="w-full lg:w-auto">
-                        <button type="submit" class="w-full h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                            <i class="fas fa-filter mr-2"></i> Filtrar
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {{-- Barra de gerencia seleccionada --}}
-            <div id="gerenciaInfo" class="hidden p-4 bg-indigo-50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-300">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <span id="titleGerencia" class="text-lg font-bold text-slate-800 dark:text-slate-100"></span>
-                </div>
-                <div class="flex gap-3">
-                    <button id="crear" class="h-10 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-md transition-all flex items-center gap-2" data-toggle="modal" data-target="#modalFactura">
-                        <i class="fas fa-plus"></i> Crear Factura
-                    </button>
-                    <button id="graficas" class="h-10 px-4 rounded-lg bg-gray-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-2">
-                        <i class="fas fa-chart-pie text-indigo-500"></i> Ver Gráficas
-                    </button>
+            {{-- Gerencia --}}
+            <div class="w-full lg:w-1/3">
+                <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Gerencia</label>
+                <div class="relative">
+                    {!! Form::select('gerenci_id', $gerencia, null, [
+                        'class' => 'w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all',
+                        'id' => 'gerenci_id'
+                    ]) !!}
+                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-chevron-down text-xs"></i></div>
                 </div>
             </div>
 
-            {{-- Tabla --}}
-            <div class="w-full overflow-x-auto">
-                <table id="facturasTable" class="w-full text-left border-collapse">
-                    <thead class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700">
-                        <tr>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Nombre</th>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Solicitud</th>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Gerencia</th>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo</th>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mes</th>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Año</th>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Insumo</th>
-                            <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">PDF</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-gray-50 dark:bg-slate-900"></tbody>
-                </table>
+            {{-- Mes --}}
+            <div class="w-full lg:w-1/5">
+                <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mes</label>
+                <div class="relative">
+                    <select id="mesFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
+                        <option value="">Todos los meses</option>
+                        @foreach($meses as $num => $nombre)
+                            <option value="{{ $num }}">{{ $nombre }}</option>
+                        @endforeach
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar-alt text-xs"></i></div>
+                </div>
             </div>
 
-        </div>
-    </div>
-
-    {{-- Tab Historial --}}
-    <div id="content-historial" class="tab-content">
-        <div class="bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-8 text-center">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
-                <i class="fas fa-history text-3xl text-slate-400 dark:text-slate-500"></i>
+            {{-- Año --}}
+            <div class="w-full lg:w-1/5">
+                <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Año</label>
+                <div class="relative">
+                    <select id="añoFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
+                        <option value="">Todos los años</option>
+                        @foreach($years as $año)
+                            <option value="{{ $año }}">{{ $año }}</option>
+                        @endforeach
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar text-xs"></i></div>
+                </div>
             </div>
-            <h3 class="text-xl font-bold text-slate-800 dark:text-white">Historial de Cortes</h3>
-            <p class="text-slate-500 dark:text-slate-400 mt-2">Aquí podrás ver el historial de cortes generados anteriormente.</p>
-            <div class="mt-8 p-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                <span class="text-sm font-medium text-slate-400">Contenido del historial próximamente...</span>
-            </div>
-        </div>
-    </div>
 
-</div>
-
-{{-- Modal Subir XML --}}
-<div class="modal fade" id="modalFactura" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden bg-gray-50 dark:bg-slate-900">
-            <div class="modal-header border-b border-slate-100 dark:border-slate-800 p-5 bg-slate-50/50 dark:bg-slate-950/50">
-                <h5 class="modal-title text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <i class="fas fa-file-upload text-indigo-500"></i> Subir XML
-                </h5>
-                <button type="button" class="close text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 outline-none" data-dismiss="modal" aria-label="Cerrar">
-                    <span aria-hidden="true">&times;</span>
+            {{-- Botón Filtrar --}}
+            <div class="w-full lg:w-auto">
+                <button type="submit" class="w-full h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                    <i class="fas fa-filter mr-2"></i> Filtrar
                 </button>
             </div>
-            <div class="modal-body p-6">
-                <div class="flex gap-4 mb-6">
-                    <div class="flex-1 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
-                        <label class="block text-[10px] font-bold text-indigo-400 uppercase">Gerencia</label>
-                        <span id="previewGerencia" class="text-sm font-bold text-indigo-700 dark:text-indigo-300 block truncate">--</span>
-                    </div>
-                    <div class="flex-1 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
-                        <label class="block text-[10px] font-bold text-indigo-400 uppercase">Mes</label>
-                        <span id="previewMes" class="text-sm font-bold text-indigo-700 dark:text-indigo-300 block">--</span>
-                    </div>
-                </div>
-
-                <form action="{{ route('cortes.saveXML') }}" method="POST" id="formImagen" enctype="multipart/form-data">
-                    @csrf
-                    <input type="hidden" name="gerenci_id" id="modalGerenciaInput">
-                    <input type="hidden" name="mes" id="modalMesInput">
-
-                    <div class="mb-5">
-                        <label class="block w-full cursor-pointer group">
-                            <div class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-800/50 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/10 group-hover:border-indigo-400 transition-all">
-                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                    <i class="fas fa-cloud-upload-alt text-3xl text-slate-400 mb-2 group-hover:text-indigo-500 transition-colors"></i>
-                                    <p class="mb-1 text-sm text-slate-500 dark:text-slate-400"><span class="font-bold text-indigo-500">Clic para subir</span> o arrastra</p>
-                                    <p class="text-xs text-slate-400">Soporta archivos .XML</p>
-                                </div>
-                                <input type="file" id="inputImage" name="imagen" accept=".xml" required class="hidden" />
-                            </div>
-                        </label>
-                        <div id="fileName" class="mt-2 text-xs text-center text-emerald-500 font-medium h-4"></div>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                        Procesar Factura
-                    </button>
-                </form>
-            </div>
-        </div>
+        </form>
     </div>
+
+    {{-- Barra de gerencia seleccionada --}}
+    <div id="gerenciaInfo" class="hidden p-4 bg-indigo-50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-800 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shrink-0">
+            <i class="fas fa-building"></i>
+        </div>
+        <span id="titleGerencia" class="text-lg font-bold text-slate-800 dark:text-slate-100"></span>
+    </div>
+
+    {{-- Tabla --}}
+    <div class="w-full overflow-x-auto">
+        <table id="facturasTable" class="w-full text-left border-collapse">
+            <thead class="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Nombre</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Solicitud</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Gerencia</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mes</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Año</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Insumo</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">PDF</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-gray-50 dark:bg-slate-900"></tbody>
+        </table>
+    </div>
+
 </div>
 
-@endsection
-
-@push('third_party_scripts')
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-
+@push('facturas_scripts')
 <script>
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-function switchTab(tab) {
-    const base    = "px-6 py-2 text-sm font-bold rounded-lg transition-all duration-300 flex items-center gap-2 ";
-    const normal  = "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700";
-    const active  = "bg-indigo-600 text-white shadow-md";
-
-    ['facturas','historial'].forEach(t => {
-        document.getElementById('tab-' + t).className = base + (t === tab ? active : normal);
-    });
-
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.getElementById('content-' + tab).classList.add('active');
-}
-
-// ── Input file nombre ─────────────────────────────────────────────────────────
-document.getElementById('inputImage').addEventListener('change', function(e) {
-    const name = e.target.files[0]?.name;
-    document.getElementById('fileName').textContent = name ? 'Archivo: ' + name : '';
-});
-
-// ── DataTable ─────────────────────────────────────────────────────────────────
 $(document).ready(function() {
     const currencyFmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
@@ -245,6 +98,8 @@ $(document).ready(function() {
         5:'Mayo', 6:'Junio', 7:'Julio', 8:'Agosto',
         9:'Septiembre', 10:'Octubre', 11:'Noviembre', 12:'Diciembre'
     };
+
+    const insumoCache = {};
 
     const table = $('#facturasTable').DataTable({
         destroy: true,
@@ -265,9 +120,9 @@ $(document).ready(function() {
             url: '{{ route("facturas.ver") }}',
             method: 'GET',
             data: function(d) {
-                d.mes       = $('#mesFilter').val();
+                d.mes        = $('#mesFilter').val();
                 d.gerenci_id = $('#gerenci_id').val();
-                d.año       = $('#añoFilter').val();
+                d.año        = $('#añoFilter').val();
             },
             dataSrc: 'data'
         },
@@ -333,15 +188,41 @@ $(document).ready(function() {
                     return `<span class="text-sm font-semibold text-slate-600 dark:text-slate-300">${data}</span>`;
                 }
             },
-            // Insumo
+            // Insumo — select editable poblado desde cortes
             {
-                data: 'NombreInsumo',
+                data: 'InsumoNombre',
                 className: 'px-4 py-3 border-b dark:border-slate-800',
-                render: function(data) {
-                    if (!data) return '<span class="text-xs text-slate-400 italic">Sin match</span>';
-                    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-800/40">
-                        <i class="fas fa-tag text-[9px]"></i>${data}
-                    </span>`;
+                orderable: false,
+                render: function(val, type, row) {
+                    const valorActual = val ? val.replace(/"/g, '&quot;') : '';
+                    const labelActual = val
+                        ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-800/40">
+                               <i class="fas fa-tag text-[9px]"></i>${val}
+                           </span>`
+                        : '';
+
+                    return `
+                    <div class="insumo-select-wrap relative" data-factura="${row.FacturasID}" data-solicitud="${row.SolicitudID}" data-valor="${valorActual}">
+                        <div class="insumo-label mb-1">${labelActual}</div>
+                        <div class="relative inline-block">
+                            <select class="insumo-select pl-3 pr-8 py-1.5 text-xs font-medium rounded-lg outline-none transition-all cursor-pointer appearance-none
+                                           bg-gray-50 dark:bg-slate-900
+                                           border border-slate-200 dark:border-slate-700
+                                           text-slate-600 dark:text-slate-300
+                                           hover:border-violet-400 dark:hover:border-violet-500
+                                           focus:border-violet-500 dark:focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
+                                    style="min-width:160px"
+                                    data-loaded="false"
+                                    data-factura="${row.FacturasID}"
+                                    data-solicitud="${row.SolicitudID}"
+                                    data-valor="${valorActual}">
+                                <option value="">— Asignar insumo —</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                            </div>
+                        </div>
+                    </div>`;
                 }
             },
             // PDF
@@ -371,6 +252,94 @@ $(document).ready(function() {
         }
     });
 
+    // Carga lazy de insumos al hacer focus en el select
+    $('#facturasTable').on('focus', '.insumo-select', async function() {
+        const $sel     = $(this);
+        const solID    = $sel.data('solicitud');
+        const valorAct = $sel.data('valor') || '';
+
+        if ($sel.data('loaded') === true || $sel.data('loaded') === 'true') return;
+        $sel.data('loaded', true);
+
+        $sel.empty().append('<option>Cargando...</option>').prop('disabled', true);
+
+        try {
+            let insumos = insumoCache[solID];
+
+            if (!insumos) {
+                const res  = await fetch(
+                    `{{ route('facturas.insumosPorGerencia') }}?solicitudID=${encodeURIComponent(solID)}`,
+                    { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }
+                );
+                const json = await res.json();
+                insumos    = json.data || [];
+                insumoCache[solID] = insumos;
+            }
+
+            $sel.empty().append('<option value="">— Sin asignar —</option>');
+
+            insumos.forEach(nombre => {
+                const selected = nombre === valorAct ? 'selected' : '';
+                $sel.append(`<option value="${nombre}" ${selected}>${nombre}</option>`);
+            });
+
+            if (insumos.length === 0) {
+                $sel.append('<option value="" disabled>Sin insumos en corte</option>');
+            }
+
+        } catch (e) {
+            $sel.empty().append('<option value="" disabled>Error al cargar</option>');
+            console.error('Error cargando insumos:', e);
+        }
+
+        $sel.prop('disabled', false);
+    });
+
+    // Guardar al cambiar el select
+    $('#facturasTable').on('change', '.insumo-select', async function() {
+        const $sel      = $(this);
+        const $wrap     = $sel.closest('.insumo-select-wrap');
+        const facturaID = $sel.data('factura');
+        const nombre    = $sel.val();
+
+        $sel.prop('disabled', true);
+
+        try {
+            const res = await fetch(`/facturas/${facturaID}/insumo`, {
+                method:  'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept':       'application/json'
+                },
+                body: JSON.stringify({ InsumoNombre: nombre })
+            });
+
+            if (!res.ok) throw new Error('Error HTTP ' + res.status);
+
+            const $label = $wrap.find('.insumo-label');
+            if (nombre) {
+                $label.html(`
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 border border-violet-100 dark:border-violet-800/40">
+                        <i class="fas fa-tag text-[9px]"></i>${nombre}
+                    </span>`);
+            } else {
+                $label.html('');
+            }
+
+            $sel.data('valor', nombre);
+            $sel.addClass('!border-emerald-500');
+            setTimeout(() => $sel.removeClass('!border-emerald-500'), 1200);
+
+        } catch (e) {
+            console.error('Error guardando insumo:', e);
+            $sel.addClass('!border-red-500');
+            setTimeout(() => $sel.removeClass('!border-red-500'), 1500);
+        }
+
+        $sel.prop('disabled', false);
+    });
+
     // Filtrar al submit
     $('#formFilter').on('submit', function(e) {
         e.preventDefault();
@@ -382,18 +351,6 @@ $(document).ready(function() {
             $('#gerenciaInfo').addClass('hidden').removeClass('flex');
         }
         table.ajax.reload();
-    });
-
-    // Modal: pasar datos actuales
-    $('#crear').click(function() {
-        const gerenciaSel = $('#gerenci_id option:selected').text();
-        const mesSel      = $('#mesFilter option:selected').text();
-
-        $('#modalGerenciaInput').val($('#gerenci_id').val());
-        $('#modalMesInput').val($('#mesFilter').val());
-
-        $('#previewGerencia').text(gerenciaSel !== 'Selecciona una opción' ? gerenciaSel : '---');
-        $('#previewMes').text(mesSel !== 'Todos los meses' ? mesSel : '---');
     });
 });
 </script>

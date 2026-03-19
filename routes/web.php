@@ -112,13 +112,18 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('/export-lineas-asignadas-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportLineasAsignadasExcel'])->name('export-lineas-asignadas-excel');
     });
 
-    Route::resource('facturas', App\Http\Controllers\FacturasController::class);
+    
+    Route::get('facturas/comparativa', [FacturasController::class, 'comparativa'])->name('facturas.comparativa');
+    Route::get('facturas/historial', [FacturasController::class, 'historial'])->name('facturas.historial');
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
     Route::post('facturas/parsear-xml', [FacturasController::class, 'parsearXml'])->name('facturas.parsear-xml');
+    Route::get('facturas/insumos-por-gerencia', [FacturasController::class, 'getInsumosPorGerencia'])->name('facturas.insumosPorGerencia');
+    Route::patch('facturas/{id}/insumo', [FacturasController::class, 'actualizarInsumo'])->name('facturas.actualizarInsumo');
+    Route::resource('facturas', App\Http\Controllers\FacturasController::class);
 
     Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
     Route::get('/verInsumos', [CortesController::class, 'obtenerInsumos'])->name('cortes.ver');
-    Route::get('indexVista', [App\Http\Controllers\CortesController::class, 'indexVista'])->name('cortes.indexVista');
+    Route::get('indexVista', [CortesController::class, 'indexVista'])->name('cortes.indexVista');
     Route::post('/cortes/saveXML', [CortesController::class, 'saveXML'])->name('cortes.saveXML');
     Route::post('/cortes/readXML', [CortesController::class, 'readXML'])->name('cortes.readXML');
     Route::resource('cortes', App\Http\Controllers\CortesController::class);
