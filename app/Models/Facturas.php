@@ -5,70 +5,77 @@ namespace App\Models;
 use Eloquent as Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-
 /**
  * Class Facturas
  * @package App\Models
- * @version July 23, 2025, 5:19 pm UTC
- *
- * @property \App\Models\Insumo $insumoid
- * @property string $Imagen
- * @property string $Descripcion
- * @property number $Importe
- * @property integer $InsumoID
  */
 class Facturas extends Model
 {
     use SoftDeletes;
 
-
     public $table = 'facturas';
-    
+
+    // ← CRÍTICO: sin esto el repositorio busca por 'id' y falla
+    protected $primaryKey = 'FacturasID';
+
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
-
     protected $dates = ['deleted_at'];
 
-
-
     public $fillable = [
-        'Imagen',
-        'Descripcion',
+        'Nombre',
+        'SolicitudID',
         'Importe',
-        'InsumoID'
+        'Costo',
+        'Mes',
+        'Anio',
+        'InsumoID',
+        'InsumoNombre', // ← NUEVO: nombre del insumo desde cortes
+        'ArchivoRuta',
+        'PdfRuta',
+        'UUID',
+        'Emisor',
     ];
 
-    /**
-     * The attributes that should be casted to native types.
-     *
-     * @var array
-     */
     protected $casts = [
-        'FacturasID' => 'integer',
-        'Imagen' => 'string',
-        'Descripcion' => 'string',
-        'Importe' => 'decimal:2',
-        'InsumoID' => 'integer'
+        'FacturasID'   => 'integer',
+        'Nombre'       => 'string',
+        'SolicitudID'  => 'integer',
+        'Importe'      => 'decimal:2',
+        'Costo'        => 'decimal:2',
+        'Mes'          => 'integer',
+        'Anio'         => 'integer',
+        'InsumoID'     => 'integer',
+        'InsumoNombre' => 'string',
+        'ArchivoRuta'  => 'string',
+        'PdfRuta'      => 'string',
+        'UUID'         => 'string',
+        'Emisor'       => 'string',
     ];
 
-    /**
-     * Validation rules
-     *
-     * @var array
-     */
     public static $rules = [
-        'Imagen' => 'required|string|max:100',
-        'Descripcion' => 'nullable|string',
-        'Importe' => 'nullable|numeric',
-        'InsumoID' => 'nullable|integer'
+        'Nombre'       => 'nullable|string|max:300',
+        'SolicitudID'  => 'nullable|integer',
+        'Importe'      => 'nullable|numeric',
+        'Costo'        => 'nullable|numeric',
+        'Mes'          => 'nullable|integer|min:1|max:12',
+        'Anio'         => 'nullable|integer',
+        'InsumoID'     => 'nullable|integer',
+        'InsumoNombre' => 'nullable|string|max:150',
+        'ArchivoRuta'  => 'nullable|string|max:500',
+        'PdfRuta'      => 'nullable|string|max:500',
+        'UUID'         => 'nullable|string|max:36',
+        'Emisor'       => 'nullable|string|max:300',
     ];
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     **/
     public function insumoid()
     {
         return $this->belongsTo(\App\Models\Insumo::class, 'InsumoID');
+    }
+
+    public function solicitud()
+    {
+        return $this->belongsTo(\App\Models\Solicitud::class, 'SolicitudID');
     }
 }

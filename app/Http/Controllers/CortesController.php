@@ -401,7 +401,7 @@ class CortesController extends AppBaseController
      */
     public function obtenerCorteGuardado(Request $request)
     {
-        $anio = (int) $request->input('anio');
+        $anio       = (int) $request->input('anio');
         $gerenciaID = (int) $request->input('gerenciaID');
 
         if (!$anio || !$gerenciaID) {
@@ -412,8 +412,9 @@ class CortesController extends AppBaseController
         }
 
         $mesesOrden = [
-            'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4, 'Mayo' => 5, 'Junio' => 6,
-            'Julio' => 7, 'Agosto' => 8, 'Septiembre' => 9, 'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12,
+            'Enero' => 1, 'Febrero' => 2, 'Marzo' => 3, 'Abril' => 4,
+            'Mayo'  => 5, 'Junio'   => 6, 'Julio' => 7, 'Agosto' => 8,
+            'Septiembre' => 9, 'Octubre' => 10, 'Noviembre' => 11, 'Diciembre' => 12,
         ];
         $nombresMeses = array_keys($mesesOrden);
 
@@ -421,6 +422,7 @@ class CortesController extends AppBaseController
             ->where('Anio', $anio)
             ->whereNull('deleted_at')
             ->orderBy('NombreInsumo')
+            ->orderBy('Costo')   // para que las variantes salgan ordenadas de menor a mayor
             ->orderBy('Mes')
             ->get();
 
@@ -431,47 +433,56 @@ class CortesController extends AppBaseController
             ], 200);
         }
 
-        $agrupado = $rows->groupBy('NombreInsumo')->map(function ($registros, $nombreInsumo) use ($nombresMeses, $mesesOrden) {
-            $porMes = [];
-            $sumaCosto = 0;
-            $sumaCostoTotal = 0;
-            $margen = 0;
-            $count = 0;
+        // ── Agrupar por NombreInsumo → luego por Costo (cada Costo distinto = una variante) ──
+        $resultado = [];
 
-            foreach ($registros as $r) {
-                $mes = $r->Mes ?? '';
-                $costo = (float) ($r->Costo ?? 0);
-                $costoTotal = (float) ($r->CostoTotal ?? 0);
-                $margen = (float) ($r->Margen ?? 0);
+        $porInsumo = $rows->groupBy('NombreInsumo');
 
-                $porMes[$mes] = [
-                    'Costo'      => round($costo, 2),
-                    'CostoTotal' => round($costoTotal, 2),
-                ];
-                $sumaCosto += $costo;
-                $sumaCostoTotal += $costoTotal;
-                $count++;
-            }
+        foreach ($porInsumo as $nombreInsumo => $registros) {
 
-            foreach ($nombresMeses as $m) {
-                if (!isset($porMes[$m])) {
-                    $porMes[$m] = ['Costo' => 0, 'CostoTotal' => 0];
+            // Sub-agrupar por valor de Costo para separar variantes
+            $porCosto = $registros->groupBy(fn($r) => (string) round((float) ($r->Costo ?? 0), 2));
+
+            foreach ($porCosto as $costoKey => $regsVariante) {
+
+                $costoBase   = (float) $costoKey;
+                $margen      = (float) ($regsVariante->first()->Margen ?? 0);
+                $costoConMg  = round($costoBase * (1 + $margen / 100), 2);
+                $porMes      = [];
+                $sumaCostoTotal = 0;
+
+                foreach ($regsVariante as $r) {
+                    $mes        = $r->Mes ?? '';
+                    $costoTotal = (float) ($r->CostoTotal ?? 0);
+
+                    $porMes[$mes] = [
+                        'Costo'      => round($costoBase, 2),
+                        'CostoTotal' => round($costoTotal, 2),
+                    ];
+                    $sumaCostoTotal += $costoTotal;
                 }
-            }
 
-            return [
-                'NombreInsumo'   => $nombreInsumo,
-                'Meses'          => $porMes,
-                'Costo'          => round($sumaCosto / max(1, $count), 2),
-                'Margen'         => $margen,
-                'CostoTotalAnual' => round($sumaCostoTotal, 2),
-                'Orden'          => $count,
-            ];
-        })->values()->all();
+                // Rellenar meses sin registro
+                foreach ($nombresMeses as $m) {
+                    if (!isset($porMes[$m])) {
+                        $porMes[$m] = ['Costo' => 0, 'CostoTotal' => 0];
+                    }
+                }
+
+                $resultado[] = [
+                    'NombreInsumo'    => $nombreInsumo,
+                    'Meses'           => $porMes,
+                    'Costo'           => round($costoBase, 2),
+                    'Margen'          => $margen,
+                    'CostoConMargen'  => $costoConMg,
+                    'CostoTotalAnual' => round($sumaCostoTotal, 2),
+                ];
+            }
+        }
 
         return response()->json([
             'message' => 'Corte guardado',
-            'data'    => $agrupado,
+            'data'    => $resultado,
         ], 200);
     }
 

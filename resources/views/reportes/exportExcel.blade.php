@@ -1,44 +1,53 @@
-<table style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 12px;">
-    {{-- Fila 1: Logo centrado --}}
-    <tr>
-        <td colspan="{{ count($columnas) }}" style="text-align: center; padding: 15px 0; background-color: #F9F9F9;">
-            <img src="{{ public_path('img/logo.png') }}"
-                style="height: 80px; display: block; margin: 0 auto;" />
-        </td>
-    </tr>
+<?php
 
-    {{-- Encabezados --}}
-    <tr>
-        @foreach($columnas as $columna)
-        <th style="
-                background-color: #4F81BD;
-                color: white;
-                border: 1px solid #000;
-                text-align: center;
-                padding: 8px;
-                font-weight: bold;
-                white-space: nowrap;
-            ">
-            {{ $columna }}
-        </th>
-        @endforeach
-    </tr>
+namespace App\Exports;
 
-    {{-- Datos --}}
-    @foreach($datos as $fila)
-    <tr>
-        @foreach($columnas as $col)
-        <td style="
-                    border: 1px solid #000;
-                    padding: 6px;
-                    text-align: center;
-                    vertical-align: top;
-                    white-space: pre-wrap;
-                    word-break: break-word;
-                ">
-            {{ $fila->$col ?? '' }}
-        </td>
-        @endforeach
-    </tr>
-    @endforeach
-</table>
+use Illuminate\Contracts\View\View;
+use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\AfterSheet;
+
+class ReporteExport implements FromView, WithEvents
+{
+    protected $datos;
+    protected $columnas;
+
+    public function __construct($datos, $columnas)
+    {
+        if ($datos instanceof \Illuminate\Database\Query\Builder ||
+            $datos instanceof \Illuminate\Database\Eloquent\Builder) {
+            $this->datos = $datos->chunk(1000, function ($filas) {
+                return $filas;
+            });
+            $this->datos = $datos->lazy(1000);
+        } else {
+            $this->datos = $datos;
+        }
+
+        $this->columnas = $columnas;
+    }
+
+    public function view(): View
+    {
+        return view('reportes.exportExcel', [
+            'datos'    => $this->datos,
+            'columnas' => $this->columnas,
+        ]);
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet    = $event->sheet->getDelegate();
+                $colCount = count($this->columnas);
+
+                for ($col = 1; $col <= $colCount; $col++) {
+                    $letter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+                    $sheet->getColumnDimension($letter)->setAutoSize(true);
+                }
+
+            }
+        ];
+    }
+}
