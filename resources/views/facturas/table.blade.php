@@ -1,9 +1,3 @@
-{{--
-    Partial: facturas/_tab_facturas.blade.php
-    Incluido desde: facturas/index.blade.php
-    Variables esperadas: $gerencia, $meses, $years
---}}
-
 <div class="bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
 
     {{-- Filtros --}}
@@ -252,7 +246,6 @@ $(document).ready(function() {
         }
     });
 
-    // Carga lazy de insumos al hacer focus en el select
     $('#facturasTable').on('focus', '.insumo-select', async function() {
         const $sel     = $(this);
         const solID    = $sel.data('solicitud');

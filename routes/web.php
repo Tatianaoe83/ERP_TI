@@ -92,8 +92,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/informe/data', [AuditController::class, 'getAudits'])->name('audits.data');
     Route::get('/informe', [AuditController::class, 'index'])->name('audits.index');
 
+    Route::get('reportes/{id}/data',    [ReportesController::class, 'showData'])->name('reportes.data');
     Route::resource('reportes', \App\Http\Controllers\ReportesController::class);
-    Route::post('reportes/{id}/export-pdf', [ReportesController::class, 'exportPdf'])->name('reportes.exportPdf');
+    Route::get('reportes/{id}/export-pdf', [ReportesController::class, 'exportPdf'])->name('reportes.exportPdf');
     Route::post('reportes/{id}/export-excel', [ReportesController::class, 'exportExcel'])->name('reportes.exportExcel');
     Route::post('/reportes/preview', [ReportesController::class, 'preview'])->name('reportes.preview');
     Route::get('autocomplete', [ReportesController::class, 'autocomplete']);

@@ -2,28 +2,39 @@
 
 namespace App\Exports;
 
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Events\AfterSheet;
+use Illuminate\Database\Query\Builder;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
-class ReporteExport implements FromView, WithEvents
+class ReporteExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithEvents
 {
-    protected $datos;
-    protected $columnas;
+    public function __construct(
+        protected Builder $query,
+        protected array   $columnas
+    ) {}
 
-    public function __construct($datos, $columnas)
+    public function query(): Builder
     {
-        $this->datos = $datos;
-        $this->columnas = $columnas;
+        return $this->query;
     }
 
-    public function view(): View
+    public function headings(): array
     {
-        return view('reportes.exportExcel', [
-            'datos' => $this->datos,
-            'columnas' => $this->columnas,
-        ]);
+        return array_map(function ($col) {
+            return str_contains($col, '.') ? last(explode('.', $col)) : $col;
+        }, $this->columnas);
+    }
+
+    public function map($row): array
+    {
+        return array_values((array) $row);
     }
 
     public function registerEvents(): array
@@ -33,16 +44,30 @@ class ReporteExport implements FromView, WithEvents
                 $sheet = $event->sheet->getDelegate();
 
                 $colCount = count($this->columnas);
+
+                // Autosize por columna
                 for ($col = 1; $col <= $colCount; $col++) {
-                    $letter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+                    $letter = Coordinate::stringFromColumnIndex($col);
                     $sheet->getColumnDimension($letter)->setAutoSize(true);
                 }
 
-                $rowCount = count($this->datos) + 2;
-                for ($row = 2; $row <= $rowCount; $row++) {
-                    $sheet->getRowDimension($row)->setRowHeight(-1);
-                }
-            }
+                // Estilo del encabezado (fila 1)
+                $lastCol = Coordinate::stringFromColumnIndex($colCount);
+                $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
+                    'font' => [
+                        'bold'  => true,
+                        'color' => ['argb' => 'FFFFFFFF'],
+                    ],
+                    'fill' => [
+                        'fillType'   => Fill::FILL_SOLID,
+                        'startColor' => ['argb' => 'FF191970'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical'   => Alignment::VERTICAL_CENTER,
+                    ],
+                ]);
+            },
         ];
     }
 }
