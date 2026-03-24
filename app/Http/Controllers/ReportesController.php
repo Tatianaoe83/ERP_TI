@@ -6,6 +6,7 @@ use App\DataTables\ReportesDataTable;
 use App\Exports\ReporteExport;
 use App\Helpers\JoinHelper;
 use App\Helpers\ReporteHelper;
+use App\Helpers\RelacionesUniversales;
 use Illuminate\Http\Request;
 use App\Http\Requests\CreateReportesRequest;
 use App\Http\Requests\UpdateReportesRequest;
@@ -30,9 +31,13 @@ class ReportesController extends AppBaseController
     /** @var ReportesRepository $reportesRepository*/
     private $reportesRepository;
 
+    /** @var array Relaciones centralizadas en App\Helpers\RelacionesUniversales */
+    protected array $relacionesUniversales;
+
     public function __construct(ReportesRepository $reportesRepo)
     {
-        $this->reportesRepository = $reportesRepo;
+        $this->reportesRepository  = $reportesRepo;
+        $this->relacionesUniversales = RelacionesUniversales::get();
 
         $this->middleware('permission:ver-reportes')->only(['index', 'show', 'preview', 'showData']);
         $this->middleware('permission:crear-reportes')->only(['create', 'store']);
@@ -40,62 +45,9 @@ class ReportesController extends AppBaseController
         $this->middleware('permission:borrar-reportes')->only(['destroy']);
         $this->middleware('permission:exportar-reportes')->only([
             'exportPdf', 'exportExcel',
-            'iniciarExportExcel', 'statusExport', 'descargarExport',
+            'iniciarExportExcel', 'iniciarExportPdf', 'statusExport', 'descargarExport', // <-- Aquí agregamos iniciarExportPdf
         ]);
     }
-
-    // ── Relaciones universales ─────────────────────────────────────────────────
-    protected array $relacionesUniversales = [
-        'categorias' => [
-            'tiposdecategorias' => ['tiposdecategorias.ID', '=', 'categorias.TipoID'],
-        ],
-        'departamentos' => [
-            'gerencia' => ['gerencia.GerenciaID', '=', 'departamentos.GerenciaID'],
-        ],
-        'empleados' => [
-            'obras'            => ['obras.ObraID',                '=', 'empleados.ObraID'],
-            'puestos'          => ['puestos.PuestoID',            '=', 'empleados.PuestoID'],
-            'inventarioinsumo' => ['inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID'],
-            'inventarioequipo' => ['inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID'],
-            'inventariolineas' => ['inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID'],
-        ],
-        'equipos' => [
-            'categorias' => ['categorias.ID', '=', 'equipos.CategoriaID'],
-        ],
-        'gerencia' => [],
-        'insumos' => [
-            'categorias' => ['categorias.ID', '=', 'insumos.CategoriaID'],
-        ],
-        'inventarioequipo' => [
-            'empleados' => ['empleados.EmpleadoID', '=', 'inventarioequipo.EmpleadoID'],
-        ],
-        'inventarioinsumo' => [
-            'empleados' => ['empleados.EmpleadoID', '=', 'inventarioinsumo.EmpleadoID'],
-            'insumos'   => ['insumos.InsumoID',     '=', 'inventarioinsumo.InsumoID'],
-        ],
-        'inventariolineas' => [
-            'empleados'         => ['empleados.EmpleadoID',      '=', 'inventariolineas.EmpleadoID'],
-            'lineastelefonicas' => ['lineastelefonicas.LineaID',  '=', 'inventariolineas.LineaID'],
-            'obras'             => ['obras.ObraID',               '=', 'inventariolineas.ObraID'],
-        ],
-        'lineastelefonicas' => [
-            'obras'  => ['obras.ObraID', '=', 'lineastelefonicas.ObraID'],
-            'planes' => ['planes.ID',    '=', 'lineastelefonicas.PlanID'],
-        ],
-        // obras → unidadesdenegocio es seguro (N:1).
-        // unidadesdenegocio → gerencia NO se agrega aquí porque es 1:N.
-        'obras' => [
-            'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID'],
-        ],
-        'puestos' => [
-            'departamentos' => ['departamentos.DepartamentoID', '=', 'puestos.DepartamentoID'],
-        ],
-        'planes' => [
-            'companiaslineastelefonicas' => ['companiaslineastelefonicas.ID', '=', 'planes.CompaniaID'],
-        ],
-        // unidadesdenegocio NO tiene ruta a gerencia (sería 1:N = duplicados).
-        'unidadesdenegocio' => [],
-    ];
 
     // ── index ──────────────────────────────────────────────────────────────────
     public function index(ReportesDataTable $dataTable)
@@ -127,7 +79,7 @@ class ReportesController extends AppBaseController
         return redirect(route('reportes.index'));
     }
 
-    // ── show (server-side DataTable del reporte dinámico) ─────────────────────
+    // ── show ───────────────────────────────────────────────────────────────────
     public function show($id)
     {
         $reportes = $this->reportesRepository->find($id);
@@ -150,7 +102,8 @@ class ReportesController extends AppBaseController
     }
 
     /**
-     * Endpoint AJAX que alimenta el DataTable del reporte dinámico.
+     * Endpoint AJAX — alimenta el DataTable server-side del reporte.
+     * Yajra pagina en SQL, nunca se cargan 100k filas en PHP.
      */
     public function showData(Request $request, $id)
     {
@@ -160,8 +113,7 @@ class ReportesController extends AppBaseController
             return response()->json(['error' => 'Reporte no encontrado'], 404);
         }
 
-        $metadata = json_decode($reportes->query_details, true);
-
+        $metadata           = json_decode($reportes->query_details, true);
         $metadata['limite'] = null;
 
         try {
@@ -170,33 +122,84 @@ class ReportesController extends AppBaseController
             return response()->json(['error' => $e->getMessage()], 500);
         }
 
-        $columnas = $metadata['columnas'] ?? [];
+        $esUnion = str_contains((string) ($query->from ?? ''), 'union_result');
 
+        // ── Construir aliasMap DEFINITIVO ─────────────────────────────────────────
         $aliasMap = [];
-        foreach ($columnas as $col) {
-            $col = trim($col);
-            if (stripos($col, ' as ') !== false) {
-
-                [$expr, $alias] = preg_split('/\s+as\s+/i', $col);
-                $aliasMap[trim($alias)] = trim($expr);
-            } elseif (str_contains($col, '.')) {
-                $alias = last(explode('.', $col));
-                $aliasMap[$alias] = $col;
+        $primeraFila = (clone $query)->limit(1)->first();
+        
+        if ($primeraFila) {
+            $columnasResultantes = array_keys((array) $primeraFila);
+            
+            if ($esUnion) {
+                // En UNION, todo es alias puro
+                foreach ($columnasResultantes as $alias) {
+                    $aliasMap[$alias] = "`{$alias}`";
+                }
             } else {
-                $aliasMap[$col] = $col;
+                $columnasSeleccionadas = $metadata['columnas'] ?? [];
+                
+                foreach ($columnasResultantes as $alias) {
+                    $tablaReal = null;
+                    $columnaReal = null;
+
+                    foreach ($columnasSeleccionadas as $colMeta) {
+                        if (str_contains($colMeta, '.')) {
+                            [$tbl, $col] = explode('.', $colMeta, 2);
+                            
+                            // Comparamos si el alias es igual a la columna, 
+                            // o si el helper le puso el formato "tabla_columna"
+                            if (
+                                $alias === $col || 
+                                $alias === "{$tbl}_{$col}" || 
+                                str_replace('_', ' ', $col) === $alias
+                            ) {
+                                $tablaReal = $tbl;
+                                $columnaReal = $col;
+                                break; 
+                            }
+                        } else {
+                            if ($alias === $colMeta) {
+                                $columnaReal = $colMeta;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Armamos el mapeo final ya con backticks (comillas invertidas)
+                    if ($tablaReal && $columnaReal) {
+                        $aliasMap[$alias] = "`{$tablaReal}`.`{$columnaReal}`"; 
+                    } elseif ($columnaReal) {
+                        $aliasMap[$alias] = "`{$columnaReal}`";
+                    } else {
+                        $aliasMap[$alias] = "`{$alias}`";
+                    }
+                }
             }
         }
 
         $search = $request->input('search.value', '');
+        
+        // Apagamos la búsqueda nativa para que Yajra no intente hacerla mal por su cuenta
         $request->merge(['search' => ['value' => '', 'regex' => 'false']]);
 
         $dt = DataTables::of($query);
 
         if (!empty(trim($search))) {
-            $dt->filter(function ($query) use ($search, $aliasMap) {
-                $query->where(function ($q) use ($search, $aliasMap) {
-                    foreach ($aliasMap as $alias => $expr) {
-                        $q->orWhereRaw("LOWER({$expr}) LIKE ?", ['%' . strtolower($search) . '%']);
+            $dt->filter(function ($query) use ($search, $aliasMap, $esUnion) {
+                $query->where(function ($q) use ($search, $aliasMap, $esUnion) {
+                    foreach ($aliasMap as $alias => $columnaEscapada) {
+                        if ($esUnion) {
+                            $q->orWhereRaw(
+                                "LOWER({$columnaEscapada}) LIKE ?",
+                                ['%' . strtolower($search) . '%']
+                            );
+                        } else {
+                            $q->orWhereRaw(
+                                "LOWER({$columnaEscapada}) LIKE ?",
+                                ['%' . strtolower($search) . '%']
+                            );
+                        }
                     }
                 });
             });
@@ -204,8 +207,7 @@ class ReportesController extends AppBaseController
 
         return $dt->make(true);
     }
-
-    // ── edit / update ──────────────────────────────────────────────────────────
+    // ── edit ───────────────────────────────────────────────────────────────────
     public function edit($id)
     {
         $reportes = $this->reportesRepository->find($id);
@@ -247,6 +249,7 @@ class ReportesController extends AppBaseController
         ));
     }
 
+    // ── update ─────────────────────────────────────────────────────────────────
     public function update($id, UpdateReportesRequest $request)
     {
         $reportes = $this->reportesRepository->find($id);
@@ -258,11 +261,11 @@ class ReportesController extends AppBaseController
 
         $metadataOriginal = json_decode($reportes->query_details, true);
         $nuevoMetadata    = array_merge($metadataOriginal, [
-            'columnas'        => $request->input('columnas', []),
-            'ordenColumna'    => $request->input('ordenColumna'),
-            'ordenDireccion'  => $request->input('ordenDireccion'),
-            'limite'          => $request->input('limite'),
-            'filtros'         => $request->input('filtros', []),
+            'columnas'       => $request->input('columnas', []),
+            'ordenColumna'   => $request->input('ordenColumna'),
+            'ordenDireccion' => $request->input('ordenDireccion'),
+            'limite'         => $request->input('limite'),
+            'filtros'        => $request->input('filtros', []),
         ]);
 
         $reportes->query_details = json_encode($nuevoMetadata);
@@ -287,10 +290,9 @@ class ReportesController extends AppBaseController
         return redirect(route('reportes.index'));
     }
 
-    // ── exportPdf ──────────────────────────────────────────────────────────────
     public function exportPdf(Request $request, $id)
     {
-        set_time_limit(600);
+        set_time_limit(0);
         ini_set('memory_limit', '1024M');
 
         $reportes = $this->reportesRepository->find($id);
@@ -308,59 +310,168 @@ class ReportesController extends AppBaseController
         $metadata['limite'] = null;
 
         try {
-            $resultado = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);
+            $query = ReporteHelper::construirQuery($metadata, $this->relacionesUniversales);
         } catch (\Exception $e) {
             return redirect()->route('reportes.index')
                 ->with('error', 'Error al ejecutar la consulta: ' . $e->getMessage());
         }
 
-        if ($resultado->isEmpty()) {
+        $primeraFila = (clone $query)->limit(1)->first();
+        if (!$primeraFila) {
             return redirect()->route('reportes.index')
                 ->with('error', 'No se encontraron resultados para el reporte.');
         }
 
-        $columns        = collect($resultado->first())->keys()->map(fn($key) => ['title' => $key, 'field' => $key])->values();
-        $nombre_reporte = $reportes->title;
+        $encabezados   = array_keys((array) $primeraFila);
+        $nombreReporte = $reportes->title;
+        $fecha         = now()->format('d/m/Y');
+        $logoPath      = 'file://' . public_path('img/logo.png');
+        $tmpDir        = storage_path('app/tmp_pdf_chunks');
 
-        $pdf = Pdf::loadView('reportes.exportPdf', compact('reportes', 'resultado', 'columns', 'nombre_reporte'))
-            ->setPaper('letter', 'landscape')
-            ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', false)
-            ->setOption('defaultFont', 'Arial');
-
-        $token    = $request->query('downloadToken', '');
-        $filename = Str::slug($reportes->title) . '.pdf';
-
-        $pdfContent = $pdf->output();
-
-        $response = new \Symfony\Component\HttpFoundation\Response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"', // ← fuerza descarga
-            'Content-Length'      => strlen($pdfContent),
-            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
-            'Pragma'              => 'no-cache',
-            'Expires'             => '0',
-        ]);
-
-        if ($token) {
-            $response->headers->setCookie(
-                new \Symfony\Component\HttpFoundation\Cookie(
-                    $token,
-                    'done',
-                    time() + 60, 
-                    '/',
-                    null,       
-                    false,       
-                    false       
-                )
-            );
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
         }
 
-        return $response;
+        // ── CSS compartido (CORREGIDO PARA DOMPDF) ──────────────────────────────
+        $css = '
+            @page { size: Letter landscape; margin: 1cm; }
+            body  { font-family: "DejaVu Sans", sans-serif; font-size: 7px; margin:0; padding:0; color:#222; }
+            .hdr-logo  { float:left; }
+            .hdr-logo img { max-width:160px; max-height:55px; }
+            .hdr-fecha { float:right; font-size:9px; color:#555; padding-top:8px; }
+            .clearfix::after { content:""; display:table; clear:both; }
+            h1 { text-align:center; font-size:12px; text-transform:uppercase;
+                background:#191970; color:#fff; padding:5px 0; margin:10px 0 12px 0; }
+            table { width:100%; max-width:100%; border-collapse:collapse; table-layout:fixed; font-size:7px; }
+            th { background:#191970; color:#fff; padding:4px 2px; border:1px solid #0f0f50; white-space:normal; word-wrap:break-word; overflow-wrap:break-word; }
+            td { padding:3px 2px; border:1px solid #ccc; text-align:center; vertical-align:middle; white-space:normal; word-wrap:break-word; overflow-wrap:break-word; word-break:break-all; }
+            .footer { text-align:center; font-size:7px; margin-top:10px; color:#999;
+                    border-top:1px solid #ddd; padding-top:5px; }
+        ';
+
+        // ── Encabezado HTML de tabla (reutilizable por chunk) ───────────────────
+        $theadHtml = '<thead><tr>';
+        $totalColumnas = count($encabezados);
+        $anchoColumna = $totalColumnas > 0 ? (100 / $totalColumnas) : 100;
+        
+        foreach ($encabezados as $col) {
+            $theadHtml .= '<th style="width: ' . $anchoColumna . '%;">' . htmlspecialchars(ucfirst(str_replace('_', ' ', $col)), ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        $theadHtml .= '</tr></thead>';
+
+        // ── Generar PDFs por chunk ──────────────────────────────────────────────
+        $chunkSize  = 500;
+        $chunkIndex = 0;
+        $totalFilas = 0;
+        $chunkFiles = [];
+        $buffer     = [];
+
+        // Usamos cursor() para no cargar todo en memoria
+        foreach ($query->cursor() as $fila) {
+            $buffer[] = $fila;
+            $totalFilas++;
+
+            if (count($buffer) >= $chunkSize) {
+                $chunkFiles[] = $this->_generarChunkPdf(
+                    $buffer, $chunkIndex, $css, $theadHtml,
+                    $logoPath, $fecha, $nombreReporte, $tmpDir
+                );
+                $chunkIndex++;
+                $buffer = [];
+                gc_collect_cycles(); // liberar memoria entre chunks
+            }
+        }
+
+        // Último chunk (filas sobrantes)
+        if (!empty($buffer)) {
+            $chunkFiles[] = $this->_generarChunkPdf(
+                $buffer, $chunkIndex, $css, $theadHtml,
+                $logoPath, $fecha, $nombreReporte, $tmpDir
+            );
+            $buffer = [];
+            gc_collect_cycles();
+        }
+
+        if (empty($chunkFiles)) {
+            return redirect()->route('reportes.index')
+                ->with('error', 'No se generó ningún chunk de PDF.');
+        }
+
+        // ── Fusionar todos los chunks en un solo PDF ────────────────────────────
+        $outputPath = $tmpDir . '/merged_' . Str::uuid() . '.pdf';
+        $this->_mergeChunkPdfs($chunkFiles, $outputPath);
+
+        // Limpiar temporales de chunk
+        foreach ($chunkFiles as $file) {
+            @unlink($file);
+        }
+
+        // Cookie spinner
+        $token = $request->query('downloadToken', '');
+        if ($token) {
+            \Cookie::queue(\Cookie::make($token, 'done', 1, '/', null, false, false));
+        }
+
+        $nombreArchivo = Str::slug($nombreReporte) . '.pdf';
+
+        return response()->download($outputPath, $nombreArchivo)->deleteFileAfterSend(true);
     }
 
-    // ── iniciarExportExcel (async: guarda en disco, el frontend hace polling) ───
-    public function iniciarExportExcel(Request $request, $id)
+    // ── Helper privado: genera el PDF de un chunk y lo guarda en disco ──────────
+    private function _generarChunkPdf(
+        array  $filas, int $chunkIndex, string $css, string $theadHtml,
+        string $logoPath, string $fecha, string $nombreReporte, string $tmpDir
+    ): string {
+        $html  = '<!DOCTYPE html><html lang="es"><head>';
+        $html .= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>';
+        $html .= '<style>' . $css . '</style></head><body>';
+
+        if ($chunkIndex === 0) {
+            $html .= '<div class="clearfix">';
+            $html .= '<div class="hdr-logo"><img src="' . $logoPath . '" alt="Logo"></div>';
+            $html .= '<div class="hdr-fecha">M&eacute;rida, Yucat&aacute;n a ' . $fecha . '</div></div>';
+            $html .= '<h1>' . htmlspecialchars($nombreReporte, ENT_QUOTES, 'UTF-8') . '</h1>';
+        }
+
+        $html .= '<table>' . $theadHtml . '<tbody>';
+
+        $esPar = false;
+        foreach ($filas as $fila) {
+            // Inyectamos el color desde PHP (Nivel 1 de Optimización)
+            $bgColor = $esPar ? '#f2f4ff' : '#ffffff';
+            $html .= '<tr style="background-color: ' . $bgColor . ';">';
+            
+            foreach ((array) $fila as $valor) {
+                if ($valor !== null && trim((string) $valor) !== '') {
+                    $celda = htmlspecialchars((string) $valor, ENT_QUOTES, 'UTF-8');
+                } else {
+                    $celda = 'N/A'; // Manejo de celdas vacías
+                }
+                $html .= '<td>' . $celda . '</td>';
+            }
+            $html .= '</tr>';
+            $esPar = !$esPar;
+        }
+
+        $html .= '</tbody></table></body></html>';
+
+        $filePath = $tmpDir . '/chunk_' . $chunkIndex . '_' . Str::uuid() . '.pdf';
+
+        Pdf::loadHtml($html)
+            ->setPaper('letter', 'landscape')
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => true,
+                'defaultFont'          => 'DejaVu Sans',
+                'chroot'               => public_path(),
+                'dpi'                  => 96,
+            ])->save($filePath);
+
+        return $filePath;
+    }
+
+    // ── iniciarExportPdf (async: guarda en disco, frontend hace polling) ─────
+    public function iniciarExportPdf(Request $request, $id)
     {
         $reportes = $this->reportesRepository->find($id);
         if (!$reportes) {
@@ -381,59 +492,153 @@ class ReportesController extends AppBaseController
             return response()->json(['error' => 'Sin resultados'], 422);
         }
 
-        $columnas = array_keys((array) $primeraFila);
+        $encabezados   = array_keys((array) $primeraFila);
+        $nombreReporte = $reportes->title;
+        $fecha         = now()->format('d/m/Y');
+        $logoPath      = 'file://' . public_path('img/logo.png');
+        $tmpDir        = storage_path('app/tmp_pdf_chunks');
 
-        if (empty($query->orders)) {
-            $tablaPrincipal = $metadata['tabla_principal'];
-            $columnasPK     = Schema::getColumnListing($tablaPrincipal);
-            $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
-            $query->orderBy($pkFallback);
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
         }
 
-        $token    = Str::uuid()->toString();
-        $filename = 'exports/' . $token . '.xlsx';
+        // Generamos el Token y la ruta final
+        $token = Str::uuid()->toString();
+        $outputPath = storage_path('app/exports/' . $token . '.pdf');
 
-        set_time_limit(600);
+        set_time_limit(0);
         ini_set('memory_limit', '1024M');
 
-        Excel::store(new ReporteExport($query, $columnas), $filename);
+        // CSS Optimizado (Sin las reglas de nth-child para mayor velocidad)
+        $css = '
+            @page { size: Letter landscape; margin: 1cm; }
+            body  { font-family: "DejaVu Sans", sans-serif; font-size: 7px; margin:0; padding:0; color:#222; }
+            .hdr-logo  { float:left; }
+            .hdr-logo img { max-width:150px; max-height:50px; }
+            .hdr-fecha { float:right; font-size:9px; color:#555; padding-top:10px; }
+            .clearfix::after { content:""; display:table; clear:both; }
+            h1 { text-align:center; font-size:12px; text-transform:uppercase; background:#191970; color:#fff; padding:5px 0; margin:5px 0 10px 0; }
+            table { width:100%; max-width:100%; border-collapse:collapse; table-layout:fixed; font-size:7px; }
+            th { background:#191970; color:#fff; padding:4px 2px; border:1px solid #0f0f50; white-space:normal; word-wrap:break-word; overflow-wrap:break-word; }
+            td { padding:3px 2px; border:1px solid #ccc; text-align:center; vertical-align:middle; white-space:normal; word-wrap:break-word; overflow-wrap:break-word; word-break:break-all; }
+            .footer { text-align:center; font-size:8px; margin-top:10px; color:#999; border-top:1px solid #ddd; padding-top:5px; }
+        ';
 
-        $nombreDescarga = Str::slug($reportes->title) . '.xlsx';
-        Storage::put('exports/' . $token . '.meta', $nombreDescarga);
+        $theadHtml = '<thead><tr>';
+        $totalColumnas = count($encabezados);
+        $anchoColumna = $totalColumnas > 0 ? (100 / $totalColumnas) : 100;
+        
+        foreach ($encabezados as $col) {
+            $theadHtml .= '<th style="width: ' . $anchoColumna . '%;">' . htmlspecialchars(ucfirst(str_replace('_', ' ', $col)), ENT_QUOTES, 'UTF-8') . '</th>';
+        }
+        $theadHtml .= '</tr></thead>';
+
+        // Subimos el Chunk a 1000 para que termine más rápido
+        $chunkSize  = 1000;
+        $chunkIndex = 0;
+        $chunkFiles = [];
+        $buffer     = [];
+
+        foreach ($query->cursor() as $fila) {
+            $buffer[] = $fila;
+
+            if (count($buffer) >= $chunkSize) {
+                $chunkFiles[] = $this->_generarChunkPdf(
+                    $buffer, $chunkIndex, $css, $theadHtml,
+                    $logoPath, $fecha, $nombreReporte, $tmpDir
+                );
+                $chunkIndex++;
+                $buffer = [];
+                gc_collect_cycles();
+            }
+        }
+
+        if (!empty($buffer)) {
+            $chunkFiles[] = $this->_generarChunkPdf(
+                $buffer, $chunkIndex, $css, $theadHtml,
+                $logoPath, $fecha, $nombreReporte, $tmpDir
+            );
+            $buffer = [];
+            gc_collect_cycles();
+        }
+
+        if (empty($chunkFiles)) {
+            return response()->json(['error' => 'No se generó ningún chunk de PDF.'], 500);
+        }
+
+        // Fusiona y guarda el PDF final con el nombre del Token
+        $this->_mergeChunkPdfs($chunkFiles, $outputPath);
+
+        foreach ($chunkFiles as $file) {
+            @unlink($file);
+        }
+
+        // Guarda el archivo Meta con el nombre real para la descarga
+        Storage::put('exports/' . $token . '.meta', Str::slug($nombreReporte) . '.pdf');
 
         return response()->json(['token' => $token]);
     }
 
-    // ── statusExport 
-    public function statusExport(Request $request, $token)
+    private function _mergeChunkPdfs(array $chunkFiles, string $outputPath): void
     {
-        if (!preg_match('/^[0-9a-f-]{36}$/', $token)) {
-            return response()->json(['ready' => false]);
+        // Opción A: FPDI (recomendado)
+        // composer require setasign/fpdi
+        if (class_exists(\setasign\Fpdi\Tcpdf\Fpdi::class)) {
+            $fpdi = new \setasign\Fpdi\Tcpdf\Fpdi();
+            $fpdi->SetAutoPageBreak(false);
+
+            foreach ($chunkFiles as $file) {
+                $pageCount = $fpdi->setSourceFile($file);
+                for ($i = 1; $i <= $pageCount; $i++) {
+                    $tpl = $fpdi->importPage($i);
+                    $size = $fpdi->getTemplateSize($tpl);
+
+                    $fpdi->AddPage(
+                        $size['width'] > $size['height'] ? 'L' : 'P',
+                        [$size['width'], $size['height']]
+                    );
+                    $fpdi->useTemplate($tpl);
+                }
+            }
+
+            $fpdi->Output($outputPath, 'F');
+            return;
         }
 
-        $exists = Storage::exists('exports/' . $token . '.xlsx');
-        return response()->json(['ready' => $exists]);
+        // Opción B: FPDI sin TCPDF
+        if (class_exists(\setasign\Fpdi\Fpdi::class)) {
+            $fpdi = new \setasign\Fpdi\Fpdi();
+            $fpdi->SetAutoPageBreak(false);
+
+            foreach ($chunkFiles as $file) {
+                $pageCount = $fpdi->setSourceFile($file);
+                for ($i = 1; $i <= $pageCount; $i++) {
+                    $tpl  = $fpdi->importPage($i);
+                    $size = $fpdi->getTemplateSize($tpl);
+
+                    $fpdi->AddPage(
+                        $size['width'] > $size['height'] ? 'L' : 'P',
+                        [$size['width'], $size['height']]
+                    );
+                    $fpdi->useTemplate($tpl);
+                }
+            }
+
+            file_put_contents($outputPath, $fpdi->Output('', 'S'));
+            return;
+        }
+
+        // Opción C: fallback — concatenar PDFs como strings
+        // No es un PDF válido en todos los lectores, pero funciona en Chrome/Acrobat.
+        Log::warning('exportPdf: FPDI no encontrado, usando concatenación raw de PDFs.');
+        $merged = '';
+        foreach ($chunkFiles as $file) {
+            $merged .= file_get_contents($file);
+        }
+        file_put_contents($outputPath, $merged);
     }
 
-    // ── descargarExport —
-    public function descargarExport(Request $request, $token)
-    {
-        if (!preg_match('/^[0-9a-f-]{36}$/', $token)) {
-            abort(404);
-        }
-
-        $path = storage_path('app/exports/' . $token . '.xlsx');
-        $meta = storage_path('app/exports/' . $token . '.meta');
-
-        if (!file_exists($path)) {
-            abort(404);
-        }
-
-        $nombre = file_exists($meta) ? trim(file_get_contents($meta)) : 'reporte.xlsx';
-
-        return response()->download($path, $nombre)->deleteFileAfterSend(true);
-    }
-
+    // ── exportExcel ────────────────────────────────────────────────────────────
     public function exportExcel(Request $request, $id)
     {
         set_time_limit(600);
@@ -444,7 +649,7 @@ class ReportesController extends AppBaseController
             return redirect()->route('reportes.index')->with('error', 'Reporte no encontrado');
         }
 
-        $metadata = json_decode($reportes->query_details, true);
+        $metadata           = json_decode($reportes->query_details, true);
         $metadata['limite'] = null;
 
         try {
@@ -462,53 +667,119 @@ class ReportesController extends AppBaseController
 
         $columnas = array_keys((array) $primeraFila);
 
+        // FromQuery requiere ORDER BY para chunks deterministas.
+        // Si la query es UNION (from contiene 'union_result'), las tablas originales
+        // ya no existen en el contexto — hay que ordenar por alias, no por tabla.columna.
         if (empty($query->orders)) {
-            $tablaPrincipal = $metadata['tabla_principal'];
-            $columnasPK     = Schema::getColumnListing($tablaPrincipal);
-            $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
-            $query->orderBy($pkFallback);
+            $esUnion = str_contains((string) ($query->from ?? ''), 'union_result');
+
+            if ($esUnion) {
+                // Ordenar por el primer alias del resultado (siempre existe)
+                $query->orderByRaw('`' . $columnas[0] . '`');
+            } else {
+                $tablaPrincipal = $metadata['tabla_principal'];
+                $columnasPK     = Schema::getColumnListing($tablaPrincipal);
+                $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
+                $query->orderBy($pkFallback);
+            }
         }
 
         $nombreArchivo = Str::slug($reportes->title) . '.xlsx';
-        $token         = $request->query('downloadToken', '');
 
-        $tmpToken = Str::uuid()->toString();
-        $tmpPath  = 'exports/tmp_' . $tmpToken . '.xlsx';
-        Excel::store(new ReporteExport($query, $columnas), $tmpPath);
-        $fullPath = storage_path('app/' . $tmpPath);
-
-        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($fullPath) {
-            $stream = fopen($fullPath, 'rb');
-            fpassthru($stream);
-            fclose($stream);
-            @unlink($fullPath);
-        }, 200, [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $nombreArchivo . '"',
-            'Content-Length'      => filesize($fullPath),
-            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
-            'Pragma'              => 'no-cache',
-            'Expires'             => '0',
-        ]);
-
+        $token = $request->query('downloadToken', '');
         if ($token) {
-            $response->headers->setCookie(
-                new \Symfony\Component\HttpFoundation\Cookie(
-                    $token,   
-                    'done',  
-                    time() + 60, 
-                    '/',      
-                    null,    
-                    false,
-                    false  
-                )
-            );
+            \Cookie::queue(\Cookie::make($token, 'done', 1, '/', null, false, false));
         }
 
-        return $response;
+        return Excel::download(new ReporteExport($query, $columnas), $nombreArchivo);
     }
 
-    // ── preview ─────
+    // ── iniciarExportExcel (async: guarda en disco, frontend hace polling) ─────
+    public function iniciarExportExcel(Request $request, $id)
+    {
+        $reportes = $this->reportesRepository->find($id);
+        if (!$reportes) {
+            return response()->json(['error' => 'Reporte no encontrado'], 404);
+        }
+
+        $metadata           = json_decode($reportes->query_details, true);
+        $metadata['limite'] = null;
+
+        try {
+            $query = ReporteHelper::construirQuery($metadata, $this->relacionesUniversales);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+        $primeraFila = (clone $query)->limit(1)->first();
+        if (!$primeraFila) {
+            return response()->json(['error' => 'Sin resultados'], 422);
+        }
+
+        $columnas = array_keys((array) $primeraFila);
+
+        if (empty($query->orders)) {
+            $esUnion = str_contains((string) ($query->from ?? ''), 'union_result');
+
+            if ($esUnion) {
+                $query->orderByRaw('`' . $columnas[0] . '`');
+            } else {
+                $tablaPrincipal = $metadata['tabla_principal'];
+                $columnasPK     = Schema::getColumnListing($tablaPrincipal);
+                $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
+                $query->orderBy($pkFallback);
+            }
+        }
+
+        $token    = Str::uuid()->toString();
+        $filename = 'exports/' . $token . '.xlsx';
+
+        set_time_limit(600);
+        ini_set('memory_limit', '1024M');
+
+        Excel::store(new ReporteExport($query, $columnas), $filename);
+        Storage::put('exports/' . $token . '.meta', Str::slug($reportes->title) . '.xlsx');
+
+        return response()->json(['token' => $token]);
+    }
+
+    // ── statusExport ───────────────────────────────────────────────────────────
+    public function statusExport(Request $request, $token)
+    {
+        if (!preg_match('/^[0-9a-f-]{36}$/', $token)) {
+            return response()->json(['ready' => false]);
+        }
+
+        // Verifica si existe el Excel o el PDF
+        $exists = Storage::exists('exports/' . $token . '.xlsx') || Storage::exists('exports/' . $token . '.pdf');
+        
+        return response()->json(['ready' => $exists]);
+    }
+
+    // ── descargarExport ────────────────────────────────────────────────────────
+    public function descargarExport(Request $request, $token)
+    {
+        if (!preg_match('/^[0-9a-f-]{36}$/', $token)) {
+            abort(404);
+        }
+
+        $pathExcel = storage_path('app/exports/' . $token . '.xlsx');
+        $pathPdf   = storage_path('app/exports/' . $token . '.pdf');
+
+        // Selecciona el archivo que exista
+        $path = file_exists($pathExcel) ? $pathExcel : (file_exists($pathPdf) ? $pathPdf : null);
+
+        if (!$path) {
+            abort(404);
+        }
+
+        $meta = storage_path('app/exports/' . $token . '.meta');
+        $nombre = file_exists($meta) ? trim(file_get_contents($meta)) : 'reporte.file';
+
+        return response()->download($path, $nombre)->deleteFileAfterSend(true);
+    }
+
+    // ── preview ────────────────────────────────────────────────────────────────
     public function preview(Request $request)
     {
         try {
@@ -522,7 +793,6 @@ class ReportesController extends AppBaseController
                 $metadata['tabla_relacion'] = json_decode($metadata['tabla_relacion'], true) ?? [];
             }
 
-            // Preview: máximo 10 filas
             $metadata['limite'] = 10;
 
             $resultado = ReporteHelper::ejecutarConsulta($metadata, $this->relacionesUniversales);

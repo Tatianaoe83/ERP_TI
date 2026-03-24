@@ -1314,4 +1314,43 @@ class TablaSolicitudes extends Component
             $this->usuarioSearchLock[$pIndex][$uIndex] = false;
         }
     }
+
+    public function marcarChecklist(int $pIndex, int $uIndex, string $catKey, int $idx): void
+    {
+        // 1. Obtener el item actual del array
+        $item = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx] ?? null;
+        if (!$item) return;
+
+        // 2. Determinar si se marcó o desmarcó
+        $realizado = !empty($item['realizado']);
+        
+        // 3. Asignar el prefijo del usuario usando tu función existente
+        $responsable = $realizado ? $this->currentUserPrefix() : '';
+        $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['responsable'] = $responsable;
+
+        // 4. Obtener IDs necesarios para guardar
+        $activoId = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] ?? null;
+        $reqId    = $item['req_id'] ?? null;
+
+        // 5. Si el activo ya existe en la BD, actualizamos la tarea inmediatamente
+        if ($activoId && $reqId) {
+            try {
+                SolicitudActivoCheckList::updateOrCreate(
+                    [
+                        'SolicitudActivoID'           => (int) $activoId,
+                        'DepartamentoRequerimientoID' => (int) $reqId,
+                    ],
+                    [
+                        'completado'  => $realizado,
+                        'responsable' => $realizado ? $responsable : null,
+                    ]
+                );
+                
+                $this->dispatchBrowserEvent('swal:info', ['message' => 'Checklist actualizado']);
+
+            } catch (\Throwable $e) {
+                $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al guardar el checklist: ' . $e->getMessage()]);
+            }
+        }
+    }
 }

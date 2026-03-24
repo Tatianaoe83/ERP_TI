@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 
 class FacturasController extends AppBaseController
 {
+
     /** @var FacturasRepository */
     private $facturasRepository;
 
@@ -30,6 +31,62 @@ class FacturasController extends AppBaseController
         $this->middleware('permission:facturas.create', ['only' => ['create', 'store']]);
     }
 
+    public function storeDirecta(Request $request)
+    {
+        $request->validate([
+            'Nombre'       => 'required|string|max:300',
+            'Costo'        => 'required|numeric|min:0',
+            'Importe'      => 'nullable|numeric|min:0',
+            'Mes'          => 'nullable|integer|min:1|max:12',
+            'Anio'         => 'nullable|integer|min:2000|max:2099',
+            'InsumoNombre' => 'nullable|string|max:150',
+            'UUID'         => 'nullable|string|max:36',
+            'Emisor'       => 'nullable|string|max:300',
+            'archivo_xml'  => 'nullable|file|mimes:xml,text/xml|max:2048',
+            'archivo_pdf'  => 'nullable|file|mimes:pdf|max:10240',
+            'GerenciaID'   => 'nullable|integer', 
+            'InsumoID'     => 'nullable|integer',
+        ]);
+    
+        $xmlRuta = null;
+        $pdfRuta = null;
+    
+        if ($request->hasFile('archivo_xml')) {
+            $xmlRuta = $request->file('archivo_xml')->store('facturas/xml', 'public');
+        }
+    
+        if ($request->hasFile('archivo_pdf')) {
+            $pdfRuta = $request->file('archivo_pdf')->store('facturas/pdf', 'public');
+        }
+    
+        $insumoID = $request->input('InsumoID');
+        if (!$insumoID && $request->filled('InsumoNombre')) {
+            $insumoID = DB::table('insumos')
+                ->whereNull('deleted_at')
+                ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower(trim($request->InsumoNombre))])
+                ->value('ID');
+        }
+    
+        DB::table('facturas')->insert([
+            'SolicitudID'  => null,          
+            'GerenciaID'   => $request->GerenciaID ?: null, 
+            'Nombre'       => $request->Nombre,
+            'Costo'        => $request->Costo,
+            'Importe'      => $request->Importe  ?: null,
+            'Mes'          => $request->Mes        ?: null,
+            'Anio'         => $request->Anio       ?: null,
+            'InsumoNombre' => $request->InsumoNombre ?: null,
+            'InsumoID'     => $insumoID,                    
+            'UUID'         => $request->UUID       ?: null,
+            'Emisor'       => $request->Emisor     ?: null,
+            'ArchivoRuta'  => $xmlRuta,
+            'PdfRuta'      => $pdfRuta,
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
+    
+        return response()->json(['message' => 'Factura guardada correctamente.'], 201);
+    }
     // ══════════════════════════════════════════════════════════════════════════
     // Parseo de XML CFDI
     // ══════════════════════════════════════════════════════════════════════════
@@ -156,8 +213,8 @@ class FacturasController extends AppBaseController
     {
         $meses = [
             1  => 'Enero',    2  => 'Febrero',   3  => 'Marzo',
-            4  => 'Abril',    5  => 'Mayo',       6  => 'Junio',
-            7  => 'Julio',    8  => 'Agosto',     9  => 'Septiembre',
+            4  => 'Abril',    5  => 'Mayo',      6  => 'Junio',
+            7  => 'Julio',    8  => 'Agosto',    9  => 'Septiembre',
             10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
         ];
 
@@ -179,7 +236,33 @@ class FacturasController extends AppBaseController
 
         $gerencia = ['' => 'Selecciona una opción'] + $gerenciasConFacturas;
 
-        return view('facturas.index', compact('meses', 'years', 'gerencia'));
+        $gerenciasModal = DB::table('gerencia')
+            ->where('estado', 1)
+            ->whereNull('deleted_at')
+            ->select('GerenciaID as id', 'NombreGerencia as nombre')
+            ->orderBy('NombreGerencia')
+            ->get();
+
+        $insumosModal = DB::table('cortes')
+            ->whereNull('deleted_at')
+            ->distinct()
+            ->select('NombreInsumo as nombre')
+            ->orderBy('NombreInsumo')
+            ->get()
+            ->map(function ($corte) {
+                return (object) [
+                    'id'     => $corte->nombre, 
+                    'nombre' => $corte->nombre
+                ];
+            });
+
+        return view('facturas.index', [
+            'meses'     => $meses, 
+            'years'     => $years, 
+            'gerencia'  => $gerencia, 
+            'gerencias' => $gerenciasModal, // ⬅ Se pasa a la vista
+            'insumos'   => $insumosModal,   // ⬅ Se pasa a la vista
+        ]);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -208,24 +291,31 @@ class FacturasController extends AppBaseController
             : ($mesesNum[$mesParam] ?? null);
 
         $query = DB::table('facturas')
-            ->select([
-                'facturas.FacturasID',
-                'facturas.Nombre',
-                'facturas.SolicitudID',
-                'facturas.Costo',
-                'facturas.Mes',
-                'facturas.Anio',
-                'facturas.PdfRuta',
-                'facturas.InsumoNombre', // ← viene directo de facturas (editable)
-                'gerencia.NombreGerencia',
-            ])
-            ->join('solicitudes', 'facturas.SolicitudID', '=', 'solicitudes.SolicitudID')
-            ->join('gerencia',    'solicitudes.GerenciaID', '=', 'gerencia.GerenciaID')
-            // sin leftJoin a insumos — ya no lo necesitamos para esta columna
-            ->whereNull('facturas.deleted_at');
+        ->select([
+            'facturas.FacturasID',
+            'facturas.Nombre',
+            'facturas.SolicitudID',
+            'facturas.Costo',
+            'facturas.Mes',
+            'facturas.Anio',
+            'facturas.PdfRuta',
+            'facturas.InsumoNombre',
+            // COALESCE toma el primer valor que no sea nulo. 
+            // Si tiene solicitud, toma esa gerencia. Si no, toma la de g_directa.
+            DB::raw('COALESCE(gerencia.NombreGerencia, g_directa.NombreGerencia) as NombreGerencia')
+        ])
+        ->leftJoin('solicitudes', 'facturas.SolicitudID', '=', 'solicitudes.SolicitudID')
+        ->leftJoin('gerencia', 'solicitudes.GerenciaID', '=', 'gerencia.GerenciaID')
+        // Un join extra para traer la gerencia directamente asociada a la factura
+        ->leftJoin('gerencia as g_directa', 'facturas.GerenciaID', '=', 'g_directa.GerenciaID')
+        ->whereNull('facturas.deleted_at');
 
         if ($gerenciaID) {
-            $query->where('solicitudes.GerenciaID', $gerenciaID);
+            // Buscamos que coincida el filtro con la gerencia de la solicitud O la de la factura
+            $query->where(function($q) use ($gerenciaID) {
+                $q->where('solicitudes.GerenciaID', $gerenciaID)
+                  ->orWhere('facturas.GerenciaID', $gerenciaID);
+            });
         }
         if ($numMes) {
             $query->where('facturas.Mes', $numMes);
@@ -455,39 +545,39 @@ class FacturasController extends AppBaseController
 
     public function comparativa(Request $request): \Illuminate\Http\JsonResponse
     {
-        $gerenciaId = $request->input('gerencia_id');   // int|null
-        $mes        = $request->input('mes');           // 1-12|null
-        $anio       = $request->input('anio');          // 4 dígitos|null
-        $insumo     = $request->input('insumo');        // texto libre|null
-        $estatus    = $request->input('estatus');       // Aprobada|En Proceso|etc.|null
+        $gerenciaId = $request->input('gerencia_id'); 
+        $mes        = $request->input('mes'); 
+        $anio       = $request->input('anio');          
+        $insumo     = $request->input('insumo');     
+        $estatus    = $request->input('estatus');      
 
-        // ── 1. Solicitudes que cumplen los filtros de gerencia / estatus ──────────
-        $solicitudesBase = DB::table('solicitudes')
-            ->whereNull('deleted_at')
-            ->select('SolicitudID', 'GerenciaID', 'Estatus');
+        // ── 1. Construir query base de facturas (con o sin solicitud) ─────────
+        $queryBase = DB::table('facturas as f')
+            ->leftJoin('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
+            ->whereNull('f.deleted_at')
+            ->where(function($q) {
+                $q->whereNull('s.deleted_at')
+                  ->orWhereNull('f.SolicitudID');
+            })
+            ->whereNotNull('f.InsumoNombre')
+            ->where('f.InsumoNombre', '<>', '');
 
-        if ($gerenciaId) $solicitudesBase->where('GerenciaID', $gerenciaId);
-        if ($estatus)    $solicitudesBase->where('Estatus', $estatus);
-
-        $solicitudesIds = $solicitudesBase->pluck('SolicitudID');
-
-        if ($solicitudesIds->isEmpty()) {
-            return response()->json(['insumos' => [], 'meta' => ['total' => 0]]);
+        // ── Aplicar Filtros Dinámicos ──
+        if ($gerenciaId) {
+            $queryBase->where(function($q) use ($gerenciaId) {
+                $q->where('s.GerenciaID', $gerenciaId)
+                  ->orWhere('f.GerenciaID', $gerenciaId);
+            });
         }
+        if ($estatus) {
+            $queryBase->where('s.Estatus', $estatus);
+        }
+        if ($mes)  $queryBase->where('f.Mes', $mes);
+        if ($anio) $queryBase->where('f.Anio', $anio);
+        if ($insumo) $queryBase->where('f.InsumoNombre', 'like', "%{$insumo}%");
 
-        // ── 2. Insumos únicos en esas facturas (aplicando mes/año/nombre) ─────────
-        $insumosQuery = DB::table('facturas')
-            ->whereNull('deleted_at')
-            ->whereNotNull('InsumoNombre')
-            ->where('InsumoNombre', '<>', '')
-            ->whereIn('SolicitudID', $solicitudesIds)
-            ->select('InsumoNombre');
-
-        if ($mes)    $insumosQuery->where('Mes', $mes);
-        if ($anio)   $insumosQuery->where('Anio', $anio);
-        if ($insumo) $insumosQuery->where('InsumoNombre', 'like', "%{$insumo}%");
-
-        $insumos = $insumosQuery->distinct()->orderBy('InsumoNombre')->pluck('InsumoNombre');
+        // ── 2. Obtener nombres únicos de insumos ─────────
+        $insumos = (clone $queryBase)->distinct()->pluck('f.InsumoNombre');
 
         if ($insumos->isEmpty()) {
             return response()->json(['insumos' => [], 'meta' => ['total' => 0]]);
@@ -500,15 +590,13 @@ class FacturasController extends AppBaseController
             ->keyBy('GerenciaID');
 
         // ── 4. Prefetch: todas las facturas relevantes en UN query ────────────────
-        $todasFacturas = DB::table('facturas')
-            ->whereNull('deleted_at')
-            ->whereIn('InsumoNombre', $insumos)
-            ->whereIn('SolicitudID', $solicitudesIds)
-            ->when($mes,  fn($q) => $q->where('Mes',  $mes))
-            ->when($anio, fn($q) => $q->where('Anio', $anio))
-            ->select(['FacturasID','Nombre','SolicitudID','Importe','Costo',
-                    'Mes','Anio','InsumoNombre','PdfRuta','Emisor'])
-            ->orderBy('Anio')->orderBy('Mes')
+        $todasFacturas = clone $queryBase;
+        $todasFacturas = $todasFacturas->select([
+                'f.FacturasID','f.Nombre','f.SolicitudID','f.Importe','f.Costo',
+                'f.Mes','f.Anio','f.InsumoNombre','f.PdfRuta','f.Emisor',
+                'f.GerenciaID as FacturaGerenciaID', 's.GerenciaID as SolicitudGerenciaID'
+            ])
+            ->orderBy('f.Anio')->orderBy('f.Mes')
             ->get()
             ->groupBy('InsumoNombre');
 
@@ -530,7 +618,7 @@ class FacturasController extends AppBaseController
         $todosCortes = DB::table('cortes')
             ->whereNull('deleted_at')
             ->whereIn('NombreInsumo', $insumos)
-            ->when($mes,        fn($q) => $q->where('Mes', $mes))  // cortes.Mes puede ser nombre ("Enero")
+            ->when($mes,        fn($q) => $q->where('Mes', $mes))
             ->when($anio,       fn($q) => $q->where('Anio', $anio))
             ->when($gerenciaId, fn($q) => $q->where('GerenciaID', $gerenciaId))
             ->select(['CortesID','NombreInsumo','Mes','Anio','Costo','CostoTotal','Margen','GerenciaID'])
@@ -538,32 +626,23 @@ class FacturasController extends AppBaseController
             ->get()
             ->groupBy('NombreInsumo');
 
-        // ── 7. Prefetch: GerenciaID de cada solicitud ─────────────────────────────
-        $solGerencia = DB::table('solicitudes')
-            ->whereIn('SolicitudID', $todasSolicitudesConFact)
-            ->pluck('GerenciaID', 'SolicitudID');
-
-        // ── 8. Construir resultado por insumo ─────────────────────────────────────
+        // ── 7. Construir resultado por insumo ─────────────────────────────────────
         $resultado = $insumos->map(function ($nombreInsumo) use (
-            $todasFacturas, $todasCotizaciones, $todosCortes,
-            $solGerencia, $gerenciaMap
+            $todasFacturas, $todasCotizaciones, $todosCortes, $gerenciaMap
         ) {
             $facturas = $todasFacturas->get($nombreInsumo, collect());
             $cortes   = $todosCortes->get($nombreInsumo,   collect());
 
             $solicitudIds = $facturas->pluck('SolicitudID')->filter()->unique();
 
-            // Cotizaciones agrupadas por solicitud → aplanar
             $cotizaciones = $solicitudIds->flatMap(fn($sid) =>
                 $todasCotizaciones->get($sid, collect())
             )->values();
 
-            // Gerencia del primer solicitudID encontrado
-            $primerSolId  = $solicitudIds->first();
-            $gId          = $primerSolId ? ($solGerencia[$primerSolId] ?? null) : null;
-            $gNombre      = $gId ? optional($gerenciaMap->get($gId))->NombreGerencia : null;
+            $primeraFactura = $facturas->first();
+            $gId = $primeraFactura->SolicitudGerenciaID ?? $primeraFactura->FacturaGerenciaID;
+            $gNombre = $gId ? optional($gerenciaMap->get($gId))->NombreGerencia : null;
 
-            // ── Métricas ──────────────────────────────────────────────────────────
             $totalFacturado = $facturas->sum(fn($f) => (float)($f->Costo ?? 0));
             $totalCortes    = $cortes->sum(fn($c)   => (float)($c->CostoTotal ?? $c->Costo ?? 0));
 
@@ -599,7 +678,7 @@ class FacturasController extends AppBaseController
                 'gerencia'     => $gNombre,
                 'metricas'     => [
                     'mejor_cotizacion'            => $mejorCot,
-                    'cotizacion_seleccionada'     => $cotSelTotal,
+                    'cotizacion_seleccionada'     => $cotSelTotal,  
                     'total_facturado'             => $totalFacturado,
                     'total_cortes'                => $totalCortes,
                     'desviacion_cot_fact_monto'   => $desvCotFactMonto,

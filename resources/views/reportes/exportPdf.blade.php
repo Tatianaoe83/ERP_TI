@@ -2,136 +2,200 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Reporte - {{ $reportes->title }}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Reporte - {{ $reportes->title ?? 'Exportación' }}</title>
     <style>
         @page {
-            size: Letter;
-            margin: 0cm 0cm 1cm 1cm;
+            size: Letter landscape;
+            margin: 1cm;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            margin: 1cm 1cm 1cm 0cm;
+            font-family: DejaVu Sans, Arial, sans-serif;
+            margin: 0;
             padding: 0;
-            background-color: #cccccc;
+            background-color: #ffffff;
+            color: #222222;
         }
 
-        .container {
-            width: 100%;
-            max-width: 720px;
-            margin: auto;
-            background: #ffffff;
-            padding: 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-        }
-
+        /* ── Header ── */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 10px;
+            width: 100%;
             margin-bottom: 10px;
+            border-bottom: 2px solid #191970;
+            padding-bottom: 5px;
         }
 
-        .logo img {
-            max-width: 180px;
+        .header-logo {
+            float: left;
+            width: 50%;
         }
 
-        .invoice-date {
-            font-size: 11px;
-            color: #666;
+        .header-logo img {
+            max-width: 150px;
+            max-height: 50px;
+        }
+
+        .header-date {
+            float: right;
+            width: 50%;
             text-align: right;
+            font-size: 9px;
+            color: #555555;
+            padding-top: 10px;
         }
 
+        .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        /* ── Título ── */
         h1 {
             text-align: center;
-            font-size: 16px;
+            font-size: 12px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 10px 0;
-            padding: 6px 0;
-            background: #cccccc;
+            margin: 5px 0 10px 0;
+            padding: 5px 0;
+            background-color: #191970;
+            color: #ffffff;
+            letter-spacing: 1px;
         }
 
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            display: block;
-        }
-
+        /* ── Tabla ── */
         table {
             width: 100%;
+            max-width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
-            word-wrap: break-word;
+            /* CRÍTICO PARA DOMPDF: Fuerza a respetar el ancho de la tabla */
+            table-layout: fixed; 
+            font-size: 7px; /* Letra pequeña para que quepa mucha info */
         }
 
-        th,
-        td {
-            padding: 4px;
-            font-size: 10px;
-            word-break: break-word;
+        thead tr th {
+            background-color: #191970;
+            color: #ffffff;
+            padding: 4px 2px;
             text-align: center;
             vertical-align: middle;
+            font-weight: bold;
+            border: 1px solid #0f0f50;
+            
+            /* Permite que el título de la columna baje de línea */
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
-        th {
-            background-color: #444;
-            color: white;
+        tbody tr td {
+            padding: 3px 2px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #cccccc;
+            
+            /* CRÍTICO: Obliga al texto a bajar a la siguiente línea si no cabe */
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
+        tbody tr:nth-child(even) td {
+            background-color: #f2f4ff;
+        }
+
+        tbody tr:nth-child(odd) td {
+            background-color: #ffffff;
+        }
+
+        .no-data td {
+            text-align: center;
+            padding: 12px;
+            color: #888888;
+            font-style: italic;
+        }
+
+        /* ── Footer ── */
         .footer {
             text-align: center;
-            font-size: 9px;
+            font-size: 8px;
             margin-top: 10px;
-            color: #666;
+            color: #999999;
+            border-top: 1px solid #dddddd;
+            padding-top: 5px;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">
-                <img src="{{ public_path('img/logo.png') }}" alt="Logo">
-            </div>
-            <div class="invoice-date">
-                <p>Mérida, Yucatán a {{ \Carbon\Carbon::now()->format('d-m-Y') }}</p>
-            </div>
+
+    {{-- Header --}}
+    <div class="header clearfix">
+        <div class="header-logo">
+            <img src="file://{{ public_path('img/logo.png') }}" alt="Logo">
         </div>
-
-        <h1>Reporte {{ $reportes->title }}</h1>
-
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        @foreach (array_keys((array)$resultado[0] ?? []) as $col)
-                        <th>{{ ucfirst($col) }}</th>
-                        @endforeach
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($resultado as $fila)
-                    <tr>
-                        @foreach ((array)$fila as $valor)
-                        <td>{{ $valor }}</td>
-                        @endforeach
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="100%" class="text-center">No hay datos para mostrar</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <div class="footer">
-           
+        <div class="header-date">
+            Mérida, Yucatán a {{ \Carbon\Carbon::now()->format('d/m/Y') }}
         </div>
     </div>
+
+    {{-- Título --}}
+    <h1>{{ $nombre_reporte ?? 'Reporte' }}</h1>
+
+    {{-- Cálculos para forzar el ancho de columnas en DomPDF --}}
+    @php
+        $primeraFila = clone $resultado;
+        $primeraFila = $primeraFila->first();
+        $encabezados = $primeraFila ? array_keys((array) $primeraFila) : [];
+        $totalColumnas = count($encabezados);
+        // Dividimos 100% entre el total de columnas. 
+        // Si hay 10 columnas, cada una medirá 10% exacto.
+        $anchoColumna = $totalColumnas > 0 ? (100 / $totalColumnas) : 100;
+    @endphp
+
+    {{-- Tabla de datos --}}
+    <table>
+        <thead>
+            <tr>
+                @foreach ($encabezados as $col)
+                    {{-- Imprimimos el estilo en línea (width: X%) para forzar a DomPDF --}}
+                    <th style="width: {{ $anchoColumna }}%;">
+                        {{ ucfirst(str_replace('_', ' ', $col)) }}
+                    </th>
+                @endforeach
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($resultado as $fila)
+                <tr>
+                    @foreach ((array) $fila as $valor)
+                        <td>
+                            @if ($valor !== null && $valor !== '')
+                                {{ $valor }}
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+            @empty
+                <tr class="no-data">
+                    <td colspan="{{ $totalColumnas > 0 ? $totalColumnas : 1 }}">No hay datos para mostrar</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    {{-- Footer --}}
+    <div class="footer">
+        Generado el {{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}
+        &nbsp;|&nbsp;
+        Total de registros: {{ $resultado->count() }}
+    </div>
+
 </body>
 
 </html>

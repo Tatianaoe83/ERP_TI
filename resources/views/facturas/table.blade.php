@@ -111,23 +111,26 @@ $(document).ready(function() {
             paginate:    { first: '<<', last: '>>', next: '>', previous: '<' }
         },
         ajax: {
-            url: '{{ route("facturas.ver") }}',
-            method: 'GET',
-            data: function(d) {
-                d.mes        = $('#mesFilter').val();
-                d.gerenci_id = $('#gerenci_id').val();
-                d.año        = $('#añoFilter').val();
+                url: '{{ route("facturas.ver") }}', // Asegúrate de que esta ruta apunte a indexVista
+                method: 'GET',
+                data: function(d) {
+                    d.mes        = $('#mesFilter').val();
+                    d.gerenci_id = $('#gerenci_id').val();
+                    d.año        = $('#añoFilter').val();
+                }
+                // ELIMINA la línea de: dataSrc: 'data'
             },
-            dataSrc: 'data'
-        },
         columns: [
             // Nombre
             {
                 data: 'Nombre',
                 className: 'px-4 py-3 border-b dark:border-slate-800',
                 render: function(data) {
-                    const short = data ? (data.length > 50 ? data.substring(0, 50) + '…' : data) : '—';
-                    return `<span class="text-sm font-semibold text-slate-800 dark:text-slate-100" title="${data ?? ''}">${short}</span>`;
+                    if (data === null || data === undefined) return '<span class="text-slate-400">—</span>';
+                    
+                    const strData = String(data);
+                    const short = strData.length > 50 ? strData.substring(0, 50) + '…' : strData;
+                    return `<span class="text-sm font-semibold text-slate-800 dark:text-slate-100" title="${strData}">${short}</span>`;
                 }
             },
             // Solicitud
@@ -265,7 +268,7 @@ $(document).ready(function() {
                     { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }
                 );
                 const json = await res.json();
-                insumos    = json.data || [];
+                insumos    = (json && json.data) ? json.data : [];
                 insumoCache[solID] = insumos;
             }
 

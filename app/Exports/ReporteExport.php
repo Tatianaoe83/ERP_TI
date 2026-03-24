@@ -15,10 +15,30 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class ReporteExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithEvents
 {
+    /** @var string[]  Claves cortas (sin prefijo tabla) en el orden deseado. */
+    protected array $claves;
+
     public function __construct(
         protected Builder $query,
         protected array   $columnas
-    ) {}
+    ) {
+        // Pre-calcular las claves cortas una sola vez para reutilizarlas
+        // en map() sin repetir la lógica en cada fila.
+        // FIX: el original hacía (array)$row que depende del orden interno
+        // de las propiedades del stdClass, el cual puede no coincidir con
+        // $columnas cuando hay alias o columnas de múltiples tablas.
+        $this->claves = array_map(function (string $col): string {
+            // Si tiene alias ("tabla.columna as alias" o "columna as alias")
+            if (stripos($col, ' as ') !== false) {
+                return trim(last(preg_split('/\s+as\s+/i', $col)));
+            }
+            // Si tiene prefijo de tabla
+            if (str_contains($col, '.')) {
+                return last(explode('.', $col));
+            }
+            return trim($col);
+        }, $columnas);
+    }
 
     public function query(): Builder
     {
@@ -27,31 +47,48 @@ class ReporteExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
 
     public function headings(): array
     {
-        return array_map(function ($col) {
-            return str_contains($col, '.') ? last(explode('.', $col)) : $col;
-        }, $this->columnas);
+        // Usar las claves ya calculadas para que headings y map() sean
+        // exactamente el mismo orden.
+        return $this->claves;
     }
 
+    /**
+     * FIX: En lugar de iterar las propiedades del objeto en orden arbitrario,
+     * extraemos los valores según $this->claves, que refleja el orden de
+     * $this->columnas. Esto garantiza que cada celda del Excel corresponda
+     * a la columna del encabezado correcto.
+     */
     public function map($row): array
     {
-        return array_values((array) $row);
+        $rowArray    = (array) $row;
+        $filaMapeada = [];
+
+        foreach ($this->claves as $clave) {
+            // Buscar la clave con y sin backticks por si el driver los dejó
+            $valor = $rowArray[$clave]
+                ?? $rowArray[str_replace('`', '', $clave)]
+                ?? null;
+
+            $filaMapeada[] = ($valor !== null && trim((string) $valor) !== '')
+                ? $valor
+                : 'N/A';
+        }
+
+        return $filaMapeada;
     }
 
     public function registerEvents(): array
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
+                $sheet    = $event->sheet->getDelegate();
+                $colCount = count($this->claves);
 
-                $colCount = count($this->columnas);
-
-                // Autosize por columna
                 for ($col = 1; $col <= $colCount; $col++) {
-                    $letter = Coordinate::stringFromColumnIndex($col);
-                    $sheet->getColumnDimension($letter)->setAutoSize(true);
+                    $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($col))
+                          ->setAutoSize(true);
                 }
 
-                // Estilo del encabezado (fila 1)
                 $lastCol = Coordinate::stringFromColumnIndex($colCount);
                 $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
                     'font' => [

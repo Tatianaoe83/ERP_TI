@@ -4,6 +4,7 @@ namespace App\Http\Livewire;
 
 use App\Helpers\JoinHelper;
 use App\Helpers\ReporteHelper;
+use App\Helpers\RelacionesUniversales;
 use Livewire\Component;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Eloquent\Model;
@@ -17,35 +18,121 @@ class Reporte extends Component
 {
     public $modelo;
     public $titulo;
-    public $columnas = [];
+    public $columnas            = [];
     public $columnasSeleccionadas = [];
-    public $filtros = [];
+    public $filtros             = [];
     public $ordenColumna;
-    public $ordenDireccion = 'asc';
+    public $ordenDireccion      = 'asc';
     public $limite;
-    public $relaciones = [];
+    public $relaciones          = [];
     public $relacionesSeleccionadas = [];
-    public $relacionActual = [];
+    public $relacionActual      = [];
     public $columnasRelacionActual = [];
     public $columnasPorRelacion = [];
-    public $tablasDisponibles = [];
+    public $tablasDisponibles   = [];
     public $modeloClase;
     public $filtroAutocompletarIndex = null;
+
+    /** @var array Relaciones centralizadas — se inicializan en mount() */
+    protected array $relacionesUniversales;
+
     protected $listeners = [
         'valorAutocompletado' => 'valorAutocompletado',
     ];
 
+    // ── Lifecycle ──────────────────────────────────────────────────────────────
+    // boot() se ejecuta SIEMPRE, en cada clic y recarga del componente
+    public function boot()
+    {
+        $this->relacionesUniversales = RelacionesUniversales::get();
+    }
+
+    // mount() se ejecuta SOLO UNA VEZ al abrir la página
+    public function mount()
+    {
+        $this->tablasDisponibles = ReporteService::obtenerTablas();
+    }
+
+    public function initModel()
+    {
+        $this->modelo = 'empleados';
+        $this->updatedModelo();
+    }
+
+    // ── Watchers ───────────────────────────────────────────────────────────────
+
+    public function updatedModelo()
+    {
+        if (!$this->modelo) return;
+
+        $this->relacionesSeleccionadas = [];
+        $this->relacionActual          = '';
+        $this->columnasSeleccionadas   = [];
+        $this->columnasPorRelacion     = [];
+        $this->filtros                 = [];
+        $this->ordenColumna            = '';
+        $this->ordenDireccion          = 'asc';
+        $this->limite                  = null;
+
+        $this->modeloClase = ReporteService::modeloDesdeTabla($this->modelo);
+
+        if ($this->modeloClase) {
+            $this->columnas   = ReporteService::listarColumnas($this->modelo);
+            $this->relaciones = ReporteService::relacionesTablas($this->modeloClase);
+        } else {
+            $this->resetEstado();
+        }
+    }
+
+    public function updatedRelacionActual($relacion)
+    {
+        if (!$relacion) return;
+
+        if (in_array($relacion, $this->relacionesSeleccionadas)) {
+            // Si ya estaba seleccionada → quitarla y remover sus columnas
+            if (isset($this->columnasPorRelacion[$relacion])) {
+                $this->columnasSeleccionadas = array_values(
+                    array_diff($this->columnasSeleccionadas, $this->columnasPorRelacion[$relacion])
+                );
+            }
+
+            $this->relacionesSeleccionadas = array_values(
+                array_filter($this->relacionesSeleccionadas, fn($r) => $r !== $relacion)
+            );
+
+            unset($this->columnasPorRelacion[$relacion]);
+        } else {
+            // Agregar relación y sus columnas disponibles
+            $this->relacionesSeleccionadas[]        = $relacion;
+            $this->columnasPorRelacion[$relacion]   = ReporteService::obtenerColumnasRelacion($this->modeloClase, $relacion);
+        }
+
+        $this->relacionActual = '';
+    }
+
+    public function updatedFiltros($value, $key)
+    {
+        if (Str::endsWith($key, '.operador')) {
+            $index = explode('.', $key)[0];
+
+            $this->filtros[$index]['valor'] = $this->filtros[$index]['operador'] === 'between'
+                ? ['inicio' => '', 'fin' => '']
+                : '';
+        }
+    }
+
+    // ── Acciones ───────────────────────────────────────────────────────────────
 
     public function mostrarPreview()
     {
         $metadata = [
-            'tabla_principal'   => $this->modelo,
-            'tabla_relacion'    => $this->relacionesSeleccionadas,
-            'columnas'          => $this->columnasSeleccionadas,
-            'filtros'           => $this->filtros,
-            'ordenColumna'      => $this->ordenColumna,
-            'ordenDireccion'    => $this->ordenDireccion,
-            'limite'            => 10,
+            'tabla_principal' => $this->modelo,
+            'tabla_relacion'  => $this->relacionesSeleccionadas,
+            'columnas'        => $this->columnasSeleccionadas,
+            'filtros'         => $this->filtros,
+            'ordenColumna'    => $this->ordenColumna,
+            'ordenDireccion'  => $this->ordenDireccion,
+            'limite'          => 10,
         ];
 
         try {
@@ -56,126 +143,40 @@ class Reporte extends Component
         }
     }
 
-    public function mount()
-    {
-        $this->tablasDisponibles = ReporteService::obtenerTablas();
-    }
-
-    public function updatedModelo()
-    {
-        if (!$this->modelo) return;
-
-        $this->relacionesSeleccionadas = [];
-        $this->relacionActual = '';
-        $this->columnasSeleccionadas = [];
-        $this->columnasPorRelacion = [];
-        $this->filtros = [];
-        $this->ordenColumna = '';
-        $this->ordenDireccion = 'asc';
-        $this->limite = null;
-
-        $this->modeloClase = ReporteService::modeloDesdeTabla($this->modelo);
-
-        if ($this->modeloClase) {
-            $this->columnas = ReporteService::listarColumnas($this->modelo);
-            $this->relaciones = ReporteService::relacionesTablas($this->modeloClase);
-        } else {
-            $this->resetEstado();
-        }
-    }
-
-    public function initModel()
-    {
-        $this->modelo = 'empleados';
-        $this->updatedModelo();
-    }
-
-    protected array $relacionesUniversales = [
-        'categorias' => [
-            'tiposdecategorias' => ['tiposdecategorias.ID', '=', 'categorias.TipoID'],
-        ],
-        'departamentos' => [
-            'gerencia' => ['gerencia.GerenciaID', '=', 'departamentos.GerenciaID'],
-        ],
-        'empleados' => [
-            'obras' => ['obras.ObraID', '=', 'empleados.ObraID'],
-            'puestos' => ['puestos.PuestoID', '=', 'empleados.PuestoID'],
-            'inventarioinsumo' => ['inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID'],
-            'inventarioequipo' => ['inventarioequipo.EmpleadoID', '=', 'empleados.EmpleadoID'],
-            'inventariolineas' => ['inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID']
-        ],
-        'equipos' => [
-            'categorias' => ['categorias.ID', '=', 'equipos.CategoriaID'],
-        ],
-        'gerencia' => [
-            'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'gerencia.UnidadNegocioID'],
-        ],
-        'insumos' => [
-            'categorias' => ['categorias.ID', '=', 'insumos.CategoriaID'],
-        ],
-        'inventarioequipo' => [
-            'empleados' => ['empleados.EmpleadoID', '=', 'inventarioequipo.EmpleadoID'],
-        ],
-        'inventarioinsumo' => [
-            'empleados' => ['empleados.EmpleadoID', '=', 'inventarioinsumo.EmpleadoID'],
-            'insumos' => ['insumos.InsumoID', '=', 'inventarioinsumo.InsumoID'],
-        ],
-        'inventariolineas' => [
-            'empleados' => ['empleados.EmpleadoID', '=', 'inventariolineas.EmpleadoID'],
-            'lineastelefonicas' => ['lineastelefonicas.LineaID', '=', 'inventariolineas.LineaID'],
-            'obras' => ['obras.ObraID', '=', 'inventariolineas.ObraID'],
-        ],
-        'lineastelefonicas' => [
-            'obras' => ['obras.ObraID', '=', 'lineastelefonicas.ObraID'],
-            'planes' => ['planes.ID', '=', 'lineastelefonicas.PlanID']
-        ],
-        'obras' => [
-            'unidadesdenegocio' => ['unidadesdenegocio.UnidadNegocioID', '=', 'obras.UnidadNegocioID'],
-        ],
-        'puestos' => [
-            'departamentos' => ['departamentos.DepartamentoID', '=', 'puestos.DepartamentoID'],
-        ],
-        'planes' => [
-            'companiaslineastelefonicas' => ['companiaslineastelefonicas.ID', '=', 'planes.CompaniaID'],
-        ],
-        'unidadesdenegocio' => [
-            'gerencia' => ['gerencia.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID'],
-        ]
-    ];
-
     public function generarReporte()
     {
-
         if (!$this->modeloClase) {
             $this->addError('modelo', 'La tabla seleccionada no es válida.');
             return;
         }
 
         $this->validate([
-            'titulo' => 'required|string|max:255',
-            'modelo' => 'required',
+            'titulo'                => 'required|string|max:255',
+            'modelo'                => 'required',
             'columnasSeleccionadas' => 'required|array|min:1',
         ]);
 
-        $query = $this->modeloClase::query();
+        $query     = $this->modeloClase::query();
         $tablaBase = $query->getModel()->getTable();
 
         $joinsHechos = [];
-        $columnas = [];
+        $columnas    = [];
 
         foreach ($this->columnasSeleccionadas as $columna) {
             if (strpos($columna, '.') !== false) {
                 $columnas[] = $columna;
-                $partes = explode('.', $columna);
-                $tablaDestino = $partes[0];
-                foreach ($this->relacionesSeleccionadas as $relacion) {
-                    $camino = JoinHelper::resolverRutaJoins($tablaBase, $relacion, $this->relacionesUniversales);
 
-                    foreach ($camino as [$tablaJoin, [$from, $op, $to]]) {
-                        if (!in_array($tablaJoin, $joinsHechos)) {
-                            $query->join($tablaJoin, $from, $op, $to);
-                            $joinsHechos[] = $tablaJoin;
+                foreach ($this->relacionesSeleccionadas as $relacion) {
+                    try {
+                        $camino = JoinHelper::resolverRutaJoins($tablaBase, $relacion, $this->relacionesUniversales);
+                        foreach ($camino as [$tablaJoin, [$from, $op, $to]]) {
+                            if (!in_array($tablaJoin, $joinsHechos)) {
+                                $query->join($tablaJoin, $from, $op, $to);
+                                $joinsHechos[] = $tablaJoin;
+                            }
                         }
+                    } catch (\Exception $e) {
+                        Log::warning("generarReporte: no se pudo resolver ruta para '{$relacion}': " . $e->getMessage());
                     }
                 }
             } else {
@@ -186,19 +187,16 @@ class Reporte extends Component
         $query->select($columnas);
 
         foreach ($this->filtros as $filtro) {
-            if (empty($filtro['columna']) || !isset($filtro['valor'])) {
-                continue;
-            }
+            if (empty($filtro['columna']) || !isset($filtro['valor'])) continue;
 
-            $columna = $filtro['columna'];
+            $columna  = $filtro['columna'];
             $operador = $filtro['operador'] ?? '=';
-            $valor = $filtro['valor'];
+            $valor    = $filtro['valor'];
 
             if ($operador === 'between') {
                 if (is_array($valor)) {
                     $inicio = $valor['inicio'] ?? null;
-                    $fin = $valor['fin'] ?? null;
-
+                    $fin    = $valor['fin']    ?? null;
                     if (!is_null($inicio) && !is_null($fin)) {
                         $query->whereBetween($columna, [$inicio, $fin]);
                     }
@@ -207,7 +205,6 @@ class Reporte extends Component
                 if ($operador === 'like') {
                     $valor = '%' . $valor . '%';
                 }
-
                 $query->where($columna, $operador, $valor);
             }
         }
@@ -225,94 +222,13 @@ class Reporte extends Component
         return redirect()->route('reportes.index');
     }
 
-    public function saveSql($sql, $columnasPrefijo)
-    {
-        $result = DB::table('query_forms')->insert([
-            'title' => $this->titulo,
-            'query_details' => json_encode([
-                'tabla_principal' => $this->modelo,
-                'tabla_relacion' => $this->relacionesSeleccionadas,
-                'columnas' => $columnasPrefijo,
-                'filtros' => $this->filtros,
-                'ordenColumna' => $this->ordenColumna,
-                'ordenDireccion' => $this->ordenDireccion,
-                'limite' => $this->limite
-            ])
-        ], JSON_PRETTY_PRINT);
-    }
-
-    public function updatedFiltros($value, $key)
-    {
-        if (Str::endsWith($key, '.operador')) {
-            $index = explode('.', $key)[0];
-
-            if ($this->filtros[$index]['operador'] === 'between') {
-                $this->filtros[$index]['valor'] = ['inicio' => '', 'fin' => ''];
-            } else {
-                $this->filtros[$index]['valor'] = '';
-            }
-        }
-    }
-
-    public function valorAutocompletado($value, $index)
-    {
-        if (isset($this->filtros[$index])) {
-            $this->filtros[$index]['valor'] = $value;
-        }
-    }
-
-    public function updatedRelacionActual($relacion)
-    {
-        if (!$relacion) return;
-
-        if (in_array($relacion, $this->relacionesSeleccionadas)) {
-            if (isset($this->columnasPorRelacion[$relacion])) {
-
-                $columnasARemover = $this->columnasPorRelacion[$relacion];
-
-                $this->columnasSeleccionadas = array_values(
-                    array_diff($this->columnasSeleccionadas, $columnasARemover)
-                );
-            }
-
-            $this->relacionesSeleccionadas = array_values(
-                array_filter($this->relacionesSeleccionadas, fn($r) => $r !== $relacion)
-            );
-
-            unset($this->columnasPorRelacion[$relacion]);
-        } else {
-            $this->relacionesSeleccionadas[] = $relacion;
-            $this->columnasPorRelacion[$relacion] =
-                ReporteService::obtenerColumnasRelacion($this->modeloClase, $relacion);
-        }
-
-        $this->relacionActual = '';
-    }
-
-
-    private function resetEstado()
-    {
-        $this->modelo = '';
-        $this->titulo = '';
-        $this->columnas = [];
-        $this->columnasSeleccionadas = [];
-        $this->filtros = [];
-        $this->ordenColumna = null;
-        $this->ordenDireccion = 'asc';
-        $this->limite = null;
-        $this->relaciones = [];
-        $this->relacionesSeleccionadas = [];
-        $this->relacionActual = '';
-        $this->columnasRelacionActual = [];
-    }
-
     public function agregarFiltro()
     {
         $this->filtros[] = [
-            'id' => Str::uuid()->toString(),
-            'columna' => '',
+            'id'       => Str::uuid()->toString(),
+            'columna'  => '',
             'operador' => '=',
-            'valor' => '',
+            'valor'    => '',
         ];
     }
 
@@ -324,24 +240,65 @@ class Reporte extends Component
     public function agregarRelacion()
     {
         if ($this->relacionActual && !in_array($this->relacionActual, $this->relacionesSeleccionadas)) {
-            $this->relacionesSeleccionadas[] = $this->relacionActual;
-
-            $columnas = ReporteService::obtenerColumnasRelacion($this->modeloClase, $this->relacionActual);
-
-            $this->columnasPorRelacion[$this->relacionActual] = $columnas;
+            $this->relacionesSeleccionadas[]      = $this->relacionActual;
+            $this->columnasPorRelacion[$this->relacionActual] = ReporteService::obtenerColumnasRelacion(
+                $this->modeloClase,
+                $this->relacionActual
+            );
         }
-
-        $this->relacionActual;
     }
+
+    public function valorAutocompletado($value, $index)
+    {
+        if (isset($this->filtros[$index])) {
+            $this->filtros[$index]['valor'] = $value;
+        }
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────────
 
     public function render()
     {
         return view('livewire.reporte', [
-            'tablasDisponibles' => $this->tablasDisponibles,
-            'columnas' => $this->columnas,
-            'relaciones' => $this->relaciones,
-            'relacionActual' => $this->relacionActual,
+            'tablasDisponibles'  => $this->tablasDisponibles,
+            'columnas'           => $this->columnas,
+            'relaciones'         => $this->relaciones,
+            'relacionActual'     => $this->relacionActual,
             'columnasPorRelacion' => $this->columnasPorRelacion,
         ]);
+    }
+
+    // ── Helpers privados ───────────────────────────────────────────────────────
+
+    private function saveSql($sql, $columnasPrefijo)
+    {
+        DB::table('query_forms')->insert([
+            'title'         => $this->titulo,
+            'query_details' => json_encode([
+                'tabla_principal' => $this->modelo,
+                'tabla_relacion'  => $this->relacionesSeleccionadas,
+                'columnas'        => $columnasPrefijo,
+                'filtros'         => $this->filtros,
+                'ordenColumna'    => $this->ordenColumna,
+                'ordenDireccion'  => $this->ordenDireccion,
+                'limite'          => $this->limite,
+            ]),
+        ]);
+    }
+
+    private function resetEstado()
+    {
+        $this->modelo                  = '';
+        $this->titulo                  = '';
+        $this->columnas                = [];
+        $this->columnasSeleccionadas   = [];
+        $this->filtros                 = [];
+        $this->ordenColumna            = null;
+        $this->ordenDireccion          = 'asc';
+        $this->limite                  = null;
+        $this->relaciones              = [];
+        $this->relacionesSeleccionadas = [];
+        $this->relacionActual          = '';
+        $this->columnasRelacionActual  = [];
     }
 }

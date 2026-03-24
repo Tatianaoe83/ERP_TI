@@ -98,6 +98,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('reportes/{id}/export-excel', [ReportesController::class, 'exportExcel'])->name('reportes.exportExcel');
     Route::post('/reportes/preview', [ReportesController::class, 'preview'])->name('reportes.preview');
     Route::get('autocomplete', [ReportesController::class, 'autocomplete']);
+    Route::get('reportes/{id}/export-pdf-async', [App\Http\Controllers\ReportesController::class, 'iniciarExportPdf'])->name('reportes.iniciarExportPdf');
 
     // Rutas para reportes específicos
     Route::prefix('reportes-especificos')->name('reportes-especificos.')->group(function () {
@@ -120,6 +121,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('facturas/parsear-xml', [FacturasController::class, 'parsearXml'])->name('facturas.parsear-xml');
     Route::get('facturas/insumos-por-gerencia', [FacturasController::class, 'getInsumosPorGerencia'])->name('facturas.insumosPorGerencia');
     Route::patch('facturas/{id}/insumo', [FacturasController::class, 'actualizarInsumo'])->name('facturas.actualizarInsumo');
+    Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])
+     ->name('facturas.storeDirecta')
+     ->middleware('permission:facturas.create');
     Route::resource('facturas', App\Http\Controllers\FacturasController::class);
 
     Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
