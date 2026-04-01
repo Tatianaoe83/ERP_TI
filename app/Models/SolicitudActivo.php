@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property integer $CotizacionID
  * @property integer $NumeroPropuesta
  * @property integer $UnidadIndex
- * @property string $FacturaPath
+ * @property string $FacturaPath    
  * @property string $FechaEntrega
  * @property integer $EmpleadoID
  * @property integer $DepartamentoID
@@ -50,7 +50,8 @@ class SolicitudActivo extends Model
         'FechaEntrega',
         'EmpleadoID',
         'DepartamentoID',
-        'serial'
+        'serial',
+        'fecha_fin_configuracion'
     ];
 
     /**
@@ -68,7 +69,8 @@ class SolicitudActivo extends Model
         'FechaEntrega' => 'date',
         'EmpleadoID' => 'integer',
         'DepartamentoID' => 'integer',
-        'serial' => 'string'
+        'serial' => 'string',
+        'fecha_fin_configuracion' => 'datetime'
     ];
 
     /**

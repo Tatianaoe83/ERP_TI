@@ -12,21 +12,18 @@ use App\Models\Insumos;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Response;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\JsonResponse;
 
-
 class FacturasController extends AppBaseController
 {
-
-    /** @var FacturasRepository */
     private $facturasRepository;
 
     public function __construct(FacturasRepository $facturasRepo)
     {
         $this->facturasRepository = $facturasRepo;
-
         $this->middleware('permission:facturas.view',   ['only' => ['index']]);
         $this->middleware('permission:facturas.create', ['only' => ['create', 'store']]);
     }
@@ -87,9 +84,185 @@ class FacturasController extends AppBaseController
     
         return response()->json(['message' => 'Factura guardada correctamente.'], 201);
     }
-    // ══════════════════════════════════════════════════════════════════════════
-    // Parseo de XML CFDI
-    // ══════════════════════════════════════════════════════════════════════════
+
+    public function reemplazarArchivo(Request $request, $id)
+    {
+        $request->validate([
+            'archivo_xml' => 'nullable|file|mimes:xml,text/xml|max:10240',
+            'archivo_pdf' => 'nullable|file|mimes:pdf|max:10240',
+        ]);
+
+        if (!$request->hasFile('archivo_xml') && !$request->hasFile('archivo_pdf')) {
+            return response()->json(['message' => 'Debes subir al menos un archivo (XML o PDF).'], 422);
+        }
+
+        $factura = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')->first();
+
+        if (!$factura) {
+            return response()->json(['message' => 'Factura no encontrada'], 404);
+        }
+
+        $baseDir    = $factura->SolicitudID ? "solicitudes/{$factura->SolicitudID}/facturas" : "facturas/extras";
+        $updateData = ['updated_at' => now()];
+        $parsedData = null;
+        $rutaXml    = null;
+        $rutaPdf    = null;
+
+        // 1. SI SUBE XML
+        if ($request->hasFile('archivo_xml')) {
+            if (!empty($factura->ArchivoRuta) && Storage::disk('public')->exists($factura->ArchivoRuta)) {
+                Storage::disk('public')->delete($factura->ArchivoRuta);
+            }
+            $rutaXml                   = $request->file('archivo_xml')->store($baseDir . '/xml', 'public');
+            $updateData['ArchivoRuta'] = $rutaXml;
+            $parsedData                = $this->extraerDatosFacturaXml($request->file('archivo_xml')->getRealPath());
+        }
+
+        // 2. SI SUBE PDF
+        if ($request->hasFile('archivo_pdf')) {
+            if (!empty($factura->PdfRuta) && Storage::disk('public')->exists($factura->PdfRuta)) {
+                Storage::disk('public')->delete($factura->PdfRuta);
+            }
+            $rutaPdf                = $request->file('archivo_pdf')->store($baseDir . '/pdf', 'public');
+            $updateData['PdfRuta'] = $rutaPdf;
+
+            if (!$parsedData && !$request->hasFile('archivo_xml')) {
+                $parsedData = $this->extraerDatosFacturaPdf($request->file('archivo_pdf')->getRealPath(), $factura->Emisor ?? 'Extranjero');
+            }
+        }
+
+        // 3. ACTUALIZAR MONTOS SI EL PARSEO FUE EXITOSO
+        if ($parsedData && empty($parsedData['error'])) {
+            if (!empty($parsedData['total']))  { $updateData['Costo']   = $parsedData['total']; $updateData['Importe'] = $parsedData['total']; }
+            if (!empty($parsedData['uuid']))    $updateData['UUID']   = $parsedData['uuid'];
+            if (!empty($parsedData['emisor']))  $updateData['Emisor'] = $parsedData['emisor'];
+            if (!empty($parsedData['mes']))     $updateData['Mes']    = $parsedData['mes'];
+            if (!empty($parsedData['anio']))    $updateData['Anio']   = $parsedData['anio'];
+        }
+
+        DB::table('facturas')->where('FacturasID', $id)->update($updateData);
+
+        // 4. SINCRONIZAR solicitud_activos SI LA FACTURA PERTENECE A UNA SOLICITUD
+        if ($factura->SolicitudID && ($rutaXml || $rutaPdf)) {
+            $nuevaRuta       = $rutaXml ?? $rutaPdf;
+            $rutaAnteriorXml = $factura->ArchivoRuta ?? '';
+            $rutaAnteriorPdf = $factura->PdfRuta     ?? '';
+
+            DB::table('solicitud_activos')
+                ->where('SolicitudID', $factura->SolicitudID)
+                ->where(function ($q) use ($rutaAnteriorXml, $rutaAnteriorPdf) {
+                    $q->where('FacturaPath', $rutaAnteriorXml)
+                    ->orWhere('FacturaPath', $rutaAnteriorPdf);
+                })
+                ->update([
+                    'FacturaPath' => $nuevaRuta,
+                    'updated_at'  => now(),
+                ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Archivo actualizado y montos recalculados correctamente.',
+            'parsed'  => $parsedData,
+        ]);
+    }
+    // ── Lógica idéntica a Solicitudes para extraer datos ──
+    private function extraerDatosFacturaXml(string $rutaArchivo): array
+    {
+        try {
+            $contenido = file_get_contents($rutaArchivo);
+            libxml_use_internal_errors(true);
+            $xml = simplexml_load_string($contenido, 'SimpleXMLElement', LIBXML_NOCDATA);
+
+            if ($xml === false) return ['error' => true];
+
+            $xml->registerXPathNamespace('cfdi',  'http://www.sat.gob.mx/cfd/4');
+            $xml->registerXPathNamespace('cfdi3', 'http://www.sat.gob.mx/cfd/3');
+            $xml->registerXPathNamespace('tfd',   'http://www.sat.gob.mx/TimbreFiscalDigital');
+
+            $attrs  = $xml->attributes();
+            $nsCfdi = str_starts_with((string) ($attrs['Version'] ?? $attrs['version'] ?? '3.3'), '4') ? 'cfdi' : 'cfdi3';
+
+            $total = (string) ($attrs['SubTotal'] ?? $attrs['subTotal'] ?? '0'); // SIN IVA
+            $fecha = (string) ($attrs['Fecha']  ?? $attrs['fecha']  ?? '');
+
+            $emisorNodes = $xml->xpath("//{$nsCfdi}:Emisor") ?: $xml->xpath('//cfdi:Emisor') ?: $xml->xpath('//cfdi3:Emisor');
+            $emisorNombre = !empty($emisorNodes) ? (string) ($emisorNodes[0]->attributes()['Nombre'] ?? '') : '';
+
+            $uuid = '';
+            $timbreNodes = $xml->xpath('//tfd:TimbreFiscalDigital');
+            if (!empty($timbreNodes)) {
+                $ta   = $timbreNodes[0]->attributes();
+                $uuid = strtoupper(trim((string) ($ta['UUID'] ?? $ta['uuid'] ?? '')));
+            }
+
+            $mes = null; $anio = null;
+            if ($fecha) {
+                try {
+                    $cf = Carbon::parse($fecha);
+                    $mes = (int) $cf->format('n');
+                    $anio = (int) $cf->format('Y');
+                } catch (\Throwable $th) {}
+            }
+
+            return [
+                'error'  => false,
+                'total'  => (float) $total,
+                'emisor' => $emisorNombre,
+                'uuid'   => $uuid,
+                'mes'    => $mes,
+                'anio'   => $anio
+            ];
+        } catch (\Throwable $th) {
+            return ['error' => true];
+        }
+    }
+
+    private function extraerDatosFacturaPdf(string $rutaPdfRutaAbsoluta, string $proveedorFallback): array
+    {
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf    = $parser->parseFile($rutaPdfRutaAbsoluta);
+            $text   = strtolower($pdf->getText());
+
+            $total = 0;
+            if (str_contains($text, 'starlink')) {
+                if (preg_match('/(?:subtotal|sub-total|net amount).*?\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2}))/i', $text, $matches)) {
+                    $total = (float) str_replace(',', '', $matches[1]);
+                } elseif (preg_match('/(?:total|amount due|balance).*?\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2}))/i', $text, $matches)) {
+                    $total = round(((float) str_replace(',', '', $matches[1])) / 1.16, 2);
+                } else {
+                    if (preg_match_all('/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2}))/', $text, $matches)) {
+                        $numeros = array_map(fn($n) => (float) str_replace(',', '', $n), $matches[1]);
+                        $total = round(max($numeros) / 1.16, 2);
+                    }
+                }
+            } else {
+                if (preg_match('/(?:subtotal|sub-total|net amount).*?\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2}))/i', $text, $matches)) {
+                    $total = (float) str_replace(',', '', $matches[1]);
+                } elseif (preg_match('/(?:total|amount due|invoice total).*?\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2}))/i', $text, $matches)) {
+                    $total = round(((float) str_replace(',', '', $matches[1])) / 1.16, 2);
+                }
+            }
+
+            return [
+                'error'  => false,
+                'total'  => $total,
+                'emisor' => str_contains($text, 'starlink') ? 'STARLINK' : $proveedorFallback,
+            ];
+        } catch (\Throwable $e) {
+            return ['error' => true];
+        }
+    }
+    public function previsualizarPdf(Request $request)
+    {
+        $request->validate(['pdf' => 'required|file|mimes:pdf|max:10240']);
+        
+        $path = $request->file('pdf')->getRealPath();
+        $data = $this->extraerDatosFacturaPdf($path, 'Proveedor Extranjero');
+        
+        return response()->json($data);
+    }
 
     public function parsearXml(Request $request)
     {
@@ -156,7 +329,7 @@ class FacturasController extends AppBaseController
             ->orderBy('NombreInsumo')
             ->get(['NombreInsumo'])
             ->map(fn($i) => [
-                'id'     => null, // cortes no tiene ID de insumo separado
+                'id'     => null,
                 'nombre' => mb_strtolower(trim((string) $i->NombreInsumo)),
             ])
             ->toArray();
@@ -204,10 +377,6 @@ class FacturasController extends AppBaseController
             return response()->json(['error' => 'Error procesando XML: ' . $e->getMessage()], 500);
         }
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // index — vista principal
-    // ══════════════════════════════════════════════════════════════════════════
 
     public function index()
     {
@@ -260,16 +429,10 @@ class FacturasController extends AppBaseController
             'meses'     => $meses, 
             'years'     => $years, 
             'gerencia'  => $gerencia, 
-            'gerencias' => $gerenciasModal, // ⬅ Se pasa a la vista
-            'insumos'   => $insumosModal,   // ⬅ Se pasa a la vista
+            'gerencias' => $gerenciasModal,
+            'insumos'   => $insumosModal,
         ]);
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // indexVista — DataTables AJAX
-    // Columnas: Nombre, SolicitudID, NombreGerencia, Costo, Mes, Anio,
-    //           InsumoNombre (de facturas, editable), PdfRuta
-    // ══════════════════════════════════════════════════════════════════════════
 
     public function indexVista(Request $request)
     {
@@ -299,19 +462,16 @@ class FacturasController extends AppBaseController
             'facturas.Mes',
             'facturas.Anio',
             'facturas.PdfRuta',
+            'facturas.ArchivoRuta',
             'facturas.InsumoNombre',
-            // COALESCE toma el primer valor que no sea nulo. 
-            // Si tiene solicitud, toma esa gerencia. Si no, toma la de g_directa.
             DB::raw('COALESCE(gerencia.NombreGerencia, g_directa.NombreGerencia) as NombreGerencia')
         ])
         ->leftJoin('solicitudes', 'facturas.SolicitudID', '=', 'solicitudes.SolicitudID')
         ->leftJoin('gerencia', 'solicitudes.GerenciaID', '=', 'gerencia.GerenciaID')
-        // Un join extra para traer la gerencia directamente asociada a la factura
         ->leftJoin('gerencia as g_directa', 'facturas.GerenciaID', '=', 'g_directa.GerenciaID')
         ->whereNull('facturas.deleted_at');
 
         if ($gerenciaID) {
-            // Buscamos que coincida el filtro con la gerencia de la solicitud O la de la factura
             $query->where(function($q) use ($gerenciaID) {
                 $q->where('solicitudes.GerenciaID', $gerenciaID)
                   ->orWhere('facturas.GerenciaID', $gerenciaID);
@@ -328,11 +488,6 @@ class FacturasController extends AppBaseController
 
         return DataTables::of($query)->make(true);
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // getInsumosPorGerencia — select editable en tabla
-    // Recibe solicitudID, saca GerenciaID, devuelve insumos únicos de cortes
-    // ══════════════════════════════════════════════════════════════════════════
 
     public function getInsumosPorGerencia(Request $request)
     {
@@ -360,12 +515,6 @@ class FacturasController extends AppBaseController
         return response()->json(['data' => $insumos]);
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // actualizarInsumo — PATCH /facturas/{id}/insumo
-    // Guarda InsumoNombre en la factura usando query directa (evita problema
-    // de primaryKey en el repositorio)
-    // ══════════════════════════════════════════════════════════════════════════
-
     public function actualizarInsumo(Request $request, $id)
     {
         $request->validate([
@@ -385,7 +534,7 @@ class FacturasController extends AppBaseController
             ->whereNull('deleted_at')
             ->update([
                 'InsumoNombre' => $request->input('InsumoNombre'),
-                'InsumoID'     => $insumoID,   // ← también guarda el ID
+                'InsumoID'     => $insumoID,
                 'updated_at'   => now(),
             ]);
 
@@ -395,10 +544,6 @@ class FacturasController extends AppBaseController
 
         return response()->json(['message' => 'Insumo actualizado']);
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // CRUD original
-    // ══════════════════════════════════════════════════════════════════════════
 
     public function create()
     {
@@ -443,9 +588,6 @@ class FacturasController extends AppBaseController
         Flash::success('Factura eliminada correctamente.');
         return redirect(route('facturas.index'));
     }
-    // ══════════════════════════════════════════════════════════════════════════
-    // historial — vista agrupada por Solicitud (AJAX)
-    // ══════════════════════════════════════════════════════════════════════════
 
     public function historial(Request $request)
     {
@@ -453,17 +595,14 @@ class FacturasController extends AppBaseController
 
         $query = DB::table('facturas as f')
             ->select([
-                // Solicitud
                 's.SolicitudID',
                 's.Motivo',
                 's.Estatus',
                 's.Requerimientos',
                 's.Presupuesto',
                 's.created_at as solicitud_fecha',
-                // Gerencia
                 'g.NombreGerencia',
                 'g.GerenciaID',
-                // Factura
                 'f.FacturasID',
                 'f.Nombre as FacturaNombre',
                 'f.Costo',
@@ -474,7 +613,6 @@ class FacturasController extends AppBaseController
                 'f.Emisor',
                 'f.UUID',
                 'f.InsumoNombre',
-                // Datos del insumo desde cortes (por nombre)
                 'c.Costo as CostoMensual',
                 'c.CostoTotal as CostoAnual',
             ])
@@ -504,7 +642,6 @@ class FacturasController extends AppBaseController
 
         $rows = $query->get();
 
-        // Agrupar por solicitud
         $solicitudes = [];
         foreach ($rows as $row) {
             $sid = $row->SolicitudID;
@@ -533,15 +670,14 @@ class FacturasController extends AppBaseController
                 'Emisor'       => $row->Emisor,
                 'UUID'         => $row->UUID,
                 'InsumoNombre' => $row->InsumoNombre,
-                'CostoMensual' => $row->CostoMensual,  // c.Costo
-                'CostoAnual'   => $row->CostoAnual,    // c.CostoTotal
+                'CostoMensual' => $row->CostoMensual,
+                'CostoAnual'   => $row->CostoAnual,
             ];
             $solicitudes[$sid]['total_costo'] += (float) $row->Costo;
         }
 
         return response()->json(['data' => array_values($solicitudes)]);
     }
-
 
     public function comparativa(Request $request): \Illuminate\Http\JsonResponse
     {
@@ -551,7 +687,6 @@ class FacturasController extends AppBaseController
         $insumo     = $request->input('insumo');     
         $estatus    = $request->input('estatus');      
 
-        // ── 1. Construir query base de facturas (con o sin solicitud) ─────────
         $queryBase = DB::table('facturas as f')
             ->leftJoin('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
             ->whereNull('f.deleted_at')
@@ -562,7 +697,6 @@ class FacturasController extends AppBaseController
             ->whereNotNull('f.InsumoNombre')
             ->where('f.InsumoNombre', '<>', '');
 
-        // ── Aplicar Filtros Dinámicos ──
         if ($gerenciaId) {
             $queryBase->where(function($q) use ($gerenciaId) {
                 $q->where('s.GerenciaID', $gerenciaId)
@@ -576,20 +710,17 @@ class FacturasController extends AppBaseController
         if ($anio) $queryBase->where('f.Anio', $anio);
         if ($insumo) $queryBase->where('f.InsumoNombre', 'like', "%{$insumo}%");
 
-        // ── 2. Obtener nombres únicos de insumos ─────────
         $insumos = (clone $queryBase)->distinct()->pluck('f.InsumoNombre');
 
         if ($insumos->isEmpty()) {
             return response()->json(['insumos' => [], 'meta' => ['total' => 0]]);
         }
 
-        // ── 3. Prefetch: gerencias para mapeo rápido ──────────────────────────────
         $gerenciaMap = DB::table('gerencia')
             ->select('GerenciaID', 'NombreGerencia')
             ->get()
             ->keyBy('GerenciaID');
 
-        // ── 4. Prefetch: todas las facturas relevantes en UN query ────────────────
         $todasFacturas = clone $queryBase;
         $todasFacturas = $todasFacturas->select([
                 'f.FacturasID','f.Nombre','f.SolicitudID','f.Importe','f.Costo',
@@ -600,7 +731,6 @@ class FacturasController extends AppBaseController
             ->get()
             ->groupBy('InsumoNombre');
 
-        // ── 5. Prefetch: todas las cotizaciones relevantes en UN query ─────────────
         $todasSolicitudesConFact = $todasFacturas->flatten()
             ->pluck('SolicitudID')->filter()->unique();
 
@@ -614,7 +744,6 @@ class FacturasController extends AppBaseController
                 ->groupBy('SolicitudID')
             : collect();
 
-        // ── 6. Prefetch: todos los cortes relevantes en UN query ──────────────────
         $todosCortes = DB::table('cortes')
             ->whereNull('deleted_at')
             ->whereIn('NombreInsumo', $insumos)
@@ -626,7 +755,6 @@ class FacturasController extends AppBaseController
             ->get()
             ->groupBy('NombreInsumo');
 
-        // ── 7. Construir resultado por insumo ─────────────────────────────────────
         $resultado = $insumos->map(function ($nombreInsumo) use (
             $todasFacturas, $todasCotizaciones, $todosCortes, $gerenciaMap
         ) {

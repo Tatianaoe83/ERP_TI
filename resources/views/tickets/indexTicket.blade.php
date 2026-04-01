@@ -360,9 +360,9 @@
                             <div class="space-y-2">
                                 <template x-for="(adjunto, index) in obtenerAdjuntos()" :key="index">
                                     <div class="flex items-center justify-between p-2 rounded-lg transition 
-                        border border-gray-200 dark:border-gray-700 
-                        bg-gray-50 dark:bg-gray-700/50 
-                        hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        border border-gray-200 dark:border-gray-700 
+                                        bg-gray-50 dark:bg-gray-700/50 
+                                        hover:bg-gray-100 dark:hover:bg-gray-700">
 
                                         <div class="flex items-center gap-3 flex-1 min-w-0">
                                             <div class="flex-shrink-0 text-gray-400 dark:text-gray-300">

@@ -627,9 +627,7 @@
                 });
             }
 
-            // =========================================================
-            // 5. EVENTO ENVIAR (VALIDACIÓN FINAL PARA AMBOS)
-            // =========================================================
+
             $('form').on('submit', function(e) {
                 var errores = [];
                 var esSolicitud = $('#solicitud-form').is(':visible');
@@ -2132,9 +2130,8 @@
                         }, 600);
                     },
                     error: function(xhr) {
-                        // Error en la búsqueda - deshabilitar campos
                         deshabilitarCamposSolicitud();
-                        deshabilitarCampoUbicacion(); // Asegurar que el campo de ubicación esté deshabilitado
+                        deshabilitarCampoUbicacion();
                         if (xhr.status === 404) {
                             $empleadoInput.val('')
                                 .removeClass('border-blue-500 border-green-500')
@@ -2189,7 +2186,6 @@
             }
         });
 
-        // Función auxiliar para que no tengas que repetir el código de los iconos dos veces
         function formatState(data) {
             if (!data.id) {
                 return data.text;
@@ -2198,7 +2194,6 @@
             var icon = '<i class="fas fa-map-marker-alt text-gray-500 mr-2"></i>';
             var prefix = '';
 
-            // Intentamos obtener el grupo
             var element = data.element;
             var groupLabel = '';
             if (element) {
@@ -2221,6 +2216,138 @@
             return $result;
         };
     </script>
-</body>
 
+   <script>
+    (function () {
+        'use strict';
+
+        let _enviando = false;
+
+        function bloquearBoton($btn, textoOriginal) {
+            _enviando = true;
+
+            $btn
+                .prop('disabled', true)
+                .css('pointer-events', 'none')
+                .addClass('cursor-not-allowed opacity-70')
+                .html('<i class="fas fa-spinner fa-spin mr-2"></i>Enviando…');
+
+            setTimeout(() => desbloquearBoton($btn, textoOriginal), 30_000);
+        }
+
+        function desbloquearBoton($btn, textoOriginal) {
+            _enviando = false;
+            $btn
+                .prop('disabled', false)
+                .css('pointer-events', '')
+                .removeClass('cursor-not-allowed opacity-70')
+                .html(textoOriginal);
+            $('form').removeAttr('data-locked');
+        }
+
+        function formEstaLocked() {
+            return $('form').attr('data-locked') === '1';
+        }
+        function lockForm() {
+            $('form').attr('data-locked', '1');
+        }
+
+        $(document).ready(function () {
+
+            const textoTicket    = '<i class="fas fa-paper-plane mr-2"></i>Enviar Ticket';
+            const textoSolicitud = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
+
+            $(document).on('click', '#btnEnviar, #btnEnviarSolicitud', function (e) {
+                if (_enviando || formEstaLocked()) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            });
+
+            $('form').off('submit').on('submit', function (e) {
+
+                if (_enviando || formEstaLocked()) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+
+                const errores     = [];
+                const esSolicitud = $('#solicitud-form').is(':visible');
+                const esTicket    = $('#ticket-form').is(':visible');
+                const emailRegex  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (esTicket) {
+                    const correo     = $('#correoEmpleado').val().trim();
+                    const empleadoID = $('#EmpleadoID').val();
+                    const numero     = $('#numeroTelefono').val().replace(/\D/g, '');
+                    const desc       = $('#descripcionTicket').val().trim();
+
+                    if (!correo)
+                        errores.push('El correo electrónico es requerido.');
+                    else if (!emailRegex.test(correo))
+                        errores.push('El formato del correo no es válido.');
+                    else if (!correoValido || !empleadoID) {
+                        errores.push('Debes esperar a que el correo sea validado antes de enviar.');
+                        $('#correoEmpleado').addClass('border-red-500').focus();
+                        $('#correo-error').removeClass('hidden').text('Valida el correo antes de enviar.');
+                    }
+
+                    if (numero.length !== 10) errores.push('El teléfono debe tener exactamente 10 dígitos.');
+                    if (!desc)                errores.push('La descripción es requerida.');
+
+                    if (correo && !$('#correoHidden').length) {
+                        $('<input>').attr({ type: 'hidden', id: 'correoHidden', name: 'Correo', value: correo }).appendTo('form');
+                    } else if (correo) {
+                        $('#correoHidden').val(correo);
+                    }
+                    $('#correoEmpleado').prop('disabled', false);
+                }
+
+                if (esSolicitud) {
+                    const correo     = $('#correoEmpleadoSolicitud').val().trim();
+                    const empleadoID = $('#EmpleadoIDSolicitud').val();
+                    const proyecto   = $('#Proyecto').val();
+
+                    if (!correo)
+                        errores.push('El correo electrónico es requerido.');
+                    else if (!emailRegex.test(correo))
+                        errores.push('El formato del correo no es válido.');
+                    else if (!window.correoSolicitudValido || !empleadoID) {
+                        errores.push('Debes esperar a que el correo sea validado antes de enviar.');
+                        $('#correoEmpleadoSolicitud').addClass('border-red-500').focus();
+                        $('#correo-solicitud-error').removeClass('hidden').text('Valida el correo antes de enviar.');
+                    }
+
+                    if (!proyecto) errores.push('Debes seleccionar una ubicación (Proyecto).');
+                }
+
+                if (errores.length > 0) {
+                    e.preventDefault();
+                    Swal.fire({
+                        icon:              'error',
+                        title:             'Faltan datos',
+                        html:              '• ' + errores.join('<br>• '),
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#ef4444',
+                        background:        '#fff',
+                    });
+                    return false;
+                }
+
+                lockForm();                                       
+                $('input:disabled, select:disabled, textarea:disabled').prop('disabled', false);
+
+                if (esTicket) {
+                    bloquearBoton($('#btnEnviar'), textoTicket);
+                } else if (esSolicitud) {
+                    bloquearBoton($('#btnEnviarSolicitud'), textoSolicitud);
+                }
+
+            });
+        });
+    })();
+    </script>
+</body>
 </html>

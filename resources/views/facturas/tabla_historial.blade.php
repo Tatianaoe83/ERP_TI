@@ -394,7 +394,7 @@
                 <span id="cmpTotalRows" class="text-[11px] font-semibold text-slate-400"></span>
             </div>
             <div class="overflow-x-auto md:overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm">
+                <table class="w-full text-left border-colVlapse text-sm">
                     <thead id="cmpTableHead" class="bg-slate-50 dark:bg-slate-950 sticky top-0 z-10">
                         <tr>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Insumo</th>
