@@ -57,6 +57,7 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
             '# Solicitud',
             'Fecha Creación',
             'Empleado',
+            'Gerencia',
             'Proyecto',
             'Motivo',
             'Descripción',
@@ -73,6 +74,7 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sol['id'] ?? '',
                 $sol['fecha_creacion'] ?? '',
                 $sol['empleado'] ?? '',
+                $sol['gerencia_nombre'] ?? 'Sin Gerencia',
                 $sol['proyecto'] ?? '',
                 $sol['motivo'] ?? '',
                 $sol['descripcion_motivo'] ?? '',
@@ -96,13 +98,14 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sheet->getColumnDimension('A')->setWidth(12);  // # Solicitud
                 $sheet->getColumnDimension('B')->setWidth(18);  // Fecha Creación
                 $sheet->getColumnDimension('C')->setWidth(30);  // Empleado
-                $sheet->getColumnDimension('D')->setWidth(20);  // Proyecto
-                $sheet->getColumnDimension('E')->setWidth(25);  // Motivo
-                $sheet->getColumnDimension('F')->setWidth(45);  // Descripción
-                $sheet->getColumnDimension('G')->setWidth(20);  // Estatus
-                $sheet->getColumnDimension('H')->setWidth(18);  // Tiempo Cotización
-                $sheet->getColumnDimension('I')->setWidth(18);  // Tiempo Config
-                $sheet->getColumnDimension('J')->setWidth(18);  // Tiempo Total
+                $sheet->getColumnDimension('D')->setWidth(25);  // Gerencia
+                $sheet->getColumnDimension('E')->setWidth(20);  // Proyecto
+                $sheet->getColumnDimension('F')->setWidth(25);  // Motivo
+                $sheet->getColumnDimension('G')->setWidth(45);  // Descripción
+                $sheet->getColumnDimension('H')->setWidth(20);  // Estatus
+                $sheet->getColumnDimension('I')->setWidth(18);  // Tiempo Cotización
+                $sheet->getColumnDimension('J')->setWidth(18);  // Tiempo Config
+                $sheet->getColumnDimension('K')->setWidth(18);  // Tiempo Total
                 
                 $highestColumn = $sheet->getHighestColumn();
                 
@@ -207,8 +210,8 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                         ]
                     ]);
                     
-                    // Wrap text a descripción (columna F)
-                    $sheet->getStyle('F' . $row)->getAlignment()->setWrapText(true);
+                    // Wrap text a descripción (columna G)
+                    $sheet->getStyle('G' . $row)->getAlignment()->setWrapText(true);
                     
                     // Filas alternadas
                     if (($row - 3) % 2 == 0) {
@@ -220,12 +223,12 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                         ]);
                     }
                     
-                    // Colores condicionales para Estatus (columna G)
-                    $estatus = $sheet->getCell('G' . $row)->getValue();
+                    // Colores condicionales para Estatus (columna H)
+                    $estatus = $sheet->getCell('H' . $row)->getValue();
                     $estatusLower = strtolower((string)$estatus);
                     
                     if (stripos($estatusLower, 'aprobad') !== false || stripos($estatusLower, 'completad') !== false) {
-                        $sheet->getStyle('G' . $row)->applyFromArray([
+                        $sheet->getStyle('H' . $row)->applyFromArray([
                             'fill' => [
                                 'fillType' => Fill::FILL_SOLID,
                                 'startColor' => ['rgb' => 'D1FAE5']
@@ -233,7 +236,7 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                             'font' => ['color' => ['rgb' => '065F46'], 'bold' => true]
                         ]);
                     } elseif (stripos($estatusLower, 'rechazad') !== false || stripos($estatusLower, 'cancelad') !== false) {
-                        $sheet->getStyle('G' . $row)->applyFromArray([
+                        $sheet->getStyle('H' . $row)->applyFromArray([
                             'fill' => [
                                 'fillType' => Fill::FILL_SOLID,
                                 'startColor' => ['rgb' => 'FEE2E2']
@@ -241,7 +244,7 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                             'font' => ['color' => ['rgb' => '991B1B'], 'bold' => true]
                         ]);
                     } elseif (stripos($estatusLower, 'pendiente') !== false || stripos($estatusLower, 'revisión') !== false) {
-                        $sheet->getStyle('G' . $row)->applyFromArray([
+                        $sheet->getStyle('H' . $row)->applyFromArray([
                             'fill' => [
                                 'fillType' => Fill::FILL_SOLID,
                                 'startColor' => ['rgb' => 'FEF3C7']
@@ -250,8 +253,8 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                         ]);
                     }
                     
-                    // Centrar números y tiempos (columnas A, H, I, J)
-                    foreach (['A', 'H', 'I', 'J'] as $col) {
+                    // Centrar números y tiempos (columnas A, I, J, K)
+                    foreach (['A', 'I', 'J', 'K'] as $col) {
                         $sheet->getStyle($col . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     }
                 }

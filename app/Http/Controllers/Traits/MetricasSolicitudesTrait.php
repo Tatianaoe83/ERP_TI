@@ -58,7 +58,7 @@ trait MetricasSolicitudesTrait
 
         // 1. Obtener solicitudes del mes con las relaciones clave
         // SOLO solicitudes que tengan activos con checklist (configuración completada)
-        $solicitudes = Solicitud::with(['cotizaciones', 'pasoAdministracion', 'empleadoid'])
+        $solicitudes = Solicitud::with(['cotizaciones', 'pasoAdministracion', 'empleadoid', 'gerenciaid'])
             ->whereHas('activos', function($q) {
                 $q->whereHas('checklists');
             })
@@ -112,6 +112,7 @@ trait MetricasSolicitudesTrait
             $tiempoTotalHoras = $this->calcularHorasLaboralesFloat($fechaCreacion, $endTotal);
 
             $empleadoNombre = $sol->empleadoid ? $sol->empleadoid->NombreEmpleado : 'Desconocido';
+            $gerenciaNombre = $sol->gerenciaid ? $sol->gerenciaid->NombreGerencia : 'Sin Gerencia';
 
             $desglose[] = [
                 'id'                  => $sol->SolicitudID,
@@ -119,6 +120,7 @@ trait MetricasSolicitudesTrait
                 'fecha_actualizacion' => $sol->updated_at ? Carbon::parse($sol->updated_at)->format('d/m/Y H:i') : '',
                 'empleado'            => $empleadoNombre,
                 'proyecto'            => $sol->Proyecto ?? 'Sin Proyecto',
+                'gerencia_nombre'     => $gerenciaNombre,
                 'motivo'              => $sol->Motivo ?? 'N/A',
                 'descripcion_motivo'  => $sol->DescripcionMotivo ?? '',
                 'estatus'             => $sol->Estatus ?? 'Pendiente',

@@ -16,9 +16,11 @@ class ResumeGraphicsSheetExport implements FromArray, WithCharts, WithTitle
     protected $mes;
     protected $anio;
     protected $catalogo;
+    protected $solicitudes;
+    protected $metricasSolicitudes;
     protected $resumenSheet;
 
-    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [])
+    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [])
     {
         $this->tickets = $tickets instanceof Collection ? $tickets : collect($tickets);
         $this->resumen = is_array($resumen) ? $resumen : [];
@@ -27,6 +29,8 @@ class ResumeGraphicsSheetExport implements FromArray, WithCharts, WithTitle
         $this->mes = $mes;
         $this->anio = $anio;
         $this->catalogo = $catalogo;
+        $this->solicitudes = $solicitudes;
+        $this->metricasSolicitudes = $metricasSolicitudes;
 
         // Crear instancia de ResumenSheetExport para acceder a datos y gráficas
         $this->resumenSheet = new ResumenSheetExport(
@@ -36,7 +40,9 @@ class ResumeGraphicsSheetExport implements FromArray, WithCharts, WithTitle
             $this->tiempoPorCategoria,
             $this->mes,
             $this->anio,
-            $this->catalogo
+            $this->catalogo,
+            $this->solicitudes,
+            $this->metricasSolicitudes
         );
     }
 

@@ -41,7 +41,9 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
                 $this->tiempoPorCategoria,
                 $this->mes,
                 $this->anio,
-                $this->catalogo
+                $this->catalogo,
+                $this->solicitudes,
+                $this->metricasSolicitudes
             ),
             new ResumeGraphicsSheetExport(
                 $this->tickets,
@@ -50,7 +52,9 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
                 $this->tiempoPorCategoria,
                 $this->mes,
                 $this->anio,
-                $this->catalogo
+                $this->catalogo,
+                $this->solicitudes,
+                $this->metricasSolicitudes
             ),
             new TicketsSheetExport($this->ticketsMesActual, $this->resumen, $this->mes, $this->anio),
             new SolicitudesSheetExport($this->solicitudes, $this->metricasSolicitudes, $this->mes, $this->anio),

@@ -31,6 +31,8 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
     protected $mes;
     protected $anio;
     protected $catalogo;
+    protected $solicitudes;
+    protected $metricasSolicitudes;
     protected $tertipoAPadres = [];
 
     protected array $reportData = [];
@@ -47,7 +49,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         '0891B2',
     ];
 
-    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [])
+    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [])
     {
         $this->tickets = $tickets instanceof Collection ? $tickets : collect($tickets);
         $this->resumen = is_array($resumen) ? $resumen : [];
@@ -56,6 +58,8 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $this->mes = $mes;
         $this->anio = $anio;
         $this->catalogo = $catalogo;
+        $this->solicitudes = $solicitudes;
+        $this->metricasSolicitudes = $metricasSolicitudes;
     }
 
     public function title(): string
@@ -868,6 +872,237 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $this->layout['comparativo']['end'] = $row - 1;
 
+        // ========== TABLAS DE SOLICITUDES ==========
+        if (!empty($this->metricasSolicitudes) && !empty($this->metricasSolicitudes['desglose'])) {
+            $desglose = $this->metricasSolicitudes['desglose'];
+            $promedioCotizacion = $this->metricasSolicitudes['promedio_cotizacion_horas'] ?? 0;
+            $promedioConfiguracion = $this->metricasSolicitudes['promedio_configuracion_dias'] ?? 0;
+            $promedioTotal = ($promedioCotizacion + $promedioConfiguracion);
+
+            $rows[] = [];
+            $row++;
+
+            // Tabla 1: Resumen de promedios por Gerencia
+            $this->layout['solicitudes_gerencia'] = [
+                'start' => $row,
+                'headers' => $row + 1,
+                'dataStart' => $row + 2,
+            ];
+
+            $rows[] = ['Solicitudes: Tiempos promedio por Gerencia — ' . ($d['mesNombreTarget'] ?? '')];
+            $row++;
+
+            $rows[] = ['Gerencia', 'Cantidad', 'Prom. Cotización (h)', 'Prom. Configuración (h)', 'Prom. Total (h)'];
+            $row++;
+
+            // Agrupar por gerencia
+            $porGerencia = [];
+            foreach ($desglose as $sol) {
+                $gerencia = $sol['gerencia_nombre'] ?? 'Sin Gerencia';
+                if (!isset($porGerencia[$gerencia])) {
+                    $porGerencia[$gerencia] = [
+                        'cantidad' => 0,
+                        'suma_cotizacion' => 0,
+                        'suma_configuracion' => 0,
+                        'suma_total' => 0,
+                        'count_cotizacion' => 0,
+                        'count_configuracion' => 0,
+                        'count_total' => 0,
+                    ];
+                }
+                $porGerencia[$gerencia]['cantidad']++;
+                
+                if (($sol['tiempo_cotizacion_horas'] ?? null) !== null) {
+                    $porGerencia[$gerencia]['suma_cotizacion'] += $sol['tiempo_cotizacion_horas'];
+                    $porGerencia[$gerencia]['count_cotizacion']++;
+                }
+                if (($sol['tiempo_configuracion_dias'] ?? null) !== null) {
+                    $porGerencia[$gerencia]['suma_configuracion'] += $sol['tiempo_configuracion_dias'];
+                    $porGerencia[$gerencia]['count_configuracion']++;
+                }
+                if (($sol['tiempo_total_dias'] ?? null) !== null) {
+                    $porGerencia[$gerencia]['suma_total'] += $sol['tiempo_total_dias'];
+                    $porGerencia[$gerencia]['count_total']++;
+                }
+            }
+
+            ksort($porGerencia);
+
+            foreach ($porGerencia as $gerencia => $data) {
+                $promCot = $data['count_cotizacion'] > 0 ? round($data['suma_cotizacion'] / $data['count_cotizacion'], 1) : 0;
+                $promConf = $data['count_configuracion'] > 0 ? round($data['suma_configuracion'] / $data['count_configuracion'], 1) : 0;
+                $promTot = $data['count_total'] > 0 ? round($data['suma_total'] / $data['count_total'], 1) : 0;
+                
+                $rows[] = [
+                    $gerencia,
+                    $data['cantidad'],
+                    $promCot,
+                    $promConf,
+                    $promTot,
+                ];
+                $row++;
+            }
+
+            $rows[] = [
+                'Total General',
+                count($desglose),
+                round($promedioCotizacion, 1),
+                round($promedioConfiguracion, 1),
+                round($promedioTotal, 1),
+            ];
+            $this->layout['solicitudes_gerencia']['totalRow'] = $row;
+            $this->layout['solicitudes_gerencia']['end'] = $row;
+            $row++;
+
+            $rows[] = [];
+            $row++;
+
+            // Tabla 2: Resumen por Motivo
+            $this->layout['solicitudes_motivo'] = [
+                'start' => $row,
+                'headers' => $row + 1,
+                'dataStart' => $row + 2,
+            ];
+
+            $rows[] = ['Solicitudes: Tiempos promedio por Motivo — ' . ($d['mesNombreTarget'] ?? '')];
+            $row++;
+
+            $rows[] = ['Motivo', 'Cantidad', 'Prom. Cotización (h)', 'Prom. Configuración (h)', 'Prom. Total (h)'];
+            $row++;
+
+            // Agrupar por motivo
+            $porMotivo = [];
+            foreach ($desglose as $sol) {
+                $motivo = $sol['motivo'] ?? 'Sin Motivo';
+                if (!isset($porMotivo[$motivo])) {
+                    $porMotivo[$motivo] = [
+                        'cantidad' => 0,
+                        'suma_cotizacion' => 0,
+                        'suma_configuracion' => 0,
+                        'suma_total' => 0,
+                        'count_cotizacion' => 0,
+                        'count_configuracion' => 0,
+                        'count_total' => 0,
+                    ];
+                }
+                $porMotivo[$motivo]['cantidad']++;
+                
+                if (($sol['tiempo_cotizacion_horas'] ?? null) !== null) {
+                    $porMotivo[$motivo]['suma_cotizacion'] += $sol['tiempo_cotizacion_horas'];
+                    $porMotivo[$motivo]['count_cotizacion']++;
+                }
+                if (($sol['tiempo_configuracion_dias'] ?? null) !== null) {
+                    $porMotivo[$motivo]['suma_configuracion'] += $sol['tiempo_configuracion_dias'];
+                    $porMotivo[$motivo]['count_configuracion']++;
+                }
+                if (($sol['tiempo_total_dias'] ?? null) !== null) {
+                    $porMotivo[$motivo]['suma_total'] += $sol['tiempo_total_dias'];
+                    $porMotivo[$motivo]['count_total']++;
+                }
+            }
+
+            // Ordenar por cantidad descendente
+            uasort($porMotivo, fn($a, $b) => $b['cantidad'] <=> $a['cantidad']);
+
+            foreach ($porMotivo as $motivo => $data) {
+                $promCot = $data['count_cotizacion'] > 0 ? round($data['suma_cotizacion'] / $data['count_cotizacion'], 1) : 0;
+                $promConf = $data['count_configuracion'] > 0 ? round($data['suma_configuracion'] / $data['count_configuracion'], 1) : 0;
+                $promTot = $data['count_total'] > 0 ? round($data['suma_total'] / $data['count_total'], 1) : 0;
+                
+                $rows[] = [
+                    $motivo,
+                    $data['cantidad'],
+                    $promCot,
+                    $promConf,
+                    $promTot,
+                ];
+                $row++;
+            }
+
+            $rows[] = [
+                'Total General',
+                count($desglose),
+                round($promedioCotizacion, 1),
+                round($promedioConfiguracion, 1),
+                round($promedioTotal, 1),
+            ];
+            $this->layout['solicitudes_motivo']['totalRow'] = $row;
+            $this->layout['solicitudes_motivo']['end'] = $row;
+            $row++;
+
+            $rows[] = [];
+            $row++;
+
+            // Tabla 3: Comparación Cotización vs Configuración
+            $this->layout['solicitudes_comparacion'] = [
+                'start' => $row,
+                'headers' => $row + 1,
+                'dataStart' => $row + 2,
+            ];
+
+            $rows[] = ['Solicitudes: Comparación de Tiempos Cotización vs Configuración — ' . ($d['mesNombreTarget'] ?? '')];
+            $row++;
+
+            $rows[] = ['Métrica', 'Promedio (h)', 'Mínimo (h)', 'Máximo (h)', '% del Total'];
+            $row++;
+
+            // Calcular estadísticas de cotización
+            $tiemposCotizacion = [];
+            $tiemposConfiguracion = [];
+            foreach ($desglose as $sol) {
+                if (($sol['tiempo_cotizacion_horas'] ?? null) !== null) {
+                    $tiemposCotizacion[] = $sol['tiempo_cotizacion_horas'];
+                }
+                if (($sol['tiempo_configuracion_dias'] ?? null) !== null) {
+                    $tiemposConfiguracion[] = $sol['tiempo_configuracion_dias'];
+                }
+            }
+
+            $promCot = count($tiemposCotizacion) > 0 ? round(array_sum($tiemposCotizacion) / count($tiemposCotizacion), 1) : 0;
+            $minCot = count($tiemposCotizacion) > 0 ? round(min($tiemposCotizacion), 1) : 0;
+            $maxCot = count($tiemposCotizacion) > 0 ? round(max($tiemposCotizacion), 1) : 0;
+
+            $promConf = count($tiemposConfiguracion) > 0 ? round(array_sum($tiemposConfiguracion) / count($tiemposConfiguracion), 1) : 0;
+            $minConf = count($tiemposConfiguracion) > 0 ? round(min($tiemposConfiguracion), 1) : 0;
+            $maxConf = count($tiemposConfiguracion) > 0 ? round(max($tiemposConfiguracion), 1) : 0;
+
+            $totalPromedio = $promCot + $promConf;
+            $porcentajeCot = $totalPromedio > 0 ? round(($promCot / $totalPromedio) * 100, 1) : 0;
+            $porcentajeConf = $totalPromedio > 0 ? round(($promConf / $totalPromedio) * 100, 1) : 0;
+
+            // Fila Cotización
+            $rows[] = [
+                'Tiempo de Cotización',
+                $promCot,
+                $minCot,
+                $maxCot,
+                $porcentajeCot > 0 ? $porcentajeCot . '%' : '0%',
+            ];
+            $row++;
+
+            // Fila Configuración
+            $rows[] = [
+                'Tiempo de Configuración',
+                $promConf,
+                $minConf,
+                $maxConf,
+                $porcentajeConf > 0 ? $porcentajeConf . '%' : '0%',
+            ];
+            $row++;
+
+            // Fila Total
+            $rows[] = [
+                'Tiempo Total',
+                round($totalPromedio, 1),
+                round($minCot + $minConf, 1),
+                round($maxCot + $maxConf, 1),
+                '100%',
+            ];
+            $this->layout['solicitudes_comparacion']['totalRow'] = $row;
+            $this->layout['solicitudes_comparacion']['end'] = $row;
+            $row++;
+        }
+
         return $rows;
     }
 
@@ -942,48 +1177,82 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         }
 
         $charts = [];
-        $currentCol = 'H';
-        $currentRow = 2;
+        
+        // Layout en cuadrícula 2x3 (Dashboard style)
+        // Columna Izquierda: A-I, Columna Derecha: K-S
+        $leftCol = 'A';
+        $rightCol = 'K';
+        $rowHeight = 22; // Espacio entre filas de gráficas
+        
+        // FILA 1: Tickets - Resumen General
+        $row1 = 2;
+        
+        // FILA 2: Tickets - Detalles
+        $row2 = $row1 + $rowHeight;
+        
+        // FILA 3: Solicitudes
+        $row3 = $row2 + $rowHeight;
 
-        // Gráfica 1: Resumen por Tipo
+        // === FILA 1: RESUMEN DE TICKETS ===
+        
+        // Gráfica 1 (Izquierda): Resumen por Tipo
         if (
             isset($this->layout['resumen_tipo']) &&
             !empty($this->reportData['totalesPorTipo']) &&
             !empty($this->layout['resumen_tipo']['dataRows'])
         ) {
-            $chart = $this->createChartResumenPorTipo($sheetName, $currentCol, $currentRow);
+            $chart = $this->createChartResumenPorTipo($sheetName, $leftCol, $row1);
             $charts[] = $chart;
-            $currentRow += 23;
         }
 
-        // Gráfica 2: Incidencias por Categoría
+        // Gráfica 2 (Derecha): Incidencias por Categoría
         if (
             isset($this->layout['categorias']) &&
             !empty($this->reportData['tablaCategoriaDetallada']) &&
             !empty($this->layout['categorias']['dataRows'])
         ) {
-            $chart = $this->createChartIncidenciasPorCategoria($sheetName, $currentCol, $currentRow);
+            $chart = $this->createChartIncidenciasPorCategoria($sheetName, $rightCol, $row1);
             $charts[] = $chart;
-            $currentRow += 23;
         }
 
-        // Gráfica 3: Incidencias por Gerencia (Tabla principal)
+        // === FILA 2: ANÁLISIS DETALLADO ===
+        
+        // Gráfica 3 (Izquierda): Incidencias por Gerencia
         if (
             isset($this->layout['incidencias']) &&
             !empty($this->layout['incidencias']['dataRows'])
         ) {
-            $chart = $this->createChartIncidenciasPorGerencia($sheetName, $currentCol, $currentRow);
+            $chart = $this->createChartIncidenciasPorGerencia($sheetName, $leftCol, $row2);
             $charts[] = $chart;
-            $currentRow += 23;
         }
 
-        // Gráfica 4: Comparativo de Meses por Usuario
+        // Gráfica 4 (Derecha): Comparativo de Meses
         if (
             isset($this->layout['comparativo']) &&
             !empty($this->reportData['usuariosAmbosMeses']) &&
             !empty($this->layout['comparativo']['dataRows'])
         ) {
-            $chart = $this->createChartComparativoMeses($sheetName, $currentCol, $currentRow);
+            $chart = $this->createChartComparativoMeses($sheetName, $rightCol, $row2);
+            $charts[] = $chart;
+        }
+
+        // === FILA 3: SOLICITUDES ===
+        
+        // Gráfica 5 (Izquierda): Solicitudes por Gerencia
+        if (
+            isset($this->layout['solicitudes_gerencia']) &&
+            !empty($this->metricasSolicitudes)
+        ) {
+            $chart = $this->createChartSolicitudesPorGerencia($sheetName, $leftCol, $row3);
+            $charts[] = $chart;
+        }
+
+        // Gráfica 6 (Derecha): Solicitudes por Motivo
+        if (
+            isset($this->layout['solicitudes_motivo']) &&
+            !empty($this->metricasSolicitudes)
+        ) {
+            $chart = $this->createChartSolicitudesPorMotivo($sheetName, $rightCol, $row3);
             $charts[] = $chart;
         }
 
@@ -1040,13 +1309,14 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'resumen_por_tipo',
-            new Title('Resumen por Tipo de Incidencia'),
+            new Title('RESUMEN POR TIPO DE INCIDENCIA'),
             $legend,
             $plotArea
         );
 
         $chart->setTopLeftCell($baseCol . $baseRow);
-        $chart->setBottomRightCell('M' . ($baseRow + 14));
+        $endCol = ($baseCol === 'A') ? 'J' : 'T';
+        $chart->setBottomRightCell($endCol . ($baseRow + 20));
 
         return $chart;
     }
@@ -1101,13 +1371,14 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'incidencias_por_categoria',
-            new Title('Incidencias por Categoría'),
+            new Title('DISTRIBUCIÓN POR CATEGORÍA'),
             $legend,
             $plotArea
         );
 
         $chart->setTopLeftCell($baseCol . $baseRow);
-        $chart->setBottomRightCell('T' . ($baseRow + 20));
+        $endCol = ($baseCol === 'A') ? 'J' : 'T';
+        $chart->setBottomRightCell($endCol . ($baseRow + 20));
 
         return $chart;
     }
@@ -1169,13 +1440,14 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'incidencias_por_gerencia',
-            new Title('Incidencias por Gerencia por Usuario Asignado'),
+            new Title('INCIDENCIAS POR GERENCIA Y USUARIO'),
             $legend,
             $plotArea
         );
 
         $chart->setTopLeftCell($baseCol . $baseRow);
-        $chart->setBottomRightCell('T' . ($baseRow + 20));
+        $endCol = ($baseCol === 'A') ? 'J' : 'T';
+        $chart->setBottomRightCell($endCol . ($baseRow + 20));
 
         return $chart;
     }
@@ -1245,13 +1517,138 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'comparativo_meses',
-            new Title('Comparativo de Meses por Usuario'),
+            new Title('ANÁLISIS COMPARATIVO MENSUAL'),
             $legend,
             $plotArea
         );
 
         $chart->setTopLeftCell($baseCol . $baseRow);
-        $chart->setBottomRightCell('M' . ($baseRow + 14));
+        $endCol = ($baseCol === 'A') ? 'J' : 'T';
+        $chart->setBottomRightCell($endCol . ($baseRow + 20));
+
+        return $chart;
+    }
+
+    private function createChartSolicitudesPorGerencia(string $sheetName, string $baseCol, int $baseRow): Chart
+    {
+        $headerRow = $this->layout['solicitudes_gerencia']['headers'];
+        $firstDataRow = $this->layout['solicitudes_gerencia']['dataStart'];
+        $totalRow = $this->layout['solicitudes_gerencia']['totalRow'];
+        $endRow = $totalRow - 1; // Excluir fila de total
+
+        $labels = [
+            new DataSeriesValues(
+                DataSeriesValues::DATASERIES_TYPE_STRING,
+                "'" . $sheetName . "'!\$B\$" . $headerRow,
+                null,
+                1
+            ),
+        ];
+
+        $categories = [
+            new DataSeriesValues(
+                DataSeriesValues::DATASERIES_TYPE_STRING,
+                "'" . $sheetName . "'!\$A\$" . $firstDataRow . ":\$A\$" . $endRow,
+                null,
+                $endRow - $firstDataRow + 1
+            ),
+        ];
+
+        $values = [
+            new DataSeriesValues(
+                DataSeriesValues::DATASERIES_TYPE_NUMBER,
+                "'" . $sheetName . "'!\$B\$" . $firstDataRow . ":\$B\$" . $endRow,
+                null,
+                $endRow - $firstDataRow + 1
+            ),
+        ];
+
+        $series = new DataSeries(
+            DataSeries::TYPE_BARCHART,
+            DataSeries::GROUPING_STANDARD,
+            [0],
+            $labels,
+            $categories,
+            $values
+        );
+
+        $series->setPlotDirection(DataSeries::DIRECTION_BAR);
+
+        $plotArea = new PlotArea(null, [$series]);
+        $legend = new Legend(Legend::POSITION_RIGHT);
+
+        $chart = new Chart(
+            'solicitudes_gerencia',
+            new Title('SOLICITUDES: ANÁLISIS POR GERENCIA'),
+            $legend,
+            $plotArea
+        );
+
+        $chart->setTopLeftCell($baseCol . $baseRow);
+        $endCol = ($baseCol === 'A') ? 'J' : 'T';
+        $chart->setBottomRightCell($endCol . ($baseRow + 20));
+
+        return $chart;
+    }
+
+    private function createChartSolicitudesPorMotivo(string $sheetName, string $baseCol, int $baseRow): Chart
+    {
+        $headerRow = $this->layout['solicitudes_motivo']['headers'];
+        $firstDataRow = $this->layout['solicitudes_motivo']['dataStart'];
+        $totalRow = $this->layout['solicitudes_motivo']['totalRow'];
+        $endRow = $totalRow - 1; // Excluir fila de total
+
+        $labels = [
+            new DataSeriesValues(
+                DataSeriesValues::DATASERIES_TYPE_STRING,
+                "'" . $sheetName . "'!\$B\$" . $headerRow,
+                null,
+                1
+            ),
+        ];
+
+        $categories = [
+            new DataSeriesValues(
+                DataSeriesValues::DATASERIES_TYPE_STRING,
+                "'" . $sheetName . "'!\$A\$" . $firstDataRow . ":\$A\$" . $endRow,
+                null,
+                $endRow - $firstDataRow + 1
+            ),
+        ];
+
+        $values = [
+            new DataSeriesValues(
+                DataSeriesValues::DATASERIES_TYPE_NUMBER,
+                "'" . $sheetName . "'!\$B\$" . $firstDataRow . ":\$B\$" . $endRow,
+                null,
+                $endRow - $firstDataRow + 1
+            ),
+        ];
+
+        $series = new DataSeries(
+            DataSeries::TYPE_BARCHART,
+            DataSeries::GROUPING_STANDARD,
+            [0],
+            $labels,
+            $categories,
+            $values
+        );
+
+        $series->setPlotDirection(DataSeries::DIRECTION_BAR);
+
+        $plotArea = new PlotArea(null, [$series]);
+        $legend = new Legend(Legend::POSITION_RIGHT);
+
+        $chart = new Chart(
+            'solicitudes_motivo',
+            new Title('SOLICITUDES: DISTRIBUCIÓN POR MOTIVO'),
+            $legend,
+            $plotArea
+        );
+
+        $chart->setTopLeftCell($baseCol . $baseRow);
+        $endCol = ($baseCol === 'A') ? 'J' : 'T';
+        $chart->setBottomRightCell($endCol . ($baseRow + 20));
 
         return $chart;
     }
@@ -1686,6 +2083,74 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                     $centerKey = ($index % 2 === 0) ? 'center' : 'center_alt';
                     $this->applyStyle($sheet, "A{$row}", $styles['label']);
                     $this->applyStyle($sheet, "B{$row}:D{$row}", $styles[$centerKey]);
+                }
+
+                // ========== ESTILOS PARA TABLAS DE SOLICITUDES ==========
+                if (isset($this->layout['solicitudes_gerencia'])) {
+                    // Tabla de Gerencia
+                    $sheet->mergeCells('A' . $this->layout['solicitudes_gerencia']['start'] . ':E' . $this->layout['solicitudes_gerencia']['start']);
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_gerencia']['start'] . ':E' . $this->layout['solicitudes_gerencia']['start'], $styles['section_title']);
+                    
+                    // Headers
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_gerencia']['headers'] . ':E' . $this->layout['solicitudes_gerencia']['headers'], $styles['table_header']);
+                    
+                    // Data rows
+                    for ($row = $this->layout['solicitudes_gerencia']['dataStart']; $row < $this->layout['solicitudes_gerencia']['totalRow']; $row++) {
+                        $index = $row - $this->layout['solicitudes_gerencia']['dataStart'];
+                        $styleKey = ($index % 2 === 0) ? 'normal' : 'normal_alt';
+                        $centerKey = ($index % 2 === 0) ? 'center' : 'center_alt';
+                        $this->applyStyle($sheet, "A{$row}", $styles['label']);
+                        $this->applyStyle($sheet, "B{$row}:E{$row}", $styles[$centerKey]);
+                    }
+                    
+                    // Total row
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_gerencia']['totalRow'], $styles['green_row']);
+                    $this->applyStyle($sheet, 'B' . $this->layout['solicitudes_gerencia']['totalRow'] . ':E' . $this->layout['solicitudes_gerencia']['totalRow'], $styles['green_center']);
+                }
+
+                if (isset($this->layout['solicitudes_motivo'])) {
+                    // Tabla de Motivo
+                    $sheet->mergeCells('A' . $this->layout['solicitudes_motivo']['start'] . ':E' . $this->layout['solicitudes_motivo']['start']);
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_motivo']['start'] . ':E' . $this->layout['solicitudes_motivo']['start'], $styles['section_title']);
+                    
+                    // Headers
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_motivo']['headers'] . ':E' . $this->layout['solicitudes_motivo']['headers'], $styles['table_header']);
+                    
+                    // Data rows
+                    for ($row = $this->layout['solicitudes_motivo']['dataStart']; $row < $this->layout['solicitudes_motivo']['totalRow']; $row++) {
+                        $index = $row - $this->layout['solicitudes_motivo']['dataStart'];
+                        $styleKey = ($index % 2 === 0) ? 'normal' : 'normal_alt';
+                        $centerKey = ($index % 2 === 0) ? 'center' : 'center_alt';
+                        $this->applyStyle($sheet, "A{$row}", $styles['label']);
+                        $this->applyStyle($sheet, "B{$row}:E{$row}", $styles[$centerKey]);
+                    }
+                    
+                    // Total row
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_motivo']['totalRow'], $styles['green_row']);
+                    $this->applyStyle($sheet, 'B' . $this->layout['solicitudes_motivo']['totalRow'] . ':E' . $this->layout['solicitudes_motivo']['totalRow'], $styles['green_center']);
+                }
+
+                if (isset($this->layout['solicitudes_comparacion'])) {
+                    // Tabla de Comparación
+                    $sheet->mergeCells('A' . $this->layout['solicitudes_comparacion']['start'] . ':E' . $this->layout['solicitudes_comparacion']['start']);
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_comparacion']['start'] . ':E' . $this->layout['solicitudes_comparacion']['start'], $styles['section_title']);
+                    
+                    // Headers
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_comparacion']['headers'] . ':E' . $this->layout['solicitudes_comparacion']['headers'], $styles['table_header']);
+                    
+                    // Data rows (Cotización y Configuración)
+                    $datosRow1 = $this->layout['solicitudes_comparacion']['dataStart'];
+                    $datosRow2 = $this->layout['solicitudes_comparacion']['dataStart'] + 1;
+                    
+                    $this->applyStyle($sheet, "A{$datosRow1}", $styles['label']);
+                    $this->applyStyle($sheet, "B{$datosRow1}:E{$datosRow1}", $styles['center']);
+                    
+                    $this->applyStyle($sheet, "A{$datosRow2}", $styles['label']);
+                    $this->applyStyle($sheet, "B{$datosRow2}:E{$datosRow2}", $styles['center_alt']);
+                    
+                    // Total row
+                    $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_comparacion']['totalRow'], $styles['green_row']);
+                    $this->applyStyle($sheet, 'B' . $this->layout['solicitudes_comparacion']['totalRow'] . ':E' . $this->layout['solicitudes_comparacion']['totalRow'], $styles['green_center']);
                 }
             },
         ];
