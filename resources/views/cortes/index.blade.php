@@ -48,7 +48,7 @@
                 <i class="fas fa-file-invoice-dollar text-xl"></i>
             </div>
             <div>
-                <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Generar Corte Anual</h2>
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Generar Presupuesto Oficial</h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gestión visual de costos y variantes por gerencia.</p>
             </div>
         </div>
@@ -100,12 +100,12 @@
             <div class="flex flex-wrap gap-3 items-center lg:pb-0.5">
                 <button type="button" id="verGuardado"
                     class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
-                    <i class="fas fa-folder-open"></i> <span>Ver corte guardado</span>
+                    <i class="fas fa-folder-open"></i> <span>Ver Presupuesto guardado</span>
                 </button>
                 <button type="button" id="enviar"
                     class="h-11 px-6 flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-indigo-500/20 dark:shadow-indigo-900/40 transition-all duration-200
                            bg-indigo-600 hover:bg-indigo-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
-                    <i class="fas fa-calculator"></i> <span>Generar corte</span>
+                    <i class="fas fa-calculator"></i> <span>Generar Presupuesto</span>
                 </button>
             </div>
         </div>
@@ -121,7 +121,7 @@
             <!-- Con corte — badges clickeables -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 overflow-hidden min-h-[120px] flex flex-col">
                 <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-emerald-50 dark:bg-emerald-900/20 shrink-0 flex items-center gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Con corte</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Con Presupuesto</span>
                     <span class="text-slate-500 dark:text-slate-400 text-sm">({{ count($gerenciasConCorte) }})</span>
                     <span class="ml-auto text-[10px] text-emerald-600 dark:text-emerald-500 italic flex items-center gap-1">
                         <i class="fas fa-hand-pointer text-[9px]"></i> Click para ver
@@ -153,7 +153,7 @@
             <!-- Sin corte — solo lectura -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50 overflow-hidden min-h-[120px] flex flex-col">
                 <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20 shrink-0">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Sin corte</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Sin presupuesto</span>
                     <span class="ml-2 text-slate-500 dark:text-slate-400 text-sm">({{ count($gerenciasSinCorte) }})</span>
                 </div>
                 <div class="p-3 flex-1 overflow-y-auto custom-scroll min-h-0">
@@ -169,7 +169,7 @@
 
     <!-- Tabla -->
     <div class="px-6 md:px-8 py-5">
-        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Datos del corte</p>
+        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Datos del Presupuesto</p>
     </div>
     <div class="relative w-full custom-scroll overflow-x-auto bg-gray-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
         <table id="tabla" class="w-full text-left border-collapse">
@@ -200,7 +200,7 @@
         </div>
     </div>
 
-    <!-- Modal: Corte guardado -->
+    <!-- Modal: Presupuesto guardado -->
     <div id="bloque-corte-guardado" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog" aria-labelledby="modal-corte-guardado-title">
         <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="modal-corte-guardado-backdrop"></div>
         <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
@@ -208,7 +208,7 @@
                 <div class="flex items-center justify-between shrink-0 px-5 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                     <h2 id="modal-corte-guardado-title" class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         <i class="fas fa-folder-open text-indigo-500"></i>
-                        <span>Corte guardado</span>
+                        <span>Presupuesto guardado</span>
                         <span id="modal-corte-nombre" class="text-slate-400 dark:text-slate-500 font-normal text-base"></span>
                     </h2>
                     <button type="button" id="cerrar-corte-guardado"
@@ -259,7 +259,6 @@ $(function () {
     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
                    'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-    // ─── DataTable ─────────────────────────────────────────────────────────────
     const table = $('#tabla').DataTable({
         destroy      : true,
         responsive   : true,
@@ -482,7 +481,7 @@ $(function () {
         const $btn = $(this);
         $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cargando...');
         await abrirCorteGuardado(gid, anio, nombre);
-        $btn.prop('disabled', false).html('<i class="fas fa-folder-open"></i> <span>Ver corte guardado</span>');
+        $btn.prop('disabled', false).html('<i class="fas fa-folder-open"></i> <span>Ver presupuesto guardado</span>');
     });
 
     // ─── Click en badge de gerencia "Con corte" ────────────────────────────────
@@ -634,8 +633,8 @@ $(function () {
         if (yaExiste) {
             const confirmResult = await Swal.fire({
                 icon             : 'warning',
-                title            : '¿Sobreescribir corte?',
-                html             : `Ya existe un corte guardado para esta gerencia y año.<br>
+                title            : '¿Sobreescribir presupuesto?',
+                html             : `Ya existe un presupuesto guardado para esta gerencia y año.<br>
                                     <strong>Será reemplazado</strong> con los datos actuales.<br><br>
                                     ¿Deseas continuar?`,
                 showCancelButton : true,
@@ -707,7 +706,7 @@ $(function () {
                 return;
             }
 
-            Swal.fire({ icon: 'success', title: yaExiste ? 'Corte sobreescrito' : 'Corte guardado', timer: 1500, showConfirmButton: false })
+            Swal.fire({ icon: 'success', title: yaExiste ? 'Presupuesto sobreescrito' : 'Presupuesto guardado', timer: 1500, showConfirmButton: false })
                 .then(() => location.reload());
 
         } catch (e) {

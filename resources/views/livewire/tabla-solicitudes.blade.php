@@ -536,7 +536,7 @@
                         @if($modalYaTieneFacturas)
                             Visualización de la asignación registrada.
                         @else
-                            Defina responsables técnicos por ítem, suba las facturas y complete el checklist.
+                            Defina responsables técnicos por ítem, suba el XML de factura y complete el checklist.
                         @endif
                     </p>
                 </div>
@@ -556,7 +556,7 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-xs font-medium text-slate-500 dark:text-slate-400">
                         <i class="fas fa-info-circle text-blue-400 mr-1"></i>
-                        Proveedores con múltiples propuestas — la factura se comparte automáticamente:
+                        Proveedores con múltiples propuestas — el XML se comparte automáticamente:
                     </span>
                     @foreach($proveedoresAgrupados->keys() as $proveedor)
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-slate-800 border border-blue-200 dark:border-blue-800/50 shadow-sm">
@@ -568,7 +568,7 @@
             </div>
             @endif
 
-            {{-- ── CAMBIO 1: Banner facturas pendientes — prioridad XML ──────── --}}
+            {{-- Banner facturas (XML) pendientes --}}
             @if(!$modalYaTieneFacturas)
             @php
                 $proveedoresSinFactura = [];
@@ -579,8 +579,7 @@
                     $proveedoresVistos[] = $prov;
                     $tieneAlgo = false;
                     foreach (($pItem['unidades'] ?? []) as $uIdx => $uItem) {
-                        if (!empty($uItem['factura_xml_path']) || !empty($uItem['factura_pdf_path'])
-                            || !empty($facturaXml[$pIdx][$uIdx]) || !empty($facturaPdf[$pIdx][$uIdx])) {
+                        if (!empty($uItem['factura_xml_path']) || !empty($facturaXml[$pIdx][$uIdx])) {
                             $tieneAlgo = true;
                             break;
                         }
@@ -592,13 +591,11 @@
             <div class="px-6 py-3 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800/40 flex items-center gap-3">
                 <i class="fas fa-exclamation-triangle text-amber-500 shrink-0"></i>
                 <p class="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                    Facturas pendientes de subir para:
+                    XML pendiente de subir para:
                     <span class="font-bold">{{ implode(', ', $proveedoresSinFactura) }}</span>.<br>
                     <span class="font-normal opacity-90 mt-1 inline-block">
-                        {{-- CAMBIO 1: XML primero en el mensaje --}}
                         <i class="fas fa-info-circle"></i>
-                        Sube primero el <b>XML</b> (valida el CFDI automáticamente), luego el <b>PDF</b> (ambos para nacionales).
-                        Para extranjeros (Starlink/AWS) solo <b>PDF</b>.
+                        Sube el <b>XML</b> del CFDI (se valida automáticamente). Para proveedores extranjeros como Starlink/AWS esta sección no aplica.
                     </span>
                 </p>
             </div>
@@ -637,7 +634,7 @@
                     <div class="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-slate-100/60 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">
                         <div class="col-span-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">#</div>
                         <div class="col-span-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Descripción</div>
-                        <div class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Factura</div>
+                        <div class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">XML Factura</div>
                         <div class="col-span-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Fecha de entrega</div>
                         <div class="col-span-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Usuario final</div>
                     </div>
@@ -662,17 +659,14 @@
                                 <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Unidad {{ $u['unidadIndex'] ?? ($uIndex + 1) }}</div>
                             </div>
 
-                            {{-- ── CAMBIO 1: Columna Factura — XML primero y con mayor énfasis ── --}}
+                            {{-- ══ COLUMNA: XML ÚNICAMENTE ══ --}}
                             <div class="col-span-2">
-                                <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Factura</label>
+                                <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">XML Factura</label>
 
                                 @php
                                     $xmlSavedPath  = $u['factura_xml_path'] ?? '';
-                                    $pdfSavedPath  = $u['factura_pdf_path'] ?? '';
                                     $hasNewXml     = !empty($facturaXml[$pIndex][$uIndex]);
-                                    $hasNewPdf     = !empty($facturaPdf[$pIndex][$uIndex]);
                                     $esXmlGuardado = !empty($xmlSavedPath);
-                                    $esPdfGuardado = !empty($pdfSavedPath);
                                     $parsed        = $xmlParseado[$pIndex][$uIndex] ?? null;
                                     $parsedOk      = $parsed && empty($parsed['error']) && !empty($parsed['conceptos']);
 
@@ -700,26 +694,14 @@
                                         </a>
                                         @else
                                         <span class="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium bg-slate-100 border border-slate-200 text-slate-500 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400" title="Proveedor extranjero sin XML">
-                                            <i class="fas fa-globe"></i> Solo PDF
+                                            <i class="fas fa-globe"></i> Sin XML
                                         </span>
                                         @endif
-
-                                        @if($esPdfGuardado)
-                                        <a href="{{ Storage::url($pdfSavedPath) }}" target="_blank"
-                                            class="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-xs font-medium bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-colors dark:bg-emerald-900/20 dark:border-emerald-700/50 dark:text-emerald-300">
-                                            <i class="fas fa-file-pdf text-emerald-500"></i>
-                                            <span class="truncate max-w-[8rem]">{{ basename($pdfSavedPath) }}</span>
-                                            <i class="fas fa-external-link-alt text-[10px] ml-auto opacity-60"></i>
-                                        </a>
-                                        @else
-                                        <span class="text-xs text-slate-400 italic">Sin PDF</span>
-                                        @endif
                                     </div>
-                                    @else
-                                    {{-- ── Modo edición: XML PRIMERO y marcado como prioritario ── --}}
-                                    <div class="flex flex-col gap-1.5">
 
-                                        {{-- 1. Subir XML — PRIORIDAD PRINCIPAL --}}
+                                    @else
+                                    {{-- ══ Modo edición: solo XML ══ --}}
+                                    <div class="flex flex-col gap-1.5">
                                         <label class="relative inline-flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 text-xs
                                             {{ ($hasNewXml || $esXmlGuardado)
                                                 ? 'bg-violet-50 border-violet-400 text-violet-700 hover:bg-violet-100 dark:bg-violet-900/20 dark:border-violet-600 dark:text-violet-300'
@@ -727,64 +709,32 @@
                                             <input type="file" class="hidden" accept="text/xml,application/xml,.xml"
                                                 wire:model.live="facturaXml.{{ $pIndex }}.{{ $uIndex }}">
                                             <i class="fas {{ ($hasNewXml || $esXmlGuardado) ? 'fa-check-circle text-violet-500' : 'fa-file-code text-violet-400' }}"></i>
-                                            <span class="font-semibold truncate max-w-[7rem]">
+                                            <span class="font-semibold truncate max-w-[8rem]">
                                                 @if($hasNewXml)
                                                     {{ $parsedOk ? 'XML ✓ (' . count($parsed['conceptos']) . ' conceptos)' : 'XML cargado' }}
                                                 @elseif($esXmlGuardado)
                                                     {{ basename($xmlSavedPath) }}
                                                 @else
-                                                    XML
-                                                    <span class="ml-1 font-bold text-[10px] bg-violet-200 dark:bg-violet-800 text-violet-700 dark:text-violet-300 px-1 py-0.5 rounded">PRIMERO</span>
+                                                    Subir XML (CFDI)
                                                 @endif
                                             </span>
                                         </label>
+
                                         <div wire:loading wire:target="facturaXml.{{ $pIndex }}.{{ $uIndex }}"
                                             class="text-[10px] text-violet-500 flex items-center gap-1">
                                             <i class="fas fa-spinner fa-spin"></i> Validando CFDI...
                                         </div>
+
                                         @error("facturaXml.$pIndex.$uIndex")
                                         <p class="text-[10px] text-red-600 flex items-center gap-1">
                                             <i class="fas fa-exclamation-circle"></i> {{ $message }}
                                         </p>
                                         @enderror
+
                                         @if($esXmlGuardado && !$hasNewXml)
                                         <a href="{{ Storage::url($xmlSavedPath) }}" target="_blank"
                                             class="inline-flex items-center gap-1 text-[10px] text-violet-600 dark:text-violet-400 hover:underline">
                                             <i class="fas fa-file-code"></i> Ver XML guardado
-                                        </a>
-                                        @endif
-
-                                        {{-- 2. Subir PDF — COMPLEMENTARIO --}}
-                                        <label class="relative inline-flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-dashed cursor-pointer transition-all duration-200 text-xs
-                                            {{ ($hasNewPdf || $esPdfGuardado)
-                                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-700/50 dark:text-emerald-300'
-                                                : 'bg-slate-50 border-slate-300 text-slate-500 hover:bg-slate-100 hover:border-slate-400 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400' }}">
-                                            <input type="file" class="hidden" accept="application/pdf,.pdf"
-                                                wire:model.live="facturaPdf.{{ $pIndex }}.{{ $uIndex }}">
-                                            <i class="fas {{ ($hasNewPdf || $esPdfGuardado) ? 'fa-file-pdf text-emerald-500' : 'fa-file-pdf text-slate-400' }}"></i>
-                                            <span class="font-medium truncate max-w-[7rem]">
-                                                @if($hasNewPdf)
-                                                    PDF adjunto
-                                                @elseif($esPdfGuardado)
-                                                    {{ basename($pdfSavedPath) }}
-                                                @else
-                                                    PDF <span class="font-normal text-[10px] ml-1">(Requerido)</span>
-                                                @endif
-                                            </span>
-                                        </label>
-                                        <div wire:loading wire:target="facturaPdf.{{ $pIndex }}.{{ $uIndex }}"
-                                            class="text-[10px] text-emerald-500 flex items-center gap-1">
-                                            <i class="fas fa-spinner fa-spin"></i> Subiendo...
-                                        </div>
-                                        @error("facturaPdf.$pIndex.$uIndex")
-                                        <p class="text-[10px] text-red-600 flex items-center gap-1">
-                                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
-                                        </p>
-                                        @enderror
-                                        @if($esPdfGuardado)
-                                        <a href="{{ Storage::url($pdfSavedPath) }}" target="_blank"
-                                            class="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline">
-                                            <i class="fas fa-external-link-alt"></i> Ver PDF guardado
                                         </a>
                                         @endif
                                     </div>
@@ -802,22 +752,13 @@
                                             <span><i class="fas fa-building mr-1.5 opacity-60 text-blue-500"></i> Compartida — mismo proveedor</span>
                                         @endif
                                     </div>
-                                    @if($esXmlGuardado)
-                                    <a href="{{ Storage::url($xmlSavedPath) }}" target="_blank"
+                                    @if(!empty($u['factura_xml_path']))
+                                    <a href="{{ Storage::url($u['factura_xml_path']) }}" target="_blank"
                                         class="inline-flex items-center justify-center gap-1 text-[10px] text-violet-600 dark:text-violet-400 hover:underline">
                                         <i class="fas fa-file-code"></i> Ver XML
                                     </a>
                                     @elseif($hasNewXml)
                                     <span class="text-[10px] text-violet-500 text-center"><i class="fas fa-check mr-1"></i> XML listo</span>
-                                    @endif
-
-                                    @if($esPdfGuardado)
-                                    <a href="{{ Storage::url($pdfSavedPath) }}" target="_blank"
-                                        class="inline-flex items-center justify-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline">
-                                        <i class="fas fa-external-link-alt"></i> Ver PDF
-                                    </a>
-                                    @elseif($hasNewPdf)
-                                    <span class="text-[10px] text-emerald-500 text-center"><i class="fas fa-check mr-1"></i> PDF listo</span>
                                     @endif
                                 </div>
                                 @endif
@@ -992,7 +933,7 @@
                         </div>
                         @endif
 
-                        {{-- ── CAMBIO 3: Progreso + botón Finalizar con guard anti-duplicado ── --}}
+                        {{-- ══ BOTÓN FINALIZAR: SweetAlert único, sin distinción por checklist ══ --}}
                         @if($u['requiere_config'] ?? false)
                         @php
                             $checklistFlat2 = collect($u['checklist'] ?? [])
@@ -1001,7 +942,6 @@
                             $totalItems     = $checklistFlat2->count();
                             $itemsMarcados  = $checklistFlat2->filter(fn($i) => !empty($i['realizado']))->count();
                             $yaFinalizado   = !empty($u['fecha_fin_configuracion']);
-                            $puedeFinalizarBoton = !$yaFinalizado;
                         @endphp
                         <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3"
                             wire:key="finalize-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
@@ -1029,32 +969,30 @@
                                         <i class="fas fa-check-circle text-2xl text-emerald-500 dark:text-emerald-400"></i>
                                         <div>
                                             <p class="font-bold text-sm">¡Ticket creado y equipo configurado!</p>
-                                            <p class="text-xs opacity-90 mt-0.5">Ya puedes continuar y subir la factura de este equipo.</p>
+                                            <p class="text-xs opacity-90 mt-0.5">Ya puedes continuar y subir el XML de factura de este equipo.</p>
                                         </div>
                                     </div>
                                 </div>
+
                             @elseif($yaFinalizado)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 shadow-sm">
                                     <i class="fas fa-check-double"></i>
                                     Configuración finalizada el {{ \Carbon\Carbon::parse($u['fecha_fin_configuracion'])->format('d/m/Y H:i') }}
                                 </span>
 
-                            {{-- ── CAMBIO 2 + 3: SweetAlert + guard Alpine anti-duplicado ── --}}
-                            @elseif($puedeFinalizarBoton)
-                                <div
-                                    x-data="{ enviando: false }"
-                                    wire:key="btn-fin-wrap-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}"
-                                    x-on:swal-fin-done.window="enviando = false">
-
+                            @else
+                                {{-- ══ Botón Finalizar Instalación ══ --}}
+                                <div wire:key="btn-fin-wrap-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
                                     <button type="button"
                                         wire:key="btn-fin-activo-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}"
-                                        :disabled="enviando"
-                                        @click="
-                                            if (enviando) return;
-                                            window.Swal.fire({
+                                        wire:loading.attr="disabled"
+                                        wire:target="finalizarConfiguracionUnidad"
+                                        onclick="
+                                            var btn = this;
+                                            Swal.fire({
                                                 background: '#f9fafb',
                                                 color: '#1e293b',
-                                                title: '¿Finalizar configuración?',
+                                                title: '¿Finalizar instalación?',
                                                 html: 'Se registrará la <b>fecha y hora actual</b> y se creará un <b>ticket de instalación</b> automáticamente.',
                                                 icon: 'question',
                                                 showCancelButton: true,
@@ -1063,23 +1001,19 @@
                                                 confirmButtonColor: '#4f46e5',
                                                 cancelButtonColor: '#94a3b8',
                                                 reverseButtons: true,
-                                            }).then(result => {
+                                            }).then(function(result) {
                                                 if (result.isConfirmed) {
-                                                    enviando = true;
-                                                    $wire.finalizarConfiguracionUnidad({{ $pIndex }}, {{ $uIndex }});
+                                                    var wireEl = btn.closest('[wire\\:id]');
+                                                    Livewire.find(wireEl.getAttribute('wire:id'))
+                                                        .finalizarConfiguracionUnidad({{ $pIndex }}, {{ $uIndex }});
                                                 }
-                                            })
+                                            });
                                         "
-                                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-gray-50 rounded-xl transition-all shadow-sm
-                                            bg-indigo-600 hover:bg-indigo-700
-                                            disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none">
-                                        <span x-show="!enviando">
-                                            <i class="fas fa-flag-checkered"></i> Finalizar Configuración
-                                            @if($totalItems > 0 && $itemsMarcados < $totalItems)
-                                            <span class="ml-1 text-[10px] opacity-75">({{ $itemsMarcados }}/{{ $totalItems }})</span>
-                                            @endif
+                                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-gray-50 rounded-xl transition-all shadow-sm bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none">
+                                        <span wire:loading.remove wire:target="finalizarConfiguracionUnidad">
+                                            <i class="fas fa-flag-checkered"></i> Finalizar Instalación
                                         </span>
-                                        <span x-show="enviando" x-cloak>
+                                        <span wire:loading wire:target="finalizarConfiguracionUnidad">
                                             <i class="fas fa-spinner fa-spin mr-1"></i> Registrando...
                                         </span>
                                     </button>
@@ -1124,7 +1058,7 @@
                     <div class="px-5 py-3 bg-violet-100/80 dark:bg-violet-900/30 border-b border-violet-200 dark:border-violet-700/40 flex items-center gap-2">
                         <i class="fas fa-file-invoice text-violet-600 dark:text-violet-400"></i>
                         <span class="text-sm font-semibold text-violet-800 dark:text-violet-300">
-                            Insumos detectados en el documento
+                            Insumos detectados en el XML
                             <span class="ml-1.5 text-xs font-normal text-violet-500">
                                 ({{ $todasFacturasParseadas->sum(fn($f) => count($f['conceptos'])) }} conceptos
                                 · {{ $todasFacturasParseadas->count() }} {{ $todasFacturasParseadas->count() === 1 ? 'factura' : 'facturas' }})
@@ -1146,11 +1080,6 @@
                                     <i class="fas fa-fingerprint text-violet-400"></i>
                                     <span>{{ Str::upper($facturaData['uuid']) }}</span>
                                 </div>
-                                @endif
-                                @if(!empty($facturaData['es_pdf']))
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700">
-                                    <i class="fas fa-file-pdf"></i> PDF
-                                </span>
                                 @endif
                                 @if($facturaData['mes'] && $facturaData['anio'])
                                 <div class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
@@ -1209,7 +1138,7 @@
                 @endif{{-- /empty propuestasAsignacion --}}
             </div>{{-- /scroll body --}}
 
-            {{-- ── PIE DEL MODAL — CAMBIO 2: SweetAlert en botón Guardar ── --}}
+            {{-- PIE DEL MODAL --}}
             <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 bg-gray-50 dark:bg-slate-900">
                 <div class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                     @if($modalYaTieneFacturas)
@@ -1217,7 +1146,7 @@
                         <span>Modo solo lectura — para modificar contacta al administrador.</span>
                     @else
                         <i class="fas fa-info-circle text-slate-300"></i>
-                        <span>Guarda el avance para conservar las facturas y los datos ingresados.</span>
+                        <span>Guarda el avance para conservar los XML y los datos ingresados.</span>
                     @endif
                 </div>
                 <div class="flex items-center gap-3">
@@ -1229,18 +1158,16 @@
                     </button>
 
                     @if(!$modalYaTieneFacturas)
-                        {{-- CAMBIO 2: SweetAlert reemplaza onclick confirm nativo --}}
                         <button type="button"
                             wire:loading.attr="disabled"
                             wire:target="persistAsignacion"
-                            x-data="{ guardando: false }"
-                            @click="
-                                if (guardando) return;
-                                window.Swal.fire({
+                            onclick="
+                                var btn = this;
+                                Swal.fire({
                                     background: '#f9fafb',
                                     color: '#1e293b',
-                                    title: '¿Guardar facturas y avance?',
-                                    text: 'Se guardarán los archivos y toda la información ingresada hasta ahora.',
+                                    title: '¿Guardar XML y avance?',
+                                    text: 'Se guardarán los archivos XML y toda la información ingresada hasta ahora.',
                                     icon: 'question',
                                     showCancelButton: true,
                                     confirmButtonText: '<i class=\'fas fa-save mr-1\'></i> Guardar',
@@ -1248,17 +1175,17 @@
                                     confirmButtonColor: '#0f172a',
                                     cancelButtonColor: '#94a3b8',
                                     reverseButtons: true,
-                                }).then(result => {
+                                }).then(function(result) {
                                     if (result.isConfirmed) {
-                                        guardando = true;
-                                        $wire.persistAsignacion(0, 0).then(() => { guardando = false; });
+                                        var wireEl = btn.closest('[wire\\:id]');
+                                        Livewire.find(wireEl.getAttribute('wire:id')).persistAsignacion(0, 0);
                                     }
-                                })
+                                });
                             "
                             class="px-4 py-2 text-sm rounded-lg font-medium text-gray-50 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors shadow-sm
                                    disabled:opacity-50 disabled:cursor-not-allowed">
                             <span wire:loading.remove wire:target="persistAsignacion">
-                                <i class="fas fa-save mr-1"></i> Guardar Facturas y Avance
+                                <i class="fas fa-save mr-1"></i> Guardar XML y Avance
                             </span>
                             <span wire:loading wire:target="persistAsignacion">
                                 <i class="fas fa-spinner fa-spin mr-1"></i> Guardando...
@@ -1288,9 +1215,9 @@
                     <i class="fas fa-exclamation-triangle text-amber-600 dark:text-amber-400 text-lg"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">¿Cerrar sin guardar las facturas?</h3>
+                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">¿Cerrar sin guardar?</h3>
                     <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                        Hay proveedores sin factura cargada. Si cierras ahora, los archivos seleccionados en esta sesión
+                        Hay proveedores sin XML cargado. Si cierras ahora, los archivos seleccionados en esta sesión
                         <strong class="text-slate-700 dark:text-slate-200">se perderán</strong>.
                         Los datos ya guardados anteriormente se conservan.
                     </p>
@@ -1299,7 +1226,7 @@
             <div class="px-6 pb-5 flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button type="button" wire:click="$set('confirmarCierreModalAbierto', false)"
                     class="px-4 py-2 text-sm rounded-lg border border-slate-300 bg-gray-50 text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700 transition-colors">
-                    <i class="fas fa-arrow-left mr-1"></i> Volver y subir facturas
+                    <i class="fas fa-arrow-left mr-1"></i> Volver y subir XML
                 </button>
                 <button type="button" wire:click="forzarCloseAsignacion"
                     class="px-4 py-2 text-sm rounded-lg font-medium text-white bg-rose-600 hover:bg-rose-700 transition-colors">
@@ -1310,9 +1237,7 @@
     </div>
     @endif
 
-    {{-- ══════════════════════════════════════════════════════════════════════
-         MODAL CANCELACIÓN
-    ══════════════════════════════════════════════════════════════════════ --}}
+    {{-- MODAL CANCELACIÓN --}}
     @if($modalCancelacionAbierto)
     <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
         wire:keydown.escape.window="cerrarModalCancelacion">
@@ -1389,65 +1314,70 @@ function solicitudesData() {
     }
 }
 
-const _swalBase = {
-    background:         '#f9fafb',
-    color:              '#1e293b',
-    confirmButtonColor: '#3b82f6',   /* blue-500  */
-    cancelButtonColor:  '#94a3b8',   /* slate-400 */
-};
-
 document.addEventListener('livewire:load', function () {
 
-    /* ── Notificaciones SweetAlert ── */
+    const _swalBase = {
+        background:         '#f9fafb',
+        color:              '#1e293b',
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor:  '#94a3b8',
+    };
+
     window.addEventListener('swal:success', function (e) {
         var data = e.detail;
         var msg  = (typeof data === 'string') ? data : (data && data.message ? data.message : 'Cambios hechos correctamente');
-        if (window.Swal) {
-            Swal.fire({
-                ..._swalBase,
-                icon:              'success',
-                title:             '¡Listo!',
-                text:              msg,
-                timer:             3500,
-                showConfirmButton: false,
-                toast:             true,
-                position:          'top-end',
-            });
-        } else { alert(msg); }
+        Swal.fire({
+            ..._swalBase,
+            icon:              'success',
+            title:             '¡Listo!',
+            text:              msg,
+            timer:             3500,
+            showConfirmButton: false,
+            toast:             true,
+            position:          'top-end',
+        });
     });
 
     window.addEventListener('swal:error', function (e) {
         var data = e.detail;
         var msg  = (typeof data === 'string') ? data : (data && data.message ? data.message : 'Error desconocido');
-        if (window.Swal) {
-            Swal.fire({
-                ..._swalBase,
-                icon:  'error',
-                title: 'Error',
-                text:  msg,
-            });
-        } else { alert(msg); }
+        Swal.fire({
+            ..._swalBase,
+            icon:  'error',
+            title: 'Error',
+            text:  msg,
+        });
+    });
+
+    window.addEventListener('swal:warning', function (e) {
+        var data = e.detail;
+        var msg  = (typeof data === 'string') ? data : (data && data.message ? data.message : 'Advertencia');
+        Swal.fire({
+            ..._swalBase,
+            icon:  'warning',
+            title: 'Atención',
+            text:  msg,
+        });
     });
 
     window.addEventListener('swal:info', function (e) {
         var data = e.detail;
         var msg  = (typeof data === 'string') ? data : (data && data.message ? data.message : '');
         if (!msg) return;
-        if (window.Swal) {
-            Swal.fire({
-                ..._swalBase,
-                icon:              'info',
-                text:              msg,
-                timer:             3000,
-                showConfirmButton: false,
-                toast:             true,
-                position:          'top-end',
-            });
-        }
+        Swal.fire({
+            ..._swalBase,
+            icon:              'info',
+            text:              msg,
+            timer:             3000,
+            showConfirmButton: false,
+            toast:             true,
+            position:          'top-end',
+        });
     });
 
     window.addEventListener('swal:success', () => window.dispatchEvent(new Event('swal-fin-done')));
     window.addEventListener('swal:error',   () => window.dispatchEvent(new Event('swal-fin-done')));
+    window.addEventListener('swal:warning', () => window.dispatchEvent(new Event('swal-fin-done')));
 
 });
 </script>

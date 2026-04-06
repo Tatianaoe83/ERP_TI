@@ -210,7 +210,7 @@
                 @if(auth()->check() && auth()->user()->can('cortes.view'))
                 <a href="/cortes" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
-                    <span class="sidebar-text">Cortes</span>
+                    <span class="sidebar-text">Presupuestos Oficiales</span>
                 </a>
                 @endif
             </li>
