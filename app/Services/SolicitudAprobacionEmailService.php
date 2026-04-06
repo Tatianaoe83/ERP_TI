@@ -36,7 +36,10 @@ class SolicitudAprobacionEmailService
     public function enviarRevisionPendiente(Empleados $aprobador, Solicitud $solicitud, string $token, string $stageLabel): bool
     {
         if (empty($aprobador->Correo)) {
-            Log::warning("SolicitudAprobacionEmailService: aprobador {$aprobador->EmpleadoID} sin correo, no se envía email.");
+            Log::warning(
+                "SolicitudAprobacionEmailService: aprobador {$aprobador->EmpleadoID} sin correo, no se envía email. " .
+                    "Solicitud #{$solicitud->SolicitudID}, etapa {$stageLabel}"
+            );
             return false;
         }
 
@@ -59,10 +62,18 @@ class SolicitudAprobacionEmailService
             $mail->Body = $contenido;
             $mail->send();
 
-            Log::info("Email de revisión enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} ({$stageLabel})");
+            Log::info(
+                "Email de revisión enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
+                    "(etapa: {$stageLabel}, token: {$token})"
+            );
+
             return true;
         } catch (Exception $e) {
-            Log::error("Error enviando email de revisión solicitud #{$solicitud->SolicitudID}: " . $e->getMessage());
+            Log::error(
+                "Error enviando email de revisión solicitud #{$solicitud->SolicitudID} " .
+                    "a {$aprobador->Correo} (etapa: {$stageLabel}, token: {$token}): " . $e->getMessage()
+            );
+
             return false;
         }
     }
@@ -85,7 +96,7 @@ class SolicitudAprobacionEmailService
             $urlElegir = route('tickets.index');
             Log::warning("No se proporcionó token para solicitud #{$solicitud->SolicitudID}, usando ruta general: {$urlElegir}");
         }
-        
+
         $asunto = "Propuestas listas – Elige ganador – Solicitud #{$solicitud->SolicitudID}";
         $contenido = $this->construirContenidoCotizacionesListas($solicitud, $urlElegir, $gerente->NombreEmpleado);
 
@@ -204,7 +215,7 @@ HTML;
         $empleado = $solicitud->empleadoid;
         $nombreSolicitante = $empleado ? $empleado->NombreEmpleado : 'N/A';
         $motivo = e($solicitud->Motivo ?? 'N/A');
-        
+
         return <<<HTML
 <!DOCTYPE html>
 <html>

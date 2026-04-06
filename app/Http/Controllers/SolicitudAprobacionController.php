@@ -197,16 +197,14 @@ class SolicitudAprobacionController extends Controller
                 ]);
 
                 // 3. Preparar correo para el SIGUIENTE aprobador REAL (si existe)
-                // No se envía correo al gerente aquí: el gerente recibe el correo cuando TI sube
-                // cotizaciones y las envía (enviarCotizacionesAlGerente). Así el gerente solo ve
-                // la solicitud cuando ya hay propuestas para elegir ganador o devolver a TI.
                 if ($pending->isNotEmpty()) {
                     $nextStep = $pending->first();
                     $nextStep->load('approverEmpleado');
 
-                    // No enviar correo si el siguiente paso es gerencia: se enviará cuando TI suba cotizaciones
-                    if ($nextStep->stage === 'gerencia') {
-                        // Opcional: crear/renovar token para cuando TI envíe las cotizaciones
+                    // No enviar correo si el siguiente paso es administración
+                    // Administración: se enviará cuando se confirmen los ganadores
+                    if ($nextStep->stage === 'administracion') {
+                        // Crear/renovar token para cuando sea el momento de notificar
                         $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
                             ->whereNull('used_at')
                             ->whereNull('revoked_at')
@@ -222,6 +220,7 @@ class SolicitudAprobacionController extends Controller
                             ]);
                         }
                     } else {
+                        // Para todos los demás pasos (incluyendo gerencia), enviar correo de inmediato
                         $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
                             ->whereNull('used_at')
                             ->whereNull('revoked_at')

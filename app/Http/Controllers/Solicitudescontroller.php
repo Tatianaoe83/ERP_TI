@@ -102,8 +102,8 @@ class SolicitudesController extends Controller
             }
 
             $todasFirmaron = ($pasoSupervisor     && $pasoSupervisor->status     === 'approved')
-                          && ($pasoGerencia       && $pasoGerencia->status       === 'approved')
-                          && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
+                && ($pasoGerencia       && $pasoGerencia->status       === 'approved')
+                && ($pasoAdministracion && $pasoAdministracion->status === 'approved');
 
             $todosGanadores     = $solicitud->todosProductosTienenGanador();
             $supervisorAprobado = $pasoSupervisor && $pasoSupervisor->status === 'approved';
@@ -284,48 +284,69 @@ class SolicitudesController extends Controller
                 'token'         => 'nullable|string',
             ]);
 
-            $solicitud          = Solicitud::with(['empleadoid', 'cotizaciones'])->findOrFail($id);
-            $cotizacionGanadora = Cotizacion::findOrFail($request->input('cotizacion_id'));
-
-            if ($cotizacionGanadora->SolicitudID != $solicitud->SolicitudID) {
-                return response()->json(['success' => false, 'message' => 'La cotización no pertenece a esta solicitud'], 400);
-            }
-
-            if ($cotizacionGanadora->Estatus === 'Seleccionada') {
-                return response()->json(['success' => false, 'message' => 'Esta cotización ya fue seleccionada como ganadora para este producto.'], 400);
-            }
-
-            if (!in_array($cotizacionGanadora->Estatus, ['Pendiente', 'Seleccionada', 'Rechazada'])) {
-                return response()->json(['success' => false, 'message' => 'No se puede seleccionar esta cotización'], 400);
-            }
-
-            $claveProducto = $this->claveProducto($cotizacionGanadora);
-
-            $cotizacionesMismoProducto = $solicitud->cotizaciones->filter(
-                fn($c) => $this->claveProducto($c) === $claveProducto
-            );
-
-            $cotizacionGanadora->Estatus = 'Seleccionada';
-            $cotizacionGanadora->save();
-
-            $idsRechazar = $cotizacionesMismoProducto
-                ->where('CotizacionID', '!=', $cotizacionGanadora->CotizacionID)
-                ->pluck('CotizacionID');
-
-            if ($idsRechazar->isNotEmpty()) {
-                Cotizacion::whereIn('CotizacionID', $idsRechazar)->update(['Estatus' => 'Rechazada']);
-            }
-
-            $solicitud->refresh();
-            $solicitud->load(['cotizaciones', 'pasoGerencia', 'pasoAdministracion']);
-            $todosGanadores = $solicitud->todosProductosTienenGanador();
-
             $emailAdminData = null;
-            if ($todosGanadores) {
+
+            \DB::transaction(function () use ($request, $id, &$emailAdminData) {
+                $solicitud = Solicitud::with([
+                    'empleadoid',
+                    'cotizaciones',
+                    'pasoGerencia.approverEmpleado',
+                    'pasoAdministracion.approverEmpleado',
+                ])->findOrFail($id);
+
+                $cotizacionGanadora = Cotizacion::findOrFail($request->input('cotizacion_id'));
+
+                if ((int)$cotizacionGanadora->SolicitudID !== (int)$solicitud->SolicitudID) {
+                    throw new \RuntimeException('La cotización no pertenece a esta solicitud');
+                }
+
+                if ($cotizacionGanadora->Estatus === 'Seleccionada') {
+                    throw new \RuntimeException('Esta cotización ya fue seleccionada como ganadora para este producto.');
+                }
+
+                if (!in_array($cotizacionGanadora->Estatus, ['Pendiente', 'Seleccionada', 'Rechazada'], true)) {
+                    throw new \RuntimeException('No se puede seleccionar esta cotización');
+                }
+
+                $claveProducto = $this->claveProducto($cotizacionGanadora);
+
+                $cotizacionesMismoProducto = $solicitud->cotizaciones->filter(
+                    fn($c) => $this->claveProducto($c) === $claveProducto
+                );
+
+                $cotizacionGanadora->Estatus = 'Seleccionada';
+                $cotizacionGanadora->save();
+
+                $idsRechazar = $cotizacionesMismoProducto
+                    ->where('CotizacionID', '!=', $cotizacionGanadora->CotizacionID)
+                    ->pluck('CotizacionID');
+
+                if ($idsRechazar->isNotEmpty()) {
+                    Cotizacion::whereIn('CotizacionID', $idsRechazar)->update(['Estatus' => 'Rechazada']);
+                }
+
+                $solicitud->refresh();
+                $solicitud->load([
+                    'empleadoid',
+                    'cotizaciones',
+                    'pasoGerencia.approverEmpleado',
+                    'pasoAdministracion.approverEmpleado',
+                ]);
+
+                $todosGanadores = $solicitud->todosProductosTienenGanador();
+
+                if (!$todosGanadores) {
+                    return;
+                }
+
                 $pasoGerencia       = $solicitud->pasoGerencia;
                 $pasoAdministracion = $solicitud->pasoAdministracion;
 
-                if ($pasoGerencia && $pasoGerencia->status === 'pending') {
+                if (!$pasoGerencia) {
+                    throw new \RuntimeException('No existe el paso de gerencia para esta solicitud.');
+                }
+
+                if ($pasoGerencia->status === 'pending') {
                     $pasoGerencia->update([
                         'status'                 => 'approved',
                         'comment'                => 'Ganadores elegidos',
@@ -337,60 +358,110 @@ class SolicitudesController extends Controller
                     if ($token) {
                         \App\Models\SolicitudTokens::where('token', $token)
                             ->where('approval_step_id', $pasoGerencia->id)
-                            ->update(['revoked_at' => now(), 'used_at' => now()]);
-                    }
-
-                    $solicitud->Estatus = 'En revisión';
-                    $solicitud->save();
-
-                    if ($pasoAdministracion && $pasoAdministracion->status === 'pending') {
-                        $pasoAdministracion->load('approverEmpleado');
-                        $adminTokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdministracion->id)
-                            ->whereNull('used_at')->whereNull('revoked_at')
-                            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-                            ->first();
-
-                        if (!$adminTokenRow) {
-                            $adminTokenRow = \App\Models\SolicitudTokens::create([
-                                'approval_step_id' => $pasoAdministracion->id,
-                                'token'            => \Illuminate\Support\Str::uuid(),
-                                'expires_at'       => now()->addDays(7),
+                            ->update([
+                                'revoked_at' => now(),
+                                'used_at'    => now(),
                             ]);
-                        }
-
-                        if ($adminTokenRow && $pasoAdministracion->approverEmpleado) {
-                            $emailAdminData = [
-                                'aprobador'  => $pasoAdministracion->approverEmpleado,
-                                'solicitud'  => $solicitud->load('empleadoid'),
-                                'token'      => $adminTokenRow->token,
-                                'stageLabel' => 'Administración: ve ganadores y aprueba la solicitud',
-                            ];
-                        }
                     }
+                } elseif ($pasoGerencia->status !== 'approved') {
+                    throw new \RuntimeException('El paso de gerencia no está en un estado válido para continuar.');
                 }
-            }
+
+                $solicitud->Estatus = 'En revisión';
+                $solicitud->save();
+
+                if (!$pasoAdministracion) {
+                    throw new \RuntimeException('No existe el paso de administración para esta solicitud.');
+                }
+
+                if ($pasoAdministracion->status !== 'pending') {
+                    return;
+                }
+
+                $pasoAdministracion->load('approverEmpleado');
+
+                if (!$pasoAdministracion->approverEmpleado) {
+                    throw new \RuntimeException('No existe aprobador configurado para administración.');
+                }
+
+                $adminTokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdministracion->id)
+                    ->whereNull('used_at')
+                    ->whereNull('revoked_at')
+                    ->where(function ($q) {
+                        $q->whereNull('expires_at')
+                            ->orWhere('expires_at', '>', now());
+                    })
+                    ->first();
+
+                if (!$adminTokenRow) {
+                    $adminTokenRow = \App\Models\SolicitudTokens::create([
+                        'approval_step_id' => $pasoAdministracion->id,
+                        'token'            => \Illuminate\Support\Str::uuid(),
+                        'expires_at'       => now()->addDays(7),
+                    ]);
+                }
+
+                $emailAdminData = [
+                    'aprobador'  => $pasoAdministracion->approverEmpleado,
+                    'solicitud'  => $solicitud->load('empleadoid'),
+                    'token'      => $adminTokenRow->token,
+                    'stageLabel' => 'Administración: ve ganadores y aprueba la solicitud',
+                ];
+            });
+
+            $solicitud = Solicitud::with(['cotizaciones'])->findOrFail($id);
+            $todosGanadores = $solicitud->todosProductosTienenGanador();
 
             if ($emailAdminData) {
-                app(\App\Services\SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
+                $enviado = app(\App\Services\SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
                     $emailAdminData['aprobador'],
                     $emailAdminData['solicitud'],
                     $emailAdminData['token'],
                     $emailAdminData['stageLabel']
                 );
+
+                if (!$enviado) {
+                    Log::error("No se pudo enviar el correo a administración para la solicitud #{$id}");
+                    return response()->json([
+                        'success'          => false,
+                        'message'          => 'Se seleccionaron los ganadores, pero no se pudo enviar el correo a Administración.',
+                        'todos_completos'  => $todosGanadores,
+                    ], 500);
+                }
             }
 
             $mensaje = $todosGanadores
                 ? 'Ganadores seleccionados. Se ha enviado la solicitud a Administración para su aprobación final.'
                 : 'Ganador seleccionado para este producto. Elige el ganador de los demás productos para completar.';
 
-            return response()->json(['success' => true, 'message' => $mensaje, 'todos_completos' => $todosGanadores]);
+            return response()->json([
+                'success'         => true,
+                'message'         => $mensaje,
+                'todos_completos' => $todosGanadores,
+            ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Error de validación', 'errors' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['success' => false, 'message' => 'Solicitud o cotización no encontrada'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Solicitud o cotización no encontrada',
+            ], 404);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
         } catch (\Exception $e) {
-            Log::error("Error seleccionando cotización ganadora: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error al seleccionar la cotización: ' . $e->getMessage()], 500);
+            Log::error("Error seleccionando cotización ganadora en solicitud #{$id}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al seleccionar la cotización: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -404,55 +475,72 @@ class SolicitudesController extends Controller
                 'token'       => 'nullable|string',
             ]);
 
-            $solicitud    = Solicitud::with(['cotizaciones'])->findOrFail($id);
-            $ids          = array_map('intval', $request->input('ganadores'));
-            $cotizaciones = $solicitud->cotizaciones ?? collect();
-
-            $propuestas = [];
-            foreach ($cotizaciones as $c) {
-                $numPropuesta = (int)($c->NumeroPropuesta ?? 1);
-                $propuestas[$numPropuesta][] = $c;
-            }
-
-            if (count($ids) !== count(array_keys($propuestas))) {
-                return response()->json(['success' => false, 'message' => 'Debes enviar exactamente un ganador por cada propuesta.'], 422);
-            }
-
-            $porPropuesta = [];
-            foreach ($ids as $cid) {
-                $cot = $cotizaciones->firstWhere('CotizacionID', $cid);
-                if (!$cot || $cot->SolicitudID != $solicitud->SolicitudID) {
-                    return response()->json(['success' => false, 'message' => 'Una o más cotizaciones no pertenecen a esta solicitud.'], 400);
-                }
-                $numPropuesta = (int)($cot->NumeroPropuesta ?? 1);
-                if (!isset($propuestas[$numPropuesta])) {
-                    return response()->json(['success' => false, 'message' => 'Cotización no coincide con ninguna propuesta de la solicitud.'], 400);
-                }
-                if (isset($porPropuesta[$numPropuesta])) {
-                    return response()->json(['success' => false, 'message' => 'Solo puede haber un ganador por propuesta.'], 422);
-                }
-                $porPropuesta[$numPropuesta] = $cot;
-            }
-
-            $token          = $request->input('token');
             $emailAdminData = null;
 
-            \DB::transaction(function () use ($solicitud, $porPropuesta, $propuestas, $token, &$emailAdminData) {
+            \DB::transaction(function () use ($request, $id, &$emailAdminData) {
+                $solicitud = Solicitud::with([
+                    'empleadoid',
+                    'cotizaciones',
+                    'pasoGerencia.approverEmpleado',
+                    'pasoAdministracion.approverEmpleado',
+                ])->findOrFail($id);
+
+                $ids          = array_map('intval', $request->input('ganadores'));
+                $cotizaciones = $solicitud->cotizaciones ?? collect();
+
+                $propuestas = [];
+                foreach ($cotizaciones as $c) {
+                    $numPropuesta = (int)($c->NumeroPropuesta ?? 1);
+                    $propuestas[$numPropuesta][] = $c;
+                }
+
+                if (count($ids) !== count(array_keys($propuestas))) {
+                    throw new \RuntimeException('Debes enviar exactamente un ganador por cada propuesta.');
+                }
+
+                $porPropuesta = [];
+                foreach ($ids as $cid) {
+                    $cot = $cotizaciones->firstWhere('CotizacionID', $cid);
+
+                    if (!$cot || (int)$cot->SolicitudID !== (int)$solicitud->SolicitudID) {
+                        throw new \RuntimeException('Una o más cotizaciones no pertenecen a esta solicitud.');
+                    }
+
+                    $numPropuesta = (int)($cot->NumeroPropuesta ?? 1);
+
+                    if (!isset($propuestas[$numPropuesta])) {
+                        throw new \RuntimeException('Cotización no coincide con ninguna propuesta de la solicitud.');
+                    }
+
+                    if (isset($porPropuesta[$numPropuesta])) {
+                        throw new \RuntimeException('Solo puede haber un ganador por propuesta.');
+                    }
+
+                    $porPropuesta[$numPropuesta] = $cot;
+                }
+
                 foreach ($porPropuesta as $numPropuesta => $ganador) {
                     $ganador->Estatus = 'Seleccionada';
                     $ganador->save();
 
                     $idsRechazar = collect($propuestas[$numPropuesta])
-                        ->where('CotizacionID', '!=', $ganador->CotizacionID)
-                        ->pluck('CotizacionID');
+                        ->pluck('CotizacionID')
+                        ->filter(fn($cid) => (int)$cid !== (int)$ganador->CotizacionID);
 
                     if ($idsRechazar->isNotEmpty()) {
-                        Cotizacion::whereIn('CotizacionID', $idsRechazar)->update(['Estatus' => 'Rechazada']);
+                        Cotizacion::whereIn('CotizacionID', $idsRechazar)->update([
+                            'Estatus' => 'Rechazada',
+                        ]);
                     }
                 }
 
                 $solicitud->refresh();
-                $solicitud->load(['cotizaciones', 'pasoGerencia', 'pasoAdministracion']);
+                $solicitud->load([
+                    'empleadoid',
+                    'cotizaciones',
+                    'pasoGerencia.approverEmpleado',
+                    'pasoAdministracion.approverEmpleado',
+                ]);
 
                 $todasPropuestasConGanador = true;
                 foreach ($propuestas as $numPropuesta => $cotis) {
@@ -462,76 +550,130 @@ class SolicitudesController extends Controller
                     }
                 }
 
-                if (!$todasPropuestasConGanador) return;
+                if (!$todasPropuestasConGanador) {
+                    return;
+                }
 
                 $pasoGerencia       = $solicitud->pasoGerencia;
                 $pasoAdministracion = $solicitud->pasoAdministracion;
 
-                if (!$pasoGerencia || $pasoGerencia->status !== 'pending') return;
+                if (!$pasoGerencia) {
+                    throw new \RuntimeException('No existe el paso de gerencia para esta solicitud.');
+                }
 
-                $pasoGerencia->update([
-                    'status'                 => 'approved',
-                    'comment'                => 'Ganadores elegidos',
-                    'decided_at'             => now(),
-                    'decided_by_empleado_id' => $pasoGerencia->approver_empleado_id,
-                ]);
+                if ($pasoGerencia->status === 'pending') {
+                    $pasoGerencia->update([
+                        'status'                 => 'approved',
+                        'comment'                => 'Ganadores elegidos',
+                        'decided_at'             => now(),
+                        'decided_by_empleado_id' => $pasoGerencia->approver_empleado_id,
+                    ]);
 
-                if ($token) {
-                    \App\Models\SolicitudTokens::where('token', $token)
-                        ->where('approval_step_id', $pasoGerencia->id)
-                        ->update(['revoked_at' => now(), 'used_at' => now()]);
+                    $token = $request->input('token');
+                    if ($token) {
+                        \App\Models\SolicitudTokens::where('token', $token)
+                            ->where('approval_step_id', $pasoGerencia->id)
+                            ->update([
+                                'revoked_at' => now(),
+                                'used_at'    => now(),
+                            ]);
+                    }
+                } elseif ($pasoGerencia->status !== 'approved') {
+                    throw new \RuntimeException('El paso de gerencia no está en un estado válido para continuar.');
                 }
 
                 $solicitud->Estatus = 'En revisión';
                 $solicitud->save();
 
-                if ($pasoAdministracion && $pasoAdministracion->status === 'pending') {
-                    $pasoAdministracion->load('approverEmpleado');
-                    $adminTokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdministracion->id)
-                        ->whereNull('used_at')->whereNull('revoked_at')
-                        ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-                        ->first();
-
-                    if (!$adminTokenRow) {
-                        $adminTokenRow = \App\Models\SolicitudTokens::create([
-                            'approval_step_id' => $pasoAdministracion->id,
-                            'token'            => \Illuminate\Support\Str::uuid(),
-                            'expires_at'       => now()->addDays(7),
-                        ]);
-                    }
-
-                    if ($adminTokenRow && $pasoAdministracion->approverEmpleado) {
-                        $emailAdminData = [
-                            'aprobador'  => $pasoAdministracion->approverEmpleado,
-                            'solicitud'  => $solicitud->load('empleadoid'),
-                            'token'      => $adminTokenRow->token,
-                            'stageLabel' => 'Administración: ve ganadores y aprueba la solicitud',
-                        ];
-                    }
+                if (!$pasoAdministracion) {
+                    throw new \RuntimeException('No existe el paso de administración para esta solicitud.');
                 }
+
+                if ($pasoAdministracion->status !== 'pending') {
+                    return;
+                }
+
+                $pasoAdministracion->load('approverEmpleado');
+
+                if (!$pasoAdministracion->approverEmpleado) {
+                    throw new \RuntimeException('No existe aprobador configurado para administración.');
+                }
+
+                $adminTokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdministracion->id)
+                    ->whereNull('used_at')
+                    ->whereNull('revoked_at')
+                    ->where(function ($q) {
+                        $q->whereNull('expires_at')
+                            ->orWhere('expires_at', '>', now());
+                    })
+                    ->first();
+
+                if (!$adminTokenRow) {
+                    $adminTokenRow = \App\Models\SolicitudTokens::create([
+                        'approval_step_id' => $pasoAdministracion->id,
+                        'token'            => \Illuminate\Support\Str::uuid(),
+                        'expires_at'       => now()->addDays(7),
+                    ]);
+                }
+
+                $emailAdminData = [
+                    'aprobador'  => $pasoAdministracion->approverEmpleado,
+                    'solicitud'  => $solicitud->load('empleadoid'),
+                    'token'      => $adminTokenRow->token,
+                    'stageLabel' => 'Administración: ve ganadores y aprueba la solicitud',
+                ];
             });
 
+            $solicitud = Solicitud::with(['cotizaciones'])->findOrFail($id);
+            $todosGanadores = $solicitud->todosProductosTienenGanador();
+
             if ($emailAdminData) {
-                app(\App\Services\SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
+                $enviado = app(\App\Services\SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
                     $emailAdminData['aprobador'],
                     $emailAdminData['solicitud'],
                     $emailAdminData['token'],
                     $emailAdminData['stageLabel']
                 );
+
+                if (!$enviado) {
+                    Log::error("No se pudo enviar el correo a administración para la solicitud #{$id}");
+
+                    return response()->json([
+                        'success'         => false,
+                        'message'         => 'Los ganadores se confirmaron, pero no se pudo enviar el correo a Administración.',
+                        'todos_completos' => $todosGanadores,
+                    ], 500);
+                }
             }
 
             return response()->json([
-                'success'  => true,
-                'message'  => 'Ganadores confirmados. Se ha enviado la solicitud a Administración para su aprobación.',
-                'redirect' => route('solicitudes.ganadores-confirmados'),
+                'success'         => true,
+                'message'         => 'Ganadores confirmados. Se ha enviado la solicitud a Administración para su aprobación.',
+                'todos_completos' => $todosGanadores,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Error de validación', 'errors' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors'  => $e->errors(),
+            ], 422);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['success' => false, 'message' => 'Solicitud no encontrada'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Solicitud no encontrada',
+            ], 404);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
         } catch (\Exception $e) {
-            Log::error('Error confirmando ganadores: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error al confirmar ganadores: ' . $e->getMessage()], 500);
+            Log::error("Error confirmando ganadores en solicitud #{$id}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al confirmar ganadores: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -600,8 +742,14 @@ class SolicitudesController extends Controller
     {
         try {
             $solicitud = Solicitud::with([
-                'empleadoid', 'gerenciaid', 'obraid', 'puestoid',
-                'pasoSupervisor', 'pasoGerencia', 'pasoAdministracion', 'cotizaciones',
+                'empleadoid',
+                'gerenciaid',
+                'obraid',
+                'puestoid',
+                'pasoSupervisor',
+                'pasoGerencia',
+                'pasoAdministracion',
+                'cotizaciones',
             ])->findOrFail($id);
 
             $pasoSupervisor     = $solicitud->pasoSupervisor;
@@ -852,7 +1000,16 @@ class SolicitudesController extends Controller
                 return response()->json(['success' => false, 'message' => 'El Vo.bo de supervisor debe estar aprobado antes de enviar cotizaciones al gerente.'], 400);
             }
 
-            if (!$pasoGerencia || $pasoGerencia->status !== 'pending') {
+            if (!$pasoGerencia) {
+                return response()->json(['success' => false, 'message' => 'No existe paso de gerencia para esta solicitud.'], 400);
+            }
+
+            // Permitir envío si está pending O si está approved pero sin ganadores seleccionados (re-envío)
+            $todosProductosTienenGanador = $solicitud->todosProductosTienenGanador();
+            $estatusGerenciaValido = $pasoGerencia->status === 'pending'
+                || ($pasoGerencia->status === 'approved' && !$todosProductosTienenGanador);
+
+            if (!$estatusGerenciaValido || $pasoGerencia->status === 'rejected') {
                 return response()->json(['success' => false, 'message' => 'El paso de gerencia ya fue resuelto. No se puede reenviar cotizaciones en este estado.'], 400);
             }
 
