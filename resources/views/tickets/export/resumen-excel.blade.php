@@ -71,9 +71,6 @@
     $coloresResponsables = ['#2563EB', '#EA580C', '#059669', '#7C3AED', '#DC2626', '#0891B2'];
 @endphp
 
-{{-- ══════════════════════════════════════════════════════════════════
-     ENCABEZADO Y TARJETAS KPI DE RESUMEN
-══════════════════════════════════════════════════════════════════ --}}
 <table style="{{ $tableStyle }} margin-bottom:24px;">
     <tr>
         <td colspan="5" style="background:linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%); color:#FFFFFF; font-size:18px; font-weight:700; padding:16px 20px; border:1px solid #1E40AF; letter-spacing:0.5px;">
@@ -85,7 +82,6 @@
             Período: {{ $mesNombreTarget ?? '' }}
         </td>
     </tr>
-    {{-- Fila de etiquetas KPI (una celda = un concepto, sin pegar texto) --}}
     <tr>
         <td style="{{ $cardStyle }} background-color:#EFF6FF; color:{{ $primaryBlue ?? '#1E40AF' }}; border:1px solid #BFDBFE; text-align:center; min-width:140px;">Total de Tickets</td>
         <td style="{{ $cardStyle }} background-color:{{ $lightGreen ?? '#D1FAE5' }}; color:{{ $successGreen ?? '#059669' }}; border:1px solid #6EE7B7; text-align:center; min-width:140px;">Tickets Cerrados</td>
@@ -93,7 +89,6 @@
         <td style="{{ $cardStyle }} background-color:{{ $lightAmber ?? '#FEF3C7' }}; color:{{ $amberAccent ?? '#D97706' }}; border:1px solid #FCD34D; text-align:center; min-width:160px;">Tiempo Prom. Respuesta</td>
         <td style="{{ $cardStyle }} background-color:{{ $lightGreen ?? '#D1FAE5' }}; color:{{ $successGreen ?? '#059669' }}; border:1px solid #6EE7B7; text-align:center; min-width:120px;">Cumplimiento</td>
     </tr>
-    {{-- Fila de valores KPI --}}
     <tr>
         <td style="font-size:14px; font-weight:700; padding:10px 16px; background-color:#EFF6FF; border:1px solid #BFDBFE; text-align:center;">{{ $totalTickets ?? 0 }}</td>
         <td style="font-size:14px; font-weight:700; padding:10px 16px; background-color:{{ $lightGreen ?? '#D1FAE5' }}; border:1px solid #6EE7B7; text-align:center;">{{ $ticketsCerrados ?? 0 }}<br><span style="font-size:10px; font-weight:500;">{{ $totalTickets > 0 ? round(($ticketsCerrados ?? 0) / $totalTickets * 100, 1) : 0 }}% del total</span></td>
@@ -103,7 +98,6 @@
     </tr>
 </table>
 
-{{-- Vista resumida: Tickets por Tipo (para gráfica adicional) --}}
 @if(!empty($totalesPorTipo ?? []))
 <table style="{{ $tableStyle }} margin-bottom:16px; max-width:280px;">
     <tr>
@@ -128,9 +122,6 @@
 </div>
 @endif
 
-{{-- ══════════════════════════════════════════════════════════════════
-     TABLA 1 · Incidencias por gerencia por usuario asignado
-══════════════════════════════════════════════════════════════════ --}}
 <div style="display:block; clear:both; margin-bottom:28px;">
 <table style="{{ $tableStyle }}">
     <tr>
@@ -201,17 +192,8 @@
 </table>
 </div>
 
-{{-- ══════════════════════════════════════════════════════════════════
-     GRÁFICA — Movida debajo de la Tabla 1
-══════════════════════════════════════════════════════════════════ --}}
-<div style="display:block; clear:both; width:100%; margin-top:10px; margin-bottom:28px;">
-    {{-- Ejemplo: <img src="{{ $graficaUrl }}" style="max-width:100%; height:auto;"> --}}
-    {{-- O tu componente Blade/Livewire de gráfica aquí --}}
-</div>
+<div style="display:block; clear:both; width:100%; margin-top:10px; margin-bottom:28px;"></div>
 
-{{-- ══════════════════════════════════════════════════════════════════
-     TABLA 2 · Incidencias por categoría (Tipo | Subtipo | Tertipo)
-══════════════════════════════════════════════════════════════════ --}}
 <div style="display:block; clear:both; margin-bottom:28px;">
 <table style="{{ $tableStyle }}">
     <tr>
@@ -245,9 +227,6 @@
 </table>
 </div>
 
-{{-- ══════════════════════════════════════════════════════════════════
-     TABLA 2b · Resumen por Responsable (Tipo | Subtipo | Tertipo)
-══════════════════════════════════════════════════════════════════ --}}
 @if(!empty($tablaResponsableDetalle ?? []))
 <div style="display:block; clear:both; margin-bottom:28px;">
 <table style="{{ $tableStyle }}">
@@ -279,9 +258,6 @@
 </div>
 @endif
 
-{{-- ══════════════════════════════════════════════════════════════════
-     TABLA 3 · Tiempos de respuesta promedio
-══════════════════════════════════════════════════════════════════ --}}
 <div style="display:block; clear:both; margin-bottom:28px;">
 <table style="{{ $tableStyle }}">
     <tr>
@@ -345,9 +321,6 @@
 </table>
 </div>
 
-{{-- ══════════════════════════════════════════════════════════════════
-     TABLA 4 · Comparativo de meses por usuario
-══════════════════════════════════════════════════════════════════ --}}
 <div style="display:block; clear:both; margin-bottom:28px;">
 <table style="{{ $tableStyle }}">
     <tr>

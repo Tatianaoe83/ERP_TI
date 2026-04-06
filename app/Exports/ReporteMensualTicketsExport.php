@@ -13,8 +13,9 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
     protected $tiempoPorCategoria;
     protected $mes;
     protected $anio;
+    protected $catalogo;
 
-    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $ticketsMesActual = null)
+    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $ticketsMesActual = null, $catalogo = [])
     {
         $this->tickets = $tickets;
         $this->ticketsMesActual = $ticketsMesActual ?? $tickets;
@@ -23,18 +24,29 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
         $this->tiempoPorCategoria = $tiempoPorCategoria;
         $this->mes = $mes;
         $this->anio = $anio;
+        $this->catalogo = $catalogo;
     }
 
     public function sheets(): array
     {
         return [
             new ResumenSheetExport(
-                $this->tickets, 
-                $this->resumen, 
-                $this->tiempoPorEmpleado, 
-                $this->tiempoPorCategoria, 
-                $this->mes, 
-                $this->anio
+                $this->tickets,
+                $this->resumen,
+                $this->tiempoPorEmpleado,
+                $this->tiempoPorCategoria,
+                $this->mes,
+                $this->anio,
+                $this->catalogo
+            ),
+            new ResumeGraphicsSheetExport(
+                $this->tickets,
+                $this->resumen,
+                $this->tiempoPorEmpleado,
+                $this->tiempoPorCategoria,
+                $this->mes,
+                $this->anio,
+                $this->catalogo
             ),
             new TicketsSheetExport($this->ticketsMesActual, $this->resumen, $this->mes, $this->anio),
             new TiempoResolucionPorEmpleadoSheetExport($this->tiempoPorEmpleado, $this->mes, $this->anio),

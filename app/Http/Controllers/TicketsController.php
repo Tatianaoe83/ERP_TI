@@ -47,14 +47,23 @@ class TicketsController extends Controller
         $metricasProductividad   = $this->obtenerMetricasProductividad($tickets, $mes, $anio);
 
         $solicitudes = Solicitud::with([
-            'empleadoid', 'pasoSupervisor', 'pasoGerencia', 'pasoAdministracion', 'cotizaciones',
+            'empleadoid',
+            'pasoSupervisor',
+            'pasoGerencia',
+            'pasoAdministracion',
+            'cotizaciones',
         ])->orderBy('created_at', 'desc')->get();
 
         $solicitudesStatus = [$solicitudes->all()];
         $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
 
         return view('tickets.index', compact(
-            'ticketsStatus', 'responsablesTI', 'metricasProductividad', 'mes', 'anio', 'solicitudesStatus'
+            'ticketsStatus',
+            'responsablesTI',
+            'metricasProductividad',
+            'mes',
+            'anio',
+            'solicitudesStatus'
         ));
     }
 
@@ -84,7 +93,8 @@ class TicketsController extends Controller
         $tiempoPromedioResolucion = 0;
         if ($ticketsCerradosMes->count() > 0) {
             $tiempoPromedioResolucion = round(
-                $ticketsCerradosMes->sum(fn($t) => $t->tiempo_resolucion ?? 0) / $ticketsCerradosMes->count(), 2
+                $ticketsCerradosMes->sum(fn($t) => $t->tiempo_resolucion ?? 0) / $ticketsCerradosMes->count(),
+                2
             );
         }
 
@@ -95,7 +105,8 @@ class TicketsController extends Controller
         $tiempoPromedioRespuesta = 0;
         if ($ticketsEnProgresoMes->count() > 0) {
             $tiempoPromedioRespuesta = round(
-                $ticketsEnProgresoMes->sum(fn($t) => $t->tiempo_respuesta ?? 0) / $ticketsEnProgresoMes->count(), 2
+                $ticketsEnProgresoMes->sum(fn($t) => $t->tiempo_respuesta ?? 0) / $ticketsEnProgresoMes->count(),
+                2
             );
         }
 
@@ -107,7 +118,7 @@ class TicketsController extends Controller
                     'nombre'     => $responsable ? $responsable->NombreEmpleado : 'Sin asignar',
                     'total'      => $grupo->count(),
                     'cerrados'   => $grupo->where('Estatus', 'Cerrado')->count(),
-                    'en_progreso'=> $grupo->where('Estatus', 'En progreso')->count(),
+                    'en_progreso' => $grupo->where('Estatus', 'En progreso')->count(),
                     'pendientes' => $grupo->where('Estatus', 'Pendiente')->count(),
                     'problemas'  => $grupo->where('Clasificacion', 'Problema')->count(),
                     'servicios'  => $grupo->where('Clasificacion', 'Servicio')->count(),
@@ -190,7 +201,8 @@ class TicketsController extends Controller
             $tiempoPromedioResolucion = 0;
             if ($ticketsConResolucion->count() > 0) {
                 $tiempoPromedioResolucion = round(
-                    $ticketsConResolucion->sum(fn($t) => $t->tiempo_resolucion ?? 0) / $ticketsConResolucion->count(), 2
+                    $ticketsConResolucion->sum(fn($t) => $t->tiempo_resolucion ?? 0) / $ticketsConResolucion->count(),
+                    2
                 );
             }
 
@@ -228,7 +240,7 @@ class TicketsController extends Controller
                 'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
                 'tickets_por_mes'          => $ticketsPorMes,
                 'tickets_por_prioridad'    => $ticketsEmpleado->groupBy('Prioridad')->map(fn($g) => $g->count()),
-                'tickets_por_clasificacion'=> $ticketsEmpleado->groupBy('Clasificacion')->map(fn($g) => $g->count()),
+                'tickets_por_clasificacion' => $ticketsEmpleado->groupBy('Clasificacion')->map(fn($g) => $g->count()),
             ];
         }
 
@@ -449,7 +461,7 @@ class TicketsController extends Controller
             return response()->json([
                 'success'          => true,
                 'tiene_nuevos'     => $ultimoMensaje->id > (int)$ultimoMensajeId,
-                'ultimo_mensaje_id'=> $ultimoMensaje->id,
+                'ultimo_mensaje_id' => $ultimoMensaje->id,
                 'total_mensajes'   => TicketChat::where('ticket_id', $ticketId)->count(),
             ]);
         } catch (\Exception $e) {
@@ -533,7 +545,10 @@ class TicketsController extends Controller
 
             $hybridService = new \App\Services\HybridEmailService();
             $resultado     = $hybridService->enviarRespuestaConInstrucciones(
-                $ticketId, $mensaje, $adjuntosProcesados, $mensajeParaCorreo
+                $ticketId,
+                $mensaje,
+                $adjuntosProcesados,
+                $mensajeParaCorreo
             );
 
             if ($resultado) {
@@ -998,7 +1013,7 @@ class TicketsController extends Controller
             return response()->json([
                 'success'     => true,
                 'message'     => "Se actualizaron {$actualizados} tipos de tickets",
-                'actualizados'=> $actualizados,
+                'actualizados' => $actualizados,
                 'errores'     => $errores,
             ]);
         } catch (\Exception $e) {
@@ -1043,7 +1058,9 @@ class TicketsController extends Controller
             'empleado.puestos.departamentos.gerencia',
             'empleado.gerencia',
             'responsableTI.gerencia',
-            'tipoticket', 'subtipo', 'tertipo',
+            'tipoticket',
+            'subtipo',
+            'tertipo',
         ])->whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
 
         $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
@@ -1072,7 +1089,9 @@ class TicketsController extends Controller
             'empleado.puestos.departamentos.gerencia',
             'empleado.gerencia',
             'responsableTI.gerencia',
-            'tipoticket', 'subtipo', 'tertipo',
+            'tipoticket',
+            'subtipo',
+            'tertipo',
         ])->whereBetween('created_at', [$fechaInicioAnterior, $fechaFinActual])->get();
 
         $ticketsMesActual = $ticketsDosMeses->filter(
@@ -1104,7 +1123,15 @@ class TicketsController extends Controller
 
         return Excel::download(
             new \App\Exports\ReporteMensualTicketsExport(
-                $ticketsDosMeses, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $ticketsMesActual
+                $ticketsDosMeses,
+                $resumen,
+                $tiempoPorEmpleado,
+                $tiempoPorCategoria,
+                $mes,
+                $anio,
+                $ticketsMesActual,
+                $catalogo,
+                ['includeCharts' => true]
             ),
             $nombreArchivo
         );
