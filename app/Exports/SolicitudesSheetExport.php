@@ -43,13 +43,12 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
         
         // Fila 2: Estadísticas generales
         $promedioCot = round($this->metricasSolicitudes['promedio_cotizacion_horas'] ?? 0, 1);
-        $promedioCompra = round($this->metricasSolicitudes['promedio_compra_dias'] ?? 0, 1);
         $promedioConfig = round($this->metricasSolicitudes['promedio_configuracion_dias'] ?? 0, 1);
         $totalSolicitudes = count($this->metricasSolicitudes['desglose'] ?? []);
         
         $rows[] = [
             "Período: {$mesCapitalizado} {$this->anio} | Total Solicitudes: {$totalSolicitudes} | " .
-            "Promedio Cotización: {$promedioCot}h | Promedio Compra: {$promedioCompra}h | " .
+            "Promedio Cotización: {$promedioCot}h | " .
             "Promedio Configuración: {$promedioConfig}h"
         ];
         
@@ -63,7 +62,6 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
             'Descripción',
             'Estatus',
             'Tiempo Cotización (h)',
-            'Tiempo Compra (h)',
             'Tiempo Config. (h)',
             'Tiempo Total (h)',
         ];
@@ -80,7 +78,6 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sol['descripcion_motivo'] ?? '',
                 $sol['estatus'] ?? '',
                 $sol['tiempo_cotizacion_horas'] !== null ? round($sol['tiempo_cotizacion_horas'], 1) : '-',
-                $sol['tiempo_compra_dias'] !== null ? round($sol['tiempo_compra_dias'], 1) : '-',
                 $sol['tiempo_configuracion_dias'] !== null ? round($sol['tiempo_configuracion_dias'], 1) : '-',
                 $sol['tiempo_total_dias'] !== null ? round($sol['tiempo_total_dias'], 1) : '-',
             ];
@@ -104,9 +101,8 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sheet->getColumnDimension('F')->setWidth(45);  // Descripción
                 $sheet->getColumnDimension('G')->setWidth(20);  // Estatus
                 $sheet->getColumnDimension('H')->setWidth(18);  // Tiempo Cotización
-                $sheet->getColumnDimension('I')->setWidth(18);  // Tiempo Compra
-                $sheet->getColumnDimension('J')->setWidth(18);  // Tiempo Config
-                $sheet->getColumnDimension('K')->setWidth(18);  // Tiempo Total
+                $sheet->getColumnDimension('I')->setWidth(18);  // Tiempo Config
+                $sheet->getColumnDimension('J')->setWidth(18);  // Tiempo Total
                 
                 $highestColumn = $sheet->getHighestColumn();
                 
@@ -254,8 +250,8 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                         ]);
                     }
                     
-                    // Centrar números y tiempos (columnas A, H, I, J, K)
-                    foreach (['A', 'H', 'I', 'J', 'K'] as $col) {
+                    // Centrar números y tiempos (columnas A, H, I, J)
+                    foreach (['A', 'H', 'I', 'J'] as $col) {
                         $sheet->getStyle($col . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                     }
                 }
