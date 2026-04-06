@@ -57,7 +57,11 @@ trait MetricasSolicitudesTrait
         $fechaFinMes    = Carbon::create($anio, $mes, 1)->endOfMonth();
 
         // 1. Obtener solicitudes del mes con las relaciones clave
+        // SOLO solicitudes que tengan activos con checklist (configuración completada)
         $solicitudes = Solicitud::with(['cotizaciones', 'pasoAdministracion', 'empleadoid'])
+            ->whereHas('activos', function($q) {
+                $q->whereHas('checklists');
+            })
             ->whereBetween('created_at', [$fechaInicioMes, $fechaFinMes])
             ->get();
 
@@ -69,8 +73,8 @@ trait MetricasSolicitudesTrait
             ->groupBy('SolicitudID');
 
         $desglose = [];
-        $totalCotizacionHoras = $totalCompraHoras = $totalConfiguracionHoras = 0;
-        $countCotizacion = $countCompra = $countConfiguracion = 0;
+        $totalCotizacionHoras = $totalConfiguracionHoras = 0;
+        $countCotizacion = $countConfiguracion = 0;
 
         foreach ($solicitudes as $sol) {
             $fechaCreacion = Carbon::parse($sol->created_at);
@@ -89,12 +93,6 @@ trait MetricasSolicitudesTrait
             $fechaAprobacion = ($fechaCotizacion && $pasoAdmin && $pasoAdmin->status === 'approved' && $pasoAdmin->decided_at) 
                 ? Carbon::parse($pasoAdmin->decided_at) 
                 : null;
-            
-            $tiempoCompraHoras = $this->calcularHorasLaboralesFloat($fechaCotizacion, $fechaAprobacion);
-            if ($tiempoCompraHoras !== null) {
-                $totalCompraHoras += $tiempoCompraHoras;
-                $countCompra++;
-            }
 
             $fechaConfiguracion = null;
             if ($fechaAprobacion && isset($activos[$sol->SolicitudID])) {
@@ -124,8 +122,7 @@ trait MetricasSolicitudesTrait
                 'motivo'              => $sol->Motivo ?? 'N/A',
                 'descripcion_motivo'  => $sol->DescripcionMotivo ?? '',
                 'estatus'             => $sol->Estatus ?? 'Pendiente',
-                                'tiempo_cotizacion_horas'   => $tiempoCotizacionHoras,
-                'tiempo_compra_dias'        => $tiempoCompraHoras,
+                'tiempo_cotizacion_horas'   => $tiempoCotizacionHoras,
                 'tiempo_configuracion_dias' => $tiempoConfiguracionHoras,
                 'tiempo_total_dias'         => $tiempoTotalHoras,
             ];
@@ -133,7 +130,6 @@ trait MetricasSolicitudesTrait
 
         return [
             'promedio_cotizacion_horas'   => $countCotizacion > 0 ? $totalCotizacionHoras / $countCotizacion : 0,
-            'promedio_compra_dias'        => $countCompra > 0 ? $totalCompraHoras / $countCompra : 0,
             'promedio_configuracion_dias' => $countConfiguracion > 0 ? $totalConfiguracionHoras / $countConfiguracion : 0,
             'desglose'                    => collect($desglose)->sortByDesc('id')->values()->all(),
         ];

@@ -142,6 +142,14 @@ public $fillable = [
     }
 
     /**
+     * Relación con activos asignados
+     */
+    public function activos()
+    {
+        return $this->hasMany(\App\Models\SolicitudActivo::class, 'SolicitudID', 'SolicitudID');
+    }
+
+    /**
      * Indica si todos los productos (agrupados por NumeroPropuesta / NombreEquipo) tienen exactamente un ganador (Estatus Seleccionada).
      * Se usa para saber si la solicitud está totalmente aprobada (un ganador por producto).
      */

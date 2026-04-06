@@ -447,7 +447,7 @@
 
         <div x-show="activeTab === 'solicitudes'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="rounded-2xl p-6 border border-blue-100 bg-blue-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
                     <div class="flex items-center gap-4">
                         <div class="p-3 bg-blue-500 text-white rounded-xl shadow-sm"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
@@ -455,18 +455,6 @@
                             <p class="text-sm font-medium text-blue-900/70 dark:text-gray-400">Promedio Cotización</p>
                             <h4 class="text-2xl font-bold text-blue-900 dark:text-white">
                                 {{ number_format($metricasSolicitudes['promedio_cotizacion_horas'] ?? 0, 1) }} <span class="text-sm font-normal text-blue-900/70 dark:text-gray-400">hrs</span>
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="rounded-2xl p-6 border border-purple-100 bg-purple-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-purple-500 text-white rounded-xl shadow-sm"><i class="fas fa-shopping-cart text-xl"></i></div>
-                        <div>
-                            <p class="text-sm font-medium text-purple-900/70 dark:text-gray-400">Promedio Compra</p>
-                            <h4 class="text-2xl font-bold text-purple-900 dark:text-white">
-                                {{ number_format($metricasSolicitudes['promedio_compra_dias'] ?? 0, 1) }} <span class="text-sm font-normal text-purple-900/70 dark:text-gray-400">hrs</span>
                             </h4>
                         </div>
                     </div>
@@ -497,7 +485,6 @@
                                 <th scope="col" class="px-6 py-4 font-semibold">ID Sol.</th>
                                 <th scope="col" class="px-6 py-4 font-semibold">Creación</th>
                                 <th scope="col" class="px-6 py-4 font-semibold text-center">T. Cotización</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-center">T. Compra</th>
                                 <th scope="col" class="px-6 py-4 font-semibold text-center">T. Config.</th>
                                 <th scope="col" class="px-6 py-4 font-semibold text-right">Tiempo Total</th>
                             </tr>
@@ -521,16 +508,6 @@
                                     </td>
                                     
                                     <td class="px-6 py-4 text-center">
-                                        @if($sol['tiempo_compra_dias'] !== null)
-                                            <span class="inline-flex px-2 py-1 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 font-medium text-xs">
-                                                {{ $sol['tiempo_compra_dias'] }} h
-                                            </span>
-                                        @else
-                                            <span class="text-gray-400 dark:text-gray-600">-</span>
-                                        @endif
-                                    </td>
-                                    
-                                    <td class="px-6 py-4 text-center">
                                         @if($sol['tiempo_configuracion_dias'] !== null)
                                             <span class="inline-flex px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium text-xs">
                                                 {{ $sol['tiempo_configuracion_dias'] }} h
@@ -546,7 +523,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-[#9CA3AF]">No hay solicitudes procesadas en este periodo.</td>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-[#9CA3AF]">No hay solicitudes procesadas en este periodo.</td>
                                 </tr>
                             @endforelse
                         </tbody>
