@@ -562,7 +562,7 @@
              @click.self="modalAbierto = false"
              @keydown.escape.window="modalAbierto = false">
              
-            <div class="relative w-full max-w-lg mx-4 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
+            <div class="relative w-full max-w-lg mx-4 bg-slate-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
                  x-transition:enter="transition ease-out duration-300"
                  x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                  x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -609,11 +609,11 @@
 
                     {{-- Fechas Clave --}}
                     <div class="grid grid-cols-2 gap-4 mt-2">
-                        <div class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-white dark:bg-slate-800/50">
+                        <div class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                             <label class="text-xs font-bold text-slate-400 block"><i class="fas fa-calendar-plus mr-1"></i> Creada el</label>
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1" x-text="infoModal.creacion"></p>
                         </div>
-                        <div class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-white dark:bg-slate-800/50">
+                        <div class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                             <label class="text-xs font-bold text-slate-400 block"><i class="fas fa-clock mr-1"></i> Última act.</label>
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1" x-text="infoModal.actualizacion || 'N/A'"></p>
                         </div>
@@ -623,7 +623,7 @@
 
                 {{-- Footer --}}
                 <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-end">
-                    <button @click="modalAbierto = false" class="px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+                    <button @click="modalAbierto = false" class="px-4 py-2 bg-red-500 text-white dark:bg-red-500 rounded-lg text-sm font-medium hover:bg-red-600 dark:hover:bg-red-600 transition-colors">
                         Cerrar Detalles
                     </button>
                 </div>
