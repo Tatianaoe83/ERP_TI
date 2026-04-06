@@ -1119,6 +1119,11 @@ class TicketsController extends Controller
         $resumen             = $this->calcularResumenMensual($ticketsMesActual, $fechaInicioActual, $fechaFinActual);
         $tiempoPorEmpleado   = $this->calcularTiempoResolucionPorEmpleado($ticketsMesActual);
         $tiempoPorCategoria  = $this->calcularTiempoPorCategoriaResponsable($ticketsMesActual);
+        
+        // Calcular métricas de solicitudes del mes actual
+        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
+        $solicitudesMesActual = $metricasSolicitudes['desglose'] ?? [];
+        
         $nombreArchivo       = 'reporte_tickets_' . date('d-m-Y-H-i') . '.xlsx';
 
         return Excel::download(
@@ -1131,7 +1136,8 @@ class TicketsController extends Controller
                 $anio,
                 $ticketsMesActual,
                 $catalogo,
-                ['includeCharts' => true]
+                $solicitudesMesActual,
+                $metricasSolicitudes
             ),
             $nombreArchivo
         );
