@@ -1,18 +1,4 @@
 <?php
-// ============================================================
-// CAMBIOS REALIZADOS EN TablaSolicitudes.php
-// ============================================================
-// 1. guardarAsignacion() y persistAsignacion() ahora guardan
-//    XML y datos de instalación de forma INDEPENDIENTE:
-//    - Se puede subir el XML y guardar sin haber finalizado la instalación
-//    - Se puede finalizar la instalación sin tener el XML listo
-// 2. actualizarInsumoConcepto() ahora acepta null para limpiar
-//    el insumo sin romper métricas (InsumoNombre e InsumoID = null)
-// 3. Todos los conceptos del XML son modificables en la UI,
-//    no solo el primero de cada proveedor
-// 4. Los insumos nulos en facturas no participan en comparativas
-//    (el query en comparativa() filtra WHERE InsumoNombre IS NOT NULL)
-// ============================================================
 
 namespace App\Http\Livewire;
 
@@ -23,11 +9,13 @@ use App\Models\Solicitud;
 use App\Models\Cotizacion;
 use App\Models\Empleados;
 use App\Models\SolicitudPasos;
+use App\Models\SolicitudTokens;
 use App\Models\DepartamentoRequerimientos;
 use App\Models\SolicitudActivo;
 use App\Models\SolicitudActivoCheckList;
 use App\Models\Facturas;
 use App\Models\Tickets;
+use App\Services\SolicitudAprobacionEmailService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -57,14 +45,14 @@ class TablaSolicitudes extends Component
 
     public array $usuarioSearch      = [];
     public array $usuarioOptions     = [];
-    public array $usuarioSearchLock = [];
+    public array $usuarioSearchLock  = [];
 
     public bool   $modalCancelacionAbierto = false;
-    public ?int   $solicitudCancelarId      = null;
-    public string $motivoCancelacion        = '';
+    public ?int   $solicitudCancelarId     = null;
+    public string $motivoCancelacion       = '';
 
     public bool $modalInfoAbierto = false;
-    public $infoSolicitud          = null;
+    public $infoSolicitud         = null;
 
     public bool $confirmarCierreModalAbierto = false;
 
@@ -90,6 +78,13 @@ class TablaSolicitudes extends Component
     private const STAGE_PERMISSIONS = [
         'gerencia'       => 'aprobar-solicitudes-gerencia',
         'administracion' => 'aprobar-solicitudes-administracion',
+    ];
+
+    // Etiquetas para los correos, idénticas a las del controlador
+    private const STAGE_LABELS = [
+        'supervisor'     => 'Vo.bo de supervisor',
+        'gerencia'       => 'Gerente: ve propuestas, elige ganador o regresa a TI para cotizar',
+        'administracion' => 'Administración: ve ganadores y aprueba la solicitud',
     ];
 
     private ?string $serialColumn            = null;
@@ -119,7 +114,6 @@ class TablaSolicitudes extends Component
             $this->xmlParseado[$pIndex][$uIndex] = ['error' => $e->getMessage()];
         }
 
-        // Share across same proveedor
         $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
         if (!$proveedor) return;
 
@@ -197,7 +191,8 @@ class TablaSolicitudes extends Component
 
         if ($this->search) {
             $term = trim((string)$this->search);
-            $query->where(fn($q) => $q->where('SolicitudID', 'like', "%{$term}%")
+            $query->where(fn($q) => $q
+                ->where('SolicitudID', 'like', "%{$term}%")
                 ->orWhere('Motivo', 'like', "%{$term}%")
                 ->orWhereHas('empleadoid', fn($s) => $s->where('NombreEmpleado', 'like', "%{$term}%")));
         }
@@ -258,8 +253,8 @@ class TablaSolicitudes extends Component
         $solicitud->nivelAprobacion   = '';
 
         [$facturasSubidas, $totalNecesarias] = $this->contarFacturas($solicitud);
-        $solicitud->facturasSubidas         = $facturasSubidas;
-        $solicitud->totalFacturasNecesarias = $totalNecesarias;
+        $solicitud->facturasSubidas          = $facturasSubidas;
+        $solicitud->totalFacturasNecesarias  = $totalNecesarias;
 
         if ($user && !$estaRechazada && !$estaCancelada) {
             $ps = $solicitud->pasoSupervisor;
@@ -322,8 +317,11 @@ class TablaSolicitudes extends Component
         foreach ($seleccionadas as $cot) {
             $qty = max(1, (int)($cot->Cantidad ?? 1));
             for ($i = 1; $i <= $qty; $i++) {
-                $activo = SolicitudActivo::query()->where('SolicitudID', $solicitud->SolicitudID)
-                    ->where('CotizacionID', $cot->CotizacionID)->where('UnidadIndex', $i)->first();
+                $activo = SolicitudActivo::query()
+                    ->where('SolicitudID', $solicitud->SolicitudID)
+                    ->where('CotizacionID', $cot->CotizacionID)
+                    ->where('UnidadIndex', $i)
+                    ->first();
                 if (!$activo || empty($activo->fecha_fin_configuracion)) return false;
             }
         }
@@ -357,7 +355,9 @@ class TablaSolicitudes extends Component
         $ps = $solicitud->pasoSupervisor;
         $pg = $solicitud->pasoGerencia;
         $pa = $solicitud->pasoAdministracion;
-        return ($ps && $ps->status === 'approved') && ($pg && $pg->status === 'approved') && ($pa && $pa->status === 'approved');
+        return ($ps && $ps->status === 'approved')
+            && ($pg && $pg->status === 'approved')
+            && ($pa && $pa->status === 'approved');
     }
 
     private function contarFacturas($solicitud): array
@@ -373,8 +373,10 @@ class TablaSolicitudes extends Component
         $cotIds = $sel->pluck('CotizacionID')->filter()->unique()->toArray();
         if (empty($cotIds)) return [0, $totalNecesarias];
 
-        $activos = SolicitudActivo::query()->whereIn('CotizacionID', $cotIds)
-            ->whereNotNull('FacturaPath')->where('FacturaPath', '!=', '')->select('CotizacionID')->distinct()->get();
+        $activos = SolicitudActivo::query()
+            ->whereIn('CotizacionID', $cotIds)
+            ->whereNotNull('FacturaPath')->where('FacturaPath', '!=', '')
+            ->select('CotizacionID')->distinct()->get();
 
         if ($activos->isEmpty()) return [0, $totalNecesarias];
 
@@ -408,23 +410,35 @@ class TablaSolicitudes extends Component
         }
     }
 
+    /**
+     * Decide un paso de aprobación y, si corresponde, envía correo al siguiente aprobador.
+     * Replica la misma lógica de SolicitudAprobacionController::decide() para que los correos
+     * se disparen tanto desde la vista pública (token) como desde el panel interno (Livewire).
+     */
     private function decidirPaso(int $solicitudId, string $nivel, string $comentario, string $decision): void
     {
         $nivel = trim(strtolower($nivel));
         if (!in_array($nivel, self::VALID_STAGES, true)) throw new \Exception('Etapa inválida.');
 
-        DB::transaction(function () use ($solicitudId, $nivel, $comentario, $decision) {
+        // Se rellena dentro de la transacción y se usa fuera para disparar el correo
+        $emailRevisionData = null;
+
+        DB::transaction(function () use ($solicitudId, $nivel, $comentario, $decision, &$emailRevisionData) {
             $solicitud = Solicitud::findOrFail($solicitudId);
             $usuario   = auth()->user() ?? throw new \Exception('Sesión inválida.');
             $empleado  = Empleados::query()->where('Correo', $usuario->email)->firstOrFail();
 
-            $step = SolicitudPasos::query()->where('solicitud_id', $solicitud->SolicitudID)
-                ->where('stage', $nivel)->lockForUpdate()->firstOrFail();
+            $step = SolicitudPasos::query()
+                ->where('solicitud_id', $solicitud->SolicitudID)
+                ->where('stage', $nivel)
+                ->lockForUpdate()
+                ->firstOrFail();
 
             if ($step->status !== 'pending') throw new \Exception('Etapa ya resuelta.');
 
             $this->authorizeDecision($usuario, $empleado, $solicitud, $step, $nivel);
 
+            // 1. Actualizar el paso actual
             $step->update([
                 'status'                 => $decision,
                 'comment'                => $comentario,
@@ -432,8 +446,87 @@ class TablaSolicitudes extends Component
                 'decided_by_empleado_id' => (int)$empleado->EmpleadoID,
             ]);
 
-            if ($decision === 'rejected') $solicitud->update(['Estatus' => 'Rechazada']);
+            // Revocar cualquier token activo de este paso para evitar correos fantasma
+            SolicitudTokens::where('approval_step_id', $step->id)
+                ->whereNull('revoked_at')
+                ->whereNull('used_at')
+                ->update(['revoked_at' => now()]);
+
+            // 2. Si se rechaza, cerrar todo y salir
+            if ($decision === 'rejected') {
+                $solicitud->update(['Estatus' => 'Rechazada']);
+                return;
+            }
+
+            // 3. Auto-aprobación en cascada (misma persona en pasos siguientes)
+            $this->procesarAutoAprobacionEnCascada($solicitud->SolicitudID, (int)$empleado->EmpleadoID);
+
+            // 4. Recalcular pasos pendientes tras la cascada
+            $pasosPendientes = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+                ->where('status', 'pending')
+                ->orderBy('step_order')
+                ->get();
+
+            $solicitud->update([
+                'Estatus' => $pasosPendientes->isNotEmpty() ? 'En revisión' : 'Aprobada',
+            ]);
+
+            // 5. Preparar correo para el siguiente aprobador REAL
+            if ($pasosPendientes->isNotEmpty()) {
+                $nextStep = $pasosPendientes->first();
+                $nextStep->load('approverEmpleado');
+
+                if ($nextStep->stage === 'gerencia') {
+                    // Gerencia no recibe correo aquí: lo recibirá cuando TI suba las cotizaciones.
+                    // Solo nos aseguramos de que el token exista para ese momento.
+                    $existeToken = SolicitudTokens::where('approval_step_id', $nextStep->id)
+                        ->whereNull('used_at')->whereNull('revoked_at')
+                        ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                        ->exists();
+
+                    if (!$existeToken) {
+                        SolicitudTokens::create([
+                            'approval_step_id' => $nextStep->id,
+                            'token'            => Str::uuid(),
+                            'expires_at'       => now()->addDays(7),
+                        ]);
+                    }
+                } else {
+                    // Para supervisor y administración: crear/reutilizar token y enviar correo
+                    $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
+                        ->whereNull('used_at')->whereNull('revoked_at')
+                        ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                        ->first();
+
+                    if (!$nextTokenRow) {
+                        $nextTokenRow = SolicitudTokens::create([
+                            'approval_step_id' => $nextStep->id,
+                            'token'            => Str::uuid(),
+                            'expires_at'       => now()->addDays(7),
+                        ]);
+                    }
+
+                    if ($nextTokenRow && $nextStep->approverEmpleado) {
+                        $emailRevisionData = [
+                            'aprobador'  => $nextStep->approverEmpleado,
+                            'solicitud'  => $solicitud->load('empleadoid'),
+                            'token'      => $nextTokenRow->token,
+                            'stageLabel' => self::STAGE_LABELS[$nextStep->stage] ?? $nextStep->stage,
+                        ];
+                    }
+                }
+            }
         });
+
+        // 6. Enviar correo FUERA de la transacción para no bloquearla en caso de fallo SMTP
+        if ($emailRevisionData) {
+            app(SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
+                $emailRevisionData['aprobador'],
+                $emailRevisionData['solicitud'],
+                $emailRevisionData['token'],
+                $emailRevisionData['stageLabel']
+            );
+        }
     }
 
     private function authorizeDecision($user, Empleados $empleado, Solicitud $solicitud, SolicitudPasos $step, string $nivel): void
@@ -446,6 +539,40 @@ class TablaSolicitudes extends Component
         $perm = self::STAGE_PERMISSIONS[$nivel] ?? null;
         if ($perm && !$user->can($perm)) throw new \Exception('No tienes permiso para resolver esta etapa.');
         if ($nivel === 'gerencia' && empty($solicitud->GerenciaID)) throw new \Exception('Solicitud sin gerencia asignada.');
+    }
+
+    /**
+     * Lógica de efecto dominó (Cascada): idéntica a la del controlador.
+     * Si el mismo empleado aparece en pasos consecutivos, se auto-aprueba.
+     * Gerencia NUNCA se auto-aprueba porque el gerente debe elegir ganador.
+     */
+    private function procesarAutoAprobacionEnCascada(int $solicitudId, int $empleadoIdQueAprobo): void
+    {
+        $pasosPendientes = SolicitudPasos::where('solicitud_id', $solicitudId)
+            ->where('status', 'pending')
+            ->orderBy('step_order', 'asc')
+            ->get();
+
+        foreach ($pasosPendientes as $siguientePaso) {
+            if ($siguientePaso->stage === 'gerencia') break;
+
+            if ($siguientePaso->approver_empleado_id == $empleadoIdQueAprobo) {
+                $siguientePaso->update([
+                    'status'                 => 'approved',
+                    'comment'                => 'Aprobación automática: Validado previamente por el mismo usuario en el nivel anterior.',
+                    'decided_at'             => now(),
+                    'decided_by_empleado_id' => $empleadoIdQueAprobo,
+                ]);
+
+                // Revocar tokens de este paso para no mandar correos innecesarios
+                SolicitudTokens::where('approval_step_id', $siguientePaso->id)
+                    ->whereNull('revoked_at')
+                    ->whereNull('used_at')
+                    ->update(['revoked_at' => now()]);
+            } else {
+                break;
+            }
+        }
     }
 
     // =========================================================================
@@ -473,7 +600,10 @@ class TablaSolicitudes extends Component
             ]
         );
 
-        if (!$this->solicitudCancelarId) { $this->dispatchBrowserEvent('swal:error', ['message' => 'Solicitud inválida.']); return; }
+        if (!$this->solicitudCancelarId) {
+            $this->dispatchBrowserEvent('swal:error', ['message' => 'Solicitud inválida.']);
+            return;
+        }
 
         try {
             $usuario = auth()->user() ?? throw new \Exception('Sesión inválida.');
@@ -523,8 +653,11 @@ class TablaSolicitudes extends Component
                 ->map(fn($c) => ['id' => (int)$c->id, 'nombre' => (string)$c->nombre])
                 ->toArray();
 
-            $seleccionadas = Cotizacion::query()->where('SolicitudID', $solicitudId)
-                ->where('Estatus', 'Seleccionada')->orderBy('NumeroPropuesta')->get();
+            $seleccionadas = Cotizacion::query()
+                ->where('SolicitudID', $solicitudId)
+                ->where('Estatus', 'Seleccionada')
+                ->orderBy('NumeroPropuesta')
+                ->get();
 
             if ($seleccionadas->isEmpty()) {
                 $this->dispatchBrowserEvent('swal:error', ['message' => 'No hay cotizaciones Seleccionadas para asignar.']);
@@ -554,8 +687,7 @@ class TablaSolicitudes extends Component
 
             foreach ($seleccionadas as $cot) {
                 $proveedor = (string)($cot->Proveedor ?? '');
-                if (!$proveedor) continue;
-                if (!empty($rutasPorProveedor[$proveedor]['xml'])) continue;
+                if (!$proveedor || !empty($rutasPorProveedor[$proveedor]['xml'])) continue;
 
                 $qty = max(1, (int)($cot->Cantidad ?? 1));
                 for ($i = 1; $i <= $qty; $i++) {
@@ -648,21 +780,7 @@ class TablaSolicitudes extends Component
                 }
             }
 
-            $cotIds           = $seleccionadas->pluck('CotizacionID')->filter()->unique()->values()->all();
-            $proveedoresTotal = $seleccionadas->pluck('Proveedor')->filter()->unique()->count();
-            $this->modalEsSoloLectura = false;
-
-            if ($proveedoresTotal > 0 && !empty($cotIds)) {
-                $cotsConFactura = SolicitudActivo::query()->whereIn('CotizacionID', $cotIds)
-                    ->whereNotNull('FacturaPath')->where('FacturaPath', '!=', '')
-                    ->pluck('CotizacionID')->unique()->values()->all();
-                $provsConFactura = $seleccionadas->whereIn('CotizacionID', $cotsConFactura)
-                    ->pluck('Proveedor')->filter()->unique()->count();
-                // CAMBIO: Ya no forzamos solo-lectura si hay facturas.
-                // El modal siempre es editable para permitir continuar instalación.
-                $this->modalEsSoloLectura = false;
-            }
-
+            $this->modalEsSoloLectura     = false;
             $this->modalAsignacionAbierto = true;
         } catch (\Throwable $e) {
             $this->resetAsignacionState();
@@ -677,29 +795,18 @@ class TablaSolicitudes extends Component
     public function buscarInsumos(string $term): void
     {
         $term = trim($term);
-        if (mb_strlen($term) < 2) {
-            $this->insumoSearchResults = [];
-            return;
-        }
+        if (mb_strlen($term) < 2) { $this->insumoSearchResults = []; return; }
 
         $this->insumoSearchResults = collect($this->insumosDisponibles)
             ->filter(fn($i) => str_contains(mb_strtolower($i['nombre']), mb_strtolower($term)))
-            ->values()
-            ->take(10)
-            ->toArray();
+            ->values()->take(10)->toArray();
     }
 
     // =========================================================================
     // CLOSE ASIGNACIÓN
     // =========================================================================
 
-    public function closeAsignacion(): void
-    {
-        // CAMBIO: Ya no bloqueamos el cierre por facturas pendientes.
-        // El usuario puede guardar y seguir después.
-        $this->resetAsignacionState();
-    }
-
+    public function closeAsignacion(): void  { $this->resetAsignacionState(); }
     public function forzarCloseAsignacion(): void { $this->resetAsignacionState(); }
 
     // =========================================================================
@@ -715,7 +822,8 @@ class TablaSolicitudes extends Component
 
         $this->usuarioOptions[$pIndex][$uIndex] = Empleados::query()
             ->where('Estado', true)
-            ->where(fn($q) => $q->where('NombreEmpleado', 'like', "%{$term}%")
+            ->where(fn($q) => $q
+                ->where('NombreEmpleado', 'like', "%{$term}%")
                 ->orWhere('Correo', 'like', "%{$term}%")
                 ->when(ctype_digit($term), fn($q) => $q->orWhere('EmpleadoID', (int)$term)))
             ->limit(8)->get(['EmpleadoID','NombreEmpleado','Correo'])
@@ -739,15 +847,10 @@ class TablaSolicitudes extends Component
         foreach ($this->propuestasAsignacion as $pIndex => $p) {
             foreach (($p['unidades'] ?? []) as $uIndex => $u) {
                 $base = "propuestasAsignacion.$pIndex.unidades.$uIndex";
-                // CAMBIO: Solo validamos campos de instalación si el usuario explícitamente
-                // tiene marcada la config o ha llenado fecha/empleado (no bloqueamos si solo subió XML)
-                if ($strict && !empty($u['empleado_id'])) {
-                    // Si ya tiene empleado asignado, requerimos fecha también
-                    if (empty($u['fecha_entrega'])) $errors["$base.fecha_entrega"] = 'La fecha de entrega es obligatoria cuando hay usuario asignado.';
-                }
-                if ($strict && !empty($u['fecha_entrega']) && empty($u['empleado_id'])) {
+                if ($strict && !empty($u['empleado_id']) && empty($u['fecha_entrega']))
+                    $errors["$base.fecha_entrega"] = 'La fecha de entrega es obligatoria cuando hay usuario asignado.';
+                if ($strict && !empty($u['fecha_entrega']) && empty($u['empleado_id']))
                     $errors["$base.empleado_id"] = 'El usuario final es obligatorio cuando hay fecha de entrega.';
-                }
                 if (!empty($u['requiere_config'])) {
                     foreach (array_keys($u['checklist'] ?? []) as $catKey) {
                         foreach (($u['checklist'][$catKey] ?? []) as $idx => $item) {
@@ -758,8 +861,8 @@ class TablaSolicitudes extends Component
                 }
                 if (isset($this->facturaXml[$pIndex][$uIndex]) && $this->facturaXml[$pIndex][$uIndex]) {
                     try {
-                        $e = strtolower((string)$this->facturaXml[$pIndex][$uIndex]->getClientOriginalExtension());
-                        if ($e !== 'xml') $errors["facturaXml.$pIndex.$uIndex"] = 'El archivo debe ser XML.';
+                        if (strtolower((string)$this->facturaXml[$pIndex][$uIndex]->getClientOriginalExtension()) !== 'xml')
+                            $errors["facturaXml.$pIndex.$uIndex"] = 'El archivo debe ser XML.';
                     } catch (\Throwable) {}
                 }
                 if (isset($this->facturas[$pIndex][$uIndex]) && $this->facturas[$pIndex][$uIndex]) {
@@ -774,9 +877,6 @@ class TablaSolicitudes extends Component
         return $errors;
     }
 
-    /**
-     * Guardar avance — INDEPENDIENTE: guarda lo que haya (XML o instalación) sin requerir ambos.
-     */
     public function guardarAsignacion(): void { $this->persistAsignacion(false, false); }
 
     public function persistAsignacion($strict = false, $closeAfter = false): void
@@ -814,15 +914,11 @@ class TablaSolicitudes extends Component
                     foreach (($p['unidades'] ?? []) as $uIndex => $u) {
                         if (!$this->shouldPersistUnit($pIndex, $uIndex, $u)) continue;
 
-                        // ── Persistir datos de asignación (instalación) ──────────
-                        $dataUpdate = [
-                            'NumeroPropuesta' => (int)($p['numeroPropuesta'] ?? 0),
-                        ];
-                        // Solo actualizamos fecha/empleado si vienen informados
-                        if (!empty($u['fecha_entrega'])) $dataUpdate['FechaEntrega'] = $u['fecha_entrega'];
-                        if (!empty($u['empleado_id']))   $dataUpdate['EmpleadoID']   = (int)$u['empleado_id'];
+                        $dataUpdate = ['NumeroPropuesta' => (int)($p['numeroPropuesta'] ?? 0)];
+                        if (!empty($u['fecha_entrega']))   $dataUpdate['FechaEntrega']   = $u['fecha_entrega'];
+                        if (!empty($u['empleado_id']))     $dataUpdate['EmpleadoID']     = (int)$u['empleado_id'];
                         if (!empty($u['departamento_id'])) $dataUpdate['DepartamentoID'] = (int)$u['departamento_id'];
-                        if ($this->serialColumn) $dataUpdate[$this->serialColumn] = (string)($u['serial'] ?? '');
+                        if ($this->serialColumn)           $dataUpdate[$this->serialColumn] = (string)($u['serial'] ?? '');
 
                         $activo = SolicitudActivo::updateOrCreate(
                             [
@@ -833,7 +929,6 @@ class TablaSolicitudes extends Component
                             $dataUpdate
                         );
 
-                        // ── Persistir XML/Factura ─────────────────────────────────
                         $proveedor = $p['proveedor'] ?? null;
                         $baseDir   = "solicitudes/{$this->asignacionSolicitudId}/activos/{$activo->SolicitudActivoID}";
                         $rutaXml   = null;
@@ -868,7 +963,6 @@ class TablaSolicitudes extends Component
                         if ($rutaXml) {
                             $activo->update(['FacturaPath' => $rutaXml]);
                             $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['factura_xml_path'] = $rutaXml;
-                            // Propagar a mismos proveedores
                             if ($proveedor) {
                                 foreach ($this->propuestasAsignacion as $pi => $prop) {
                                     if (($prop['proveedor'] ?? '') !== $proveedor) continue;
@@ -880,7 +974,6 @@ class TablaSolicitudes extends Component
                             }
                         }
 
-                        // ── Guardar registros de Facturas desde XML ───────────────
                         $localParsed    = $this->xmlParseado[$pIndex][$uIndex] ?? null;
                         $providerParsed = $proveedor ? $this->buscarXmlParseadoPorProveedor($pIndex, $proveedor) : null;
 
@@ -894,7 +987,6 @@ class TablaSolicitudes extends Component
                             $uuid = trim((string)($parsed['uuid'] ?? ''));
 
                             if ($uuid) {
-                                // Eliminar facturas anteriores del mismo UUID en esta solicitud
                                 Facturas::query()
                                     ->where('SolicitudID', (int)$this->asignacionSolicitudId)
                                     ->where('UUID', $uuid)
@@ -906,16 +998,12 @@ class TablaSolicitudes extends Component
                                 $nombreConcepto = mb_substr(trim((string)($concepto['nombre'] ?? '')), 0, 300);
                                 if ($nombreConcepto === '') continue;
 
-                                // CAMBIO: insumoId puede ser null (permitido explícitamente)
-                                $insumoId = isset($concepto['insumoId']) ? (int)$concepto['insumoId'] : null;
-                                // Verificar si es un override del usuario en UI
-                                // (viene del array xmlParseado que actualizarInsumoConcepto modifica)
+                                $insumoId     = isset($concepto['insumoId']) ? (int)$concepto['insumoId'] : null;
                                 $insumoNombre = null;
                                 if ($insumoId) {
                                     $insumoEncontrado = collect($this->insumosDisponibles)->firstWhere('id', $insumoId);
                                     $insumoNombre     = $insumoEncontrado['nombre'] ?? null;
                                 }
-                                // Si insumoId es 0 o null → se guarda con null (no rompe métricas)
 
                                 try {
                                     Facturas::create([
@@ -926,8 +1014,8 @@ class TablaSolicitudes extends Component
                                         'Costo'        => is_numeric($concepto['costo']   ?? null) ? (float)$concepto['costo']   : 0,
                                         'Mes'          => !empty($parsed['mes'])  ? (int)$parsed['mes']  : null,
                                         'Anio'         => !empty($parsed['anio']) ? (int)$parsed['anio'] : null,
-                                        'InsumoID'     => $insumoId ?: null,   // null OK
-                                        'InsumoNombre' => $insumoNombre,       // null OK — no afecta métricas
+                                        'InsumoID'     => $insumoId ?: null,
+                                        'InsumoNombre' => $insumoNombre,
                                         'Emisor'       => $parsed['emisor'] ?? '',
                                         'ArchivoRuta'  => $rutaXml ?? '',
                                         'PdfRuta'      => '',
@@ -939,7 +1027,6 @@ class TablaSolicitudes extends Component
                             }
                         }
 
-                        // ── Checklist ─────────────────────────────────────────────
                         if (!empty($u['requiere_config'])) {
                             foreach (array_keys($u['checklist'] ?? []) as $catKey) {
                                 foreach (($u['checklist'][$catKey] ?? []) as $item) {
@@ -973,20 +1060,13 @@ class TablaSolicitudes extends Component
         }
     }
 
-    /**
-     * CAMBIO: Ahora acepta $insumoId = null para limpiar el insumo.
-     * Se propaga a todos los conceptos del mismo índice en el mismo proveedor.
-     * Insumo nulo = no aparece en comparativas (filtro WHERE IS NOT NULL).
-     */
     public function actualizarInsumoConcepto(int $pIndex, int $uIndex, int $cIndex, $insumoId): void
     {
         if (!isset($this->xmlParseado[$pIndex][$uIndex]['conceptos'][$cIndex])) return;
 
-        // Acepta null explícito
         $insumoId = ($insumoId !== null && $insumoId > 0) ? (int)$insumoId : null;
         $this->xmlParseado[$pIndex][$uIndex]['conceptos'][$cIndex]['insumoId'] = $insumoId;
 
-        // Propagar a mismos proveedores
         $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
         if (!$proveedor) return;
 
@@ -994,9 +1074,8 @@ class TablaSolicitudes extends Component
             if (($prop['proveedor'] ?? '') !== $proveedor) continue;
             foreach (array_keys($prop['unidades'] ?? []) as $ui) {
                 if ($pi === $pIndex && $ui === $uIndex) continue;
-                if (isset($this->xmlParseado[$pi][$ui]['conceptos'][$cIndex])) {
+                if (isset($this->xmlParseado[$pi][$ui]['conceptos'][$cIndex]))
                     $this->xmlParseado[$pi][$ui]['conceptos'][$cIndex]['insumoId'] = $insumoId;
-                }
             }
         }
     }
@@ -1045,7 +1124,8 @@ class TablaSolicitudes extends Component
         if (isset($this->checklistTemplatesCache[$deptId])) return $this->checklistTemplatesCache[$deptId];
 
         $reqs = DepartamentoRequerimientos::query()->byDepartamentos($deptId)->seleccionados()
-            ->orderBy('categoria')->orderBy('nombre')->get(['id','categoria','nombre']);
+            ->orderBy('categoria')->orderBy('nombre')
+            ->get(['id','categoria','nombre']);
 
         $payload = [];
         foreach ($reqs as $r) {
@@ -1064,7 +1144,7 @@ class TablaSolicitudes extends Component
         foreach (array_keys($template) as $catKey) {
             foreach ($template[$catKey] as $idx => $item) {
                 $reqId = (int)($item['req_id'] ?? 0); if (!$reqId) continue;
-                $row = $map->get($reqId);
+                $row   = $map->get($reqId);
                 if ($row) {
                     $template[$catKey][$idx]['realizado']   = (bool)($row->completado  ?? false);
                     $template[$catKey][$idx]['responsable'] = (string)($row->responsable ?? '');
@@ -1078,7 +1158,9 @@ class TablaSolicitudes extends Component
     {
         $user = auth()->user();
         if (!$user || empty($user->name)) return '';
-        $empleado = Empleados::query()->whereRaw('LOWER(NombreEmpleado) = ?', [mb_strtolower(trim((string)$user->name))])->first();
+        $empleado = Empleados::query()
+            ->whereRaw('LOWER(NombreEmpleado) = ?', [mb_strtolower(trim((string)$user->name))])
+            ->first();
         return $empleado && !empty($empleado->Correo) ? (string)Str::before(strtolower($empleado->Correo), '@') : '';
     }
 
@@ -1151,7 +1233,7 @@ class TablaSolicitudes extends Component
         ];
     }
 
-    private function lockUsuarioSearch(int $p, int $u): void    { $this->usuarioSearchLock[$p][$u] = true; }
+    private function lockUsuarioSearch(int $p, int $u): void     { $this->usuarioSearchLock[$p][$u] = true; }
     private function isUsuarioSearchLocked(int $p, int $u): bool { return !empty($this->usuarioSearchLock[$p][$u]); }
     private function unlockUsuarioSearch(int $p, int $u): void   { if (isset($this->usuarioSearchLock[$p][$u])) $this->usuarioSearchLock[$p][$u] = false; }
 
@@ -1199,8 +1281,8 @@ class TablaSolicitudes extends Component
             DB::transaction(function () use ($pIndex, $uIndex, $propuesta, &$unidad, &$activoId) {
                 $dataUpdate = [
                     'NumeroPropuesta'         => (int)($propuesta['numeroPropuesta'] ?? 0),
-                    'FechaEntrega'            => !empty($unidad['fecha_entrega']) ? $unidad['fecha_entrega'] : null,
-                    'EmpleadoID'              => !empty($unidad['empleado_id']) ? (int)$unidad['empleado_id'] : null,
+                    'FechaEntrega'            => !empty($unidad['fecha_entrega'])   ? $unidad['fecha_entrega']   : null,
+                    'EmpleadoID'              => !empty($unidad['empleado_id'])     ? (int)$unidad['empleado_id']     : null,
                     'DepartamentoID'          => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
                     'fecha_fin_configuracion' => now(),
                 ];
@@ -1230,7 +1312,6 @@ class TablaSolicitudes extends Component
             $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist_open']  = false;
             $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['config_lista_ui'] = true;
 
-            // CAMBIO: El mensaje ya no dice "No olvides subir el XML" como obligatorio
             $this->dispatchBrowserEvent('swal:info', [
                 'message' => "Instalación registrada correctamente.\nPuedes subir el XML de factura ahora o más tarde.",
             ]);
@@ -1245,9 +1326,8 @@ class TablaSolicitudes extends Component
         $propuesta = $this->propuestasAsignacion[$pIndex];
 
         $solicitanteEmpleadoId = $unidad['empleado_id'] ?? null;
-        if (!$solicitanteEmpleadoId && $this->asignacionSolicitudId) {
+        if (!$solicitanteEmpleadoId && $this->asignacionSolicitudId)
             $solicitanteEmpleadoId = Solicitud::find($this->asignacionSolicitudId)?->EmpleadoID;
-        }
 
         $checklistLineas = [];
         foreach (($unidad['checklist'] ?? []) as $categoria => $items) {
@@ -1280,8 +1360,10 @@ class TablaSolicitudes extends Component
         $sufijo        = $totalUnidades > 1 ? " (Unidad {$numeroUnidad}/{$totalUnidades})" : '';
         $titulo        = 'Instalacion - ' . ($propuesta['nombreEquipo'] ?? 'Equipo') . $sufijo;
 
-        if (Tickets::query()->where('Descripcion', 'like', $titulo . '%')
-            ->where('Descripcion', 'like', '%Solicitud #' . $this->asignacionSolicitudId . '%')->exists()) return;
+        if (Tickets::query()
+            ->where('Descripcion', 'like', $titulo . '%')
+            ->where('Descripcion', 'like', '%Solicitud #' . $this->asignacionSolicitudId . '%')
+            ->exists()) return;
 
         Tickets::create([
             'EmpleadoID'    => $solicitanteEmpleadoId,
@@ -1376,14 +1458,14 @@ class TablaSolicitudes extends Component
 
         $attrs   = $xml->attributes();
         $version = (string)($attrs['Version'] ?? $attrs['version'] ?? '3.3');
-        $fecha   = (string)($attrs['Fecha'] ?? '');
-        $moneda  = (string)($attrs['Moneda'] ?? 'MXN');
+        $fecha   = (string)($attrs['Fecha']   ?? '');
+        $moneda  = (string)($attrs['Moneda']  ?? 'MXN');
         $total   = (string)($attrs['SubTotal'] ?? $attrs['subTotal'] ?? '0');
 
         $emisorNode   = $xml->xpath('//cfdi:Comprobante/cfdi:Emisor') ?: $xml->xpath('//cfdi:Emisor');
         $emisorNombre = $emisorNode ? (string)$emisorNode[0]['Nombre'] : '';
 
-        $uuid = '';
+        $uuid   = '';
         $timbre = $xml->xpath('//tfd:TimbreFiscalDigital') ?: [];
         if (!empty($timbre)) $uuid = strtoupper(trim((string)($timbre[0]['UUID'] ?? '')));
 
@@ -1399,7 +1481,7 @@ class TablaSolicitudes extends Component
 
         foreach ($conceptoNodes as $nodo) {
             $ca          = $nodo->attributes();
-            $descripcion = (string)($ca['Descripcion'] ?? '');
+            $descripcion = (string)($ca['Descripcion']   ?? '');
             $valorUnit   = (string)($ca['ValorUnitario'] ?? '0');
             $importe     = (string)($ca['Importe']       ?? '0');
             $cantidad    = (string)($ca['Cantidad']      ?? '1');
@@ -1411,7 +1493,7 @@ class TablaSolicitudes extends Component
                 'costo'    => $valorUnit,
                 'importe'  => $importe,
                 'cantidad' => $cantidad,
-                'insumoId' => $best['id'] ?? null,   // null = no match, is OK
+                'insumoId' => $best['id'] ?? null,
             ];
         }
 
@@ -1445,9 +1527,9 @@ class TablaSolicitudes extends Component
             if (str_contains($dn, $cat['norm']) || str_contains($cat['norm'], $dn)) return [$cat, 95];
         }
 
-        $palabrasDesc    = array_filter(explode(' ', $dn), fn($w) => mb_strlen($w) > 2);
-        $palabrasEmisor  = array_filter(explode(' ', $en), fn($w) => mb_strlen($w) > 2);
-        $todasPalabras   = array_unique(array_merge($palabrasDesc, $palabrasEmisor));
+        $palabrasDesc   = array_filter(explode(' ', $dn), fn($w) => mb_strlen($w) > 2);
+        $palabrasEmisor = array_filter(explode(' ', $en), fn($w) => mb_strlen($w) > 2);
+        $todasPalabras  = array_unique(array_merge($palabrasDesc, $palabrasEmisor));
 
         $mejorScore = 0;
         $mejorCat   = null;
@@ -1460,15 +1542,11 @@ class TablaSolicitudes extends Component
             $hits = 0;
             foreach ($palabrasCat as $pw) {
                 foreach ($todasPalabras as $dw) {
-                    if ($pw === $dw || str_contains($dw, $pw) || str_contains($pw, $dw)) {
-                        $hits++;
-                        break;
-                    }
+                    if ($pw === $dw || str_contains($dw, $pw) || str_contains($pw, $dw)) { $hits++; break; }
                 }
             }
 
             if ($hits === 0) continue;
-
             $pct = ($hits / count($palabrasCat)) * 100;
             if ($pct > $mejorScore) { $mejorScore = $pct; $mejorCat = $cat; }
         }
