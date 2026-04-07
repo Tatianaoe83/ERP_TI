@@ -57,7 +57,7 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
             '# Solicitud',
             'Fecha Creación',
             'Solicitante',
-            'Gerencia',
+            'Gerencia del Solicitante',
             'Proyecto',
             'Motivo',
             'Descripción',
@@ -65,6 +65,8 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
             'Tiempo Cotización (h)',
             'Tiempo Config. (h)',
             'Tiempo Total (h)',
+            'Usuario Final',
+            'Departamento Usuario Final',
         ];
         
         // Filas de datos
@@ -82,6 +84,8 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sol['tiempo_cotizacion_horas'] !== null ? round($sol['tiempo_cotizacion_horas'], 1) : '-',
                 $sol['tiempo_configuracion_dias'] !== null ? round($sol['tiempo_configuracion_dias'], 1) : '-',
                 $sol['tiempo_total_dias'] !== null ? round($sol['tiempo_total_dias'], 1) : '-',
+                $sol['usuario_final'] ?? '-',
+                $sol['gerencia_usuario_final'] ?? '-',
             ];
         }
         
@@ -106,6 +110,8 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sheet->getColumnDimension('I')->setWidth(18);  // Tiempo Cotización
                 $sheet->getColumnDimension('J')->setWidth(18);  // Tiempo Config
                 $sheet->getColumnDimension('K')->setWidth(18);  // Tiempo Total
+                $sheet->getColumnDimension('L')->setWidth(30);  // Usuario Final
+                $sheet->getColumnDimension('M')->setWidth(30);  // Departamento Usuario Final
                 
                 $highestColumn = $sheet->getHighestColumn();
                 

@@ -67,7 +67,8 @@ trait MetricasSolicitudesTrait
 
         // 2. Traer las fechas de configuración de los activos de esas solicitudes
         $solicitudIds = $solicitudes->pluck('SolicitudID')->toArray();
-        $activos = SolicitudActivo::whereIn('SolicitudID', $solicitudIds)
+        $activos = SolicitudActivo::with(['empleadoAsignado', 'departamentos'])
+            ->whereIn('SolicitudID', $solicitudIds)
             ->whereNotNull('fecha_fin_configuracion')
             ->get()
             ->groupBy('SolicitudID');
@@ -132,6 +133,21 @@ trait MetricasSolicitudesTrait
                     ->pluck('Proveedor')->filter()->unique()->count();
             }
 
+            // --- E) Usuario Final y Gerencia ---
+            $usuarioFinal = null;
+            $gerenciaUsuarioFinal = null;
+            if (isset($activos[$sol->SolicitudID])) {
+                $primerActivo = $activos[$sol->SolicitudID]->first();
+                if ($primerActivo) {
+                    $usuarioFinal = $primerActivo->empleadoAsignado
+                        ? $primerActivo->empleadoAsignado->NombreEmpleado
+                        : null;
+                    $gerenciaUsuarioFinal = $primerActivo->departamentos
+                        ? $primerActivo->departamentos->NombreDepartamento
+                        : null;
+                }
+            }
+
             $empleadoNombre = $sol->empleadoid ? $sol->empleadoid->NombreEmpleado : 'Desconocido';
             $gerenciaNombre = $sol->gerenciaid ? $sol->gerenciaid->NombreGerencia : 'Sin Gerencia';
 
@@ -150,6 +166,8 @@ trait MetricasSolicitudesTrait
                 'tiempo_total_dias'         => $tiempoTotalHoras,
                 'facturas_subidas'          => $facturasSubidas,
                 'facturas_necesarias'       => $totalNecesarias,
+                'usuario_final'             => $usuarioFinal,
+                'gerencia_usuario_final'    => $gerenciaUsuarioFinal,
             ];
         }
 
