@@ -271,7 +271,7 @@
                         <select name="type" id="type" class="cursor-pointer border-2 border-gray-200 rounded-xl text-base text-black w-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white">
                             <option value="" selected disabled>Selecciona una opción</option>
                             <option value="Ticket">Ticket para soporte</option>
-                            <option value="Solicitud">Solicitud de recursos tecnológicos</option>
+                            <option value="Solicitud">Compras de recursos tecnológicos</option>
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">
@@ -340,7 +340,7 @@
                             <div class="bg-green-500 rounded-xl w-10 h-10 flex items-center justify-center text-white flex-shrink-0">
                                 <i class="fas fa-laptop"></i>
                             </div>
-                            <h3 class="text-lg font-semibold text-gray-800">Nueva Solicitud de Recursos</h3>
+                            <h3 class="text-lg font-semibold text-gray-800">Nueva Compra de Recursos</h3>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-black">
                             <div>
@@ -1026,7 +1026,7 @@
                 } else if (value === "Solicitud") {
                     solicitud.classList.remove("hidden");
                     manejarRequired(solicitud, true); // Agregar required cuando se muestra
-                    title.textContent = "Solicitud de Recursos";
+                    title.textContent = "Compra de Recursos Tecnológicos";
                     // Agregar clases para altura completa y scroll
                     mainContainer.classList.add('h-full', 'max-h-[95vh]');
                     formContainer.classList.add('flex-1');
