@@ -56,7 +56,7 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
         $rows[] = [
             '# Solicitud',
             'Fecha Creación',
-            'Empleado',
+            'Solicitante',
             'Gerencia',
             'Proyecto',
             'Motivo',

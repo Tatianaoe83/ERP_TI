@@ -602,7 +602,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $rows = [];
         $row = 1;
 
-        $rows[] = ['Reporte de Productividad'];
+        $rows[] = ['Tickets: Reporte de Productividad'];
         $this->layout['summary_title'] = $row++;
         $rows[] = ['Período: ' . ($d['mesNombreTarget'] ?? '')];
         $this->layout['summary_period'] = $row++;
@@ -635,7 +635,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                 'dataRows' => [],
             ];
 
-            $rows[] = ['Resumen por Tipo'];
+            $rows[] = ['Tickets: Resumen por Tipo'];
             $row++;
 
             $rows[] = ['Tipo', 'Total'];
@@ -672,7 +672,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         ];
 
         $rows[] = array_merge(
-            ['Incidencias por gerencia por usuario asignado'],
+            ['Tickets:Incidencias por gerencia por usuario asignado'],
             array_fill(0, count($usuarios) + 1, '')
         );
         $row++;
@@ -740,7 +740,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             'dataRows' => [],
         ];
 
-        $rows[] = ['Incidencias por categoría — ' . ($d['mesNombreTarget'] ?? '')];
+        $rows[] = ['Tickets: Incidencias por categoría — ' . ($d['mesNombreTarget'] ?? '')];
         $row++;
 
         $rows[] = ['Tipo', 'Subtipo', 'Incidencia', 'Cuenta', 'Tiempo Prom. Resolución'];
@@ -773,7 +773,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                 'dataRows' => [],
             ];
 
-            $rows[] = ['Resumen por Responsable — Tipo · Subtipo · Incidencia'];
+            $rows[] = ['Tickets: Resumen por Responsable — Tipo · Subtipo · Incidencia'];
             $row++;
 
             $rows[] = ['Responsable', 'Tipo', 'Subtipo', 'Incidencia', 'Total', 'Tiempo Prom.'];
@@ -810,7 +810,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             'noteRow' => $row + 11,
         ];
 
-        $rows[] = ['Tiempos de respuesta promedio — ' . ($d['mesNombreTarget'] ?? '')];
+        $rows[] = ['Tickets: Tiempos de respuesta promedio — ' . ($d['mesNombreTarget'] ?? '')];
         $row++;
 
         $rows[] = ['Tiempo Promedio de primer respuesta', $d['promPrimerRespuesta'], 'Tiempo de respuesta promedio de tickets normales'];
@@ -825,7 +825,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $rows[] = [];
         $row++;
 
-        $rows[] = ['Tiempos de respuesta promedio — ' . ($d['mesNombreAnterior'] ?? '')];
+        $rows[] = ['Tickets: Tiempos de respuesta promedio — ' . ($d['mesNombreAnterior'] ?? '')];
         $row++;
 
         $rows[] = ['Tiempo Promedio de primer respuesta', $d['promPrimerRespuestaAnt'], 'Tiempo de respuesta promedio de tickets normales'];
@@ -849,7 +849,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             'dataRows' => [],
         ];
 
-        $rows[] = ['Comparativo de meses por usuario'];
+        $rows[] = ['Tickets: Comparativo de meses por usuario'];
         $row++;
 
         $rows[] = ['Etiquetas de fila', $d['mesAnteriorCorto'], $d['mesActualCorto'], 'Total general'];
@@ -1309,7 +1309,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'resumen_por_tipo',
-            new Title('RESUMEN POR TIPO DE INCIDENCIA'),
+            new Title('TICKETS: RESUMEN POR TIPO'),
             $legend,
             $plotArea
         );
@@ -1371,7 +1371,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'incidencias_por_categoria',
-            new Title('DISTRIBUCIÓN POR CATEGORÍA'),
+            new Title('TICKETS: DISTRIBUCIÓN POR CATEGORÍA'),
             $legend,
             $plotArea
         );
@@ -1440,7 +1440,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'incidencias_por_gerencia',
-            new Title('INCIDENCIAS POR GERENCIA Y USUARIO'),
+            new Title('TICKETS: INCIDENCIAS POR GERENCIA Y USUARIO'),
             $legend,
             $plotArea
         );
@@ -1517,7 +1517,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $chart = new Chart(
             'comparativo_meses',
-            new Title('ANÁLISIS COMPARATIVO MENSUAL'),
+            new Title('TICKETS: ANÁLISIS COMPARATIVO MENSUAL'),
             $legend,
             $plotArea
         );
