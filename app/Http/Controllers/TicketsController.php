@@ -63,7 +63,8 @@ class TicketsController extends Controller
             'metricasProductividad',
             'mes',
             'anio',
-            'solicitudesStatus'
+            'solicitudesStatus',
+            'metricasSolicitudes'
         ));
     }
 
