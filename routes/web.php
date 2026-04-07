@@ -107,6 +107,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:facturas.create');
     Route::resource('facturas', FacturasController::class);
 
+    Route::post('cortes/store-all', [CortesController::class, 'storeAll'])->name('cortes.storeAll');
     Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
     Route::get('/verInsumos', [CortesController::class, 'obtenerInsumos'])->name('cortes.ver');
     Route::get('indexVista', [CortesController::class, 'indexVista'])->name('cortes.indexVista');

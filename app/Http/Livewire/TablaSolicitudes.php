@@ -1,4 +1,18 @@
 <?php
+// ============================================================
+// CAMBIOS REALIZADOS EN TablaSolicitudes.php
+// ============================================================
+// 1. guardarAsignacion() y persistAsignacion() ahora guardan
+//    XML y datos de instalación de forma INDEPENDIENTE:
+//    - Se puede subir el XML y guardar sin haber finalizado la instalación
+//    - Se puede finalizar la instalación sin tener el XML listo
+// 2. actualizarInsumoConcepto() ahora acepta null para limpiar
+//    el insumo sin romper métricas (InsumoNombre e InsumoID = null)
+// 3. Todos los conceptos del XML son modificables en la UI,
+//    no solo el primero de cada proveedor
+// 4. Los insumos nulos en facturas no participan en comparativas
+//    (el query en comparativa() filtra WHERE InsumoNombre IS NOT NULL)
+// ============================================================
 
 namespace App\Http\Livewire;
 
@@ -12,7 +26,6 @@ use App\Models\SolicitudPasos;
 use App\Models\DepartamentoRequerimientos;
 use App\Models\SolicitudActivo;
 use App\Models\SolicitudActivoCheckList;
-use App\Models\Insumos;
 use App\Models\Facturas;
 use App\Models\Tickets;
 use Carbon\Carbon;
@@ -42,16 +55,16 @@ class TablaSolicitudes extends Component
     public array $facturaXml           = [];
     public array $xmlParseado          = [];
 
-    public array $usuarioSearch     = [];
-    public array $usuarioOptions    = [];
+    public array $usuarioSearch      = [];
+    public array $usuarioOptions     = [];
     public array $usuarioSearchLock = [];
 
     public bool   $modalCancelacionAbierto = false;
-    public ?int   $solicitudCancelarId     = null;
-    public string $motivoCancelacion       = '';
+    public ?int   $solicitudCancelarId      = null;
+    public string $motivoCancelacion        = '';
 
     public bool $modalInfoAbierto = false;
-    public $infoSolicitud         = null;
+    public $infoSolicitud          = null;
 
     public bool $confirmarCierreModalAbierto = false;
 
@@ -61,6 +74,10 @@ class TablaSolicitudes extends Component
     public ?int   $ticketInstalacionEmpleadoId   = null;
     public string $ticketInstalacionResponsable  = '';
     public array  $ticketInstalacionOptions      = [];
+
+    public array  $insumosDisponibles  = [];
+    public string $insumoSearchQuery   = '';
+    public array  $insumoSearchResults = [];
 
     protected $listeners = [
         'aprobarSolicitudConfirmed'  => 'aprobar',
@@ -83,8 +100,9 @@ class TablaSolicitudes extends Component
         $this->serialColumn = $this->detectSerialColumn();
     }
 
-    // ── HOOKS DE ARCHIVOS ─────────────────────────────────────────────────────
-    // Solo XML. El PDF fue eliminado de solicitudes.
+    // =========================================================================
+    // FILE UPLOAD WATCHERS
+    // =========================================================================
 
     public function updatedFacturaXml($value, $name): void
     {
@@ -101,6 +119,7 @@ class TablaSolicitudes extends Component
             $this->xmlParseado[$pIndex][$uIndex] = ['error' => $e->getMessage()];
         }
 
+        // Share across same proveedor
         $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
         if (!$proveedor) return;
 
@@ -138,8 +157,6 @@ class TablaSolicitudes extends Component
         $this->dispatchBrowserEvent('swal:info', ['message' => "Factura aplicada a todas las unidades de: {$proveedor}"]);
     }
 
-    // ── LIFECYCLE ─────────────────────────────────────────────────────────────
-
     public function updatingFiltroEstatus(): void { $this->resetPage(); }
     public function updatingSearch(): void        { $this->resetPage(); }
     public function updatingPerPage(): void       { $this->resetPage(); }
@@ -165,6 +182,10 @@ class TablaSolicitudes extends Component
             $this->buscarResponsableTicket((string)$value);
         }
     }
+
+    // =========================================================================
+    // RENDER
+    // =========================================================================
 
     public function render()
     {
@@ -199,7 +220,9 @@ class TablaSolicitudes extends Component
         return view('livewire.tabla-solicitudes', ['todasSolicitudes' => $paginador]);
     }
 
-    // ── HYDRATION ─────────────────────────────────────────────────────────────
+    // =========================================================================
+    // ROW HYDRATION
+    // =========================================================================
 
     private function hydrateSolicitudRow($solicitud, $user, ?int $empleadoActualId)
     {
@@ -361,7 +384,9 @@ class TablaSolicitudes extends Component
         return [$provsConFactura, $totalNecesarias];
     }
 
-    // ── APROBACIÓN ────────────────────────────────────────────────────────────
+    // =========================================================================
+    // APROBAR / RECHAZAR
+    // =========================================================================
 
     public function aprobar($id, $nivel, $comentario)
     {
@@ -423,7 +448,9 @@ class TablaSolicitudes extends Component
         if ($nivel === 'gerencia' && empty($solicitud->GerenciaID)) throw new \Exception('Solicitud sin gerencia asignada.');
     }
 
-    // ── MODAL CANCELACIÓN ─────────────────────────────────────────────────────
+    // =========================================================================
+    // CANCELACIÓN
+    // =========================================================================
 
     public function abrirModalCancelacion(int $solicitudId): void
     {
@@ -475,7 +502,9 @@ class TablaSolicitudes extends Component
         $this->resetErrorBag('motivoCancelacion');
     }
 
-    // ── MODAL ASIGNACIÓN ──────────────────────────────────────────────────────
+    // =========================================================================
+    // MODAL ASIGNACIÓN - ABRIR
+    // =========================================================================
 
     public function abrirModalAsignacion(int $solicitudId): void { $this->openAsignacion($solicitudId); }
 
@@ -484,6 +513,15 @@ class TablaSolicitudes extends Component
         try {
             $this->resetAsignacionState();
             $this->asignacionSolicitudId = $solicitudId;
+
+            $this->insumosDisponibles = DB::table('cortes')
+                ->whereNull('deleted_at')
+                ->select(DB::raw('MAX(CortesID) as id, NombreInsumo as nombre'))
+                ->groupBy('NombreInsumo')
+                ->orderBy('NombreInsumo')
+                ->get()
+                ->map(fn($c) => ['id' => (int)$c->id, 'nombre' => (string)$c->nombre])
+                ->toArray();
 
             $seleccionadas = Cotizacion::query()->where('SolicitudID', $solicitudId)
                 ->where('Estatus', 'Seleccionada')->orderBy('NumeroPropuesta')->get();
@@ -620,7 +658,9 @@ class TablaSolicitudes extends Component
                     ->pluck('CotizacionID')->unique()->values()->all();
                 $provsConFactura = $seleccionadas->whereIn('CotizacionID', $cotsConFactura)
                     ->pluck('Proveedor')->filter()->unique()->count();
-                $this->modalEsSoloLectura = $provsConFactura >= $proveedoresTotal;
+                // CAMBIO: Ya no forzamos solo-lectura si hay facturas.
+                // El modal siempre es editable para permitir continuar instalación.
+                $this->modalEsSoloLectura = false;
             }
 
             $this->modalAsignacionAbierto = true;
@@ -630,35 +670,41 @@ class TablaSolicitudes extends Component
         }
     }
 
-    public function closeAsignacion(): void
+    // =========================================================================
+    // INSUMO SEARCH
+    // =========================================================================
+
+    public function buscarInsumos(string $term): void
     {
-        if (!$this->modalEsSoloLectura && !empty($this->propuestasAsignacion) && $this->hayFacturaPendienteDeCarga()) {
-            $this->confirmarCierreModalAbierto = true;
+        $term = trim($term);
+        if (mb_strlen($term) < 2) {
+            $this->insumoSearchResults = [];
             return;
         }
+
+        $this->insumoSearchResults = collect($this->insumosDisponibles)
+            ->filter(fn($i) => str_contains(mb_strtolower($i['nombre']), mb_strtolower($term)))
+            ->values()
+            ->take(10)
+            ->toArray();
+    }
+
+    // =========================================================================
+    // CLOSE ASIGNACIÓN
+    // =========================================================================
+
+    public function closeAsignacion(): void
+    {
+        // CAMBIO: Ya no bloqueamos el cierre por facturas pendientes.
+        // El usuario puede guardar y seguir después.
         $this->resetAsignacionState();
     }
 
     public function forzarCloseAsignacion(): void { $this->resetAsignacionState(); }
 
-    private function hayFacturaPendienteDeCarga(): bool
-    {
-        $revisados = [];
-        foreach ($this->propuestasAsignacion as $pIndex => $p) {
-            $prov = $p['proveedor'] ?? '';
-            if (in_array($prov, $revisados, true)) continue;
-            $revisados[] = $prov;
-
-            $tieneAlgo = false;
-            foreach (($p['unidades'] ?? []) as $uIndex => $u) {
-                if (!empty($u['factura_xml_path']) || !empty($this->facturaXml[$pIndex][$uIndex])) {
-                    $tieneAlgo = true; break;
-                }
-            }
-            if (!$tieneAlgo) return true;
-        }
-        return false;
-    }
+    // =========================================================================
+    // USUARIO SEARCH
+    // =========================================================================
 
     private function handleUsuarioSearchUpdated(int $pIndex, int $uIndex, string $term): void
     {
@@ -677,33 +723,66 @@ class TablaSolicitudes extends Component
             ->toArray();
     }
 
-    public function seleccionarEmpleado(int $pIndex, int $uIndex, int $empleadoId): void
+    private function shouldPersistUnit(int $pIndex, int $uIndex, array $u): bool
     {
-        if (!isset($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex])) throw new \Exception('Ítem inválido.');
-
-        $row = $this->getEmpleadoConDept($empleadoId);
-
-        $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex] = array_merge(
-            $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex],
-            [
-                'empleado_id'         => (int)$row['EmpleadoID'],
-                'empleado_nombre'     => (string)$row['NombreEmpleado'],
-                'departamento_id'     => $row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null,
-                'departamento_nombre' => $row['NombreDepartamento'] ?: null,
-                'checklist'           => $this->checklistTemplateByDept($row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null),
-            ]
-        );
-
-        $this->lockUsuarioSearch($pIndex, $uIndex);
-        $this->usuarioSearch[$pIndex][$uIndex]  = (string)$row['NombreEmpleado'];
-        $this->usuarioOptions[$pIndex][$uIndex] = [];
+        if (!empty($u['requiere_config']) || !empty($u['serial']) || !empty($u['fecha_entrega']) || !empty($u['empleado_id']) || !empty($u['departamento_id'])) return true;
+        foreach (['facturas','facturaXml'] as $prop) {
+            if (isset($this->$prop[$pIndex][$uIndex]) && $this->$prop[$pIndex][$uIndex]) return true;
+        }
+        if (isset($this->xmlParseado[$pIndex][$uIndex]) && empty($this->xmlParseado[$pIndex][$uIndex]['error'])) return true;
+        return false;
     }
 
+    private function validateAsignacionPayload(bool $strict): array
+    {
+        $errors = [];
+        foreach ($this->propuestasAsignacion as $pIndex => $p) {
+            foreach (($p['unidades'] ?? []) as $uIndex => $u) {
+                $base = "propuestasAsignacion.$pIndex.unidades.$uIndex";
+                // CAMBIO: Solo validamos campos de instalación si el usuario explícitamente
+                // tiene marcada la config o ha llenado fecha/empleado (no bloqueamos si solo subió XML)
+                if ($strict && !empty($u['empleado_id'])) {
+                    // Si ya tiene empleado asignado, requerimos fecha también
+                    if (empty($u['fecha_entrega'])) $errors["$base.fecha_entrega"] = 'La fecha de entrega es obligatoria cuando hay usuario asignado.';
+                }
+                if ($strict && !empty($u['fecha_entrega']) && empty($u['empleado_id'])) {
+                    $errors["$base.empleado_id"] = 'El usuario final es obligatorio cuando hay fecha de entrega.';
+                }
+                if (!empty($u['requiere_config'])) {
+                    foreach (array_keys($u['checklist'] ?? []) as $catKey) {
+                        foreach (($u['checklist'][$catKey] ?? []) as $idx => $item) {
+                            if (!empty($item['realizado']) && empty($item['responsable']))
+                                $errors["$base.checklist.$catKey.$idx.responsable"] = 'Responsable obligatorio en tareas marcadas.';
+                        }
+                    }
+                }
+                if (isset($this->facturaXml[$pIndex][$uIndex]) && $this->facturaXml[$pIndex][$uIndex]) {
+                    try {
+                        $e = strtolower((string)$this->facturaXml[$pIndex][$uIndex]->getClientOriginalExtension());
+                        if ($e !== 'xml') $errors["facturaXml.$pIndex.$uIndex"] = 'El archivo debe ser XML.';
+                    } catch (\Throwable) {}
+                }
+                if (isset($this->facturas[$pIndex][$uIndex]) && $this->facturas[$pIndex][$uIndex]) {
+                    $file = $this->facturas[$pIndex][$uIndex];
+                    $ext  = strtolower((string)$file->getClientOriginalExtension());
+                    $mime = strtolower((string)$file->getMimeType());
+                    if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true))
+                        $errors["facturas.$pIndex.$uIndex"] = 'La factura debe ser XML.';
+                }
+            }
+        }
+        return $errors;
+    }
+
+    /**
+     * Guardar avance — INDEPENDIENTE: guarda lo que haya (XML o instalación) sin requerir ambos.
+     */
     public function guardarAsignacion(): void { $this->persistAsignacion(false, false); }
 
     public function persistAsignacion($strict = false, $closeAfter = false): void
     {
-        $strict = (bool)$strict; $closeAfter = (bool)$closeAfter;
+        $strict     = (bool)$strict;
+        $closeAfter = (bool)$closeAfter;
 
         if (!$this->asignacionSolicitudId) {
             $this->dispatchBrowserEvent('swal:error', ['message' => 'Solicitud inválida.']);
@@ -735,24 +814,34 @@ class TablaSolicitudes extends Component
                     foreach (($p['unidades'] ?? []) as $uIndex => $u) {
                         if (!$this->shouldPersistUnit($pIndex, $uIndex, $u)) continue;
 
+                        // ── Persistir datos de asignación (instalación) ──────────
                         $dataUpdate = [
                             'NumeroPropuesta' => (int)($p['numeroPropuesta'] ?? 0),
-                            'FechaEntrega'    => !empty($u['fecha_entrega']) ? $u['fecha_entrega'] : null,
-                            'EmpleadoID'      => !empty($u['empleado_id']) ? (int)$u['empleado_id'] : null,
-                            'DepartamentoID'  => !empty($u['departamento_id']) ? (int)$u['departamento_id'] : null,
                         ];
+                        // Solo actualizamos fecha/empleado si vienen informados
+                        if (!empty($u['fecha_entrega'])) $dataUpdate['FechaEntrega'] = $u['fecha_entrega'];
+                        if (!empty($u['empleado_id']))   $dataUpdate['EmpleadoID']   = (int)$u['empleado_id'];
+                        if (!empty($u['departamento_id'])) $dataUpdate['DepartamentoID'] = (int)$u['departamento_id'];
                         if ($this->serialColumn) $dataUpdate[$this->serialColumn] = (string)($u['serial'] ?? '');
 
                         $activo = SolicitudActivo::updateOrCreate(
-                            ['SolicitudID'=>(int)$this->asignacionSolicitudId,'CotizacionID'=>(int)($p['cotizacionId']??0),'UnidadIndex'=>(int)($u['unidadIndex']??($uIndex+1))],
+                            [
+                                'SolicitudID'  => (int)$this->asignacionSolicitudId,
+                                'CotizacionID' => (int)($p['cotizacionId'] ?? 0),
+                                'UnidadIndex'  => (int)($u['unidadIndex'] ?? ($uIndex + 1)),
+                            ],
                             $dataUpdate
                         );
 
+                        // ── Persistir XML/Factura ─────────────────────────────────
                         $proveedor = $p['proveedor'] ?? null;
                         $baseDir   = "solicitudes/{$this->asignacionSolicitudId}/activos/{$activo->SolicitudActivoID}";
                         $rutaXml   = null;
 
-                        $xmlFile = ($proveedor && isset($xmlPorProveedor[$proveedor])) ? $xmlPorProveedor[$proveedor] : ($this->facturaXml[$pIndex][$uIndex] ?? null);
+                        $xmlFile = ($proveedor && isset($xmlPorProveedor[$proveedor]))
+                            ? $xmlPorProveedor[$proveedor]
+                            : ($this->facturaXml[$pIndex][$uIndex] ?? null);
+
                         if ($xmlFile) {
                             $ext  = strtolower((string)$xmlFile->getClientOriginalExtension());
                             $mime = strtolower((string)$xmlFile->getMimeType());
@@ -764,7 +853,9 @@ class TablaSolicitudes extends Component
                         if (!$rutaXml && !empty($u['factura_xml_path'])) $rutaXml = $u['factura_xml_path'];
 
                         if (!$rutaXml) {
-                            $legacy = ($proveedor && isset($facturaPorProveedor[$proveedor])) ? $facturaPorProveedor[$proveedor] : ($this->facturas[$pIndex][$uIndex] ?? null);
+                            $legacy = ($proveedor && isset($facturaPorProveedor[$proveedor]))
+                                ? $facturaPorProveedor[$proveedor]
+                                : ($this->facturas[$pIndex][$uIndex] ?? null);
                             if ($legacy) {
                                 $ext  = strtolower((string)$legacy->getClientOriginalExtension());
                                 $mime = strtolower((string)$legacy->getMimeType());
@@ -777,6 +868,7 @@ class TablaSolicitudes extends Component
                         if ($rutaXml) {
                             $activo->update(['FacturaPath' => $rutaXml]);
                             $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['factura_xml_path'] = $rutaXml;
+                            // Propagar a mismos proveedores
                             if ($proveedor) {
                                 foreach ($this->propuestasAsignacion as $pi => $prop) {
                                     if (($prop['proveedor'] ?? '') !== $proveedor) continue;
@@ -788,6 +880,7 @@ class TablaSolicitudes extends Component
                             }
                         }
 
+                        // ── Guardar registros de Facturas desde XML ───────────────
                         $localParsed    = $this->xmlParseado[$pIndex][$uIndex] ?? null;
                         $providerParsed = $proveedor ? $this->buscarXmlParseadoPorProveedor($pIndex, $proveedor) : null;
 
@@ -799,45 +892,46 @@ class TablaSolicitudes extends Component
 
                         if ($parsed && empty($parsed['error']) && !empty($parsed['conceptos'])) {
                             $uuid = trim((string)($parsed['uuid'] ?? ''));
-                            foreach ($parsed['conceptos'] as $concepto) {
+
+                            if ($uuid) {
+                                // Eliminar facturas anteriores del mismo UUID en esta solicitud
+                                Facturas::query()
+                                    ->where('SolicitudID', (int)$this->asignacionSolicitudId)
+                                    ->where('UUID', $uuid)
+                                    ->whereNull('deleted_at')
+                                    ->update(['deleted_at' => now()]);
+                            }
+
+                            foreach ($parsed['conceptos'] as $cIdx => $concepto) {
                                 $nombreConcepto = mb_substr(trim((string)($concepto['nombre'] ?? '')), 0, 300);
                                 if ($nombreConcepto === '') continue;
+
+                                // CAMBIO: insumoId puede ser null (permitido explícitamente)
+                                $insumoId = isset($concepto['insumoId']) ? (int)$concepto['insumoId'] : null;
+                                // Verificar si es un override del usuario en UI
+                                // (viene del array xmlParseado que actualizarInsumoConcepto modifica)
+                                $insumoNombre = null;
+                                if ($insumoId) {
+                                    $insumoEncontrado = collect($this->insumosDisponibles)->firstWhere('id', $insumoId);
+                                    $insumoNombre     = $insumoEncontrado['nombre'] ?? null;
+                                }
+                                // Si insumoId es 0 o null → se guarda con null (no rompe métricas)
+
                                 try {
-                                    $facturaGlobal = $uuid ? Facturas::query()->where('UUID', $uuid)->where('Nombre', $nombreConcepto)->first() : null;
-                                    if ($facturaGlobal) {
-                                        $upd = [];
-                                        if ($rutaXml && empty($facturaGlobal->ArchivoRuta)) $upd['ArchivoRuta'] = $rutaXml;
-                                        if (!empty($upd)) $facturaGlobal->update($upd);
-                                        if ((int)$facturaGlobal->SolicitudID !== (int)$this->asignacionSolicitudId) {
-                                            Facturas::firstOrCreate(
-                                                ['SolicitudID'=>(int)$this->asignacionSolicitudId,'UUID'=>$uuid,'Nombre'=>$nombreConcepto],
-                                                [
-                                                    'Importe'    => is_numeric($concepto['importe'] ?? null) ? (float)$concepto['importe'] : 0,
-                                                    'Costo'      => is_numeric($concepto['costo']   ?? null) ? (float)$concepto['costo']   : 0,
-                                                    'Mes'        => !empty($parsed['mes'])  ? (int)$parsed['mes']  : null,
-                                                    'Anio'       => !empty($parsed['anio']) ? (int)$parsed['anio'] : null,
-                                                    'InsumoID'   => $concepto['insumoId'] ?? null,
-                                                    'Emisor'     => $parsed['emisor'] ?? '',
-                                                    'ArchivoRuta'=> $rutaXml ?? $facturaGlobal->ArchivoRuta ?? '',
-                                                    'PdfRuta'    => '',
-                                                ]
-                                            );
-                                        }
-                                    } else {
-                                        Facturas::updateOrCreate(
-                                            ['SolicitudID'=>(int)$this->asignacionSolicitudId,'UUID'=>$uuid,'Nombre'=>$nombreConcepto],
-                                            [
-                                                'Importe'    => is_numeric($concepto['importe'] ?? null) ? (float)$concepto['importe'] : 0,
-                                                'Costo'      => is_numeric($concepto['costo']   ?? null) ? (float)$concepto['costo']   : 0,
-                                                'Mes'        => !empty($parsed['mes'])  ? (int)$parsed['mes']  : null,
-                                                'Anio'       => !empty($parsed['anio']) ? (int)$parsed['anio'] : null,
-                                                'InsumoID'   => $concepto['insumoId'] ?? null,
-                                                'Emisor'     => $parsed['emisor'] ?? '',
-                                                'ArchivoRuta'=> $rutaXml ?? '',
-                                                'PdfRuta'    => '',
-                                            ]
-                                        );
-                                    }
+                                    Facturas::create([
+                                        'SolicitudID'  => (int)$this->asignacionSolicitudId,
+                                        'UUID'         => $uuid ?: null,
+                                        'Nombre'       => $nombreConcepto,
+                                        'Importe'      => is_numeric($concepto['importe'] ?? null) ? (float)$concepto['importe'] : 0,
+                                        'Costo'        => is_numeric($concepto['costo']   ?? null) ? (float)$concepto['costo']   : 0,
+                                        'Mes'          => !empty($parsed['mes'])  ? (int)$parsed['mes']  : null,
+                                        'Anio'         => !empty($parsed['anio']) ? (int)$parsed['anio'] : null,
+                                        'InsumoID'     => $insumoId ?: null,   // null OK
+                                        'InsumoNombre' => $insumoNombre,       // null OK — no afecta métricas
+                                        'Emisor'       => $parsed['emisor'] ?? '',
+                                        'ArchivoRuta'  => $rutaXml ?? '',
+                                        'PdfRuta'      => '',
+                                    ]);
                                 } catch (\Throwable $fe) {
                                     \Log::error('[Asignacion] ERROR factura XML', ['concepto'=>$nombreConcepto,'error'=>$fe->getMessage()]);
                                     throw $fe;
@@ -845,6 +939,7 @@ class TablaSolicitudes extends Component
                             }
                         }
 
+                        // ── Checklist ─────────────────────────────────────────────
                         if (!empty($u['requiere_config'])) {
                             foreach (array_keys($u['checklist'] ?? []) as $catKey) {
                                 foreach (($u['checklist'][$catKey] ?? []) as $item) {
@@ -861,13 +956,76 @@ class TablaSolicitudes extends Component
                 }
             });
 
-            $this->facturaXml = []; $this->facturas = []; $this->xmlParseado = [];
-            $this->dispatchBrowserEvent('swal:success', ['message' => $strict ? 'Asignación finalizada' : 'Avance guardado correctamente']);
+            $this->facturaXml  = [];
+            $this->facturas    = [];
+            $this->xmlParseado = [];
+
+            $this->dispatchBrowserEvent('swal:success', [
+                'message' => $strict ? 'Asignación guardada correctamente' : 'Avance guardado correctamente',
+            ]);
+
             if ($closeAfter) $this->closeAsignacion();
+
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             $this->dispatchBrowserEvent('swal:error', ['message' => 'Error guardando: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * CAMBIO: Ahora acepta $insumoId = null para limpiar el insumo.
+     * Se propaga a todos los conceptos del mismo índice en el mismo proveedor.
+     * Insumo nulo = no aparece en comparativas (filtro WHERE IS NOT NULL).
+     */
+    public function actualizarInsumoConcepto(int $pIndex, int $uIndex, int $cIndex, $insumoId): void
+    {
+        if (!isset($this->xmlParseado[$pIndex][$uIndex]['conceptos'][$cIndex])) return;
+
+        // Acepta null explícito
+        $insumoId = ($insumoId !== null && $insumoId > 0) ? (int)$insumoId : null;
+        $this->xmlParseado[$pIndex][$uIndex]['conceptos'][$cIndex]['insumoId'] = $insumoId;
+
+        // Propagar a mismos proveedores
+        $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
+        if (!$proveedor) return;
+
+        foreach ($this->propuestasAsignacion as $pi => $prop) {
+            if (($prop['proveedor'] ?? '') !== $proveedor) continue;
+            foreach (array_keys($prop['unidades'] ?? []) as $ui) {
+                if ($pi === $pIndex && $ui === $uIndex) continue;
+                if (isset($this->xmlParseado[$pi][$ui]['conceptos'][$cIndex])) {
+                    $this->xmlParseado[$pi][$ui]['conceptos'][$cIndex]['insumoId'] = $insumoId;
+                }
+            }
+        }
+    }
+
+    public function seleccionarEmpleado(int $pIndex, int $uIndex, int $empleadoId): void
+    {
+        if (!isset($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex])) throw new \Exception('Ítem inválido.');
+
+        $row = $this->getEmpleadoConDept($empleadoId);
+
+        $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex] = array_merge(
+            $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex],
+            [
+                'empleado_id'         => (int)$row['EmpleadoID'],
+                'empleado_nombre'     => (string)$row['NombreEmpleado'],
+                'departamento_id'     => $row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null,
+                'departamento_nombre' => $row['NombreDepartamento'] ?: null,
+                'checklist'           => $this->checklistTemplateByDept($row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null),
+            ]
+        );
+
+        $this->lockUsuarioSearch($pIndex, $uIndex);
+        $this->usuarioSearch[$pIndex][$uIndex]  = (string)$row['NombreEmpleado'];
+        $this->usuarioOptions[$pIndex][$uIndex] = [];
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
 
     private function buscarXmlParseadoPorProveedor(int $pIndex, string $proveedor): ?array
     {
@@ -879,43 +1037,6 @@ class TablaSolicitudes extends Component
             }
         }
         return null;
-    }
-
-    private function validateAsignacionPayload(bool $strict): array
-    {
-        $errors = [];
-        foreach ($this->propuestasAsignacion as $pIndex => $p) {
-            foreach (($p['unidades'] ?? []) as $uIndex => $u) {
-                $base = "propuestasAsignacion.$pIndex.unidades.$uIndex";
-                if ($strict) {
-                    if (empty($u['serial']))        $errors["$base.serial"]        = 'El Serial es obligatorio.';
-                    if (empty($u['fecha_entrega'])) $errors["$base.fecha_entrega"] = 'La fecha de entrega es obligatoria.';
-                    if (empty($u['empleado_id']))   $errors["$base.empleado_id"]   = 'El usuario final es obligatorio.';
-                }
-                if (!empty($u['requiere_config'])) {
-                    foreach (array_keys($u['checklist'] ?? []) as $catKey) {
-                        foreach (($u['checklist'][$catKey] ?? []) as $idx => $item) {
-                            if (!empty($item['realizado']) && empty($item['responsable']))
-                                $errors["$base.checklist.$catKey.$idx.responsable"] = 'Responsable obligatorio.';
-                        }
-                    }
-                }
-                if (isset($this->facturaXml[$pIndex][$uIndex]) && $this->facturaXml[$pIndex][$uIndex]) {
-                    try {
-                        $e = strtolower((string)$this->facturaXml[$pIndex][$uIndex]->getClientOriginalExtension());
-                        if ($e !== 'xml') $errors["facturaXml.$pIndex.$uIndex"] = 'El archivo debe ser XML.';
-                    } catch (\Throwable) {}
-                }
-                if (isset($this->facturas[$pIndex][$uIndex]) && $this->facturas[$pIndex][$uIndex]) {
-                    $file = $this->facturas[$pIndex][$uIndex];
-                    $ext  = strtolower((string)$file->getClientOriginalExtension());
-                    $mime = strtolower((string)$file->getMimeType());
-                    if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true))
-                        $errors["facturas.$pIndex.$uIndex"] = 'La factura debe ser XML.';
-                }
-            }
-        }
-        return $errors;
     }
 
     private function checklistTemplateByDept(?int $deptId): array
@@ -975,6 +1096,9 @@ class TablaSolicitudes extends Component
         $this->usuarioSearchLock           = [];
         $this->checklistTemplatesCache     = [];
         $this->confirmarCierreModalAbierto = false;
+        $this->insumosDisponibles          = [];
+        $this->insumoSearchQuery           = '';
+        $this->insumoSearchResults         = [];
     }
 
     private function detectSerialColumn(): ?string
@@ -984,16 +1108,6 @@ class TablaSolicitudes extends Component
             if (Schema::hasColumn('solicitud_activos', $col)) return $col;
         }
         return null;
-    }
-
-    private function shouldPersistUnit(int $pIndex, int $uIndex, array $u): bool
-    {
-        if (!empty($u['requiere_config']) || !empty($u['serial']) || !empty($u['fecha_entrega']) || !empty($u['empleado_id']) || !empty($u['departamento_id'])) return true;
-        foreach (['facturas','facturaXml'] as $prop) {
-            if (isset($this->$prop[$pIndex][$uIndex]) && $this->$prop[$pIndex][$uIndex]) return true;
-        }
-        if (isset($this->xmlParseado[$pIndex][$uIndex]) && empty($this->xmlParseado[$pIndex][$uIndex]['error'])) return true;
-        return false;
     }
 
     private function loadEmpleadosDeptMap(array $empleadoIds): array
@@ -1011,7 +1125,7 @@ class TablaSolicitudes extends Component
             $map[(int)$r->EmpleadoID] = [
                 'nombre'              => (string)($r->NombreEmpleado    ?? ''),
                 'correo'              => (string)($r->Correo            ?? ''),
-                'departamento_id'     => $r->DepartamentoID     ? (int)$r->DepartamentoID     : null,
+                'departamento_id'     => $r->DepartamentoID      ? (int)$r->DepartamentoID      : null,
                 'departamento_nombre' => $r->NombreDepartamento ? (string)$r->NombreDepartamento : null,
             ];
         }
@@ -1032,7 +1146,7 @@ class TablaSolicitudes extends Component
             'EmpleadoID'         => (int)$row->EmpleadoID,
             'NombreEmpleado'     => (string)($row->NombreEmpleado    ?? ''),
             'Correo'             => (string)($row->Correo            ?? ''),
-            'DepartamentoID'     => $row->DepartamentoID     ? (int)$row->DepartamentoID     : null,
+            'DepartamentoID'     => $row->DepartamentoID      ? (int)$row->DepartamentoID      : null,
             'NombreDepartamento' => $row->NombreDepartamento ? (string)$row->NombreDepartamento : null,
         ];
     }
@@ -1040,8 +1154,6 @@ class TablaSolicitudes extends Component
     private function lockUsuarioSearch(int $p, int $u): void    { $this->usuarioSearchLock[$p][$u] = true; }
     private function isUsuarioSearchLocked(int $p, int $u): bool { return !empty($this->usuarioSearchLock[$p][$u]); }
     private function unlockUsuarioSearch(int $p, int $u): void   { if (isset($this->usuarioSearchLock[$p][$u])) $this->usuarioSearchLock[$p][$u] = false; }
-
-    // ── CHECKLIST ─────────────────────────────────────────────────────────────
 
     public function marcarChecklist(int $pIndex, int $uIndex, string $catKey, int $idx): void
     {
@@ -1066,11 +1178,6 @@ class TablaSolicitudes extends Component
         }
     }
 
-    /**
-     * Finaliza la configuración de una unidad y crea el ticket de instalación.
-     * NO requiere que el checklist esté completamente marcado — se puede finalizar
-     * con cualquier estado del checklist.
-     */
     public function finalizarConfiguracionUnidad(int $pIndex, int $uIndex): void
     {
         try {
@@ -1122,8 +1229,10 @@ class TablaSolicitudes extends Component
             $this->crearTicketPorEquipo($pIndex, $uIndex, $activoId);
             $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist_open']  = false;
             $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['config_lista_ui'] = true;
+
+            // CAMBIO: El mensaje ya no dice "No olvides subir el XML" como obligatorio
             $this->dispatchBrowserEvent('swal:info', [
-                'message' => "Ticket de instalación creado.\n\n⚠️ No olvides subir el XML de factura.",
+                'message' => "Instalación registrada correctamente.\nPuedes subir el XML de factura ahora o más tarde.",
             ]);
         } catch (\Throwable $e) {
             $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al finalizar configuración: ' . $e->getMessage()]);
@@ -1248,8 +1357,6 @@ class TablaSolicitudes extends Component
         return $h > 0 ? "{$h} h " . ($m > 0 ? "{$m} m" : '') : "{$m} m";
     }
 
-    // ── PARSE XML ─────────────────────────────────────────────────────────────
-
     private function parsearCfdi(string $ruta): array
     {
         $contenido = file_get_contents($ruta);
@@ -1287,7 +1394,7 @@ class TablaSolicitudes extends Component
         }
 
         $conceptoNodes = $xml->xpath('//cfdi:Comprobante/cfdi:Conceptos/cfdi:Concepto') ?: $xml->xpath('//cfdi:Concepto') ?: [];
-        $catalogo      = $this->getCatalogoInsumos();
+        $catalogo      = $this->getCatalogoCortes();
         $conceptos     = [];
 
         foreach ($conceptoNodes as $nodo) {
@@ -1297,50 +1404,77 @@ class TablaSolicitudes extends Component
             $importe     = (string)($ca['Importe']       ?? '0');
             $cantidad    = (string)($ca['Cantidad']      ?? '1');
 
-            [$best, $score] = $this->matchInsumo($descripcion, $catalogo);
-            if (($best === null || $score < 60) && $emisorNombre) {
-                $normEmisor = $this->normalizeText($emisorNombre);
-                if (str_contains($normEmisor, 'starlink') || str_contains($normEmisor, 'space exploration')) {
-                    $star = $this->matchPorKeyword('starlink', $catalogo) ?? $this->matchPorKeyword('internet satelital', $catalogo);
-                    if ($star) { $best = $star; $score = 95; }
-                }
-            }
+            [$best, $score] = $this->matchInsumo($descripcion, $catalogo, $emisorNombre);
 
-            $conceptos[] = ['nombre'=>$descripcion,'costo'=>$valorUnit,'importe'=>$importe,'cantidad'=>$cantidad,'insumoId'=>$best['id']??null];
+            $conceptos[] = [
+                'nombre'   => $descripcion,
+                'costo'    => $valorUnit,
+                'importe'  => $importe,
+                'cantidad' => $cantidad,
+                'insumoId' => $best['id'] ?? null,   // null = no match, is OK
+            ];
         }
 
         return ['version'=>$version,'uuid'=>$uuid,'emisor'=>$emisorNombre,'fecha'=>$fecha,'mes'=>$mes,'anio'=>$anio,'total'=>$total,'moneda'=>$moneda,'conceptos'=>$conceptos];
     }
 
-    private function getCatalogoInsumos(): array
+    private function getCatalogoCortes(): array
     {
-        return Insumos::query()->whereNull('deleted_at')->get(['ID','NombreInsumo'])
-            ->map(fn($i) => ['id'=>(int)$i->ID,'nombre'=>(string)$i->NombreInsumo,'norm'=>$this->normalizeText((string)$i->NombreInsumo)])
+        return DB::table('cortes')
+            ->whereNull('deleted_at')
+            ->select(DB::raw('MAX(CortesID) as id, NombreInsumo as nombre'))
+            ->groupBy('NombreInsumo')
+            ->get()
+            ->map(fn($c) => ['id'=>(int)$c->id,'nombre'=>(string)$c->nombre,'norm'=>$this->normalizeText((string)$c->nombre)])
             ->toArray();
     }
 
-    private function matchInsumo(string $descripcion, array $catalogo): array
+    private function matchInsumo(string $descripcion, array $catalogo, string $emisor = ''): array
     {
         $dn = $this->normalizeText($descripcion);
-        if ($dn === '') return [null, 0];
-        foreach ($catalogo as $cat) {
-            if ($cat['norm'] === '') continue;
-            if ($cat['norm'] === $dn || str_contains($dn, $cat['norm']) || str_contains($cat['norm'], $dn)) return [$cat, 100];
-        }
-        $best = null; $score = 0;
-        foreach ($catalogo as $cat) {
-            if ($cat['norm'] === '') continue;
-            similar_text($dn, $cat['norm'], $s);
-            if ($s > $score) { $score = $s; $best = $cat; }
-        }
-        return [$best, $score];
-    }
+        $en = $this->normalizeText($emisor);
+        if ($dn === '' && $en === '') return [null, 0];
 
-    private function matchPorKeyword(string $keyword, array $catalogo): ?array
-    {
-        $kw = $this->normalizeText($keyword);
-        foreach ($catalogo as $cat) { if (str_contains($cat['norm'], $kw)) return $cat; }
-        return null;
+        foreach ($catalogo as $cat) {
+            if ($cat['norm'] === '') continue;
+            if ($cat['norm'] === $dn) return [$cat, 100];
+        }
+
+        foreach ($catalogo as $cat) {
+            if ($cat['norm'] === '') continue;
+            if (str_contains($dn, $cat['norm']) || str_contains($cat['norm'], $dn)) return [$cat, 95];
+        }
+
+        $palabrasDesc    = array_filter(explode(' ', $dn), fn($w) => mb_strlen($w) > 2);
+        $palabrasEmisor  = array_filter(explode(' ', $en), fn($w) => mb_strlen($w) > 2);
+        $todasPalabras   = array_unique(array_merge($palabrasDesc, $palabrasEmisor));
+
+        $mejorScore = 0;
+        $mejorCat   = null;
+
+        foreach ($catalogo as $cat) {
+            if ($cat['norm'] === '') continue;
+            $palabrasCat = array_filter(explode(' ', $cat['norm']), fn($w) => mb_strlen($w) > 2);
+            if (empty($palabrasCat)) continue;
+
+            $hits = 0;
+            foreach ($palabrasCat as $pw) {
+                foreach ($todasPalabras as $dw) {
+                    if ($pw === $dw || str_contains($dw, $pw) || str_contains($pw, $dw)) {
+                        $hits++;
+                        break;
+                    }
+                }
+            }
+
+            if ($hits === 0) continue;
+
+            $pct = ($hits / count($palabrasCat)) * 100;
+            if ($pct > $mejorScore) { $mejorScore = $pct; $mejorCat = $cat; }
+        }
+
+        if ($mejorScore >= 50) return [$mejorCat, $mejorScore];
+        return [null, 0];
     }
 
     private function normalizeText(string $t): string
