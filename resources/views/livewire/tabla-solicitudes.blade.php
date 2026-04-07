@@ -323,28 +323,89 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- ==================== FLUJO DE APROBACIÓN ==================== --}}
                     <div>
                         <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">Flujo de Aprobación</h4>
-                        <div class="space-y-3">
-                            <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="index">
-                                <div class="p-3 rounded-lg border-l-4 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-                                    :class="{ 'border-l-green-500': paso.status === 'approved', 'border-l-red-500': paso.status === 'rejected', 'border-l-yellow-400': paso.status === 'pending' }">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-sm font-semibold text-slate-900 dark:text-slate-100" x-text="paso.stageLabel"></span>
-                                        <span class="text-xs px-2 py-0.5 rounded font-medium"
-                                            :class="{ 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300': paso.status === 'approved', 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300': paso.status === 'rejected', 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300': paso.status === 'pending' }"
+
+                        {{-- PARTE 1: Pipeline visual de etapas --}}
+                        <div class="flex items-stretch mb-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                            <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="'pipe-'+index">
+                                <div class="flex-1 relative px-4 py-3 text-center"
+                                    :class="{
+                                        'bg-emerald-50 dark:bg-emerald-900/20':  paso.status === 'approved',
+                                        'bg-red-50 dark:bg-red-900/20':          paso.status === 'rejected',
+                                        'bg-amber-50/60 dark:bg-amber-900/10':   paso.status === 'pending',
+                                        'border-r border-slate-200 dark:border-slate-700': index < (solicitudSeleccionada?.pasosAprobacion?.length || 1) - 1
+                                    }">
+                                    <div class="flex flex-col items-center gap-1.5">
+                                        <span class="text-xl"
+                                            :class="{
+                                                'text-emerald-500': paso.status === 'approved',
+                                                'text-red-500':     paso.status === 'rejected',
+                                                'text-amber-400':   paso.status === 'pending'
+                                            }">
+                                            <template x-if="paso.status === 'approved'"><i class="fas fa-check-circle"></i></template>
+                                            <template x-if="paso.status === 'rejected'"><i class="fas fa-times-circle"></i></template>
+                                            <template x-if="paso.status === 'pending'"><i class="far fa-clock"></i></template>
+                                        </span>
+                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-tight" x-text="paso.stageLabel"></span>
+                                        <span class="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                                            :class="{
+                                                'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300': paso.status === 'approved',
+                                                'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300':                 paso.status === 'rejected',
+                                                'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300':         paso.status === 'pending'
+                                            }"
                                             x-text="paso.statusLabel"></span>
                                     </div>
-                                    <div class="text-xs text-slate-500 dark:text-slate-400 space-y-0.5">
-                                        <p><span class="font-medium text-slate-600 dark:text-slate-300">Aprobador:</span> <span x-text="paso.approverNombre || 'N/A'"></span></p>
-                                        <p x-show="paso.decidedByNombre"><span class="font-medium text-slate-600 dark:text-slate-300">Decidido por:</span> <span x-text="paso.decidedByNombre"></span></p>
-                                        <p x-show="paso.decidedAt"><span class="font-medium text-slate-600 dark:text-slate-300">Fecha:</span> <span x-text="paso.decidedAt"></span></p>
-                                        <p x-show="paso.comment"><span class="font-medium text-slate-600 dark:text-slate-300">Comentario:</span> <span class="italic" x-text="paso.comment"></span></p>
+                                </div>
+                            </template>
+                        </div>
+
+                        {{-- PARTE 2: Detalle de quién decidió / comentarios --}}
+                        <div class="space-y-2">
+                            <template x-for="(paso, index) in solicitudSeleccionada?.pasosAprobacion || []" :key="'det-'+index">
+                                <div x-show="paso.approverNombre || paso.decidedByNombre || paso.decidedAt || paso.comment"
+                                    class="flex items-start gap-3 px-4 py-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                    <div class="mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px]"
+                                        :class="{
+                                            'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300': paso.status === 'approved',
+                                            'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300':                 paso.status === 'rejected',
+                                            'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300':         paso.status === 'pending'
+                                        }">
+                                        <i class="fas"
+                                            :class="{
+                                                'fa-check': paso.status === 'approved',
+                                                'fa-times': paso.status === 'rejected',
+                                                'fa-clock': paso.status === 'pending'
+                                            }"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5" x-text="paso.stageLabel"></p>
+                                        <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                            <span x-show="paso.approverNombre">
+                                                <span class="font-medium text-slate-600 dark:text-slate-300">Aprobador:</span>
+                                                <span x-text="' ' + paso.approverNombre"></span>
+                                            </span>
+                                            <span x-show="paso.decidedByNombre">
+                                                <span class="font-medium text-slate-600 dark:text-slate-300">Decidido por:</span>
+                                                <span x-text="' ' + paso.decidedByNombre"></span>
+                                            </span>
+                                            <span x-show="paso.decidedAt">
+                                                <span class="font-medium text-slate-600 dark:text-slate-300">Fecha:</span>
+                                                <span x-text="' ' + paso.decidedAt"></span>
+                                            </span>
+                                        </div>
+                                        <p x-show="paso.comment"
+                                            class="mt-1.5 text-xs italic text-slate-500 dark:text-slate-400 border-l-2 border-slate-300 dark:border-slate-600 pl-2"
+                                            x-text="paso.comment"></p>
                                     </div>
                                 </div>
                             </template>
                         </div>
                     </div>
+                    {{-- ==================== /FLUJO DE APROBACIÓN ==================== --}}
+
                     <div x-show="(solicitudSeleccionada?.cotizaciones?.length || 0) > 0" x-data="{
                         selectedIndexes: {},
                         getCotizacionesAgrupadas() {
@@ -616,7 +677,6 @@
                                     @enderror
                                 @endif
                             </div>
-                            {{-- Usuario final --}}
                             <div class="col-span-3"
                                 x-data="{ open: false }"
                                 @click.outside="open = false">
