@@ -487,6 +487,7 @@
                                 <th scope="col" class="px-6 py-4 font-semibold text-center">T. Cotización</th>
                                 <th scope="col" class="px-6 py-4 font-semibold text-center">T. Config.</th>
                                 <th scope="col" class="px-6 py-4 font-semibold text-right">Tiempo Total</th>
+                                <th scope="col" class="px-6 py-4 font-semibold text-center">Facturas</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A] bg-gray-50 dark:bg-transparent">
@@ -520,10 +521,36 @@
                                     <td class="px-6 py-4 text-right font-bold text-gray-700 dark:text-gray-300">
                                         {{ $sol['tiempo_total_dias'] !== null ? $sol['tiempo_total_dias'] . ' h' : '-' }}
                                     </td>
+
+                                    <td class="px-6 py-4 text-center">
+                                        @php
+                                            $fSub = $sol['facturas_subidas'] ?? 0;
+                                            $fNec = $sol['facturas_necesarias'] ?? 0;
+                                        @endphp
+                                        @if($fNec > 0)
+                                            @if($fSub >= $fNec)
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
+                                                    <i class="fas fa-check-circle"></i> {{ $fSub }}/{{ $fNec }} Completas
+                                                </span>
+                                            @elseif($fSub > 0)
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                                                    <i class="fas fa-exclamation-triangle"></i> {{ $fSub }}/{{ $fNec }} Parcial
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
+                                                    <i class="fas fa-times-circle"></i> Faltan (0/{{ $fNec }})
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
+                                                N/A
+                                            </span>
+                                        @endif
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-[#9CA3AF]">No hay solicitudes procesadas en este periodo.</td>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-[#9CA3AF]">No hay solicitudes procesadas en este periodo.</td>
                                 </tr>
                             @endforelse
                         </tbody>

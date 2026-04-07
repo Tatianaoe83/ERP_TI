@@ -72,6 +72,16 @@ trait MetricasSolicitudesTrait
             ->get()
             ->groupBy('SolicitudID');
 
+        // 3. Traer activos con facturas subidas
+        $activosConFactura = SolicitudActivo::whereIn('SolicitudID', $solicitudIds)
+            ->whereNotNull('CotizacionID')
+            ->whereNotNull('FacturaPath')
+            ->where('FacturaPath', '!=', '')
+            ->select('SolicitudID', 'CotizacionID')
+            ->distinct()
+            ->get()
+            ->groupBy('SolicitudID');
+
         $desglose = [];
         $totalCotizacionHoras = $totalConfiguracionHoras = 0;
         $countCotizacion = $countConfiguracion = 0;
@@ -111,6 +121,17 @@ trait MetricasSolicitudesTrait
             $endTotal = $fechaConfiguracion ?? $fechaAprobacion;
             $tiempoTotalHoras = $this->calcularHorasLaboralesFloat($fechaCreacion, $endTotal);
 
+            // --- D) Facturas ---
+            $cotSeleccionadas = $sol->cotizaciones->where('Estatus', 'Seleccionada');
+            $totalNecesarias  = $cotSeleccionadas->pluck('Proveedor')->filter()->unique()->count();
+            $facturasSubidas  = 0;
+            if ($totalNecesarias > 0 && isset($activosConFactura[$sol->SolicitudID])) {
+                $cotIds         = $cotSeleccionadas->pluck('CotizacionID')->filter()->unique()->toArray();
+                $cotsConFactura = $activosConFactura[$sol->SolicitudID]->pluck('CotizacionID')->toArray();
+                $facturasSubidas = $cotSeleccionadas->whereIn('CotizacionID', $cotsConFactura)
+                    ->pluck('Proveedor')->filter()->unique()->count();
+            }
+
             $empleadoNombre = $sol->empleadoid ? $sol->empleadoid->NombreEmpleado : 'Desconocido';
             $gerenciaNombre = $sol->gerenciaid ? $sol->gerenciaid->NombreGerencia : 'Sin Gerencia';
 
@@ -127,6 +148,8 @@ trait MetricasSolicitudesTrait
                 'tiempo_cotizacion_horas'   => $tiempoCotizacionHoras,
                 'tiempo_configuracion_dias' => $tiempoConfiguracionHoras,
                 'tiempo_total_dias'         => $tiempoTotalHoras,
+                'facturas_subidas'          => $facturasSubidas,
+                'facturas_necesarias'       => $totalNecesarias,
             ];
         }
 

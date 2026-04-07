@@ -34,7 +34,7 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            new ResumenSheetExport(
+            new ResumeGraphicsSheetExport(
                 $this->tickets,
                 $this->resumen,
                 $this->tiempoPorEmpleado,
@@ -45,7 +45,7 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
                 $this->solicitudes,
                 $this->metricasSolicitudes
             ),
-            new ResumeGraphicsSheetExport(
+            new ResumenSheetExport(
                 $this->tickets,
                 $this->resumen,
                 $this->tiempoPorEmpleado,
