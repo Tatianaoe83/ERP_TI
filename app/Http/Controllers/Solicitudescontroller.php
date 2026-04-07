@@ -905,7 +905,7 @@ class SolicitudesController extends Controller
     {
         $request->headers->set('Accept', 'application/json');
 
-        try {
+        try {   
             $solicitud = Solicitud::findOrFail($id);
 
             $validated = $request->validate([

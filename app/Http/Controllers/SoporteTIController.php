@@ -352,11 +352,17 @@ public function crearTickets(Request $request)
                         // Detectar a quién enviar el correo
                         // Buscamos el PRIMER paso que esté 'pending'
                         if ($s['status'] === 'pending' && !$emailEncontrado) {
+                        if ($s['stage'] === 'gerencia' || $s['stage'] === 'administracion') {
+                            // Detenemos la búsqueda sin asignar nada.
+                            // $firstToken queda null → no se envía ningún correo.
+                            $emailEncontrado = true;
+                        } else {
                             $firstToken = $tokenRow->token;
                             $primerAprobadorReal = Empleados::find($s['approver']);
                             $rolPrimerAprobador = $s['role'];
-                            $emailEncontrado = true; // Dejamos de buscar
+                            $emailEncontrado = true;
                         }
+                    }
                     }
                 });
 
