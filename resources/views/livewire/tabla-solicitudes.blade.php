@@ -577,6 +577,7 @@
 
                     <div class="divide-y divide-slate-100 dark:divide-slate-800">
                     @foreach($p['unidades'] ?? [] as $uIndex => $u)
+                    @php $yaFinalizado = !empty($u['fecha_fin_configuracion']) || !empty($u['config_lista_ui']); @endphp
                     <div class="px-5 py-4" wire:key="unit-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                             <div class="col-span-1 flex lg:justify-center">
@@ -681,7 +682,7 @@
                                 x-data="{ open: false }"
                                 @click.outside="open = false">
                                 <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Usuario final</label>
-                                @if($modalYaTieneFacturas)
+                                @if($modalYaTieneFacturas || $yaFinalizado)
                                     <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300">
                                         <i class="fas fa-user text-slate-400 text-xs"></i> {{ $u['empleado_nombre'] ?? '—' }}
                                     </div>
@@ -735,12 +736,13 @@
                         @endphp
                         @if($hasChecklistItems)
                         <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800"
-                            wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
-                            <label class="inline-flex items-center gap-2 {{ !$modalYaTieneFacturas ? 'cursor-pointer' : '' }} mb-3 select-none">
+                            wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}"
+                            x-data="{ checklistOpen: {{ ($modalYaTieneFacturas || $yaFinalizado) ? 'false' : 'true' }} }">
+                            <label class="inline-flex items-center gap-2 {{ (!$modalYaTieneFacturas && !$yaFinalizado) ? 'cursor-pointer' : 'cursor-not-allowed opacity-70' }} mb-3 select-none">
                                 <input type="checkbox"
                                     wire:model.live="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.requiere_config"
                                     class="peer sr-only"
-                                    @if($modalYaTieneFacturas) disabled @endif>
+                                    @if($modalYaTieneFacturas || $yaFinalizado) disabled @endif>
                                 <div class="relative w-9 h-5 rounded-full border-2 transition-all
                                     bg-slate-200 border-slate-300 peer-checked:bg-violet-500 peer-checked:border-violet-500
                                     dark:bg-slate-700 dark:border-slate-600 dark:peer-checked:bg-violet-600 dark:peer-checked:border-violet-600">
@@ -749,14 +751,13 @@
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Requiere configuración</span>
                             </label>
                             @if($u['requiere_config'] ?? false)
-                            <div x-data="{ open: {{ ($modalYaTieneFacturas || !empty($u['config_lista_ui'])) ? 'false' : 'true' }} }"
-                                wire:key="checklist-content-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
-                                <button type="button" @click="open = !open"
+                            <div wire:key="checklist-content-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
+                                <button type="button" @click="checklistOpen = !checklistOpen"
                                     class="flex items-center justify-between w-full px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                     <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Checklist de configuración</span>
-                                    <i class="fas fa-chevron-down text-xs text-slate-400 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                                    <i class="fas fa-chevron-down text-xs text-slate-400 transition-transform duration-200" :class="{ 'rotate-180': checklistOpen }"></i>
                                 </button>
-                                <div x-show="open" x-transition class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div x-show="checklistOpen" x-transition class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                                     @foreach($u['checklist'] ?? [] as $catKey => $items)
                                     <div class="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                                         <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
@@ -769,7 +770,7 @@
                                                     <input type="checkbox"
                                                         wire:click="marcarChecklist({{ $pIndex }}, {{ $uIndex }}, '{{ $catKey }}', {{ $idx }})"
                                                         {{ !empty($item['realizado']) ? 'checked' : '' }}
-                                                        @if($modalYaTieneFacturas) disabled @endif
+                                                        @if($modalYaTieneFacturas || $yaFinalizado) disabled @endif
                                                         class="peer sr-only">
                                                     <div class="w-5 h-5 rounded border-2 border-slate-300 dark:border-slate-600 peer-checked:bg-green-500 peer-checked:border-green-500 transition-all flex items-center justify-center">
                                                         <i class="fas fa-check text-white text-[8px] opacity-0 peer-checked:opacity-100"></i>
@@ -778,9 +779,9 @@
                                                 <span class="text-sm flex-1 {{ !empty($item['realizado']) ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200' }}">{{ $item['nombre'] ?? '' }}</span>
                                                 <input type="text"
                                                     wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.responsable"
-                                                    @if($modalYaTieneFacturas) readonly @endif
+                                                    @if($modalYaTieneFacturas || $yaFinalizado) readonly @endif
                                                     placeholder="Responsable"
-                                                    class="h-7 w-24 px-2 text-xs border border-slate-200 rounded bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 text-center {{ $modalYaTieneFacturas ? 'opacity-60 cursor-not-allowed' : '' }}">
+                                                    class="h-7 w-24 px-2 text-xs border border-slate-200 rounded bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 text-center {{ ($modalYaTieneFacturas || $yaFinalizado) ? 'opacity-60 cursor-not-allowed' : '' }}">
                                             </div>
                                             @endforeach
                                         </div>
@@ -1160,33 +1161,7 @@
     </div>
     @endif
 
-    @if($confirmarCierreModalAbierto)
-    <div class="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
-        <div class="w-full max-w-md mx-4 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700">
-            <div class="px-6 py-5 flex items-start gap-4">
-                <div class="w-10 h-10 flex items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40 shrink-0">
-                    <i class="fas fa-exclamation-triangle text-amber-600 dark:text-amber-400"></i>
-                </div>
-                <div>
-                    <h3 class="text-base font-semibold text-slate-900 dark:text-slate-100">Cerrar sin guardar</h3>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Hay proveedores sin XML cargado. Si cierras ahora, los archivos seleccionados se perderán. Los datos guardados anteriormente se conservan.
-                    </p>
-                </div>
-            </div>
-            <div class="px-6 pb-5 flex items-center justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <button type="button" wire:click="$set('confirmarCierreModalAbierto', false)"
-                    class="px-4 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                    Volver y subir XML
-                </button>
-                <button type="button" wire:click="forzarCloseAsignacion"
-                    class="px-4 py-2 text-sm rounded-lg font-medium text-white bg-rose-600 hover:bg-rose-700 transition-colors">
-                    Cerrar de todas formas
-                </button>
-            </div>
-        </div>
-    </div>
-    @endif
+
     @if($modalCancelacionAbierto)
     <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
         wire:keydown.escape.window="cerrarModalCancelacion">

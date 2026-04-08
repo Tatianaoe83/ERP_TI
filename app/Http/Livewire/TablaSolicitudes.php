@@ -806,7 +806,18 @@ class TablaSolicitudes extends Component
     // CLOSE ASIGNACIÓN
     // =========================================================================
 
-    public function closeAsignacion(): void  { $this->resetAsignacionState(); }
+    public function closeAsignacion(): void
+    {
+        if ($this->asignacionSolicitudId && !$this->modalEsSoloLectura) {
+            try {
+                $this->persistAsignacion(false, false, true);
+            } catch (\Throwable $e) {
+                // Silent fail on auto-save close
+            }
+        }
+        $this->resetAsignacionState();
+    }
+
     public function forzarCloseAsignacion(): void { $this->resetAsignacionState(); }
 
     // =========================================================================
@@ -879,10 +890,11 @@ class TablaSolicitudes extends Component
 
     public function guardarAsignacion(): void { $this->persistAsignacion(false, false); }
 
-    public function persistAsignacion($strict = false, $closeAfter = false): void
+    public function persistAsignacion($strict = false, $closeAfter = false, $silent = false): void
     {
         $strict     = (bool)$strict;
         $closeAfter = (bool)$closeAfter;
+        $silent     = (bool)$silent;
 
         if (!$this->asignacionSolicitudId) {
             $this->dispatchBrowserEvent('swal:error', ['message' => 'Solicitud inválida.']);
@@ -1047,11 +1059,13 @@ class TablaSolicitudes extends Component
             $this->facturas    = [];
             $this->xmlParseado = [];
 
-            $this->dispatchBrowserEvent('swal:success', [
-                'message' => $strict ? 'Asignación guardada correctamente' : 'Avance guardado correctamente',
-            ]);
+            if (!$silent) {
+                $this->dispatchBrowserEvent('swal:success', [
+                    'message' => $strict ? 'Asignación guardada correctamente' : 'Avance guardado correctamente',
+                ]);
+            }
 
-            if ($closeAfter) $this->closeAsignacion();
+            if ($closeAfter) $this->resetAsignacionState();
 
         } catch (ValidationException $e) {
             throw $e;
@@ -1247,6 +1261,33 @@ class TablaSolicitudes extends Component
 
         $activoId = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] ?? null;
         $reqId    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['req_id'] ?? null;
+
+        // Si no existe SolicitudActivo aún pero hay empleado asignado, crearlo para poder guardar el checklist
+        if (!$activoId && $this->asignacionSolicitudId) {
+            $unidad    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex];
+            $propuesta = $this->propuestasAsignacion[$pIndex];
+            if (!empty($unidad['empleado_id'])) {
+                try {
+                    $activo = SolicitudActivo::updateOrCreate(
+                        [
+                            'SolicitudID'  => (int)$this->asignacionSolicitudId,
+                            'CotizacionID' => (int)($propuesta['cotizacionId'] ?? 0),
+                            'UnidadIndex'  => (int)($unidad['unidadIndex'] ?? ($uIndex + 1)),
+                        ],
+                        [
+                            'NumeroPropuesta' => (int)($propuesta['numeroPropuesta'] ?? 0),
+                            'EmpleadoID'      => (int)$unidad['empleado_id'],
+                            'DepartamentoID'  => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
+                        ]
+                    );
+                    $activoId = (int)$activo->SolicitudActivoID;
+                    $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = $activoId;
+                } catch (\Throwable $e) {
+                    $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al crear el registro: ' . $e->getMessage()]);
+                    return;
+                }
+            }
+        }
 
         if ($activoId && $reqId) {
             try {
