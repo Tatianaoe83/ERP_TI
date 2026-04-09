@@ -376,19 +376,22 @@ class ReportesController extends AppBaseController
             return response()->json(['error' => $e->getMessage()], 500);
         }
 
+        if (empty($query->orders)) {
+            $tablaPrincipal = $metadata['tabla_principal'];
+            $columnasPK     = Schema::getColumnListing($tablaPrincipal);
+            $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
+            $query->orderBy($pkFallback);
+            if (str_contains((string) $pkFallback, '.')) {
+                ReporteHelper::asegurarSelectDistinctCompatibleOrderBy($query, $pkFallback, $tablaPrincipal);
+            }
+        }
+
         $primeraFila = (clone $query)->limit(1)->first();
         if (!$primeraFila) {
             return response()->json(['error' => 'Sin resultados'], 422);
         }
 
         $columnas = array_keys((array) $primeraFila);
-
-        if (empty($query->orders)) {
-            $tablaPrincipal = $metadata['tabla_principal'];
-            $columnasPK     = Schema::getColumnListing($tablaPrincipal);
-            $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
-            $query->orderBy($pkFallback);
-        }
 
         $token    = Str::uuid()->toString();
         $filename = 'exports/' . $token . '.xlsx';
@@ -454,6 +457,16 @@ class ReportesController extends AppBaseController
                 ->with('error', 'Error al ejecutar la consulta: ' . $e->getMessage());
         }
 
+        if (empty($query->orders)) {
+            $tablaPrincipal = $metadata['tabla_principal'];
+            $columnasPK     = Schema::getColumnListing($tablaPrincipal);
+            $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
+            $query->orderBy($pkFallback);
+            if (str_contains((string) $pkFallback, '.')) {
+                ReporteHelper::asegurarSelectDistinctCompatibleOrderBy($query, $pkFallback, $tablaPrincipal);
+            }
+        }
+
         $primeraFila = (clone $query)->limit(1)->first();
         if (!$primeraFila) {
             return redirect()->route('reportes.index')
@@ -461,13 +474,6 @@ class ReportesController extends AppBaseController
         }
 
         $columnas = array_keys((array) $primeraFila);
-
-        if (empty($query->orders)) {
-            $tablaPrincipal = $metadata['tabla_principal'];
-            $columnasPK     = Schema::getColumnListing($tablaPrincipal);
-            $pkFallback     = !empty($columnasPK) ? "{$tablaPrincipal}.{$columnasPK[0]}" : '1';
-            $query->orderBy($pkFallback);
-        }
 
         $nombreArchivo = Str::slug($reportes->title) . '.xlsx';
         $token         = $request->query('downloadToken', '');
