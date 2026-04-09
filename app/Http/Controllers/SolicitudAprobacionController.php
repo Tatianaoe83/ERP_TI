@@ -201,9 +201,10 @@ class SolicitudAprobacionController extends Controller
                     $nextStep = $pending->first();
                     $nextStep->load('approverEmpleado');
 
-                    // No enviar correo si el siguiente paso es administración
+                    // No enviar correo si el siguiente paso es gerencia o administración
+                    // Gerencia: se enviará cuando TI cargue y envíe las cotizaciones
                     // Administración: se enviará cuando se confirmen los ganadores
-                    if ($nextStep->stage === 'administracion') {
+                    if ($nextStep->stage === 'gerencia' || $nextStep->stage === 'administracion') {
                         // Crear/renovar token para cuando sea el momento de notificar
                         $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
                             ->whereNull('used_at')
@@ -220,7 +221,7 @@ class SolicitudAprobacionController extends Controller
                             ]);
                         }
                     } else {
-                        // Para todos los demás pasos (incluyendo gerencia), enviar correo de inmediato
+                        // Para supervisor y otros pasos, enviar correo de inmediato
                         $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
                             ->whereNull('used_at')
                             ->whereNull('revoked_at')

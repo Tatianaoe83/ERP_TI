@@ -476,9 +476,11 @@ class TablaSolicitudes extends Component
                 $nextStep = $pasosPendientes->first();
                 $nextStep->load('approverEmpleado');
 
-                if ($nextStep->stage === 'gerencia') {
-                    // Gerencia no recibe correo aquí: lo recibirá cuando TI suba las cotizaciones.
-                    // Solo nos aseguramos de que el token exista para ese momento.
+                // No enviar correo si el siguiente paso es gerencia o administración
+                // Gerencia: se enviará cuando TI cargue y envíe las cotizaciones
+                // Administración: se enviará cuando gerencia confirme ganadores
+                if ($nextStep->stage === 'gerencia' || $nextStep->stage === 'administracion') {
+                    // Solo crear token para cuando sea el momento de notificar
                     $existeToken = SolicitudTokens::where('approval_step_id', $nextStep->id)
                         ->whereNull('used_at')->whereNull('revoked_at')
                         ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
@@ -492,7 +494,7 @@ class TablaSolicitudes extends Component
                         ]);
                     }
                 } else {
-                    // Para supervisor y administración: crear/reutilizar token y enviar correo
+                    // Para supervisor y otros pasos: crear/reutilizar token y enviar correo
                     $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
                         ->whereNull('used_at')->whereNull('revoked_at')
                         ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
