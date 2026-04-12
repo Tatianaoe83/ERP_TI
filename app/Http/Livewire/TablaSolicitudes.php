@@ -733,6 +733,9 @@ class TablaSolicitudes extends Component
                     $template = $this->checklistTemplateByDept($deptId);
                     $saved    = $activo ? ($checklists->get((int)$activo->SolicitudActivoID) ?? collect()) : collect();
 
+                    // Calcular requiere_config: solo true si hay al menos un checkbox marcado en BD
+                    $algunCheckMarcado = $saved->where('completado', true)->isNotEmpty();
+
                     $xmlSavedPath = $rutasPorProveedor[$proveedor]['xml'] ?? '';
 
                     if (empty($xmlSavedPath) && $activo) {
@@ -755,7 +758,7 @@ class TablaSolicitudes extends Component
                         'departamento_nombre'     => $empleadoRow['departamento_nombre'] ?? null,
                         'checklist_open'          => true,
                         'checklist'               => $this->applySavedChecklist($template, $saved),
-                        'requiere_config'         => $saved->isNotEmpty(),
+                        'requiere_config'         => $algunCheckMarcado,
                         'fecha_fin_configuracion' => $activo ? (string)($activo->fecha_fin_configuracion ?? '') : '',
                     ];
                 }
@@ -804,53 +807,62 @@ class TablaSolicitudes extends Component
             ->values()->take(10)->toArray();
     }
 
-    // =========================================================================
     // CLOSE ASIGNACIÓN
-    // =========================================================================
 
-    public function closeAsignacion(): void
-    {
-        if ($this->asignacionSolicitudId && !$this->modalEsSoloLectura) {
-            try {
-                $this->persistAsignacion(false, false, true);
-            } catch (\Throwable $e) {
-                // Silent fail on auto-save close
-            }
-        }
+    public function closeAsignacion(): void 
+    { 
+        // Limpiar registros en BD que no cumplen las 3 condiciones antes de cerrar
+        $this->limpiarRegistrosHuerfanos();
         $this->resetAsignacionState();
     }
 
     public function forzarCloseAsignacion(): void { $this->resetAsignacionState(); }
 
-    // =========================================================================
     // USUARIO SEARCH
-    // =========================================================================
 
     private function handleUsuarioSearchUpdated(int $pIndex, int $uIndex, string $term): void
     {
         $term = trim($term);
         $this->usuarioOptions[$pIndex]          = $this->usuarioOptions[$pIndex] ?? [];
         $this->usuarioOptions[$pIndex][$uIndex] = [];
-        if ($term === '') return;
+        
+        // Requerir al menos 2 caracteres para buscar
+        if (strlen($term) < 2) return;
 
         $this->usuarioOptions[$pIndex][$uIndex] = Empleados::query()
+            ->select('EmpleadoID', 'NombreEmpleado', 'Correo')
             ->where('Estado', true)
             ->where(fn($q) => $q
-                ->where('NombreEmpleado', 'like', "%{$term}%")
-                ->orWhere('Correo', 'like', "%{$term}%")
+                ->where('NombreEmpleado', 'like', "{$term}%")
+                ->orWhere('Correo', 'like', "{$term}%")
                 ->when(ctype_digit($term), fn($q) => $q->orWhere('EmpleadoID', (int)$term)))
-            ->limit(8)->get(['EmpleadoID','NombreEmpleado','Correo'])
+            ->orderBy('NombreEmpleado')
+            ->limit(10)
+            ->get()
             ->map(fn($e) => ['id'=>(int)$e->EmpleadoID,'name'=>(string)$e->NombreEmpleado,'correo'=>(string)$e->Correo])
             ->toArray();
     }
 
     private function shouldPersistUnit(int $pIndex, int $uIndex, array $u): bool
     {
-        if (!empty($u['requiere_config']) || !empty($u['serial']) || !empty($u['fecha_entrega']) || !empty($u['empleado_id']) || !empty($u['departamento_id'])) return true;
+        // Persistir si tiene serial o fecha de entrega (datos de finalización)
+        if (!empty($u['serial']) || !empty($u['fecha_entrega'])) return true;
+        
+        // Persistir SOLO si cumple las 3 condiciones: usuario final + requiere_config + al menos un checkbox marcado
+        if (!empty($u['empleado_id']) && !empty($u['requiere_config'])) {
+            foreach ($u['checklist'] ?? [] as $items) {
+                foreach ($items as $item) {
+                    if (!empty($item['realizado'])) return true;
+                }
+            }
+        }
+        
+        // Persistir si tiene facturas o XML
         foreach (['facturas','facturaXml'] as $prop) {
             if (isset($this->$prop[$pIndex][$uIndex]) && $this->$prop[$pIndex][$uIndex]) return true;
         }
         if (isset($this->xmlParseado[$pIndex][$uIndex]) && empty($this->xmlParseado[$pIndex][$uIndex]['error'])) return true;
+        
         return false;
     }
 
@@ -885,6 +897,28 @@ class TablaSolicitudes extends Component
                     if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true))
                         $errors["facturas.$pIndex.$uIndex"] = 'La factura debe ser XML.';
                 }
+                
+                // Validación: si hay XML parseado, debe tener insumo, fecha y XML
+                if (isset($this->xmlParseado[$pIndex][$uIndex])) {
+                    $parsed = $this->xmlParseado[$pIndex][$uIndex];
+                    
+                    if (empty($parsed['insumoId'])) {
+                        $errors["$base.insumo"] = 'Debe asignar un insumo a la factura antes de guardar.';
+                    }
+                    
+                    if (empty($u['fecha_entrega'])) {
+                        $errors["$base.fecha_entrega_xml"] = 'La fecha de entrega es obligatoria cuando hay factura XML.';
+                    }
+                    
+                    // Verificar que existe el XML: o está en memoria temporal o ya guardado
+                    $tieneXml = !empty($this->facturaXml[$pIndex][$uIndex]) 
+                             || !empty($this->facturas[$pIndex][$uIndex])
+                             || !empty($u['factura_xml_path']);
+                    
+                    if (!$tieneXml) {
+                        $errors["$base.xml_archivo"] = 'Debe subir el archivo XML de la factura.';
+                    }
+                }
             }
         }
         return $errors;
@@ -892,11 +926,10 @@ class TablaSolicitudes extends Component
 
     public function guardarAsignacion(): void { $this->persistAsignacion(false, false); }
 
-    public function persistAsignacion($strict = false, $closeAfter = false, $silent = false): void
+    public function persistAsignacion($strict = false, $closeAfter = false): void
     {
         $strict     = (bool)$strict;
         $closeAfter = (bool)$closeAfter;
-        $silent     = (bool)$silent;
 
         if (!$this->asignacionSolicitudId) {
             $this->dispatchBrowserEvent('swal:error', ['message' => 'Solicitud inválida.']);
@@ -911,6 +944,9 @@ class TablaSolicitudes extends Component
             }
 
             DB::transaction(function () {
+                // ===================================================================
+                // FASE 1: Recolectar XMLs únicos por proveedor
+                // ===================================================================
                 $xmlPorProveedor     = [];
                 $facturaPorProveedor = [];
 
@@ -924,15 +960,145 @@ class TablaSolicitudes extends Component
                     }
                 }
 
+                // ===================================================================
+                // FASE 2: Insertar FACTURAS ÚNICAS (1 por UUID/proveedor)
+                // ===================================================================
+                $facturasInsertadas = []; // control de UUIDs ya insertados
+
+                foreach ($this->propuestasAsignacion as $pIndex => $p) {
+                    $proveedor = $p['proveedor'] ?? null;
+                    if (!$proveedor) continue;
+
+                    // Buscar el XML parseado para este proveedor
+                    $parsed = $this->buscarXmlParseadoPorProveedor($pIndex, $proveedor);
+                    if (!$parsed || !empty($parsed['error'])) continue;
+
+                    $uuid = trim((string)($parsed['uuid'] ?? ''));
+                    if (!$uuid) continue;
+
+                    // Si ya insertamos esta factura (mismo UUID), skip
+                    if (isset($facturasInsertadas[$uuid])) continue;
+
+                    // Soft-delete facturas anteriores con este UUID
+                    Facturas::query()
+                        ->where('SolicitudID', (int)$this->asignacionSolicitudId)
+                        ->where('UUID', $uuid)
+                        ->whereNull('deleted_at')
+                        ->update(['deleted_at' => now()]);
+
+                    // Preparar datos de la factura
+                    $descripcion = mb_substr(trim((string)($parsed['descripcion'] ?? '')), 0, 300);
+                    if ($descripcion === '') continue;
+
+                    $insumoId     = isset($parsed['insumoId']) ? (int)$parsed['insumoId'] : null;
+                    $insumoNombre = null;
+                    if ($insumoId) {
+                        $insumoEncontrado = collect($this->insumosDisponibles)->firstWhere('id', $insumoId);
+                        $insumoNombre     = $insumoEncontrado['nombre'] ?? null;
+                    }
+
+                    $subtotal = is_numeric($parsed['subtotal'] ?? null) ? (float)$parsed['subtotal'] : 0;
+                    $cantidad = isset($parsed['cantidad']) ? (int)$parsed['cantidad'] : 1;
+
+                    // Buscar la primera ruta XML de este proveedor
+                    $rutaXmlFactura = '';
+                    foreach ($this->propuestasAsignacion as $pi => $propuesta) {
+                        if (($propuesta['proveedor'] ?? '') !== $proveedor) continue;
+                        foreach (($propuesta['unidades'] ?? []) as $ui => $unidad) {
+                            if (!empty($unidad['factura_xml_path'])) {
+                                $rutaXmlFactura = $unidad['factura_xml_path'];
+                                break 2;
+                            }
+                        }
+                    }
+
+                    try {
+                        Facturas::create([
+                            'SolicitudID'  => (int)$this->asignacionSolicitudId,
+                            'UUID'         => $uuid,
+                            'Nombre'       => $descripcion,
+                            'Importe'      => $subtotal,
+                            'Costo'        => $cantidad > 0 ? ($subtotal / $cantidad) : $subtotal,
+                            'Mes'          => !empty($parsed['mes'])  ? (int)$parsed['mes']  : null,
+                            'Anio'         => !empty($parsed['anio']) ? (int)$parsed['anio'] : null,
+                            'InsumoID'     => $insumoId ?: null,
+                            'InsumoNombre' => $insumoNombre,
+                            'Emisor'       => $parsed['emisor'] ?? '',
+                            'ArchivoRuta'  => $rutaXmlFactura,
+                            'PdfRuta'      => '',
+                        ]);
+
+                        $facturasInsertadas[$uuid] = true;
+
+                    } catch (\Throwable $fe) {
+                        \Log::error('[Asignacion] ERROR factura XML', [
+                            'proveedor'   => $proveedor,
+                            'uuid'        => $uuid,
+                            'descripcion' => $descripcion,
+                            'error'       => $fe->getMessage()
+                        ]);
+                        throw $fe;
+                    }
+                }
+
+                // ===================================================================
+                // FASE 3: Guardar SolicitudActivo y Checklist por unidad
+                // ===================================================================
                 foreach ($this->propuestasAsignacion as $pIndex => $p) {
                     foreach (($p['unidades'] ?? []) as $uIndex => $u) {
-                        if (!$this->shouldPersistUnit($pIndex, $uIndex, $u)) continue;
+                        // Si NO cumple condiciones de persistencia
+                        if (!$this->shouldPersistUnit($pIndex, $uIndex, $u)) {
+                            // Si tiene activoId (registro existente)
+                            $activoId = $u['activoId'] ?? null;
+                            if ($activoId) {
+                                try {
+                                    // Si tiene serial/fecha_entrega, SOLO limpiar empleado
+                                    if (!empty($u['serial']) || !empty($u['fecha_entrega'])) {
+                                        SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->update([
+                                            'EmpleadoID'     => null,
+                                            'DepartamentoID' => null,
+                                        ]);
+                                    } else {
+                                        // Si no tiene serial/fecha_entrega, eliminar completo
+                                        SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->delete();
+                                        $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = null;
+                                    }
+                                } catch (\Throwable $e) {
+                                    \Log::error('[Asignacion] Error limpiando SolicitudActivo', [
+                                        'activoId' => $activoId,
+                                        'error'    => $e->getMessage(),
+                                    ]);
+                                }
+                            }
+                            continue;
+                        }
 
                         $dataUpdate = ['NumeroPropuesta' => (int)($p['numeroPropuesta'] ?? 0)];
                         if (!empty($u['fecha_entrega']))   $dataUpdate['FechaEntrega']   = $u['fecha_entrega'];
-                        if (!empty($u['empleado_id']))     $dataUpdate['EmpleadoID']     = (int)$u['empleado_id'];
-                        if (!empty($u['departamento_id'])) $dataUpdate['DepartamentoID'] = (int)$u['departamento_id'];
                         if ($this->serialColumn)           $dataUpdate[$this->serialColumn] = (string)($u['serial'] ?? '');
+
+                        // Verificar si cumple las 3 condiciones del USUARIO FINAL
+                        $cumpleCondicionesUsuarioFinal = false;
+                        if (!empty($u['empleado_id']) && !empty($u['requiere_config'])) {
+                            foreach (($u['checklist'] ?? []) as $items) {
+                                foreach ($items as $item) {
+                                    if (!empty($item['realizado'])) {
+                                        $cumpleCondicionesUsuarioFinal = true;
+                                        break 2;
+                                    }
+                                }
+                            }
+                        }
+
+                        // SOLO actualizar empleado/departamento si cumple las 3 condiciones
+                        if ($cumpleCondicionesUsuarioFinal) {
+                            $dataUpdate['EmpleadoID']     = (int)$u['empleado_id'];
+                            $dataUpdate['DepartamentoID'] = !empty($u['departamento_id']) ? (int)$u['departamento_id'] : null;
+                        } else {
+                            // Si NO cumple, limpiar empleado/departamento
+                            $dataUpdate['EmpleadoID']     = null;
+                            $dataUpdate['DepartamentoID'] = null;
+                        }
 
                         $activo = SolicitudActivo::updateOrCreate(
                             [
@@ -988,60 +1154,9 @@ class TablaSolicitudes extends Component
                             }
                         }
 
-                        $localParsed    = $this->xmlParseado[$pIndex][$uIndex] ?? null;
-                        $providerParsed = $proveedor ? $this->buscarXmlParseadoPorProveedor($pIndex, $proveedor) : null;
-
-                        $parsed = null;
-                        if ($localParsed && empty($localParsed['error']) && empty($localParsed['es_pdf'])) $parsed = $localParsed;
-                        elseif ($providerParsed && empty($providerParsed['es_pdf'])) $parsed = $providerParsed;
-                        elseif ($localParsed && empty($localParsed['error'])) $parsed = $localParsed;
-                        else $parsed = $providerParsed;
-
-                        if ($parsed && empty($parsed['error']) && !empty($parsed['conceptos'])) {
-                            $uuid = trim((string)($parsed['uuid'] ?? ''));
-
-                            if ($uuid) {
-                                Facturas::query()
-                                    ->where('SolicitudID', (int)$this->asignacionSolicitudId)
-                                    ->where('UUID', $uuid)
-                                    ->whereNull('deleted_at')
-                                    ->update(['deleted_at' => now()]);
-                            }
-
-                            foreach ($parsed['conceptos'] as $cIdx => $concepto) {
-                                $nombreConcepto = mb_substr(trim((string)($concepto['nombre'] ?? '')), 0, 300);
-                                if ($nombreConcepto === '') continue;
-
-                                $insumoId     = isset($concepto['insumoId']) ? (int)$concepto['insumoId'] : null;
-                                $insumoNombre = null;
-                                if ($insumoId) {
-                                    $insumoEncontrado = collect($this->insumosDisponibles)->firstWhere('id', $insumoId);
-                                    $insumoNombre     = $insumoEncontrado['nombre'] ?? null;
-                                }
-
-                                try {
-                                    Facturas::create([
-                                        'SolicitudID'  => (int)$this->asignacionSolicitudId,
-                                        'UUID'         => $uuid ?: null,
-                                        'Nombre'       => $nombreConcepto,
-                                        'Importe'      => is_numeric($concepto['importe'] ?? null) ? (float)$concepto['importe'] : 0,
-                                        'Costo'        => is_numeric($concepto['costo']   ?? null) ? (float)$concepto['costo']   : 0,
-                                        'Mes'          => !empty($parsed['mes'])  ? (int)$parsed['mes']  : null,
-                                        'Anio'         => !empty($parsed['anio']) ? (int)$parsed['anio'] : null,
-                                        'InsumoID'     => $insumoId ?: null,
-                                        'InsumoNombre' => $insumoNombre,
-                                        'Emisor'       => $parsed['emisor'] ?? '',
-                                        'ArchivoRuta'  => $rutaXml ?? '',
-                                        'PdfRuta'      => '',
-                                    ]);
-                                } catch (\Throwable $fe) {
-                                    \Log::error('[Asignacion] ERROR factura XML', ['concepto'=>$nombreConcepto,'error'=>$fe->getMessage()]);
-                                    throw $fe;
-                                }
-                            }
-                        }
-
-                        if (!empty($u['requiere_config'])) {
+                        // Guardar o limpiar checklist según cumplimiento de condiciones
+                        if ($cumpleCondicionesUsuarioFinal && !empty($u['checklist'])) {
+                            // SI cumple: guardar checklist
                             foreach (array_keys($u['checklist'] ?? []) as $catKey) {
                                 foreach (($u['checklist'][$catKey] ?? []) as $item) {
                                     $reqId = (int)($item['req_id'] ?? 0); if (!$reqId) continue;
@@ -1052,6 +1167,9 @@ class TablaSolicitudes extends Component
                                     );
                                 }
                             }
+                        } else {
+                            // NO cumple: eliminar cualquier checklist existente
+                            SolicitudActivoCheckList::where('SolicitudActivoID', (int)$activo->SolicitudActivoID)->delete();
                         }
                     }
                 }
@@ -1061,13 +1179,11 @@ class TablaSolicitudes extends Component
             $this->facturas    = [];
             $this->xmlParseado = [];
 
-            if (!$silent) {
-                $this->dispatchBrowserEvent('swal:success', [
-                    'message' => $strict ? 'Asignación guardada correctamente' : 'Avance guardado correctamente',
-                ]);
-            }
+            $this->dispatchBrowserEvent('swal:success', [
+                'message' => $strict ? 'Asignación guardada correctamente' : 'Avance guardado correctamente',
+            ]);
 
-            if ($closeAfter) $this->resetAsignacionState();
+            if ($closeAfter) $this->closeAsignacion();
 
         } catch (ValidationException $e) {
             throw $e;
@@ -1076,12 +1192,15 @@ class TablaSolicitudes extends Component
         }
     }
 
-    public function actualizarInsumoConcepto(int $pIndex, int $uIndex, int $cIndex, $insumoId): void
+    public function actualizarInsumoConcepto(int $pIndex, int $uIndex, $insumoId): void
     {
-        if (!isset($this->xmlParseado[$pIndex][$uIndex]['conceptos'][$cIndex])) return;
+        if (!isset($this->xmlParseado[$pIndex][$uIndex])) return;
+
+        // Evitar re-render completo (el panel ya se cerró en JS)
+        $this->skipRender();
 
         $insumoId = ($insumoId !== null && $insumoId > 0) ? (int)$insumoId : null;
-        $this->xmlParseado[$pIndex][$uIndex]['conceptos'][$cIndex]['insumoId'] = $insumoId;
+        $this->xmlParseado[$pIndex][$uIndex]['insumoId'] = $insumoId;
 
         $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
         if (!$proveedor) return;
@@ -1090,8 +1209,8 @@ class TablaSolicitudes extends Component
             if (($prop['proveedor'] ?? '') !== $proveedor) continue;
             foreach (array_keys($prop['unidades'] ?? []) as $ui) {
                 if ($pi === $pIndex && $ui === $uIndex) continue;
-                if (isset($this->xmlParseado[$pi][$ui]['conceptos'][$cIndex]))
-                    $this->xmlParseado[$pi][$ui]['conceptos'][$cIndex]['insumoId'] = $insumoId;
+                if (isset($this->xmlParseado[$pi][$ui]))
+                    $this->xmlParseado[$pi][$ui]['insumoId'] = $insumoId;
             }
         }
     }
@@ -1180,6 +1299,43 @@ class TablaSolicitudes extends Component
         return $empleado && !empty($empleado->Correo) ? (string)Str::before(strtolower($empleado->Correo), '@') : '';
     }
 
+    /**
+     * Limpia registros SolicitudActivo en BD que no cumplen las 3 condiciones de persistencia.
+     * Se ejecuta al cerrar el modal sin guardar para eliminar registros creados automáticamente.
+     */
+    private function limpiarRegistrosHuerfanos(): void
+    {
+        if (!$this->asignacionSolicitudId) return;
+
+        try {
+            foreach ($this->propuestasAsignacion as $pIndex => $p) {
+                foreach (($p['unidades'] ?? []) as $uIndex => $u) {
+                    // Si NO cumple condiciones de persistencia pero tiene activoId
+                    if (!$this->shouldPersistUnit($pIndex, $uIndex, $u)) {
+                        $activoId = $u['activoId'] ?? null;
+                        if ($activoId) {
+                            // Si tiene serial/fecha_entrega, SOLO limpiar empleado
+                            if (!empty($u['serial']) || !empty($u['fecha_entrega'])) {
+                                SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->update([
+                                    'EmpleadoID'     => null,
+                                    'DepartamentoID' => null,
+                                ]);
+                            } else {
+                                // Si no tiene serial/fecha_entrega, eliminar completo
+                                SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->delete();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::error('[Asignacion] Error limpiando registros huérfanos', [
+                'solicitudId' => $this->asignacionSolicitudId,
+                'error'       => $e->getMessage(),
+            ]);
+        }
+    }
+
     private function resetAsignacionState(): void
     {
         $this->modalAsignacionAbierto      = false;
@@ -1253,52 +1409,217 @@ class TablaSolicitudes extends Component
     private function isUsuarioSearchLocked(int $p, int $u): bool { return !empty($this->usuarioSearchLock[$p][$u]); }
     private function unlockUsuarioSearch(int $p, int $u): void   { if (isset($this->usuarioSearchLock[$p][$u])) $this->usuarioSearchLock[$p][$u] = false; }
 
+    public function toggleRequiereConfig(int $pIndex, int $uIndex): void
+    {
+        if (!isset($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex])) return;
+
+        $this->skipRender();
+
+        $current = (bool)($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['requiere_config'] ?? false);
+        $nuevo = !$current;
+        $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['requiere_config'] = $nuevo;
+
+        // Si se DESACTIVA requiere_config, desmarcar TODOS los checkboxes en memoria Y en BD
+        if (!$nuevo) {
+            foreach (array_keys($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'] ?? []) as $catKey) {
+                foreach (array_keys($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey] ?? []) as $idx) {
+                    $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['realizado'] = false;
+                    $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['responsable'] = '';
+                }
+            }
+            
+            // Si ya existe activoId, eliminar checkboxes de BD
+            $activoId = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] ?? null;
+            if ($activoId && $this->asignacionSolicitudId) {
+                try {
+                    SolicitudActivoCheckList::where('SolicitudActivoID', (int)$activoId)->delete();
+                    
+                    $u = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex];
+                    // Si tampoco tiene serial ni fecha_entrega, eliminar el SolicitudActivo completo
+                    if (empty($u['serial']) && empty($u['fecha_entrega'])) {
+                        SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->delete();
+                        $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = null;
+                    } else {
+                        // Si tiene serial/fecha_entrega, SOLO actualizar empleado a NULL
+                        SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->update([
+                            'EmpleadoID'     => null,
+                            'DepartamentoID' => null,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al desactivar configuración: ' . $e->getMessage()]);
+                }
+            }
+            
+            return;
+        }
+
+        // Si se ACTIVA requiere_config y tiene empleado asignado, insertar TODA la checklist en BD
+        if ($nuevo && !empty($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['empleado_id']) && $this->asignacionSolicitudId) {
+            try {
+                $propuesta = $this->propuestasAsignacion[$pIndex] ?? null;
+                $unidad    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex] ?? null;
+                
+                if (!$propuesta || !$unidad) return;
+
+                $activoId = $unidad['activoId'] ?? null;
+                $empleadoId = (int)($unidad['empleado_id'] ?? 0);
+
+                // SIEMPRE actualizar o crear SolicitudActivo con los datos actuales del empleado
+                $activo = SolicitudActivo::updateOrCreate(
+                    [
+                        'SolicitudID'     => (int)$this->asignacionSolicitudId,
+                        'CotizacionID'    => (int)($propuesta['cotizacionId'] ?? 0),
+                        'UnidadIndex'     => (int)($unidad['unidadIndex'] ?? ($uIndex + 1)),
+                    ],
+                    [
+                        'NumeroPropuesta' => (int)($propuesta['numeroPropuesta'] ?? 0),
+                        'EmpleadoID'      => $empleadoId,
+                        'DepartamentoID'  => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
+                    ]
+                );
+                
+                $activoId = (int)$activo->SolicitudActivoID;
+                $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = $activoId;
+
+                // Insertar TODA la checklist con completado=0, responsable=null
+                foreach ($unidad['checklist'] as $categoria => $items) {
+                    foreach ($items as $item) {
+                        $reqId = (int)($item['req_id'] ?? 0);
+                        if (!$reqId) continue;
+
+                        SolicitudActivoCheckList::updateOrCreate(
+                            ['SolicitudActivoID' => (int)$activoId, 'DepartamentoRequerimientoID' => $reqId],
+                            ['completado' => false, 'responsable' => null]
+                        );
+                    }
+                }
+
+            } catch (\Throwable $e) {
+                $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al activar configuración: ' . $e->getMessage()]);
+            }
+        }
+    }
+
     public function marcarChecklist(int $pIndex, int $uIndex, string $catKey, int $idx): void
     {
         if (!isset($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx])) return;
 
+        // Evitar re-render completo del componente (el toggle visual se hace en JS)
+        $this->skipRender();
+
+        // 1. Actualizar estado en memoria
         $realizado = !((bool)($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['realizado'] ?? false));
         $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['realizado']   = $realizado;
         $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['responsable'] = $realizado ? $this->currentUserPrefix() : '';
 
-        $activoId = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] ?? null;
-        $reqId    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['req_id'] ?? null;
-
-        // Si no existe SolicitudActivo aún pero hay empleado asignado, crearlo para poder guardar el checklist
-        if (!$activoId && $this->asignacionSolicitudId) {
-            $unidad    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex];
-            $propuesta = $this->propuestasAsignacion[$pIndex];
-            if (!empty($unidad['empleado_id'])) {
-                try {
-                    $activo = SolicitudActivo::updateOrCreate(
-                        [
-                            'SolicitudID'  => (int)$this->asignacionSolicitudId,
-                            'CotizacionID' => (int)($propuesta['cotizacionId'] ?? 0),
-                            'UnidadIndex'  => (int)($unidad['unidadIndex'] ?? ($uIndex + 1)),
-                        ],
-                        [
-                            'NumeroPropuesta' => (int)($propuesta['numeroPropuesta'] ?? 0),
-                            'EmpleadoID'      => (int)$unidad['empleado_id'],
-                            'DepartamentoID'  => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
-                        ]
-                    );
-                    $activoId = (int)$activo->SolicitudActivoID;
-                    $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = $activoId;
-                } catch (\Throwable $e) {
-                    $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al crear el registro: ' . $e->getMessage()]);
-                    return;
+        // 2. Calcular si requiere_config (al menos un checkbox marcado en todo el checklist)
+        $tieneChecksMarcados = false;
+        foreach ($this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'] as $items) {
+            foreach ($items as $c) {
+                if (!empty($c['realizado'])) {
+                    $tieneChecksMarcados = true;
+                    break 2;
                 }
             }
         }
+        $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['requiere_config'] = $tieneChecksMarcados;
 
-        if ($activoId && $reqId) {
+        // 3. Obtener datos necesarios
+        $activoId     = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] ?? null;
+        $empleadoId   = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['empleado_id'] ?? null;
+        $reqConfig    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['requiere_config'] ?? false;
+        $reqId        = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['req_id'] ?? null;
+
+        // 4. PERSISTIR SOLO EL CHECKBOX ESPECÍFICO si cumple condiciones:
+        //    - Tiene empleado asignado
+        //    - requiere_config está activo
+        //    - Tiene al menos un checkbox marcado (para crear activoId si no existe)
+        //    - Tiene reqId válido
+        if ($empleadoId && $reqConfig && $tieneChecksMarcados && $this->asignacionSolicitudId && $reqId) {
             try {
-                SolicitudActivoCheckList::updateOrCreate(
-                    ['SolicitudActivoID'=>(int)$activoId,'DepartamentoRequerimientoID'=>(int)$reqId],
-                    ['completado'=>$realizado,'responsable'=>$realizado ? $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['responsable'] : null]
+                $propuesta = $this->propuestasAsignacion[$pIndex] ?? null;
+                $unidad    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex] ?? null;
+                
+                if (!$propuesta || !$unidad) return;
+
+                // SIEMPRE actualizar o crear SolicitudActivo con los datos actuales del empleado
+                $activo = SolicitudActivo::updateOrCreate(
+                    [
+                        'SolicitudID'     => (int)$this->asignacionSolicitudId,
+                        'CotizacionID'    => (int)($propuesta['cotizacionId'] ?? 0),
+                        'UnidadIndex'     => (int)($unidad['unidadIndex'] ?? ($uIndex + 1)),
+                    ],
+                    [
+                        'NumeroPropuesta' => (int)($propuesta['numeroPropuesta'] ?? 0),
+                        'EmpleadoID'      => (int)$empleadoId,
+                        'DepartamentoID'  => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
+                    ]
                 );
+                
+                $activoId = (int)$activo->SolicitudActivoID;
+                $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = $activoId;
+
+                // Persistir SOLO el checkbox que cambió (no toda la lista)
+                SolicitudActivoCheckList::updateOrCreate(
+                    ['SolicitudActivoID' => (int)$activoId, 'DepartamentoRequerimientoID' => (int)$reqId],
+                    [
+                        'completado'  => $realizado,
+                        'responsable' => $realizado ? $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['responsable'] : null,
+                    ]
+                );
+
             } catch (\Throwable $e) {
                 $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al guardar el checklist: ' . $e->getMessage()]);
+            }
+        }
+        // Si ya existe activoId pero se desmarcó todo, actualizar solo este item
+        elseif ($activoId && $empleadoId && $reqConfig && $this->asignacionSolicitudId && $reqId) {
+            try {
+                // Actualizar el SolicitudActivo con los datos actuales del empleado
+                $propuesta = $this->propuestasAsignacion[$pIndex] ?? null;
+                $unidad    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex] ?? null;
+                
+                if ($propuesta && $unidad) {
+                    SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->update([
+                        'EmpleadoID'     => (int)$empleadoId,
+                        'DepartamentoID' => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
+                    ]);
+                }
+
+                // Actualizar el checkbox específico
+                SolicitudActivoCheckList::updateOrCreate(
+                    ['SolicitudActivoID' => (int)$activoId, 'DepartamentoRequerimientoID' => (int)$reqId],
+                    [
+                        'completado'  => $realizado,
+                        'responsable' => $realizado ? $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['checklist'][$catKey][$idx]['responsable'] : null,
+                    ]
+                );
+            } catch (\Throwable $e) {
+                $this->dispatchBrowserEvent('swal:error', ['message' => 'Error al actualizar el checklist: ' . $e->getMessage()]);
+            }
+        }
+
+        // Si después de marcar/desmarcar ya NO cumple condiciones de persistencia
+        if ($activoId && !$tieneChecksMarcados) {
+            $u = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex];
+            try {
+                if (empty($u['serial']) && empty($u['fecha_entrega'])) {
+                    // Si no tiene serial/fecha_entrega, eliminar el SolicitudActivo completo
+                    SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->delete();
+                    $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = null;
+                } else {
+                    // Si tiene serial/fecha_entrega, SOLO actualizar empleado a NULL
+                    SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->update([
+                        'EmpleadoID'     => null,
+                        'DepartamentoID' => null,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('[Asignacion] Error limpiando SolicitudActivo sin checks', [
+                    'activoId' => $activoId,
+                    'error'    => $e->getMessage(),
+                ]);
             }
         }
     }
@@ -1503,7 +1824,7 @@ class TablaSolicitudes extends Component
         $version = (string)($attrs['Version'] ?? $attrs['version'] ?? '3.3');
         $fecha   = (string)($attrs['Fecha']   ?? '');
         $moneda  = (string)($attrs['Moneda']  ?? 'MXN');
-        $total   = (string)($attrs['SubTotal'] ?? $attrs['subTotal'] ?? '0');
+        $subtotal = (string)($attrs['SubTotal'] ?? $attrs['subTotal'] ?? '0');
 
         $emisorNode   = $xml->xpath('//cfdi:Comprobante/cfdi:Emisor') ?: $xml->xpath('//cfdi:Emisor');
         $emisorNombre = $emisorNode ? (string)$emisorNode[0]['Nombre'] : '';
@@ -1518,29 +1839,47 @@ class TablaSolicitudes extends Component
             catch (\Throwable) {}
         }
 
+        // Construir array de conceptos individuales
         $conceptoNodes = $xml->xpath('//cfdi:Comprobante/cfdi:Conceptos/cfdi:Concepto') ?: $xml->xpath('//cfdi:Concepto') ?: [];
-        $catalogo      = $this->getCatalogoCortes();
-        $conceptos     = [];
+        $cantidadTotal = 0;
+        $descripcionCompleta = [];
+        $conceptos = [];
 
         foreach ($conceptoNodes as $nodo) {
-            $ca          = $nodo->attributes();
-            $descripcion = (string)($ca['Descripcion']   ?? '');
-            $valorUnit   = (string)($ca['ValorUnitario'] ?? '0');
-            $importe     = (string)($ca['Importe']       ?? '0');
-            $cantidad    = (string)($ca['Cantidad']      ?? '1');
-
-            [$best, $score] = $this->matchInsumo($descripcion, $catalogo, $emisorNombre);
-
-            $conceptos[] = [
-                'nombre'   => $descripcion,
-                'costo'    => $valorUnit,
-                'importe'  => $importe,
-                'cantidad' => $cantidad,
-                'insumoId' => $best['id'] ?? null,
-            ];
+            $ca = $nodo->attributes();
+            $cantidad = (float)((string)($ca['Cantidad'] ?? '1'));
+            $cantidadTotal += $cantidad;
+            $desc = (string)($ca['Descripcion'] ?? '');
+            $valorUnitario = (string)($ca['ValorUnitario'] ?? $ca['valorUnitario'] ?? '0.00');
+            $importe = (string)($ca['Importe'] ?? '0.00');
+            
+            if ($desc) {
+                $descripcionCompleta[] = $desc;
+                $conceptos[] = [
+                    'nombre' => $desc, // La vista espera 'nombre' no 'descripcion'
+                    'cantidad' => $cantidad,
+                    'costo' => $valorUnitario, // La vista espera 'costo' no 'valorUnitario'
+                    'importe' => $importe,
+                    'insumoId' => null, // Usuario debe asignar manualmente
+                ];
+            }
         }
 
-        return ['version'=>$version,'uuid'=>$uuid,'emisor'=>$emisorNombre,'fecha'=>$fecha,'mes'=>$mes,'anio'=>$anio,'total'=>$total,'moneda'=>$moneda,'conceptos'=>$conceptos];
+        // Retornar datos con conceptos individuales para asignación de insumos
+        return [
+            'version'    => $version,
+            'uuid'       => $uuid,
+            'emisor'     => $emisorNombre,
+            'fecha'      => $fecha,
+            'mes'        => $mes,
+            'anio'       => $anio,
+            'subtotal'   => $subtotal,
+            'moneda'     => $moneda,
+            'cantidad'   => (int)$cantidadTotal,
+            'descripcion' => implode(', ', array_slice($descripcionCompleta, 0, 3)) . (count($descripcionCompleta) > 3 ? '...' : ''),
+            'conceptos'  => $conceptos, // Array de conceptos para asignar insumos
+            'total'      => $subtotal, // Para compatibilidad con código existente
+        ];
     }
 
     private function getCatalogoCortes(): array

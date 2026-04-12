@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Eloquent as Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 /**
@@ -20,19 +19,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class SolicitudActivoCheckList extends Model
 {
-    use SoftDeletes;
-
-
     public $table = 'solicitud_activo_checklists';
     protected $primaryKey = 'SolicitudActivoChecklistID';
     
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
-
-
-    protected $dates = ['deleted_at'];
-
-
 
     public $fillable = [
         'SolicitudActivoID',
@@ -65,8 +56,7 @@ class SolicitudActivoCheckList extends Model
         'completado' => 'required|boolean',
         'responsable' => 'nullable|string|max:80',
         'created_at' => 'required',
-        'updated_at' => 'required',
-        'deleted_at' => 'nullable'
+        'updated_at' => 'required'
     ];
 
     /**

@@ -6,7 +6,7 @@
             <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
         </div>
 
-        <div wire:poll.15s>
+        <div @if(!$modalAsignacionAbierto) wire:poll.15s @endif>
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
                 <div class="flex gap-3 flex-wrap items-end">
                     <div class="flex-1 min-w-[140px] max-w-xs">
@@ -477,13 +477,13 @@
 
     @if($modalAsignacionAbierto)
     @php $modalYaTieneFacturas = $modalEsSoloLectura; @endphp
-    <script>
-        window.__insumosCatalogo = @json($insumosDisponibles ?? []);
-    </script>
     <div class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
-        wire:keydown.escape.window="closeAsignacion" tabindex="-1">
+        wire:keydown.escape.window="closeAsignacion" tabindex="-1"
+        x-data="{ __ready: true }"
+        x-init="window.__insumosCatalogo = @js($insumosDisponibles ?? [])">
         <div class="absolute inset-0" wire:click="closeAsignacion"></div>
-        <div class="relative z-10 w-full max-w-5xl mx-4 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="relative z-10 w-full max-w-7xl mx-2 lg:mx-6 bg-gray-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden"
+            wire:ignore.self>
 
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4 shrink-0">
                 <div>
@@ -693,7 +693,7 @@
                                 @else
                                     <div class="relative">
                                         <input type="text"
-                                            wire:model.live.debounce.250ms="usuarioSearch.{{ $pIndex }}.{{ $uIndex }}"
+                                            wire:model.live.debounce.400ms="usuarioSearch.{{ $pIndex }}.{{ $uIndex }}"
                                             @focus="open = true"
                                             autocomplete="off"
                                             class="h-11 w-full pl-7 pr-4 text-sm border-2 border-slate-200 rounded-xl bg-gray-50 dark:bg-slate-800 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all relative z-20 dark:border-slate-600 dark:text-slate-200"
@@ -715,7 +715,6 @@
                                     </div>
                                     <div class="mt-2.5 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 text-xs dark:from-slate-800 dark:to-slate-800/50 dark:border-slate-700">
                                         <i class="fas fa-sitemap text-slate-400 dark:text-slate-500"></i>
-                                        <span class="text-slate-500 dark:text-slate-400">Departamento:</span>
                                         <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $u['departamento_nombre'] ?? '-' }}</span>
                                     </div>
                                     @error("propuestasAsignacion.$pIndex.unidades.$uIndex.empleado_id")
@@ -735,29 +734,56 @@
                             $hasChecklistItems = $checklistFlat->isNotEmpty();
                         @endphp
                         @if($hasChecklistItems)
+                        @php
+                            $checklistFlat2 = collect($u['checklist'] ?? [])->flatMap(fn($items) => is_array($items) ? array_values($items) : [])->filter(fn($i) => is_array($i) && isset($i['nombre']));
+                            $totalItemsCount = $checklistFlat2->count();
+                            $initialDoneStates = [];
+                            $flatIdx = 0;
+                            foreach ($u['checklist'] ?? [] as $_ck => $_items) {
+                                foreach ($_items as $_item) {
+                                    $initialDoneStates[$flatIdx] = !empty($_item['realizado']);
+                                    $flatIdx++;
+                                }
+                            }
+                        @endphp
                         <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800"
                             wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}"
-                            x-data="{ checklistOpen: {{ ($modalYaTieneFacturas || $yaFinalizado) ? 'false' : 'true' }} }">
-                            <label class="inline-flex items-center gap-2 {{ (!$modalYaTieneFacturas && !$yaFinalizado) ? 'cursor-pointer' : 'cursor-not-allowed opacity-70' }} mb-3 select-none">
-                                <input type="checkbox"
-                                    wire:model.live="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.requiere_config"
-                                    class="peer sr-only"
+                            x-data="{
+                                checklistOpen: {{ ($modalYaTieneFacturas || $yaFinalizado) ? 'false' : 'true' }},
+                                reqConfig: {{ ($u['requiere_config'] ?? false) ? 'true' : 'false' }},
+                                doneStates: @js($initialDoneStates),
+                                totalItems: {{ $totalItemsCount }},
+                                get marcados() { return Object.values(this.doneStates).filter(Boolean).length; },
+                                get porcentaje() { return this.totalItems > 0 ? Math.round((this.marcados / this.totalItems) * 100) : 0; },
+                                toggleItem(flatIdx) { this.doneStates[flatIdx] = !this.doneStates[flatIdx]; }
+                            }">
+                            <label class="inline-flex items-center gap-2 {{ (!$modalYaTieneFacturas && !$yaFinalizado) ? 'cursor-pointer' : 'cursor-not-allowed opacity-70' }} mb-3 select-none"
+                                @if(!$modalYaTieneFacturas && !$yaFinalizado)
+                                @click.prevent="
+                                    let oldVal = reqConfig;
+                                    reqConfig = !reqConfig;
+                                    if (oldVal && !reqConfig) {
+                                        Object.keys(doneStates).forEach(k => doneStates[k] = false);
+                                    }
+                                    $wire.toggleRequiereConfig({{ $pIndex }}, {{ $uIndex }})
+                                "
+                                @endif>
+                                <input type="checkbox" class="peer sr-only" :checked="reqConfig"
                                     @if($modalYaTieneFacturas || $yaFinalizado) disabled @endif>
-                                <div class="relative w-9 h-5 rounded-full border-2 transition-all
-                                    bg-slate-200 border-slate-300 peer-checked:bg-violet-500 peer-checked:border-violet-500
-                                    dark:bg-slate-700 dark:border-slate-600 dark:peer-checked:bg-violet-600 dark:peer-checked:border-violet-600">
-                                    <span class="absolute left-0.5 top-0.5 w-3.5 h-3.5 rounded-full bg-gray-50 shadow transition-transform duration-200 peer-checked:translate-x-4"></span>
+                                <div class="relative w-9 h-5 rounded-full border-2 transition-all"
+                                    :class="reqConfig ? 'bg-violet-500 border-violet-500 dark:bg-violet-600 dark:border-violet-600' : 'bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600'">
+                                    <span class="absolute left-0.5 top-0.5 w-3.5 h-3.5 rounded-full bg-gray-50 shadow transition-transform duration-200" :class="reqConfig ? 'translate-x-4' : ''"></span>
                                 </div>
                                 <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Requiere configuración</span>
                             </label>
-                            @if($u['requiere_config'] ?? false)
-                            <div wire:key="checklist-content-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
+                            <div x-show="reqConfig" wire:key="checklist-content-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
                                 <button type="button" @click="checklistOpen = !checklistOpen"
                                     class="flex items-center justify-between w-full px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                     <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Checklist de configuración</span>
                                     <i class="fas fa-chevron-down text-xs text-slate-400 transition-transform duration-200" :class="{ 'rotate-180': checklistOpen }"></i>
                                 </button>
                                 <div x-show="checklistOpen" x-transition class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    @php $flatCounter = 0; @endphp
                                     @foreach($u['checklist'] ?? [] as $catKey => $items)
                                     <div class="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                                         <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
@@ -765,18 +791,22 @@
                                         </div>
                                         <div class="p-3 space-y-2">
                                             @foreach($items as $idx => $item)
+                                            @php $currentFlat = $flatCounter; $flatCounter++; @endphp
                                             <div class="flex items-center gap-3 p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                                <label class="flex items-center justify-center cursor-pointer">
+                                                <label class="flex items-center justify-center cursor-pointer"
+                                                    @if(!$modalYaTieneFacturas && !$yaFinalizado)
+                                                    @click.prevent="toggleItem({{ $currentFlat }}); $wire.marcarChecklist({{ $pIndex }}, {{ $uIndex }}, '{{ $catKey }}', {{ $idx }})"
+                                                    @endif>
                                                     <input type="checkbox"
-                                                        wire:click="marcarChecklist({{ $pIndex }}, {{ $uIndex }}, '{{ $catKey }}', {{ $idx }})"
-                                                        {{ !empty($item['realizado']) ? 'checked' : '' }}
+                                                        :checked="doneStates[{{ $currentFlat }}]"
                                                         @if($modalYaTieneFacturas || $yaFinalizado) disabled @endif
                                                         class="peer sr-only">
-                                                    <div class="w-5 h-5 rounded border-2 border-slate-300 dark:border-slate-600 peer-checked:bg-green-500 peer-checked:border-green-500 transition-all flex items-center justify-center">
-                                                        <i class="fas fa-check text-white text-[8px] opacity-0 peer-checked:opacity-100"></i>
+                                                    <div class="w-5 h-5 rounded border-2 transition-all flex items-center justify-center"
+                                                        :class="doneStates[{{ $currentFlat }}] ? 'bg-green-500 border-green-500' : 'border-slate-300 dark:border-slate-600'">
+                                                        <i class="fas fa-check text-white text-[8px]" :class="doneStates[{{ $currentFlat }}] ? 'opacity-100' : 'opacity-0'"></i>
                                                     </div>
                                                 </label>
-                                                <span class="text-sm flex-1 {{ !empty($item['realizado']) ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200' }}">{{ $item['nombre'] ?? '' }}</span>
+                                                <span class="text-sm flex-1" :class="doneStates[{{ $currentFlat }}] ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200'">{{ $item['nombre'] ?? '' }}</span>
                                                 <input type="text"
                                                     wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.responsable"
                                                     @if($modalYaTieneFacturas || $yaFinalizado) readonly @endif
@@ -789,26 +819,18 @@
                                     @endforeach
                                 </div>
                             </div>
-                            @endif
-                        </div>
-                        @endif
-
-                        @if($u['requiere_config'] ?? false)
-                        @php
-                            $checklistFlat2 = collect($u['checklist'] ?? [])->flatMap(fn($items) => is_array($items) ? array_values($items) : [])->filter(fn($i) => is_array($i) && isset($i['nombre']));
-                            $totalItems = $checklistFlat2->count();
-                            $itemsMarcados = $checklistFlat2->filter(fn($i) => !empty($i['realizado']))->count();
-                            $yaFinalizado = !empty($u['fecha_fin_configuracion']);
-                        @endphp
+                        {{-- Counter section: inside same x-data for Alpine reactivity --}}
+                        <template x-if="reqConfig">
                         <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3"
                             wire:key="finalize-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
-                            @if(!$yaFinalizado && $totalItems > 0)
+                            @if(!$yaFinalizado && $totalItemsCount > 0)
                             <div class="flex items-center gap-2 text-xs text-slate-500">
-                                <span class="font-semibold {{ $itemsMarcados === $totalItems ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-300' }}">{{ $itemsMarcados }}/{{ $totalItems }}</span>
+                                <span class="font-semibold" :class="marcados === totalItems ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-300'" x-text="marcados + '/' + totalItems"></span>
                                 <span>tareas</span>
                                 <div class="w-20 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div class="h-full rounded-full transition-all {{ $itemsMarcados === $totalItems ? 'bg-emerald-500' : 'bg-violet-500' }}"
-                                        style="width: {{ $totalItems > 0 ? round(($itemsMarcados / $totalItems) * 100) : 0 }}%"></div>
+                                    <div class="h-full rounded-full transition-all"
+                                        :class="marcados === totalItems ? 'bg-emerald-500' : 'bg-violet-500'"
+                                        :style="'width: ' + porcentaje + '%'"></div>
                                 </div>
                             </div>
                             @else
@@ -856,6 +878,8 @@
                                     <span wire:loading wire:target="finalizarConfiguracionUnidad"><i class="fas fa-spinner fa-spin mr-1"></i> Registrando...</span>
                                 </button>
                             @endif
+                        </div>
+                        </template>
                         </div>
                         @endif
 

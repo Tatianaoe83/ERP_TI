@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Eloquent as Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 
 /**
@@ -27,19 +26,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class SolicitudActivo extends Model
 {
-    use SoftDeletes;
-
-
     public $table = 'solicitud_activos';
     protected $primaryKey = 'SolicitudActivoID';
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
-
-
-    protected $dates = ['deleted_at'];
-
-
 
     public $fillable = [
         'SolicitudID',
@@ -88,8 +79,7 @@ class SolicitudActivo extends Model
         'EmpleadoID' => 'nullable|integer',
         'DepartamentoID' => 'nullable|integer',
         'created_at' => 'required',
-        'updated_at' => 'required',
-        'deleted_at' => 'nullable'
+        'updated_at' => 'required'
     ];
 
     /**
