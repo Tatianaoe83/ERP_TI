@@ -408,7 +408,7 @@
 </div>
 
 @push('facturas_scripts')
-<script src="{{ asset('vendor/highcharts/highcharts.js') }}"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
 <script>
 (function () {
     'use strict';
