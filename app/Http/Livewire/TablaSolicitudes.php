@@ -42,6 +42,7 @@ class TablaSolicitudes extends Component
     public array $facturas             = [];
     public array $facturaXml           = [];
     public array $xmlParseado          = [];
+    public array $unidadesGuardadas    = []; // Rastrea qué unidades fueron guardadas en esta sesión
 
     public array $usuarioSearch      = [];
     public array $usuarioOptions     = [];
@@ -113,6 +114,9 @@ class TablaSolicitudes extends Component
         } catch (\Throwable $e) {
             $this->xmlParseado[$pIndex][$uIndex] = ['error' => $e->getMessage()];
         }
+
+        // Verificar si hay empleado y cargar insumos si ambos existen
+        $this->verificarYCargarInsumosParaUnidad($pIndex, $uIndex);
 
         // 🔥 Guardar archivo al storage
         if ($this->asignacionSolicitudId) {
@@ -691,15 +695,8 @@ class TablaSolicitudes extends Component
         try {
             $this->resetAsignacionState();
             $this->asignacionSolicitudId = $solicitudId;
-
-            $this->insumosDisponibles = DB::table('cortes')
-                ->whereNull('deleted_at')
-                ->select(DB::raw('MAX(CortesID) as id, NombreInsumo as nombre'))
-                ->groupBy('NombreInsumo')
-                ->orderBy('NombreInsumo')
-                ->get()
-                ->map(fn($c) => ['id' => (int)$c->id, 'nombre' => (string)$c->nombre])
-                ->toArray();
+            // NO cargar insumos al abrir - se cargan solo cuando tenga AMBOS: XML + usuario final
+            $this->insumosDisponibles = [];
 
             $seleccionadas = Cotizacion::query()
                 ->where('SolicitudID', $solicitudId)
@@ -830,6 +827,10 @@ class TablaSolicitudes extends Component
                     $this->usuarioOptions[$pIndex][$uIndex] = [];
                 }
             }
+
+            // Limpiar insumos al abrir para que solo carguen cuando AMBOS estén (XML + empleado) en ESTA sesión
+            $this->insumosDisponibles = [];
+            $this->unidadesGuardadas  = [];
 
             $this->modalEsSoloLectura     = false;
             $this->modalAsignacionAbierto = true;
@@ -1265,6 +1266,13 @@ class TablaSolicitudes extends Component
                 }
             });
 
+            // Marcar todas las unidades como guardadas en esta sesión
+            foreach ($this->propuestasAsignacion as $pIndex => $p) {
+                foreach (array_keys($p['unidades'] ?? []) as $uIndex) {
+                    $this->unidadesGuardadas["{$pIndex}_{$uIndex}"] = true;
+                }
+            }
+
             $this->facturaXml  = [];
             $this->facturas    = [];
             $this->xmlParseado = [];
@@ -1325,47 +1333,11 @@ class TablaSolicitudes extends Component
         $this->usuarioSearch[$pIndex][$uIndex]  = (string)$row['NombreEmpleado'];
         $this->usuarioOptions[$pIndex][$uIndex] = [];
 
-        // PERSISTIR INMEDIATAMENTE el usuario final en BD
-        if ($this->asignacionSolicitudId) {
-            try {
-                $propuesta = $this->propuestasAsignacion[$pIndex];
-                $unidad    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex];
+        // Verificar si hay XML y cargar insumos de la gerencia del usuario
+        $this->verificarYCargarInsumosParaUnidad($pIndex, $uIndex);
 
-                $activo = SolicitudActivo::updateOrCreate(
-                    [
-                        'SolicitudID'  => (int)$this->asignacionSolicitudId,
-                        'CotizacionID' => (int)($propuesta['cotizacionId'] ?? 0),
-                        'UnidadIndex'  => (int)($unidad['unidadIndex'] ?? ($uIndex + 1)),
-                    ],
-                    [
-                        'NumeroPropuesta' => (int)($propuesta['numeroPropuesta'] ?? 0),
-                        'EmpleadoID'      => (int)$row['EmpleadoID'],
-                        'DepartamentoID'  => $row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null,
-                    ]
-                );
-
-                // Guardar activoId en memoria para futuras actualizaciones
-                $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = (int)$activo->SolicitudActivoID;
-
-                \Log::info('[Asignacion] Usuario final persistido inmediatamente', [
-                    'solicitudId' => $this->asignacionSolicitudId,
-                    'activoId'    => $activo->SolicitudActivoID,
-                    'empleadoId'  => $row['EmpleadoID'],
-                    'pIndex'      => $pIndex,
-                    'uIndex'      => $uIndex,
-                ]);
-
-            } catch (\Throwable $e) {
-                \Log::error('[Asignacion] Error persistiendo usuario final', [
-                    'solicitudId' => $this->asignacionSolicitudId,
-                    'empleadoId'  => $empleadoId,
-                    'error'       => $e->getMessage(),
-                ]);
-                $this->dispatchBrowserEvent('swal:error', [
-                    'message' => 'Error guardando usuario final: ' . $e->getMessage()
-                ]);
-            }
-        }
+        // NO persistir en BD aquí - solo actualizar memoria
+        // La persistencia ocurre cuando hace clic en "Guardar" con persistAsignacion()
     }
 
     // =========================================================================
@@ -1431,8 +1403,59 @@ class TablaSolicitudes extends Component
     }
 
     /**
+     * Carga insumos de una gerencia específica.
+     * Se ejecuta cuando el usuario tiene AMBOS: XML subido + usuario final asignado
+     */
+    private function cargarInsumosDispPorGerencia(?int $gerenciaId): void
+    {
+        if (!$gerenciaId) {
+            $this->insumosDisponibles = [];
+            return;
+        }
+
+        $this->insumosDisponibles = DB::table('cortes')
+            ->whereNull('deleted_at')
+            ->where('GerenciaID', $gerenciaId)
+            ->select(DB::raw('MAX(CortesID) as id, NombreInsumo as nombre'))
+            ->groupBy('NombreInsumo')
+            ->orderBy('NombreInsumo')
+            ->get()
+            ->map(fn($c) => ['id' => (int)$c->id, 'nombre' => (string)$c->nombre])
+            ->toArray();
+    }
+
+    /**
+     * Verifica si hay XML + usuario final en una unidad, y carga insumos si es así
+     */
+    private function verificarYCargarInsumosParaUnidad(int $pIndex, int $uIndex): void
+    {
+        $unidad = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex] ?? null;
+        if (!$unidad) return;
+
+        // Verificar si tiene XML parseado exitosamente
+        $tieneXml = isset($this->xmlParseado[$pIndex][$uIndex]) && 
+                    !empty($this->xmlParseado[$pIndex][$uIndex]['uuid']) &&
+                    empty($this->xmlParseado[$pIndex][$uIndex]['error']);
+
+        // Verificar si tiene usuario final asignado
+        $tieneEmpleado = !empty($unidad['empleado_id']);
+
+        // Si tiene AMBOS, cargar insumos de su gerencia
+        if ($tieneXml && $tieneEmpleado) {
+            $deptId = (int)($unidad['departamento_id'] ?? 0);
+            if ($deptId) {
+                $dept = \App\Models\Departamentos::find($deptId);
+                if ($dept && $dept->GerenciaID) {
+                    $this->cargarInsumosDispPorGerencia((int)$dept->GerenciaID);
+                }
+            }
+        }
+    }
+
+    /**
      * Limpia registros SolicitudActivo en BD que no cumplen las 3 condiciones de persistencia.
      * Se ejecuta al cerrar el modal sin guardar para eliminar registros creados automáticamente.
+     * PERO: NO borra si tiene EmpleadoID (usuario final ya asignado)
      */
     private function limpiarRegistrosHuerfanos(): void
     {
@@ -1441,20 +1464,33 @@ class TablaSolicitudes extends Component
         try {
             foreach ($this->propuestasAsignacion as $pIndex => $p) {
                 foreach (($p['unidades'] ?? []) as $uIndex => $u) {
-                    // Si NO cumple condiciones de persistencia pero tiene activoId
+                    $activoId = $u['activoId'] ?? null;
+                    if (!$activoId) continue;
+
+                    // Obtener el registro de BD para verificar si tiene EmpleadoID
+                    $activo = SolicitudActivo::find((int)$activoId);
+                    if (!$activo) continue;
+
+                    // ⚠️ NUNCA borrar si tiene EmpleadoID (usuario final ya asignado)
+                    if (!empty($activo->EmpleadoID)) {
+                        \Log::info('[Asignacion] Manteniendo SolicitudActivo con empleado asignado', [
+                            'activoId'   => $activoId,
+                            'empleadoId' => $activo->EmpleadoID,
+                        ]);
+                        continue;
+                    }
+
+                    // Si NO cumple condiciones de persistencia Y no tiene empleado, limpiar
                     if (!$this->shouldPersistUnit($pIndex, $uIndex, $u)) {
-                        $activoId = $u['activoId'] ?? null;
-                        if ($activoId) {
-                            // Si tiene serial/fecha_entrega, SOLO limpiar empleado
-                            if (!empty($u['serial']) || !empty($u['fecha_entrega'])) {
-                                SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->update([
-                                    'EmpleadoID'     => null,
-                                    'DepartamentoID' => null,
-                                ]);
-                            } else {
-                                // Si no tiene serial/fecha_entrega, eliminar completo
-                                SolicitudActivo::where('SolicitudActivoID', (int)$activoId)->delete();
-                            }
+                        // Si tiene serial/fecha_entrega, SOLO limpiar empleado
+                        if (!empty($u['serial']) || !empty($u['fecha_entrega'])) {
+                            $activo->update([
+                                'EmpleadoID'     => null,
+                                'DepartamentoID' => null,
+                            ]);
+                        } else {
+                            // Si no tiene nada, eliminar completo
+                            $activo->delete();
                         }
                     }
                 }
@@ -1485,6 +1521,7 @@ class TablaSolicitudes extends Component
         $this->insumosDisponibles          = [];
         $this->insumoSearchQuery           = '';
         $this->insumoSearchResults         = [];
+        $this->unidadesGuardadas           = []; // Limpiar rastro de guardadas
     }
 
     private function detectSerialColumn(): ?string

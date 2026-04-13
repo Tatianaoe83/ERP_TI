@@ -615,8 +615,9 @@
                         @foreach($p['unidades'] ?? [] as $uIndex => $u)
                         @php 
                         $yaFinalizado = !empty($u['fecha_fin_configuracion']) || !empty($u['config_lista_ui']);
-                        // Si tiene activoId significa que fue guardado en BD (persistAsignacion creó SolicitudActivo)
-                        $yaGuardado = !empty($u['activoId']);
+                        // $yaGuardado es true solo si fue guardado en ESTA sesión (en $unidadesGuardadas)
+                        // O si finalizó la config (fecha_fin_configuracion/config_lista_ui)
+                        $yaGuardado = !empty($unidadesGuardadas["{$pIndex}_{$uIndex}"]) || $yaFinalizado;
                         @endphp
                         <div class="px-5 py-4" wire:key="unit-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
                             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
@@ -958,7 +959,7 @@
                 $facturasConInsumo = $todasFacturasParseadas->count() - $facturasSinInsumo;
                 @endphp
 
-                @if($todasFacturasParseadas->isNotEmpty())
+                @if($todasFacturasParseadas->isNotEmpty() && !empty($insumosDisponibles))
                 <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden" x-data="{ expandido: true }">
                     <button type="button" @click="expandido = !expandido"
                         class="w-full px-5 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
@@ -1049,6 +1050,18 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                
+                @if($todasFacturasParseadas->isNotEmpty() && empty($insumosDisponibles))
+                <div class="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 p-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-info-circle text-blue-500 text-lg shrink-0"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-blue-900 dark:text-blue-200">Asigna un usuario final para cargar insumos</p>
+                            <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">Los insumos disponibles se mostrarán según la gerencia del usuario seleccionado.</p>
                         </div>
                     </div>
                 </div>
