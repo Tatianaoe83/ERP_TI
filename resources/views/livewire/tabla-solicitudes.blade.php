@@ -613,7 +613,10 @@
 
                     <div class="divide-y divide-slate-100 dark:divide-slate-800">
                         @foreach($p['unidades'] ?? [] as $uIndex => $u)
-                        @php $yaFinalizado = !empty($u['fecha_fin_configuracion']) || !empty($u['config_lista_ui']); @endphp
+                        @php 
+                        // Si tiene activoId o fecha_fin_configuracion o config_lista_ui, está guardado y se bloquea
+                        $yaFinalizado = !empty($u['activoId']) || !empty($u['fecha_fin_configuracion']) || !empty($u['config_lista_ui']);
+                        @endphp
                         <div class="px-5 py-4" wire:key="unit-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
                             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
                                 <div class="col-span-1 flex lg:justify-center">
@@ -657,19 +660,19 @@
                                         @endif
                                         @else
                                         <div class="flex flex-col gap-1">
+                                            @if($esXmlGuardado && !$hasNewXml)
+                                            <div class="inline-flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-violet-300 bg-violet-50 text-violet-700 text-xs dark:bg-violet-900/20 dark:border-violet-600 dark:text-violet-300 cursor-not-allowed opacity-70">
+                                                <i class="fas fa-lock text-violet-500 text-[9px]"></i>
+                                                <span class="font-medium truncate max-w-[7rem]">{{ basename($xmlSavedPath) }}</span>
+                                            </div>
+                                            @else
                                             <label class="inline-flex items-center gap-2 h-9 px-3 rounded-lg border-2 border-dashed cursor-pointer transition-all text-xs
-                                                {{ ($hasNewXml || $esXmlGuardado) ? 'bg-violet-50 border-violet-400 text-violet-700 hover:bg-violet-100 dark:bg-violet-900/20 dark:border-violet-600 dark:text-violet-300' : 'bg-violet-50/40 border-violet-300 text-violet-600 hover:bg-violet-50 hover:border-violet-400 dark:bg-violet-950/20 dark:border-violet-700 dark:text-violet-400' }}">
+                                                {{ $hasNewXml ? 'bg-violet-50 border-violet-400 text-violet-700 hover:bg-violet-100 dark:bg-violet-900/20 dark:border-violet-600 dark:text-violet-300' : 'bg-violet-50/40 border-violet-300 text-violet-600 hover:bg-violet-50 hover:border-violet-400 dark:bg-violet-950/20 dark:border-violet-700 dark:text-violet-400' }}">
                                                 <input type="file" class="hidden" accept="text/xml,application/xml,.xml"
                                                     wire:model.live="facturaXml.{{ $pIndex }}.{{ $uIndex }}">
-                                                <i class="fas {{ ($hasNewXml || $esXmlGuardado) ? 'fa-check-circle text-violet-500' : 'fa-file-code text-violet-400' }}"></i>
+                                                <i class="fas {{ $hasNewXml ? 'fa-check-circle text-violet-500' : 'fa-file-code text-violet-400' }}"></i>
                                                 <span class="font-medium truncate max-w-[7rem]">
-                                                    @if($hasNewXml)
-                                                    {{ $parsedOk ? 'XML Cargado' : 'XML cargado' }}
-                                                    @elseif($esXmlGuardado)
-                                                    {{ basename($xmlSavedPath) }}
-                                                    @else
-                                                    Subir XML
-                                                    @endif
+                                                    {{ $hasNewXml ? ($parsedOk ? 'XML Cargado' : 'XML cargado') : 'Subir XML' }}
                                                 </span>
                                             </label>
                                             <div wire:loading wire:target="facturaXml.{{ $pIndex }}.{{ $uIndex }}" class="text-[10px] text-violet-500 flex items-center gap-1">
@@ -678,10 +681,6 @@
                                             @error("facturaXml.$pIndex.$uIndex")
                                             <p class="text-[10px] text-red-600 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> {{ $message }}</p>
                                             @enderror
-                                            @if($esXmlGuardado && !$hasNewXml)
-                                            <a href="{{ Storage::url($xmlSavedPath) }}" target="_blank" class="text-[10px] text-violet-600 dark:text-violet-400 hover:underline">
-                                                <i class="fas fa-file-code mr-1"></i>Ver XML guardado
-                                            </a>
                                             @endif
                                         </div>
                                         @endif
@@ -702,7 +701,7 @@
                                 </div>
                                 <div class="col-span-3">
                                     <p class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Fecha de entrega</p>
-                                    @if($modalYaTieneFacturas)
+                                    @if($modalYaTieneFacturas || $yaFinalizado)
                                     <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300">
                                         <i class="fas fa-calendar-alt text-slate-400 text-xs"></i> {{ $u['fecha_entrega'] ?? 'Sin fecha' }}
                                     </div>

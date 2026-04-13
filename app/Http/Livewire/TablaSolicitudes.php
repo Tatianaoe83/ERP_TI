@@ -1095,7 +1095,7 @@ class TablaSolicitudes extends Component
                         Facturas::create([
                             'SolicitudID'  => (int)$this->asignacionSolicitudId,
                             'CotizacionID' => $cotizacionId,
-                            'GerenciaID'   => $gerenciaID,  // 🔥 AGREGAR GERENCIA
+                            'GerenciaID'   => $gerenciaID,
                             'UUID'         => $uuid,
                             'Nombre'       => $descripcion,
                             'Importe'      => $subtotal,
