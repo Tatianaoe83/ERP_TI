@@ -614,8 +614,9 @@
                     <div class="divide-y divide-slate-100 dark:divide-slate-800">
                         @foreach($p['unidades'] ?? [] as $uIndex => $u)
                         @php 
-                        // Si tiene activoId o fecha_fin_configuracion o config_lista_ui, está guardado y se bloquea
-                        $yaFinalizado = !empty($u['activoId']) || !empty($u['fecha_fin_configuracion']) || !empty($u['config_lista_ui']);
+                        $yaFinalizado = !empty($u['fecha_fin_configuracion']) || !empty($u['config_lista_ui']);
+                        // Si tiene activoId significa que fue guardado en BD (persistAsignacion creó SolicitudActivo)
+                        $yaGuardado = !empty($u['activoId']);
                         @endphp
                         <div class="px-5 py-4" wire:key="unit-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
                             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
@@ -701,7 +702,7 @@
                                 </div>
                                 <div class="col-span-3">
                                     <p class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Fecha de entrega</p>
-                                    @if($modalYaTieneFacturas || $yaFinalizado)
+                                    @if($modalYaTieneFacturas || $yaGuardado)
                                     <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300">
                                         <i class="fas fa-calendar-alt text-slate-400 text-xs"></i> {{ $u['fecha_entrega'] ?? 'Sin fecha' }}
                                     </div>
@@ -718,7 +719,7 @@
                                     x-data="{ open: false }"
                                     @click.outside="open = false">
                                     <label class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5 block">Usuario final</label>
-                                    @if($modalYaTieneFacturas || $yaFinalizado)
+                                    @if($modalYaTieneFacturas || $yaFinalizado || $yaGuardado)
                                     <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300">
                                         <i class="fas fa-user text-slate-400 text-xs"></i> {{ $u['empleado_nombre'] ?? '—' }}
                                     </div>
@@ -785,7 +786,7 @@
                             <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800"
                                 wire:key="checklist-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}"
                                 x-data="{
-                                checklistOpen: {{ ($modalYaTieneFacturas || $yaFinalizado) ? 'false' : 'true' }},
+                                checklistOpen: {{ ($modalYaTieneFacturas || $yaFinalizado || $yaGuardado) ? 'false' : 'true' }},
                                 reqConfig: {{ ($u['requiere_config'] ?? false) ? 'true' : 'false' }},
                                 doneStates: @js($initialDoneStates),
                                 totalItems: {{ $totalItemsCount }},
@@ -793,8 +794,8 @@
                                 get porcentaje() { return this.totalItems > 0 ? Math.round((this.marcados / this.totalItems) * 100) : 0; },
                                 toggleItem(flatIdx) { this.doneStates[flatIdx] = !this.doneStates[flatIdx]; }
                             }">
-                                <label class="inline-flex items-center gap-2 {{ (!$modalYaTieneFacturas && !$yaFinalizado) ? 'cursor-pointer' : 'cursor-not-allowed opacity-70' }} mb-3 select-none"
-                                    @if(!$modalYaTieneFacturas && !$yaFinalizado)
+                                <label class="inline-flex items-center gap-2 {{ (!$modalYaTieneFacturas && !$yaFinalizado && !$yaGuardado) ? 'cursor-pointer' : 'cursor-not-allowed opacity-70' }} mb-3 select-none"
+                                    @if(!$modalYaTieneFacturas && !$yaFinalizado && !$yaGuardado)
                                     @click.prevent="
                                     let oldVal = reqConfig;
                                     reqConfig = !reqConfig;
@@ -805,7 +806,7 @@
                                 "
                                     @endif>
                                     <input type="checkbox" class="peer sr-only" :checked="reqConfig"
-                                        @if($modalYaTieneFacturas || $yaFinalizado) disabled @endif>
+                                        @if($modalYaTieneFacturas || $yaFinalizado || $yaGuardado) disabled @endif>
                                     <div class="relative w-9 h-5 rounded-full border-2 transition-all"
                                         :class="reqConfig ? 'bg-violet-500 border-violet-500 dark:bg-violet-600 dark:border-violet-600' : 'bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600'">
                                         <span class="absolute left-0.5 top-0.5 w-3.5 h-3.5 rounded-full bg-gray-50 shadow transition-transform duration-200" :class="reqConfig ? 'translate-x-4' : ''"></span>
@@ -830,12 +831,12 @@
                                                 @php $currentFlat = $flatCounter; $flatCounter++; @endphp
                                                 <div class="flex items-center gap-3 p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                     <label class="flex items-center justify-center cursor-pointer"
-                                                        @if(!$modalYaTieneFacturas && !$yaFinalizado)
+                                                        @if(!$modalYaTieneFacturas && !$yaFinalizado && !$yaGuardado)
                                                         @click.prevent="toggleItem({{ $currentFlat }}); $wire.marcarChecklist({{ $pIndex }}, {{ $uIndex }}, '{{ $catKey }}', {{ $idx }})"
                                                         @endif>
                                                         <input type="checkbox"
                                                             :checked="doneStates[{{ $currentFlat }}]"
-                                                            @if($modalYaTieneFacturas || $yaFinalizado) disabled @endif
+                                                            @if($modalYaTieneFacturas || $yaFinalizado || $yaGuardado) disabled @endif
                                                             class="peer sr-only">
                                                         <div class="w-5 h-5 rounded border-2 transition-all flex items-center justify-center"
                                                             :class="doneStates[{{ $currentFlat }}] ? 'bg-green-500 border-green-500' : 'border-slate-300 dark:border-slate-600'">
@@ -845,9 +846,9 @@
                                                     <span class="text-sm flex-1" :class="doneStates[{{ $currentFlat }}] ? 'line-through text-slate-400' : 'text-slate-800 dark:text-slate-200'">{{ $item['nombre'] ?? '' }}</span>
                                                     <input type="text"
                                                         wire:model.lazy="propuestasAsignacion.{{ $pIndex }}.unidades.{{ $uIndex }}.checklist.{{ $catKey }}.{{ $idx }}.responsable"
-                                                        @if($modalYaTieneFacturas || $yaFinalizado) readonly @endif
+                                                        @if($modalYaTieneFacturas || $yaFinalizado || $yaGuardado) readonly @endif
                                                         placeholder="Responsable"
-                                                        class="h-7 w-24 px-2 text-xs border border-slate-200 rounded bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 text-center {{ ($modalYaTieneFacturas || $yaFinalizado) ? 'opacity-60 cursor-not-allowed' : '' }}">
+                                                        class="h-7 w-24 px-2 text-xs border border-slate-200 rounded bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 text-center {{ ($modalYaTieneFacturas || $yaFinalizado || $yaGuardado) ? 'opacity-60 cursor-not-allowed' : '' }}">
                                                 </div>
                                                 @endforeach
                                             </div>
@@ -859,7 +860,7 @@
                                 <template x-if="reqConfig">
                                     <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3"
                                         wire:key="finalize-{{ $asignacionSolicitudId }}-{{ $pIndex }}-{{ $uIndex }}">
-                                        @if(!$yaFinalizado && $totalItemsCount > 0)
+                                        @if(!$yaFinalizado && !$yaGuardado && $totalItemsCount > 0)
                                         <div class="flex items-center gap-2 text-xs text-slate-500">
                                             <span class="font-semibold" :class="marcados === totalItems ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-300'" x-text="marcados + '/' + totalItems"></span>
                                             <span>tareas</span>
@@ -880,7 +881,7 @@
                                                 <p class="text-xs text-emerald-600 dark:text-emerald-400">Ya puedes subir el XML de factura.</p>
                                             </div>
                                         </div>
-                                        @elseif($yaFinalizado)
+                                        @elseif($yaFinalizado || $yaGuardado)
                                         <span class="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800">
                                             <i class="fas fa-check-double mr-1"></i>
                                             Finalizado el {{ \Carbon\Carbon::parse($u['fecha_fin_configuracion'])->format('d/m/Y H:i') }}
