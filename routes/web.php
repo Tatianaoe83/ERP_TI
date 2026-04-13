@@ -104,6 +104,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
     Route::get('facturas/insumos-por-gerencia', [FacturasController::class, 'getInsumosPorGerencia'])->name('facturas.insumosPorGerencia');
     Route::patch('facturas/{id}/insumo', [FacturasController::class, 'actualizarInsumo'])->name('facturas.actualizarInsumo');
+    Route::patch('facturas/{id}/mes', [FacturasController::class, 'actualizarMes'])->name('facturas.actualizarMes');
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:facturas.create');
     Route::resource('facturas', FacturasController::class);
 

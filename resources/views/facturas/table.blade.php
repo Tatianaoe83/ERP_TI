@@ -217,25 +217,24 @@
                     render: function(val, type, row) {
                         const valorActual = val ? val.replace(/"/g, '&quot;') : '';
                         
-                        if (val) {
-                            return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
-                               <i class="fas fa-tag text-[9px]"></i>${valorActual}
-                           </span>`;
-                        }
-
                         return `
-                    <div class="insumo-select-wrap relative" data-factura="${row.FacturasID}" data-solicitud="${row.SolicitudID}" data-valor="">
-                        <div class="relative inline-block">
-                            <select class="insumo-select pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg outline-none transition-all cursor-pointer appearance-none
-                                           bg-gray-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700
-                                           text-slate-700 dark:text-slate-200 hover:border-violet-400 dark:hover:border-violet-500
-                                           focus:border-violet-500 dark:focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
-                                style="min-width:160px" data-loaded="false" data-factura="${row.FacturasID}" data-solicitud="${row.SolicitudID}" data-valor="">
-                                <option value="">— Asignar insumo —</option>
-                            </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                            </div>
+                    <div class="insumo-select-wrap relative inline-block" data-factura="${row.FacturasID}" data-valor="${valorActual}">
+                        <select class="insumo-select pr-9 pl-3 py-2 text-xs font-medium rounded-lg outline-none transition-all cursor-pointer appearance-none
+                                       bg-gray-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700
+                                       text-slate-700 dark:text-slate-200 hover:border-violet-400 dark:hover:border-violet-500
+                                       focus:border-violet-500 dark:focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm
+                                       disabled:opacity-50 disabled:cursor-not-allowed"
+                            style="width: 240px; max-width: 240px;" data-loaded="false" data-factura="${row.FacturasID}" data-valor="${valorActual}">
+                            ${val ? `<option value="${valorActual}">${valorActual.length > 32 ? valorActual.substring(0, 32) + '...' : valorActual}</option>` : '<option value="">— Sin asignar —</option>'}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5">
+                            <svg class="w-3.5 h-3.5 text-slate-400 transition-all chevron-icon" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            <svg class="w-3.5 h-3.5 text-violet-500 animate-spin hidden loading-icon" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </div>
                     </div>`;
                     }
@@ -281,12 +280,32 @@
                 {
                     data: 'Mes',
                     className: 'px-4 py-3 border-b dark:border-slate-800',
-                    render: function(data) {
-                        if (!data) return '<span class="text-slate-400 text-xs">—</span>';
-                        const nombre = mesesNombres[parseInt(data)] ?? data;
-                        return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-[11px] font-bold border border-sky-200 dark:border-sky-800/50">
-                        <i class="fas fa-calendar-alt text-[10px]"></i>${nombre}
-                    </span>`;
+                    orderable: false,
+                    render: function(data, type, row) {
+                        return `
+                    <div class="mes-select-wrap relative inline-block" data-factura="${row.FacturasID}">
+                        <select class="mes-select pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg outline-none transition-all cursor-pointer appearance-none
+                                       bg-gray-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+                                       text-slate-700 dark:text-slate-200 hover:border-sky-400 dark:hover:border-sky-500
+                                       focus:border-sky-500 dark:focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 shadow-sm"
+                            data-factura="${row.FacturasID}">
+                            <option value="1" ${data == 1 ? 'selected' : ''}>Enero</option>
+                            <option value="2" ${data == 2 ? 'selected' : ''}>Febrero</option>
+                            <option value="3" ${data == 3 ? 'selected' : ''}>Marzo</option>
+                            <option value="4" ${data == 4 ? 'selected' : ''}>Abril</option>
+                            <option value="5" ${data == 5 ? 'selected' : ''}>Mayo</option>
+                            <option value="6" ${data == 6 ? 'selected' : ''}>Junio</option>
+                            <option value="7" ${data == 7 ? 'selected' : ''}>Julio</option>
+                            <option value="8" ${data == 8 ? 'selected' : ''}>Agosto</option>
+                            <option value="9" ${data == 9 ? 'selected' : ''}>Septiembre</option>
+                            <option value="10" ${data == 10 ? 'selected' : ''}>Octubre</option>
+                            <option value="11" ${data == 11 ? 'selected' : ''}>Noviembre</option>
+                            <option value="12" ${data == 12 ? 'selected' : ''}>Diciembre</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                            <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                        </div>
+                    </div>`;
                     }
                 },
                 {
@@ -343,41 +362,74 @@
 
         $('#facturasTable').on('focus', '.insumo-select', async function() {
             const $sel = $(this);
-            const solID = $sel.data('solicitud');
+            const $wrap = $sel.closest('.insumo-select-wrap');
+            const facturaID = $sel.data('factura');
             const valorAct = $sel.data('valor') || '';
 
             if ($sel.data('loaded') === true || $sel.data('loaded') === 'true') return;
             $sel.data('loaded', true);
 
-            $sel.empty().append('<option>Cargando...</option>').prop('disabled', true);
+            // Mostrar spinner, ocultar chevron
+            $wrap.find('.chevron-icon').addClass('hidden');
+            $wrap.find('.loading-icon').removeClass('hidden');
+            $sel.prop('disabled', true);
 
             try {
-                let insumos = insumoCache[solID];
+                let insumos = insumoCache[facturaID];
                 if (!insumos) {
-                    const res = await fetch(`{{ route('facturas.insumosPorGerencia') }}?solicitudID=${encodeURIComponent(solID)}`, {
+                    const res = await fetch(`{{ route('facturas.insumosPorGerencia') }}?facturaID=${encodeURIComponent(facturaID)}`, {
                         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     const json = await res.json();
                     insumos = (json && json.data) ? json.data : [];
-                    insumoCache[solID] = insumos;
+                    insumoCache[facturaID] = insumos;
                 }
 
+                // Guardar el valor actual antes de limpiar
+                const currentVal = $sel.val();
                 $sel.empty().append('<option value="">— Sin asignar —</option>');
+                
                 insumos.forEach(nombre => {
-                    const selected = nombre === valorAct ? 'selected' : '';
-                    $sel.append(`<option value="${nombre}" ${selected}>${nombre}</option>`);
+                    const selected = (nombre === valorAct || nombre === currentVal) ? 'selected' : '';
+                    const displayNombre = nombre.length > 32 ? nombre.substring(0, 32) + '...' : nombre;
+                    $sel.append(`<option value="${nombre}" ${selected} title="${nombre}">${displayNombre}</option>`);
                 });
 
-                if (insumos.length === 0) $sel.append('<option value="" disabled>Sin insumos en corte</option>');
+                if (insumos.length === 0) {
+                    $sel.append('<option value="" disabled>Sin insumos disponibles</option>');
+                }
             } catch (e) {
+                console.error('Error cargando insumos:', e);
                 $sel.empty().append('<option value="" disabled>Error al cargar</option>');
+            } finally {
+                // Ocultar spinner, mostrar chevron
+                $wrap.find('.loading-icon').addClass('hidden');
+                $wrap.find('.chevron-icon').removeClass('hidden');
+                $sel.prop('disabled', false);
+                
+                // Abrir el select automáticamente después de cargar
+                setTimeout(() => {
+                    const selectElement = $sel[0];
+                    if (selectElement && typeof selectElement.showPicker === 'function') {
+                        try {
+                            selectElement.showPicker();
+                        } catch (err) {
+                            // Fallback si showPicker no está soportado
+                            $sel.focus();
+                        }
+                    } else {
+                        // Fallback para browsers que no soportan showPicker
+                        $sel.focus();
+                        // Simular click para abrir dropdown
+                        const event = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+                        selectElement.dispatchEvent(event);
+                    }
+                }, 50);
             }
-            $sel.prop('disabled', false);
         });
 
         $('#facturasTable').on('change', '.insumo-select', async function() {
             const $sel = $(this);
-            const $wrap = $sel.closest('.insumo-select-wrap');
             const $td = $sel.closest('td');
             const facturaID = $sel.data('factura');
             const nombre = $sel.val();
@@ -393,15 +445,43 @@
 
                 if (!res.ok) throw new Error('Error HTTP ' + res.status);
 
-                if (nombre) {
-                    $td.html(`<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
-                        <i class="fas fa-tag text-[9px]"></i>${nombre.replace(/"/g, '&quot;')}
-                    </span>`);
-                }
+                // Animación de éxito
+                $sel.removeClass('!border-green-500').addClass('!border-green-500');
+                setTimeout(() => $sel.removeClass('!border-green-500'), 800);
 
             } catch (e) {
                 $sel.addClass('!border-rose-500');
                 setTimeout(() => $sel.removeClass('!border-rose-500'), 1500);
+            } finally {
+                $sel.prop('disabled', false);
+            }
+        });
+
+        $('#facturasTable').on('change', '.mes-select', async function() {
+            const $sel = $(this);
+            const facturaID = $sel.data('factura');
+            const mes = parseInt($sel.val());
+
+            const mesAnterior = $sel.find('option[selected]').val() || $sel.find('option:first').val();
+            $sel.prop('disabled', true);
+
+            try {
+                const res = await fetch(`/facturas/${facturaID}/mes`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: JSON.stringify({ Mes: mes })
+                });
+
+                if (!res.ok) throw new Error('Error HTTP ' + res.status);
+
+                $sel.removeClass('!border-green-500').addClass('!border-green-500');
+                setTimeout(() => $sel.removeClass('!border-green-500'), 800);
+
+            } catch (e) {
+                $sel.val(mesAnterior);
+                $sel.addClass('!border-rose-500');
+                setTimeout(() => $sel.removeClass('!border-rose-500'), 1500);
+            } finally {
                 $sel.prop('disabled', false);
             }
         });

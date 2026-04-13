@@ -593,15 +593,28 @@ class FacturasController extends AppBaseController
 
     public function getInsumosPorGerencia(Request $request): JsonResponse
     {
-        $solicitudID = $request->input('solicitudID');
-        if (!$solicitudID) return response()->json(['data' => []]);
+        $facturaID = $request->input('facturaID');
+        if (!$facturaID) return response()->json(['data' => []]);
 
-        $gerenciaID = DB::table('solicitudes')->where('SolicitudID', $solicitudID)->value('GerenciaID');
+        $gerenciaID = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->value('GerenciaID');
         if (!$gerenciaID) return response()->json(['data' => []]);
 
         return response()->json(['data' => DB::table('cortes')
             ->where('GerenciaID', $gerenciaID)->whereNull('deleted_at')
             ->distinct()->orderBy('NombreInsumo')->pluck('NombreInsumo')]);
+    }
+
+    public function actualizarMes(Request $request, $id): JsonResponse
+    {
+        $request->validate(['Mes' => 'required|integer|min:1|max:12']);
+
+        $mes = (int)$request->input('Mes');
+        $updated = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')
+            ->update(['Mes' => $mes, 'updated_at' => now()]);
+
+        return $updated
+            ? response()->json(['message' => 'Mes actualizado correctamente'])
+            : response()->json(['message' => 'Factura no encontrada'], 404);
     }
 
     public function actualizarInsumo(Request $request, $id): JsonResponse
