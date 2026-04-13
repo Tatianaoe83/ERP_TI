@@ -26,6 +26,7 @@ class Facturas extends Model
     public $fillable = [
         'Nombre',
         'SolicitudID',
+        'GerenciaID',
         'Importe',
         'Costo',
         'Mes',
@@ -42,6 +43,8 @@ class Facturas extends Model
         'FacturasID'   => 'integer',
         'Nombre'       => 'string',
         'SolicitudID'  => 'integer',
+        'CotizacionID' => 'integer',
+        'GerenciaID'   => 'integer',
         'Importe'      => 'decimal:2',
         'Costo'        => 'decimal:2',
         'Mes'          => 'integer',

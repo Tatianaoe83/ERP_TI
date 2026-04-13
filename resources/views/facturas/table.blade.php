@@ -59,10 +59,10 @@
             <thead class="bg-gray-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700">
                 <tr>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Insumo</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Nombre</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Emisor</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Solicitud</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Gerencia</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Costo</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Total</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mes</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Año</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Acciones</th>
@@ -216,20 +216,21 @@
                     orderable: false,
                     render: function(val, type, row) {
                         const valorActual = val ? val.replace(/"/g, '&quot;') : '';
-                        const labelActual = val ?
-                            `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
-                               <i class="fas fa-tag text-[9px]"></i>${val}
-                           </span>` : '';
+                        
+                        if (val) {
+                            return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
+                               <i class="fas fa-tag text-[9px]"></i>${valorActual}
+                           </span>`;
+                        }
 
                         return `
-                    <div class="insumo-select-wrap relative" data-factura="${row.FacturasID}" data-solicitud="${row.SolicitudID}" data-valor="${valorActual}">
-                        <div class="insumo-label mb-1.5">${labelActual}</div>
+                    <div class="insumo-select-wrap relative" data-factura="${row.FacturasID}" data-solicitud="${row.SolicitudID}" data-valor="">
                         <div class="relative inline-block">
                             <select class="insumo-select pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg outline-none transition-all cursor-pointer appearance-none
                                            bg-gray-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700
                                            text-slate-700 dark:text-slate-200 hover:border-violet-400 dark:hover:border-violet-500
                                            focus:border-violet-500 dark:focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm"
-                                style="min-width:160px" data-loaded="false" data-factura="${row.FacturasID}" data-solicitud="${row.SolicitudID}" data-valor="${valorActual}">
+                                style="min-width:160px" data-loaded="false" data-factura="${row.FacturasID}" data-solicitud="${row.SolicitudID}" data-valor="">
                                 <option value="">— Asignar insumo —</option>
                             </select>
                             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
@@ -240,7 +241,7 @@
                     }
                 },
                 {
-                    data: 'Nombre',
+                    data: 'Emisor',
                     className: 'px-4 py-3 border-b dark:border-slate-800',
                     render: function(data) {
                         if (data === null || data === undefined) return '<span class="text-slate-400">—</span>';
@@ -304,7 +305,7 @@
                         const fileUrl = row.PdfRuta || row.ArchivoRuta || '';
                         const insumoStr = row.InsumoNombre ? row.InsumoNombre.replace(/[\r\n]+/g, ' ').replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
                         const solID = row.SolicitudID || 'null';
-                        const nombreFactura = row.Nombre ? row.Nombre.replace(/[\r\n]+/g, ' ').replace(/'/g, "\\'").replace(/"/g, '&quot;') : 'Factura';
+                        const nombreFactura = row.Emisor ? row.Emisor.replace(/[\r\n]+/g, ' ').replace(/'/g, "\\'").replace(/"/g, '&quot;') : 'Factura';
 
                         let actions = '';
 
@@ -377,6 +378,7 @@
         $('#facturasTable').on('change', '.insumo-select', async function() {
             const $sel = $(this);
             const $wrap = $sel.closest('.insumo-select-wrap');
+            const $td = $sel.closest('td');
             const facturaID = $sel.data('factura');
             const nombre = $sel.val();
 
@@ -391,25 +393,17 @@
 
                 if (!res.ok) throw new Error('Error HTTP ' + res.status);
 
-                const $label = $wrap.find('.insumo-label');
                 if (nombre) {
-                    $label.html(`
-                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
-                        <i class="fas fa-tag text-[9px]"></i>${nombre}
+                    $td.html(`<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/50">
+                        <i class="fas fa-tag text-[9px]"></i>${nombre.replace(/"/g, '&quot;')}
                     </span>`);
-                } else {
-                    $label.html('');
                 }
-
-                $sel.data('valor', nombre);
-                $sel.addClass('!border-emerald-500');
-                setTimeout(() => $sel.removeClass('!border-emerald-500'), 1200);
 
             } catch (e) {
                 $sel.addClass('!border-rose-500');
                 setTimeout(() => $sel.removeClass('!border-rose-500'), 1500);
+                $sel.prop('disabled', false);
             }
-            $sel.prop('disabled', false);
         });
 
         function buildSearchableSelect($container, options, selectedValue, placeholder = "— Buscar y seleccionar —", dataIdx = null) {

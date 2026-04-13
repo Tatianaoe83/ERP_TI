@@ -90,19 +90,16 @@ class FacturasController extends AppBaseController
 
         $query = DB::table('facturas')
             ->select([
-                'facturas.FacturasID','facturas.Nombre','facturas.SolicitudID',
+                'facturas.FacturasID','facturas.Nombre','facturas.Emisor','facturas.SolicitudID',
                 'facturas.Costo','facturas.Mes','facturas.Anio',
                 'facturas.PdfRuta','facturas.ArchivoRuta','facturas.InsumoNombre',
-                DB::raw('COALESCE(gerencia.NombreGerencia, g_directa.NombreGerencia) as NombreGerencia'),
+                'gerencia.NombreGerencia',
             ])
-            ->leftJoin('solicitudes', 'facturas.SolicitudID', '=', 'solicitudes.SolicitudID')
-            ->leftJoin('gerencia', 'solicitudes.GerenciaID', '=', 'gerencia.GerenciaID')
-            ->leftJoin('gerencia as g_directa', 'facturas.GerenciaID', '=', 'g_directa.GerenciaID')
+            ->leftJoin('gerencia', 'facturas.GerenciaID', '=', 'gerencia.GerenciaID')
             ->whereNull('facturas.deleted_at');
 
         if ($gerenciaID) {
-            $query->where(fn($q) => $q->where('solicitudes.GerenciaID', $gerenciaID)
-                ->orWhere('facturas.GerenciaID', $gerenciaID));
+            $query->where('facturas.GerenciaID', $gerenciaID);
         }
         if ($numMes) $query->where('facturas.Mes', $numMes);
         if ($año)    $query->where('facturas.Anio', (int)$año);

@@ -114,6 +114,29 @@ class TablaSolicitudes extends Component
             $this->xmlParseado[$pIndex][$uIndex] = ['error' => $e->getMessage()];
         }
 
+        // 🔥 Guardar archivo al storage
+        if ($this->asignacionSolicitudId) {
+            try {
+                $solicitudId = $this->asignacionSolicitudId;
+                $dir = "solicitudes/{$solicitudId}/temp";
+                $filename = "factura_{$pIndex}_{$uIndex}.xml";
+                $ruta = $file->storeAs($dir, $filename, 'public');
+                
+                // Actualizar ruta en propuestasAsignacion para todas las unidades del proveedor
+                $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
+                if ($proveedor) {
+                    foreach ($this->propuestasAsignacion as $pi => $prop) {
+                        if (($prop['proveedor'] ?? '') !== $proveedor) continue;
+                        foreach (array_keys($prop['unidades'] ?? []) as $ui) {
+                            $this->propuestasAsignacion[$pi]['unidades'][$ui]['factura_xml_path'] = $ruta;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Error guardando XML en storage', ['error' => $e->getMessage()]);
+            }
+        }
+
         $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
         if (!$proveedor) return;
 
@@ -137,6 +160,29 @@ class TablaSolicitudes extends Component
         [$pIndexOrigen, $uIndexOrigen] = [(int)$parts[0], (int)$parts[1]];
         $facturaSubida = $this->facturas[$pIndexOrigen][$uIndexOrigen] ?? null;
         if (!$facturaSubida) return;
+
+        // 🔥 Guardar archivo PDF al storage
+        if ($this->asignacionSolicitudId) {
+            try {
+                $solicitudId = $this->asignacionSolicitudId;
+                $dir = "solicitudes/{$solicitudId}/temp";
+                $filename = "factura_{$pIndexOrigen}_{$uIndexOrigen}.pdf";
+                $ruta = $facturaSubida->storeAs($dir, $filename, 'public');
+                
+                // Actualizar ruta en propuestasAsignacion para todas las unidades del proveedor
+                $proveedor = $this->propuestasAsignacion[$pIndexOrigen]['proveedor'] ?? null;
+                if ($proveedor) {
+                    foreach ($this->propuestasAsignacion as $pIndex => $prop) {
+                        if (($prop['proveedor'] ?? '') !== $proveedor) continue;
+                        foreach (array_keys($prop['unidades'] ?? []) as $uIndex) {
+                            $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['factura_pdf_path'] = $ruta;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Error guardando PDF en storage', ['error' => $e->getMessage()]);
+            }
+        }
 
         $proveedor = $this->propuestasAsignacion[$pIndexOrigen]['proveedor'] ?? null;
         if (!$proveedor) return;
@@ -981,6 +1027,21 @@ class TablaSolicitudes extends Component
                     $proveedor = $data['proveedor'];
                     if (!$proveedor) continue;
 
+                    // 🔥 Obtener GerenciaID del departamento asignado en SolicitudActivo
+                    $gerenciaID = null;
+                    foreach ($this->propuestasAsignacion as $prop) {
+                        foreach (($prop['unidades'] ?? []) as $u) {
+                            $deptId = $u['departamento_id'] ?? null;
+                            if ($deptId) {
+                                $dept = \App\Models\Departamentos::find($deptId);
+                                if ($dept) {
+                                    $gerenciaID = $dept->GerenciaID ?? null;
+                                }
+                                break 2; // Salir de ambos foreach
+                            }
+                        }
+                    }
+
                     // Buscar el XML parseado para este proveedor
                     $parsed = $this->buscarXmlParseadoPorProveedor($pIndex, $proveedor);
                     if (!$parsed || !empty($parsed['error'])) continue;
@@ -1012,13 +1073,19 @@ class TablaSolicitudes extends Component
                     $subtotal = is_numeric($parsed['subtotal'] ?? null) ? (float)$parsed['subtotal'] : 0;
                     $cantidad = isset($parsed['cantidad']) ? (int)$parsed['cantidad'] : 1;
 
-                    // Buscar la primera ruta XML de este proveedor
+                    // Buscar las rutas XML y PDF de este proveedor
                     $rutaXmlFactura = '';
+                    $rutaPdfFactura = '';
                     foreach ($this->propuestasAsignacion as $pi => $propuesta) {
                         if (($propuesta['proveedor'] ?? '') !== $proveedor) continue;
                         foreach (($propuesta['unidades'] ?? []) as $ui => $unidad) {
-                            if (!empty($unidad['factura_xml_path'])) {
+                            if (empty($rutaXmlFactura) && !empty($unidad['factura_xml_path'])) {
                                 $rutaXmlFactura = $unidad['factura_xml_path'];
+                            }
+                            if (empty($rutaPdfFactura) && !empty($unidad['factura_pdf_path'])) {
+                                $rutaPdfFactura = $unidad['factura_pdf_path'];
+                            }
+                            if (!empty($rutaXmlFactura) && !empty($rutaPdfFactura)) {
                                 break 2;
                             }
                         }
@@ -1028,6 +1095,7 @@ class TablaSolicitudes extends Component
                         Facturas::create([
                             'SolicitudID'  => (int)$this->asignacionSolicitudId,
                             'CotizacionID' => $cotizacionId,
+                            'GerenciaID'   => $gerenciaID,  // 🔥 AGREGAR GERENCIA
                             'UUID'         => $uuid,
                             'Nombre'       => $descripcion,
                             'Importe'      => $subtotal,
@@ -1038,7 +1106,7 @@ class TablaSolicitudes extends Component
                             'InsumoNombre' => $insumoNombre,
                             'Emisor'       => $parsed['emisor'] ?? '',
                             'ArchivoRuta'  => $rutaXmlFactura,
-                            'PdfRuta'      => '',
+                            'PdfRuta'      => $rutaPdfFactura,
                         ]);
 
                         $facturasInsertadas[$cotizacionId] = true;
