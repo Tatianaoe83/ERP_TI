@@ -102,7 +102,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('facturas/comparativa', [FacturasController::class, 'comparativa'])->name('facturas.comparativa');
     Route::get('facturas/historial', [FacturasController::class, 'historial'])->name('facturas.historial');
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
-    Route::get('facturas/insumos-por-gerencia', [FacturasController::class, 'getInsumosPorGerencia'])->name('facturas.insumosPorGerencia');
+    Route::get('facturas/insumos-por-gerencia', [FacturasController::class, 'getInsumosPorGerencia'])->name('facturas.getInsumosPorGerencia');
     Route::patch('facturas/{id}/insumo', [FacturasController::class, 'actualizarInsumo'])->name('facturas.actualizarInsumo');
     Route::patch('facturas/{id}/mes', [FacturasController::class, 'actualizarMes'])->name('facturas.actualizarMes');
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:facturas.create');

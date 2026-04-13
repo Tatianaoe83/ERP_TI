@@ -73,7 +73,7 @@
     </div>
 
     <div id="modalReemplazoFactura" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
-        <div class="relative bg-gray-50 dark:bg-slate-900 rounded-2xl w-full max-w-xl mx-4 overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh]"
+        <div class="relative bg-gray-50 dark:bg-slate-900 rounded-2xl w-full max-w-3xl mx-4 overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh]"
             style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5)">
 
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0 bg-gray-50 dark:bg-slate-900">
@@ -377,7 +377,7 @@
             try {
                 let insumos = insumoCache[facturaID];
                 if (!insumos) {
-                    const res = await fetch(`{{ route('facturas.insumosPorGerencia') }}?facturaID=${encodeURIComponent(facturaID)}`, {
+                    const res = await fetch(`{{ route('facturas.getInsumosPorGerencia') }}?facturaID=${encodeURIComponent(facturaID)}`, {
                         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     const json = await res.json();
@@ -605,7 +605,7 @@
             $('#modalReemplazoFactura').removeClass('hidden');
 
             try {
-                const res = await fetch(`{{ route('facturas.insumosPorGerencia') }}?solicitudID=${solID || ''}`, {
+                const res = await fetch(`{{ route('facturas.getInsumosPorGerencia') }}?solicitudID=${solID || ''}`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 const json = await res.json();

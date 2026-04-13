@@ -154,44 +154,16 @@ class FacturasController extends AppBaseController
                 catch (\Throwable) {}
             }
 
-            $conceptoNodes = $xml->xpath("//{$nsCfdi}:Concepto")
-                          ?: $xml->xpath('//cfdi:Concepto')
-                          ?: $xml->xpath('//cfdi3:Concepto')
-                          ?: [];
-
-            $catalogo  = $this->getCatalogoCortes();
-            $conceptos = [];
-
-            foreach ($conceptoNodes as $nodo) {
-                $ca          = $nodo->attributes();
-                $descripcion = (string)($ca['Descripcion']   ?? $ca['descripcion']   ?? '');
-                $valorUnit   = (string)($ca['ValorUnitario'] ?? $ca['valorUnitario'] ?? '0');
-                $importe     = (string)($ca['Importe']       ?? $ca['importe']       ?? '0');
-                $cantidad    = (string)($ca['Cantidad']      ?? $ca['cantidad']      ?? '1');
-
-                [$best, $score] = $this->matchInsumo($descripcion, $catalogo, $emisorNombre);
-
-                $conceptos[] = [
-                    'nombre'       => $descripcion,
-                    'costo'        => $valorUnit,
-                    'importe'      => $importe,
-                    'cantidad'     => $cantidad,
-                    'insumoId'     => $best['id'] ?? null,
-                    'insumoNombre' => $best['nombre'] ?? null,
-                ];
-            }
-
             return response()->json([
-                'ok'        => true,
-                'version'   => $version,
-                'uuid'      => $uuid,
-                'emisor'    => $emisorNombre,
-                'fecha'     => $fecha,
-                'mes'       => $mes,
-                'anio'      => $anio,
-                'total'     => $total,
-                'moneda'    => $moneda,
-                'conceptos' => $conceptos,
+                'ok'      => true,
+                'version' => $version,
+                'uuid'    => $uuid,
+                'emisor'  => $emisorNombre,
+                'fecha'   => $fecha,
+                'mes'     => $mes,
+                'anio'    => $anio,
+                'total'   => $total,
+                'moneda'  => $moneda,
             ]);
 
         } catch (\Throwable $e) {
@@ -210,32 +182,16 @@ class FacturasController extends AppBaseController
                 return response()->json(['error' => 'No se pudieron extraer datos del PDF.'], 422);
             }
 
-            $catalogo  = $this->getCatalogoCortes();
             $emisorPdf = $data['emisor'] ?? '';
 
-            $conceptosMapeados = [];
-            foreach (($data['conceptos'] ?? []) as $c) {
-                [$best, $score] = $this->matchInsumo($c['nombre'], $catalogo, $emisorPdf);
-
-                $conceptosMapeados[] = [
-                    'nombre'       => $c['nombre'],
-                    'cantidad'     => 1,
-                    'costo'        => $c['importe'],
-                    'importe'      => $c['importe'],
-                    'insumoId'     => $best['id'] ?? null,
-                    'insumoNombre' => $best['nombre'] ?? null,
-                ];
-            }
-
             return response()->json([
-                'emisor'    => $emisorPdf,
-                'uuid'      => null,
-                'mes'       => (int)now()->format('n'),
-                'anio'      => (int)now()->format('Y'),
-                'total'     => $data['total'] ?? 0,
-                'moneda'    => 'MXN',
-                'conceptos' => $conceptosMapeados,
-                'es_pdf'    => true,
+                'emisor'  => $emisorPdf,
+                'uuid'    => null,
+                'mes'     => (int)now()->format('n'),
+                'anio'    => (int)now()->format('Y'),
+                'total'   => $data['total'] ?? 0,
+                'moneda'  => 'MXN',
+                'es_pdf'  => true,
             ]);
 
         } catch (\Throwable $e) {
@@ -593,10 +549,16 @@ class FacturasController extends AppBaseController
 
     public function getInsumosPorGerencia(Request $request): JsonResponse
     {
-        $facturaID = $request->input('facturaID');
-        if (!$facturaID) return response()->json(['data' => []]);
-
-        $gerenciaID = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->value('GerenciaID');
+        $gerenciaID = $request->input('gerenciaID');
+        
+        // Si no viene gerenciaID directamente, intentar extraerlo de una factura (para compatibilidad)
+        if (!$gerenciaID) {
+            $facturaID = $request->input('facturaID');
+            if ($facturaID) {
+                $gerenciaID = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->value('GerenciaID');
+            }
+        }
+        
         if (!$gerenciaID) return response()->json(['data' => []]);
 
         return response()->json(['data' => DB::table('cortes')

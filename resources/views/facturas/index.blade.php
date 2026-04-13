@@ -61,7 +61,7 @@
     <div id="modalFacturaDirecta"
         class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/75 backdrop-blur-sm px-4">
 
-        <div class="relative w-full max-w-xl bg-gray-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
+        <div class="relative w-full max-w-3xl bg-gray-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
 
             <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-3">
@@ -138,50 +138,7 @@
                     </div>
                 </div>
 
-                {{-- Datos detectados del XML/PDF --}}
-                <div id="seccionParsed" class="hidden rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div id="parsedHeader" class="px-4 py-2.5 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 bg-slate-50 dark:bg-slate-800">
-                        <i id="parsedHeaderIcon" class="fas fa-check-circle text-indigo-500 text-xs"></i>
-                        <span id="parsedHeaderText" class="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Datos detectados</span>
-                    </div>
-                    <div class="px-4 py-3 grid grid-cols-3 gap-x-4 gap-y-2 bg-slate-50/50 dark:bg-slate-800/30">
-                        <div><p class="text-[10px] font-medium text-slate-400 mb-0.5">Emisor</p><p id="parsedEmisor" class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">—</p></div>
-                        <div><p class="text-[10px] font-medium text-slate-400 mb-0.5">UUID</p><p id="parsedUuid" class="text-xs font-mono text-indigo-600 dark:text-indigo-400 truncate">—</p></div>
-                        <div><p class="text-[10px] font-medium text-slate-400 mb-0.5">Total</p><p id="parsedTotal" class="text-sm font-bold text-emerald-600 dark:text-emerald-400">—</p></div>
-                        <div><p class="text-[10px] font-medium text-slate-400 mb-0.5">Mes</p><p id="parsedMes" class="text-sm text-slate-600 dark:text-slate-300">—</p></div>
-                        <div><p class="text-[10px] font-medium text-slate-400 mb-0.5">Año</p><p id="parsedAnio" class="text-sm text-slate-600 dark:text-slate-300">—</p></div>
-                        <div><p class="text-[10px] font-medium text-slate-400 mb-0.5">Conceptos</p><p id="parsedConceptos" class="text-sm text-slate-600 dark:text-slate-300">—</p></div>
-                    </div>
-                </div>
 
-                {{-- Conceptos del XML con selector de insumo --}}
-                <div id="seccionConceptos" class="hidden rounded-lg border border-violet-200 dark:border-violet-800/40 overflow-hidden">
-                    <div class="px-4 py-3 bg-violet-50 dark:bg-violet-900/20 border-b border-violet-200 dark:border-violet-800/40 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-list text-violet-500 text-sm"></i>
-                            <span class="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase tracking-wider">Conceptos detectados</span>
-                            <span id="contadorConceptos" class="text-xs text-violet-500 font-medium"></span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span id="contadorSinInsumo" class="hidden text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200"><span></span> sin insumo</span>
-                            <span id="contadorConInsumo" class="hidden text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200"><span></span> asignados</span>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto bg-gray-50 dark:bg-slate-900">
-                        <table class="w-full text-xs">
-                            <thead class="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                                <tr>
-                                    <th class="text-left px-4 py-2.5 font-medium">Descripcion</th>
-                                    <th class="text-right px-3 py-2.5 font-medium w-12">Cant.</th>
-                                    <th class="text-right px-3 py-2.5 font-medium w-24">Unitario</th>
-                                    <th class="text-right px-3 py-2.5 font-medium w-24">Importe</th>
-                                    <th class="text-left px-3 py-2.5 font-medium w-48">Insumo</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbodyConceptos" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-                        </table>
-                    </div>
-                </div>
 
                 {{-- Formulario principal --}}
                 <div class="grid grid-cols-2 gap-4">
@@ -204,36 +161,16 @@
                         <p id="errFdGerencia" class="hidden mt-1 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Seleccione una gerencia</p>
                     </div>
 
-                    {{--
-                        El insumo se muestra como select cuando NO hay XML/conceptos cargados.
-                        Cuando el XML carga conceptos, este campo se convierte en informativo
-                        mostrando el insumo detectado automaticamente.
-                        El selector se ocultara con JS cuando haya conceptos en el XML.
-                    --}}
-                    <div id="wrapperInsumoSelect">
+                    <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Insumo <span class="text-red-500">*</span></label>
                         <div class="relative">
                             <select id="fdInsumoSelect" class="w-full h-10 pl-4 pr-8 appearance-none text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
                                 <option value="">Seleccione insumo</option>
-                                @if(isset($insumos)) @foreach($insumos as $insumo) <option value="{{ $insumo->id }}">{{ $insumo->nombre }}</option> @endforeach @endif
                             </select>
                             <i class="fas fa-chevron-down text-xs text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                         </div>
                         <p id="errFdInsumo" class="hidden mt-1 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Seleccione un insumo</p>
                     </div>
-
-                    {{-- Insumo detectado del XML (se muestra en lugar del select cuando hay conceptos) --}}
-                    <div id="wrapperInsumoDetectado" class="hidden">
-                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Insumo</label>
-                        <div class="flex items-center gap-2 h-10 px-4 rounded-lg border border-emerald-200 dark:border-emerald-700/50 bg-emerald-50 dark:bg-emerald-900/20">
-                            <i class="fas fa-magic text-emerald-500 text-xs shrink-0"></i>
-                            <span id="textoInsumoDetectado" class="text-sm text-emerald-800 dark:text-emerald-200 font-medium truncate">Detectado del XML</span>
-                        </div>
-                        <p class="mt-1 text-[10px] text-slate-400">Asignado desde los conceptos del XML. Puedes cambiarlo arriba.</p>
-                        <input type="hidden" id="fdInsumoSelect">
-                    </div>
-
-                    <div class="hidden"><input type="text" id="fdInsumoNombre"></div>
 
                     <div>
                         <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Importe</label>
@@ -350,21 +287,15 @@
 
     function resetModal() {
         state.xmlFile = null; state.pdfFile = null; state.parsed = null; state.origenParsed = null;
-        state.conceptosInsumos = {}; state.tieneConceptosXml = false;
-        openDropdownIdx = null;
         ['inputXml','inputPdf'].forEach(id => { if ($(id)) $(id).value = ''; });
-        ['fdNombre','fdGerencia','fdInsumoNombre','fdImporte','fdCosto','fdMes','fdAnio'].forEach(id => { if ($(id)) $(id).value = ''; });
-
-        // Reset selector de insumo
-        const sel = $('fdInsumoSelect');
-        if (sel) sel.value = '';
-        mostrarSelectorInsumo();
-
-        ['seccionParsed','seccionConceptos','spinnerXml','spinnerPdf','errorXml','errFdNombre','errFdCosto','errFdGerencia','errFdInsumo','avisoPdfExtranjero'].forEach(hide);
+        ['fdNombre','fdGerencia','fdImporte','fdCosto','fdMes','fdAnio','fdInsumoSelect'].forEach(id => { if ($(id)) $(id).value = ''; });
+        ['spinnerXml','spinnerPdf','errorXml','errFdNombre','errFdCosto','errFdGerencia','errFdInsumo','avisoPdfExtranjero'].forEach(hide);
         resetZonaXml(); resetZonaPdf();
         $('pdfPreviewContainer').classList.add('hidden');
         $('pdfPreviewFrame').src = '';
-        $('tbodyConceptos').innerHTML = '';
+        // Cargar insumos vacíos
+        const sel = $('fdInsumoSelect');
+        if (sel) sel.innerHTML = '<option value="">Seleccione insumo</option>';
     }
 
     function resetZonaXml() {
@@ -379,29 +310,25 @@
         $('iconoPdf').innerHTML = '<i class="fas fa-file-pdf text-slate-400 group-hover:text-emerald-500 transition-colors"></i>';
     }
 
-    function mostrarSelectorInsumo() {
-        show('wrapperInsumoSelect');
-        hide('wrapperInsumoDetectado');
-    }
+    async function cargarInsumosPorGerencia(gerenciaID) {
+        if (!gerenciaID) {
+            $('fdInsumoSelect').innerHTML = '<option value="">Seleccione insumo</option>';
+            return;
+        }
 
-    function mostrarInsumoDetectado(nombre) {
-        hide('wrapperInsumoSelect');
-        show('wrapperInsumoDetectado');
-        $('textoInsumoDetectado').textContent = nombre || 'Detectado del XML';
-        hide('errFdInsumo');
-    }
-
-    function autoMatchInsumo(conceptos) {
-        if (!conceptos || !conceptos.length) return;
-        const matchNombre = conceptos[0].insumoNombre;
-        if (!matchNombre) return;
-
-        // Intentar seleccionar en el select normal
-        const sel = $('fdInsumoSelect');
-        const option = Array.from(sel.options).find(o => o.text.trim().toLowerCase() === matchNombre.trim().toLowerCase());
-        if (option) {
-            sel.value = option.value;
-            mostrarInsumoDetectado(option.text.trim());
+        try {
+            const res = await fetch('{{ route("facturas.getInsumosPorGerencia") }}?gerenciaID=' + gerenciaID, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await res.json();
+            const insumos = data.data || [];
+            let html = '<option value="">Seleccione insumo</option>';
+            insumos.forEach(nombre => {
+                html += `<option value="${nombre}">${nombre}</option>`;
+            });
+            $('fdInsumoSelect').innerHTML = html;
+        } catch (e) {
+            console.error('Error cargando insumos:', e);
         }
     }
 
@@ -409,7 +336,7 @@
         const yaHayXml = state.origenParsed === 'xml';
         if (origen === 'pdf' && yaHayXml) return;
 
-        state.parsed = data; state.origenParsed = origen; state.conceptosInsumos = {};
+        state.parsed = data; state.origenParsed = origen;
 
         if (data.emisor && !$('fdNombre').value.trim()) $('fdNombre').value = data.emisor;
         if (data.total) {
@@ -418,199 +345,7 @@
         }
         if (data.mes) $('fdMes').value = data.mes;
         if (data.anio) $('fdAnio').value = data.anio;
-
-        if (data.conceptos && data.conceptos.length > 0) {
-            $('fdInsumoNombre').value = data.conceptos[0].nombre ?? '';
-            state.tieneConceptosXml = true;
-            autoMatchInsumo(data.conceptos);
-            data.conceptos.forEach((c, i) => { if (c.insumoNombre) state.conceptosInsumos[i] = c.insumoNombre; });
-        } else {
-            state.tieneConceptosXml = false;
-            mostrarSelectorInsumo();
-        }
-
-        $('parsedEmisor').textContent = data.emisor || '—';
-        $('parsedUuid').textContent = data.uuid ? data.uuid.toUpperCase() : (origen === 'pdf' ? '(PDF extranjero)' : '—');
-        $('parsedTotal').textContent = data.total ? '$' + parseFloat(data.total).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' ' + (data.moneda ?? 'MXN') : '—';
-        $('parsedMes').textContent = data.mes ? (mesesNombres[data.mes] ?? String(data.mes)) : '—';
-        $('parsedAnio').textContent = data.anio ? String(data.anio) : '—';
-        $('parsedConceptos').textContent = data.conceptos ? data.conceptos.length + ' concepto(s)' : '—';
-
-        $('parsedHeaderText').textContent = origen === 'xml' ? 'Datos detectados del XML' : 'Datos extraidos del PDF';
-        show('seccionParsed');
-
-        renderConceptos(data.conceptos ?? []);
-        if (origen === 'pdf' && !yaHayXml) show('avisoPdfExtranjero');
     }
-
-    function closeAllDropdowns() {
-        document.querySelectorAll('.dd-insumo-modal').forEach(d => d.classList.add('hidden'));
-        openDropdownIdx = null;
-    }
-
-    function updateContadores() {
-        const conceptos = state.parsed?.conceptos ?? [];
-        if (!conceptos.length) return;
-        let conMatch = 0, sinMatch = 0;
-        conceptos.forEach((c, i) => { (state.conceptosInsumos[i] || c.insumoNombre) ? conMatch++ : sinMatch++; });
-        const elSin = $('contadorSinInsumo'); const elCon = $('contadorConInsumo');
-        if (sinMatch > 0) { elSin.querySelector('span').textContent = sinMatch; elSin.classList.remove('hidden'); } else { elSin.classList.add('hidden'); }
-        if (conMatch > 0) { elCon.querySelector('span').textContent = conMatch; elCon.classList.remove('hidden'); } else { elCon.classList.add('hidden'); }
-    }
-
-    function setConceptoInsumo(idx, nombre) {
-        state.conceptosInsumos[idx] = nombre;
-        // Si es el primer concepto, actualizar el insumo principal del formulario
-        if (idx === 0 && nombre) {
-            const sel = $('fdInsumoSelect');
-            const option = Array.from(sel.options).find(o => o.text.trim().toLowerCase() === nombre.trim().toLowerCase());
-            if (option) { sel.value = option.value; mostrarInsumoDetectado(option.text.trim()); }
-        }
-        closeAllDropdowns();
-        renderConceptos(state.parsed?.conceptos ?? []);
-    }
-
-    function removeConceptoInsumo(idx) {
-        delete state.conceptosInsumos[idx];
-        if (state.parsed?.conceptos?.[idx]) state.parsed.conceptos[idx].insumoNombre = null;
-        if (idx === 0) mostrarSelectorInsumo();
-        closeAllDropdowns();
-        renderConceptos(state.parsed?.conceptos ?? []);
-    }
-
-    function renderConceptos(conceptos) {
-        const tbody = $('tbodyConceptos');
-        tbody.innerHTML = '';
-        if (!conceptos.length) { hide('seccionConceptos'); return; }
-
-        $('contadorConceptos').textContent = '(' + conceptos.length + ')';
-
-        conceptos.forEach((c, idx) => {
-            const tr = document.createElement('tr');
-            const tieneMatch = !!(state.conceptosInsumos[idx] || c.insumoNombre);
-            const matchLabel = state.conceptosInsumos[idx] || c.insumoNombre || '';
-            const costo = parseFloat(c.costo ?? 0);
-            const importe = parseFloat(c.importe ?? 0);
-            const cant = c.cantidad ?? 1;
-            const nombre = (c.nombre ?? '—').length > 50 ? (c.nombre ?? '').substring(0, 50) + '…' : (c.nombre ?? '—');
-
-            tr.className = tieneMatch
-                ? 'bg-gray-50 dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                : 'bg-amber-50/30 dark:bg-amber-950/10 hover:bg-amber-50/50';
-
-            let selectorHtml;
-            if (tieneMatch) {
-                selectorHtml = `
-                    <div class="relative">
-                        <button type="button" onclick="window.__toggleDD(${idx})"
-                            class="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-left bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors dark:bg-emerald-900/20 dark:border-emerald-700/50">
-                            <i class="fas fa-check-circle text-emerald-500 text-[9px] shrink-0"></i>
-                            <span class="text-[11px] font-medium text-emerald-800 dark:text-emerald-200 truncate">${matchLabel.length > 20 ? matchLabel.substring(0,20)+'…' : matchLabel}</span>
-                            <i class="fas fa-pen text-[8px] text-emerald-400 ml-auto shrink-0"></i>
-                        </button>
-                        <div class="dd-insumo-modal hidden absolute top-full left-0 z-[99999] mt-1 w-52 rounded-lg border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 shadow-xl overflow-hidden" id="dd-m-${idx}"></div>
-                    </div>`;
-            } else {
-                selectorHtml = `
-                    <div class="relative">
-                        <button type="button" onclick="window.__toggleDD(${idx})"
-                            class="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-left bg-amber-50 border-2 border-dashed border-amber-300 hover:bg-amber-100 transition-colors dark:bg-amber-950/20 dark:border-amber-700/50">
-                            <i class="fas fa-plus-circle text-amber-500 text-[9px] shrink-0"></i>
-                            <span class="text-[11px] font-medium text-amber-700 dark:text-amber-300">Asignar insumo</span>
-                        </button>
-                        <div class="dd-insumo-modal hidden absolute top-full left-0 z-[99999] mt-1 w-52 rounded-lg border border-slbg-gray-50ate-200 dark:border-slate-700  dark:bg-slate-900 shadow-xl overflow-hidden" id="dd-m-${idx}"></div>
-                    </div>`;
-            }
-
-            tr.innerHTML = `
-                <td class="px-4 py-2.5">
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded flex items-center justify-center shrink-0 ${tieneMatch ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-amber-100 dark:bg-amber-900/30'}">
-                            <i class="fas ${tieneMatch ? 'fa-check text-emerald-600' : 'fa-exclamation text-amber-600'}" style="font-size:7px"></i>
-                        </div>
-                        <span class="text-slate-800 dark:text-slate-200">${nombre}</span>
-                    </div>
-                </td>
-                <td class="px-3 py-2.5 text-right text-slate-600 dark:text-slate-300">${cant}</td>
-                <td class="px-3 py-2.5 text-right text-slate-600 dark:text-slate-300 font-mono">${costo > 0 ? '$' + costo.toLocaleString('es-MX', {minimumFractionDigits:2}) : '—'}</td>
-                <td class="px-3 py-2.5 text-right font-bold text-slate-800 dark:text-slate-200 font-mono">${importe > 0 ? '$' + importe.toLocaleString('es-MX', {minimumFractionDigits:2}) : '—'}</td>
-                <td class="px-3 py-2.5">${selectorHtml}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
-        show('seccionConceptos');
-        updateContadores();
-    }
-
-    function buildDropdown(idx) {
-        const dd = document.getElementById('dd-m-' + idx);
-        if (!dd) return;
-        const tieneMatch = !!(state.conceptosInsumos[idx]);
-        let html = `<div style="padding:6px;border-bottom:1px solid #f1f5f9">
-            <div style="position:relative">
-                <input type="text" id="dds-${idx}" placeholder="Buscar..."
-                    style="width:100%;height:30px;padding:0 8px 0 26px;font-size:11px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;outline:none"
-                    autocomplete="off">
-                <i class="fas fa-search" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:9px;color:#94a3b8;pointer-events:none"></i>
-            </div>
-        </div>`;
-
-        if (tieneMatch) {
-            html += `<button type="button" onclick="window.__removeDD(${idx})"
-                style="display:block;width:100%;padding:8px 12px;text-align:left;font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer;border-bottom:1px solid #f1f5f9">
-                <i class="fas fa-times-circle" style="margin-right:4px"></i> Quitar insumo</button>`;
-        }
-
-        html += `<div id="ddl-${idx}" style="max-height:160px;overflow-y:auto">`;
-        INSUMOS_CATALOGO.slice(0, 15).forEach(ins => {
-            const n = (ins.nombre || '').replace(/'/g, "\\'");
-            html += `<button type="button" onclick="window.__setDD(${idx}, '${n}')"
-                style="display:block;width:100%;padding:7px 12px;text-align:left;font-size:11px;color:#334155;background:none;border:none;cursor:pointer;border-bottom:1px solid #f8fafc"
-                onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'"
-                >${ins.nombre}</button>`;
-        });
-        html += '</div>';
-        dd.innerHTML = html;
-
-        setTimeout(() => {
-            const si = document.getElementById('dds-' + idx);
-            if (!si) return;
-            si.focus();
-            si.addEventListener('input', function () {
-                const term = this.value.toLowerCase().trim();
-                const listEl = document.getElementById('ddl-' + idx);
-                const filtered = term ? INSUMOS_CATALOGO.filter(i => (i.nombre||'').toLowerCase().includes(term)).slice(0,15) : INSUMOS_CATALOGO.slice(0,15);
-                if (!filtered.length) {
-                    listEl.innerHTML = '<div style="padding:12px;text-align:center;font-size:11px;color:#94a3b8">Sin resultados</div>';
-                    return;
-                }
-                listEl.innerHTML = filtered.map(ins => {
-                    const n = (ins.nombre || '').replace(/'/g, "\\'");
-                    return `<button type="button" onclick="window.__setDD(${idx}, '${n}')"
-                        style="display:block;width:100%;padding:7px 12px;text-align:left;font-size:11px;color:#334155;background:none;border:none;cursor:pointer;border-bottom:1px solid #f8fafc"
-                        onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background='none'"
-                        >${ins.nombre}</button>`;
-                }).join('');
-            });
-        }, 30);
-    }
-
-    window.__toggleDD = function (idx) {
-        const dd = document.getElementById('dd-m-' + idx);
-        if (!dd) return;
-        const wasOpen = !dd.classList.contains('hidden');
-        closeAllDropdowns();
-        if (!wasOpen) { buildDropdown(idx); dd.classList.remove('hidden'); openDropdownIdx = idx; }
-    };
-    window.__setDD = setConceptoInsumo;
-    window.__removeDD = removeConceptoInsumo;
-
-    document.addEventListener('click', function (e) {
-        if (openDropdownIdx === null) return;
-        const dd = document.getElementById('dd-m-' + openDropdownIdx);
-        if (dd && !dd.contains(e.target) && !e.target.closest('[onclick]')) closeAllDropdowns();
-    });
 
     async function parsearXml(file) {
         hide('errorXml'); show('spinnerXml');
@@ -649,8 +384,7 @@
         ['errFdNombre','errFdCosto','errFdGerencia','errFdInsumo'].forEach(hide);
         if (!$('fdNombre').value.trim()) { show('errFdNombre'); ok = false; }
         if (!$('fdGerencia').value) { show('errFdGerencia'); ok = false; }
-        // Solo validar insumo si el selector esta visible (no hay conceptos XML)
-        if (!state.tieneConceptosXml && !$('fdInsumoSelect').value) { show('errFdInsumo'); ok = false; }
+        if (!$('fdInsumoSelect').value) { show('errFdInsumo'); ok = false; }
         if (!$('fdCosto').value || parseFloat($('fdCosto').value) < 0) { show('errFdCosto'); ok = false; }
         return ok;
     }
@@ -677,9 +411,6 @@
         }
         if (state.xmlFile) form.append('archivo_xml', state.xmlFile);
         if (state.pdfFile) form.append('archivo_pdf', state.pdfFile);
-        if (Object.keys(state.conceptosInsumos).length > 0) {
-            form.append('conceptos_insumos', JSON.stringify(state.conceptosInsumos));
-        }
 
         try {
             const res = await fetch('{{ route("facturas.storeDirecta") }}', { method: 'POST', body: form, headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
@@ -722,6 +453,12 @@
         $('btnGuardarFacturaDirecta').addEventListener('click', guardar);
         $('modalFacturaDirecta').addEventListener('click', e => { if (e.target === $('modalFacturaDirecta')) cerrarModal(); });
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modalFacturaDirecta').classList.contains('hidden')) cerrarModal(); });
+        
+        // Cargar insumos cuando cambia la gerencia
+        $('fdGerencia').addEventListener('change', async function () {
+            await cargarInsumosPorGerencia(this.value);
+        });
+
         $('inputXml').addEventListener('change', async function () { await handleXmlFile(this.files[0]); });
         setupDragDrop('zonaXml', async file => { $('inputXml').value = ''; await handleXmlFile(file); });
         $('inputPdf').addEventListener('change', async function () { await handlePdfFile(this.files[0]); });
