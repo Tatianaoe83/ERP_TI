@@ -105,6 +105,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('facturas/insumos-por-gerencia', [FacturasController::class, 'getInsumosPorGerencia'])->name('facturas.getInsumosPorGerencia');
     Route::patch('facturas/{id}/insumo', [FacturasController::class, 'actualizarInsumo'])->name('facturas.actualizarInsumo');
     Route::patch('facturas/{id}/mes', [FacturasController::class, 'actualizarMes'])->name('facturas.actualizarMes');
+    Route::get('facturas/{id}/datos', [FacturasController::class, 'obtenerDatos'])->name('facturas.obtenerDatos');
+    Route::patch('facturas/{id}/actualizar-datos', [FacturasController::class, 'actualizarDatos'])->name('facturas.actualizarDatos');
+    Route::post('facturas/{id}/actualizar-completo', [FacturasController::class, 'actualizarCompleto'])->name('facturas.actualizarCompleto');
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:facturas.create');
     Route::resource('facturas', FacturasController::class);
 

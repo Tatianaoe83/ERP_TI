@@ -83,7 +83,7 @@
                     </div>
                     <div>
                         <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Actualizar Factura</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Asigna el insumo o sube nuevos archivos</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Sube un documento o edita los datos manualmente</p>
                     </div>
                 </div>
                 <button type="button" onclick="cerrarModalReemplazo()"
@@ -101,19 +101,9 @@
                     </div>
                     <input type="hidden" id="reemplazoFacturaID">
 
-                    <div id="contenedorInsumoGlobal">
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
-                            1. Asignar Insumo
-                        </label>
-                        <div id="reemplazoInsumoBuscador"></div>
-                        <p class="text-[10px] text-slate-400 mt-1.5 ml-1"><i class="fas fa-info-circle mr-1"></i>Puedes dejarlo en blanco si no aplica.</p>
-                    </div>
-
-                    <hr class="border-slate-200 dark:border-slate-700">
-
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-4">
-                            2. Actualizar Documentos <span class="text-slate-400 font-normal">(Opcional)</span>
+                            <i class="fas fa-file-upload text-indigo-500 mr-1.5"></i> Subir Nuevo Documento <span class="text-slate-400 font-normal">(Opcional)</span>
                         </label>
                         
                         <div class="space-y-4">
@@ -149,12 +139,33 @@
                         </div>
                     </div>
 
-                    <div id="previewContenedor" class="hidden mt-4 p-5 rounded-xl bg-indigo-50/80 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+                    <div id="previewContenedor" class="hidden p-5 rounded-xl bg-indigo-50/80 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
                         <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3 flex items-center gap-1.5">
-                            <i class="fas fa-robot text-xs"></i> Datos extraídos
+                            <i class="fas fa-eye"></i> Datos Detectados
                         </p>
                         <div id="previewContenido" class="text-sm text-slate-700 dark:text-slate-300 space-y-2"></div>
                     </div>
+
+                    <hr class="border-slate-200 dark:border-slate-700">
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                            <i class="fas fa-building text-indigo-500 mr-1.5"></i> Emisor
+                        </label>
+                        <input type="text" id="reemplazoEmisor" 
+                            class="w-full h-11 px-4 text-sm font-medium border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                            placeholder="Nombre del emisor">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                            <i class="fas fa-dollar-sign text-green-500 mr-1.5"></i> Costo (Subtotal)
+                        </label>
+                        <input type="number" id="reemplazoCosto" step="0.01" min="0"
+                            class="w-full h-11 px-4 text-sm font-medium border-2 border-slate-200 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                            placeholder="0.00">
+                    </div>
+
                 </form>
             </div>
 
@@ -340,7 +351,7 @@
                             actions += `<span class="text-[13px] text-slate-400 italic"><i class="fas fa-eye-slash mr-1"></i> N/A</span>`;
                         }
 
-                        actions += `<button type="button" onclick="abrirModalReemplazo(${row.FacturasID}, '${nombreFactura}', '${fileUrl}', '${insumoStr}', ${solID})" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-[13px] font-bold transition-colors">
+                        actions += `<button type="button" onclick="abrirModalReemplazo(${row.FacturasID}, '${nombreFactura}', '${fileUrl}', '${insumoStr}', ${solID}, ${row.GerenciaID})" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-[13px] font-bold transition-colors">
                         <i class="fas fa-sync-alt mr-1"></i> Actualizar
                     </button>`;
 
@@ -588,31 +599,32 @@
             setTimeout(() => $('.select-dropdown').addClass('hidden'), 200);
         });
 
-        window.abrirModalReemplazo = async function(id, nombre, fileUrl, insumoActual, solID) {
+        window.abrirModalReemplazo = async function(id, nombre, fileUrl, insumoActual, solID, gerenciaID) {
             $('#formReemplazarFactura')[0].reset();
             $('#btnSubmitReemplazo').prop('disabled', false).html('<i class="fas fa-save text-xs"></i> Guardar');
             $('#reemplazoFacturaID').val(id);
             $('#reemplazoFacturaNombre').text(nombre);
+            
+            // Limpiar preview y archivos
+            $('#previewContenedor').addClass('hidden');
+            $('#previewContenido').html('');
             $('#reemplazoXml').val('');
             $('#reemplazoPdf').val('');
             
-            $('#previewContenedor').addClass('hidden');
-            $('#previewContenido').html('');
-            $('#contenedorInsumoGlobal').show();
-            $('#reemplazoInsumoBuscador').html('<div class="h-11 px-4 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-gray-50 dark:bg-slate-900 text-slate-400 text-sm font-semibold flex items-center"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando...</div>');
-            window.currentModalInsumos = [];
-
             $('#modalReemplazoFactura').removeClass('hidden');
 
+            // Cargar los datos actuales de la factura
             try {
-                const res = await fetch(`{{ route('facturas.getInsumosPorGerencia') }}?solicitudID=${solID || ''}`, {
+                const res = await fetch(`/facturas/${id}/datos`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 });
                 const json = await res.json();
-                window.currentModalInsumos = (json && json.data) ? json.data : [];
-            } catch (e) {}
-
-            buildSearchableSelect($('#reemplazoInsumoBuscador'), window.currentModalInsumos, insumoActual, '— Buscar y seleccionar —');
+                
+                $('#reemplazoEmisor').val(json.Emisor || '');
+                $('#reemplazoCosto').val(json.Costo || '');
+            } catch (e) {
+                console.error('Error cargando datos de factura:', e);
+            }
         };
 
         window.cerrarModalReemplazo = function() {
@@ -622,6 +634,8 @@
         window.enviarReemplazoFactura = async function(e) {
             e.preventDefault();
             const facturaID = $('#reemplazoFacturaID').val();
+            const emisor = $('#reemplazoEmisor').val().trim();
+            const costo = $('#reemplazoCosto').val();
             const fileXml = $('#reemplazoXml')[0].files[0];
             const filePdf = $('#reemplazoPdf')[0].files[0];
             
@@ -631,38 +645,27 @@
 
             try {
                 const formData = new FormData();
-                
-                const conceptWrappers = $('.concepto-insumo-wrapper');
-                if (conceptWrappers.length > 0) {
-                    let overrides = {};
-                    conceptWrappers.each(function() {
-                        overrides[$(this).data('idx')] = $(this).find('.real-input').val();
-                    });
-                    formData.append('conceptos_insumos', JSON.stringify(overrides));
-                    formData.append('insumo_nombre', ''); 
-                } else {
-                    const valGlobal = $('#reemplazoInsumoBuscador .real-input').val();
-                    formData.append('insumo_nombre', valGlobal);
-                }
+                formData.append('Emisor', emisor);
+                formData.append('Costo', costo);
                 
                 if (fileXml) formData.append('archivo_xml', fileXml);
                 if (filePdf) formData.append('archivo_pdf', filePdf);
                 formData.append('_token', '{{ csrf_token() }}');
 
-                const res = await fetch(`/facturas/${facturaID}/reemplazar-archivo`, {
+                const res = await fetch(`/facturas/${facturaID}/actualizar-completo`, {
                     method: 'POST',
                     body: formData,
                     headers: { 'Accept': 'application/json' }
                 });
                 
                 const json = await res.json();
-                if (!res.ok) throw new Error(json.message || 'Error al procesar el archivo');
+                if (!res.ok) throw new Error(json.message || 'Error al actualizar');
 
                 if (window.Swal) {
                     Swal.fire({
                         icon: 'success',
                         title: '¡Actualizado!',
-                        text: json.message || 'Cambios guardados correctamente.',
+                        text: json.message || 'Factura actualizada correctamente.',
                         timer: 3000,
                         showConfirmButton: false,
                         toast: true,
@@ -679,7 +682,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: error.message,
+                    text: error.message || 'Hubo un error al actualizar la factura',
                     background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
                     color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a'
                 });
@@ -704,42 +707,23 @@
                     throw new Error(data.error && typeof data.error === 'string' ? data.error : 'No se pudo extraer la información del documento.');
                 }
 
+                // Actualizar los campos del formulario con los datos parseados
+                if (data.emisor) $('#reemplazoEmisor').val(data.emisor);
+                if (data.total) $('#reemplazoCosto').val(parseFloat(data.total));
+
+                // Mostrar preview
                 let html = '';
                 if (data.emisor) html += `<div><strong class="font-extrabold text-slate-800 dark:text-slate-200">Emisor:</strong> ${data.emisor}</div>`;
-                if (data.total) html += `<div><strong class="font-extrabold text-slate-800 dark:text-slate-200">Total (Sin IVA):</strong> $${parseFloat(data.total).toLocaleString('es-MX', {minimumFractionDigits:2})} <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 ml-1">${data.moneda || 'MXN'}</span></div>`;
+                if (data.total) html += `<div><strong class="font-extrabold text-slate-800 dark:text-slate-200">Subtotal:</strong> $${parseFloat(data.total).toLocaleString('es-MX', {minimumFractionDigits:2})} <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 ml-1">${data.moneda || 'MXN'}</span></div>`;
                 if (data.uuid) html += `<div><strong class="font-extrabold text-slate-800 dark:text-slate-200">UUID:</strong> <span class="font-mono text-xs bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700">${data.uuid}</span></div>`;
+                if (data.fecha) html += `<div><strong class="font-extrabold text-slate-800 dark:text-slate-200">Fecha:</strong> ${data.fecha}</div>`;
 
+                if (!html) html = `<div class="text-slate-500 font-medium italic">Datos extraídos correctamente. Revisa los campos a continuación.</div>`;
                 $('#previewContenido').html(html);
-
-                if (data.conceptos && data.conceptos.length > 0) {
-                    let conceptHtml = `<div class="mt-5 pt-4 border-t border-indigo-200/60 dark:border-indigo-800/40">
-                        <p class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 mb-3"><i class="fas fa-list-ul mr-1"></i> Asignar por Concepto (${data.conceptos.length})</p>
-                        <div class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">`;
-
-                    data.conceptos.forEach((c, idx) => {
-                        conceptHtml += `
-                        <div class="p-3 bg-gray-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
-                            <p class="text-xs font-bold text-slate-800 dark:text-slate-100 mb-1 leading-snug line-clamp-2" title="${c.nombre}">${c.nombre}</p>
-                            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-extrabold mb-2.5 font-mono">$${parseFloat(c.importe).toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
-                            <div id="concepto_select_${idx}"></div>
-                        </div>`;
-                    });
-                    
-                    conceptHtml += `</div></div>`;
-                    $('#previewContenido').append(conceptHtml);
-                    
-                    data.conceptos.forEach((c, idx) => {
-                        buildSearchableSelect($(`#concepto_select_${idx}`), window.currentModalInsumos, c.insumoNombre, '— Buscar y seleccionar —', idx);
-                    });
-
-                    $('#contenedorInsumoGlobal').slideUp();
-                } else {
-                    if (!html) $('#previewContenido').html(`<div class="text-slate-500 font-medium italic">No se detectaron datos estructurales.</div>`);
-                    $('#contenedorInsumoGlobal').slideDown();
-                }
 
             } catch (e) {
                 $('#previewContenido').html(`<div class="text-rose-500 font-bold flex items-center gap-2"><i class="fas fa-exclamation-triangle"></i> ${e.message}</div>`);
+                $('#previewContenedor').removeClass('hidden');
             }
         }
 

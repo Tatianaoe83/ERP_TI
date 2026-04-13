@@ -599,6 +599,110 @@ class FacturasController extends AppBaseController
             : response()->json(['message' => 'Factura no encontrada'], 404);
     }
 
+    public function obtenerDatos($id): JsonResponse
+    {
+        $factura = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')->first();
+        
+        if (!$factura) {
+            return response()->json(['message' => 'Factura no encontrada'], 404);
+        }
+
+        return response()->json([
+            'FacturasID' => $factura->FacturasID,
+            'Nombre' => $factura->Nombre,
+            'Emisor' => $factura->Emisor,
+            'Costo' => $factura->Costo,
+            'Importe' => $factura->Importe,
+            'Mes' => $factura->Mes,
+            'Anio' => $factura->Anio,
+        ]);
+    }
+
+    public function actualizarDatos(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'Emisor' => 'nullable|string|max:300',
+            'Costo' => 'required|numeric|min:0',
+        ]);
+
+        $factura = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')->first();
+        
+        if (!$factura) {
+            return response()->json(['message' => 'Factura no encontrada'], 404);
+        }
+
+        $updated = DB::table('facturas')->where('FacturasID', $id)->update([
+            'Emisor' => $request->input('Emisor'),
+            'Costo' => $request->input('Costo'),
+            'updated_at' => now()
+        ]);
+
+        return response()->json(['message' => 'Factura actualizada correctamente']);
+    }
+
+    public function actualizarCompleto(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'Emisor' => 'nullable|string|max:300',
+            'Costo' => 'required|numeric|min:0',
+            'archivo_xml' => 'nullable|file|max:5120',
+            'archivo_pdf' => 'nullable|file|mimes:pdf|max:10240',
+        ]);
+
+        $factura = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')->first();
+        
+        if (!$factura) {
+            return response()->json(['message' => 'Factura no encontrada'], 404);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $id, $factura) {
+                $rutaXml = $factura->ArchivoRuta;
+                $rutaPdf = $factura->PdfRuta;
+
+                // Guardar nuevos archivos si se subieron
+                if ($request->hasFile('archivo_xml') && $request->file('archivo_xml')->isValid()) {
+                    // Eliminar archivo anterior si existe
+                    if ($rutaXml && Storage::disk('public')->exists($rutaXml)) {
+                        Storage::disk('public')->delete($rutaXml);
+                    }
+                    $baseDir = $factura->SolicitudID ? "solicitudes/{$factura->SolicitudID}/facturas" : "facturas/extras";
+                    $rutaXml = $request->file('archivo_xml')->store($baseDir . '/xml', 'public');
+                }
+
+                if ($request->hasFile('archivo_pdf') && $request->file('archivo_pdf')->isValid()) {
+                    // Eliminar archivo anterior si existe
+                    if ($rutaPdf && Storage::disk('public')->exists($rutaPdf)) {
+                        Storage::disk('public')->delete($rutaPdf);
+                    }
+                    $baseDir = $factura->SolicitudID ? "solicitudes/{$factura->SolicitudID}/facturas" : "facturas/extras";
+                    $rutaPdf = $request->file('archivo_pdf')->store($baseDir . '/pdf', 'public');
+                }
+
+                // Actualizar datos de la factura
+                $updateData = [
+                    'Emisor' => $request->input('Emisor'),
+                    'Costo' => $request->input('Costo'),
+                    'updated_at' => now()
+                ];
+
+                if ($rutaXml !== $factura->ArchivoRuta) {
+                    $updateData['ArchivoRuta'] = $rutaXml;
+                }
+                if ($rutaPdf !== $factura->PdfRuta) {
+                    $updateData['PdfRuta'] = $rutaPdf;
+                }
+
+                DB::table('facturas')->where('FacturasID', $id)->update($updateData);
+            });
+
+            return response()->json(['success' => true, 'message' => 'Factura actualizada correctamente']);
+
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Error al actualizar: ' . $e->getMessage()], 500);
+        }
+    }
+
     public function historial(Request $request): JsonResponse
     {
         $gerenciaID = $request->input('gerenci_id');
