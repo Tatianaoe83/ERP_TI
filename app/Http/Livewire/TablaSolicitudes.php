@@ -848,14 +848,8 @@ class TablaSolicitudes extends Component
         // Persistir si tiene serial o fecha de entrega (datos de finalización)
         if (!empty($u['serial']) || !empty($u['fecha_entrega'])) return true;
         
-        // Persistir SOLO si cumple las 3 condiciones: usuario final + requiere_config + al menos un checkbox marcado
-        if (!empty($u['empleado_id']) && !empty($u['requiere_config'])) {
-            foreach ($u['checklist'] ?? [] as $items) {
-                foreach ($items as $item) {
-                    if (!empty($item['realizado'])) return true;
-                }
-            }
-        }
+        // Persistir si tiene usuario final asignado (independientemente de requiere_config)
+        if (!empty($u['empleado_id'])) return true;
         
         // Persistir si tiene facturas o XML
         foreach (['facturas','facturaXml'] as $prop) {
@@ -961,12 +955,30 @@ class TablaSolicitudes extends Component
                 }
 
                 // ===================================================================
-                // FASE 2: Insertar FACTURAS ÚNICAS (1 por UUID/proveedor)
+                // FASE 2: Insertar FACTURAS ÚNICAS (1 por cotización ganadora)
                 // ===================================================================
-                $facturasInsertadas = []; // control de UUIDs ya insertados
+                $facturasInsertadas = []; // control de cotizaciones ya procesadas
 
+                // Agrupar por cotización para insertar UNA factura por cotización
+                $cotizacionesUnicas = [];
                 foreach ($this->propuestasAsignacion as $pIndex => $p) {
-                    $proveedor = $p['proveedor'] ?? null;
+                    $cotizacionId = (int)($p['cotizacionId'] ?? 0);
+                    if (!$cotizacionId) continue;
+                    
+                    // Si ya procesamos esta cotización, skip
+                    if (isset($cotizacionesUnicas[$cotizacionId])) continue;
+                    
+                    $cotizacionesUnicas[$cotizacionId] = [
+                        'pIndex'    => $pIndex,
+                        'proveedor' => $p['proveedor'] ?? null,
+                        'propuesta' => $p,
+                    ];
+                }
+
+                // Insertar una factura por cada cotización ganadora
+                foreach ($cotizacionesUnicas as $cotizacionId => $data) {
+                    $pIndex    = $data['pIndex'];
+                    $proveedor = $data['proveedor'];
                     if (!$proveedor) continue;
 
                     // Buscar el XML parseado para este proveedor
@@ -976,10 +988,7 @@ class TablaSolicitudes extends Component
                     $uuid = trim((string)($parsed['uuid'] ?? ''));
                     if (!$uuid) continue;
 
-                    // Si ya insertamos esta factura (mismo UUID), skip
-                    if (isset($facturasInsertadas[$uuid])) continue;
-
-                    // Soft-delete facturas anteriores con este UUID
+                    // Soft-delete facturas anteriores con este UUID para esta solicitud
                     Facturas::query()
                         ->where('SolicitudID', (int)$this->asignacionSolicitudId)
                         ->where('UUID', $uuid)
@@ -987,15 +996,18 @@ class TablaSolicitudes extends Component
                         ->update(['deleted_at' => now()]);
 
                     // Preparar datos de la factura
-                    $descripcion = mb_substr(trim((string)($parsed['descripcion'] ?? '')), 0, 300);
-                    if ($descripcion === '') continue;
-
                     $insumoId     = isset($parsed['insumoId']) ? (int)$parsed['insumoId'] : null;
                     $insumoNombre = null;
                     if ($insumoId) {
                         $insumoEncontrado = collect($this->insumosDisponibles)->firstWhere('id', $insumoId);
                         $insumoNombre     = $insumoEncontrado['nombre'] ?? null;
                     }
+
+                    // Nombre de la factura: descripcion del CFDI, nombre del insumo o emisor como fallback
+                    $descripcion = mb_substr(trim((string)($parsed['descripcion'] ?? '')), 0, 300);
+                    if ($descripcion === '') $descripcion = $insumoNombre ?? mb_substr(trim((string)($parsed['emisor'] ?? '')), 0, 300);
+                    if ($descripcion === '') $descripcion = 'Factura ' . $uuid;
+                    $descripcion = mb_substr($descripcion, 0, 300);
 
                     $subtotal = is_numeric($parsed['subtotal'] ?? null) ? (float)$parsed['subtotal'] : 0;
                     $cantidad = isset($parsed['cantidad']) ? (int)$parsed['cantidad'] : 1;
@@ -1015,6 +1027,7 @@ class TablaSolicitudes extends Component
                     try {
                         Facturas::create([
                             'SolicitudID'  => (int)$this->asignacionSolicitudId,
+                            'CotizacionID' => $cotizacionId,
                             'UUID'         => $uuid,
                             'Nombre'       => $descripcion,
                             'Importe'      => $subtotal,
@@ -1028,14 +1041,22 @@ class TablaSolicitudes extends Component
                             'PdfRuta'      => '',
                         ]);
 
-                        $facturasInsertadas[$uuid] = true;
+                        $facturasInsertadas[$cotizacionId] = true;
+
+                        \Log::info('[Asignacion] Factura insertada por cotización', [
+                            'solicitudId'  => $this->asignacionSolicitudId,
+                            'cotizacionId' => $cotizacionId,
+                            'uuid'         => $uuid,
+                            'proveedor'    => $proveedor,
+                        ]);
 
                     } catch (\Throwable $fe) {
                         \Log::error('[Asignacion] ERROR factura XML', [
-                            'proveedor'   => $proveedor,
-                            'uuid'        => $uuid,
-                            'descripcion' => $descripcion,
-                            'error'       => $fe->getMessage()
+                            'cotizacionId' => $cotizacionId,
+                            'proveedor'    => $proveedor,
+                            'uuid'         => $uuid,
+                            'descripcion'  => $descripcion,
+                            'error'        => $fe->getMessage()
                         ]);
                         throw $fe;
                     }
@@ -1077,25 +1098,25 @@ class TablaSolicitudes extends Component
                         if (!empty($u['fecha_entrega']))   $dataUpdate['FechaEntrega']   = $u['fecha_entrega'];
                         if ($this->serialColumn)           $dataUpdate[$this->serialColumn] = (string)($u['serial'] ?? '');
 
-                        // Verificar si cumple las 3 condiciones del USUARIO FINAL
-                        $cumpleCondicionesUsuarioFinal = false;
+                        // Verificar si cumple las 3 condiciones COMPLETAS (empleado + requiere_config + checklist)
+                        $cumpleCondicionesCompletas = false;
                         if (!empty($u['empleado_id']) && !empty($u['requiere_config'])) {
                             foreach (($u['checklist'] ?? []) as $items) {
                                 foreach ($items as $item) {
                                     if (!empty($item['realizado'])) {
-                                        $cumpleCondicionesUsuarioFinal = true;
+                                        $cumpleCondicionesCompletas = true;
                                         break 2;
                                     }
                                 }
                             }
                         }
 
-                        // SOLO actualizar empleado/departamento si cumple las 3 condiciones
-                        if ($cumpleCondicionesUsuarioFinal) {
+                        // Actualizar empleado/departamento si tiene empleado asignado (con o sin config completa)
+                        if (!empty($u['empleado_id'])) {
                             $dataUpdate['EmpleadoID']     = (int)$u['empleado_id'];
                             $dataUpdate['DepartamentoID'] = !empty($u['departamento_id']) ? (int)$u['departamento_id'] : null;
                         } else {
-                            // Si NO cumple, limpiar empleado/departamento
+                            // Si NO tiene empleado, limpiar empleado/departamento
                             $dataUpdate['EmpleadoID']     = null;
                             $dataUpdate['DepartamentoID'] = null;
                         }
@@ -1154,9 +1175,9 @@ class TablaSolicitudes extends Component
                             }
                         }
 
-                        // Guardar o limpiar checklist según cumplimiento de condiciones
-                        if ($cumpleCondicionesUsuarioFinal && !empty($u['checklist'])) {
-                            // SI cumple: guardar checklist
+                        // Guardar o limpiar checklist según cumplimiento de condiciones COMPLETAS
+                        if ($cumpleCondicionesCompletas && !empty($u['checklist'])) {
+                            // SI cumple las 3 condiciones: guardar checklist completo
                             foreach (array_keys($u['checklist'] ?? []) as $catKey) {
                                 foreach (($u['checklist'][$catKey] ?? []) as $item) {
                                     $reqId = (int)($item['req_id'] ?? 0); if (!$reqId) continue;
@@ -1168,7 +1189,8 @@ class TablaSolicitudes extends Component
                                 }
                             }
                         } else {
-                            // NO cumple: eliminar cualquier checklist existente
+                            // NO cumple las 3 condiciones: eliminar cualquier checklist existente
+                            // (solo se guarda usuario final, no configuración)
                             SolicitudActivoCheckList::where('SolicitudActivoID', (int)$activo->SolicitudActivoID)->delete();
                         }
                     }
@@ -1196,8 +1218,7 @@ class TablaSolicitudes extends Component
     {
         if (!isset($this->xmlParseado[$pIndex][$uIndex])) return;
 
-        // Evitar re-render completo (el panel ya se cerró en JS)
-        $this->skipRender();
+        //$this->skipRender();
 
         $insumoId = ($insumoId !== null && $insumoId > 0) ? (int)$insumoId : null;
         $this->xmlParseado[$pIndex][$uIndex]['insumoId'] = $insumoId;
@@ -1235,6 +1256,48 @@ class TablaSolicitudes extends Component
         $this->lockUsuarioSearch($pIndex, $uIndex);
         $this->usuarioSearch[$pIndex][$uIndex]  = (string)$row['NombreEmpleado'];
         $this->usuarioOptions[$pIndex][$uIndex] = [];
+
+        // PERSISTIR INMEDIATAMENTE el usuario final en BD
+        if ($this->asignacionSolicitudId) {
+            try {
+                $propuesta = $this->propuestasAsignacion[$pIndex];
+                $unidad    = $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex];
+
+                $activo = SolicitudActivo::updateOrCreate(
+                    [
+                        'SolicitudID'  => (int)$this->asignacionSolicitudId,
+                        'CotizacionID' => (int)($propuesta['cotizacionId'] ?? 0),
+                        'UnidadIndex'  => (int)($unidad['unidadIndex'] ?? ($uIndex + 1)),
+                    ],
+                    [
+                        'NumeroPropuesta' => (int)($propuesta['numeroPropuesta'] ?? 0),
+                        'EmpleadoID'      => (int)$row['EmpleadoID'],
+                        'DepartamentoID'  => $row['DepartamentoID'] ? (int)$row['DepartamentoID'] : null,
+                    ]
+                );
+
+                // Guardar activoId en memoria para futuras actualizaciones
+                $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['activoId'] = (int)$activo->SolicitudActivoID;
+
+                \Log::info('[Asignacion] Usuario final persistido inmediatamente', [
+                    'solicitudId' => $this->asignacionSolicitudId,
+                    'activoId'    => $activo->SolicitudActivoID,
+                    'empleadoId'  => $row['EmpleadoID'],
+                    'pIndex'      => $pIndex,
+                    'uIndex'      => $uIndex,
+                ]);
+
+            } catch (\Throwable $e) {
+                \Log::error('[Asignacion] Error persistiendo usuario final', [
+                    'solicitudId' => $this->asignacionSolicitudId,
+                    'empleadoId'  => $empleadoId,
+                    'error'       => $e->getMessage(),
+                ]);
+                $this->dispatchBrowserEvent('swal:error', [
+                    'message' => 'Error guardando usuario final: ' . $e->getMessage()
+                ]);
+            }
+        }
     }
 
     // =========================================================================
@@ -1338,6 +1401,7 @@ class TablaSolicitudes extends Component
 
     private function resetAsignacionState(): void
     {
+        $this->resetErrorBag();
         $this->modalAsignacionAbierto      = false;
         $this->modalEsSoloLectura          = false;
         $this->asignacionSolicitudId       = null;
@@ -1839,46 +1903,33 @@ class TablaSolicitudes extends Component
             catch (\Throwable) {}
         }
 
-        // Construir array de conceptos individuales
+        // Extraer descripciones de conceptos para el campo descripcion general
         $conceptoNodes = $xml->xpath('//cfdi:Comprobante/cfdi:Conceptos/cfdi:Concepto') ?: $xml->xpath('//cfdi:Concepto') ?: [];
         $cantidadTotal = 0;
         $descripcionCompleta = [];
-        $conceptos = [];
 
         foreach ($conceptoNodes as $nodo) {
             $ca = $nodo->attributes();
             $cantidad = (float)((string)($ca['Cantidad'] ?? '1'));
             $cantidadTotal += $cantidad;
             $desc = (string)($ca['Descripcion'] ?? '');
-            $valorUnitario = (string)($ca['ValorUnitario'] ?? $ca['valorUnitario'] ?? '0.00');
-            $importe = (string)($ca['Importe'] ?? '0.00');
-            
-            if ($desc) {
-                $descripcionCompleta[] = $desc;
-                $conceptos[] = [
-                    'nombre' => $desc, // La vista espera 'nombre' no 'descripcion'
-                    'cantidad' => $cantidad,
-                    'costo' => $valorUnitario, // La vista espera 'costo' no 'valorUnitario'
-                    'importe' => $importe,
-                    'insumoId' => null, // Usuario debe asignar manualmente
-                ];
-            }
+            if ($desc) $descripcionCompleta[] = $desc;
         }
 
-        // Retornar datos con conceptos individuales para asignación de insumos
+        // Retorna datos de cabecera del CFDI; un solo insumoId se asigna a nivel de factura
         return [
-            'version'    => $version,
-            'uuid'       => $uuid,
-            'emisor'     => $emisorNombre,
-            'fecha'      => $fecha,
-            'mes'        => $mes,
-            'anio'       => $anio,
-            'subtotal'   => $subtotal,
-            'moneda'     => $moneda,
-            'cantidad'   => (int)$cantidadTotal,
+            'version'     => $version,
+            'uuid'        => $uuid,
+            'emisor'      => $emisorNombre,
+            'fecha'       => $fecha,
+            'mes'         => $mes,
+            'anio'        => $anio,
+            'subtotal'    => $subtotal,
+            'moneda'      => $moneda,
+            'cantidad'    => (int)$cantidadTotal,
             'descripcion' => implode(', ', array_slice($descripcionCompleta, 0, 3)) . (count($descripcionCompleta) > 3 ? '...' : ''),
-            'conceptos'  => $conceptos, // Array de conceptos para asignar insumos
-            'total'      => $subtotal, // Para compatibilidad con código existente
+            'insumoId'    => null,
+            'total'       => $subtotal, // compatibilidad
         ];
     }
 
