@@ -65,6 +65,7 @@
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Total</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mes</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Año</th>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Último Cambio</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Acciones</th>
                 </tr>
             </thead>
@@ -325,6 +326,28 @@
                     render: function(data) {
                         if (!data) return '<span class="text-slate-400 text-xs">—</span>';
                         return `<span class="text-sm font-bold text-slate-700 dark:text-slate-300">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'NombreEmpleado',
+                    className: 'px-4 py-3 border-b dark:border-slate-800',
+                    render: function(data) {
+                        if (!data || data.trim() === '') {
+                            return '<span class="text-slate-400 dark:text-slate-500 italic text-xs">Sin cambios</span>';
+                        }
+                        const partes = data.trim().split(/\s+/);
+                        let nombre = '';
+                        
+                        if (partes.length >= 3) {
+                            // Formato: APELLIDO APELLIDO NOMBRE NOMBRE... -> mostrar NOMBRE APELLIDO
+                            nombre = partes[2] + ' ' + partes[0];
+                        } else if (partes.length === 2) {
+                            nombre = partes[1] + ' ' + partes[0];
+                        } else {
+                            nombre = partes[0];
+                        }
+                        
+                        return `<span class="text-xs font-semibold text-slate-700 dark:text-slate-300">${nombre}</span>`;
                     }
                 },
                 {

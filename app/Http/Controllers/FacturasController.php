@@ -93,10 +93,12 @@ class FacturasController extends AppBaseController
             ->select([
                 'facturas.FacturasID','facturas.Nombre','facturas.Emisor','facturas.SolicitudID',
                 'facturas.Costo','facturas.Mes','facturas.Anio',
-                'facturas.PdfRuta','facturas.ArchivoRuta','facturas.InsumoNombre',
+                'facturas.PdfRuta','facturas.ArchivoRuta','facturas.InsumoNombre','facturas.GerenciaID',
                 'gerencia.NombreGerencia',
+                'empleados.NombreEmpleado'
             ])
             ->leftJoin('gerencia', 'facturas.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('empleados', 'facturas.EmpleadoID', '=', 'empleados.EmpleadoID')
             ->whereNull('facturas.deleted_at');
 
         if ($gerenciaID) {
