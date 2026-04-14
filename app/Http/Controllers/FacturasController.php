@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateFacturasRequest;
 use App\Repositories\FacturasRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
+use App\Models\Facturas;
 use App\Models\Gerencia;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -574,6 +575,10 @@ class FacturasController extends AppBaseController
         $updated = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')
             ->update(['Mes' => $mes, 'updated_at' => now()]);
 
+        if ($updated) {
+            $this->registrarCambioEmpleado($id);
+        }
+
         return $updated
             ? response()->json(['message' => 'Mes actualizado correctamente'])
             : response()->json(['message' => 'Factura no encontrada'], 404);
@@ -593,6 +598,10 @@ class FacturasController extends AppBaseController
 
         $updated = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')
             ->update(['InsumoNombre' => $nombre, 'InsumoID' => $insumoID ?: null, 'updated_at' => now()]);
+    
+        if ($updated) {
+            $this->registrarCambioEmpleado($id);
+        }
 
         return $updated
             ? response()->json(['message' => 'Insumo actualizado'])
@@ -636,6 +645,10 @@ class FacturasController extends AppBaseController
             'Costo' => $request->input('Costo'),
             'updated_at' => now()
         ]);
+
+        if ($updated) {
+            $this->registrarCambioEmpleado($id);
+        }
 
         return response()->json(['message' => 'Factura actualizada correctamente']);
     }
@@ -695,6 +708,8 @@ class FacturasController extends AppBaseController
 
                 DB::table('facturas')->where('FacturasID', $id)->update($updateData);
             });
+
+            $this->registrarCambioEmpleado($id);
 
             return response()->json(['success' => true, 'message' => 'Factura actualizada correctamente']);
 
@@ -1119,5 +1134,57 @@ class FacturasController extends AppBaseController
         $t = str_replace(['á','é','í','ó','ú','ä','ë','ï','ö','ü','ñ'],['a','e','i','o','u','a','e','i','o','u','n'], $t);
         $t = preg_replace('/[^a-z0-9\s]/', '', $t);
         return trim(preg_replace('/\s+/', ' ', $t));
+    }
+
+    /**
+     * Método privado para registrar el cambio de empleado en una factura
+     */
+    private function registrarCambioEmpleado($id): void
+    {
+        try {
+            $user = auth()->user();
+            
+            if (!$user) {
+                \Log::warning("FacturasController::registrarCambioEmpleado - Usuario no autenticado");
+                return;
+            }
+
+            \Log::info("FacturasController::registrarCambioEmpleado - Usuario name: {$user->name}, email: {$user->email}, FacturaID: {$id}");
+
+            // Buscar empleado por email o nombre completo
+            $empleado = DB::table('empleados')
+                ->where(function($query) use ($user) {
+                    // Buscar por Correo = email
+                    if (!empty($user->email)) {
+                        $query->where('Correo', $user->email);
+                    }
+                    // Buscar por NombreEmpleado = name (nombre completo)
+                    if (!empty($user->name)) {
+                        $query->orWhere('NombreEmpleado', $user->name);
+                    }
+                })
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$empleado) {
+                \Log::warning("FacturasController::registrarCambioEmpleado - Empleado no encontrado con email: {$user->email} o name: {$user->name}");
+                return;
+            }
+
+            \Log::info("FacturasController::registrarCambioEmpleado - Empleado encontrado: {$empleado->EmpleadoID}, Nombre: {$empleado->NombreEmpleado}");
+
+            // Actualizar la factura con el EmpleadoID del empleado que hizo el cambio
+            $updated = DB::table('facturas')
+                ->where('FacturasID', $id)
+                ->whereNull('deleted_at')
+                ->update([
+                    'EmpleadoID' => $empleado->EmpleadoID,
+                    'updated_at' => now()
+                ]);
+
+            \Log::info("FacturasController::registrarCambioEmpleado - Filas actualizadas: {$updated}");
+        } catch (\Throwable $e) {
+            \Log::error("FacturasController::registrarCambioEmpleado - Error: " . $e->getMessage());
+        }
     }
 }

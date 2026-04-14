@@ -98,22 +98,10 @@
                 <span class="gls-tip" style="left:0;transform:none;">Más del 5% por debajo del presupuesto — gasto eficiente, ¡excelente!</span>
             </span>
             <span class="gls flex-shrink-0">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                    <i class="fas fa-check text-[9px]"></i> OK
-                </span>
-                <span class="gls-tip" style="left:0;transform:none;">Desviación menor al 5% en cualquier dirección — sin acción requerida.</span>
-            </span>
-            <span class="gls flex-shrink-0">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                    <i class="fas fa-exclamation-circle text-[9px]"></i> Alerta
-                </span>
-                <span class="gls-tip" style="left:0;transform:none;">Excedente entre 5% y 15% sobre el presupuesto — revisar con el área responsable.</span>
-            </span>
-            <span class="gls flex-shrink-0">
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                     <i class="fas fa-exclamation-triangle text-[9px]"></i> Desviacion
                 </span>
-                <span class="gls-tip" style="left:0;transform:none;">Excedente mayor al 15% sobre el presupuesto — acción inmediata requerida.</span>
+                <span class="gls-tip" style="left:0;transform:none;">Excedente mayor al 5% sobre el presupuesto — se gastó más de lo presupuestado.</span>
             </span>
 
         </div>
@@ -374,34 +362,6 @@
                     <tfoot id="cmpTableFoot" class="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-bold text-sm"></tfoot>
                 </table>
             </div>
-            {{-- Leyenda estados --}}
-            <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-4 text-[11px] text-slate-400">
-                <span class="font-bold text-slate-500 mr-1">Significado del estado:</span>
-                <span class="flex items-center gap-1.5">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                        <i class="fas fa-piggy-bank text-[9px]"></i> Ahorro
-                    </span>
-                    Más del 5% por debajo — ¡excelente!
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                        <i class="fas fa-check text-[9px]"></i> OK
-                    </span>
-                    Desviación &lt;5% — sin acción requerida
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                        <i class="fas fa-exclamation-circle text-[9px]"></i> Alerta
-                    </span>
-                    Excedente entre 5% y 15% — revisar con el área
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                        <i class="fas fa-exclamation-triangle text-[9px]"></i> Desviacion
-                    </span>
-                    Excedente mayor al 15% — acción inmediata
-                </span>
-            </div>
         </div>
 
     </div>{{-- /cmpResults --}}
@@ -439,27 +399,24 @@
        Negativo = ahorro = verde siempre.      */
     function desvColor(v) {
         if (v == null) return '#94a3b8';
-        if (v > 15)   return '#f43f5e';   /* crítico   → rojo   */
-        if (v > 5)    return '#f59e0b';   /* alerta    → ámbar  */
+        if (v > 5)    return '#f43f5e';   /* excedente → rojo   */
         if (v < -5)   return '#0d9488';   /* ahorro    → teal   */
-        return '#10b981';                 /* ok / leve → verde  */
+        return '#94a3b8';                 /* neutral   → gris   */
     }
 
     function desvClass(v) {
         if (v == null) return 'text-slate-400';
-        if (v > 15)   return 'text-rose-600 dark:text-rose-400 font-bold';
-        if (v > 5)    return 'text-amber-600 dark:text-amber-400 font-semibold';
+        if (v > 5)    return 'text-rose-600 dark:text-rose-400 font-bold';
         if (v < -5)   return 'text-teal-600 dark:text-teal-400 font-semibold';
-        return 'text-emerald-600 dark:text-emerald-400';
+        return 'text-slate-400';
     }
 
-    /* Badge de estado — Ahorro solo cuando es negativo > 5% */
+    /* Badge de estado — Solo Ahorro y Desviacion */
     function estadoBadge(desvPct) {
         const v = desvPct ?? 0;
         if (v < -5) return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800"><i class="fas fa-piggy-bank"></i> Ahorro</span>`;
-        if (v > 15) return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"><i class="fas fa-exclamation-triangle"></i> Desviacion</span>`;
-        if (v > 5)  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800"><i class="fas fa-exclamation-circle"></i> Alerta</span>`;
-        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"><i class="fas fa-check"></i> OK</span>`;
+        if (v > 5) return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"><i class="fas fa-exclamation-triangle"></i> Desviacion</span>`;
+        return '';
     }
 
     /* ══ INSIGHTS ══ */
@@ -468,8 +425,7 @@
         const totFact  = insumos.reduce((s,i) => s + (i.metricas.total_facturado || 0), 0);
 
         /* Solo cuentan como problema los que SE PASAN del presupuesto */
-        const criticos = insumos.filter(i => (i.metricas.desviacion_pct ?? 0) > 15);
-        const alertas  = insumos.filter(i => { const v = i.metricas.desviacion_pct ?? 0; return v > 5 && v <= 15; });
+        const desviaciones = insumos.filter(i => (i.metricas.desviacion_pct ?? 0) > 5);
         const ahorros  = insumos.filter(i => (i.metricas.desviacion_pct ?? 0) < -5);
         const sinPresu = insumos.filter(i => !i.metricas.presupuesto_generales);
 
@@ -477,18 +433,12 @@
 
         /* ── Insight global ── */
         let gType, gIcon, gMsg;
-        if (criticos.length > 0) {
+        if (desviaciones.length > 0) {
             gType = 'alert'; gIcon = 'fa-exclamation-triangle';
             const ahorroExtra = ahorros.length > 0
                 ? ` · <span style="color:#0d9488">✓ ${ahorros.length} con ahorro: ${ahorros.map(i=>i.nombre).join(', ')}</span>`
                 : '';
-            gMsg = `<strong>${criticos.length} insumo${criticos.length!==1?'s':''} con excedente crítico (&gt;15%):</strong> ${criticos.map(i=>i.nombre).join(', ')}. Solicita justificación al área responsable.${ahorroExtra}`;
-        } else if (alertas.length > 0) {
-            gType = 'warn'; gIcon = 'fa-exclamation-circle';
-            const ahorroExtra = ahorros.length > 0
-                ? ` · <span style="color:#0d9488">✓ ${ahorros.length} con ahorro: ${ahorros.map(i=>i.nombre).join(', ')}</span>`
-                : '';
-            gMsg = `<strong>${alertas.length} insumo${alertas.length!==1?'s':''} con excedente moderado (5–15%):</strong> ${alertas.map(i=>i.nombre).join(', ')}. Monitorea su evolución.${ahorroExtra}`;
+            gMsg = `<strong>${desviaciones.length} insumo${desviaciones.length!==1?'s':''} con excedente (&gt;5%):</strong> ${desviaciones.map(i=>i.nombre).join(', ')}. Solicita justificación al área responsable.${ahorroExtra}`;
         } else if (ahorros.length > 0) {
             gType = 'saving'; gIcon = 'fa-piggy-bank';
             gMsg = `<strong>¡Buen trabajo! ${ahorros.length} insumo${ahorros.length!==1?'s tienen':' tiene'} ahorro</strong> (más del 5% por debajo del presupuesto): ${ahorros.map(i=>i.nombre).join(', ')}. Sin excedentes detectados.`;
@@ -504,12 +454,9 @@
         /* ── Insight gráfica montos ── */
         const maxDesv = insumos.reduce((m,i) => Math.max(m, i.metricas.desviacion_pct ?? 0), 0);
         let mType, mMsg;
-        if (maxDesv > 15) {
+        if (maxDesv > 5) {
             mType = 'alert';
-            mMsg  = `Las barras <strong>naranjas/rojas</strong> superan al presupuesto (azul). Revisa los insumos marcados como Desviacion — se gastó más de lo autorizado.`;
-        } else if (maxDesv > 5) {
-            mType = 'warn';
-            mMsg  = `Los montos facturados son cercanos al presupuesto. Algunos insumos muestran una leve diferencia — mantén el monitoreo durante el período.`;
+            mMsg  = `Las barras <strong>rojas</strong> superan al presupuesto (azul). Revisa los insumos marcados como Desviacion — se gastó más de lo autorizado.`;
         } else {
             mType = 'ok';
             mMsg  = ahorros.length > 0
@@ -521,12 +468,9 @@
 
         /* ── Insight gráfica desviación ── */
         let dType, dMsg;
-        if (criticos.length > 0) {
+        if (desviaciones.length > 0) {
             dType = 'alert';
-            dMsg  = `Las barras que más sobresalen a la derecha son los insumos con mayor excedente. <strong>Prioriza los marcados en rojo</strong> (&gt;15%). Las barras verdes a la izquierda representan ahorro.`;
-        } else if (alertas.length > 0) {
-            dType = 'warn';
-            dMsg  = `Hay insumos con excedente moderado (5–15%). Las barras verdes a la izquierda son ahorro — buen signo.`;
+            dMsg  = `Las barras que más sobresalen a la derecha son los insumos con mayor excedente. <strong>Prioriza los marcados en rojo</strong> (&gt;5%). Las barras verdes a la izquierda representan ahorro.`;
         } else if (sinPresu.length > 0) {
             dType = 'warn';
             const nombresDP = sinPresu.map(i => i.nombre).join(', ');
@@ -583,17 +527,15 @@
         insumos.forEach(ins => {
             const m   = ins.metricas;
             const dp  = m.desviacion_pct;
-            /* Color barra facturado: teal si ahorro, rojo/ámbar si excedente */
+            /* Color barra facturado: teal si ahorro, rojo si excedente */
             const fc  = dp == null ? '#10b981'
                       : dp < -5   ? '#0d9488'
-                      : dp > 15   ? '#f43f5e'
-                      : dp > 5    ? '#f59e0b'
+                      : dp > 5    ? '#f43f5e'
                       : '#10b981';
             const dclr = dp == null ? '#94a3b8'
                        : dp < 0    ? '#0d9488'
-                       : dp > 15   ? '#f43f5e'
-                       : dp > 5    ? '#f59e0b'
-                       : '#10b981';
+                       : dp > 5    ? '#f43f5e'
+                       : '#94a3b8';
 
             presuData.push({ y: m.presupuesto_generales ?? 0, name: ins.nombre });
             factData.push( { y: m.total_facturado ?? 0,       name: ins.nombre, color: fc });
@@ -615,9 +557,8 @@
                     const dif = (m.total_facturado ?? 0) - (m.presupuesto_generales ?? 0);
                     const interpret = dp == null ? ''
                         : dp < -5  ? `<div style="margin-top:8px;font-size:11px;color:#0d9488;font-weight:700">✓ Ahorro — se gastó menos de lo presupuestado</div>`
-                        : dp > 15  ? `<div style="margin-top:8px;font-size:11px;color:#f43f5e;font-weight:700">⚠ Excedente crítico — revisar con el área responsable</div>`
-                        : dp > 5   ? `<div style="margin-top:8px;font-size:11px;color:#f59e0b">↑ Excedente moderado — monitorear</div>`
-                        : `<div style="margin-top:8px;font-size:11px;color:#10b981">✓ Dentro del presupuesto — sin acción requerida</div>`;
+                        : dp > 5   ? `<div style="margin-top:8px;font-size:11px;color:#f43f5e;font-weight:700">⚠ Excedente — se gastó más de lo presupuestado</div>`
+                        : '';
                     return `<div style="min-width:240px">
                         <div style="font-weight:800;font-size:13px;margin-bottom:4px;white-space:normal">${ins.nombre}</div>
                         <div style="color:#94a3b8;font-size:10px;margin-bottom:10px">${gNom(ins.gerencia_id, ins.gerencia)}</div>
@@ -653,9 +594,8 @@
                     const dc  = desvColor(dp);
                     const accion = dp == null ? 'Sin presupuesto asignado'
                         : dp < -5  ? `✓ Ahorro de ${f(Math.abs(m.desviacion_monto ?? 0))} — ¡excelente gestión!`
-                        : dp > 15  ? '⚠ Revisión urgente del gasto'
-                        : dp > 5   ? 'Monitorear en las próximas semanas'
-                        : '✓ Sin acción requerida';
+                        : dp > 5   ? '⚠ Excedente — revisar con el área responsable'
+                        : '';
                     return `<div style="min-width:220px">
                         <div style="font-weight:800;font-size:13px;margin-bottom:4px;white-space:normal">${ins.nombre}</div>
                         <div style="color:#94a3b8;font-size:10px;margin-bottom:10px">${gNom(ins.gerencia_id, ins.gerencia)}</div>
@@ -948,7 +888,7 @@
         const mob   = isMobile();
 
         document.getElementById('cmpTableFoot').innerHTML = `
-            <tr class="cmp-foot-desk" style="display:${mob?'none':'table-row'};background:#f8fafc;">
+            <tr class="cmp-foot-desk" style="display:${mob?'none':'table-row'};background:#18171c;">
                 <td colspan="2" style="padding:10px 16px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;">Total general</td>
                 <td style="padding:10px 16px;text-align:right;font-family:monospace;color:#6366f1;font-weight:700;">${f(totPresu)}</td>
                 <td style="padding:10px 16px;text-align:right;font-family:monospace;font-weight:700;color:${difC};">${f(totFact)}</td>

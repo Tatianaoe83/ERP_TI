@@ -37,6 +37,7 @@ class Facturas extends Model
         'PdfRuta',
         'UUID',
         'Emisor',
+        'EmpleadoID'
     ];
 
     protected $casts = [
@@ -45,6 +46,7 @@ class Facturas extends Model
         'SolicitudID'  => 'integer',
         'CotizacionID' => 'integer',
         'GerenciaID'   => 'integer',
+        'EmpledadoID'   => 'integer',
         'Importe'      => 'decimal:2',
         'Costo'        => 'decimal:2',
         'Mes'          => 'integer',
@@ -80,5 +82,10 @@ class Facturas extends Model
     public function solicitud()
     {
         return $this->belongsTo(\App\Models\Solicitud::class, 'SolicitudID');
+    }
+
+     public function empleado()
+    {
+        return $this->belongsTo(\App\Models\Empleado::class, 'EmpleadoID');
     }
 }

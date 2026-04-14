@@ -108,6 +108,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('facturas/{id}/datos', [FacturasController::class, 'obtenerDatos'])->name('facturas.obtenerDatos');
     Route::patch('facturas/{id}/actualizar-datos', [FacturasController::class, 'actualizarDatos'])->name('facturas.actualizarDatos');
     Route::post('facturas/{id}/actualizar-completo', [FacturasController::class, 'actualizarCompleto'])->name('facturas.actualizarCompleto');
+    Route::patch('facturas/{id}/registrar-cambio', [FacturasController::class, 'ultimoCambioPorUsuario'])->name('facturas.registrarCambio');
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:facturas.create');
     Route::resource('facturas', FacturasController::class);
 
