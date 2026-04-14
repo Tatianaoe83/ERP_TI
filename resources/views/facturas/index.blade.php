@@ -290,6 +290,8 @@
         ['inputXml','inputPdf'].forEach(id => { if ($(id)) $(id).value = ''; });
         ['fdNombre','fdGerencia','fdImporte','fdCosto','fdMes','fdAnio','fdInsumoSelect'].forEach(id => { if ($(id)) $(id).value = ''; });
         ['spinnerXml','spinnerPdf','errorXml','errFdNombre','errFdCosto','errFdGerencia','errFdInsumo','avisoPdfExtranjero'].forEach(hide);
+        // Habilitar el campo año nuevamente
+        if ($('fdAnio')) $('fdAnio').disabled = false;
         resetZonaXml(); resetZonaPdf();
         $('pdfPreviewContainer').classList.add('hidden');
         $('pdfPreviewFrame').src = '';
@@ -345,6 +347,11 @@
         }
         if (data.mes) $('fdMes').value = data.mes;
         if (data.anio) $('fdAnio').value = data.anio;
+        
+        // Deshabilitar el año si viene del XML
+        if (origen === 'xml' && data.anio) {
+            $('fdAnio').disabled = true;
+        }
     }
 
     async function parsearXml(file) {
