@@ -1814,7 +1814,6 @@ class TablaSolicitudes extends Component
             DB::transaction(function () use ($pIndex, $uIndex, $propuesta, &$unidad, &$activoId) {
                 $dataUpdate = [
                     'NumeroPropuesta'         => (int)($propuesta['numeroPropuesta'] ?? 0),
-                    'FechaEntrega'            => !empty($unidad['fecha_entrega'])   ? $unidad['fecha_entrega']   : null,
                     'EmpleadoID'              => !empty($unidad['empleado_id'])     ? (int)$unidad['empleado_id']     : null,
                     'DepartamentoID'          => !empty($unidad['departamento_id']) ? (int)$unidad['departamento_id'] : null,
                     'fecha_fin_configuracion' => now(),

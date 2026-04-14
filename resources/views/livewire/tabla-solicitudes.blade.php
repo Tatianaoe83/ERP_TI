@@ -703,7 +703,7 @@
                                 </div>
                                 <div class="col-span-3">
                                     <p class="lg:hidden text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Fecha de entrega</p>
-                                    @if($modalYaTieneFacturas || $yaGuardado)
+                                    @if($modalYaTieneFacturas)
                                     <div class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300">
                                         <i class="fas fa-calendar-alt text-slate-400 text-xs"></i> {{ $u['fecha_entrega'] ?? 'Sin fecha' }}
                                     </div>
