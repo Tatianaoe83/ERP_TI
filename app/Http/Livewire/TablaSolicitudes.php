@@ -1100,7 +1100,7 @@ class TablaSolicitudes extends Component
                             'UUID'         => $uuid,
                             'Nombre'       => $descripcion,
                             'Importe'      => $subtotal,
-                            'Costo'        => $cantidad > 0 ? ($subtotal / $cantidad) : $subtotal,
+                            'Costo'        => $subtotal,
                             'Mes'          => !empty($parsed['mes'])  ? (int)$parsed['mes']  : null,
                             'Anio'         => !empty($parsed['anio']) ? (int)$parsed['anio'] : null,
                             'InsumoID'     => $insumoId ?: null,
