@@ -31,9 +31,18 @@ class FacturasController extends AppBaseController
     public function index()
     {
         $meses = [
-            1=>'Enero', 2=>'Febrero', 3=>'Marzo', 4=>'Abril',
-            5=>'Mayo', 6=>'Junio', 7=>'Julio', 8=>'Agosto',
-            9=>'Septiembre', 10=>'Octubre', 11=>'Noviembre', 12=>'Diciembre',
+            1 => 'Enero',
+            2 => 'Febrero',
+            3 => 'Marzo',
+            4 => 'Abril',
+            5 => 'Mayo',
+            6 => 'Junio',
+            7 => 'Julio',
+            8 => 'Agosto',
+            9 => 'Septiembre',
+            10 => 'Octubre',
+            11 => 'Noviembre',
+            12 => 'Diciembre',
         ];
 
         $currentYear = (int) Carbon::now()->format('Y');
@@ -42,11 +51,10 @@ class FacturasController extends AppBaseController
         $gerenciasConFacturas = Gerencia::query()
             ->where('estado', 1)
             ->whereIn('GerenciaID', function ($q) {
-                $q->select('solicitudes.GerenciaID')
+                $q->select('GerenciaID')
                     ->from('facturas')
-                    ->join('solicitudes', 'facturas.SolicitudID', '=', 'solicitudes.SolicitudID')
-                    ->whereNull('facturas.deleted_at')
-                    ->whereNotNull('solicitudes.GerenciaID');
+                    ->whereNull('deleted_at')
+                    ->whereNotNull('GerenciaID');
             })
             ->orderBy('NombreGerencia')
             ->pluck('NombreGerencia', 'GerenciaID')
@@ -84,16 +92,34 @@ class FacturasController extends AppBaseController
         $año        = $request->input('año');
 
         $mesesNum = [
-            'Enero'=>1,'Febrero'=>2,'Marzo'=>3,'Abril'=>4,'Mayo'=>5,'Junio'=>6,
-            'Julio'=>7,'Agosto'=>8,'Septiembre'=>9,'Octubre'=>10,'Noviembre'=>11,'Diciembre'=>12,
+            'Enero' => 1,
+            'Febrero' => 2,
+            'Marzo' => 3,
+            'Abril' => 4,
+            'Mayo' => 5,
+            'Junio' => 6,
+            'Julio' => 7,
+            'Agosto' => 8,
+            'Septiembre' => 9,
+            'Octubre' => 10,
+            'Noviembre' => 11,
+            'Diciembre' => 12,
         ];
         $numMes = is_numeric($mesParam) ? (int)$mesParam : ($mesesNum[$mesParam] ?? null);
 
         $query = DB::table('facturas')
             ->select([
-                'facturas.FacturasID','facturas.Nombre','facturas.Emisor','facturas.SolicitudID',
-                'facturas.Costo','facturas.Mes','facturas.Anio',
-                'facturas.PdfRuta','facturas.ArchivoRuta','facturas.InsumoNombre','facturas.GerenciaID',
+                'facturas.FacturasID',
+                'facturas.Nombre',
+                'facturas.Emisor',
+                'facturas.SolicitudID',
+                'facturas.Costo',
+                'facturas.Mes',
+                'facturas.Anio',
+                'facturas.PdfRuta',
+                'facturas.ArchivoRuta',
+                'facturas.InsumoNombre',
+                'facturas.GerenciaID',
                 'gerencia.NombreGerencia',
                 'empleados.NombreEmpleado'
             ])
@@ -151,10 +177,15 @@ class FacturasController extends AppBaseController
                 $uuid = strtoupper(trim((string)($ta['UUID'] ?? $ta['uuid'] ?? '')));
             }
 
-            $mes = null; $anio = null;
+            $mes = null;
+            $anio = null;
             if ($fecha) {
-                try { $cf = Carbon::parse($fecha); $mes = (int)$cf->format('n'); $anio = (int)$cf->format('Y'); }
-                catch (\Throwable) {}
+                try {
+                    $cf = Carbon::parse($fecha);
+                    $mes = (int)$cf->format('n');
+                    $anio = (int)$cf->format('Y');
+                } catch (\Throwable) {
+                }
             }
 
             return response()->json([
@@ -168,7 +199,6 @@ class FacturasController extends AppBaseController
                 'total'   => $total,
                 'moneda'  => $moneda,
             ]);
-
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Error procesando XML: ' . $e->getMessage()], 500);
         }
@@ -196,7 +226,6 @@ class FacturasController extends AppBaseController
                 'moneda'  => 'MXN',
                 'es_pdf'  => true,
             ]);
-
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         }
@@ -216,7 +245,6 @@ class FacturasController extends AppBaseController
             'archivo_xml'        => 'nullable|file|max:5120',
             'archivo_pdf'        => 'nullable|file|mimes:pdf|max:10240',
             'GerenciaID'         => 'nullable|integer',
-            'conceptos_insumos'  => 'nullable|string|max:10000',
         ]);
 
         try {
@@ -236,47 +264,30 @@ class FacturasController extends AppBaseController
                 $gerenciaId = $request->input('GerenciaID') ?: null;
                 $mes        = $request->input('Mes') ?: null;
                 $anio       = $request->input('Anio') ?: null;
+                $nombre     = trim((string)($request->input('Nombre', '')));
+                $costo      = (float)$request->input('Costo', 0);
+                $importe    = $request->input('Importe') ? (float)$request->input('Importe') : null;
 
-                $parsedConceptos = [];
+                $totalXml = null;
 
+                // Parsear XML si existe
                 if ($xmlRuta && $request->hasFile('archivo_xml')) {
                     $parsed = $this->parsearCfdi($request->file('archivo_xml')->getRealPath());
-                    if (!empty($parsed['conceptos'])) {
-                        $parsedConceptos = $parsed['conceptos'];
-                        if (empty($uuid) && !empty($parsed['uuid']))     $uuid   = $parsed['uuid'];
-                        if (empty($emisor) && !empty($parsed['emisor'])) $emisor = $parsed['emisor'];
-                        if (empty($mes) && !empty($parsed['mes']))       $mes    = $parsed['mes'];
-                        if (empty($anio) && !empty($parsed['anio']))     $anio   = $parsed['anio'];
+                    if (empty($uuid) && !empty($parsed['uuid']))     $uuid   = $parsed['uuid'];
+                    if (empty($emisor) && !empty($parsed['emisor'])) $emisor = $parsed['emisor'];
+                    if (empty($mes) && !empty($parsed['mes']))       $mes    = $parsed['mes'];
+                    if (empty($anio) && !empty($parsed['anio']))     $anio   = $parsed['anio'];
+                    
+                    // Obtener el SubTotal del XML
+                    $totalXml = (float)($parsed['total'] ?? 0);
+                    
+                    // Usar el SubTotal del XML como Costo si está disponible
+                    if ($totalXml > 0) {
+                        $costo = $totalXml;
                     }
                 }
 
-                if (empty($parsedConceptos) && $pdfRuta && $request->hasFile('archivo_pdf')) {
-                    $parsed = $this->parsearPdfBasico($request->file('archivo_pdf')->getRealPath(), $emisor ?: 'Extranjero');
-                    if (!empty($parsed['conceptos'])) {
-                        $catalogo  = $this->getCatalogoCortes();
-                        $emisorPdf = $parsed['emisor'] ?? $emisor;
-                        foreach ($parsed['conceptos'] as $c) {
-                            [$best, $score] = $this->matchInsumo($c['nombre'], $catalogo, $emisorPdf);
-                            $parsedConceptos[] = [
-                                'nombre'       => $c['nombre'],
-                                'costo'        => $c['importe'] ?? 0,
-                                'importe'      => $c['importe'] ?? 0,
-                                'cantidad'     => 1,
-                                'insumoId'     => $best['id'] ?? null,
-                                'insumoNombre' => $best['nombre'] ?? null,
-                            ];
-                        }
-                        if (empty($emisor) && !empty($parsed['emisor'])) $emisor = $parsed['emisor'];
-                    }
-                }
-
-                $conceptosInsumosOverride = [];
-                $ciRaw = $request->input('conceptos_insumos');
-                if ($ciRaw) {
-                    $decoded = is_string($ciRaw) ? json_decode($ciRaw, true) : (is_array($ciRaw) ? $ciRaw : []);
-                    if (is_array($decoded)) $conceptosInsumosOverride = $decoded;
-                }
-
+                // Limpiar registros duplicados si hay UUID
                 if ($uuid) {
                     DB::table('facturas')
                         ->where('UUID', $uuid)
@@ -284,99 +295,36 @@ class FacturasController extends AppBaseController
                         ->delete();
                 }
 
-                if (!empty($parsedConceptos)) {
-                    foreach ($parsedConceptos as $cIdx => $concepto) {
-                        $nombreConcepto = mb_substr(trim((string)($concepto['nombre'] ?? '')), 0, 300);
-                        if ($nombreConcepto === '') continue;
+                // Obtener InsumoID si se especificó InsumoNombre
+                $insumoNombre = trim((string)($request->input('InsumoNombre', '')));
+                $insumoID     = $insumoNombre
+                    ? DB::table('cortes')
+                    ->whereNull('deleted_at')
+                    ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower($insumoNombre)])
+                    ->max('CortesID')
+                    : null;
 
-                        $overrideRaw    = array_key_exists((string)$cIdx, $conceptosInsumosOverride)
-                            ? $conceptosInsumosOverride[(string)$cIdx]
-                            : '__not_set__';
-                        $overrideIsNull = ($overrideRaw === null || $overrideRaw === '');
-                        $overrideNombre = ($overrideRaw !== '__not_set__' && !$overrideIsNull) ? (string)$overrideRaw : null;
-                        $hasOverride    = ($overrideRaw !== '__not_set__');
-
-                        if ($hasOverride && $overrideIsNull) {
-                            $insumoNombreConcepto = null;
-                            $insumoID             = null;
-                        } elseif ($hasOverride && $overrideNombre) {
-                            $insumoNombreConcepto = $overrideNombre;
-                            $insumoID = DB::table('cortes')
-                                ->whereNull('deleted_at')
-                                ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower(trim($insumoNombreConcepto))])
-                                ->max('CortesID');
-                        } elseif (!empty($concepto['insumoId'])) {
-                            $insumoID             = (int)$concepto['insumoId'];
-                            $insumoNombreConcepto = $concepto['insumoNombre'] ?? null;
-                        } else {
-                            $insumoNombreConcepto = $concepto['insumoNombre'] ?? null;
-                            $insumoID = $insumoNombreConcepto
-                                ? DB::table('cortes')
-                                    ->whereNull('deleted_at')
-                                    ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower(trim($insumoNombreConcepto))])
-                                    ->max('CortesID')
-                                : null;
-                        }
-
-                        if (!$hasOverride && !$insumoNombreConcepto) {
-                            $insumoNombreConcepto = trim((string)($request->input('InsumoNombre', ''))) ?: null;
-                            if ($insumoNombreConcepto && !$insumoID) {
-                                $insumoID = DB::table('cortes')
-                                    ->whereNull('deleted_at')
-                                    ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower(trim($insumoNombreConcepto))])
-                                    ->max('CortesID');
-                            }
-                        }
-
-                        DB::table('facturas')->insert([
-                            'SolicitudID'  => null,
-                            'GerenciaID'   => $gerenciaId,
-                            'Nombre'       => $nombreConcepto,
-                            'Costo'        => is_numeric($concepto['costo'] ?? null) ? (float)$concepto['costo'] : 0,
-                            'Importe'      => is_numeric($concepto['importe'] ?? null) ? (float)$concepto['importe'] : 0,
-                            'Mes'          => $mes,
-                            'Anio'         => $anio,
-                            'InsumoNombre' => $insumoNombreConcepto,
-                            'InsumoID'     => $insumoID ?: null,
-                            'UUID'         => $uuid ?: null,
-                            'Emisor'       => $emisor ?: null,
-                            'ArchivoRuta'  => $xmlRuta,
-                            'PdfRuta'      => $pdfRuta,
-                            'created_at'   => now(),
-                            'updated_at'   => now(),
-                        ]);
-                    }
-                } else {
-                    $insumoNombre = trim((string)($request->input('InsumoNombre', '')));
-                    $insumoID     = $insumoNombre
-                        ? DB::table('cortes')
-                            ->whereNull('deleted_at')
-                            ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower($insumoNombre)])
-                            ->max('CortesID')
-                        : null;
-
-                    DB::table('facturas')->insert([
-                        'SolicitudID'  => null,
-                        'GerenciaID'   => $gerenciaId,
-                        'Nombre'       => $request->input('Nombre'),
-                        'Costo'        => $request->input('Costo'),
-                        'Importe'      => $request->input('Importe') ?: null,
-                        'Mes'          => $mes,
-                        'Anio'         => $anio,
-                        'InsumoNombre' => $insumoNombre ?: null,
-                        'InsumoID'     => $insumoID ?: null,
-                        'UUID'         => $uuid ?: null,
-                        'Emisor'       => $emisor ?: null,
-                        'ArchivoRuta'  => $xmlRuta,
-                        'PdfRuta'      => $pdfRuta,
-                        'created_at'   => now(),
-                        'updated_at'   => now(),
-                    ]);
-                }
+                // Crear UNA SOLA factura con el total
+                DB::table('facturas')->insert([
+                    'SolicitudID'  => null,
+                    'GerenciaID'   => $gerenciaId,
+                    'Nombre'       => $nombre,
+                    'Costo'        => $costo,
+                    'Importe'      => $importe,
+                    'Mes'          => $mes,
+                    'Anio'         => $anio,
+                    'InsumoNombre' => $insumoNombre ?: null,
+                    'InsumoID'     => $insumoID ?: null,
+                    'UUID'         => $uuid ?: null,
+                    'Emisor'       => $emisor ?: null,
+                    'ArchivoRuta'  => $xmlRuta,
+                    'PdfRuta'      => $pdfRuta,
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ]);
             });
 
             return response()->json(['message' => 'Factura guardada correctamente.'], 201);
-
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Error al guardar: ' . $e->getMessage()], 500);
         }
@@ -394,10 +342,10 @@ class FacturasController extends AppBaseController
 
         try {
             DB::transaction(function () use ($request, $id, $factura) {
-                
+
                 $insumoElegido = $request->input('insumo_nombre');
                 $insumoElegido = trim((string)$insumoElegido) === '' ? null : $insumoElegido;
-                
+
                 $finalInsumoID = null;
                 if ($insumoElegido) {
                     $finalInsumoID = DB::table('cortes')->whereNull('deleted_at')
@@ -439,10 +387,10 @@ class FacturasController extends AppBaseController
                 $uuidNuevo = ($parsedData['uuid'] ?? '') ?: $uuidViejo;
 
                 if (!empty($conceptosNuevos)) {
-                    
+
                     $queryDel = DB::table('facturas')
                         ->when($factura->SolicitudID, fn($q) => $q->where('SolicitudID', $factura->SolicitudID), fn($q) => $q->whereNull('SolicitudID'));
-                        
+
                     if ($uuidViejo) {
                         $queryDel->where('UUID', $uuidViejo);
                     } elseif ($factura->ArchivoRuta) {
@@ -506,7 +454,7 @@ class FacturasController extends AppBaseController
                     $queryDelHermanas = DB::table('facturas')
                         ->where('FacturasID', '!=', $id)
                         ->when($factura->SolicitudID, fn($q) => $q->where('SolicitudID', $factura->SolicitudID), fn($q) => $q->whereNull('SolicitudID'));
-                        
+
                     if ($uuidViejo) {
                         $queryDelHermanas->where('UUID', $uuidViejo)->delete();
                     } elseif ($factura->ArchivoRuta) {
@@ -525,7 +473,10 @@ class FacturasController extends AppBaseController
                         $updateData['InsumoID']     = $finalInsumoID;
                     }
                     if ($parsedData) {
-                        if (!empty($parsedData['total']))  { $updateData['Costo'] = $parsedData['total']; $updateData['Importe'] = $parsedData['total']; }
+                        if (!empty($parsedData['total'])) {
+                            $updateData['Costo'] = $parsedData['total'];
+                            $updateData['Importe'] = $parsedData['total'];
+                        }
                         if (!empty($parsedData['uuid']))   $updateData['UUID'] = $parsedData['uuid'];
                         if (!empty($parsedData['emisor'])) $updateData['Emisor'] = $parsedData['emisor'];
                         if (!empty($parsedData['mes']))    $updateData['Mes'] = $parsedData['mes'];
@@ -538,13 +489,12 @@ class FacturasController extends AppBaseController
                     DB::table('solicitud_activos')
                         ->where('SolicitudID', $factura->SolicitudID)
                         ->where(fn($q) => $q->where('FacturaPath', $factura->ArchivoRuta ?? '')
-                                            ->orWhere('FacturaPath', $factura->PdfRuta ?? ''))
+                            ->orWhere('FacturaPath', $factura->PdfRuta ?? ''))
                         ->update(['FacturaPath' => $rutaXml ?? $rutaPdf, 'updated_at' => now()]);
                 }
             });
 
             return response()->json(['success' => true, 'message' => 'Archivo actualizado correctamente.']);
-
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Error al reemplazar: ' . $e->getMessage()], 500);
         }
@@ -553,7 +503,7 @@ class FacturasController extends AppBaseController
     public function getInsumosPorGerencia(Request $request): JsonResponse
     {
         $gerenciaID = $request->input('gerenciaID');
-        
+
         // Si no viene gerenciaID directamente, intentar extraerlo de una factura (para compatibilidad)
         if (!$gerenciaID) {
             $facturaID = $request->input('facturaID');
@@ -561,7 +511,7 @@ class FacturasController extends AppBaseController
                 $gerenciaID = DB::table('facturas')->where('FacturasID', $facturaID)->whereNull('deleted_at')->value('GerenciaID');
             }
         }
-        
+
         if (!$gerenciaID) return response()->json(['data' => []]);
 
         return response()->json(['data' => DB::table('cortes')
@@ -593,14 +543,14 @@ class FacturasController extends AppBaseController
         $nombre   = $request->input('InsumoNombre');
         $insumoID = $nombre
             ? DB::table('cortes')
-                ->whereNull('deleted_at')
-                ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower(trim($nombre))])
-                ->max('CortesID')
+            ->whereNull('deleted_at')
+            ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower(trim($nombre))])
+            ->max('CortesID')
             : null;
 
         $updated = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')
             ->update(['InsumoNombre' => $nombre, 'InsumoID' => $insumoID ?: null, 'updated_at' => now()]);
-    
+
         if ($updated) {
             $this->registrarCambioEmpleado($id);
         }
@@ -613,7 +563,7 @@ class FacturasController extends AppBaseController
     public function obtenerDatos($id): JsonResponse
     {
         $factura = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')->first();
-        
+
         if (!$factura) {
             return response()->json(['message' => 'Factura no encontrada'], 404);
         }
@@ -637,7 +587,7 @@ class FacturasController extends AppBaseController
         ]);
 
         $factura = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')->first();
-        
+
         if (!$factura) {
             return response()->json(['message' => 'Factura no encontrada'], 404);
         }
@@ -665,7 +615,7 @@ class FacturasController extends AppBaseController
         ]);
 
         $factura = DB::table('facturas')->where('FacturasID', $id)->whereNull('deleted_at')->first();
-        
+
         if (!$factura) {
             return response()->json(['message' => 'Factura no encontrada'], 404);
         }
@@ -714,7 +664,6 @@ class FacturasController extends AppBaseController
             $this->registrarCambioEmpleado($id);
 
             return response()->json(['success' => true, 'message' => 'Factura actualizada correctamente']);
-
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Error al actualizar: ' . $e->getMessage()], 500);
         }
@@ -726,19 +675,37 @@ class FacturasController extends AppBaseController
 
         $query = DB::table('facturas as f')
             ->select([
-                's.SolicitudID','s.Motivo','s.Estatus','s.Requerimientos','s.Presupuesto',
-                's.created_at as solicitud_fecha','g.NombreGerencia','g.GerenciaID',
-                'f.FacturasID','f.Nombre as FacturaNombre','f.Costo','f.Importe',
-                'f.Mes','f.Anio','f.PdfRuta','f.Emisor','f.UUID','f.InsumoNombre',
-                'c.Costo as CostoMensual','c.CostoTotal as CostoAnual',
+                's.SolicitudID',
+                's.Motivo',
+                's.Estatus',
+                's.Requerimientos',
+                's.Presupuesto',
+                's.created_at as solicitud_fecha',
+                'g.NombreGerencia',
+                'g.GerenciaID',
+                'f.FacturasID',
+                'f.Nombre as FacturaNombre',
+                'f.Costo',
+                'f.Importe',
+                'f.Mes',
+                'f.Anio',
+                'f.PdfRuta',
+                'f.Emisor',
+                'f.UUID',
+                'f.InsumoNombre',
+                'c.Costo as CostoMensual',
+                'c.CostoTotal as CostoAnual',
             ])
             ->join('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
             ->join('gerencia as g', 's.GerenciaID', '=', 'g.GerenciaID')
-            ->leftJoin(DB::raw('(SELECT NombreInsumo, MIN(Costo) as Costo, MIN(CostoTotal) as CostoTotal FROM cortes WHERE deleted_at IS NULL GROUP BY NombreInsumo) as c'),
+            ->leftJoin(
+                DB::raw('(SELECT NombreInsumo, MIN(Costo) as Costo, MIN(CostoTotal) as CostoTotal FROM cortes WHERE deleted_at IS NULL GROUP BY NombreInsumo) as c'),
                 fn($j) => $j->on(
-                    DB::raw('LOWER(TRIM(f.InsumoNombre)) COLLATE utf8mb4_unicode_ci'), '=',
+                    DB::raw('LOWER(TRIM(f.InsumoNombre)) COLLATE utf8mb4_unicode_ci'),
+                    '=',
                     DB::raw('LOWER(TRIM(c.NombreInsumo)) COLLATE utf8mb4_unicode_ci')
-                ))
+                )
+            )
             ->whereNull('f.deleted_at')->whereNull('s.deleted_at');
 
         if ($gerenciaID) $query->where('s.GerenciaID', $gerenciaID);
@@ -750,17 +717,31 @@ class FacturasController extends AppBaseController
             $sid = $row->SolicitudID;
             if (!isset($solicitudes[$sid])) {
                 $solicitudes[$sid] = [
-                    'SolicitudID'=>$sid,'Motivo'=>$row->Motivo,'Estatus'=>$row->Estatus,
-                    'Requerimientos'=>$row->Requerimientos,'Presupuesto'=>$row->Presupuesto,
-                    'solicitud_fecha'=>$row->solicitud_fecha,'NombreGerencia'=>$row->NombreGerencia,
-                    'GerenciaID'=>$row->GerenciaID,'facturas'=>[],'total_costo'=>0,
+                    'SolicitudID' => $sid,
+                    'Motivo' => $row->Motivo,
+                    'Estatus' => $row->Estatus,
+                    'Requerimientos' => $row->Requerimientos,
+                    'Presupuesto' => $row->Presupuesto,
+                    'solicitud_fecha' => $row->solicitud_fecha,
+                    'NombreGerencia' => $row->NombreGerencia,
+                    'GerenciaID' => $row->GerenciaID,
+                    'facturas' => [],
+                    'total_costo' => 0,
                 ];
             }
             $solicitudes[$sid]['facturas'][] = [
-                'FacturasID'=>$row->FacturasID,'FacturaNombre'=>$row->FacturaNombre,
-                'Costo'=>$row->Costo,'Importe'=>$row->Importe,'Mes'=>$row->Mes,'Anio'=>$row->Anio,
-                'PdfRuta'=>$row->PdfRuta,'Emisor'=>$row->Emisor,'UUID'=>$row->UUID,
-                'InsumoNombre'=>$row->InsumoNombre,'CostoMensual'=>$row->CostoMensual,'CostoAnual'=>$row->CostoAnual,
+                'FacturasID' => $row->FacturasID,
+                'FacturaNombre' => $row->FacturaNombre,
+                'Costo' => $row->Costo,
+                'Importe' => $row->Importe,
+                'Mes' => $row->Mes,
+                'Anio' => $row->Anio,
+                'PdfRuta' => $row->PdfRuta,
+                'Emisor' => $row->Emisor,
+                'UUID' => $row->UUID,
+                'InsumoNombre' => $row->InsumoNombre,
+                'CostoMensual' => $row->CostoMensual,
+                'CostoAnual' => $row->CostoAnual,
             ];
             $solicitudes[$sid]['total_costo'] += (float)$row->Costo;
         }
@@ -781,25 +762,30 @@ class FacturasController extends AppBaseController
             ->where(fn($q) => $q->whereNull('s.deleted_at')->orWhereNull('f.SolicitudID'))
             ->whereNotNull('f.InsumoNombre')->where('f.InsumoNombre', '<>', '');
 
-        if ($gerenciaId) $base->where(fn($q) => $q->where('s.GerenciaID', $gerenciaId)->orWhere('f.GerenciaID', $gerenciaId));
-        if ($mes)    $base->where('f.Mes', $mes);
-        if ($anio)   $base->where('f.Anio', $anio);
+        if ($gerenciaId) {
+            $gerenciaId = (int)$gerenciaId;
+            $base->where('f.GerenciaID', '=', $gerenciaId)->whereNotNull('f.GerenciaID');
+        } else {
+            // Si no hay filtro, excluir registros sin gerencia
+            $base->whereNotNull('f.GerenciaID');
+        }
+        if ($mes)    $base->where('f.Mes', (int)$mes);
+        if ($anio)   $base->where('f.Anio', (int)$anio);
         if ($insumo) $base->where('f.InsumoNombre', 'like', "%{$insumo}%");
 
         $insumos = (clone $base)->distinct()->pluck('f.InsumoNombre');
         if ($insumos->isEmpty()) return response()->json(['insumos' => [], 'meta' => ['total' => 0]]);
 
-        $gerenciaMap = DB::table('gerencia')->select('GerenciaID','NombreGerencia')->get()->keyBy('GerenciaID');
-        
+        $gerenciaMap = DB::table('gerencia')->select('GerenciaID', 'NombreGerencia')->get()->keyBy('GerenciaID');
+
         $todasFacturas = (clone $base)
             ->select([
                 'f.InsumoNombre',
-                DB::raw('SUM(f.Costo) as CostoTotalFacturado'),
-                DB::raw('MAX(COALESCE(s.GerenciaID, f.GerenciaID)) as GerenciaID')
+                'f.GerenciaID',
+                DB::raw('SUM(f.Costo) as CostoTotalFacturado')
             ])
-            ->groupBy('f.InsumoNombre')
-            ->get()
-            ->keyBy('InsumoNombre');
+            ->groupBy('f.InsumoNombre', 'f.GerenciaID')
+            ->get();
 
         $presupuestos = DB::table('cortes')
             ->whereNull('deleted_at')
@@ -809,19 +795,35 @@ class FacturasController extends AppBaseController
             ->when($gerenciaId, fn($q) => $q->where('GerenciaID', $gerenciaId))
             ->select([
                 'NombreInsumo',
+                'GerenciaID',
                 DB::raw('SUM(COALESCE(CostoTotal, Costo, 0)) as TotalPresupuesto')
             ])
-            ->groupBy('NombreInsumo')
-            ->pluck('TotalPresupuesto', 'NombreInsumo');
+            ->groupBy('NombreInsumo', 'GerenciaID')
+            ->get();
 
         $resultado = $insumos->map(function ($nombre) use ($todasFacturas, $presupuestos, $gerenciaMap) {
-            $factData  = $todasFacturas->get($nombre);
-            $totalFact = $factData ? (float)$factData->CostoTotalFacturado : 0;
-            
-            $gId       = $factData ? $factData->GerenciaID : null;
-            $gNombre   = $gId ? optional($gerenciaMap->get($gId))->NombreGerencia : null;
+            // Filtrar facturas de este insumo
+            $facturasPorInsumo = $todasFacturas->filter(fn($f) => $f->InsumoNombre === $nombre);
 
-            $totalPresu = (float)($presupuestos->get($nombre, 0));
+            if ($facturasPorInsumo->isEmpty()) return null;
+
+            // Tomar el primer registro (todos los del mismo insumo tendrán la misma gerencia en un filtro específico)
+            $firstFact = $facturasPorInsumo->first();
+            $gId = $firstFact->GerenciaID ? (int)$firstFact->GerenciaID : null;
+
+            // Obtener nombre de gerencia
+            $gNombre = null;
+            if ($gId) {
+                $gerenciaObj = $gerenciaMap->get($gId);
+                $gNombre = $gerenciaObj ? $gerenciaObj->NombreGerencia : null;
+            }
+
+            // Sumar todos los costos de este insumo
+            $totalFact = (float)$facturasPorInsumo->sum('CostoTotalFacturado');
+
+            // Buscar presupuesto para este insumo + gerencia
+            $presuData = $presupuestos->first(fn($p) => $p->NombreInsumo === $nombre && $p->GerenciaID == $gId);
+            $totalPresu = $presuData ? (float)$presuData->TotalPresupuesto : 0;
 
             $desvMonto = ($totalPresu > 0 && $totalFact > 0) ? round($totalFact - $totalPresu, 2) : null;
             $desvPct   = ($totalPresu > 0 && $totalFact > 0) ? round((($totalFact - $totalPresu) / $totalPresu) * 100, 2) : null;
@@ -838,13 +840,16 @@ class FacturasController extends AppBaseController
                 ],
             ];
         })
-        ->filter(fn($i) => $i['metricas']['total_facturado'] > 0 || ($i['metricas']['presupuesto_generales'] ?? 0) > 0)
-        ->values();
+            ->filter(fn($i) => $i && ($i['metricas']['total_facturado'] > 0 || ($i['metricas']['presupuesto_generales'] ?? 0) > 0))
+            ->values();
 
         return response()->json(['insumos' => $resultado, 'meta' => ['total' => $resultado->count()]]);
     }
 
-    public function create()  { return view('facturas.create'); }
+    public function create()
+    {
+        return view('facturas.create');
+    }
 
     public function store(CreateFacturasRequest $request)
     {
@@ -856,21 +861,30 @@ class FacturasController extends AppBaseController
     public function show($id)
     {
         $facturas = $this->facturasRepository->find($id);
-        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
+        if (empty($facturas)) {
+            Flash::error('Factura no encontrada');
+            return redirect(route('facturas.index'));
+        }
         return view('facturas.show')->with('facturas', $facturas);
     }
 
     public function edit($id)
     {
         $facturas = $this->facturasRepository->find($id);
-        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
+        if (empty($facturas)) {
+            Flash::error('Factura no encontrada');
+            return redirect(route('facturas.index'));
+        }
         return view('facturas.edit')->with('facturas', $facturas);
     }
 
     public function update($id, UpdateFacturasRequest $request)
     {
         $facturas = $this->facturasRepository->find($id);
-        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
+        if (empty($facturas)) {
+            Flash::error('Factura no encontrada');
+            return redirect(route('facturas.index'));
+        }
         $this->facturasRepository->update($request->all(), $id);
         Flash::success('Factura actualizada correctamente.');
         return redirect(route('facturas.index'));
@@ -879,7 +893,10 @@ class FacturasController extends AppBaseController
     public function destroy($id)
     {
         $facturas = $this->facturasRepository->find($id);
-        if (empty($facturas)) { Flash::error('Factura no encontrada'); return redirect(route('facturas.index')); }
+        if (empty($facturas)) {
+            Flash::error('Factura no encontrada');
+            return redirect(route('facturas.index'));
+        }
         $this->facturasRepository->delete($id);
         Flash::success('Factura eliminada correctamente.');
         return redirect(route('facturas.index'));
@@ -892,7 +909,7 @@ class FacturasController extends AppBaseController
             ->select(DB::raw('MAX(CortesID) as id, NombreInsumo as nombre'))
             ->groupBy('NombreInsumo')
             ->get()
-            ->map(fn($c) => ['id'=>(int)$c->id,'nombre'=>(string)$c->nombre,'norm'=>$this->normalizeText((string)$c->nombre)])
+            ->map(fn($c) => ['id' => (int)$c->id, 'nombre' => (string)$c->nombre, 'norm' => $this->normalizeText((string)$c->nombre)])
             ->toArray();
     }
 
@@ -937,7 +954,10 @@ class FacturasController extends AppBaseController
             if ($hits === 0) continue;
 
             $pct = ($hits / count($palabrasCat)) * 100;
-            if ($pct > $mejorScore) { $mejorScore = $pct; $mejorCat = $cat; }
+            if ($pct > $mejorScore) {
+                $mejorScore = $pct;
+                $mejorCat = $cat;
+            }
         }
 
         if ($mejorScore >= 50) return [$mejorCat, $mejorScore];
@@ -952,7 +972,7 @@ class FacturasController extends AppBaseController
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($contenido, 'SimpleXMLElement', LIBXML_NOCDATA);
         if ($xml === false) {
-            $e = array_map(fn($err) => $err->message, libxml_get_errors()); 
+            $e = array_map(fn($err) => $err->message, libxml_get_errors());
             libxml_clear_errors();
             throw new \Exception('XML inválido: ' . implode(', ', $e));
         }
@@ -975,13 +995,15 @@ class FacturasController extends AppBaseController
         $timbre = $xml->xpath('//tfd:TimbreFiscalDigital') ?: [];
         if (!empty($timbre)) $uuid = strtoupper(trim((string)($timbre[0]['UUID'] ?? '')));
 
-        $mes = null; $anio = null;
+        $mes = null;
+        $anio = null;
         if ($fecha) {
-            try { 
-                $cf = Carbon::parse($fecha); 
-                $mes = (int)$cf->format('n'); 
-                $anio = (int)$cf->format('Y'); 
-            } catch (\Throwable) {}
+            try {
+                $cf = Carbon::parse($fecha);
+                $mes = (int)$cf->format('n');
+                $anio = (int)$cf->format('Y');
+            } catch (\Throwable) {
+            }
         }
 
         $conceptoNodes = $xml->xpath('//cfdi:Comprobante/cfdi:Conceptos/cfdi:Concepto') ?: $xml->xpath('//cfdi:Concepto') ?: [];
@@ -1025,7 +1047,9 @@ class FacturasController extends AppBaseController
         try {
             $data = $this->leerPdfExtranjero($ruta, $proveedorFallback);
             return $data['error'] ? ['error' => true] : ['error' => false, 'total' => $data['total'], 'emisor' => $data['emisor']];
-        } catch (\Throwable) { return ['error' => true]; }
+        } catch (\Throwable) {
+            return ['error' => true];
+        }
     }
 
     private function leerPdfExtranjero(string $ruta, string $proveedorHint): array
@@ -1048,7 +1072,8 @@ class FacturasController extends AppBaseController
         elseif ($esHostgator) $emisor = 'HOSTGATOR';
 
         $ivaExplicito = (bool)preg_match('/\b(?:iva|i\.v\.a|vat|tax(?:es)?)\b[^\d\n]{0,30}[\d,]+\.\d{2}/i', $text);
-        $subtotalDoc  = null; $totalDoc = null;
+        $subtotalDoc  = null;
+        $totalDoc = null;
 
         if (preg_match('/(?:sub\s*total|subtotal|net\s*amount)[^\d\n]{0,20}([\d,]+\.\d{2})/i', $text, $m))
             $subtotalDoc = (float)str_replace(',', '', $m[1]);
@@ -1064,9 +1089,11 @@ class FacturasController extends AppBaseController
         $tieneIva = ($ivaExplicito || $ivaRatio) && !$esHostgator;
         $total    = 0.0;
 
-        if ($subtotalDoc !== null)  { $total = $subtotalDoc; }
-        elseif ($totalDoc !== null) { $total = $tieneIva ? round($totalDoc / 1.16, 2) : $totalDoc; }
-        else {
+        if ($subtotalDoc !== null) {
+            $total = $subtotalDoc;
+        } elseif ($totalDoc !== null) {
+            $total = $tieneIva ? round($totalDoc / 1.16, 2) : $totalDoc;
+        } else {
             preg_match_all('/\$\s*([\d,]+\.\d{2})/', $text, $m);
             if (!empty($m[1])) {
                 $mayor = max(array_map(fn($n) => (float)str_replace(',', '', $n), $m[1]));
@@ -1086,11 +1113,44 @@ class FacturasController extends AppBaseController
     {
         $conceptos = [];
         $excluir   = [
-            'subtotal','sub total','sub-total','net amount','total','amount due','balance due',
-            'invoice total','iva','i.v.a','vat','tax','taxes','payment','due date','invoice date',
-            'invoice','bill to','ship to','sold to','page','thank you','please','note','balance',
-            'credit','discount','descuento','transaction','gateway','powered by',
-            'description','descripcion','amount','qty','quantity','pdf generated','invoiced to',
+            'subtotal',
+            'sub total',
+            'sub-total',
+            'net amount',
+            'total',
+            'amount due',
+            'balance due',
+            'invoice total',
+            'iva',
+            'i.v.a',
+            'vat',
+            'tax',
+            'taxes',
+            'payment',
+            'due date',
+            'invoice date',
+            'invoice',
+            'bill to',
+            'ship to',
+            'sold to',
+            'page',
+            'thank you',
+            'please',
+            'note',
+            'balance',
+            'credit',
+            'discount',
+            'descuento',
+            'transaction',
+            'gateway',
+            'powered by',
+            'description',
+            'descripcion',
+            'amount',
+            'qty',
+            'quantity',
+            'pdf generated',
+            'invoiced to',
         ];
 
         $patron = '/^[ \t]*([A-Za-zÁÉÍÓÚáéíóúñÑ][A-Za-zÁÉÍÓÚáéíóúñÑ0-9 ,\.\-\/\(\)\#\@\_\:]{2,149}?)[ \t]*(?:\.{2,}|_{2,}|-{2,})?[ \t]*\$?\s*([\d]{1,3}(?:,[\d]{3})*\.[\d]{2})(?!\d)/m';
@@ -1126,14 +1186,16 @@ class FacturasController extends AppBaseController
         if (!preg_match('/[A-Za-záéíóúñÁÉÍÓÚÑ]{2}/', $nombre)) return false;
         if (preg_match('/^\d/', $nombre)) return false;
         $lower = strtolower($nombre);
-        foreach ($excluir as $kw) { if (str_contains($lower, $kw)) return false; }
+        foreach ($excluir as $kw) {
+            if (str_contains($lower, $kw)) return false;
+        }
         return true;
     }
 
     private function normalizeText(string $t): string
     {
         $t = mb_strtolower(trim($t), 'UTF-8');
-        $t = str_replace(['á','é','í','ó','ú','ä','ë','ï','ö','ü','ñ'],['a','e','i','o','u','a','e','i','o','u','n'], $t);
+        $t = str_replace(['á', 'é', 'í', 'ó', 'ú', 'ä', 'ë', 'ï', 'ö', 'ü', 'ñ'], ['a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'n'], $t);
         $t = preg_replace('/[^a-z0-9\s]/', '', $t);
         return trim(preg_replace('/\s+/', ' ', $t));
     }
@@ -1145,7 +1207,7 @@ class FacturasController extends AppBaseController
     {
         try {
             $user = auth()->user();
-            
+
             if (!$user) {
                 \Log::warning("FacturasController::registrarCambioEmpleado - Usuario no autenticado");
                 return;
@@ -1155,7 +1217,7 @@ class FacturasController extends AppBaseController
 
             // Buscar empleado por email o nombre completo
             $empleado = DB::table('empleados')
-                ->where(function($query) use ($user) {
+                ->where(function ($query) use ($user) {
                     // Buscar por Correo = email
                     if (!empty($user->email)) {
                         $query->where('Correo', $user->email);
