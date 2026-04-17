@@ -30,10 +30,17 @@ class TicketsController extends Controller
     // Carga el dashboard principal con tickets, solicitudes y métricas del mes
     public function index(Request $request)
     {
-        $mes  = $request->input('mes', now()->month);
-        $anio = $request->input('anio', now()->year);
+        $mes  = (int)$request->input('mes', now()->month);
+        $anio = (int)$request->input('anio', now()->year);
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'tertipo', 'chat' => function ($query) {
+        $esRango    = $request->has('mes_inicio') && $request->has('mes_fin');
+        $mesInicio  = $esRango ? (int)$request->input('mes_inicio')  : null;
+        $anioInicio = $esRango ? (int)$request->input('anio_inicio') : null;
+        $mesFin     = $esRango ? (int)$request->input('mes_fin')     : null;
+        $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
+        $modoRango  = $esRango;
+
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
@@ -43,8 +50,8 @@ class TicketsController extends Controller
             'resueltos' => $tickets->where('Estatus', 'Cerrado'),
         ];
 
-        $responsablesTI          = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
-        $metricasProductividad   = $this->obtenerMetricasProductividad($tickets, $mes, $anio);
+        $responsablesTI        = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
+        $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
 
         $solicitudes = Solicitud::with([
             'empleadoid',
@@ -54,7 +61,7 @@ class TicketsController extends Controller
             'cotizaciones',
         ])->orderBy('created_at', 'desc')->get();
 
-        $solicitudesStatus = [$solicitudes->all()];
+        $solicitudesStatus   = [$solicitudes->all()];
         $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
 
         return view('tickets.index', compact(
@@ -64,18 +71,31 @@ class TicketsController extends Controller
             'mes',
             'anio',
             'solicitudesStatus',
-            'metricasSolicitudes'
+            'metricasSolicitudes',
+            'modoRango',
+            'mesInicio',
+            'anioInicio',
+            'mesFin',
+            'anioFin'
         ));
     }
 
-    // Calcula métricas de productividad para el dashboard filtradas por mes y año
-    private function obtenerMetricasProductividad($tickets, $mes = null, $anio = null)
+    // Calcula métricas de productividad para el dashboard filtradas por mes/año o rango
+    private function obtenerMetricasProductividad($tickets, $mes = null, $anio = null, $mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null)
     {
-        $mes  = $mes  ?? now()->month;
-        $anio = $anio ?? now()->year;
+        $esRango = $mesInicio !== null && $anioInicio !== null && $mesFin !== null && $anioFin !== null;
 
-        $fechaInicioMes = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
-        $fechaFinMes    = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+        if ($esRango) {
+            $fechaInicioMes = \Carbon\Carbon::create($anioInicio, $mesInicio, 1)->startOfMonth();
+            $fechaFinMes    = \Carbon\Carbon::create($anioFin, $mesFin, 1)->endOfMonth();
+            $mes            = $mesInicio;
+            $anio           = $anioInicio;
+        } else {
+            $mes  = $mes  ?? now()->month;
+            $anio = $anio ?? now()->year;
+            $fechaInicioMes = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+            $fechaFinMes    = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+        }
 
         $ticketsDelMes = $tickets->filter(
             fn($t) => \Carbon\Carbon::parse($t->created_at)->between($fechaInicioMes, $fechaFinMes)
@@ -95,7 +115,7 @@ class TicketsController extends Controller
         if ($ticketsCerradosMes->count() > 0) {
             $tiempoPromedioResolucion = round(
                 $ticketsCerradosMes->sum(fn($t) => $t->tiempo_resolucion ?? 0) / $ticketsCerradosMes->count(),
-                2
+                1
             );
         }
 
@@ -107,7 +127,7 @@ class TicketsController extends Controller
         if ($ticketsEnProgresoMes->count() > 0) {
             $tiempoPromedioRespuesta = round(
                 $ticketsEnProgresoMes->sum(fn($t) => $t->tiempo_respuesta ?? 0) / $ticketsEnProgresoMes->count(),
-                2
+                1
             );
         }
 
@@ -132,25 +152,46 @@ class TicketsController extends Controller
             fn($t) => $t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado'
         )->groupBy('Clasificacion')->map(fn($g) => $g->count());
 
-        $fechaInicio30       = now()->subDays(30)->startOfDay();
-        $ticketsUltimos30Dias = $tickets->filter(
-            fn($t) => \Carbon\Carbon::parse($t->created_at)->greaterThanOrEqualTo($fechaInicio30)
-        );
+        $diffDias = $fechaInicioMes->diffInDays($fechaFinMes);
+        $usarAgrupacionSemanal = $diffDias > 60;
 
         $resueltosPorDia = [];
-        $creadosPorDia = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $fecha = now()->subDays($i)->format('Y-m-d');
-            $resueltosPorDia[$fecha] = $tickets->filter(
-                fn($t) => $t->Estatus === 'Cerrado'
-                    && $t->FechaFinProgreso
-                    && \Carbon\Carbon::parse($t->FechaFinProgreso)->format('Y-m-d') === $fecha
-            )->count();
-            
-            $creadosPorDia[$fecha] = $tickets->filter(
-                fn($t) => \Carbon\Carbon::parse($t->created_at)->format('Y-m-d') === $fecha
-            )->count();
+        $creadosPorDia   = [];
+
+        if ($usarAgrupacionSemanal) {
+            $semanaIter = $fechaInicioMes->copy()->startOfWeek();
+            while ($semanaIter->lte($fechaFinMes)) {
+                $semanaFin = $semanaIter->copy()->endOfWeek();
+                if ($semanaFin->gt($fechaFinMes)) $semanaFin = $fechaFinMes->copy();
+                $label = $semanaIter->format('d/m') . '-' . $semanaFin->format('d/m');
+                $sIni  = $semanaIter->copy();
+                $sFin  = $semanaFin->copy();
+                $resueltosPorDia[$label] = $ticketsDelMes->filter(function ($t) use ($sIni, $sFin) {
+                    if ($t->Estatus !== 'Cerrado' || !$t->FechaFinProgreso) return false;
+                    return \Carbon\Carbon::parse($t->FechaFinProgreso)->between($sIni, $sFin);
+                })->count();
+                $creadosPorDia[$label] = $ticketsDelMes->filter(
+                    fn($t) => \Carbon\Carbon::parse($t->created_at)->between($sIni, $sFin)
+                )->count();
+                $semanaIter->addWeek();
+            }
+        } else {
+            $diaIter = $fechaInicioMes->copy();
+            while ($diaIter->lte($fechaFinMes)) {
+                $fecha = $diaIter->format('Y-m-d');
+                $resueltosPorDia[$fecha] = $ticketsDelMes->filter(
+                    fn($t) => $t->Estatus === 'Cerrado'
+                        && $t->FechaFinProgreso
+                        && \Carbon\Carbon::parse($t->FechaFinProgreso)->format('Y-m-d') === $fecha
+                )->count();
+                $creadosPorDia[$fecha] = $ticketsDelMes->filter(
+                    fn($t) => \Carbon\Carbon::parse($t->created_at)->format('Y-m-d') === $fecha
+                )->count();
+                $diaIter->addDay();
+            }
         }
+
+        $ticketsUltimos30Dias = $ticketsDelMes;
 
         $tendenciasSemanales = [];
         for ($i = 7; $i >= 0; $i--) {
@@ -334,24 +375,24 @@ class TicketsController extends Controller
             }
         }
 
-        // Backlog acumulado día a día del mes
+        // Backlog acumulado día a día del período activo
         $backlogAcumulado = [];
-        $diasDelMes = $fechaFinMes->day;
-        
-        for ($dia = 1; $dia <= $diasDelMes; $dia++) {
-            $fechaCarbon = \Carbon\Carbon::create($anio, $mes, $dia);
-            $fecha = $fechaCarbon->format('Y-m-d');
-            
-            $creadosHastaAqui = $ticketsDelMes->filter(function($t) use ($fechaCarbon) {
-                return \Carbon\Carbon::parse($t->created_at)->lte($fechaCarbon);
+        $diaIterBk = $fechaInicioMes->copy();
+        while ($diaIterBk->lte($fechaFinMes)) {
+            $fecha       = $diaIterBk->format('Y-m-d');
+            $diaIterCopy = $diaIterBk->copy();
+
+            $creadosHastaAqui = $ticketsDelMes->filter(function ($t) use ($diaIterCopy) {
+                return \Carbon\Carbon::parse($t->created_at)->lte($diaIterCopy);
             })->count();
-            
-            $cerradosHastaAqui = $ticketsDelMes->filter(function($t) use ($fechaCarbon) {
+
+            $cerradosHastaAqui = $ticketsDelMes->filter(function ($t) use ($diaIterCopy) {
                 if ($t->Estatus !== 'Cerrado' || !$t->FechaFinProgreso) return false;
-                return \Carbon\Carbon::parse($t->FechaFinProgreso)->lte($fechaCarbon);
+                return \Carbon\Carbon::parse($t->FechaFinProgreso)->lte($diaIterCopy);
             })->count();
-            
+
             $backlogAcumulado[$fecha] = $creadosHastaAqui - $cerradosHastaAqui;
+            $diaIterBk->addDay();
         }
 
         // Carga actual por responsable TI considerando solo tickets abiertos (Pendiente o En progreso)
@@ -426,45 +467,60 @@ class TicketsController extends Controller
             'Baja' => $ticketsAbiertos->where('Prioridad', 'Baja')->count(),
         ];
 
-        // Comparación de tiempos de los últimos 6 meses (mes actual + 5 meses anteriores)
-        $comparacionTiempos = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $mesComparacion = now()->subMonthsNoOverflow($i);
-            $inicioMesComp = $mesComparacion->copy()->startOfMonth();
-            $finMesComp = $mesComparacion->copy()->endOfMonth();
-            $labelMes = $mesComparacion->locale('es')->isoFormat('MMM YYYY');
-
-            $ticketsMesComp = $tickets->filter(
+        // Comparación de tiempos: rango → mes a mes del rango; único → mes seleccionado + 5 anteriores
+        // Usa $tickets (colección completa) para no limitar el cálculo al período filtrado
+        $calcularComparacionMes = function ($ticketsAll, $inicioMesComp, $finMesComp) {
+            $ticketsMesComp = $ticketsAll->filter(
                 fn($t) => \Carbon\Carbon::parse($t->created_at)->between($inicioMesComp, $finMesComp)
             );
-
-            // Tiempo promedio de respuesta
-            $ticketsConRespuestaComp = $ticketsMesComp->filter(
-                fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
+            // Filtrar tickets EN PROGRESO para tiempo de respuesta (igual que KPI)
+            $ticketsEnProgresoComp = $ticketsMesComp->filter(
+                fn($t) => $t->Estatus === 'En progreso' && $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
             );
-            $tiempoPromedioRespuestaComp = $ticketsConRespuestaComp->count() > 0
-                ? round($ticketsConRespuestaComp->avg(fn($t) => $t->tiempo_respuesta ?? 0), 2)
+            $tiempoPromedioRespuestaComp = $ticketsEnProgresoComp->count() > 0
+                ? round($ticketsEnProgresoComp->avg(fn($t) => $t->tiempo_respuesta ?? 0), 1)
                 : 0;
-
-            // Tiempo promedio de resolución
-            $ticketsConResolucionComp = $ticketsMesComp->filter(
-                fn($t) => $t->FechaInicioProgreso && $t->FechaFinProgreso && $t->tiempo_resolucion !== null
+            // Filtrar tickets CERRADOS para tiempo de resolución
+            $ticketsCerradosComp = $ticketsMesComp->filter(
+                fn($t) => $t->Estatus === 'Cerrado' && $t->FechaInicioProgreso && $t->FechaFinProgreso && $t->tiempo_resolucion !== null
             );
-            $tiempoPromedioResolucionComp = $ticketsConResolucionComp->count() > 0
-                ? round($ticketsConResolucionComp->avg(fn($t) => $t->tiempo_resolucion ?? 0), 2)
+            $tiempoPromedioResolucionComp = $ticketsCerradosComp->count() > 0
+                ? round($ticketsCerradosComp->avg(fn($t) => $t->tiempo_resolucion ?? 0), 1)
                 : 0;
-
-            // Tiempo promedio total (suma de respuesta + resolución)
-            $tiempoPromedioTotal = round($tiempoPromedioRespuestaComp + $tiempoPromedioResolucionComp, 2);
-
-            $comparacionTiempos[$labelMes] = [
-                'respuesta' => $tiempoPromedioRespuestaComp,
+            return [
+                'respuesta'  => $tiempoPromedioRespuestaComp,
                 'resolucion' => $tiempoPromedioResolucionComp,
-                'total' => $tiempoPromedioTotal,
+                'total'      => round($tiempoPromedioRespuestaComp + $tiempoPromedioResolucionComp, 2),
             ];
+        };
+
+        $comparacionTiempos = [];
+        if ($esRango) {
+            $mesIterComp = \Carbon\Carbon::create($anioInicio, $mesInicio, 1)->startOfMonth();
+            $mesFinRango = \Carbon\Carbon::create($anioFin, $mesFin, 1)->startOfMonth();
+            while ($mesIterComp->lte($mesFinRango)) {
+                $labelMes = $mesIterComp->locale('es')->isoFormat('MMM YYYY');
+                $comparacionTiempos[$labelMes] = $calcularComparacionMes(
+                    $tickets,
+                    $mesIterComp->copy()->startOfMonth(),
+                    $mesIterComp->copy()->endOfMonth()
+                );
+                $mesIterComp->addMonth();
+            }
+        } else {
+            // Mes seleccionado + 5 anteriores (relativo al mes del filtro, no al mes actual del sistema)
+            for ($i = 5; $i >= 0; $i--) {
+                $mesComparacion = $fechaFinMes->copy()->subMonthsNoOverflow($i);
+                $labelMes       = $mesComparacion->locale('es')->isoFormat('MMM YYYY');
+                $comparacionTiempos[$labelMes] = $calcularComparacionMes(
+                    $tickets,
+                    $mesComparacion->copy()->startOfMonth(),
+                    $mesComparacion->copy()->endOfMonth()
+                );
+            }
         }
 
-        $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($ticketsDelMes);
+        $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($ticketsDelMes, $tickets, $fechaFinMes);
 
         return [
             'total_tickets'                      => $ticketsDelMes->count(),
@@ -499,14 +555,21 @@ class TicketsController extends Controller
         ];
     }
 
-    // Calcula métricas de rendimiento por empleado TI en los últimos 6 meses
-    private function obtenerMetricasPorEmpleado($tickets)
+    // Calcula métricas de rendimiento por empleado TI
+    // $ticketsDelMes  → ya filtrado por el período activo (para stats generales)
+    // $ticketsTodos   → colección completa sin filtro (para desglose mensual)
+    // $fechaFinPeriodo → fin del período activo (para calcular los 6 meses atrás)
+    private function obtenerMetricasPorEmpleado($ticketsDelMes, $ticketsTodos = null, $fechaFinPeriodo = null)
     {
+        $ticketsTodos    = $ticketsTodos    ?? $ticketsDelMes;
+        $fechaFinPeriodo = $fechaFinPeriodo ?? now();
+
         $empleados = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
         $metricas  = [];
 
         foreach ($empleados as $empleado) {
-            $ticketsEmpleado = $tickets->filter(fn($t) => $t->ResponsableTI == $empleado->EmpleadoID);
+            // Stats generales: solo sobre el período filtrado
+            $ticketsEmpleado = $ticketsDelMes->filter(fn($t) => $t->ResponsableTI == $empleado->EmpleadoID);
             if ($ticketsEmpleado->count() == 0) continue;
 
             $cerrados   = $ticketsEmpleado->where('Estatus', 'Cerrado');
@@ -527,36 +590,38 @@ class TicketsController extends Controller
                 ? round(($cerrados->count() / $ticketsEmpleado->count()) * 100, 1)
                 : 0;
 
+            // Desglose mensual: usar colección COMPLETA y 6 meses atrás desde el fin del período
+            $ticketsEmpleadoTodos = $ticketsTodos->filter(fn($t) => $t->ResponsableTI == $empleado->EmpleadoID);
             $ticketsPorMes = [];
             for ($i = 5; $i >= 0; $i--) {
-                $mesInicio = now()->subMonthsNoOverflow($i)->startOfMonth();
-                $mesFin    = now()->subMonthsNoOverflow($i)->endOfMonth();
-                $mesLabel  = $mesInicio->format('M Y');
+                $mesIni   = $fechaFinPeriodo->copy()->subMonthsNoOverflow($i)->startOfMonth();
+                $mesFin   = $fechaFinPeriodo->copy()->subMonthsNoOverflow($i)->endOfMonth();
+                $mesLabel = $mesIni->format('M Y');
 
                 $ticketsPorMes[$mesLabel] = [
-                    'total'    => $ticketsEmpleado->filter(
-                        fn($t) => \Carbon\Carbon::parse($t->created_at)->between($mesInicio, $mesFin)
+                    'total'    => $ticketsEmpleadoTodos->filter(
+                        fn($t) => \Carbon\Carbon::parse($t->created_at)->between($mesIni, $mesFin)
                     )->count(),
-                    'cerrados' => $ticketsEmpleado->filter(function ($t) use ($mesInicio, $mesFin) {
+                    'cerrados' => $ticketsEmpleadoTodos->filter(function ($t) use ($mesIni, $mesFin) {
                         if ($t->Estatus !== 'Cerrado' || empty($t->FechaFinProgreso)) return false;
-                        return \Carbon\Carbon::parse($t->FechaFinProgreso)->between($mesInicio, $mesFin);
+                        return \Carbon\Carbon::parse($t->FechaFinProgreso)->between($mesIni, $mesFin);
                     })->count(),
                 ];
             }
 
             $metricas[] = [
-                'empleado_id'              => $empleado->EmpleadoID,
-                'nombre'                   => $empleado->NombreEmpleado,
-                'total'                    => $ticketsEmpleado->count(),
-                'cerrados'                 => $cerrados->count(),
-                'en_progreso'              => $enProgreso->count(),
-                'pendientes'               => $pendientes->count(),
-                'problemas'                => $ticketsEmpleado->where('Clasificacion', 'Problema')->count(),
-                'servicios'                => $ticketsEmpleado->where('Clasificacion', 'Servicio')->count(),
-                'tasa_cierre'              => $tasaCierre,
+                'empleado_id'               => $empleado->EmpleadoID,
+                'nombre'                    => $empleado->NombreEmpleado,
+                'total'                     => $ticketsEmpleado->count(),
+                'cerrados'                  => $cerrados->count(),
+                'en_progreso'               => $enProgreso->count(),
+                'pendientes'                => $pendientes->count(),
+                'problemas'                 => $ticketsEmpleado->where('Clasificacion', 'Problema')->count(),
+                'servicios'                 => $ticketsEmpleado->where('Clasificacion', 'Servicio')->count(),
+                'tasa_cierre'               => $tasaCierre,
                 'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
-                'tickets_por_mes'          => $ticketsPorMes,
-                'tickets_por_prioridad'    => $ticketsEmpleado->groupBy('Prioridad')->map(fn($g) => $g->count()),
+                'tickets_por_mes'           => $ticketsPorMes,
+                'tickets_por_prioridad'     => $ticketsEmpleado->groupBy('Prioridad')->map(fn($g) => $g->count()),
                 'tickets_por_clasificacion' => $ticketsEmpleado->groupBy('Clasificacion')->map(fn($g) => $g->count()),
             ];
         }
@@ -1342,21 +1407,33 @@ class TicketsController extends Controller
     // Retorna métricas de productividad en JSON para actualización dinámica del dashboard
     public function obtenerProductividadAjax(Request $request)
     {
-        $mes  = $request->input('mes', now()->month);
-        $anio = $request->input('anio', now()->year);
+        $mes  = (int)$request->input('mes', now()->month);
+        $anio = (int)$request->input('anio', now()->year);
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'chat' => function ($query) {
+        $esRango    = $request->has('mes_inicio') && $request->has('mes_fin');
+        $mesInicio  = $esRango ? (int)$request->input('mes_inicio')  : null;
+        $anioInicio = $esRango ? (int)$request->input('anio_inicio') : null;
+        $mesFin     = $esRango ? (int)$request->input('mes_fin')     : null;
+        $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
+        $modoRango  = $esRango;
+
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
-        $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio);
-        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
+        $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
+        $metricasSolicitudes   = $this->calcularMetricasSolicitudes($esRango ? $mesInicio : $mes, $esRango ? $anioInicio : $anio);
 
         $html = view('tickets.productividad', [
             'metricasProductividad' => $metricasProductividad,
             'mes'                   => $mes,
-            'metricasSolicitudes'   => $metricasSolicitudes,
             'anio'                  => $anio,
+            'metricasSolicitudes'   => $metricasSolicitudes,
+            'modoRango'             => $modoRango,
+            'mesInicio'             => $mesInicio ?? $mes,
+            'anioInicio'            => $anioInicio ?? $anio,
+            'mesFin'                => $mesFin ?? $mes,
+            'anioFin'               => $anioFin ?? $anio,
         ])->render();
 
         return response()->json(['success' => true, 'html' => $html, 'mes' => $mes, 'anio' => $anio]);

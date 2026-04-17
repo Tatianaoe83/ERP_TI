@@ -10,18 +10,37 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @package App\Models
  * @version October 14, 2025, 5:38 pm UTC
  *
- * @property \App\Models\Empleado $responsableti
- * @property \App\Models\Empleado $empleadoid
+ * @property integer $TicketID
  * @property integer $CodeAnyDesk
  * @property string $Descripcion
- * @property string $Resolucion  // <--- AGREGADO AQUÍ
+ * @property string $Resolucion
  * @property string $imagen
  * @property integer $Numero
  * @property string $Prioridad
  * @property string $Estatus
+ * @property string $Clasificacion
  * @property integer $ResponsableTI
  * @property integer $EmpleadoID
  * @property integer $TipoID
+ * @property integer $SubtipoID
+ * @property integer $TertipoID
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property \Carbon\Carbon|null $deleted_at
+ * @property \Carbon\Carbon|null $FechaInicioProgreso
+ * @property \Carbon\Carbon|null $FechaFinProgreso
+ * @property \Carbon\Carbon|null $fecha_ultima_notificacion_exceso
+ * @property \App\Models\Empleado $empleado
+ * @property \App\Models\Empleado $responsableTI
+ * @property \App\Models\Tipoticket $tipoticket
+ * @property \App\Models\Subtipos $subtipo
+ * @property \App\Models\Tertipos $tertipo
+ * @property-read float|null $tiempo_respuesta
+ * @property-read string|null $tiempo_respuesta_formateado
+ * @property-read float|null $tiempo_resolucion
+ * @property-read string|null $tiempo_resolucion_formateado
+ * @property-read int $id
+ * @property-read string $estado
  */
 class Tickets extends Model
 {
@@ -318,16 +337,17 @@ class Tickets extends Model
     }
 
     /**
-     * Obtener tiempo de respuesta en horas laborales (para tickets en progreso)
-     * Diferencia entre FechaInicioProgreso y ahora
+     * Obtener tiempo de respuesta en horas laborales
+     * Diferencia entre created_at y FechaInicioProgreso
+     * Representa: cuánto esperó el usuario antes de que alguien empezara a atender el ticket
      */
     public function getTiempoRespuestaAttribute()
     {
-        if (!$this->FechaInicioProgreso || $this->Estatus !== 'En progreso') {
+        if (!$this->FechaInicioProgreso) {
             return null;
         }
 
-        return $this->calcularHorasLaborales($this->FechaInicioProgreso, now());
+        return $this->calcularHorasLaborales($this->created_at, $this->FechaInicioProgreso);
     }
 
     /**

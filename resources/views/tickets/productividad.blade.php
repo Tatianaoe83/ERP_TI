@@ -5,60 +5,104 @@
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis de rendimiento y métricas de tiempos.</p>
         </div>
 
-        <div class="flex items-center gap-4"
-            x-data="{ 
-                 mes: {{ $mes ?? now()->month }}, 
-                 anio: {{ $anio ?? now()->year }}, 
-                 cargando: false,
-                 cargarProductividad() {
-                     this.cargando = true;
-                     
-                     fetch(`{{ route('tickets.productividad-ajax') }}?mes=${this.mes}&anio=${this.anio}`)
-                         .then(response => response.json())
-                         .then(data => {
-                             if (data.success) {
-                                 // 1. Reemplazamos el HTML limpiamente
-                                 const container = document.getElementById('productividad-container');
-                                 container.outerHTML = data.html;
-                                 
-                                 // 2. Forzamos a que se dibujen las gráficas si estamos en la pestaña principal
-                                 setTimeout(() => {
-                                     if (sessionStorage.getItem('prodTab') === 'general' || !sessionStorage.getItem('prodTab')) {
-                                         if (typeof inicializarGraficas === 'function') inicializarGraficas();
-                                         if (typeof inicializarGraficasEmpleados === 'function') inicializarGraficasEmpleados();
-                                     }
-                                 }, 300);
-                             }
-                             this.cargando = false;
-                         })
-                         .catch(error => {
-                             console.error('Error:', error);
-                             this.cargando = false;
-                         });
-                 }
-             }">
+        @php
+            $mesInicioInit  = $mesInicio  ?? ($mes  ?? now()->month);
+            $anioInicioInit = $anioInicio ?? ($anio ?? now()->year);
+            $mesFinInit     = $mesFin     ?? ($mes  ?? now()->month);
+            $anioFinInit    = $anioFin    ?? ($anio ?? now()->year);
+            $mesActual      = now()->month;
+            $anioActual     = now()->year;
+        @endphp
+        <div class="flex items-center gap-4 flex-wrap"
+            x-data="{
+                mesInicio:  {{ $mesInicioInit }},
+                anioInicio: {{ $anioInicioInit }},
+                mesFin:     {{ $mesFinInit }},
+                anioFin:    {{ $anioFinInit }},
+                cargando:   false,
+                validarRango() {
+                    if (parseInt(this.anioFin) < parseInt(this.anioInicio)) {
+                        this.anioFin = this.anioInicio;
+                        this.mesFin = this.mesInicio;
+                    } else if (parseInt(this.anioFin) === parseInt(this.anioInicio) && parseInt(this.mesFin) < parseInt(this.mesInicio)) {
+                        this.mesFin = this.mesInicio;
+                    }
+                },
+                cargarProductividad() {
+                    this.validarRango();
+                    this.cargando = true;
+                    const params = new URLSearchParams();
+                    params.append('mes_inicio',  this.mesInicio);
+                    params.append('anio_inicio', this.anioInicio);
+                    params.append('mes_fin',     this.mesFin);
+                    params.append('anio_fin',    this.anioFin);
+                    fetch(`{{ route('tickets.productividad-ajax') }}?${params.toString()}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const container = document.getElementById('productividad-container');
+                                container.outerHTML = data.html;
+                                setTimeout(() => {
+                                    if (sessionStorage.getItem('prodTab') === 'general' || !sessionStorage.getItem('prodTab')) {
+                                        if (typeof inicializarGraficas === 'function') inicializarGraficas();
+                                        if (typeof inicializarGraficasEmpleados === 'function') inicializarGraficasEmpleados();
+                                    }
+                                }, 300);
+                            }
+                            this.cargando = false;
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            this.cargando = false;
+                        });
+                },
+                getExportUrl() {
+                    this.validarRango();
+                    const base = '{{ route('tickets.exportar-reporte-mensual-excel') }}';
+                    return `${base}?mes_inicio=${this.mesInicio}&anio_inicio=${this.anioInicio}&mes_fin=${this.mesFin}&anio_fin=${this.anioFin}`;
+                }
+            }">
 
-            <div class="flex items-center gap-2 bg-gray-50 dark:bg-[#1F2937] p-1.5 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
-                <select x-model="mes" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-3 pr-8 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
-                    @for($i = 1; $i <= 12; $i++)
-                        <option value="{{ $i }}">{{ \Carbon\Carbon::create(now()->year, $i, 1)->locale('es')->isoFormat('MMMM') }}</option>
-                        @endfor
+            {{-- Filtro rango de meses (siempre visible) --}}
+            <div class="flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] p-1.5 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm flex-wrap">
+                <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Desde</span>
+                <select x-model="mesInicio" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    @php
+                        $mesesOrdenados = [];
+                        for ($i = $mesActual; $i <= 12; $i++) {
+                            $mesesOrdenados[] = $i;
+                        }
+                        for ($i = 1; $i < $mesActual; $i++) {
+                            $mesesOrdenados[] = $i;
+                        }
+                    @endphp
+                    @foreach($mesesOrdenados as $i)
+                        <option value="{{ $i }}">{{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}</option>
+                    @endforeach
                 </select>
-
-                <div class="w-px h-5 bg-gray-300 dark:bg-gray-600"></div>
-
-                <select x-model="anio" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-3 pr-8 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
-                    @for($i = now()->year; $i >= now()->year - 5; $i--)
-                    <option value="{{ $i }}">{{ $i }}</option>
+                <select x-model="anioInicio" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    @for($i = $anioActual; $i >= $anioActual - 5; $i--)
+                        <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
                 </select>
-
+                <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+                <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Hasta</span>
+                <select x-model="mesFin" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    @foreach($mesesOrdenados as $i)
+                        <option value="{{ $i }}">{{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}</option>
+                    @endforeach
+                </select>
+                <select x-model="anioFin" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                    @for($i = $anioActual; $i >= $anioActual - 5; $i--)
+                        <option value="{{ $i }}">{{ $i }}</option>
+                    @endfor
+                </select>
                 <div x-show="cargando" class="pr-3">
                     <i class="fas fa-spinner fa-spin text-[#2563EB]"></i>
                 </div>
             </div>
 
-            <a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year]) }}"
+            <a :href="getExportUrl()"
                 class="px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white">
                 <i class="fas fa-file-excel"></i> Exportar
             </a>
@@ -166,16 +210,16 @@
                 </div>
 
                 <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <h3 class="text-lg font-semibold mb-4 dark:text-white">Tickets Creados vs Resueltos (Últimos 30 días)</h3>
+                    <h3 class="text-lg font-semibold mb-4 dark:text-white">Tickets Creados vs Resueltos</h3>
                     <div class="relative h-[300px]">
                         <canvas id="chartResueltosPorDia"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Comparación de Tiempos - Últimos 6 Meses -->
+            <!-- Comparación de Tiempos-->
             <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                <h3 class="text-lg font-semibold mb-4 dark:text-white">Comparación de Tiempos - Últimos 6 Meses</h3>
+                <h3 class="text-lg font-semibold mb-4 dark:text-white">Comparación de Tiempos</h3>
                 <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">Evolución de tiempos promedio de respuesta, resolución y total</p>
                 <div class="h-80">
                     <canvas id="chartComparacionTiempos6Meses"></canvas>
@@ -988,8 +1032,8 @@
         const valoresCreados = Object.values(creadosPorDia);
 
         const fechasFormateadas = fechas.map(fecha => {
-            const d = new Date(fecha);
-            return d.getDate() + '/' + (d.getMonth() + 1);
+            const partes = fecha.split('-');
+            return parseInt(partes[2]) + '/' + parseInt(partes[1]);
         });
 
         chartResueltos = new Chart(ctxResueltos, {
@@ -1024,18 +1068,18 @@
                         beginAtZero: true,
                         ticks: {
                             stepSize: 1,
-                            color: '#6B7280'
+                            color: colores.textoSecundario
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.05)'
+                            color: colores.grid
                         }
                     },
                     x: {
                         ticks: {
-                            color: '#6B7280'
+                            color: colores.textoSecundario
                         },
                         grid: {
-                            color: 'rgba(255, 255, 255, 0.05)'
+                            color: colores.grid
                         }
                     }
                 },
@@ -1044,16 +1088,19 @@
                         display: true,
                         position: 'top',
                         labels: {
-                            color: '#9CA3AF'
+                            color: colores.textoSecundario
                         }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(15, 17, 21, 0.95)',
-                        titleColor: '#F3F4F6',
-                        bodyColor: '#F3F4F6',
-                        borderColor: '#2A2F3A',
+                        backgroundColor: colores.tooltipBg,
+                        titleColor: colores.tooltipTexto,
+                        bodyColor: colores.tooltipTexto,
+                        borderColor: colores.tooltipBorder,
                         borderWidth: 1,
                         padding: 12
+                    },
+                    datalabels: {
+                        display: false
                     }
                 }
             }
@@ -1114,6 +1161,12 @@
                         borderColor: colores.tooltipBorder,
                         borderWidth: 1,
                         padding: 12
+                    },
+                    datalabels: {
+                        color: colores.texto,
+                        anchor: 'end',
+                        align: 'end',
+                        font: { weight: 'bold', size: 11 }
                     }
                 }
             }
@@ -1237,6 +1290,12 @@
                             borderColor: colores.tooltipBorder,
                             borderWidth: 1,
                             padding: 12
+                        },
+                        datalabels: {
+                            color: colores.texto,
+                            anchor: 'end',
+                            align: 'end',
+                            font: { weight: 'bold', size: 11 }
                         }
                     }
                 }
@@ -1710,6 +1769,16 @@
                 const totales = meses.map(mes => empleado.tickets_por_mes[mes].total);
                 const cerrados = meses.map(mes => empleado.tickets_por_mes[mes].cerrados);
 
+                const dark = isDarkMode();
+                const coloresEmpleado = {
+                    texto: dark ? '#F3F4F6' : '#111827',
+                    textoSecundario: dark ? '#9CA3AF' : '#6B7280',
+                    grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    tooltipBg: dark ? 'rgba(15,17,21,0.95)' : '#FFFFFF',
+                    tooltipTexto: dark ? '#F3F4F6' : '#111827',
+                    tooltipBorder: dark ? '#2A2F3A' : '#E5E7EB'
+                };
+
                 try {
                     window[chartKey] = new Chart(ctx, {
                         type: 'bar',
@@ -1742,18 +1811,18 @@
                                     ticks: {
                                         stepSize: 1,
                                         precision: 0,
-                                        color: '#6B7280'
+                                        color: coloresEmpleado.textoSecundario
                                     },
                                     grid: {
-                                        color: 'rgba(255, 255, 255, 0.05)'
+                                        color: coloresEmpleado.grid
                                     }
                                 },
                                 x: {
                                     ticks: {
-                                        color: '#6B7280'
+                                        color: coloresEmpleado.textoSecundario
                                     },
                                     grid: {
-                                        color: 'rgba(255, 255, 255, 0.05)'
+                                        color: coloresEmpleado.grid
                                     }
                                 }
                             },
@@ -1764,17 +1833,17 @@
                                     labels: {
                                         usePointStyle: true,
                                         padding: 15,
-                                        color: '#9CA3AF',
+                                        color: coloresEmpleado.textoSecundario,
                                         font: {
                                             size: 12
                                         }
                                     }
                                 },
                                 tooltip: {
-                                    backgroundColor: 'rgba(15, 17, 21, 0.95)',
-                                    titleColor: '#F3F4F6',
-                                    bodyColor: '#F3F4F6',
-                                    borderColor: '#2A2F3A',
+                                    backgroundColor: coloresEmpleado.tooltipBg,
+                                    titleColor: coloresEmpleado.tooltipTexto,
+                                    bodyColor: coloresEmpleado.tooltipTexto,
+                                    borderColor: coloresEmpleado.tooltipBorder,
                                     borderWidth: 1,
                                     padding: 12,
                                     titleFont: {
@@ -1793,6 +1862,12 @@
                                             return label;
                                         }
                                     }
+                                },
+                                datalabels: {
+                                    color: coloresEmpleado.texto,
+                                    anchor: 'end',
+                                    align: 'top',
+                                    font: { weight: 'bold', size: 10 }
                                 }
                             }
                         }
@@ -1852,4 +1927,33 @@
             }, 200);
         });
     }
+
+    // MutationObserver para detectar cambios en dark mode y reinicializar gráficas
+    const observerDarkMode = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const htmlElement = document.documentElement;
+                const isDark = htmlElement.classList.contains('dark');
+                
+                // Solo reinicializar si las gráficas están visibles
+                setTimeout(function() {
+                    const productividadContainer = document.getElementById('productividad-container');
+                    if (productividadContainer) {
+                        const style = window.getComputedStyle(productividadContainer);
+                        if (style.display !== 'none') {
+                            console.log('Dark mode cambió a:', isDark ? 'dark' : 'light', '- Reinicializando gráficas...');
+                            inicializarGraficas();
+                            inicializarGraficasEmpleados();
+                        }
+                    }
+                }, 50);
+            }
+        });
+    });
+
+    // Observar cambios en la clase del elemento <html>
+    observerDarkMode.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
 </script>
