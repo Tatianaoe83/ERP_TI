@@ -33,7 +33,7 @@ class TicketsController extends Controller
         $mes  = $request->input('mes', now()->month);
         $anio = $request->input('anio', now()->year);
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'chat' => function ($query) {
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'tertipo', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
@@ -138,12 +138,17 @@ class TicketsController extends Controller
         );
 
         $resueltosPorDia = [];
+        $creadosPorDia = [];
         for ($i = 29; $i >= 0; $i--) {
             $fecha = now()->subDays($i)->format('Y-m-d');
             $resueltosPorDia[$fecha] = $tickets->filter(
                 fn($t) => $t->Estatus === 'Cerrado'
                     && $t->FechaFinProgreso
                     && \Carbon\Carbon::parse($t->FechaFinProgreso)->format('Y-m-d') === $fecha
+            )->count();
+            
+            $creadosPorDia[$fecha] = $tickets->filter(
+                fn($t) => \Carbon\Carbon::parse($t->created_at)->format('Y-m-d') === $fecha
             )->count();
         }
 
@@ -164,22 +169,333 @@ class TicketsController extends Controller
             ];
         }
 
-        $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($tickets);
+        // Tickets por Tipo (Top 12 del mes)
+        $ticketsPorTipo = $ticketsDelMes
+            ->filter(fn($t) => $t->tipoticket && $t->tipoticket->NombreTipo)
+            ->groupBy(fn($t) => $t->tipoticket->NombreTipo)
+            ->map(fn($g) => $g->count())
+            ->sortDesc()
+            ->take(12);
+
+        // Incidencias por Gerencia del Solicitante (Gerencia + Total + Tertipos)
+        $ticketsPorGerenciaSolicitante = [];
+        foreach ($ticketsDelMes as $ticket) {
+            $gerenciaNombre = 'Sin gerencia';
+            
+            // Intentar obtener gerencia desde empleado
+            if ($ticket->empleado) {
+                // Opción 1: Via puestos -> departamentos -> gerencia
+                if ($ticket->empleado->puestos && 
+                    $ticket->empleado->puestos->departamentos && 
+                    $ticket->empleado->puestos->departamentos->gerencia) {
+                    $gerenciaNombre = $ticket->empleado->puestos->departamentos->gerencia->NombreGerencia ?? 'Sin gerencia';
+                } 
+                // Opción 2: Relación directa con gerencia
+                elseif ($ticket->empleado->gerencia) {
+                    $gerenciaNombre = $ticket->empleado->gerencia->NombreGerencia ?? 'Sin gerencia';
+                }
+            }
+
+            if (!isset($ticketsPorGerenciaSolicitante[$gerenciaNombre])) {
+                $ticketsPorGerenciaSolicitante[$gerenciaNombre] = [
+                    'gerencia'    => $gerenciaNombre,
+                    'total'       => 0,
+                    'tertipos'    => [],
+                ];
+            }
+
+            $ticketsPorGerenciaSolicitante[$gerenciaNombre]['total']++;
+            
+            // Contar por tertipo
+            $tertipoNombre = $ticket->tertipo ? $ticket->tertipo->NombreTertipo : 'Sin clasificar';
+            if (!isset($ticketsPorGerenciaSolicitante[$gerenciaNombre]['tertipos'][$tertipoNombre])) {
+                $ticketsPorGerenciaSolicitante[$gerenciaNombre]['tertipos'][$tertipoNombre] = 0;
+            }
+            $ticketsPorGerenciaSolicitante[$gerenciaNombre]['tertipos'][$tertipoNombre]++;
+        }
+
+        // Ordenar tertipos por cantidad y limitar a top 5 por gerencia
+        foreach ($ticketsPorGerenciaSolicitante as &$gerencia) {
+            arsort($gerencia['tertipos']);
+            $gerencia['tertipos'] = array_slice($gerencia['tertipos'], 0, 5, true);
+        }
+
+        // Ordenar por total descendente
+        uasort($ticketsPorGerenciaSolicitante, fn($a, $b) => $b['total'] <=> $a['total']);
+
+        // Incidencias por Responsable TI Asignado (Empleado + Total + Tertipos)
+        $ticketsPorResponsableTI = [];
+        foreach ($ticketsDelMes as $ticket) {
+            if (!$ticket->responsableTI) continue;
+            
+            $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin asignar';
+            $responsableID = $ticket->ResponsableTI;
+            
+            if (!isset($ticketsPorResponsableTI[$responsableID])) {
+                $ticketsPorResponsableTI[$responsableID] = [
+                    'responsable' => $responsableNombre,
+                    'total'       => 0,
+                    'tertipos'    => [],
+                ];
+            }
+
+            $ticketsPorResponsableTI[$responsableID]['total']++;
+            
+            // Contar por tertipo
+            $tertipoNombre = $ticket->tertipo ? $ticket->tertipo->NombreTertipo : 'Sin clasificar';
+            if (!isset($ticketsPorResponsableTI[$responsableID]['tertipos'][$tertipoNombre])) {
+                $ticketsPorResponsableTI[$responsableID]['tertipos'][$tertipoNombre] = 0;
+            }
+            $ticketsPorResponsableTI[$responsableID]['tertipos'][$tertipoNombre]++;
+        }
+
+        // Ordenar tertipos por cantidad y limitar a top 5 por responsable
+        foreach ($ticketsPorResponsableTI as &$responsable) {
+            arsort($responsable['tertipos']);
+            $responsable['tertipos'] = array_slice($responsable['tertipos'], 0, 5, true);
+        }
+
+        // Ordenar por total descendente
+        uasort($ticketsPorResponsableTI, fn($a, $b) => $b['total'] <=> $a['total']);
+
+        // **NUEVA: Matriz jerárquica Tipo → Subtipo vs Responsable TI**
+        $matrizIncidenciasPorResponsable = [];
+        $responsablesTIList = [];
+        
+        foreach ($ticketsDelMes as $ticket) {
+            if (!$ticket->responsableTI) continue;
+            
+            $tipoNombre = $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'Sin clasificar';
+            $subtipoNombre = $ticket->subtipo ? $ticket->subtipo->NombreSubtipo : 'Sin subtipo';
+            $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin asignar';
+            $responsableID = $ticket->ResponsableTI;
+            
+            // Registrar responsable único
+            if (!isset($responsablesTIList[$responsableID])) {
+                $responsablesTIList[$responsableID] = $responsableNombre;
+            }
+            
+            // Crear estructura jerárquica: tipo → subtipos → responsables
+            if (!isset($matrizIncidenciasPorResponsable[$tipoNombre])) {
+                $matrizIncidenciasPorResponsable[$tipoNombre] = [
+                    'total' => 0,
+                    'responsables' => [],
+                    'subtipos' => []
+                ];
+            }
+            
+            // Incrementar total del tipo
+            $matrizIncidenciasPorResponsable[$tipoNombre]['total']++;
+            
+            // Agregar al subtipo
+            if (!isset($matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre])) {
+                $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre] = [
+                    'total' => 0,
+                    'responsables' => []
+                ];
+            }
+            
+            $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['total']++;
+            
+            // Contar por responsable en el tipo
+            if (!isset($matrizIncidenciasPorResponsable[$tipoNombre]['responsables'][$responsableID])) {
+                $matrizIncidenciasPorResponsable[$tipoNombre]['responsables'][$responsableID] = 0;
+            }
+            $matrizIncidenciasPorResponsable[$tipoNombre]['responsables'][$responsableID]++;
+            
+            // Contar por responsable en el subtipo
+            if (!isset($matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['responsables'][$responsableID])) {
+                $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['responsables'][$responsableID] = 0;
+            }
+            $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['responsables'][$responsableID]++;
+        }
+        
+        // Completar con ceros donde faltan responsables
+        foreach ($matrizIncidenciasPorResponsable as &$tipoData) {
+            foreach ($responsablesTIList as $respoID => $respoNombre) {
+                if (!isset($tipoData['responsables'][$respoID])) {
+                    $tipoData['responsables'][$respoID] = 0;
+                }
+                
+                foreach ($tipoData['subtipos'] as &$subtipoData) {
+                    if (!isset($subtipoData['responsables'][$respoID])) {
+                        $subtipoData['responsables'][$respoID] = 0;
+                    }
+                }
+            }
+        }
+        
+        // Calcular totales por responsable (para columnas)
+        $totalesPorResponsable = [];
+        foreach ($responsablesTIList as $respoID => $respoNombre) {
+            $totalesPorResponsable[$respoID] = 0;
+            foreach ($matrizIncidenciasPorResponsable as $tipoData) {
+                $totalesPorResponsable[$respoID] += $tipoData['responsables'][$respoID];
+            }
+        }
+
+        // Backlog acumulado día a día del mes
+        $backlogAcumulado = [];
+        $diasDelMes = $fechaFinMes->day;
+        
+        for ($dia = 1; $dia <= $diasDelMes; $dia++) {
+            $fechaCarbon = \Carbon\Carbon::create($anio, $mes, $dia);
+            $fecha = $fechaCarbon->format('Y-m-d');
+            
+            $creadosHastaAqui = $ticketsDelMes->filter(function($t) use ($fechaCarbon) {
+                return \Carbon\Carbon::parse($t->created_at)->lte($fechaCarbon);
+            })->count();
+            
+            $cerradosHastaAqui = $ticketsDelMes->filter(function($t) use ($fechaCarbon) {
+                if ($t->Estatus !== 'Cerrado' || !$t->FechaFinProgreso) return false;
+                return \Carbon\Carbon::parse($t->FechaFinProgreso)->lte($fechaCarbon);
+            })->count();
+            
+            $backlogAcumulado[$fecha] = $creadosHastaAqui - $cerradosHastaAqui;
+        }
+
+        // Carga actual por responsable TI considerando solo tickets abiertos (Pendiente o En progreso)
+        $cargaActualPorResponsable = $ticketsDelMes->filter(function($t) {
+            return $t->ResponsableTI !== null && ($t->Estatus === 'Pendiente' || $t->Estatus === 'En progreso');
+        })->groupBy('ResponsableTI')->map(function($grupo) {
+            $responsable = $grupo->first()->responsableTI;
+            return [
+                'nombre' => $responsable ? $responsable->NombreEmpleado : 'Sin asignar',
+                'pendientes' => $grupo->where('Estatus', 'Pendiente')->count(),
+                'en_progreso' => $grupo->where('Estatus', 'En progreso')->count(),
+                'total_abiertos' => $grupo->count(),
+            ];
+        })->sortByDesc('total_abiertos')->take(10);
+
+        // SLA de respuesta: porcentaje de tickets que recibieron respuesta en menos de 4 horas desde su creación
+        $ticketsConRespuesta = $ticketsDelMes->filter(fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null);
+        $slaRespuesta = [
+            'cumplido' => $ticketsConRespuesta->filter(fn($t) => ($t->tiempo_respuesta ?? 0) <= 4)->count(),
+            'incumplido' => $ticketsConRespuesta->filter(fn($t) => ($t->tiempo_respuesta ?? 0) > 4)->count(),
+        ];
+
+        // SLA de resolución: porcentaje de tickets cerrados que se resolvieron dentro del objetivo (24 horas para servicios, 48 horas para problemas)
+        $ticketsCerradosConTiempo = $ticketsDelMes->filter(fn($t) => 
+            $t->Estatus === 'Cerrado' && 
+            $t->FechaInicioProgreso && 
+            $t->FechaFinProgreso && 
+            $t->tiempo_resolucion !== null
+        );
+        
+        // Definir objetivos de resolución según clasificación y calcular cumplimiento
+        $slaResolucion = [
+            'cumplido' => $ticketsCerradosConTiempo->filter(function($t) {
+                $objetivo = $t->Clasificacion === 'Servicio' ? 24 : 48;
+                return ($t->tiempo_resolucion ?? 999) <= $objetivo;
+            })->count(),
+            'incumplido' => $ticketsCerradosConTiempo->filter(function($t) {
+                $objetivo = $t->Clasificacion === 'Servicio' ? 24 : 48;
+                return ($t->tiempo_resolucion ?? 999) > $objetivo;
+            })->count(),
+        ];
+
+        // Edad del backlog: distribución de tickets abiertos por rango de días desde su creación
+        $ticketsAbiertos = $ticketsDelMes->filter(fn($t) => $t->Estatus === 'Pendiente' || $t->Estatus === 'En progreso');
+        $edadBacklog = [
+            '0-1_dia' => 0,
+            '1-3_dias' => 0,
+            '3-7_dias' => 0,
+            'mas_7_dias' => 0,
+        ];
+        
+        // Calcular edad de cada ticket abierto y acumular para promedio y distribución
+        $sumaEdad = 0;
+        $now = now();
+        foreach ($ticketsAbiertos as $ticket) {
+            $diasAbierto = \Carbon\Carbon::parse($ticket->created_at)->diffInDays($now);
+            $sumaEdad += $diasAbierto;
+            
+            if ($diasAbierto <= 1) $edadBacklog['0-1_dia']++;
+            elseif ($diasAbierto <= 3) $edadBacklog['1-3_dias']++;
+            elseif ($diasAbierto <= 7) $edadBacklog['3-7_dias']++;
+            else $edadBacklog['mas_7_dias']++;
+        }
+        
+        $edadPromedioBacklog = $ticketsAbiertos->count() > 0 
+            ? round($sumaEdad / $ticketsAbiertos->count(), 1) 
+            : 0;
+
+        $prioridadAbiertos = [
+            'Alta' => $ticketsAbiertos->where('Prioridad', 'Alta')->count(),
+            'Media' => $ticketsAbiertos->where('Prioridad', 'Media')->count(),
+            'Baja' => $ticketsAbiertos->where('Prioridad', 'Baja')->count(),
+        ];
+
+        // Comparación de tiempos de los últimos 6 meses (mes actual + 5 meses anteriores)
+        $comparacionTiempos = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $mesComparacion = now()->subMonthsNoOverflow($i);
+            $inicioMesComp = $mesComparacion->copy()->startOfMonth();
+            $finMesComp = $mesComparacion->copy()->endOfMonth();
+            $labelMes = $mesComparacion->locale('es')->isoFormat('MMM YYYY');
+
+            $ticketsMesComp = $tickets->filter(
+                fn($t) => \Carbon\Carbon::parse($t->created_at)->between($inicioMesComp, $finMesComp)
+            );
+
+            // Tiempo promedio de respuesta
+            $ticketsConRespuestaComp = $ticketsMesComp->filter(
+                fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
+            );
+            $tiempoPromedioRespuestaComp = $ticketsConRespuestaComp->count() > 0
+                ? round($ticketsConRespuestaComp->avg(fn($t) => $t->tiempo_respuesta ?? 0), 2)
+                : 0;
+
+            // Tiempo promedio de resolución
+            $ticketsConResolucionComp = $ticketsMesComp->filter(
+                fn($t) => $t->FechaInicioProgreso && $t->FechaFinProgreso && $t->tiempo_resolucion !== null
+            );
+            $tiempoPromedioResolucionComp = $ticketsConResolucionComp->count() > 0
+                ? round($ticketsConResolucionComp->avg(fn($t) => $t->tiempo_resolucion ?? 0), 2)
+                : 0;
+
+            // Tiempo promedio total (suma de respuesta + resolución)
+            $tiempoPromedioTotal = round($tiempoPromedioRespuestaComp + $tiempoPromedioResolucionComp, 2);
+
+            $comparacionTiempos[$labelMes] = [
+                'respuesta' => $tiempoPromedioRespuestaComp,
+                'resolucion' => $tiempoPromedioResolucionComp,
+                'total' => $tiempoPromedioTotal,
+            ];
+        }
+
+        $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($ticketsDelMes);
 
         return [
-            'total_tickets'               => $ticketsDelMes->count(),
-            'tickets_cerrados'            => $ticketsCerradosMes->count(),
-            'tickets_en_progreso'         => $ticketsEnProgresoMes->count(),
-            'distribucion_estado'         => $distribucionEstado,
-            'tiempo_promedio_resolucion'  => $tiempoPromedioResolucion,
-            'tiempo_promedio_respuesta'   => $tiempoPromedioRespuesta,
-            'tickets_por_responsable'     => $ticketsPorResponsable,
-            'tickets_por_prioridad'       => $ticketsPorPrioridad,
-            'tickets_por_clasificacion'   => $ticketsPorClasificacion,
-            'tickets_ultimos_30_dias'     => $ticketsUltimos30Dias->count(),
-            'resueltos_por_dia'           => $resueltosPorDia,
-            'tendencias_semanales'        => $tendenciasSemanales,
-            'metricas_por_empleado'       => $metricasPorEmpleado,
+            'total_tickets'                      => $ticketsDelMes->count(),
+            'tickets_cerrados'                   => $ticketsCerradosMes->count(),
+            'tickets_en_progreso'                => $ticketsEnProgresoMes->count(),
+            'distribucion_estado'                => $distribucionEstado,
+            'tiempo_promedio_resolucion'         => $tiempoPromedioResolucion,
+            'tiempo_promedio_respuesta'          => $tiempoPromedioRespuesta,
+            'tickets_por_responsable'            => $ticketsPorResponsable,
+            'tickets_por_prioridad'              => $ticketsPorPrioridad,
+            'tickets_por_clasificacion'          => $ticketsPorClasificacion,
+            'tickets_ultimos_30_dias'            => $ticketsUltimos30Dias->count(),
+            'resueltos_por_dia'                  => $resueltosPorDia,
+            'creados_por_dia'                    => $creadosPorDia,
+            'tickets_por_tipo'                   => $ticketsPorTipo,
+            'tickets_por_gerencia_solicitante'   => $ticketsPorGerenciaSolicitante,
+            'tickets_por_responsable_ti'         => $ticketsPorResponsableTI,
+            'tendencias_semanales'               => $tendenciasSemanales,
+            'metricas_por_empleado'              => $metricasPorEmpleado,
+            
+            'backlog_acumulado'                  => $backlogAcumulado,
+            'carga_actual_responsable'           => $cargaActualPorResponsable,
+            'sla_respuesta'                      => $slaRespuesta,
+            'sla_resolucion'                     => $slaResolucion,
+            'edad_backlog'                       => $edadBacklog,
+            'edad_promedio_backlog'              => $edadPromedioBacklog,
+            'prioridad_abiertos'                 => $prioridadAbiertos,
+            'comparacion_tiempos_6_meses'        => $comparacionTiempos,
+            'matriz_incidencias_responsable'     => $matrizIncidenciasPorResponsable,
+            'responsables_ti_list'               => $responsablesTIList,
+            'totales_por_responsable'            => $totalesPorResponsable,
         ];
     }
 
