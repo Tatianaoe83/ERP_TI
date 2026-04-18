@@ -452,7 +452,7 @@
                 </div>
             </div>
 
-            <div class="rounded-lg border border-gray-200 dark:border-[#2A2F3A] p-6 shadow-md"
+            <div class="rounded-lg border border-gray-200 dark:border-[#2A2F3A] p-3 sm:p-6 shadow-md"
                 x-data="{ 
                      currentEmpleado: 0, 
                      totalEmpleados: {{ count($metricasProductividad['metricas_por_empleado']) }},
@@ -471,20 +471,20 @@
                 @keydown.arrow-right.window="siguiente()">
 
                 <!-- Header con navegación -->
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div>
-                        <h3 class="text-lg font-semibold dark:text-white">Desempeño por Empleado TI</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Análisis mensual del rendimiento de cada responsable de TI (Últimos 6 meses)</p>
+                        <h3 class="text-base sm:text-lg font-semibold dark:text-white">Desempeño por Empleado TI</h3>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Análisis mensual del rendimiento (Últimos 6 meses)</p>
                     </div>
 
                     @if(count($metricasProductividad['metricas_por_empleado']) > 0)
-                    <div class="flex items-center gap-3">
-                        <span class="text-sm font-semibold text-gray-600 dark:text-gray-400" x-text="`${currentEmpleado + 1} de ${totalEmpleados}`"></span>
+                    <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+                        <span class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap" x-text="`${currentEmpleado + 1}/${totalEmpleados}`"></span>
                         <button
                             @click="anterior()"
                             :disabled="currentEmpleado === 0"
                             :class="currentEmpleado === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'"
-                            class="px-3 py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-2 disabled:pointer-events-none">
+                            class="px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 disabled:pointer-events-none text-xs sm:text-sm">
                             <i class="fas fa-chevron-left"></i>
                             <span class="hidden sm:inline">Anterior</span>
                         </button>
@@ -492,7 +492,7 @@
                             @click="siguiente()"
                             :disabled="currentEmpleado === totalEmpleados - 1"
                             :class="currentEmpleado === totalEmpleados - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'"
-                            class="px-3 py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-2 disabled:pointer-events-none">
+                            class="px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 disabled:pointer-events-none text-xs sm:text-sm">
                             <span class="hidden sm:inline">Siguiente</span>
                             <i class="fas fa-chevron-right"></i>
                         </button>
@@ -502,12 +502,12 @@
 
                 <!-- Indicadores de navegación (dots) -->
                 @if(count($metricasProductividad['metricas_por_empleado']) > 1)
-                <div class="flex justify-center gap-2 mb-6">
+                <div class="flex justify-center gap-1 sm:gap-2 mb-3 sm:mb-6 overflow-x-auto px-2">
                     @foreach($metricasProductividad['metricas_por_empleado'] as $index => $emp)
                     <button
                         @click="currentEmpleado = {{ $index }}"
-                        :class="currentEmpleado === {{ $index }} ? 'bg-blue-500 w-8' : 'bg-gray-300 dark:bg-gray-600 w-3'"
-                        class="h-3 rounded-full transition-all duration-300 hover:bg-blue-400"
+                        :class="currentEmpleado === {{ $index }} ? 'bg-blue-500 w-6 sm:w-8' : 'bg-gray-300 dark:bg-gray-600 w-2 sm:w-3'"
+                        class="h-2 sm:h-3 rounded-full transition-all duration-300 hover:bg-blue-400 flex-shrink-0"
                         title="{{ $emp['nombre'] ?? 'Empleado ' . ($index + 1) }}">
                     </button>
                     @endforeach
@@ -523,33 +523,33 @@
                         x-transition:leave="transition ease-in duration-300"
                         x-transition:leave-start="opacity-100 transform translate-x-0"
                         x-transition:leave-end="opacity-0 transform -translate-x-8"
-                        class="rounded-lg p-6 border border-gray-100 dark:border-[#2A2F3A] bg-gray-50/30 dark:bg-transparent transition-colors">
-                        <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-gray-200 dark:border-[#2A2F3A]">
-                            <div class="flex items-center gap-4">
-                                <div class="rounded-full p-3" style="background-color: rgba(59, 130, 246, 0.15);">
-                                    <i class="fas fa-user-tie text-xl text-blue-500"></i>
+                        class="rounded-lg p-3 sm:p-6 border border-gray-100 dark:border-[#2A2F3A] bg-gray-50/30 dark:bg-transparent transition-colors">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-6 pb-3 sm:pb-4 border-b-2 border-gray-200 dark:border-[#2A2F3A]">
+                            <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                                <div class="rounded-full p-2 sm:p-3 flex-shrink-0" style="background-color: rgba(59, 130, 246, 0.15);">
+                                    <i class="fas fa-user-tie text-lg sm:text-xl text-blue-500"></i>
                                 </div>
-                                <div>
-                                    <h4 class="text-xl font-bold dark:text-white">{{ $empleado['nombre'] ?? 'Sin nombre' }}</h4>
-                                    <p class="text-sm text-gray-500 dark:text-[#9CA3AF]">
-                                        Total acumulado: <span class="font-semibold">{{ $empleado['total'] ?? 0 }} tickets</span>
+                                <div class="min-w-0">
+                                    <h4 class="text-lg sm:text-xl font-bold dark:text-white truncate">{{ $empleado['nombre'] ?? 'Sin nombre' }}</h4>
+                                    <p class="text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF]">
+                                        Total: <span class="font-semibold">{{ $empleado['total'] ?? 0 }} tks</span>
                                     </p>
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-6">
+                            <div class="flex items-center gap-2 sm:gap-6 flex-shrink-0">
                                 @php
                                 $tasa = $empleado['tasa_cierre'] ?? 0;
                                 $colorTasa = $tasa >= 70 ? 'text-[#4ADE80]' : ($tasa >= 50 ? 'text-[#FBBF24]' : 'text-[#F87171]');
                                 @endphp
-                                <div class="text-center rounded-lg px-4 py-2">
-                                    <p class="text-xs mb-1 text-gray-500 dark:text-gray-400">Tasa de Cierre</p>
-                                    <p class="text-2xl font-bold {{ $colorTasa }}">{{ $tasa }}%</p>
+                                <div class="text-center rounded-lg px-2 sm:px-4 py-1 sm:py-2">
+                                    <p class="text-xs mb-0.5 sm:mb-1 text-gray-500 dark:text-gray-400">Tasa</p>
+                                    <p class="text-xl sm:text-2xl font-bold {{ $colorTasa }}">{{ $tasa }}%</p>
                                 </div>
 
-                                <div class="text-center rounded-lg px-4 py-2">
-                                    <p class="text-xs mb-1 text-gray-500 dark:text-gray-400">Tiempo Promedio</p>
-                                    <p class="text-2xl font-bold text-[#3B82F6]">
+                                <div class="text-center rounded-lg px-2 sm:px-4 py-1 sm:py-2">
+                                    <p class="text-xs mb-0.5 sm:mb-1 text-gray-500 dark:text-gray-400">T. Prom.</p>
+                                    <p class="text-xl sm:text-2xl font-bold text-[#3B82F6]">
                                         {{ isset($empleado['tiempo_promedio_resolucion']) && $empleado['tiempo_promedio_resolucion'] > 0
                                             ? number_format($empleado['tiempo_promedio_resolucion'], 1)
                                             : '0' }}h
@@ -558,29 +558,29 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-4 mb-6">
-                            <div class="rounded-lg p-4 text-center border" style="background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
-                                <i class="fas fa-check-circle text-[#4ADE80] text-2xl mb-2"></i>
-                                <p class="text-sm mb-1 text-gray-600 dark:text-gray-300">Cerrados</p>
-                                <p class="text-3xl font-bold text-[#4ADE80]">{{ $empleado['cerrados'] }}</p>
+                        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                            <div class="rounded-lg p-2 sm:p-4 text-center border" style="background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
+                                <i class="fas fa-check-circle text-[#4ADE80] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
+                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">Cerrados</p>
+                                <p class="text-2xl sm:text-3xl font-bold text-[#4ADE80]">{{ $empleado['cerrados'] }}</p>
                             </div>
-                            <div class="rounded-lg p-4 text-center border" style="background-color: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);">
-                                <i class="fas fa-clock text-[#FBBF24] text-2xl mb-2"></i>
-                                <p class="text-sm mb-1 text-gray-600 dark:text-gray-300">En Progreso</p>
-                                <p class="text-3xl font-bold text-[#FBBF24]">{{ $empleado['en_progreso'] }}</p>
+                            <div class="rounded-lg p-2 sm:p-4 text-center border" style="background-color: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);">
+                                <i class="fas fa-clock text-[#FBBF24] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
+                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">En Prog.</p>
+                                <p class="text-2xl sm:text-3xl font-bold text-[#FBBF24]">{{ $empleado['en_progreso'] }}</p>
                             </div>
-                            <div class="rounded-lg p-4 text-center border" style="background-color: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3);">
-                                <i class="fas fa-exclamation-circle text-[#F87171] text-2xl mb-2"></i>
-                                <p class="text-sm mb-1 text-gray-600 dark:text-gray-300">Pendientes</p>
-                                <p class="text-3xl font-bold text-[#F87171]">{{ $empleado['pendientes'] }}</p>
+                            <div class="rounded-lg p-2 sm:p-4 text-center border" style="background-color: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3);">
+                                <i class="fas fa-exclamation-circle text-[#F87171] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
+                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">Pendientes</p>
+                                <p class="text-2xl sm:text-3xl font-bold text-[#F87171]">{{ $empleado['pendientes'] }}</p>
                             </div>
                         </div>
 
-                        <div class="mb-6">
-                            <h5 class="text-sm font-semibold mb-4 flex items-center gap-2 dark:text-white">
-                                <i class="fas fa-calendar-alt text-[#3B82F6]"></i> Desempeño Mensual (Últimos 6 meses)
+                        <div class="mb-3 sm:mb-6">
+                            <h5 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-4 flex items-center gap-2 dark:text-white">
+                                <i class="fas fa-calendar-alt text-[#3B82F6]"></i> Últimos 6 meses
                             </h5>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-3">
                                 @php
                                 $meses = array_reverse(array_keys($empleado['tickets_por_mes']), true);
                                 $mesesEspanol = [
@@ -600,47 +600,42 @@
                                 $mesFormateado = str_replace($en, $es, $mesFormateado);
                                 }
                                 @endphp
-                                <div class="border-2 {{ $totalMes > 0 ? 'border-[#3B82F6]' : 'border-gray-200 dark:border-[#2A2F3A]' }} bg-gray-50 dark:bg-transparent rounded-lg p-4 hover:border-[#4A8FF6] transition-all">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <h6 class="font-bold text-sm dark:text-gray-200">{{ $mesFormateado }}</h6>
+                                <div class="border-2 {{ $totalMes > 0 ? 'border-[#3B82F6]' : 'border-gray-200 dark:border-[#2A2F3A]' }} bg-gray-50 dark:bg-transparent rounded-lg p-2 sm:p-3 hover:border-[#4A8FF6] transition-all">
+                                    <div class="flex items-center justify-between mb-1 sm:mb-2">
+                                        <h6 class="font-bold text-xs sm:text-sm dark:text-gray-200">{{ $mesFormateado }}</h6>
                                         @if($totalMes > 0)
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full {{ $tasaCierreMes >= 70 ? 'bg-[#4ADE80]/20 text-[#4ADE80]' : ($tasaCierreMes >= 50 ? 'bg-[#FBBF24]/20 text-[#FBBF24]' : 'bg-[#F87171]/20 text-[#F87171]') }}">
+                                        <span class="px-1.5 py-0.5 text-xs font-semibold rounded text-[12px] {{ $tasaCierreMes >= 70 ? 'bg-[#4ADE80]/20 text-[#4ADE80]' : ($tasaCierreMes >= 50 ? 'bg-[#FBBF24]/20 text-[#FBBF24]' : 'bg-[#F87171]/20 text-[#F87171]') }}">
                                             {{ $tasaCierreMes }}%
                                         </span>
                                         @else
-                                        <span class="text-gray-400 dark:text-[#6B7280] text-xs">Sin datos</span>
+                                        <span class="text-gray-400 dark:text-[#6B7280] text-xs">-</span>
                                         @endif
                                     </div>
 
                                     @if($totalMes > 0)
-                                    <div class="space-y-2">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs text-gray-500 dark:text-[#9CA3AF]">Total</span>
-                                            <span class="text-sm font-bold dark:text-white">{{ $totalMes }}</span>
+                                    <div class="space-y-1">
+                                        <div class="flex items-center justify-between text-xs">
+                                            <span class="text-gray-500 dark:text-[#9CA3AF]">Total</span>
+                                            <span class="font-bold dark:text-white">{{ $totalMes }}</span>
                                         </div>
-                                        <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-2">
-                                            <div class="bg-[#3B82F6] h-2 rounded-full" style="width: 100%"></div>
+                                        <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
+                                            <div class="bg-[#3B82F6] h-1 sm:h-2 rounded-full" style="width: 100%"></div>
                                         </div>
 
-                                        <div class="flex items-center justify-between mt-3">
-                                            <span class="text-xs flex items-center gap-1">
-                                                <i class="fas fa-check text-[#4ADE80]"></i> <span class="dark:text-gray-300">Cerrados</span>
+                                        <div class="flex items-center justify-between mt-1 text-xs">
+                                            <span class="flex items-center gap-0.5">
+                                                <i class="fas fa-check text-[#4ADE80] text-xs"></i> <span class="dark:text-gray-300">Ok</span>
                                             </span>
                                             <span class="text-sm font-bold text-[#4ADE80]">{{ $cerradosMes }}</span>
                                         </div>
-                                        <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-2">
-                                            <div class="bg-[#4ADE80] h-2 rounded-full" style="width: {{ min($tasaCierreMes, 100) }}%"></div>
-                                        </div>
-
-                                        <div class="flex items-center justify-between mt-2">
-                                            <span class="text-xs text-gray-500 dark:text-[#9CA3AF]">Pendientes</span>
-                                            <span class="text-sm font-bold text-[#F87171]">{{ $totalMes - $cerradosMes }}</span>
+                                        <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
+                                            <div class="bg-[#4ADE80] h-1 sm:h-2 rounded-full" style="width: {{ min($tasaCierreMes, 100) }}%"></div>
                                         </div>
                                     </div>
                                     @else
-                                    <div class="text-center py-4 text-gray-400 dark:text-[#6B7280]">
-                                        <i class="fas fa-inbox text-2xl mb-2"></i>
-                                        <p class="text-xs">Sin tickets</p>
+                                    <div class="text-center py-2 text-gray-400 dark:text-[#6B7280]">
+                                        <i class="fas fa-inbox text-lg mb-0.5"></i>
+                                        <p class="text-xs">Sin tks</p>
                                     </div>
                                     @endif
                                 </div>
@@ -649,10 +644,10 @@
                         </div>
 
                         <div>
-                            <h5 class="text-sm font-semibold mb-3 flex items-center gap-2 dark:text-white">
-                                <i class="fas fa-signal text-[#3B82F6]"></i> Distribución por Prioridad
+                            <h5 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 flex items-center gap-2 dark:text-white">
+                                <i class="fas fa-signal text-[#3B82F6]"></i> Prioridades
                             </h5>
-                            <div class="grid grid-cols-3 gap-4">
+                            <div class="grid grid-cols-3 gap-2 sm:gap-4">
                                 @php
                                 $prioridades = [
                                 'Alta' => ['color' => '#F87171', 'bg' => '#F87171', 'icon' => 'fa-exclamation-triangle'],
@@ -661,32 +656,29 @@
                                 ];
                                 @endphp
                                 @foreach($prioridades as $prioridad => $config)
-                                <div class="rounded-lg p-4 bg-gray-50 dark:bg-[#1F2937] border border-transparent dark:border-[#2A2F3A]">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <div class="flex items-center gap-2">
-                                            <i class="fas {{ $config['icon'] }}" style="color: {{ $config['color'] }};"></i>
-                                            <span class="text-sm font-semibold dark:text-gray-200">{{ $prioridad }}</span>
+                                <div class="rounded-lg p-2 sm:p-3 bg-gray-50 dark:bg-[#1F2937] border border-transparent dark:border-[#2A2F3A]">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <div class="flex items-center gap-1">
+                                            <i class="fas {{ $config['icon'] }} text-xs sm:text-sm" style="color: {{ $config['color'] }};"></i>
+                                            <span class="text-xs sm:text-sm font-semibold dark:text-gray-200">{{ $prioridad }}</span>
                                         </div>
-                                        <span class="text-lg font-bold dark:text-white">
+                                        <span class="text-lg sm:text-xl font-bold dark:text-white">
                                             {{ $empleado['tickets_por_prioridad'][$prioridad] ?? 0 }}
                                         </span>
                                     </div>
-                                    <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-3">
-                                        <div class="h-3 rounded-full transition-all duration-300" style="background-color: {{ $config['bg'] }}; width: {{ $empleado['total'] > 0 ? min((($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100, 100) : 0 }}%"></div>
+                                    <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
+                                        <div class="h-1 sm:h-2 rounded-full transition-all duration-300" style="background-color: {{ $config['bg'] }}; width: {{ $empleado['total'] > 0 ? min((($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100, 100) : 0 }}%"></div>
                                     </div>
-                                    <p class="text-xs mt-1 text-gray-500 dark:text-[#9CA3AF]">
-                                        {{ $empleado['total'] > 0 ? round((($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100, 1) : 0 }}% del total
-                                    </p>
                                 </div>
                                 @endforeach
                             </div>
                         </div>
                     </div>
                     @empty
-                    <div class="text-center py-12 border-2 border-dashed border-gray-200 dark:border-[#2A2F3A] rounded-lg">
-                        <i class="fas fa-users text-5xl mb-4 text-gray-400 dark:text-[#6B7280]"></i>
-                        <p class="text-lg font-semibold dark:text-gray-300">No hay métricas disponibles para empleados</p>
-                        <p class="text-sm mt-2 text-gray-500 dark:text-[#9CA3AF]">Los empleados aparecerán aquí cuando tengan tickets asignados</p>
+                    <div class="text-center py-8 sm:py-12 border-2 border-dashed border-gray-200 dark:border-[#2A2F3A] rounded-lg">
+                        <i class="fas fa-users text-3xl sm:text-5xl mb-2 sm:mb-4 text-gray-400 dark:text-[#6B7280]"></i>
+                        <p class="text-base sm:text-lg font-semibold dark:text-gray-300">No hay métricas disponibles</p>
+                        <p class="text-xs sm:text-sm mt-1 sm:mt-2 text-gray-500 dark:text-[#9CA3AF]">Los empleados aparecerán aquí con tickets asignados</p>
                     </div>
                     @endforelse
                 </div>
