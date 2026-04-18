@@ -40,16 +40,40 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
+                                if (typeof destruirGraficasProductividad === 'function') {
+                                    destruirGraficasProductividad();
+                                }
                                 const container = document.getElementById('productividad-container');
-                                container.outerHTML = data.html;
-                                setTimeout(() => {
-                                    if (sessionStorage.getItem('prodTab') === 'general' || !sessionStorage.getItem('prodTab')) {
-                                        if (typeof inicializarGraficas === 'function') inicializarGraficas();
-                                        if (typeof inicializarGraficasEmpleados === 'function') inicializarGraficasEmpleados();
+                                if (container) {
+                                    container.outerHTML = data.html;
+                                }
+                                const nuevo = document.getElementById('productividad-container');
+                                if (nuevo && window.Alpine && typeof Alpine.initTree === 'function') {
+                                    try {
+                                        Alpine.initTree(nuevo);
+                                    } catch (e) {
+                                        console.warn('Alpine.initTree productividad:', e);
                                     }
-                                }, 300);
+                                }
+                                setTimeout(function() {
+                                    const filtro = document.querySelector('#productividad-container [x-data*=mesInicio]');
+                                    if (filtro && window.Alpine && typeof Alpine.$data === 'function') {
+                                        try {
+                                            Alpine.$data(filtro).cargando = false;
+                                        } catch (e) {}
+                                    }
+                                    if (sessionStorage.getItem('prodTab') === 'general' || !sessionStorage.getItem('prodTab')) {
+                                        if (typeof inicializarGraficas === 'function') {
+                                            inicializarGraficas();
+                                        }
+                                        if (typeof inicializarGraficasEmpleados === 'function') {
+                                            inicializarGraficasEmpleados();
+                                        }
+                                    }
+                                }, 80);
+                            } else {
+                                this.cargando = false;
                             }
-                            this.cargando = false;
                         })
                         .catch(error => {
                             console.error('Error:', error);
@@ -202,49 +226,69 @@
             <hr class="my-8 border-gray-200 dark:border-[#2A2F3A]">
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <h3 class="text-lg font-semibold mb-4 dark:text-white">Distribución por Estado</h3>
-                    <div class="relative h-[300px]">
-                        <canvas id="chartEstado"></canvas>
+                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-blue-200/90 dark:hover:border-blue-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:ring-blue-400/25 focus-within:border-blue-300/80 dark:focus-within:border-blue-500/40">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <h3 class="text-lg font-semibold dark:text-white">Distribución por Estado</h3>
+                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                    </div>
+                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                        <canvas id="chartEstado" role="img" aria-label="Distribución de tickets por estado"></canvas>
                     </div>
                 </div>
 
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <h3 class="text-lg font-semibold mb-4 dark:text-white">Tickets Creados vs Resueltos</h3>
-                    <div class="relative h-[300px]">
-                        <canvas id="chartResueltosPorDia"></canvas>
+                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <h3 class="text-lg font-semibold dark:text-white">Tickets Creados vs Resueltos</h3>
+                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                    </div>
+                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                        <canvas id="chartResueltosPorDia" role="img" aria-label="Tickets creados y resueltos por día"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Comparación de Tiempos-->
-            <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                <h3 class="text-lg font-semibold mb-4 dark:text-white">Comparación de Tiempos</h3>
-                <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">Evolución de tiempos promedio de respuesta, resolución y total</p>
-                <div class="h-80">
-                    <canvas id="chartComparacionTiempos6Meses"></canvas>
+            <div class="group rounded-xl shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white to-gray-50/60 dark:from-[#111827]/45 dark:to-[#0B0F14]/70 transition-all duration-300 ease-out hover:shadow-xl hover:shadow-amber-100/30 dark:hover:shadow-black/50 hover:border-amber-200/70 dark:hover:border-amber-500/30 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-amber-500/20 dark:focus-within:ring-amber-400/25">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold dark:text-white">Comparación de Tiempos</h3>
+                        <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Evolución de tiempos promedio de respuesta, resolución y total</p>
+                    </div>
+                    <span class="shrink-0 self-start text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                </div>
+                <div class="h-80 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/30 dark:bg-black/20 group-hover:bg-gray-50/60 dark:group-hover:bg-black/30">
+                    <canvas id="chartComparacionTiempos6Meses" role="img" aria-label="Comparación de tiempos en los últimos meses"></canvas>
                 </div>
             </div>
 
-            <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                <h3 class="text-lg font-semibold mb-4 dark:text-white">Distribución por Clasificación (En Progreso y Cerrados)</h3>
-                <div class="relative h-[300px]">
-                    <canvas id="chartClasificacion"></canvas>
+            <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-indigo-200/90 dark:hover:border-indigo-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/25">
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <h3 class="text-lg font-semibold dark:text-white">Distribución por Clasificación (En Progreso y Cerrados)</h3>
+                    <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                </div>
+                <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                    <canvas id="chartClasificacion" role="img" aria-label="Distribución por clasificación de ticket"></canvas>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <h3 class="text-lg font-semibold mb-4 dark:text-white">Tickets por Prioridad</h3>
-                    <div class="relative h-[300px]">
-                        <canvas id="chartPrioridad"></canvas>
+                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-rose-200/80 dark:hover:border-rose-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-rose-500/20 dark:focus-within:ring-rose-400/25">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <h3 class="text-lg font-semibold dark:text-white">Tickets por Prioridad</h3>
+                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                    </div>
+                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                        <canvas id="chartPrioridad" role="img" aria-label="Tickets por prioridad"></canvas>
                     </div>
                 </div>
 
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <h3 class="text-lg font-semibold mb-4 dark:text-white">Distribución por Tipo de Ticket (Top 12)</h3>
-                    <div class="relative h-[300px]">
-                        <canvas id="chartTipoTicket"></canvas>
+                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-violet-200/90 dark:hover:border-violet-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-violet-500/20 dark:focus-within:ring-violet-400/25">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <h3 class="text-lg font-semibold dark:text-white">Distribución por Tipo de Ticket (Top 12)</h3>
+                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                    </div>
+                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                        <canvas id="chartTipoTicket" role="img" aria-label="Distribución por tipo de ticket"></canvas>
                     </div>
                 </div>
             </div>
@@ -444,26 +488,46 @@
                 </div>
                 
                 <!-- Gráfica de Barras Apiladas -->
-                <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1F2937]/50">
-                    <h4 class="text-sm font-semibold mb-4 dark:text-white">Visualización: Incidencias por Tipo y Responsable</h4>
-                    <div class="h-[700px]">
-                        <canvas id="chartIncidenciasMatriz"></canvas>
+                <div class="group rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1F2937]/50 shadow-inner transition-all duration-300 ease-out hover:shadow-md hover:border-cyan-200/70 dark:hover:border-cyan-500/30 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-cyan-500/20 dark:focus-within:ring-cyan-400/25">
+                    <div class="flex items-center justify-between gap-2 mb-4">
+                        <h4 class="text-sm font-semibold dark:text-white">Visualización: Incidencias por Tipo y Responsable</h4>
+                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                    </div>
+                    <div class="h-[700px] rounded-lg overflow-hidden transition-[background] duration-300 bg-white/40 dark:bg-black/20 group-hover:bg-white/60 dark:group-hover:bg-black/30">
+                        <canvas id="chartIncidenciasMatriz" role="img" aria-label="Incidencias por tipo y responsable"></canvas>
                     </div>
                 </div>
             </div>
 
             <div class="rounded-lg border border-gray-200 dark:border-[#2A2F3A] p-6 shadow-md"
                 x-data="{ 
-                     currentEmpleado: 0, 
                      totalEmpleados: {{ count($metricasProductividad['metricas_por_empleado']) }},
+                     currentEmpleado: (typeof prodEmpleadoIdxInicial === 'function' ? prodEmpleadoIdxInicial({{ count($metricasProductividad['metricas_por_empleado']) }}) : 0),
+                     persistirEmpleado() {
+                         if (this.totalEmpleados > 0) {
+                             sessionStorage.setItem('prodEmpleadoIdx', String(this.currentEmpleado));
+                         }
+                     },
                      siguiente() {
                          if (this.currentEmpleado < this.totalEmpleados - 1) {
                              this.currentEmpleado++;
+                             this.persistirEmpleado();
+                             setTimeout(function() {
+                                 if (typeof resizeChartsProductividadEmpleados === 'function') {
+                                     resizeChartsProductividadEmpleados();
+                                 }
+                             }, 320);
                          }
                      },
                      anterior() {
                          if (this.currentEmpleado > 0) {
                              this.currentEmpleado--;
+                             this.persistirEmpleado();
+                             setTimeout(function() {
+                                 if (typeof resizeChartsProductividadEmpleados === 'function') {
+                                     resizeChartsProductividadEmpleados();
+                                 }
+                             }, 320);
                          }
                      }
                  }"
@@ -505,7 +569,7 @@
                 <div class="flex justify-center gap-2 mb-6">
                     @foreach($metricasProductividad['metricas_por_empleado'] as $index => $emp)
                     <button
-                        @click="currentEmpleado = {{ $index }}"
+                        @click="currentEmpleado = {{ $index }}; persistirEmpleado(); setTimeout(function() { if (typeof resizeChartsProductividadEmpleados === 'function') resizeChartsProductividadEmpleados(); }, 320)"
                         :class="currentEmpleado === {{ $index }} ? 'bg-blue-500 w-8' : 'bg-gray-300 dark:bg-gray-600 w-3'"
                         class="h-3 rounded-full transition-all duration-300 hover:bg-blue-400"
                         title="{{ $emp['nombre'] ?? 'Empleado ' . ($index + 1) }}">
@@ -679,6 +743,18 @@
                                     </p>
                                 </div>
                                 @endforeach
+                            </div>
+                        </div>
+
+                        <div class="group mt-8 rounded-xl border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white/80 to-gray-50/60 dark:from-[#111827]/40 dark:to-[#0B0F14]/50 p-4 shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:border-blue-200/80 dark:hover:border-blue-500/35 focus-within:ring-2 focus-within:ring-blue-500/15 dark:focus-within:ring-blue-400/20">
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <h5 class="text-sm font-semibold flex items-center gap-2 dark:text-white">
+                                    <i class="fas fa-chart-bar text-[#3B82F6]"></i> Total vs cerrados por mes
+                                </h5>
+                                <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                            </div>
+                            <div class="relative h-64 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/50 dark:bg-black/25 group-hover:bg-gray-50/80 dark:group-hover:bg-black/35">
+                                <canvas id="chartEmpleado{{ $empleado['empleado_id'] }}" role="img" aria-label="Gráfico de tickets por mes para {{ $empleado['nombre'] ?? 'empleado' }}"></canvas>
                             </div>
                         </div>
                     </div>
@@ -893,8 +969,214 @@
 <script>
     Chart.register(ChartDataLabels);
 
+    /** Índice del carrusel de empleados TI (persiste al recargar productividad por AJAX). */
+    function prodEmpleadoIdxInicial(total) {
+        var t = parseInt(total, 10);
+        if (!t || t < 1) {
+            return 0;
+        }
+        var idx = parseInt(sessionStorage.getItem('prodEmpleadoIdx') || '0', 10);
+        if (isNaN(idx)) {
+            idx = 0;
+        }
+        return Math.min(Math.max(0, idx), t - 1);
+    }
+
     function isDarkMode() {
         return document.documentElement.classList.contains('dark');
+    }
+
+    /** Colores y bordes por tema (solo presentación; los datos no cambian). */
+    function crearPaletaProductividad(esOscuro) {
+        if (esOscuro) {
+            return {
+                donaBorde: 'rgba(15,23,42,0.94)',
+                estado: ['#FB7185', '#FACC15', '#4ADE80'],
+                clasificacion: ['#FB7185', '#93C5FD'],
+                clasBorde: ['#FB7185', '#93C5FD'],
+                prioridad: ['#FB7185', '#FACC15', '#4ADE80'],
+                prioridadHover: ['#FDA4AF', '#FDE047', '#86EFAC'],
+                prioridadBorde: 'rgba(255,255,255,0.12)',
+                tipoBar: 'rgba(167,139,250,0.92)',
+                tipoHover: '#DDD6FE',
+                tipoBorde: '#A78BFA',
+                lineCreadosStroke: '#93C5FD',
+                lineCreadosFill: 'rgba(96,165,250,0.22)',
+                lineResStroke: '#6EE7B7',
+                lineResFill: 'rgba(52,211,153,0.22)',
+                puntoCreados: { fill: '#0f172a', stroke: '#93C5FD', hFill: '#F8FAFC', hStroke: '#60A5FA' },
+                puntoRes: { fill: '#0f172a', stroke: '#6EE7B7', hFill: '#F8FAFC', hStroke: '#34D399' },
+                comp: [
+                    { bg: 'rgba(59,130,246,0.9)', h: '#BFDBFE', b: '#60A5FA' },
+                    { bg: 'rgba(16,185,129,0.88)', h: '#A7F3D0', b: '#34D399' },
+                    { bg: 'rgba(245,158,11,0.85)', h: '#FDE68A', b: '#FBBF24' }
+                ],
+                matriz: ['#60A5FA', '#34D399', '#FBBF24', '#FB7185', '#C4B5FD', '#F472B6', '#22D3EE', '#BEF264', '#FB923C', '#A5B4FC'],
+                matrizH: ['#93C5FD', '#6EE7B7', '#FDE68A', '#FDA4AF', '#E9D5FF', '#FBCFE8', '#67E8F9', '#D9F99D', '#FDBA74', '#C7D2FE'],
+                empTot: { bg: 'rgba(59,130,246,0.88)', h: '#93C5FD', b: '#60A5FA' },
+                empCer: { bg: 'rgba(52,211,153,0.88)', h: '#6EE7B7', b: '#4ADE80' }
+            };
+        }
+        return {
+            donaBorde: '#ffffff',
+            estado: ['#DC2626', '#CA8A04', '#15803D'],
+            clasificacion: ['#EF4444', '#2563EB'],
+            clasBorde: ['#DC2626', '#1D4ED8'],
+            prioridad: ['#EF4444', '#D97706', '#16A34A'],
+            prioridadHover: ['#FB7185', '#F59E0B', '#4ADE80'],
+            prioridadBorde: '#ffffff',
+            tipoBar: '#7C3AED',
+            tipoHover: '#A78BFA',
+            tipoBorde: '#5B21B6',
+            lineCreadosStroke: '#2563EB',
+            lineCreadosFill: 'rgba(37,99,235,0.14)',
+            lineResStroke: '#059669',
+            lineResFill: 'rgba(5,150,105,0.14)',
+            puntoCreados: { fill: '#ffffff', stroke: '#2563EB', hFill: '#2563EB', hStroke: '#ffffff' },
+            puntoRes: { fill: '#ffffff', stroke: '#059669', hFill: '#059669', hStroke: '#ffffff' },
+            comp: [
+                { bg: '#3B82F6', h: '#60A5FA', b: '#1D4ED8' },
+                { bg: '#10B981', h: '#34D399', b: '#047857' },
+                { bg: '#F59E0B', h: '#FBBF24', b: '#B45309' }
+            ],
+            matriz: ['#2563EB', '#047857', '#B45309', '#B91C1C', '#6D28D9', '#BE185D', '#0E7490', '#4D7C0F', '#C2410C', '#4338CA'],
+            matrizH: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'],
+            empTot: { bg: 'rgba(59,130,246,0.82)', h: '#3B82F6', b: '#1D4ED8' },
+            empCer: { bg: 'rgba(22,163,74,0.82)', h: '#22C55E', b: '#15803D' }
+        };
+    }
+
+    function cursorSobreGrafica(event, elementos) {
+        const t = event.native && event.native.target;
+        if (t) {
+            t.style.cursor = elementos.length ? 'pointer' : 'default';
+        }
+    }
+
+    function cursorLeyendaPointer(evt) {
+        const t = evt.native && evt.native.target;
+        if (t) {
+            t.style.cursor = 'pointer';
+        } else if (evt.chart && evt.chart.canvas) {
+            evt.chart.canvas.style.cursor = 'pointer';
+        }
+    }
+
+    function cursorLeyendaDefault(evt) {
+        const t = evt.native && evt.native.target;
+        if (t) {
+            t.style.cursor = 'default';
+        } else if (evt.chart && evt.chart.canvas) {
+            evt.chart.canvas.style.cursor = 'default';
+        }
+    }
+
+    function tooltipEstiloBase(colores, extra) {
+        return Object.assign({
+            cornerRadius: 10,
+            titleMarginBottom: 6,
+            caretSize: 6,
+            bodySpacing: 5,
+            padding: 14,
+            backgroundColor: colores.tooltipBg,
+            titleColor: colores.tooltipTexto,
+            bodyColor: colores.tooltipTexto,
+            borderColor: colores.tooltipBorder,
+            borderWidth: 1
+        }, extra || {});
+    }
+
+    function formatearClaveFechaProductividad(fecha) {
+        const s = String(fecha == null ? '' : fecha).trim();
+        const mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if (mIso) {
+            return `${parseInt(mIso[3], 10)}/${parseInt(mIso[2], 10)}`;
+        }
+        const mDmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (mDmy) {
+            return `${parseInt(mDmy[1], 10)}/${parseInt(mDmy[2], 10)}`;
+        }
+        return s || '—';
+    }
+
+    function valorNumericoTooltipDona(ctx) {
+        const raw = ctx.raw;
+        if (typeof raw === 'number' && !isNaN(raw)) {
+            return raw;
+        }
+        if (ctx.parsed !== null && typeof ctx.parsed === 'object' && ctx.parsed !== undefined) {
+            if (typeof ctx.parsed.y === 'number') {
+                return ctx.parsed.y;
+            }
+        }
+        if (typeof ctx.parsed === 'number' && !isNaN(ctx.parsed)) {
+            return ctx.parsed;
+        }
+        return 0;
+    }
+
+    function datalabelsBarrasHorizontales(colores, dark) {
+        return {
+            display: function(ctx) {
+                const v = Number(ctx.dataset.data[ctx.dataIndex]);
+                return !isNaN(v) && v > 0;
+            },
+            color: dark ? '#F8FAFC' : '#0F172A',
+            textStrokeColor: dark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.9)',
+            textStrokeWidth: 2.5,
+            font: { weight: 'bold', size: 12 },
+            anchor: 'end',
+            align: 'end',
+            offset: 4,
+            clip: false,
+            formatter: function(value) {
+                const n = Number(value);
+                if (isNaN(n) || n <= 0) {
+                    return '';
+                }
+                return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
+            }
+        };
+    }
+
+    function datalabelsMatrizApilada() {
+        return {
+            display: function(ctx) {
+                const v = Number(ctx.dataset.data[ctx.dataIndex]);
+                return !isNaN(v) && v > 0;
+            },
+            anchor: 'center',
+            align: 'center',
+            color: '#F8FAFC',
+            textStrokeColor: 'rgba(0,0,0,0.55)',
+            textStrokeWidth: 2,
+            font: { weight: 'bold', size: 9 },
+            clip: false,
+            formatter: function(value) {
+                const n = Number(value);
+                return !isNaN(n) && n > 0 ? String(n) : '';
+            }
+        };
+    }
+
+    function datalabelsDona(sumaTotal, dark) {
+        return {
+            display: function(ctx) {
+                const v = Number(ctx.dataset.data[ctx.dataIndex]);
+                if (!sumaTotal || sumaTotal <= 0 || !v || isNaN(v)) {
+                    return false;
+                }
+                return v / sumaTotal >= 0.055;
+            },
+            color: dark ? '#F8FAFC' : '#0F172A',
+            textStrokeColor: dark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.92)',
+            textStrokeWidth: 2,
+            font: { weight: 'bold', size: 12 },
+            formatter: function(value) {
+                const n = Number(value);
+                return !isNaN(n) && n > 0 ? String(n) : '';
+            }
+        };
     }
 
     // Variables globales para almacenar las instancias de gráficas
@@ -914,6 +1196,77 @@
         }
     }
 
+    function destruirGraficasProductividad() {
+        function destruir(ch) {
+            if (ch && typeof ch.destroy === 'function') {
+                try {
+                    ch.destroy();
+                } catch (e) {}
+            }
+        }
+        destruir(chartEstado);
+        destruir(chartResueltos);
+        destruir(chartTendencias);
+        destruir(chartPrioridad);
+        destruir(chartClasificacion);
+        destruir(chartTipoTicket);
+        destruir(chartComparacionTiempos6Meses);
+        destruir(chartIncidenciasMatriz);
+        chartEstado = null;
+        chartResueltos = null;
+        chartTendencias = null;
+        chartPrioridad = null;
+        chartClasificacion = null;
+        chartTipoTicket = null;
+        chartComparacionTiempos6Meses = null;
+        chartIncidenciasMatriz = null;
+
+        var md = null;
+        try {
+            md = obtenerDatosFrescos();
+        } catch (e2) {
+            md = null;
+        }
+        if (md && md.metricas_por_empleado && md.metricas_por_empleado.length) {
+            md.metricas_por_empleado.forEach(function(emp) {
+                var k = 'chartEmpleado' + emp.empleado_id;
+                if (window[k] && typeof window[k].destroy === 'function') {
+                    try {
+                        window[k].destroy();
+                    } catch (e3) {}
+                }
+                window[k] = null;
+            });
+        }
+    }
+
+    function chartProductividadCanvasConectado(ch) {
+        return !!(ch && ch.canvas && ch.canvas.isConnected);
+    }
+
+    function necesitaReiniciarGraficasEmpleados() {
+        var md = obtenerDatosFrescos();
+        if (!md || !md.metricas_por_empleado || !md.metricas_por_empleado.length) {
+            return false;
+        }
+        for (var i = 0; i < md.metricas_por_empleado.length; i++) {
+            var emp = md.metricas_por_empleado[i];
+            var k = 'chartEmpleado' + emp.empleado_id;
+            var canvas = document.getElementById(k);
+            if (!canvas) {
+                continue;
+            }
+            if (!isElementVisible(canvas)) {
+                continue;
+            }
+            var ch = window[k];
+            if (!ch || !(ch instanceof Chart) || !chartProductividadCanvasConectado(ch)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     function inicializarGraficas() {
         // Verificar que los elementos existan
         if (!document.getElementById('chartEstado')) {
@@ -929,11 +1282,18 @@
         const colores = {
             texto: dark ? '#F3F4F6' : '#111827',
             textoSecundario: dark ? '#9CA3AF' : '#6B7280',
-            grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-            tooltipBg: dark ? 'rgba(15,17,21,0.95)' : '#FFFFFF',
+            grid: dark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.07)',
+            tooltipBg: dark ? 'rgba(15,23,42,0.97)' : '#FFFFFF',
             tooltipTexto: dark ? '#F3F4F6' : '#111827',
-            tooltipBorder: dark ? '#2A2F3A' : '#E5E7EB',
-            emptyDoughnut: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
+            tooltipBorder: dark ? '#334155' : '#E2E8F0',
+            emptyDoughnut: dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.06)'
+        };
+
+        const p = crearPaletaProductividad(dark);
+
+        const animacionGraficas = {
+            duration: 720,
+            easing: 'easeOutQuart'
         };
 
         // Destruir gráficas existentes si ya están creadas
@@ -988,37 +1348,42 @@
                 labels: sumaEstados > 0 ? Object.keys(distribucionEstado) : ['Sin tickets este mes'],
                 datasets: [{
                     data: sumaEstados > 0 ? valoresEstado : [1],
-                    backgroundColor: sumaEstados > 0 ? ['#F87171', '#FBBF24', '#4ADE80'] : [colores.emptyDoughnut],
-                    borderColor: colores.tooltipBorder,
-                    borderWidth: sumaEstados > 0 ? 2 : 0
+                    backgroundColor: sumaEstados > 0 ? p.estado : [colores.emptyDoughnut],
+                    borderColor: sumaEstados > 0 ? p.donaBorde : colores.tooltipBorder,
+                    borderWidth: sumaEstados > 0 ? (dark ? 3 : 2) : 0,
+                    hoverOffset: sumaEstados > 0 ? 16 : 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '65%',
+                animation: animacionGraficas,
+                cutout: '62%',
+                onHover: cursorSobreGrafica,
                 plugins: {
                     legend: {
                         position: 'bottom',
+                        onHover: cursorLeyendaPointer,
+                        onLeave: cursorLeyendaDefault,
                         labels: {
                             color: colores.textoSecundario,
-                            padding: 15
+                            padding: 14,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
                         }
                     },
-                    tooltip: {
+                    tooltip: tooltipEstiloBase(colores, {
                         enabled: sumaEstados > 0,
-                        backgroundColor: colores.tooltipBg,
-                        titleColor: colores.tooltipTexto,
-                        bodyColor: colores.tooltipTexto,
-                        borderColor: colores.tooltipBorder,
-                        borderWidth: 1,
-                        padding: 12,
+                        intersect: false,
+                        position: 'nearest',
                         callbacks: {
                             label(context) {
-                                return `${context.label}: ${context.parsed} tickets`;
+                                const n = valorNumericoTooltipDona(context);
+                                return `${context.label}: ${n} tickets`;
                             }
                         }
-                    }
+                    }),
+                    datalabels: datalabelsDona(sumaEstados, dark)
                 }
             }
         });
@@ -1028,13 +1393,10 @@
         // -----------------------------------------------------
         const ctxResueltos = document.getElementById('chartResueltosPorDia').getContext('2d');
         const fechas = Object.keys(resueltosPorDia);
-        const valoresResueltos = Object.values(resueltosPorDia);
-        const valoresCreados = Object.values(creadosPorDia);
+        const valoresResueltos = fechas.map(f => Number(resueltosPorDia[f]) || 0);
+        const valoresCreados = fechas.map(f => Number(creadosPorDia[f]) || 0);
 
-        const fechasFormateadas = fechas.map(fecha => {
-            const partes = fecha.split('-');
-            return parseInt(partes[2]) + '/' + parseInt(partes[1]);
-        });
+        const fechasFormateadas = fechas.map(formatearClaveFechaProductividad);
 
         chartResueltos = new Chart(ctxResueltos, {
             type: 'line',
@@ -1043,26 +1405,59 @@
                 datasets: [{
                         label: 'Tickets Creados',
                         data: valoresCreados,
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                        borderWidth: 2,
+                        borderColor: p.lineCreadosStroke,
+                        backgroundColor: p.lineCreadosFill,
+                        borderWidth: dark ? 2.5 : 2,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.35,
+                        pointRadius: dark ? 2.5 : 3,
+                        pointHoverRadius: 9,
+                        pointHitRadius: 18,
+                        pointBackgroundColor: p.puntoCreados.fill,
+                        pointBorderColor: p.puntoCreados.stroke,
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: p.puntoCreados.hFill,
+                        pointHoverBorderColor: p.puntoCreados.hStroke,
+                        pointHoverBorderWidth: 2
                     },
                     {
                         label: 'Tickets Resueltos',
                         data: valoresResueltos,
-                        borderColor: '#22C55E',
-                        backgroundColor: 'rgba(34, 197, 94, 0.15)',
-                        borderWidth: 2,
+                        borderColor: p.lineResStroke,
+                        backgroundColor: p.lineResFill,
+                        borderWidth: dark ? 2.5 : 2,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.35,
+                        pointRadius: dark ? 2.5 : 3,
+                        pointHoverRadius: 9,
+                        pointHitRadius: 18,
+                        pointBackgroundColor: p.puntoRes.fill,
+                        pointBorderColor: p.puntoRes.stroke,
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: p.puntoRes.hFill,
+                        pointHoverBorderColor: p.puntoRes.hStroke,
+                        pointHoverBorderWidth: 2
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: animacionGraficas,
+                onHover: cursorSobreGrafica,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                elements: {
+                    point: {
+                        hoverBorderWidth: 2
+                    },
+                    line: {
+                        borderWidth: 2,
+                        hoverBorderWidth: dark ? 4 : 3
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -1087,18 +1482,36 @@
                     legend: {
                         display: true,
                         position: 'top',
+                        onHover: cursorLeyendaPointer,
+                        onLeave: cursorLeyendaDefault,
                         labels: {
-                            color: colores.textoSecundario
+                            color: colores.textoSecundario,
+                            usePointStyle: true,
+                            padding: 16
                         }
                     },
-                    tooltip: {
-                        backgroundColor: colores.tooltipBg,
-                        titleColor: colores.tooltipTexto,
-                        bodyColor: colores.tooltipTexto,
-                        borderColor: colores.tooltipBorder,
-                        borderWidth: 1,
-                        padding: 12
-                    },
+                    tooltip: tooltipEstiloBase(colores, {
+                        intersect: false,
+                        position: 'nearest',
+                        callbacks: {
+                            title: function(items) {
+                                if (!items || !items.length) {
+                                    return '';
+                                }
+                                const i = items[0].dataIndex;
+                                if (i >= 0 && i < fechas.length && fechas[i]) {
+                                    return formatearClaveFechaProductividad(fechas[i]);
+                                }
+                                const lab = items[0].chart && items[0].chart.data.labels[i];
+                                return lab != null ? String(lab) : '';
+                            },
+                            label: function(ctx) {
+                                const v = ctx.parsed && typeof ctx.parsed.y === 'number' ? ctx.parsed.y : Number(ctx.raw);
+                                const n = isNaN(v) ? 0 : v;
+                                return (ctx.dataset.label || '') + ': ' + n + ' tickets';
+                            }
+                        }
+                    }),
                     datalabels: {
                         display: false
                     }
@@ -1120,15 +1533,25 @@
                 datasets: [{
                     label: 'Tickets',
                     data: hasPrioridad ? Object.values(ticketsPorPrioridad) : [0],
-                    backgroundColor: hasPrioridad ? ['#F87171', '#FBBF24', '#4ADE80'] : [colores.grid],
-                    borderColor: hasPrioridad ? ['#F87171', '#FBBF24', '#4ADE80'] : ['transparent'],
-                    borderWidth: 1
+                    backgroundColor: hasPrioridad ? p.prioridad : [colores.grid],
+                    hoverBackgroundColor: hasPrioridad ? p.prioridadHover : [colores.grid],
+                    borderColor: hasPrioridad ? p.prioridadBorde : ['transparent'],
+                    borderWidth: hasPrioridad ? (dark ? 1.5 : 1) : 0,
+                    borderRadius: 8,
+                    borderSkipped: false
                 }]
             },
             options: {
                 indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: animacionGraficas,
+                onHover: cursorSobreGrafica,
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'y',
+                    intersect: false
+                },
                 scales: {
                     x: {
                         beginAtZero: true,
@@ -1153,21 +1576,12 @@
                     legend: {
                         display: false
                     },
-                    tooltip: {
+                    tooltip: tooltipEstiloBase(colores, {
                         enabled: hasPrioridad,
-                        backgroundColor: colores.tooltipBg,
-                        titleColor: colores.tooltipTexto,
-                        bodyColor: colores.tooltipTexto,
-                        borderColor: colores.tooltipBorder,
-                        borderWidth: 1,
-                        padding: 12
-                    },
-                    datalabels: {
-                        color: colores.texto,
-                        anchor: 'end',
-                        align: 'end',
-                        font: { weight: 'bold', size: 11 }
-                    }
+                        intersect: false,
+                        position: 'nearest'
+                    }),
+                    datalabels: datalabelsBarrasHorizontales(colores, dark)
                 }
             }
         });
@@ -1186,45 +1600,49 @@
                     labels: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion) : ['Sin tickets este mes'],
                     datasets: [{
                         data: sumaClasificacion > 0 ? valoresClasificacion : [1],
-                        backgroundColor: sumaClasificacion > 0 ? ['#F87171', '#3B82F6'] : [colores.emptyDoughnut],
-                        borderColor: sumaClasificacion > 0 ? ['#F87171', '#3B82F6'] : [colores.tooltipBorder],
-                        borderWidth: sumaClasificacion > 0 ? 2 : 0
+                        backgroundColor: sumaClasificacion > 0 ? p.clasificacion : [colores.emptyDoughnut],
+                        borderColor: sumaClasificacion > 0 ? p.clasBorde : [colores.tooltipBorder],
+                        borderWidth: sumaClasificacion > 0 ? (dark ? 3 : 2) : 0,
+                        hoverOffset: sumaClasificacion > 0 ? 16 : 0
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '65%',
+                    animation: animacionGraficas,
+                    cutout: '62%',
+                    onHover: cursorSobreGrafica,
                     plugins: {
                         legend: {
                             position: 'bottom',
+                            onHover: cursorLeyendaPointer,
+                            onLeave: cursorLeyendaDefault,
                             labels: {
                                 color: colores.textoSecundario,
-                                padding: 15,
+                                padding: 14,
                                 font: {
                                     size: 12
-                                }
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
                             }
                         },
-                        tooltip: {
+                        tooltip: tooltipEstiloBase(colores, {
                             enabled: sumaClasificacion > 0,
-                            backgroundColor: colores.tooltipBg,
-                            titleColor: colores.tooltipTexto,
-                            bodyColor: colores.tooltipTexto,
-                            borderColor: colores.tooltipBorder,
-                            borderWidth: 1,
-                            padding: 12,
+                            intersect: false,
+                            position: 'nearest',
                             callbacks: {
                                 label: function(context) {
+                                    const n = valorNumericoTooltipDona(context);
                                     let label = context.label || '';
                                     if (label) {
                                         label += ': ';
                                     }
-                                    label += context.parsed + ' tickets';
-                                    return label;
+                                    return label + n + ' tickets';
                                 }
                             }
-                        }
+                        }),
+                        datalabels: datalabelsDona(sumaClasificacion, dark)
                     }
                 }
             });
@@ -1246,15 +1664,25 @@
                     datasets: [{
                         label: 'Tickets',
                         data: hasTipos ? tiposValores : [0],
-                        backgroundColor: '#8B5CF6',
-                        borderColor: '#8B5CF6',
-                        borderWidth: 1
+                        backgroundColor: p.tipoBar,
+                        hoverBackgroundColor: p.tipoHover,
+                        borderColor: p.tipoBorde,
+                        borderWidth: dark ? 1.5 : 1,
+                        borderRadius: 8,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: animacionGraficas,
+                    onHover: cursorSobreGrafica,
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'y',
+                        intersect: false
+                    },
                     scales: {
                         x: {
                             beginAtZero: true,
@@ -1282,21 +1710,12 @@
                         legend: {
                             display: false
                         },
-                        tooltip: {
+                        tooltip: tooltipEstiloBase(colores, {
                             enabled: hasTipos,
-                            backgroundColor: colores.tooltipBg,
-                            titleColor: colores.tooltipTexto,
-                            bodyColor: colores.tooltipTexto,
-                            borderColor: colores.tooltipBorder,
-                            borderWidth: 1,
-                            padding: 12
-                        },
-                        datalabels: {
-                            color: colores.texto,
-                            anchor: 'end',
-                            align: 'end',
-                            font: { weight: 'bold', size: 11 }
-                        }
+                            intersect: false,
+                            position: 'nearest'
+                        }),
+                        datalabels: datalabelsBarrasHorizontales(colores, dark)
                     }
                 }
             });
@@ -1320,38 +1739,46 @@
                     datasets: [{
                             label: 'Tiempo de Respuesta',
                             data: hayDatos ? tiemposRespuesta : [0],
-                            backgroundColor: '#3B82F6',
-                            borderColor: '#2563EB',
+                            backgroundColor: p.comp[0].bg,
+                            hoverBackgroundColor: p.comp[0].h,
+                            borderColor: p.comp[0].b,
                             borderWidth: 2,
-                            borderRadius: 6,
+                            borderRadius: 8,
+                            borderSkipped: false,
                             barThickness: 'flex',
-                            maxBarThickness: 60
+                            maxBarThickness: 56
                         },
                         {
                             label: 'Tiempo de Resolución',
                             data: hayDatos ? tiemposResolucion : [0],
-                            backgroundColor: '#10B981',
-                            borderColor: '#059669',
+                            backgroundColor: p.comp[1].bg,
+                            hoverBackgroundColor: p.comp[1].h,
+                            borderColor: p.comp[1].b,
                             borderWidth: 2,
-                            borderRadius: 6,
+                            borderRadius: 8,
+                            borderSkipped: false,
                             barThickness: 'flex',
-                            maxBarThickness: 60
+                            maxBarThickness: 56
                         },
                         {
                             label: 'Tiempo Total',
                             data: hayDatos ? tiemposTotal : [0],
-                            backgroundColor: '#F59E0B',
-                            borderColor: '#D97706',
+                            backgroundColor: p.comp[2].bg,
+                            hoverBackgroundColor: p.comp[2].h,
+                            borderColor: p.comp[2].b,
                             borderWidth: 2,
-                            borderRadius: 6,
+                            borderRadius: 8,
+                            borderSkipped: false,
                             barThickness: 'flex',
-                            maxBarThickness: 60
+                            maxBarThickness: 56
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: animacionGraficas,
+                    onHover: cursorSobreGrafica,
                     interaction: {
                         mode: 'index',
                         intersect: false
@@ -1391,6 +1818,8 @@
                             display: true,
                             position: 'top',
                             align: 'center',
+                            onHover: cursorLeyendaPointer,
+                            onLeave: cursorLeyendaDefault,
                             labels: {
                                 color: colores.texto,
                                 padding: 20,
@@ -1404,18 +1833,14 @@
                                 boxHeight: 12
                             }
                         },
-                        tooltip: {
+                        tooltip: tooltipEstiloBase(colores, {
                             enabled: hayDatos,
-                            backgroundColor: colores.tooltipBg,
-                            titleColor: colores.tooltipTexto,
-                            bodyColor: colores.tooltipTexto,
-                            borderColor: colores.tooltipBorder,
-                            borderWidth: 1,
-                            padding: 14,
                             displayColors: true,
                             boxWidth: 10,
                             boxHeight: 10,
                             boxPadding: 5,
+                            intersect: false,
+                            position: 'nearest',
                             titleFont: {
                                 size: 13,
                                 weight: 'bold'
@@ -1425,25 +1850,38 @@
                             },
                             callbacks: {
                                 label: function(context) {
-                                    return ' ' + context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' hrs';
+                                    const y = context.parsed && typeof context.parsed.y === 'number' ? context.parsed.y : Number(context.raw);
+                                    const n = isNaN(y) ? 0 : y;
+                                    return ' ' + context.dataset.label + ': ' + n.toFixed(2) + ' hrs';
                                 }
                             }
-                        },
+                        }),
                         datalabels: {
-                            display: hayDatos,
-                            color: function(context) {
-                                return colores.texto;
+                            display: function(ctx) {
+                                if (!hayDatos) {
+                                    return false;
+                                }
+                                const v = Number(ctx.dataset.data[ctx.dataIndex]);
+                                return !isNaN(v) && v > 0;
                             },
+                            color: dark ? '#F8FAFC' : '#0F172A',
+                            textStrokeColor: dark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.95)',
+                            textStrokeWidth: 2,
                             font: {
                                 weight: 'bold',
-                                size: 11
+                                size: 10
                             },
                             formatter: function(value) {
-                                return value.toFixed(2) + ' h';
+                                const n = Number(value);
+                                if (isNaN(n) || n <= 0) {
+                                    return '';
+                                }
+                                return n.toFixed(1) + ' h';
                             },
                             anchor: 'end',
                             align: 'top',
-                            offset: 8
+                            offset: 6,
+                            clip: false
                         }
                     }
                 }
@@ -1464,11 +1902,6 @@
             
             // Crear un dataset por responsable
             const responsablesArray = Object.keys(responsablesList);
-            const coloresResponsables = [
-                '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
-                '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-            ];
-            
             // Primero, crear los labels (tipos → subtipos) y preparar datos
             Object.keys(matrizData).forEach((tipo, tipoIdx) => {
                 const tipoData = matrizData[tipo];
@@ -1494,9 +1927,12 @@
                 datasets.push({
                     label: responsableNombre,
                     data: data,
-                    backgroundColor: coloresResponsables[idx % coloresResponsables.length],
-                    borderColor: coloresResponsables[idx % coloresResponsables.length],
-                    borderWidth: 1
+                    backgroundColor: p.matriz[idx % p.matriz.length],
+                    hoverBackgroundColor: p.matrizH[idx % p.matrizH.length],
+                    borderColor: dark ? 'rgba(15,23,42,0.4)' : 'rgba(15,23,42,0.1)',
+                    borderWidth: dark ? 1.5 : 1,
+                    borderRadius: 4,
+                    borderSkipped: false
                 });
             });
             
@@ -1509,13 +1945,19 @@
                     datasets: hayDatos ? datasets : [{
                         label: 'Sin datos',
                         data: [0],
-                        backgroundColor: '#E5E7EB'
+                        backgroundColor: dark ? '#334155' : '#E5E7EB'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: animacionGraficas,
                     indexAxis: 'y',
+                    onHover: cursorSobreGrafica,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     scales: {
                         x: {
                             stacked: true,
@@ -1546,6 +1988,8 @@
                         legend: {
                             display: true,
                             position: 'bottom',
+                            onHover: cursorLeyendaPointer,
+                            onLeave: cursorLeyendaDefault,
                             labels: {
                                 color: colores.texto,
                                 padding: 15,
@@ -1556,25 +2000,35 @@
                                 boxHeight: 15
                             }
                         },
-                        tooltip: {
+                        tooltip: tooltipEstiloBase(colores, {
                             enabled: hayDatos,
-                            backgroundColor: colores.tooltipBg,
-                            titleColor: colores.tooltipTexto,
-                            bodyColor: colores.tooltipTexto,
-                            borderColor: colores.tooltipBorder,
-                            borderWidth: 1,
-                            padding: 12,
-                            titleFont: { size: 13, weight: 'bold' },
+                            intersect: false,
+                            position: 'nearest',
+                            titleFont: { size: 12, weight: 'bold' },
                             bodyFont: { size: 12 },
                             callbacks: {
+                                title: function(items) {
+                                    if (!items || !items.length) {
+                                        return '';
+                                    }
+                                    const i = items[0].dataIndex;
+                                    return labels[i] != null ? String(labels[i]) : '';
+                                },
                                 label: function(context) {
-                                    return context.dataset.label + ': ' + context.parsed.x + ' tickets';
+                                    const px = context.parsed && typeof context.parsed.x === 'number' ? context.parsed.x : Number(context.raw);
+                                    const n = isNaN(px) ? 0 : px;
+                                    if (n <= 0) {
+                                        return null;
+                                    }
+                                    return context.dataset.label + ': ' + n + ' tickets';
                                 }
+                            },
+                            filter: function(tooltipItem) {
+                                const px = tooltipItem.parsed && typeof tooltipItem.parsed.x === 'number' ? tooltipItem.parsed.x : Number(tooltipItem.raw);
+                                return !isNaN(px) && px > 0;
                             }
-                        },
-                        datalabels: {
-                            display: false
-                        }
+                        }),
+                        datalabels: datalabelsMatrizApilada()
                     }
                 }
             });
@@ -1596,7 +2050,7 @@
         let inicializado = false;
 
         if (canvasEstado && isElementVisible(canvasEstado)) {
-            if (!chartEstado) {
+            if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
                 inicializarGraficas();
                 inicializado = true;
             }
@@ -1604,8 +2058,10 @@
 
         const canvasEmpleado = document.querySelector('[id^="chartEmpleado"]');
         if (canvasEmpleado && isElementVisible(canvasEmpleado)) {
-            inicializarGraficasEmpleados();
-            inicializado = true;
+            if (necesitaReiniciarGraficasEmpleados()) {
+                inicializarGraficasEmpleados();
+                inicializado = true;
+            }
         }
 
         return inicializado;
@@ -1626,17 +2082,25 @@
         setTimeout(inicializarCuandoVisible, 100);
     });
 
-    // Observar cuando el tab cambie usando MutationObserver
+    // Observar cuando el tab cambie (debounce: evita destruir Chart.js al mover el tooltip o al reconciliar Alpine)
+    let prodTabMutDebounce = null;
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.querySelector('[x-data*="tab"]');
         if (container) {
             const observer = new MutationObserver(function() {
-                setTimeout(function() {
-                    if (!chartEstado) {
+                clearTimeout(prodTabMutDebounce);
+                prodTabMutDebounce = setTimeout(function() {
+                    const canvasEstado = document.getElementById('chartEstado');
+                    if (!canvasEstado || !isElementVisible(canvasEstado)) {
+                        return;
+                    }
+                    if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
                         inicializarGraficas();
                     }
-                    inicializarGraficasEmpleados();
-                }, 200);
+                    if (necesitaReiniciarGraficasEmpleados()) {
+                        inicializarGraficasEmpleados();
+                    }
+                }, 450);
             });
 
             observer.observe(container, {
@@ -1647,6 +2111,7 @@
             });
         }
 
+        let prodVisMutDebounce = null;
         const productividadDiv = document.querySelector('[x-show*="tab === 2"]');
         if (productividadDiv) {
             const productividadObserver = new MutationObserver(function(mutations) {
@@ -1654,12 +2119,19 @@
                     if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                         const style = window.getComputedStyle(productividadDiv);
                         if (style.display !== 'none' && !productividadDiv.hasAttribute('x-cloak')) {
-                            setTimeout(function() {
-                                if (!chartEstado) {
+                            clearTimeout(prodVisMutDebounce);
+                            prodVisMutDebounce = setTimeout(function() {
+                                const canvasEstado = document.getElementById('chartEstado');
+                                if (!canvasEstado || !isElementVisible(canvasEstado)) {
+                                    return;
+                                }
+                                if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
                                     inicializarGraficas();
                                 }
-                                inicializarGraficasEmpleados();
-                            }, 300);
+                                if (necesitaReiniciarGraficasEmpleados()) {
+                                    inicializarGraficasEmpleados();
+                                }
+                            }, 450);
                         }
                     }
                 });
@@ -1687,10 +2159,12 @@
             if (productividadVisible) {
                 const style = window.getComputedStyle(productividadVisible);
                 if (style.display !== 'none' && !productividadVisible.hasAttribute('x-cloak')) {
-                    if (!chartEstado) {
+                    if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
                         inicializarGraficas();
                     }
-                    inicializarGraficasEmpleados();
+                    if (necesitaReiniciarGraficasEmpleados()) {
+                        inicializarGraficasEmpleados();
+                    }
                     clearInterval(intervaloGraficas);
                 }
             }
@@ -1770,13 +2244,14 @@
                 const cerrados = meses.map(mes => empleado.tickets_por_mes[mes].cerrados);
 
                 const dark = isDarkMode();
+                const pEmp = crearPaletaProductividad(dark);
                 const coloresEmpleado = {
                     texto: dark ? '#F3F4F6' : '#111827',
                     textoSecundario: dark ? '#9CA3AF' : '#6B7280',
-                    grid: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    tooltipBg: dark ? 'rgba(15,17,21,0.95)' : '#FFFFFF',
+                    grid: dark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.07)',
+                    tooltipBg: dark ? 'rgba(15,23,42,0.97)' : '#FFFFFF',
                     tooltipTexto: dark ? '#F3F4F6' : '#111827',
-                    tooltipBorder: dark ? '#2A2F3A' : '#E5E7EB'
+                    tooltipBorder: dark ? '#334155' : '#E2E8F0'
                 };
 
                 try {
@@ -1784,27 +2259,40 @@
                         type: 'bar',
                         data: {
                             labels: mesesEspanolLabels,
-                            datasets: [{
+                            datasets: [                                {
                                     label: 'Total de Tickets',
                                     data: totales,
-                                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                                    borderColor: '#3B82F6',
+                                    backgroundColor: pEmp.empTot.bg,
+                                    hoverBackgroundColor: pEmp.empTot.h,
+                                    borderColor: pEmp.empTot.b,
                                     borderWidth: 2,
-                                    borderRadius: 4
+                                    borderRadius: 8,
+                                    borderSkipped: false
                                 },
                                 {
                                     label: 'Tickets Cerrados',
                                     data: cerrados,
-                                    backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                                    borderColor: '#22C55E',
+                                    backgroundColor: pEmp.empCer.bg,
+                                    hoverBackgroundColor: pEmp.empCer.h,
+                                    borderColor: pEmp.empCer.b,
                                     borderWidth: 2,
-                                    borderRadius: 4
+                                    borderRadius: 8,
+                                    borderSkipped: false
                                 }
                             ]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            animation: {
+                                duration: 700,
+                                easing: 'easeOutQuart'
+                            },
+                            onHover: cursorSobreGrafica,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
                             scales: {
                                 y: {
                                     beginAtZero: true,
@@ -1830,6 +2318,8 @@
                                 legend: {
                                     display: true,
                                     position: 'top',
+                                    onHover: cursorLeyendaPointer,
+                                    onLeave: cursorLeyendaDefault,
                                     labels: {
                                         usePointStyle: true,
                                         padding: 15,
@@ -1839,13 +2329,8 @@
                                         }
                                     }
                                 },
-                                tooltip: {
-                                    backgroundColor: coloresEmpleado.tooltipBg,
-                                    titleColor: coloresEmpleado.tooltipTexto,
-                                    bodyColor: coloresEmpleado.tooltipTexto,
-                                    borderColor: coloresEmpleado.tooltipBorder,
-                                    borderWidth: 1,
-                                    padding: 12,
+                                tooltip: tooltipEstiloBase(coloresEmpleado, {
+                                    intersect: false,
                                     titleFont: {
                                         size: 14
                                     },
@@ -1862,7 +2347,7 @@
                                             return label;
                                         }
                                     }
-                                },
+                                }),
                                 datalabels: {
                                     color: coloresEmpleado.texto,
                                     anchor: 'end',
@@ -1877,9 +2362,28 @@
                     window[chartKey] = null;
                 }
             });
+            setTimeout(function() {
+                if (typeof resizeChartsProductividadEmpleados === 'function') {
+                    resizeChartsProductividadEmpleados();
+                }
+            }, 400);
         } catch (error) {
             console.error('Error en inicializarGraficasEmpleados:', error);
         }
+    }
+
+    function resizeChartsProductividadEmpleados() {
+        const metricasData = obtenerDatosFrescos();
+        if (!metricasData || !metricasData.metricas_por_empleado) {
+            return;
+        }
+        metricasData.metricas_por_empleado.forEach(function(empleado) {
+            const chartKey = 'chartEmpleado' + empleado.empleado_id;
+            const ch = window[chartKey];
+            if (ch && typeof ch.resize === 'function') {
+                ch.resize();
+            }
+        });
     }
 
     // Función para forzar reinicialización de gráficas de empleados
@@ -1912,19 +2416,31 @@
         }
     });
 
-    // También intentar cuando Alpine actualice el DOM
+    // Alpine actualiza el DOM con mucha frecuencia: no recrear Chart.js cada vez (rompe tooltips y parece que “vuelve al primero”).
     if (window.Alpine) {
+        let alpineProdChartsDebounce = null;
         document.addEventListener('alpine:updated', function() {
-            setTimeout(function() {
+            clearTimeout(alpineProdChartsDebounce);
+            alpineProdChartsDebounce = setTimeout(function() {
                 const productividadVisible = document.querySelector('[x-show*="tab === 2"]');
-                if (productividadVisible) {
-                    const style = window.getComputedStyle(productividadVisible);
-                    if (style.display !== 'none') {
-                        inicializarGraficas();
-                        inicializarGraficasEmpleados();
-                    }
+                if (!productividadVisible) {
+                    return;
                 }
-            }, 200);
+                const style = window.getComputedStyle(productividadVisible);
+                if (style.display === 'none') {
+                    return;
+                }
+                const canvasEstado = document.getElementById('chartEstado');
+                if (!canvasEstado || !isElementVisible(canvasEstado)) {
+                    return;
+                }
+                if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
+                    inicializarGraficas();
+                }
+                if (necesitaReiniciarGraficasEmpleados()) {
+                    inicializarGraficasEmpleados();
+                }
+            }, 450);
         });
     }
 
@@ -1932,16 +2448,12 @@
     const observerDarkMode = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                const htmlElement = document.documentElement;
-                const isDark = htmlElement.classList.contains('dark');
-                
                 // Solo reinicializar si las gráficas están visibles
                 setTimeout(function() {
                     const productividadContainer = document.getElementById('productividad-container');
                     if (productividadContainer) {
                         const style = window.getComputedStyle(productividadContainer);
                         if (style.display !== 'none') {
-                            console.log('Dark mode cambió a:', isDark ? 'dark' : 'light', '- Reinicializando gráficas...');
                             inicializarGraficas();
                             inicializarGraficasEmpleados();
                         }
