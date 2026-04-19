@@ -123,10 +123,14 @@ class TicketsController extends Controller
             fn($t) => $t->Estatus === 'En progreso' && $t->FechaInicioProgreso
         );
 
+        $ticketsConRespuesta = $ticketsDelMes->filter(
+            fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null && ($t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado')
+        );
+
         $tiempoPromedioRespuesta = 0;
-        if ($ticketsEnProgresoMes->count() > 0) {
+        if ($ticketsConRespuesta->count() > 0) {
             $tiempoPromedioRespuesta = round(
-                $ticketsEnProgresoMes->sum(fn($t) => $t->tiempo_respuesta ?? 0) / $ticketsEnProgresoMes->count(),
+                $ticketsConRespuesta->sum(fn($t) => $t->tiempo_respuesta ?? 0) / $ticketsConRespuesta->count(),
                 1
             );
         }
@@ -191,25 +195,6 @@ class TicketsController extends Controller
             }
         }
 
-        $ticketsUltimos30Dias = $ticketsDelMes;
-
-        $tendenciasSemanales = [];
-        for ($i = 7; $i >= 0; $i--) {
-            $semanaInicio = now()->subWeeks($i)->startOfWeek();
-            $semanaFin    = now()->subWeeks($i)->endOfWeek();
-            $semanaLabel  = $semanaInicio->format('d/m') . ' - ' . $semanaFin->format('d/m');
-
-            $tendenciasSemanales[$semanaLabel] = [
-                'creados'   => $tickets->filter(
-                    fn($t) => \Carbon\Carbon::parse($t->created_at)->between($semanaInicio, $semanaFin)
-                )->count(),
-                'resueltos' => $tickets->filter(function ($t) use ($semanaInicio, $semanaFin) {
-                    if ($t->Estatus !== 'Cerrado' || empty($t->FechaFinProgreso)) return false;
-                    return \Carbon\Carbon::parse($t->FechaFinProgreso)->between($semanaInicio, $semanaFin);
-                })->count(),
-            ];
-        }
-
         // Tickets por Tipo (Top 12 del mes)
         $ticketsPorTipo = $ticketsDelMes
             ->filter(fn($t) => $t->tipoticket && $t->tipoticket->NombreTipo)
@@ -222,15 +207,17 @@ class TicketsController extends Controller
         $ticketsPorGerenciaSolicitante = [];
         foreach ($ticketsDelMes as $ticket) {
             $gerenciaNombre = 'Sin gerencia';
-            
+
             // Intentar obtener gerencia desde empleado
             if ($ticket->empleado) {
                 // Opción 1: Via puestos -> departamentos -> gerencia
-                if ($ticket->empleado->puestos && 
-                    $ticket->empleado->puestos->departamentos && 
-                    $ticket->empleado->puestos->departamentos->gerencia) {
+                if (
+                    $ticket->empleado->puestos &&
+                    $ticket->empleado->puestos->departamentos &&
+                    $ticket->empleado->puestos->departamentos->gerencia
+                ) {
                     $gerenciaNombre = $ticket->empleado->puestos->departamentos->gerencia->NombreGerencia ?? 'Sin gerencia';
-                } 
+                }
                 // Opción 2: Relación directa con gerencia
                 elseif ($ticket->empleado->gerencia) {
                     $gerenciaNombre = $ticket->empleado->gerencia->NombreGerencia ?? 'Sin gerencia';
@@ -246,7 +233,7 @@ class TicketsController extends Controller
             }
 
             $ticketsPorGerenciaSolicitante[$gerenciaNombre]['total']++;
-            
+
             // Contar por tertipo
             $tertipoNombre = $ticket->tertipo ? $ticket->tertipo->NombreTertipo : 'Sin clasificar';
             if (!isset($ticketsPorGerenciaSolicitante[$gerenciaNombre]['tertipos'][$tertipoNombre])) {
@@ -268,10 +255,10 @@ class TicketsController extends Controller
         $ticketsPorResponsableTI = [];
         foreach ($ticketsDelMes as $ticket) {
             if (!$ticket->responsableTI) continue;
-            
+
             $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin asignar';
             $responsableID = $ticket->ResponsableTI;
-            
+
             if (!isset($ticketsPorResponsableTI[$responsableID])) {
                 $ticketsPorResponsableTI[$responsableID] = [
                     'responsable' => $responsableNombre,
@@ -281,7 +268,7 @@ class TicketsController extends Controller
             }
 
             $ticketsPorResponsableTI[$responsableID]['total']++;
-            
+
             // Contar por tertipo
             $tertipoNombre = $ticket->tertipo ? $ticket->tertipo->NombreTertipo : 'Sin clasificar';
             if (!isset($ticketsPorResponsableTI[$responsableID]['tertipos'][$tertipoNombre])) {
@@ -299,24 +286,22 @@ class TicketsController extends Controller
         // Ordenar por total descendente
         uasort($ticketsPorResponsableTI, fn($a, $b) => $b['total'] <=> $a['total']);
 
-        // **NUEVA: Matriz jerárquica Tipo → Subtipo vs Responsable TI**
+        // Matriz jerárquica Tipo → Subtipo vs Responsable TI
         $matrizIncidenciasPorResponsable = [];
         $responsablesTIList = [];
-        
+
         foreach ($ticketsDelMes as $ticket) {
             if (!$ticket->responsableTI) continue;
-            
+
             $tipoNombre = $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'Sin clasificar';
             $subtipoNombre = $ticket->subtipo ? $ticket->subtipo->NombreSubtipo : 'Sin subtipo';
             $responsableNombre = $ticket->responsableTI->NombreEmpleado ?? 'Sin asignar';
             $responsableID = $ticket->ResponsableTI;
-            
-            // Registrar responsable único
+
             if (!isset($responsablesTIList[$responsableID])) {
                 $responsablesTIList[$responsableID] = $responsableNombre;
             }
-            
-            // Crear estructura jerárquica: tipo → subtipos → responsables
+
             if (!isset($matrizIncidenciasPorResponsable[$tipoNombre])) {
                 $matrizIncidenciasPorResponsable[$tipoNombre] = [
                     'total' => 0,
@@ -324,40 +309,34 @@ class TicketsController extends Controller
                     'subtipos' => []
                 ];
             }
-            
-            // Incrementar total del tipo
+
             $matrizIncidenciasPorResponsable[$tipoNombre]['total']++;
-            
-            // Agregar al subtipo
+
             if (!isset($matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre])) {
                 $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre] = [
                     'total' => 0,
                     'responsables' => []
                 ];
             }
-            
+
             $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['total']++;
-            
-            // Contar por responsable en el tipo
+
             if (!isset($matrizIncidenciasPorResponsable[$tipoNombre]['responsables'][$responsableID])) {
                 $matrizIncidenciasPorResponsable[$tipoNombre]['responsables'][$responsableID] = 0;
             }
             $matrizIncidenciasPorResponsable[$tipoNombre]['responsables'][$responsableID]++;
-            
-            // Contar por responsable en el subtipo
+
             if (!isset($matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['responsables'][$responsableID])) {
                 $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['responsables'][$responsableID] = 0;
             }
             $matrizIncidenciasPorResponsable[$tipoNombre]['subtipos'][$subtipoNombre]['responsables'][$responsableID]++;
         }
-        
-        // Completar con ceros donde faltan responsables
+
         foreach ($matrizIncidenciasPorResponsable as &$tipoData) {
             foreach ($responsablesTIList as $respoID => $respoNombre) {
                 if (!isset($tipoData['responsables'][$respoID])) {
                     $tipoData['responsables'][$respoID] = 0;
                 }
-                
                 foreach ($tipoData['subtipos'] as &$subtipoData) {
                     if (!isset($subtipoData['responsables'][$respoID])) {
                         $subtipoData['responsables'][$respoID] = 0;
@@ -365,8 +344,7 @@ class TicketsController extends Controller
                 }
             }
         }
-        
-        // Calcular totales por responsable (para columnas)
+
         $totalesPorResponsable = [];
         foreach ($responsablesTIList as $respoID => $respoNombre) {
             $totalesPorResponsable[$respoID] = 0;
@@ -375,107 +353,14 @@ class TicketsController extends Controller
             }
         }
 
-        // Backlog acumulado día a día del período activo
-        $backlogAcumulado = [];
-        $diaIterBk = $fechaInicioMes->copy();
-        while ($diaIterBk->lte($fechaFinMes)) {
-            $fecha       = $diaIterBk->format('Y-m-d');
-            $diaIterCopy = $diaIterBk->copy();
-
-            $creadosHastaAqui = $ticketsDelMes->filter(function ($t) use ($diaIterCopy) {
-                return \Carbon\Carbon::parse($t->created_at)->lte($diaIterCopy);
-            })->count();
-
-            $cerradosHastaAqui = $ticketsDelMes->filter(function ($t) use ($diaIterCopy) {
-                if ($t->Estatus !== 'Cerrado' || !$t->FechaFinProgreso) return false;
-                return \Carbon\Carbon::parse($t->FechaFinProgreso)->lte($diaIterCopy);
-            })->count();
-
-            $backlogAcumulado[$fecha] = $creadosHastaAqui - $cerradosHastaAqui;
-            $diaIterBk->addDay();
-        }
-
-        // Carga actual por responsable TI considerando solo tickets abiertos (Pendiente o En progreso)
-        $cargaActualPorResponsable = $ticketsDelMes->filter(function($t) {
-            return $t->ResponsableTI !== null && ($t->Estatus === 'Pendiente' || $t->Estatus === 'En progreso');
-        })->groupBy('ResponsableTI')->map(function($grupo) {
-            $responsable = $grupo->first()->responsableTI;
-            return [
-                'nombre' => $responsable ? $responsable->NombreEmpleado : 'Sin asignar',
-                'pendientes' => $grupo->where('Estatus', 'Pendiente')->count(),
-                'en_progreso' => $grupo->where('Estatus', 'En progreso')->count(),
-                'total_abiertos' => $grupo->count(),
-            ];
-        })->sortByDesc('total_abiertos')->take(10);
-
-        // SLA de respuesta: porcentaje de tickets que recibieron respuesta en menos de 4 horas desde su creación
-        $ticketsConRespuesta = $ticketsDelMes->filter(fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null);
-        $slaRespuesta = [
-            'cumplido' => $ticketsConRespuesta->filter(fn($t) => ($t->tiempo_respuesta ?? 0) <= 4)->count(),
-            'incumplido' => $ticketsConRespuesta->filter(fn($t) => ($t->tiempo_respuesta ?? 0) > 4)->count(),
-        ];
-
-        // SLA de resolución: porcentaje de tickets cerrados que se resolvieron dentro del objetivo (24 horas para servicios, 48 horas para problemas)
-        $ticketsCerradosConTiempo = $ticketsDelMes->filter(fn($t) => 
-            $t->Estatus === 'Cerrado' && 
-            $t->FechaInicioProgreso && 
-            $t->FechaFinProgreso && 
-            $t->tiempo_resolucion !== null
-        );
-        
-        // Definir objetivos de resolución según clasificación y calcular cumplimiento
-        $slaResolucion = [
-            'cumplido' => $ticketsCerradosConTiempo->filter(function($t) {
-                $objetivo = $t->Clasificacion === 'Servicio' ? 24 : 48;
-                return ($t->tiempo_resolucion ?? 999) <= $objetivo;
-            })->count(),
-            'incumplido' => $ticketsCerradosConTiempo->filter(function($t) {
-                $objetivo = $t->Clasificacion === 'Servicio' ? 24 : 48;
-                return ($t->tiempo_resolucion ?? 999) > $objetivo;
-            })->count(),
-        ];
-
-        // Edad del backlog: distribución de tickets abiertos por rango de días desde su creación
-        $ticketsAbiertos = $ticketsDelMes->filter(fn($t) => $t->Estatus === 'Pendiente' || $t->Estatus === 'En progreso');
-        $edadBacklog = [
-            '0-1_dia' => 0,
-            '1-3_dias' => 0,
-            '3-7_dias' => 0,
-            'mas_7_dias' => 0,
-        ];
-        
-        // Calcular edad de cada ticket abierto y acumular para promedio y distribución
-        $sumaEdad = 0;
-        $now = now();
-        foreach ($ticketsAbiertos as $ticket) {
-            $diasAbierto = \Carbon\Carbon::parse($ticket->created_at)->diffInDays($now);
-            $sumaEdad += $diasAbierto;
-            
-            if ($diasAbierto <= 1) $edadBacklog['0-1_dia']++;
-            elseif ($diasAbierto <= 3) $edadBacklog['1-3_dias']++;
-            elseif ($diasAbierto <= 7) $edadBacklog['3-7_dias']++;
-            else $edadBacklog['mas_7_dias']++;
-        }
-        
-        $edadPromedioBacklog = $ticketsAbiertos->count() > 0 
-            ? round($sumaEdad / $ticketsAbiertos->count(), 1) 
-            : 0;
-
-        $prioridadAbiertos = [
-            'Alta' => $ticketsAbiertos->where('Prioridad', 'Alta')->count(),
-            'Media' => $ticketsAbiertos->where('Prioridad', 'Media')->count(),
-            'Baja' => $ticketsAbiertos->where('Prioridad', 'Baja')->count(),
-        ];
-
         // Comparación de tiempos: rango → mes a mes del rango; único → mes seleccionado + 5 anteriores
-        // Usa $tickets (colección completa) para no limitar el cálculo al período filtrado
         $calcularComparacionMes = function ($ticketsAll, $inicioMesComp, $finMesComp) {
             $ticketsMesComp = $ticketsAll->filter(
                 fn($t) => \Carbon\Carbon::parse($t->created_at)->between($inicioMesComp, $finMesComp)
             );
             // Filtrar tickets EN PROGRESO para tiempo de respuesta (igual que KPI)
             $ticketsEnProgresoComp = $ticketsMesComp->filter(
-                fn($t) => $t->Estatus === 'En progreso' && $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
+                fn($t) => ($t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado') && $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
             );
             $tiempoPromedioRespuestaComp = $ticketsEnProgresoComp->count() > 0
                 ? round($ticketsEnProgresoComp->avg(fn($t) => $t->tiempo_respuesta ?? 0), 1)
@@ -532,22 +417,12 @@ class TicketsController extends Controller
             'tickets_por_responsable'            => $ticketsPorResponsable,
             'tickets_por_prioridad'              => $ticketsPorPrioridad,
             'tickets_por_clasificacion'          => $ticketsPorClasificacion,
-            'tickets_ultimos_30_dias'            => $ticketsUltimos30Dias->count(),
             'resueltos_por_dia'                  => $resueltosPorDia,
             'creados_por_dia'                    => $creadosPorDia,
             'tickets_por_tipo'                   => $ticketsPorTipo,
             'tickets_por_gerencia_solicitante'   => $ticketsPorGerenciaSolicitante,
             'tickets_por_responsable_ti'         => $ticketsPorResponsableTI,
-            'tendencias_semanales'               => $tendenciasSemanales,
             'metricas_por_empleado'              => $metricasPorEmpleado,
-            
-            'backlog_acumulado'                  => $backlogAcumulado,
-            'carga_actual_responsable'           => $cargaActualPorResponsable,
-            'sla_respuesta'                      => $slaRespuesta,
-            'sla_resolucion'                     => $slaResolucion,
-            'edad_backlog'                       => $edadBacklog,
-            'edad_promedio_backlog'              => $edadPromedioBacklog,
-            'prioridad_abiertos'                 => $prioridadAbiertos,
             'comparacion_tiempos_6_meses'        => $comparacionTiempos,
             'matriz_incidencias_responsable'     => $matrizIncidenciasPorResponsable,
             'responsables_ti_list'               => $responsablesTIList,
@@ -1513,11 +1388,11 @@ class TicketsController extends Controller
         $resumen             = $this->calcularResumenMensual($ticketsMesActual, $fechaInicioActual, $fechaFinActual);
         $tiempoPorEmpleado   = $this->calcularTiempoResolucionPorEmpleado($ticketsMesActual);
         $tiempoPorCategoria  = $this->calcularTiempoPorCategoriaResponsable($ticketsMesActual);
-        
+
         // Calcular métricas de solicitudes del mes actual
         $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
         $solicitudesMesActual = $metricasSolicitudes['desglose'] ?? [];
-        
+
         $nombreArchivo       = 'reporte_tickets_' . date('d-m-Y-H-i') . '.xlsx';
 
         return Excel::download(
