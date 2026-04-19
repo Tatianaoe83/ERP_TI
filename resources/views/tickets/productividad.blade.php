@@ -21,10 +21,37 @@
                 anioFin:    {{ $anioFinInit }},
                 cargando:   false,
                 validarRango() {
-                    if (parseInt(this.anioFin) < parseInt(this.anioInicio)) {
+                    this.mesInicio = parseInt(this.mesInicio);
+                    this.anioInicio = parseInt(this.anioInicio);
+                    this.mesFin = parseInt(this.mesFin);
+                    this.anioFin = parseInt(this.anioFin);
+
+                    const mesActual = {{ $mesActual }};
+                    const anioActual = {{ $anioActual }};
+
+                    if (
+                        this.anioInicio > anioActual ||
+                        (this.anioInicio === anioActual && this.mesInicio > mesActual)
+                    ) {
+                        this.anioInicio = anioActual;
+                        this.mesInicio = mesActual;
+                    }
+
+                    if (
+                        this.anioFin > anioActual ||
+                        (this.anioFin === anioActual && this.mesFin > mesActual)
+                    ) {
+                        this.anioFin = anioActual;
+                        this.mesFin = mesActual;
+                    }
+
+                    if (this.anioFin < this.anioInicio) {
                         this.anioFin = this.anioInicio;
                         this.mesFin = this.mesInicio;
-                    } else if (parseInt(this.anioFin) === parseInt(this.anioInicio) && parseInt(this.mesFin) < parseInt(this.mesInicio)) {
+                    } else if (
+                        this.anioFin === this.anioInicio &&
+                        this.mesFin < this.mesInicio
+                    ) {
                         this.mesFin = this.mesInicio;
                     }
                 },
