@@ -393,19 +393,31 @@ class TicketsController extends Controller
                 $mesIterComp->addMonth();
             }
         } else {
-            // Mes seleccionado + 5 anteriores (relativo al mes del filtro, no al mes actual del sistema)
-            for ($i = 5; $i >= 0; $i--) {
-                $mesComparacion = $fechaFinMes->copy()->subMonthsNoOverflow($i);
-                $labelMes       = $mesComparacion->locale('es')->isoFormat('MMM YYYY');
+            // Verificar si es un mes único o si debe mostrar 6 meses
+            $esUnico = $fechaInicioMes->format('Y-m') === $fechaFinMes->format('Y-m');
+            if ($esUnico) {
+                // Si es mes único, solo mostrar ese mes
+                $labelMes = $fechaInicioMes->locale('es')->isoFormat('MMM YYYY');
                 $comparacionTiempos[$labelMes] = $calcularComparacionMes(
                     $tickets,
-                    $mesComparacion->copy()->startOfMonth(),
-                    $mesComparacion->copy()->endOfMonth()
+                    $fechaInicioMes->copy()->startOfMonth(),
+                    $fechaFinMes->copy()->endOfMonth()
                 );
+            } else {
+                // Mes seleccionado + 5 anteriores (relativo al mes del filtro, no al mes actual del sistema)
+                for ($i = 5; $i >= 0; $i--) {
+                    $mesComparacion = $fechaFinMes->copy()->subMonthsNoOverflow($i);
+                    $labelMes       = $mesComparacion->locale('es')->isoFormat('MMM YYYY');
+                    $comparacionTiempos[$labelMes] = $calcularComparacionMes(
+                        $tickets,
+                        $mesComparacion->copy()->startOfMonth(),
+                        $mesComparacion->copy()->endOfMonth()
+                    );
+                }
             }
         }
 
-        $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($ticketsDelMes, $tickets, $fechaFinMes);
+        $metricasPorEmpleado = $this->obtenerMetricasPorEmpleado($ticketsDelMes, $tickets, $fechaInicioMes, $fechaFinMes);
 
         return [
             'total_tickets'                      => $ticketsDelMes->count(),
@@ -427,31 +439,42 @@ class TicketsController extends Controller
             'matriz_incidencias_responsable'     => $matrizIncidenciasPorResponsable,
             'responsables_ti_list'               => $responsablesTIList,
             'totales_por_responsable'            => $totalesPorResponsable,
+            'fecha_inicio_periodo'               => $fechaInicioMes->format('Y-m-d'),
+            'fecha_fin_periodo'                  => $fechaFinMes->format('Y-m-d'),
         ];
     }
 
     // Calcula métricas de rendimiento por empleado TI
     // $ticketsDelMes  → ya filtrado por el período activo (para stats generales)
+    // $fechaInicioPeriodo → inicio del período activo
     // $ticketsTodos   → colección completa sin filtro (para desglose mensual)
-    // $fechaFinPeriodo → fin del período activo (para calcular los 6 meses atrás)
-    private function obtenerMetricasPorEmpleado($ticketsDelMes, $ticketsTodos = null, $fechaFinPeriodo = null)
+    // $fechaFinPeriodo → fin del período activo
+    private function obtenerMetricasPorEmpleado($ticketsDelMes, $ticketsTodos = null, $fechaInicioPeriodo = null, $fechaFinPeriodo = null)
     {
-        $ticketsTodos    = $ticketsTodos    ?? $ticketsDelMes;
-        $fechaFinPeriodo = $fechaFinPeriodo ?? now();
+        $ticketsTodos       = $ticketsTodos ?? $ticketsDelMes;
+        $fechaInicioPeriodo = $fechaInicioPeriodo ?? now()->startOfMonth();
+        $fechaFinPeriodo    = $fechaFinPeriodo ?? now()->endOfMonth();
 
-        $empleados = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
-        $metricas  = [];
+        $empleados = Empleados::where('ObraID', 46)
+            ->where('tipo_persona', 'FISICA')
+            ->get();
+
+        $metricas = [];
 
         foreach ($empleados as $empleado) {
-            // Stats generales: solo sobre el período filtrado
-            $ticketsEmpleado = $ticketsDelMes->filter(fn($t) => $t->ResponsableTI == $empleado->EmpleadoID);
+            $ticketsEmpleado = $ticketsDelMes->filter(
+                fn($t) => $t->ResponsableTI == $empleado->EmpleadoID
+            );
+
             if ($ticketsEmpleado->count() == 0) continue;
 
             $cerrados   = $ticketsEmpleado->where('Estatus', 'Cerrado');
             $enProgreso = $ticketsEmpleado->where('Estatus', 'En progreso');
             $pendientes = $ticketsEmpleado->where('Estatus', 'Pendiente');
 
-            $ticketsConResolucion = $cerrados->filter(fn($t) => $t->FechaInicioProgreso && $t->FechaFinProgreso);
+            $ticketsConResolucion = $cerrados->filter(
+                fn($t) => $t->FechaInicioProgreso && $t->FechaFinProgreso
+            );
 
             $tiempoPromedioResolucion = 0;
             if ($ticketsConResolucion->count() > 0) {
@@ -465,39 +488,49 @@ class TicketsController extends Controller
                 ? round(($cerrados->count() / $ticketsEmpleado->count()) * 100, 1)
                 : 0;
 
-            // Desglose mensual: usar colección COMPLETA y 6 meses atrás desde el fin del período
-            $ticketsEmpleadoTodos = $ticketsTodos->filter(fn($t) => $t->ResponsableTI == $empleado->EmpleadoID);
+            $ticketsEmpleadoTodos = $ticketsTodos->filter(
+                fn($t) => $t->ResponsableTI == $empleado->EmpleadoID
+            );
+
             $ticketsPorMes = [];
-            for ($i = 5; $i >= 0; $i--) {
-                $mesIni   = $fechaFinPeriodo->copy()->subMonthsNoOverflow($i)->startOfMonth();
-                $mesFin   = $fechaFinPeriodo->copy()->subMonthsNoOverflow($i)->endOfMonth();
+            $mesIter = $fechaInicioPeriodo->copy()->startOfMonth();
+            $mesFinRango = $fechaFinPeriodo->copy()->startOfMonth();
+
+            while ($mesIter->lte($mesFinRango)) {
+                $mesIni   = $mesIter->copy()->startOfMonth();
+                $mesFin   = $mesIter->copy()->endOfMonth();
                 $mesLabel = $mesIni->format('M Y');
 
                 $ticketsPorMes[$mesLabel] = [
-                    'total'    => $ticketsEmpleadoTodos->filter(
+                    'total' => $ticketsEmpleadoTodos->filter(
                         fn($t) => \Carbon\Carbon::parse($t->created_at)->between($mesIni, $mesFin)
                     )->count(),
                     'cerrados' => $ticketsEmpleadoTodos->filter(function ($t) use ($mesIni, $mesFin) {
-                        if ($t->Estatus !== 'Cerrado' || empty($t->FechaFinProgreso)) return false;
+                        if ($t->Estatus !== 'Cerrado' || empty($t->FechaFinProgreso)) {
+                            return false;
+                        }
+
                         return \Carbon\Carbon::parse($t->FechaFinProgreso)->between($mesIni, $mesFin);
                     })->count(),
                 ];
+
+                $mesIter->addMonth();
             }
 
             $metricas[] = [
-                'empleado_id'               => $empleado->EmpleadoID,
-                'nombre'                    => $empleado->NombreEmpleado,
-                'total'                     => $ticketsEmpleado->count(),
-                'cerrados'                  => $cerrados->count(),
-                'en_progreso'               => $enProgreso->count(),
-                'pendientes'                => $pendientes->count(),
-                'problemas'                 => $ticketsEmpleado->where('Clasificacion', 'Problema')->count(),
-                'servicios'                 => $ticketsEmpleado->where('Clasificacion', 'Servicio')->count(),
-                'tasa_cierre'               => $tasaCierre,
+                'empleado_id'                => $empleado->EmpleadoID,
+                'nombre'                     => $empleado->NombreEmpleado,
+                'total'                      => $ticketsEmpleado->count(),
+                'cerrados'                   => $cerrados->count(),
+                'en_progreso'                => $enProgreso->count(),
+                'pendientes'                 => $pendientes->count(),
+                'problemas'                  => $ticketsEmpleado->where('Clasificacion', 'Problema')->count(),
+                'servicios'                  => $ticketsEmpleado->where('Clasificacion', 'Servicio')->count(),
+                'tasa_cierre'                => $tasaCierre,
                 'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
-                'tickets_por_mes'           => $ticketsPorMes,
-                'tickets_por_prioridad'     => $ticketsEmpleado->groupBy('Prioridad')->map(fn($g) => $g->count()),
-                'tickets_por_clasificacion' => $ticketsEmpleado->groupBy('Clasificacion')->map(fn($g) => $g->count()),
+                'tickets_por_mes'            => $ticketsPorMes,
+                'tickets_por_prioridad'      => $ticketsEmpleado->groupBy('Prioridad')->map(fn($g) => $g->count()),
+                'tickets_por_clasificacion'  => $ticketsEmpleado->groupBy('Clasificacion')->map(fn($g) => $g->count()),
             ];
         }
 

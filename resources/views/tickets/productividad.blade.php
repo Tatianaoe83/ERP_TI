@@ -565,7 +565,7 @@
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div>
                         <h3 class="text-base sm:text-lg font-semibold dark:text-white">Desempeño por Empleado TI</h3>
-                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Análisis mensual del rendimiento (Últimos 6 meses)</p>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Análisis mensual del rendimiento</p>
                     </div>
 
                     @if(count($metricasProductividad['metricas_por_empleado']) > 0)
@@ -668,12 +668,21 @@
                         </div>
 
                         <div class="mb-3 sm:mb-6">
+                            @php
+                            $fechaInicio = \Carbon\Carbon::parse($metricasProductividad['fecha_inicio_periodo']);
+                            $fechaFin = \Carbon\Carbon::parse($metricasProductividad['fecha_fin_periodo']);
+                            $diasEnRango = $fechaInicio->diffInDays($fechaFin) + 1;
+                            $esRangoUnico = $fechaInicio->format('Y-m') === $fechaFin->format('Y-m');
+                            $mesesEnRango = ($fechaInicio->diffInMonths($fechaFin)) + 1;
+                            
+                            $labelMeses = $esRangoUnico ? '1 mes' : ($mesesEnRango . ' meses');
+                            @endphp
                             <h5 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-4 flex items-center gap-2 dark:text-white">
-                                <i class="fas fa-calendar-alt text-[#3B82F6]"></i> Últimos 6 meses
+                                <i class="fas fa-calendar-alt text-[#3B82F6]"></i> {{ $labelMeses }}
                             </h5>
                             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-3">
                                 @php
-                                $meses = array_reverse(array_keys($empleado['tickets_por_mes']), true);
+                                $meses = array_keys($empleado['tickets_por_mes']);
                                 $mesesEspanol = [
                                 'Jan' => 'Ene', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Abr',
                                 'May' => 'May', 'Jun' => 'Jun', 'Jul' => 'Jul', 'Aug' => 'Ago',
