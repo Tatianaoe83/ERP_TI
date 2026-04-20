@@ -62,7 +62,7 @@ class TicketsController extends Controller
         ])->orderBy('created_at', 'desc')->get();
 
         $solicitudesStatus   = [$solicitudes->all()];
-        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
+        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
 
         return view('tickets.index', compact(
             'ticketsStatus',
@@ -1330,7 +1330,7 @@ class TicketsController extends Controller
         }])->orderBy('created_at', 'desc')->get();
 
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
-        $metricasSolicitudes   = $this->calcularMetricasSolicitudes($esRango ? $mesInicio : $mes, $esRango ? $anioInicio : $anio);
+        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
 
         $html = view('tickets.productividad', [
             'metricasProductividad' => $metricasProductividad,

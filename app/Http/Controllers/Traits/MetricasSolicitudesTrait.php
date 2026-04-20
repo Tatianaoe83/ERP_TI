@@ -32,7 +32,7 @@ trait MetricasSolicitudesTrait
             $horaFin = ($diaSemana == 6) ? $actual->copy()->setTime(14, 0, 0) : $actual->copy()->setTime(18, 0, 0);
 
             if ($actual->lt($horaInicio)) $actual = $horaInicio->copy();
-            
+
             if ($actual->gte($horaFin)) {
                 $actual->addDay()->setTime(9, 0, 0);
                 continue;
@@ -40,7 +40,7 @@ trait MetricasSolicitudesTrait
 
             $limite = $fin->lt($horaFin) ? $fin : $horaFin;
             $totalMinutos += $actual->diffInMinutes($limite);
-            
+
             $actual = $horaFin->copy();
         }
 
@@ -48,18 +48,15 @@ trait MetricasSolicitudesTrait
     }
 
     // Calcula los tiempos de cotización, compra y configuración de las Solicitudes
-    public function calcularMetricasSolicitudes($mes = null, $anio = null)
+    public function calcularMetricasSolicitudes($mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null)
     {
-        $mes  = $mes  ?? now()->month;
-        $anio = $anio ?? now()->year;
-
-        $fechaInicioMes = Carbon::create($anio, $mes, 1)->startOfMonth();
-        $fechaFinMes    = Carbon::create($anio, $mes, 1)->endOfMonth();
+        $fechaInicioMes = Carbon::create($anioInicio ?? now()->year, $mesInicio ?? now()->month, 1)->startOfMonth();
+        $fechaFinMes    = Carbon::create($anioFin    ?? now()->year, $mesFin    ?? now()->month, 1)->endOfMonth();
 
         // 1. Obtener solicitudes del mes con las relaciones clave
         // SOLO solicitudes que tengan activos con checklist (configuración completada)
         $solicitudes = Solicitud::with(['cotizaciones', 'pasoAdministracion', 'empleadoid', 'gerenciaid'])
-            ->whereHas('activos', function($q) {
+            ->whereHas('activos', function ($q) {
                 $q->whereHas('checklists');
             })
             ->whereBetween('created_at', [$fechaInicioMes, $fechaFinMes])
@@ -89,11 +86,11 @@ trait MetricasSolicitudesTrait
 
         foreach ($solicitudes as $sol) {
             $fechaCreacion = Carbon::parse($sol->created_at);
-            
+
             // --- A) Tiempo de Cotización ---
             $primeraCotizacion = $sol->cotizaciones->sortBy('created_at')->first();
             $fechaCotizacion = $primeraCotizacion ? Carbon::parse($primeraCotizacion->created_at) : null;
-            
+
             $tiempoCotizacionHoras = $this->calcularHorasLaboralesFloat($fechaCreacion, $fechaCotizacion);
             if ($tiempoCotizacionHoras !== null) {
                 $totalCotizacionHoras += $tiempoCotizacionHoras;
@@ -101,8 +98,8 @@ trait MetricasSolicitudesTrait
             }
 
             $pasoAdmin = $sol->pasoAdministracion;
-            $fechaAprobacion = ($fechaCotizacion && $pasoAdmin && $pasoAdmin->status === 'approved' && $pasoAdmin->decided_at) 
-                ? Carbon::parse($pasoAdmin->decided_at) 
+            $fechaAprobacion = ($fechaCotizacion && $pasoAdmin && $pasoAdmin->status === 'approved' && $pasoAdmin->decided_at)
+                ? Carbon::parse($pasoAdmin->decided_at)
                 : null;
 
             $fechaConfiguracion = null;
