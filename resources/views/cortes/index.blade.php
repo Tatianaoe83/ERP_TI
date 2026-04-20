@@ -158,6 +158,28 @@
         opacity: 0.7;
     }
     .error-grupo-header.open .toggle-arrow { transform: rotate(180deg); }
+
+    /* Tabla principal «Datos del Presupuesto»: misma lógica visual que modal Presupuesto guardado (primera columna fija) */
+    #tabla_wrapper table.dataTable thead th:first-child,
+    #tabla_wrapper table.dataTable tbody td:first-child {
+        position: sticky;
+        left: 0;
+        box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
+    }
+    #tabla_wrapper table.dataTable thead th:first-child {
+        z-index: 12;
+        background-color: #f8fafc;
+    }
+    .dark #tabla_wrapper table.dataTable thead th:first-child {
+        background-color: #020617;
+    }
+    #tabla_wrapper table.dataTable tbody td:first-child {
+        z-index: 2;
+        background-color: #f9fafb;
+    }
+    .dark #tabla_wrapper table.dataTable tbody td:first-child {
+        background-color: #0f172a;
+    }
 </style>
 
 <div id="ui-toast-wrapper"></div>
@@ -219,11 +241,6 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-3 items-center lg:pb-0.5">
-                <button type="button" id="verGuardado"
-                    title="Ver el presupuesto guardado de la gerencia seleccionada"
-                    class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 bg-gray-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
-                    <i class="fas fa-folder-open"></i> <span>Ver Presupuesto guardado</span>
-                </button>
                 <button type="button" id="generarTodos"
                     title="Genera y guarda el presupuesto de TODAS las gerencias activas"
                     class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-violet-400 dark:border-violet-600 text-violet-700 dark:text-violet-300 bg-gray-50 dark:bg-slate-900 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all duration-200">
@@ -293,13 +310,8 @@
         <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Datos del Presupuesto</p>
     </div>
     <div class="relative w-full custom-scroll overflow-x-auto bg-gray-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
-        <table id="tabla" class="w-full text-left border-collapse">
-            <thead class="bg-gray-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                    <th class="py-4 px-5 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Insumo</th>
-                    <th class="py-4 px-5 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Total Anual</th>
-                </tr>
-            </thead>
+        <table id="tabla" class="w-full text-left border-collapse min-w-[780px]">
+            <thead class="bg-gray-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800"></thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-gray-50 dark:bg-slate-900"></tbody>
         </table>
 
@@ -308,7 +320,7 @@
                 <i class="fas fa-search-dollar text-3xl text-slate-300 dark:text-slate-600"></i>
             </div>
             <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">Esperando datos</h3>
-            <p class="text-sm text-slate-400 dark:text-slate-500 mt-2">Selecciona una gerencia arriba para comenzar.</p>
+            <p class="text-sm text-slate-400 dark:text-slate-500 mt-2">Selecciona una gerencia y pulsa <strong class="text-slate-600 dark:text-slate-300">Generar presupuesto</strong> para ver el desglose por mes (igual que «Ver presupuesto guardado»).</p>
         </div>
 
         <div id="guardar-en-footer" class="hidden">
@@ -319,6 +331,9 @@
             </button>
         </div>
     </div>
+    <p class="px-6 md:px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900">
+        Costo total (año) = suma anual de todos los meses.
+    </p>
 
     <div id="bloque-corte-guardado" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog" aria-labelledby="modal-corte-guardado-title">
         <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="modal-corte-guardado-backdrop"></div>
@@ -532,31 +547,53 @@ $(function () {
         return `<div style="text-align:left;">${statsHtml}${erroresHtml}${contextMsg}</div>`;
     }
 
+    function costoPorMesNum(montos, mesNum) {
+        const arr = montos || [];
+        const hit = arr.find(mp => Number(mp.Mes) === mesNum);
+        return hit && !Number.isNaN(Number(hit.Costo)) ? Number(hit.Costo) : 0;
+    }
+
+    const thCorte = 'py-2 px-2 sm:px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider';
+
+    const columnasMeses = MESES.map((nombreMes, i) => ({
+        data      : null,
+        title     : nombreMes,
+        className : `${thCorte} text-right border-b border-slate-100 dark:border-slate-800 align-middle whitespace-nowrap`,
+        orderable : false,
+        render    : function (row) {
+            const v = costoPorMesNum(row.MontosPorMes, i + 1);
+            return v > 0
+                ? `<span class="font-mono text-xs text-slate-600 dark:text-slate-300">${currencyFmt.format(v)}</span>`
+                : '<span class="text-slate-300 dark:text-slate-600">-</span>';
+        }
+    }));
+
     const table = $('#tabla').DataTable({
-        destroy      : true,
-        responsive   : true,
-        searching    : true,
-        processing   : true,
-        serverSide   : true,
-        pageLength   : 25,
-        deferLoading : 0,
-        dom: 'rt<"dt-corte-footer flex flex-col sm:flex-row justify-between items-center p-5 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950"ip>',
+        destroy     : true,
+        responsive  : false,
+        searching   : false,
+        processing  : true,
+        serverSide  : true,
+        paging      : false,
+        lengthChange: false,
+        info        : false,
+        autoWidth   : false,
+        scrollX     : true,
+        dom         : 'rt<"dt-corte-footer flex flex-col sm:flex-row justify-end items-center gap-3 p-5 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950">',
         language: {
             zeroRecords: "<div class='py-8 text-center text-slate-400 dark:text-slate-500 italic'>Sin resultados</div>",
-            info       : "<span class='text-xs font-medium text-slate-500 dark:text-slate-400'>Viendo <span class='text-slate-800 dark:text-white font-bold'>_START_</span> - <span class='text-slate-800 dark:text-white font-bold'>_END_</span> de <span class='text-slate-800 dark:text-white font-bold'>_TOTAL_</span></span>",
-            infoEmpty  : "<span class='text-xs font-medium text-slate-400'>Sin registros</span>",
-            paginate   : {
-                first: '<<', last: '>>',
-                next    : '<i class="fas fa-chevron-right text-[10px]"></i>',
-                previous: '<i class="fas fa-chevron-left text-[10px]"></i>'
-            }
+            processing : '<span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando…</span>'
         },
         ajax: {
             url : '{{ route("cortes.ver") }}',
             type: 'GET',
             data: function (d) { d.gerenciaID = $('#gerenciaID').val(); },
             dataSrc: function (json) {
-                $('#tabla-placeholder').hide();
+                if ($('#gerenciaID').val()) {
+                    $('#tabla-placeholder').hide();
+                } else {
+                    $('#tabla-placeholder').show();
+                }
                 if (!json || !Array.isArray(json.data)) return [];
                 return json.data.map(r => ({
                     NombreInsumo : r.NombreInsumo,
@@ -571,30 +608,39 @@ $(function () {
         },
         columns: [
             {
-                data     : 'NombreInsumo',
-                className: 'p-4 align-middle text-sm font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800'
+                data      : 'NombreInsumo',
+                title     : 'Insumo',
+                className : `${thCorte} text-left border-b border-slate-100 dark:border-slate-800 align-middle`,
+                render    : d => `<span class="text-sm font-semibold text-slate-800 dark:text-white">${escapeHtml(decodeHtmlFully(d || ''))}</span>`
             },
+            ...columnasMeses,
             {
-                data     : null,
-                className: 'p-4 align-middle text-right border-b border-slate-100 dark:border-slate-800',
-                render   : function (row) {
+                data      : null,
+                title     : 'Total año',
+                orderable : false,
+                className : `${thCorte} text-right border-b border-slate-100 dark:border-slate-800 align-middle whitespace-nowrap`,
+                render    : function (row) {
                     const total = (row.MontosPorMes || []).reduce((acc, mp) => acc + (Number(mp.Costo) || 0), 0);
-                    return `<span class="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400
-                                bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-lg
-                                border border-emerald-100 dark:border-emerald-500/20 shadow-sm">
-                                ${currencyFmt.format(total)}
-                            </span>`;
+                    return total > 0
+                        ? `<span class="font-mono text-sm font-bold text-slate-800 dark:text-white">${currencyFmt.format(total)}</span>`
+                        : '<span class="text-slate-300 dark:text-slate-600">-</span>';
                 }
             }
         ],
+        createdRow: function (row) {
+            $(row).addClass('border-t border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50');
+        },
         drawCallback: function () {
             const base     = 'px-3 py-1.5 ml-1.5 rounded-lg border text-xs font-semibold transition-all duration-200 cursor-pointer shadow-sm ';
             const normal   = 'bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400';
             const active   = '!bg-indigo-600 !border-indigo-600 !text-white shadow-indigo-500/30 hover:!bg-indigo-700';
             const disabled = 'opacity-40 cursor-not-allowed shadow-none';
-            $('.dataTables_paginate .paginate_button').addClass(base + normal);
-            $('.dataTables_paginate .paginate_button.current').removeClass(normal).addClass(active);
-            $('.dataTables_paginate .paginate_button.disabled').addClass(disabled);
+            const $pag = $('.dataTables_paginate .paginate_button');
+            if ($pag.length) {
+                $pag.addClass(base + normal);
+                $('.dataTables_paginate .paginate_button.current').removeClass(normal).addClass(active);
+                $('.dataTables_paginate .paginate_button.disabled').addClass(disabled);
+            }
         },
         initComplete: function () {
             const $footer = $('.dt-corte-footer');
@@ -832,28 +878,6 @@ $(function () {
         $('#modal-corte-contenido').removeClass('hidden');
     }
 
-    $('#verGuardado').on('click', async function () {
-        const gid  = $('#gerenciaID').val();
-        const anio = $('#anioCorte').val();
-
-        if (!gid) {
-            Swal.fire({
-                icon             : 'warning',
-                title            : 'Gerencia requerida',
-                text             : 'Selecciona una gerencia para ver su presupuesto guardado.',
-                confirmButtonColor: '#4f46e5',
-                confirmButtonText : 'Entendido'
-            });
-            return;
-        }
-
-        const nombre = $('#gerenciaID option:selected').text().trim();
-        const $btn   = $(this);
-        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Cargando...');
-        await abrirCorteGuardado(gid, anio, nombre);
-        $btn.prop('disabled', false).html('<i class="fas fa-folder-open"></i> <span>Ver presupuesto guardado</span>');
-    });
-
     $(document).on('click', '.ver-corte-badge', async function () {
         const gid    = $(this).data('gerencia-id');
         const nombre = $(this).data('gerencia-nombre');
@@ -881,51 +905,64 @@ $(function () {
         let headHtml = `<tr>
             <th class="${th} text-left sticky left-0 z-10 bg-gray-50 dark:bg-slate-950 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] px-3 sm:px-4">Insumo</th>`;
         MESES.forEach(m => { headHtml += `<th class="${th} text-right whitespace-nowrap">${m}</th>`; });
-        headHtml += `
-            <th class="${th} text-right">Costo base</th>
-            <th class="${th} text-right">Total año</th>
-        </tr>`;
+        headHtml += `<th class="${th} text-right">Total año</th></tr>`;
         thead.html(headHtml);
 
+        const filtrados = data.filter(row => decodeHtmlFully(String(row.NombreInsumo || '')).trim().toLowerCase() !== 'costo base');
         const porInsumo = {};
-        data.forEach(row => {
-            const key = row.NombreInsumo || '';
+        filtrados.forEach(row => {
+            const key = decodeHtmlFully(String(row.NombreInsumo || '').trim());
+            if (!key) return;
             if (!porInsumo[key]) porInsumo[key] = [];
             porInsumo[key].push(row);
         });
 
-        Object.entries(porInsumo).forEach(([nombreInsumo, variantes]) => {
-            variantes.forEach((row, vi) => {
-                const meses         = row.Meses || {};
-                const costoBase     = Number(row.Costo) || 0;
-                let costoTotalAnual = Number(row.CostoTotalAnual) || 0;
-                if (!costoTotalAnual) {
-                    costoTotalAnual = MESES.reduce((acc, m) => acc + (meses[m]?.CostoTotal ? Number(meses[m].CostoTotal) : 0), 0);
-                }
-
-                const celdasMes = MESES.map(m => {
-                    const v = meses[m]?.CostoTotal ? Number(meses[m].CostoTotal) : 0;
-                    return `<td class="py-2 px-2 sm:px-3 text-right text-xs font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                        ${v > 0 ? currencyFmt.format(v) : '<span class="text-slate-300 dark:text-slate-600">-</span>'}
-                    </td>`;
-                }).join('');
-
-                const trClass = vi === 0
-                    ? 'border-t-2 border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                    : 'bg-gray-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50';
-
-                tbody.append(`<tr class="${trClass}">
-                    <td class="py-2 px-3 sm:px-4 text-sm font-semibold text-slate-800 dark:text-white sticky left-0 z-[1] bg-gray-50 dark:bg-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">${escapeHtml(nombreInsumo)}</td>
-                    ${celdasMes}
-                    <td class="py-2 px-3 sm:px-4 text-right text-sm font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                        ${costoBase > 0 ? currencyFmt.format(costoBase) : '-'}
-                    </td>
-                    <td class="py-2 px-3 sm:px-4 text-right text-sm font-mono font-bold text-slate-800 dark:text-white whitespace-nowrap">
-                        ${costoTotalAnual > 0 ? currencyFmt.format(costoTotalAnual) : '-'}
-                    </td>
-                </tr>`);
-            });
+        const nombresOrden = [];
+        const seenNombre = new Set();
+        filtrados.forEach(r => {
+            const k = decodeHtmlFully(String(r.NombreInsumo || '').trim());
+            if (!k || seenNombre.has(k)) return;
+            seenNombre.add(k);
+            nombresOrden.push(k);
         });
+
+        nombresOrden.forEach(nombreInsumo => {
+            const variantes = porInsumo[nombreInsumo];
+            if (!variantes || !variantes.length) return;
+
+            const acumMes = {};
+            MESES.forEach(m => { acumMes[m] = 0; });
+            variantes.forEach(row => {
+                const meses = row.Meses || {};
+                MESES.forEach(m => {
+                    const v = meses[m]?.CostoTotal ? Number(meses[m].CostoTotal) : 0;
+                    if (!Number.isNaN(v)) acumMes[m] += v;
+                });
+            });
+            const costoTotalAnual = MESES.reduce((acc, m) => acc + acumMes[m], 0);
+
+            const celdasMes = MESES.map(m => {
+                const v = acumMes[m];
+                return `<td class="py-2 px-2 sm:px-3 text-right text-xs font-mono text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                    ${v > 0 ? currencyFmt.format(v) : '<span class="text-slate-300 dark:text-slate-600">-</span>'}
+                </td>`;
+            }).join('');
+
+            const trClass = 'border-t border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50';
+
+            tbody.append(`<tr class="${trClass}">
+                <td class="py-2 px-3 sm:px-4 text-sm font-semibold text-slate-800 dark:text-white sticky left-0 z-[1] bg-gray-50 dark:bg-slate-900 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">${escapeHtml(decodeHtmlFully(nombreInsumo))}</td>
+                ${celdasMes}
+                <td class="py-2 px-3 sm:px-4 text-right text-sm font-mono font-bold text-slate-800 dark:text-white whitespace-nowrap">
+                    ${costoTotalAnual > 0 ? currencyFmt.format(costoTotalAnual) : '-'}
+                </td>
+            </tr>`);
+        });
+
+        if (!filtrados.length) {
+            tbody.empty();
+            tbody.append('<tr><td colspan="14" class="py-8 text-center text-slate-500 dark:text-slate-400">No quedan insumos que mostrar (solo «Costo base» u omitidos).</td></tr>');
+        }
     }
 
     function cerrarModal() {
@@ -959,6 +996,7 @@ $(function () {
         $('#tabla tbody tr').each(function () {
             const row = table.row(this).data();
             if (!row) return;
+            if (decodeHtmlFully(String(row.NombreInsumo || '')).trim().toLowerCase() === 'costo base') return;
             for (const mp of (row.MontosPorMes || [])) {
                 if (Number(mp.Costo) <= 0) continue;
                 const costo = +Number(mp.Costo).toFixed(2);
@@ -1125,6 +1163,17 @@ function decodeHtml(str) {
     const txt = document.createElement('textarea');
     txt.innerHTML = str;
     return txt.value;
+}
+
+/** Decodifica entidades HTML repetidas (p. ej. AT&amp;amp;T → AT&T) que vienen del SP o de la BD. */
+function decodeHtmlFully(str) {
+    let s = String(str ?? '');
+    for (let i = 0; i < 6; i++) {
+        const next = decodeHtml(s);
+        if (next === s) break;
+        s = next;
+    }
+    return s;
 }
 
 function escapeHtml(str) {

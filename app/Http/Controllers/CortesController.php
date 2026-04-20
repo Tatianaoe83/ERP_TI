@@ -95,9 +95,16 @@ class CortesController extends AppBaseController
         $gerenciaID = $request->input('gerenciaID');
 
         if (empty($gerenciaID)) {
-            return $request->expectsJson()
-                ? response()->json(['message' => 'Por favor, selecciona una gerencia', 'data' => []], 422)
-                : back()->with('error', 'Por favor, selecciona una gerencia');
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'draw'            => (int) $request->input('draw', 0),
+                    'recordsTotal'    => 0,
+                    'recordsFiltered' => 0,
+                    'data'            => [],
+                ]);
+            }
+
+            return back()->with('error', 'Por favor, selecciona una gerencia');
         }
 
         try {
@@ -105,7 +112,12 @@ class CortesController extends AppBaseController
 
             if ($rows->isEmpty()) {
                 return $request->expectsJson()
-                    ? response()->json(['data' => []])
+                    ? response()->json([
+                        'draw'            => (int) $request->input('draw', 0),
+                        'recordsTotal'    => 0,
+                        'recordsFiltered' => 0,
+                        'data'            => [],
+                    ])
                     : back()->with('warning', 'No hay datos para la gerencia');
             }
 
@@ -130,8 +142,10 @@ class CortesController extends AppBaseController
 
                     $distintos = $montosPorMes->pluck('Costo')->unique()->sort()->values()->all();
 
+                    $nombreInsumo = html_entity_decode((string) $nombre, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
                     return [
-                        'NombreInsumo'  => (string) $nombre,
+                        'NombreInsumo'  => $nombreInsumo,
                         'MontosPorMes'  => $montosPorMes->all(),
                         'Distintos'     => $distintos,
                         'SelectedIndex' => 0,
@@ -139,6 +153,10 @@ class CortesController extends AppBaseController
                     ];
                 })
                 ->filter()
+                ->values()
+                ->filter(function (array $row) {
+                    return strcasecmp(trim((string) ($row['NombreInsumo'] ?? '')), 'Costo base') !== 0;
+                })
                 ->values();
 
             return DataTables::of($resultado)->make(true);
@@ -358,7 +376,7 @@ class CortesController extends AppBaseController
                 }
 
                 $resultado[] = [
-                    'NombreInsumo'    => $nombreInsumo,
+                    'NombreInsumo'    => html_entity_decode((string) $nombreInsumo, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                     'Meses'           => $porMes,
                     'Costo'           => round($costoBase, 2),
                     'Margen'          => $margen,
