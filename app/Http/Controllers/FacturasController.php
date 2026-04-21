@@ -19,6 +19,15 @@ use Illuminate\Http\JsonResponse;
 
 class FacturasController extends AppBaseController
 {
+    /**
+     * En tabla `cortes`, Mes se guarda como nombre (p. ej. "Marzo"), no como número.
+     * Debe coincidir con CortesController::NUM_TO_NAME para filtrar presupuesto en comparativa.
+     */
+    private const CORTES_MES_NUM_TO_NAME = [
+        1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril', 5 => 'Mayo', 6 => 'Junio',
+        7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+    ];
+
     private $facturasRepository;
 
     public function __construct(FacturasRepository $facturasRepo)
@@ -60,7 +69,7 @@ class FacturasController extends AppBaseController
             ->pluck('NombreGerencia', 'GerenciaID')
             ->toArray();
 
-        $gerencia = ['' => 'Selecciona una opción'] + $gerenciasConFacturas;
+        $gerencia = ['' => 'Todas las gerencias'] + $gerenciasConFacturas;
 
         $gerenciasModal = DB::table('gerencia')
             ->where('estado', 1)
@@ -756,6 +765,19 @@ class FacturasController extends AppBaseController
         $anio       = $request->input('anio');
         $insumo     = $request->input('insumo');
 
+        $mesIntCortes = null;
+        $mesNombreCortes = null;
+        if ($mes !== null && $mes !== '') {
+            if (is_numeric((string) $mes)) {
+                $mesIntCortes = (int) $mes;
+                if ($mesIntCortes >= 1 && $mesIntCortes <= 12) {
+                    $mesNombreCortes = self::CORTES_MES_NUM_TO_NAME[$mesIntCortes] ?? null;
+                }
+            } else {
+                $mesNombreCortes = (string) $mes;
+            }
+        }
+
         $base = DB::table('facturas as f')
             ->leftJoin('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
             ->whereNull('f.deleted_at')
@@ -790,7 +812,14 @@ class FacturasController extends AppBaseController
         $presupuestos = DB::table('cortes')
             ->whereNull('deleted_at')
             ->whereIn('NombreInsumo', $insumos)
-            ->when($mes,        fn($q) => $q->where('Mes', $mes))
+            ->when($mesNombreCortes !== null, function ($q) use ($mesNombreCortes, $mesIntCortes) {
+                $q->where(function ($w) use ($mesNombreCortes, $mesIntCortes) {
+                    $w->where('Mes', $mesNombreCortes);
+                    if ($mesIntCortes !== null) {
+                        $w->orWhere('Mes', (string) $mesIntCortes);
+                    }
+                });
+            })
             ->when($anio,       fn($q) => $q->where('Anio', $anio))
             ->when($gerenciaId, fn($q) => $q->where('GerenciaID', $gerenciaId))
             ->select([

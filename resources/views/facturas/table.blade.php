@@ -1,52 +1,5 @@
 <div class="bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
 
-    <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950/50">
-        <form id="formFilter" class="flex flex-col lg:flex-row items-end gap-4">
-            <div class="w-full lg:w-1/3">
-                <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Gerencia</label>
-                <div class="relative">
-                    {!! Form::select('gerenci_id', $gerencia, null, [
-                    'class' => 'w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all',
-                    'id' => 'gerenci_id'
-                    ]) !!}
-                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-chevron-down text-xs"></i></div>
-                </div>
-            </div>
-
-            <div class="w-full lg:w-1/5">
-                <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mes</label>
-                <div class="relative">
-                    <select id="mesFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
-                        <option value="">Todos los meses</option>
-                        @foreach($meses as $num => $nombre)
-                        <option value="{{ $num }}">{{ $nombre }}</option>
-                        @endforeach
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar-alt text-xs"></i></div>
-                </div>
-            </div>
-
-            <div class="w-full lg:w-1/5">
-                <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Año</label>
-                <div class="relative">
-                    <select id="añoFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
-                        <option value="">Todos los años</option>
-                        @foreach($years as $año)
-                        <option value="{{ $año }}">{{ $año }}</option>
-                        @endforeach
-                    </select>
-                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar text-xs"></i></div>
-                </div>
-            </div>
-
-            <div class="w-full lg:w-auto">
-                <button type="submit" class="w-full h-11 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-gray-50 font-bold text-sm shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                    <i class="fas fa-filter mr-2"></i> Filtrar
-                </button>
-            </div>
-        </form>
-    </div>
-
     <div id="gerenciaInfo" class="hidden p-4 bg-indigo-50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-800 flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shrink-0">
             <i class="fas fa-building"></i>
@@ -195,6 +148,31 @@
             7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
         };
 
+        function _escHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s == null ? '' : String(s);
+            return d.innerHTML;
+        }
+
+        async function confirmarCambioSeguroFactura(opts) {
+            const { titulo, detalleHtml, textoPlano } = opts;
+            if (window.Swal && typeof Swal.fire === 'function') {
+                const r = await Swal.fire({
+                    icon: 'question',
+                    title: titulo,
+                    html: detalleHtml,
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, confirmar',
+                    cancelButtonText: 'Cancelar',
+                    focusCancel: true,
+                    confirmButtonColor: '#4f46e5',
+                    cancelButtonColor: '#64748b'
+                });
+                return !!r.isConfirmed;
+            }
+            return window.confirm(textoPlano || titulo);
+        }
+
         const insumoCache = {};
         window.currentModalInsumos = [];
 
@@ -202,7 +180,7 @@
             destroy: true,
             responsive: true,
             searching: true,
-            processing: true,
+            processing: false,
             serverSide: true,
             pageLength: 12,
             dom: 'rt<"flex flex-col sm:flex-row justify-between items-center p-5 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900"ip>',
@@ -210,7 +188,6 @@
                 zeroRecords: "<div class='py-10 text-center text-slate-400 italic'>No hay facturas con los filtros seleccionados</div>",
                 info: "<span class='text-xs font-medium text-slate-500'>_START_ - _END_ de _TOTAL_</span>",
                 infoEmpty: "0 registros",
-                processing: "<span class='text-xs text-indigo-500 font-bold'>Cargando...</span>",
                 paginate: { first: '<<', last: '>>', next: '>', previous: '<' }
             },
             ajax: {
@@ -391,8 +368,31 @@
                 $('.dataTables_paginate .paginate_button').addClass(btnClass + normal);
                 $('.dataTables_paginate .paginate_button.current').removeClass(normal).addClass(active);
                 $('.dataTables_paginate .paginate_button.disabled').addClass(disabled);
+
+                $('#facturasTable .mes-select').each(function () {
+                    $(this).data('facturasMesPrev', $(this).val());
+                });
             }
         });
+
+        (function mountFacturasLoader() {
+            const $w = $('#facturasTable_wrapper');
+            if (!$w.length || $w.find('#facturasTableLoadingOverlay').length) return;
+            $w.prepend(
+                '<div id="facturasTableLoadingOverlay" class="hidden absolute inset-0 z-[25] bg-gray-50/90 dark:bg-slate-900/90">' +
+                '<span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 inline-flex items-center gap-2 rounded-xl border border-indigo-200/70 dark:border-indigo-800/50 bg-white dark:bg-slate-800 px-4 py-3 text-sm font-bold text-indigo-600 dark:text-indigo-300 shadow-lg">' +
+                '<i class="fas fa-spinner fa-spin text-lg" aria-hidden="true"></i>' +
+                '<span>Cargando facturas…</span></span></div>'
+            );
+        })();
+
+        $('#facturasTable')
+            .on('preXhr.dt', function () {
+                $('#facturasTableLoadingOverlay').removeClass('hidden');
+            })
+            .on('xhr.dt error.dt', function () {
+                $('#facturasTableLoadingOverlay').addClass('hidden');
+            });
 
         $('#facturasTable').on('focus', '.insumo-select', async function() {
             const $sel = $(this);
@@ -464,9 +464,29 @@
 
         $('#facturasTable').on('change', '.insumo-select', async function() {
             const $sel = $(this);
-            const $td = $sel.closest('td');
+            const $wrap = $sel.closest('.insumo-select-wrap');
             const facturaID = $sel.data('factura');
-            const nombre = $sel.val();
+            const nuevo = $sel.val() || '';
+            const prev = String($sel.attr('data-valor') || '').trim();
+            if (nuevo === prev) return;
+
+            const prevLabel = prev ? (prev.length > 48 ? prev.substring(0, 48) + '…' : prev) : '— Sin asignar —';
+            const nuevoLabel = ($sel.find('option:selected').text() || '').trim() || '— Sin asignar —';
+
+            const ok = await confirmarCambioSeguroFactura({
+                titulo: '¿Confirmar cambio de insumo?',
+                detalleHtml:
+                    '<p class="text-sm text-slate-600 dark:text-slate-300 text-left mb-2">Factura <strong>#' + _escHtml(String(facturaID)) + '</strong></p>' +
+                    '<p class="text-xs text-slate-500 dark:text-slate-400 text-left uppercase tracking-wide font-bold mb-1">Valor actual</p>' +
+                    '<p class="text-sm text-slate-800 dark:text-slate-100 text-left font-semibold mb-3">' + _escHtml(prevLabel) + '</p>' +
+                    '<p class="text-xs text-slate-500 dark:text-slate-400 text-left uppercase tracking-wide font-bold mb-1">Nuevo valor</p>' +
+                    '<p class="text-sm text-indigo-700 dark:text-indigo-300 text-left font-semibold">' + _escHtml(nuevoLabel) + '</p>',
+                textoPlano: '¿Confirmar cambio de insumo en la factura #' + facturaID + '?'
+            });
+            if (!ok) {
+                $sel.val(prev);
+                return;
+            }
 
             $sel.prop('disabled', true);
 
@@ -474,16 +494,19 @@
                 const res = await fetch(`/facturas/${facturaID}/insumo`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                    body: JSON.stringify({ InsumoNombre: nombre })
+                    body: JSON.stringify({ InsumoNombre: nuevo })
                 });
 
                 if (!res.ok) throw new Error('Error HTTP ' + res.status);
 
-                // Animación de éxito
+                $sel.attr('data-valor', nuevo);
+                $wrap.attr('data-valor', nuevo);
+
                 $sel.removeClass('!border-green-500').addClass('!border-green-500');
                 setTimeout(() => $sel.removeClass('!border-green-500'), 800);
 
             } catch (e) {
+                $sel.val(prev);
                 $sel.addClass('!border-rose-500');
                 setTimeout(() => $sel.removeClass('!border-rose-500'), 1500);
             } finally {
@@ -491,12 +514,37 @@
             }
         });
 
+        $('#facturasTable').on('focus', '.mes-select', function() {
+            $(this).data('facturasMesPrev', $(this).val());
+        });
+
         $('#facturasTable').on('change', '.mes-select', async function() {
             const $sel = $(this);
             const facturaID = $sel.data('factura');
-            const mes = parseInt($sel.val());
+            const mes = parseInt($sel.val(), 10);
+            const mesPrev = parseInt(String($sel.data('facturasMesPrev')), 10);
+            if (!Number.isNaN(mesPrev) && mes === mesPrev) return;
 
-            const mesAnterior = $sel.find('option[selected]').val() || $sel.find('option:first').val();
+            const nomPrev = Number.isNaN(mesPrev)
+                ? 'Mes anterior'
+                : (mesesNombres[mesPrev] || ('Mes ' + mesPrev));
+            const nomNuevo = mesesNombres[mes] || ('Mes ' + mes);
+
+            const ok = await confirmarCambioSeguroFactura({
+                titulo: '¿Confirmar cambio de mes?',
+                detalleHtml:
+                    '<p class="text-sm text-slate-600 dark:text-slate-300 text-left mb-2">Factura <strong>#' + _escHtml(String(facturaID)) + '</strong></p>' +
+                    '<p class="text-xs text-slate-500 dark:text-slate-400 text-left uppercase tracking-wide font-bold mb-1">Mes actual</p>' +
+                    '<p class="text-sm text-slate-800 dark:text-slate-100 text-left font-semibold mb-3">' + _escHtml(nomPrev) + '</p>' +
+                    '<p class="text-xs text-slate-500 dark:text-slate-400 text-left uppercase tracking-wide font-bold mb-1">Nuevo mes</p>' +
+                    '<p class="text-sm text-indigo-700 dark:text-indigo-300 text-left font-semibold">' + _escHtml(nomNuevo) + '</p>',
+                textoPlano: '¿Confirmar cambio de mes de ' + nomPrev + ' a ' + nomNuevo + ' en la factura #' + facturaID + '?'
+            });
+            if (!ok) {
+                if (!Number.isNaN(mesPrev)) $sel.val(String(mesPrev));
+                return;
+            }
+
             $sel.prop('disabled', true);
 
             try {
@@ -508,11 +556,12 @@
 
                 if (!res.ok) throw new Error('Error HTTP ' + res.status);
 
+                $sel.data('facturasMesPrev', String(mes));
                 $sel.removeClass('!border-green-500').addClass('!border-green-500');
                 setTimeout(() => $sel.removeClass('!border-green-500'), 800);
 
             } catch (e) {
-                $sel.val(mesAnterior);
+                if (!Number.isNaN(mesPrev)) $sel.val(String(mesPrev));
                 $sel.addClass('!border-rose-500');
                 setTimeout(() => $sel.removeClass('!border-rose-500'), 1500);
             } finally {
@@ -766,18 +815,38 @@
             loadPreview('{{ route("facturas.previsualizarPdf") }}', formData);
         });
 
-        $('#formFilter').on('submit', function(e) {
-            e.preventDefault();
-            const gerencia = $('#gerenci_id option:selected').text();
-            if (gerencia && gerencia !== 'Selecciona una opción') {
+        function actualizarInfoGerenciaSeleccionada() {
+            const $g = $('#gerenci_id');
+            const val = $g.val();
+            const gerencia = $g.find('option:selected').text();
+            if (val && val !== '') {
                 $('#titleGerencia').text(gerencia);
                 $('#gerenciaInfo').removeClass('hidden').addClass('flex');
             } else {
                 $('#titleGerencia').text('');
                 $('#gerenciaInfo').addClass('hidden').removeClass('flex');
             }
+        }
+
+        function aplicarFiltrosGlobalesFacturas() {
+            actualizarInfoGerenciaSeleccionada();
             table.ajax.reload();
+            if (typeof window.reloadComparativaFromGlobal === 'function') {
+                window.reloadComparativaFromGlobal();
+            }
+        }
+
+        $('#formFilter').on('submit', function(e) {
+            e.preventDefault();
         });
+
+        $('#gerenci_id, #mesFilter, #añoFilter').on('change', function() {
+            aplicarFiltrosGlobalesFacturas();
+        });
+
+        window.syncGerenciaFacturasBanner = actualizarInfoGerenciaSeleccionada;
+
+        actualizarInfoGerenciaSeleccionada();
     });
 </script>
 

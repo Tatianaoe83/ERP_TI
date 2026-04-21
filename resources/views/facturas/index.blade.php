@@ -10,7 +10,11 @@
     .tab-content { visibility: hidden; height: 0; overflow: hidden; opacity: 0; transition: opacity 0.2s ease; }
     .tab-content.active { visibility: visible; height: auto; overflow: visible; opacity: 1; }
 
-    #facturasTable_wrapper .dataTables_processing { background: transparent; color: #6366f1; font-size: 0.8rem; }
+    /* Overlay de carga único (ver table.blade.php); el wrapper debe ser posición referencia */
+    #facturasTable_wrapper.dataTables_wrapper {
+        position: relative;
+        min-height: 200px;
+    }
 
     .zona-archivo { transition: border-color 0.15s, background-color 0.15s; }
     .zona-archivo.dragging { box-shadow: 0 0 0 3px rgba(99,102,241,0.25); }
@@ -22,7 +26,7 @@
 
 <div class="w-full mx-auto max-w-7xl">
 
-    <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
             <div class="w-11 h-11 flex items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800/40">
                 <i class="fas fa-file-invoice text-indigo-500 text-lg"></i>
@@ -32,21 +36,75 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400">Administra y visualiza el historial.</p>
             </div>
         </div>
-        <div class="flex items-center gap-3">
-            <button type="button" id="btnAbrirFacturaDirecta"
-                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors">
-                <i class="fas fa-plus"></i> Nueva Factura
+        <button type="button" id="btnAbrirFacturaDirecta"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shrink-0">
+            <i class="fas fa-plus"></i> Nueva Factura
+        </button>
+    </div>
+
+    @php
+        $mesActualFiltro = (int) date('n');
+        $anioActualFiltro = (int) date('Y');
+    @endphp
+    <div class="mb-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950/50 flex items-center gap-2">
+            <i class="fas fa-sliders-h text-indigo-500 text-sm"></i>
+            <span class="text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Filtros</span>
+            <span class="text-[10px] text-slate-400 dark:text-slate-500 hidden sm:inline">Aplican a Facturas y Comparativa</span>
+        </div>
+        <div class="p-4 md:p-5">
+            <form id="formFilter"
+                class="flex flex-col lg:flex-row items-end gap-4"
+                data-mes-default="{{ $mesActualFiltro }}"
+                data-anio-default="{{ $anioActualFiltro }}">
+                <div class="w-full lg:w-1/3">
+                    <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Gerencia</label>
+                    <div class="relative">
+                        {!! Form::select('gerenci_id', $gerencia, null, [
+                            'class' => 'w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all',
+                            'id' => 'gerenci_id'
+                        ]) !!}
+                        <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-chevron-down text-xs"></i></div>
+                    </div>
+                </div>
+                <div class="w-full lg:w-1/5">
+                    <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Mes</label>
+                    <div class="relative">
+                        <select id="mesFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
+                            <option value="">Todos los meses</option>
+                            @foreach($meses as $num => $nombre)
+                            <option value="{{ $num }}" {{ (int) $num === $mesActualFiltro ? 'selected' : '' }}>{{ $nombre }}</option>
+                            @endforeach
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar-alt text-xs"></i></div>
+                    </div>
+                </div>
+                <div class="w-full lg:w-1/5">
+                    <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Año</label>
+                    <div class="relative">
+                        <select id="añoFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
+                            <option value="">Todos los años</option>
+                            @foreach($years as $año)
+                            <option value="{{ $año }}" {{ (int) $año === $anioActualFiltro ? 'selected' : '' }}>{{ $año }}</option>
+                            @endforeach
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar text-xs"></i></div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="mb-5 flex justify-center sm:justify-start">
+        <div class="flex p-1 bg-gray-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 w-full sm:w-auto">
+            <button type="button" onclick="switchTab('facturas')" id="tab-facturas"
+                class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 bg-indigo-600 text-white">
+                <i class="fas fa-receipt"></i> Facturas
             </button>
-            <div class="flex p-1 bg-gray-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <button onclick="switchTab('facturas')" id="tab-facturas"
-                    class="px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 bg-indigo-600 text-white">
-                    <i class="fas fa-receipt"></i> Facturas
-                </button>
-                <button onclick="switchTab('historial')" id="tab-historial"
-                    class="px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                    <i class="fas fa-history"></i> Comparativa
-                </button>
-            </div>
+            <button type="button" onclick="switchTab('historial')" id="tab-historial"
+                class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                <i class="fas fa-history"></i> Comparativa
+            </button>
         </div>
     </div>
 
@@ -243,7 +301,7 @@
 
 <script>
 (function () {
-    const BASE   = 'px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ';
+    const BASE   = 'flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ';
     const NORMAL = 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200';
     const ACTIVE = 'bg-indigo-600 text-white';
     const TABS   = ['facturas', 'historial'];
@@ -426,6 +484,7 @@
             cerrarModal();
             if (window.Swal) Swal.fire({ icon: 'success', title: 'Factura guardada', text: 'La factura fue registrada correctamente.', timer: 3000, showConfirmButton: false, toast: true, position: 'top-end', background: '#f9fafb', color: '#1e293b' });
             if (window.jQuery && window.jQuery('#facturasTable').length) window.jQuery('#facturasTable').DataTable().ajax.reload(null, false);
+            if (typeof window.reloadComparativaFromGlobal === 'function') window.reloadComparativaFromGlobal();
         } catch (e) {
             if (window.Swal) Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: '#f9fafb', color: '#1e293b', confirmButtonColor: '#e11d48' });
         } finally {
@@ -470,6 +529,11 @@
         setupDragDrop('zonaXml', async file => { $('inputXml').value = ''; await handleXmlFile(file); });
         $('inputPdf').addEventListener('change', async function () { await handlePdfFile(this.files[0]); });
         setupDragDrop('zonaPdf', async file => { await handlePdfFile(file); });
+
+        // Precarga la comparativa al entrar para evitar espera al cambiar de pestaña.
+        if (typeof window.initComparativa === 'function') {
+            setTimeout(() => window.initComparativa(), 0);
+        }
     });
 
 })();

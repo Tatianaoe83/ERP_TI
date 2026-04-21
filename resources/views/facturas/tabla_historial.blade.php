@@ -1,42 +1,5 @@
-{{-- ═══════════════════════════════════════════════════════
-     COMPARATIVA: PRESUPUESTO GENERALES vs FACTURADO
-     — Sin cotización ganadora —
-═══════════════════════════════════════════════════════ --}}
+{{-- Comparativa: presupuesto vs facturado — solo Ahorro / Desviación --}}
 <style>
-/* ── Tooltip glosario ── */
-.gls {
-    position: relative; display: inline-flex; align-items: center;
-    gap: 3px; cursor: help;
-    border-bottom: 1.5px dashed #94a3b8; text-decoration: none;
-    transition: border-color .15s;
-}
-.gls:hover { border-color: #6366f1; }
-.gls-icon {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: #e0e7ff; color: #4f46e5;
-    font-size: 8px; font-weight: 900; flex-shrink: 0;
-    transition: background .15s;
-}
-.dark .gls-icon { background: #312e81; color: #a5b4fc; }
-.gls:hover .gls-icon { background: #6366f1; color: #fff; }
-.gls-tip {
-    position: absolute; bottom: calc(100% + 8px); left: 50%;
-    transform: translateX(-50%) translateY(4px);
-    background: #1e293b; color: #e2e8f0; border-radius: 10px;
-    padding: 9px 13px; font-size: 12px; font-weight: 500; line-height: 1.5;
-    white-space: normal; max-width: 260px; z-index: 50;
-    box-shadow: 0 8px 24px rgba(0,0,0,.25);
-    pointer-events: none; opacity: 0;
-    transition: opacity .15s, transform .15s;
-}
-.gls-tip::after {
-    content: ''; position: absolute; top: 100%; left: 50%;
-    transform: translateX(-50%);
-    border: 6px solid transparent; border-top-color: #1e293b;
-}
-.gls:hover .gls-tip { opacity: 1; transform: translateX(-50%) translateY(0); }
-
 /* ── Insights ── */
 .insight-bar {
     display: flex; align-items: flex-start; gap: 10px;
@@ -58,154 +21,44 @@
 
 <div id="comparativaRoot" class="space-y-5">
 
-    {{-- ════════════════════════════════════════
-         BARRA DE REFERENCIA RÁPIDA
-    ════════════════════════════════════════ --}}
-    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-sm px-5 py-3">
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
-
-            <span class="text-[10px] font-extrabold text-slate-300 dark:text-slate-600 uppercase tracking-widest flex-shrink-0">¿Qué significa cada dato?</span>
-
-            <span class="gls flex-shrink-0">
-                <span class="inline-block w-2.5 h-2.5 rounded-sm bg-indigo-500 mr-1.5"></span>
-                <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Presupuesto Generales</span>
-                <span class="gls-icon">?</span>
-                <span class="gls-tip">El monto que se tenía asignado para este insumo. Es el <strong>techo de gasto</strong> esperado para el período.</span>
-            </span>
-
-            <span class="gls flex-shrink-0">
-                <span class="inline-block w-2.5 h-2.5 rounded-sm bg-emerald-500 mr-1.5"></span>
-                <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Facturado</span>
-                <span class="gls-icon">?</span>
-                <span class="gls-tip">Lo que el proveedor ya cobró. Si supera el presupuesto, se gastó más de lo planeado.</span>
-            </span>
-
-            <span class="gls flex-shrink-0">
-                <span class="inline-block w-2.5 h-2.5 rounded-sm bg-fuchsia-500 mr-1.5"></span>
-                <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Desviación %</span>
-                <span class="gls-icon">?</span>
-                <span class="gls-tip"><strong style="color:#f43f5e">Positivo (+)</strong> = se gastó más de lo presupuestado.<br><strong style="color:#10b981">Negativo (−)</strong> = se gastó menos — ¡ahorro!</span>
-            </span>
-
-            <span class="hidden lg:block w-px h-5 bg-slate-200 dark:bg-slate-700 flex-shrink-0"></span>
-
-            {{-- Semáforo --}}
-            <span class="flex items-center gap-1.5 flex-shrink-0 text-[11px] font-semibold text-slate-500">Estado:</span>
-            <span class="gls flex-shrink-0">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                    <i class="fas fa-piggy-bank text-[9px]"></i> Ahorro
-                </span>
-                <span class="gls-tip" style="left:0;transform:none;">Más del 5% por debajo del presupuesto — gasto eficiente, ¡excelente!</span>
-            </span>
-            <span class="gls flex-shrink-0">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                    <i class="fas fa-exclamation-triangle text-[9px]"></i> Desviacion
-                </span>
-                <span class="gls-tip" style="left:0;transform:none;">Excedente mayor al 5% sobre el presupuesto — se gastó más de lo presupuestado.</span>
-            </span>
-
-        </div>
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-sm px-4 py-3">
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            <span class="inline-flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400"><span class="inline-block w-2 h-2 rounded-sm bg-indigo-500"></span> Presupuesto</span>
+            frente a
+            <span class="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400"><span class="inline-block w-2 h-2 rounded-sm bg-emerald-500"></span> Facturado</span>.
+            <span class="text-slate-400 mx-1">·</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200 border border-teal-200 dark:border-teal-800">Ahorro</span> = gasto <strong>por debajo</strong> del presupuesto.
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800 ml-1">Desviación</span> = gasto <strong>por encima</strong> del presupuesto.
+        </p>
     </div>
 
-    {{-- ════════════════════════════════════════
-         FILTROS
-    ════════════════════════════════════════ --}}
+    {{-- Filtro extra solo para comparativa (insumo). Gerencia / mes / año están arriba en la página. --}}
     <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-sm">
-        <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-            <i class="fas fa-sliders-h text-indigo-400 text-sm"></i>
-            <span class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Filtros</span>
+        <div class="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+            <i class="fas fa-search text-emerald-500 text-sm"></i>
+            <span class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Comparativa</span>
+            <span class="text-[10px] text-slate-400 dark:text-slate-500">Filtrar por nombre de insumo (opcional)</span>
             <span id="cmpFiltrosActivos" class="hidden ml-auto text-[11px] font-semibold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full"></span>
         </div>
-        <form id="formComparativaFilter" class="p-4">
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 items-start">
-
-                {{-- Gerencia --}}
-                <div class="col-span-2 sm:col-span-1 lg:col-span-2">
-                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5">
-                        <i class="fas fa-building mr-1 text-indigo-400"></i>Gerencia
-                    </label>
-                    <div class="relative">
-                        <select id="cmpGerencia"
-                            class="w-full h-10 pl-4 pr-10 appearance-none rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all">
-                            <option value="">Todas las gerencias</option>
-                            @foreach($gerencia as $id => $nombre)
-                                @if($id !== '')
-                                    <option value="{{ $id }}">{{ $nombre }}</option>
-                                @endif
-                            @endforeach
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </div>
-                    </div>
-                    <p class="text-[10px] text-slate-400 mt-1 ml-1">Deja en blanco para ver todas las áreas.</p>
-                </div>
-
-                {{-- Mes --}}
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5">
-                        <i class="fas fa-calendar-alt mr-1 text-sky-400"></i>Mes
-                    </label>
-                    <div class="relative">
-                        <select id="cmpMes"
-                            class="w-full h-10 pl-4 pr-10 appearance-none rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all">
-                            <option value="">Todos los meses</option>
-                            <option value="1">Enero</option><option value="2">Febrero</option>
-                            <option value="3">Marzo</option><option value="4">Abril</option>
-                            <option value="5">Mayo</option><option value="6">Junio</option>
-                            <option value="7">Julio</option><option value="8">Agosto</option>
-                            <option value="9">Septiembre</option><option value="10">Octubre</option>
-                            <option value="11">Noviembre</option><option value="12">Diciembre</option>
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Año --}}
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5">
-                        <i class="fas fa-calendar mr-1 text-violet-400"></i>Año
-                    </label>
-                    <div class="relative">
-                        <select id="cmpAnio"
-                            class="w-full h-10 pl-4 pr-10 appearance-none rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all">
-                            <option value="">Todos los años</option>
-                            @for($y = date('Y'); $y >= 2022; $y--)
-                                <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
-                            @endfor
-                        </select>
-                        <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
-                            <i class="fas fa-chevron-down text-xs"></i>
-                        </div>
-                    </div>
-                    <p class="text-[10px] text-slate-400 mt-1 ml-1">Por defecto muestra el año actual.</p>
-                </div>
-
-                {{-- Insumo --}}
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5">
-                        <i class="fas fa-tag mr-1 text-emerald-400"></i>Insumo
-                    </label>
-                    <input id="cmpInsumo" type="text" placeholder="Buscar insumo…"
-                        class="w-full h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-300">
-                </div>
-
-                {{-- Botones --}}
-                <div class="flex gap-2 pt-5">
-                    <button type="submit"
-                        class="flex-1 h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-500/25 transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-1.5">
-                        <i class="fas fa-search text-xs"></i> Filtrar
-                    </button>
-                    <button type="button" id="cmpBtnReset" title="Quitar todos los filtros"
-                        class="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center">
-                        <i class="fas fa-undo text-xs"></i>
-                    </button>
-                </div>
-
+        <div class="p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+            <div class="flex-1 min-w-0">
+                <label for="cmpInsumo" class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 ml-0.5">
+                    <i class="fas fa-tag mr-1 text-emerald-400"></i>Insumo
+                </label>
+                <input id="cmpInsumo" type="text" placeholder="Buscar insumo…"
+                    class="w-full h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all placeholder:text-slate-300">
             </div>
-        </form>
+            <div class="flex gap-2 shrink-0">
+                <button type="button" id="cmpBtnFiltrarInsumo"
+                    class="h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-500/25 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fas fa-search text-xs"></i> Aplicar
+                </button>
+                <button type="button" id="cmpBtnReset" title="Restablecer filtros (gerencia, mes, año e insumo)"
+                    class="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center">
+                    <i class="fas fa-undo text-xs"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
     {{-- ════════════════════════════════════════  LOADING ════════════════════════════════════════ --}}
@@ -238,30 +91,23 @@
         {{-- Insight global --}}
         <div id="cmpInsightGlobal"></div>
 
-        {{-- KPIs --}}
+        {{-- KPIs mínimos --}}
         <div>
             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                <i class="fas fa-tachometer-alt mr-1"></i>Resumen del período
+                <i class="fas fa-tachometer-alt mr-1"></i>Resumen
             </p>
-            <div id="cmpKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"></div>
+            <div id="cmpKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
         </div>
 
-        {{-- ── GRÁFICA 1: PRESUPUESTO vs FACTURADO ── --}}
+        {{-- Gráfica: presupuesto vs facturado --}}
         <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-xl overflow-hidden">
             <div class="px-5 pt-4 pb-0 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">
-                        <span class="gls">Presupuesto Generales
-                            <span class="gls-icon">?</span>
-                            <span class="gls-tip">Monto asignado para el período. Es el techo de gasto esperado por insumo.</span>
-                        </span>
-                        <span class="mx-1 text-slate-300">vs</span>
-                        <span class="gls">Facturado
-                            <span class="gls-icon">?</span>
-                            <span class="gls-tip">Lo que el proveedor cobró efectivamente. Barras por debajo del presupuesto indican ahorro.</span>
-                        </span>
-                    </h2>
+                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">Presupuesto vs facturado</h2>
                     <p id="cmpChartSubtitle" class="text-[11px] text-slate-400 mt-0.5">—</p>
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1 max-w-2xl leading-snug">
+                        Pasa el cursor por cada insumo para ver presupuesto y facturado a la vez. Con muchos insumos, desplázate con la barra inferior o usa la rueda del ratón para acercar el eje horizontal (luego «Restablecer zoom»).
+                    </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-4 pb-1 text-[11px] font-bold text-slate-500">
                     <span class="flex items-center gap-1.5">
@@ -274,42 +120,7 @@
                     </span>
                 </div>
             </div>
-            <div id="cmpInsightMontos" class="mt-3 mb-1"></div>
-            <div id="cmpChartMontos" class="w-full" style="min-height:360px;"></div>
-        </div>
-
-        {{-- ── GRÁFICA 2: DESVIACIÓN % ── --}}
-        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-xl overflow-hidden">
-            <div class="px-5 pt-4 pb-0 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">
-                        <span class="gls">Desviación respecto al Presupuesto
-                            <span class="gls-icon">?</span>
-                            <span class="gls-tip">Muestra qué tanto se alejó el gasto real del presupuesto asignado. Positivo = se gastó más. Negativo = se ahorró.</span>
-                        </span>
-                    </h2>
-                    <p class="text-[11px] text-slate-400 mt-0.5">
-                        Barras hacia la derecha (<span style="color:#f43f5e">rojas</span>) = excedente &nbsp;·&nbsp;
-                        Barras hacia la izquierda (<span style="color:#10b981">verdes</span>) = ahorro ✓
-                    </p>
-                </div>
-                <div class="flex flex-wrap items-center gap-4 pb-1 text-[11px] font-bold text-slate-500">
-                    <span class="flex items-center gap-1.5">
-                        <span class="inline-block w-8 h-3 rounded" style="background:#f43f5e;opacity:.85"></span>
-                        Excedente
-                    </span>
-                    <span class="flex items-center gap-1.5">
-                        <span class="inline-block w-8 h-3 rounded" style="background:#10b981;opacity:.85"></span>
-                        Ahorro
-                    </span>
-                    <span class="flex items-center gap-1.5">
-                        <span class="inline-block w-8 h-0 border-t-2 border-dashed" style="border-color:#94a3b8"></span>
-                        Sin desviación
-                    </span>
-                </div>
-            </div>
-            <div id="cmpInsightDesv" class="mt-3 mb-1"></div>
-            <div id="cmpChartDesv" class="w-full" style="min-height:260px;"></div>
+            <div id="cmpChartMontos" class="w-full" style="min-height:400px;"></div>
         </div>
 
         {{-- ── TABLA DETALLE ── --}}
@@ -327,35 +138,9 @@
                         <tr>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Insumo</th>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Gerencia</th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-indigo-400 uppercase tracking-wider text-right">
-                                <span class="gls">
-                                    Presupuesto
-                                    <span class="gls-icon">?</span>
-                                    <span class="gls-tip">Monto asignado al insumo para el período seleccionado.</span>
-                                </span>
-                            </th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-emerald-500 uppercase tracking-wider text-right">
-                                <span class="gls">
-                                    Facturado
-                                    <span class="gls-icon">?</span>
-                                    <span class="gls-tip">Monto real cobrado por el proveedor.</span>
-                                </span>
-                            </th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-right">
-                                <span class="gls">
-                                    Diferencia
-                                    <span class="gls-icon">?</span>
-                                    <span class="gls-tip">Cuánto se gastó de más (positivo) o de menos — ahorro (negativo) — respecto al presupuesto.</span>
-                                </span>
-                            </th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-right">
-                                <span class="gls">
-                                    Desviación %
-                                    <span class="gls-icon">?</span>
-                                    <span class="gls-tip">Porcentaje de diferencia entre el presupuesto y lo facturado. + = excedente. − = ahorro.</span>
-                                </span>
-                            </th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-center">Estado</th>
+                            <th class="px-4 py-3 text-[11px] font-extrabold text-indigo-400 uppercase tracking-wider text-right">Presupuesto</th>
+                            <th class="px-4 py-3 text-[11px] font-extrabold text-emerald-500 uppercase tracking-wider text-right">Facturado</th>
+                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-center">Ahorro / Desviación</th>
                         </tr>
                     </thead>
                     <tbody id="cmpTableBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
@@ -369,6 +154,7 @@
 
 @push('facturas_scripts')
 <script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
 <script>
 (function () {
     'use strict';
@@ -386,7 +172,6 @@
 
     /* ══ Helpers ══ */
     const f    = v => (v != null && v !== 0 && !isNaN(v)) ? FMT.format(v) : '—';
-    const pct  = v => v != null ? `${v > 0 ? '+' : ''}${parseFloat(v).toFixed(1)}%` : '—';
     const gNom = (id, nombre) => nombre || GERENCIA_MAP[id] || (id ? 'Gerencia #'+id : 'Sin gerencia asignada');
     const gBadge = (id, nombre) => {
         const n = nombre || GERENCIA_MAP[id] || (id ? 'Gerencia #'+id : null);
@@ -394,101 +179,94 @@
         return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700"><i class="fas fa-hourglass-half text-[9px]"></i> Sin asignar</span>`;
     };
 
-    /* ── Colores por nivel de desviación ──
-       Solo positivos (excedente) son malos.
-       Negativo = ahorro = verde siempre.      */
-    function desvColor(v) {
-        if (v == null) return '#94a3b8';
-        if (v > 5)    return '#f43f5e';   /* excedente → rojo   */
-        if (v < -5)   return '#0d9488';   /* ahorro    → teal   */
-        return '#94a3b8';                 /* neutral   → gris   */
+    /** Color según facturado vs presupuesto (sin umbrales de %) */
+    function colorPorMontos(m) {
+        const presu = m.presupuesto_generales;
+        const fact = m.total_facturado ?? 0;
+        if (presu == null || presu <= 0) return fact > 0 ? '#f43f5e' : '#94a3b8';
+        if (fact > presu) return '#f43f5e';
+        if (fact < presu) return '#0d9488';
+        return '#94a3b8';
     }
 
-    function desvClass(v) {
-        if (v == null) return 'text-slate-400';
-        if (v > 5)    return 'text-rose-600 dark:text-rose-400 font-bold';
-        if (v < -5)   return 'text-teal-600 dark:text-teal-400 font-semibold';
-        return 'text-slate-400';
+    function colorTotales(totPresu, totFact) {
+        if (!totPresu || totPresu <= 0) return totFact > 0 ? '#f43f5e' : '#94a3b8';
+        if (totFact > totPresu) return '#f43f5e';
+        if (totFact < totPresu) return '#0d9488';
+        return '#94a3b8';
     }
 
-    /* Badge de estado — Solo Ahorro y Desviacion */
-    function estadoBadge(desvPct) {
-        const v = desvPct ?? 0;
-        if (v < -5) return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800"><i class="fas fa-piggy-bank"></i> Ahorro</span>`;
-        if (v > 5) return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"><i class="fas fa-exclamation-triangle"></i> Desviacion</span>`;
-        return '';
+    function estadoBadgeMontos(m) {
+        const presu = m.presupuesto_generales;
+        const fact = m.total_facturado ?? 0;
+        if (presu == null || presu <= 0) {
+            if (fact > 0) {
+                return `<span class="inline-flex flex-col items-center gap-0.5 max-w-[11rem] mx-auto">
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"><i class="fas fa-exclamation-triangle"></i> Desviación</span>
+                    <span class="text-[11px] font-mono font-extrabold text-rose-600 dark:text-rose-400">${f(fact)}</span>
+                    <span class="text-[9px] text-slate-400 dark:text-slate-500 italic leading-tight text-center">Sin presupuesto en Cortes: el facturado cuenta como desviación.</span>
+                </span>`;
+            }
+            return `<span class="text-[10px] text-slate-400 italic">Sin presupuesto</span>`;
+        }
+        if (fact > presu) {
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800"><i class="fas fa-exclamation-triangle"></i> Desviación</span>`;
+        }
+        if (fact < presu) {
+            return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800"><i class="fas fa-piggy-bank"></i> Ahorro</span>`;
+        }
+        return `<span class="text-[10px] text-slate-500">Igual al presupuesto</span>`;
     }
 
-    /* ══ INSIGHTS ══ */
+    function insumoConPresupuesto(i) {
+        const p = i.metricas.presupuesto_generales;
+        return p != null && p > 0;
+    }
+
+    /* ══ Un solo aviso: ahorro vs desviación por montos ══ */
     function renderInsights(insumos) {
-        const totPresu = insumos.reduce((s,i) => s + (i.metricas.presupuesto_generales || 0), 0);
-        const totFact  = insumos.reduce((s,i) => s + (i.metricas.total_facturado || 0), 0);
+        const conPresu = insumos.filter(insumoConPresupuesto);
+        const desv = conPresu.filter(i => (i.metricas.total_facturado ?? 0) > i.metricas.presupuesto_generales);
+        const aho  = conPresu.filter(i => (i.metricas.total_facturado ?? 0) < i.metricas.presupuesto_generales);
+        const sinP = insumos.filter(i => !insumoConPresupuesto(i));
+        const desvSinPresu = sinP.filter(i => (i.metricas.total_facturado ?? 0) > 0);
+        const tieneDesv = desv.length > 0 || desvSinPresu.length > 0;
 
-        /* Solo cuentan como problema los que SE PASAN del presupuesto */
-        const desviaciones = insumos.filter(i => (i.metricas.desviacion_pct ?? 0) > 5);
-        const ahorros  = insumos.filter(i => (i.metricas.desviacion_pct ?? 0) < -5);
-        const sinPresu = insumos.filter(i => !i.metricas.presupuesto_generales);
-
-        const difPct = totPresu > 0 ? ((totFact - totPresu) / totPresu) * 100 : null;
-
-        /* ── Insight global ── */
         let gType, gIcon, gMsg;
-        if (desviaciones.length > 0) {
+        if (tieneDesv && aho.length) {
+            gType = 'warn'; gIcon = 'fa-balance-scale';
+            const partDesv = [];
+            if (desv.length) partDesv.push(`<strong>Sobre presupuesto:</strong> ${desv.map(i => i.nombre).join(', ')}`);
+            if (desvSinPresu.length) partDesv.push(`<strong>Sin presupuesto en Cortes</strong> (facturado como desviación): ${desvSinPresu.map(i => i.nombre).join(', ')}`);
+            gMsg = `${partDesv.join('. ')}. <strong>Ahorro:</strong> ${aho.map(i => i.nombre).join(', ')}.`;
+        } else if (tieneDesv) {
             gType = 'alert'; gIcon = 'fa-exclamation-triangle';
-            const ahorroExtra = ahorros.length > 0
-                ? ` · <span style="color:#0d9488">✓ ${ahorros.length} con ahorro: ${ahorros.map(i=>i.nombre).join(', ')}</span>`
-                : '';
-            gMsg = `<strong>${desviaciones.length} insumo${desviaciones.length!==1?'s':''} con excedente (&gt;5%):</strong> ${desviaciones.map(i=>i.nombre).join(', ')}. Solicita justificación al área responsable.${ahorroExtra}`;
-        } else if (ahorros.length > 0) {
+            if (desv.length && desvSinPresu.length) {
+                gMsg = `<strong>Desviación</strong> por encima del presupuesto: ${desv.map(i => i.nombre).join(', ')}. <strong>Facturado sin presupuesto en Cortes</strong> (se cuenta como desviación): ${desvSinPresu.map(i => i.nombre).join(', ')}.`;
+            } else if (desv.length) {
+                gMsg = `<strong>Desviación</strong> (facturado por encima del presupuesto): ${desv.map(i => i.nombre).join(', ')}.`;
+            } else {
+                gMsg = `<strong>Desviación</strong> — hay facturación sin presupuesto en Cortes: ${desvSinPresu.map(i => i.nombre).join(', ')}. El monto facturado se trata como desviación.`;
+            }
+        } else if (aho.length) {
             gType = 'saving'; gIcon = 'fa-piggy-bank';
-            gMsg = `<strong>¡Buen trabajo! ${ahorros.length} insumo${ahorros.length!==1?'s tienen':' tiene'} ahorro</strong> (más del 5% por debajo del presupuesto): ${ahorros.map(i=>i.nombre).join(', ')}. Sin excedentes detectados.`;
+            gMsg = `<strong>Ahorro</strong> (facturado por debajo del presupuesto): ${aho.map(i => i.nombre).join(', ')}.`;
         } else {
             gType = 'ok'; gIcon = 'fa-check-circle';
-            gMsg = difPct != null
-                ? `Todo en orden. La desviación global es <strong>${pct(difPct)}</strong> — ${difPct > 0 ? 'ligero excedente' : 'ahorro'} respecto al presupuesto asignado.`
-                : 'No se detectaron excedentes. Todos los insumos están dentro del presupuesto.';
+            gMsg = conPresu.length
+                ? 'Todos los insumos con presupuesto están en línea con lo presupuestado.'
+                : 'No hay presupuesto en Cortes para comparar en este período.';
+        }
+        const sinPsinFact = sinP.filter(i => (i.metricas.total_facturado ?? 0) <= 0);
+        if (sinPsinFact.length) {
+            gMsg += ` <span class="opacity-90">(${sinPsinFact.length} sin presupuesto y sin facturar en el período: ${sinPsinFact.map(i => i.nombre).join(', ')}.)</span>`;
         }
         document.getElementById('cmpInsightGlobal').innerHTML =
             `<div class="insight-bar ${gType}"><i class="fas ${gIcon} mt-0.5 flex-shrink-0"></i><span>${gMsg}</span></div>`;
-
-        /* ── Insight gráfica montos ── */
-        const maxDesv = insumos.reduce((m,i) => Math.max(m, i.metricas.desviacion_pct ?? 0), 0);
-        let mType, mMsg;
-        if (maxDesv > 5) {
-            mType = 'alert';
-            mMsg  = `Las barras <strong>rojas</strong> superan al presupuesto (azul). Revisa los insumos marcados como Desviacion — se gastó más de lo autorizado.`;
-        } else {
-            mType = 'ok';
-            mMsg  = ahorros.length > 0
-                ? `¡Excelente control de gastos! ${ahorros.length} insumo${ahorros.length!==1?'s están':' está'} por debajo del presupuesto — se generó ahorro en el período.`
-                : `Los montos facturados están dentro o por debajo del presupuesto — buen control de gastos en el período seleccionado.`;
-        }
-        document.getElementById('cmpInsightMontos').innerHTML =
-            `<div class="insight-bar ${mType}"><i class="fas fa-chart-bar mt-0.5 flex-shrink-0"></i><span>${mMsg}</span></div>`;
-
-        /* ── Insight gráfica desviación ── */
-        let dType, dMsg;
-        if (desviaciones.length > 0) {
-            dType = 'alert';
-            dMsg  = `Las barras que más sobresalen a la derecha son los insumos con mayor excedente. <strong>Prioriza los marcados en rojo</strong> (&gt;5%). Las barras verdes a la izquierda representan ahorro.`;
-        } else if (sinPresu.length > 0) {
-            dType = 'warn';
-            const nombresDP = sinPresu.map(i => i.nombre).join(', ');
-            dMsg  = `<strong>${sinPresu.length} insumo${sinPresu.length!==1?'s sin presupuesto en Cortes':' sin presupuesto en Cortes'}:</strong> ${nombresDP}. Para calcular la desviación, ve al módulo <strong>Cortes</strong> y asigna el presupuesto anual.`;
-        } else if (ahorros.length > 0) {
-            dType = 'saving';
-            dMsg  = `<strong>¡Las barras verdes indican ahorro!</strong> ${ahorros.length} insumo${ahorros.length!==1?'s están':' está'} por debajo del presupuesto. Sin excedentes detectados — excelente gestión.`;
-        } else {
-            dType = 'ok';
-            dMsg  = `Las desviaciones están dentro de rangos controlados. Sin excedentes significativos — buen manejo del presupuesto.`;
-        }
-        document.getElementById('cmpInsightDesv').innerHTML =
-            `<div class="insight-bar ${dType}"><i class="fas fa-chart-bar mt-0.5 flex-shrink-0"></i><span>${dMsg}</span></div>`;
     }
 
-    /* ══ GRÁFICAS ══ */
+    /* ══ GRÁFICA (solo presupuesto vs facturado) ══ */
     let chartMontos = null;
-    let chartDesv   = null;
 
     function applyHCAnimation(H) {
         ['line','spline'].forEach(t => {
@@ -508,7 +286,6 @@
 
     function renderChart(insumos) {
         if (chartMontos) { chartMontos.destroy(); chartMontos = null; }
-        if (chartDesv)   { chartDesv.destroy();   chartDesv   = null; }
         applyHCAnimation(Highcharts);
 
         const dark    = isDark();
@@ -522,95 +299,83 @@
         const cats      = insumos.map(i => i.nombre.length > 22 ? i.nombre.substring(0,22)+'…' : i.nombre);
         const presuData = [];
         const factData  = [];
-        const desvData  = [];
 
         insumos.forEach(ins => {
-            const m   = ins.metricas;
-            const dp  = m.desviacion_pct;
-            /* Color barra facturado: teal si ahorro, rojo si excedente */
-            const fc  = dp == null ? '#10b981'
-                      : dp < -5   ? '#0d9488'
-                      : dp > 5    ? '#f43f5e'
-                      : '#10b981';
-            const dclr = dp == null ? '#94a3b8'
-                       : dp < 0    ? '#0d9488'
-                       : dp > 5    ? '#f43f5e'
-                       : '#94a3b8';
-
+            const m = ins.metricas;
+            const fc = colorPorMontos(m);
             presuData.push({ y: m.presupuesto_generales ?? 0, name: ins.nombre });
-            factData.push( { y: m.total_facturado ?? 0,       name: ins.nombre, color: fc });
-            desvData.push( { y: dp,                           name: ins.nombre, color: dclr });
+            factData.push({ y: m.total_facturado ?? 0, name: ins.nombre, color: fc });
         });
 
-        /* Tooltip montos */
-        function tooltipMontos() {
+        function tooltipSharedMontos() {
             return {
-                useHTML: true, backgroundColor: ttBg, borderColor: ttBdr,
-                borderRadius: 12, borderWidth: 1, shadow: true,
-                style: { color: ttClr, fontSize: '12px', padding: '10px' },
+                shared: true,
+                useHTML: true,
+                followPointer: true,
+                stickOnContact: true,
+                backgroundColor: ttBg,
+                borderColor: ttBdr,
+                borderRadius: 12,
+                borderWidth: 1,
+                shadow: true,
+                padding: 0,
+                style: { color: ttClr },
                 formatter: function () {
-                    const idx = this.point.index;
-                    const ins = insumos[idx]; if (!ins) return '';
-                    const m   = ins.metricas;
-                    const dp  = m.desviacion_pct;
-                    const dc  = desvColor(dp);
-                    const dif = (m.total_facturado ?? 0) - (m.presupuesto_generales ?? 0);
-                    const interpret = dp == null ? ''
-                        : dp < -5  ? `<div style="margin-top:8px;font-size:11px;color:#0d9488;font-weight:700">✓ Ahorro — se gastó menos de lo presupuestado</div>`
-                        : dp > 5   ? `<div style="margin-top:8px;font-size:11px;color:#f43f5e;font-weight:700">⚠ Excedente — se gastó más de lo presupuestado</div>`
-                        : '';
-                    return `<div style="min-width:240px">
-                        <div style="font-weight:800;font-size:13px;margin-bottom:4px;white-space:normal">${ins.nombre}</div>
-                        <div style="color:#94a3b8;font-size:10px;margin-bottom:10px">${gNom(ins.gerencia_id, ins.gerencia)}</div>
-                        <div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:4px">
-                            <span style="color:#818cf8;font-weight:600">Presupuesto asignado</span>
-                            <span style="font-family:monospace;font-weight:700">${f(m.presupuesto_generales)}</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:4px">
-                            <span style="color:${dc};font-weight:600">Lo que se facturó</span>
-                            <span style="font-family:monospace;font-weight:700;color:${dc}">${f(m.total_facturado)}</span>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;gap:20px;margin-top:6px;padding-top:6px;border-top:1px solid #334155">
-                            <span style="color:#94a3b8;font-weight:600">Diferencia</span>
-                            <span style="font-family:monospace;font-weight:700;color:${dc}">${dif >= 0 ? '+' : ''}${f(dif)}</span>
-                        </div>
-                        ${interpret}
-                    </div>`;
-                }
-            };
-        }
-
-        /* Tooltip desviación */
-        function tooltipDesv() {
-            return {
-                useHTML: true, backgroundColor: ttBg, borderColor: ttBdr,
-                borderRadius: 12, borderWidth: 1, shadow: true,
-                style: { color: ttClr, fontSize: '12px', padding: '10px' },
-                formatter: function () {
-                    const idx = this.point.index;
-                    const ins = insumos[idx]; if (!ins) return '';
-                    const m   = ins.metricas;
-                    const dp  = m.desviacion_pct;
-                    const dc  = desvColor(dp);
-                    const accion = dp == null ? 'Sin presupuesto asignado'
-                        : dp < -5  ? `✓ Ahorro de ${f(Math.abs(m.desviacion_monto ?? 0))} — ¡excelente gestión!`
-                        : dp > 5   ? '⚠ Excedente — revisar con el área responsable'
-                        : '';
-                    return `<div style="min-width:220px">
-                        <div style="font-weight:800;font-size:13px;margin-bottom:4px;white-space:normal">${ins.nombre}</div>
-                        <div style="color:#94a3b8;font-size:10px;margin-bottom:10px">${gNom(ins.gerencia_id, ins.gerencia)}</div>
-                        <div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:8px">
-                            <span style="font-weight:700">Desviación</span>
-                            <span style="font-family:monospace;font-weight:800;font-size:16px;color:${dc}">${pct(dp)}</span>
-                        </div>
-                        <div style="font-size:11px;color:${dc};font-weight:600">${accion}</div>
+                    const pts = this.points;
+                    if (!pts || !pts.length) return false;
+                    const idx = pts[0].point.index;
+                    const ins = insumos[idx];
+                    if (!ins) return false;
+                    const m = ins.metricas;
+                    const presu = m.presupuesto_generales;
+                    const fact = m.total_facturado ?? 0;
+                    const dc = colorPorMontos(m);
+                    const sinPresuCorte = presu == null || presu <= 0;
+                    const dif = sinPresuCorte ? fact - 0 : fact - presu;
+                    let etiqueta = '';
+                    if (sinPresuCorte) {
+                        if (fact > 0) {
+                            etiqueta = '<div style="margin-top:8px;font-size:11px;color:#f43f5e;font-weight:700">Desviación: sin presupuesto en Cortes; el facturado completo se considera desviación.</div>';
+                        } else {
+                            etiqueta = '<div style="margin-top:10px;font-size:11px;color:#94a3b8">Sin presupuesto ni facturado en Cortes para comparar.</div>';
+                        }
+                    } else if (fact > presu) {
+                        etiqueta = '<div style="margin-top:8px;font-size:11px;color:#f43f5e;font-weight:700">Desviación — facturado por encima del presupuesto</div>';
+                    } else if (fact < presu) {
+                        etiqueta = '<div style="margin-top:8px;font-size:11px;color:#0d9488;font-weight:700">Ahorro — facturado por debajo del presupuesto</div>';
+                    } else {
+                        etiqueta = '<div style="margin-top:8px;font-size:11px;color:#64748b">Igual al presupuesto</div>';
+                    }
+                    let rows = '';
+                    pts.forEach(p => {
+                        const isP = p.series.name === 'Presupuesto';
+                        const col = isP ? '#818cf8' : dc;
+                        const sw = isP ? '#6366f1' : (p.color || dc);
+                        rows += `<div style="display:flex;justify-content:space-between;align-items:center;gap:18px;margin-top:6px">
+                            <span style="display:inline-flex;align-items:center;gap:6px;color:${col};font-weight:700;font-size:12px">
+                                <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${sw};opacity:0.95"></span>${p.series.name}</span>
+                            <span style="font-family:ui-monospace,monospace;font-weight:800;font-size:13px;color:${isP ? '#4f46e5' : dc}">${f(p.y)}</span>
+                        </div>`;
+                    });
+                    return `<div style="min-width:268px;padding:12px 14px">
+                        <div style="font-weight:800;font-size:13px;line-height:1.25;margin-bottom:2px;color:${ttClr}">${ins.nombre}</div>
+                        <div style="color:#94a3b8;font-size:10px;margin-bottom:6px">${gNom(ins.gerencia_id, ins.gerencia)}</div>
+                        ${rows}
+                        ${(!sinPresuCorte && presu > 0) || (sinPresuCorte && fact > 0) ? `<div style="display:flex;justify-content:space-between;gap:18px;margin-top:10px;padding-top:8px;border-top:1px solid ${ttBdr}">
+                            <span style="color:#94a3b8;font-weight:600;font-size:11px">${sinPresuCorte ? 'Desviación (sin presupuesto en Cortes)' : 'Diferencia (fact. − pres.)'}</span>
+                            <span style="font-family:ui-monospace,monospace;font-weight:800;font-size:12px;color:${dc}">${dif >= 0 ? '+' : ''}${f(dif)}</span>
+                        </div>` : ''}
+                        ${etiqueta}
                     </div>`;
                 }
             };
         }
 
         const xAxisBase = {
-            categories: cats, lineColor: axisClr, tickColor: axisClr,
+            categories: cats,
+            lineColor: axisClr,
+            tickColor: axisClr,
+            crosshair: { color: dark ? 'rgba(148,163,184,0.35)' : 'rgba(100,116,139,0.35)', width: 1, dashStyle: 'ShortDot' },
             labels: {
                 style: { color: lblClr, fontSize: '11px', fontWeight: '600' },
                 rotation: cats.length > 6 ? -35 : 0
@@ -618,204 +383,184 @@
         };
         const yFmt = function () {
             const v = Math.abs(this.value);
-            if (v >= 1000000) return '$'+(this.value/1000000).toFixed(1)+'M';
-            if (v >= 1000)    return '$'+(this.value/1000).toFixed(0)+'k';
-            return '$'+this.value;
+            if (v >= 1000000) return '$' + (this.value / 1000000).toFixed(1) + 'M';
+            if (v >= 1000) return '$' + (this.value / 1000).toFixed(0) + 'k';
+            return '$' + this.value;
         };
 
-        chartMontos = Highcharts.chart('cmpChartMontos', {
-            chart: { type:'column', backgroundColor:'transparent', style:{fontFamily:'inherit'}, height:360, marginTop:10, animation:{duration:700} },
-            title: { text:null }, credits: { enabled:false },
-            legend: { enabled:true, align:'center', verticalAlign:'bottom', itemStyle:{ color:lblClr, fontWeight:'600', fontSize:'11px' } },
-            tooltip: tooltipMontos(),
-            xAxis: xAxisBase,
-            yAxis: { title:{ text:null }, gridLineColor:gridClr, labels:{ style:{color:lblClr, fontSize:'11px'}, formatter: yFmt } },
-            plotOptions: { column: { borderRadius:5, groupPadding:.15, pointPadding:.05, animation:{duration:700} } },
-            series: [
-                { name:'Presupuesto Generales', data:presuData, color:'#6366f1', opacity:.85 },
-                { name:'Facturado',             data:factData,  colorByPoint:true, animation:{duration:700,defer:200} }
-            ],
-            responsive: { rules:[{ condition:{maxWidth:520}, chartOptions:{ xAxis:{ labels:{ rotation:-55, style:{fontSize:'10px'} } }, chart:{height:280} } }] }
-        });
+        const plotMinW = Math.min(4200, Math.max(640, insumos.length * 76));
 
-        const chartHeight = Math.max(260, insumos.length * 52 + 80);
-        chartDesv = Highcharts.chart('cmpChartDesv', {
-            chart: { type:'bar', backgroundColor:'transparent', style:{fontFamily:'inherit'}, height:chartHeight, marginTop:10, animation:{duration:800} },
-            title: { text:null }, credits: { enabled:false },
-            legend: { enabled:false },
-            tooltip: tooltipDesv(),
-            xAxis: { categories:cats, lineColor:axisClr, tickColor:axisClr, labels:{ style:{color:lblClr, fontSize:'11px', fontWeight:'600'} } },
-            yAxis: {
-                title:{ text:null }, gridLineColor:gridClr,
-                labels:{ format:'{value:.1f}%', style:{ color:lblClr, fontSize:'11px' } },
-                plotLines:[{ value:0, color: dark?'#64748b':'#94a3b8', width:2, zIndex:5, dashStyle:'Dash',
-                    label:{ text:'Sin desviación', style:{ color:lblClr, fontSize:'10px', fontWeight:'700' } }
-                }]
-            },
-            plotOptions: { bar: {
-                borderRadius:4, groupPadding:.1, pointPadding:.05, animation:{duration:800},
-                dataLabels: { enabled:true, useHTML:true,
-                    formatter: function() {
-                        if (this.y == null) return '';
-                        return `<span style="font-family:monospace;font-size:10px;font-weight:700;color:${this.point.color}">${this.y > 0 ? '+' : ''}${this.y.toFixed(1)}%</span>`;
-                    }, inside:false
+        if (!window._cmpHcLangSet) {
+            Highcharts.setOptions({
+                lang: {
+                    downloadPNG: 'Descargar PNG',
+                    downloadJPEG: 'Descargar JPEG',
+                    downloadPDF: 'Descargar PDF',
+                    downloadSVG: 'Descargar SVG',
+                    printChart: 'Imprimir gráfica',
+                    resetZoom: 'Restablecer zoom',
+                    contextButtonTitle: 'Menú de la gráfica'
                 }
-            }},
-            series: [{ name:'Desviación vs Presupuesto', data:desvData, colorByPoint:true }],
-            responsive: { rules:[{ condition:{maxWidth:520}, chartOptions:{ chart:{ height: Math.max(200, insumos.length*42+60) } } }] }
+            });
+            window._cmpHcLangSet = true;
+        }
+
+        chartMontos = Highcharts.chart('cmpChartMontos', {
+            chart: {
+                type: 'column',
+                backgroundColor: 'transparent',
+                style: { fontFamily: 'inherit' },
+                height: cats.length > 8 ? 420 : 400,
+                marginTop: 8,
+                marginBottom: 72,
+                spacing: [12, 12, 8, 12],
+                animation: { duration: 700 },
+                zooming: { type: 'x', mouseWheel: { enabled: true } },
+                scrollablePlotArea: { minWidth: plotMinW, opacity: 1, applyAnimation: true },
+                resetZoomButton: {
+                    position: { align: 'right', verticalAlign: 'top', x: -8, y: 8 },
+                    theme: { fill: dark ? '#312e81' : '#e0e7ff', stroke: dark ? '#6366f1' : '#6366f1', style: { color: dark ? '#e0e7ff' : '#312e81', fontWeight: '700', fontSize: '11px' } }
+                }
+            },
+            title: { text: null },
+            credits: { enabled: false },
+            exporting: {
+                enabled: true,
+                buttons: {
+                    contextButton: {
+                        menuItems: ['downloadPNG', 'downloadJPEG', 'downloadPDF', 'downloadSVG', 'separator', 'printChart']
+                    }
+                },
+                fallbackToExportServer: false
+            },
+            legend: {
+                enabled: true,
+                align: 'center',
+                verticalAlign: 'bottom',
+                itemMarginTop: 6,
+                itemStyle: { color: lblClr, fontWeight: '600', fontSize: '11px' },
+                symbolRadius: 3
+            },
+            tooltip: tooltipSharedMontos(),
+            xAxis: xAxisBase,
+            yAxis: {
+                title: { text: 'Importe (MXN)', style: { color: lblClr, fontSize: '10px', fontWeight: '700' }, margin: 10 },
+                gridLineColor: gridClr,
+                crosshair: { color: dark ? 'rgba(148,163,184,0.25)' : 'rgba(100,116,139,0.25)', width: 1, dashStyle: 'ShortDot' },
+                labels: { style: { color: lblClr, fontSize: '11px' }, formatter: yFmt },
+                stackLabels: { enabled: false }
+            },
+            plotOptions: {
+                column: {
+                    borderRadius: 6,
+                    borderWidth: 0,
+                    groupPadding: 0.14,
+                    pointPadding: 0.06,
+                    maxPointWidth: 56,
+                    animation: { duration: 700 },
+                    states: {
+                        hover: { brightness: dark ? 0.12 : -0.06 },
+                        inactive: { opacity: 0.45 }
+                    }
+                },
+                series: {
+                    states: { inactive: { opacity: 0.45 } },
+                    animation: { duration: 650 }
+                }
+            },
+            series: [
+                { name: 'Presupuesto', data: presuData, color: '#6366f1', opacity: 0.9, borderColor: dark ? '#1e1b4b' : '#eef2ff', borderWidth: 1 },
+                { name: 'Facturado', data: factData, colorByPoint: true, animation: { duration: 700, defer: 180 }, borderColor: dark ? '#0f172a' : '#f8fafc', borderWidth: 1 }
+            ],
+            responsive: {
+                rules: [{
+                    condition: { maxWidth: 520 },
+                    chartOptions: {
+                        xAxis: { labels: { rotation: -55, style: { fontSize: '10px' } } },
+                        yAxis: { title: { text: null } },
+                        chart: { height: 300, scrollablePlotArea: { minWidth: Math.min(3600, Math.max(520, insumos.length * 64)) } }
+                    }
+                }]
+            }
         });
     }
 
-    /* ══ KPI CARDS ══ */
+    /* ══ KPI: solo presupuesto vs facturado ══ */
     function renderKpis(insumos) {
-        const totPresu     = insumos.reduce((s,i) => s + (i.metricas.presupuesto_generales || 0), 0);
-        const totFact      = insumos.reduce((s,i) => s + (i.metricas.total_facturado || 0), 0);
-        const dif          = totFact - totPresu;
-        const difPct       = totPresu > 0 ? (dif / totPresu) * 100 : null;
-        /* Solo cuenta excedentes reales (positivo > 10%) */
-        const conExcedente = insumos.filter(i => (i.metricas.desviacion_pct ?? 0) > 10).length;
-        const conAhorro    = insumos.filter(i => (i.metricas.desviacion_pct ?? 0) < -5).length;
-        const sinPresu     = insumos.filter(i => !i.metricas.presupuesto_generales).length;
-
-        function accion(nivel, texto) {
-            const c = {
-                ok:   'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
-                save: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300',
-                warn: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
-                bad:  'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300',
-            };
-            return `<span class="inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${c[nivel]}">${texto}</span>`;
+        const totPresu = insumos.reduce((s, i) => s + (i.metricas.presupuesto_generales || 0), 0);
+        const totFact  = insumos.reduce((s, i) => s + (i.metricas.total_facturado || 0), 0);
+        const dif      = totFact - totPresu;
+        const tienePresu = totPresu > 0;
+        const cantAhorrada = tienePresu ? Math.max(0, totPresu - totFact) : null;
+        const cantDesviada = tienePresu ? Math.max(0, totFact - totPresu) : (totFact > 0 ? totFact : null);
+        let resumen = 'Sin presupuesto total en Cortes para este período.';
+        let theme = 'slate';
+        if (tienePresu) {
+            if (dif > 0) { resumen = 'Desviación: el total facturado supera al presupuesto.'; theme = 'rose'; }
+            else if (dif < 0) { resumen = 'Ahorro: el total facturado está por debajo del presupuesto.'; theme = 'teal'; }
+            else { resumen = 'El total facturado coincide con el presupuesto.'; theme = 'slate'; }
+        } else if (totFact > 0) {
+            resumen = 'Sin presupuesto total en Cortes: el facturado se considera desviación.';
+            theme = 'rose';
         }
-
-        const cards = [
-            {
-                label: 'Presupuesto Total',
-                value: f(totPresu) === '—' ? 'Sin datos' : f(totPresu),
-                sub: `${insumos.length} insumo${insumos.length!==1?'s':''} en el período` + (sinPresu > 0 ? ` · ${sinPresu} sin presupuesto` : ''),
-                action: sinPresu > 0 ? accion('warn','Algunos insumos sin presupuesto') : accion('ok','Presupuesto base del período'),
-                icon: 'fa-wallet', theme: 'indigo'
-            },
-            {
-                label: 'Total Facturado',
-                value: f(totFact),
-                sub: dif === 0 ? 'Igual al presupuesto' : dif > 0
-                    ? `<span class="text-rose-500 font-semibold">+${f(dif)} sobre presupuesto</span>`
-                    : `<span class="text-teal-600 font-semibold">${f(Math.abs(dif))} de ahorro</span>`,
-                action: dif > totPresu * 0.15 ? accion('bad','Revisar gasto con el área')
-                    : dif > totPresu * 0.05   ? accion('warn','Monitorear tendencia')
-                    : dif < -(totPresu * 0.05) ? accion('save','¡Ahorro generado!')
-                    : accion('ok','Sin acción requerida'),
-                icon: 'fa-receipt',
-                theme: dif > totPresu * 0.05 ? (dif > totPresu * 0.15 ? 'rose' : 'amber') : 'emerald'
-            },
-            {
-                label: 'Diferencia',
-                value: dif === 0 ? 'Equilibrado' : (dif > 0 ? '+' : '') + f(dif),
-                sub: difPct != null
-                    ? (Math.abs(difPct) < 1 ? 'Sin desviación significativa'
-                      : difPct < 0 ? `Ahorro de ${pct(Math.abs(difPct))} respecto al presupuesto`
-                      : `Excedente de ${pct(difPct)} respecto al presupuesto`)
-                    : 'Sin presupuesto para calcular',
-                action: difPct == null    ? accion('warn','Sin datos suficientes')
-                    : difPct < -5         ? accion('save','Ahorro — ¡buen desempeño!')
-                    : Math.abs(difPct) < 5 ? accion('ok','Dentro del rango esperado')
-                    : difPct > 0          ? accion('bad','Excedente a justificar')
-                    : accion('ok','Sin acción requerida'),
-                icon: dif > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down',
-                theme: difPct == null ? 'slate' : (difPct > 15 ? 'rose' : difPct > 5 ? 'amber' : 'emerald')
-            },
-            {
-                label: 'Desviación Global',
-                value: difPct != null ? pct(difPct) : '—',
-                sub: difPct == null ? 'No hay presupuesto registrado'
-                    : Math.abs(difPct) < 5 ? 'Rango aceptable (menos del 5%)'
-                    : difPct > 0 ? `Se gastó ${pct(difPct)} más de lo planeado`
-                    : `Se ahorró ${pct(Math.abs(difPct))} respecto al presupuesto`,
-                action: difPct == null       ? accion('warn','Registrar presupuesto')
-                    : difPct < -5            ? accion('save','¡Ahorro!')
-                    : Math.abs(difPct) > 15  ? accion('bad','Revisión urgente')
-                    : Math.abs(difPct) > 5   ? accion('warn','Monitorear')
-                    : accion('ok','Sin acción requerida'),
-                icon: 'fa-chart-pie',
-                theme: difPct == null ? 'slate' : Math.abs(difPct) > 15 ? 'rose' : Math.abs(difPct) > 5 ? 'amber' : 'emerald'
-            },
-            {
-                label: conExcedente > 0 ? 'Insumos con Excedente' : 'Balance de Insumos',
-                value: conExcedente === 0
-                    ? (conAhorro > 0 ? `${conAhorro} con ahorro` : 'Sin excedentes')
-                    : `${conExcedente} con excedente`,
-                sub: conExcedente === 0
-                    ? (conAhorro > 0
-                        ? `${conAhorro} insumo${conAhorro!==1?'s tienen':' tiene'} gasto por debajo del presupuesto`
-                        : 'Todos dentro del presupuesto (&lt;10%)')
-                    : `${conExcedente} insumo${conExcedente!==1?'s':''} superan el 10% del presupuesto`,
-                action: conExcedente === 0
-                    ? (conAhorro > 0 ? accion('save',`${conAhorro} insumo${conAhorro!==1?'s':''} con ahorro`) : accion('ok','Sin acción requerida'))
-                    : (conExcedente > 3 ? accion('bad','Atención inmediata') : accion('warn','Revisar en la próxima reunión')),
-                icon: conExcedente === 0 ? (conAhorro > 0 ? 'fa-piggy-bank' : 'fa-shield-check') : 'fa-exclamation-triangle',
-                theme: conExcedente === 0 ? 'emerald' : (conExcedente > 3 ? 'rose' : 'amber')
-            }
-        ];
 
         const themes = {
             indigo:  { wrap:'border-indigo-200  dark:border-indigo-800/50  bg-indigo-50  dark:bg-indigo-950/40',  ico:'bg-indigo-100  dark:bg-indigo-900/50  text-indigo-600  dark:text-indigo-400',  val:'text-indigo-700  dark:text-indigo-200'  },
-            emerald: { wrap:'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/40', ico:'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400', val:'text-emerald-700 dark:text-emerald-200' },
-            rose:    { wrap:'border-rose-200    dark:border-rose-800/50    bg-rose-50    dark:bg-rose-950/40',    ico:'bg-rose-100    dark:bg-rose-900/50    text-rose-600    dark:text-rose-400',    val:'text-rose-700    dark:text-rose-200'    },
-            amber:   { wrap:'border-amber-200   dark:border-amber-800/50   bg-amber-50   dark:bg-amber-950/40',   ico:'bg-amber-100   dark:bg-amber-900/50   text-amber-600   dark:text-amber-400',   val:'text-amber-700   dark:text-amber-200'   },
-            slate:   { wrap:'border-slate-200   dark:border-slate-700      bg-slate-50   dark:bg-slate-800/30',   ico:'bg-slate-100   dark:bg-slate-800      text-slate-500   dark:text-slate-400',   val:'text-slate-600   dark:text-slate-300'   }
+            teal:    { wrap:'border-teal-200 dark:border-teal-800/50 bg-teal-50 dark:bg-teal-950/40', ico:'bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400', val:'text-teal-800 dark:text-teal-200' },
+            rose:    { wrap:'border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-950/40', ico:'bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400', val:'text-rose-800 dark:text-rose-200' },
+            slate:   { wrap:'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30', ico:'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400', val:'text-slate-700 dark:text-slate-200' }
         };
+        const tIndigo = themes.indigo;
+        const tRes = theme === 'rose' ? themes.rose : theme === 'teal' ? themes.teal : themes.slate;
+        const tTeal = themes.teal;
+        const tRose = themes.rose;
 
-        document.getElementById('cmpKpis').innerHTML = cards.map(c => {
-            const t = themes[c.theme];
-            return `<div class="rounded-2xl border ${t.wrap} p-4 shadow-sm flex flex-col">
+        const subAhorrada = !tienePresu
+            ? 'Sin presupuesto en Cortes para calcular.'
+            : (cantAhorrada > 0 ? 'Presupuesto total menos facturado (monto a favor).' : 'Sin monto ahorrado: el facturado no está por debajo del presupuesto.');
+        const subDesviada = !tienePresu
+            ? (totFact > 0 ? 'Sin presupuesto en Cortes: el total facturado cuenta como desviación.' : 'Sin facturado ni presupuesto para calcular desviación.')
+            : (cantDesviada > 0 ? 'Facturado total menos presupuesto (monto en contra).' : 'Sin desviación: el facturado no supera al presupuesto.');
+
+        const cards = [
+            { label: 'Presupuesto', value: !tienePresu ? '—' : f(totPresu), sub: 'Suma en Cortes del período', t: tIndigo, icon: 'fa-wallet' },
+            { label: 'Facturado', value: f(totFact), sub: resumen, t: tRes, icon: 'fa-receipt' },
+            { label: 'Cantidad ahorrada', value: !tienePresu ? '—' : f(cantAhorrada), sub: subAhorrada, t: tTeal, icon: 'fa-piggy-bank' },
+            { label: 'Cantidad desviada', value: cantDesviada != null && cantDesviada > 0 ? f(cantDesviada) : '—', sub: subDesviada, t: tRose, icon: 'fa-chart-line' }
+        ];
+
+        document.getElementById('cmpKpis').innerHTML = cards.map(c => `
+            <div class="rounded-2xl border ${c.t.wrap} p-4 shadow-sm flex flex-col">
                 <div class="flex items-center gap-2 mb-2">
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${t.ico}">
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${c.t.ico}">
                         <i class="fas ${c.icon} text-xs"></i>
                     </div>
                     <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider leading-tight">${c.label}</div>
                 </div>
-                <div class="font-mono font-extrabold text-xl leading-tight ${t.val}">${c.value}</div>
-                <div class="text-[11px] text-slate-400 mt-1 leading-snug">${c.sub}</div>
-                <div class="mt-auto pt-2">${c.action}</div>
-            </div>`;
-        }).join('');
+                <div class="font-mono font-extrabold text-xl leading-tight ${c.t.val}">${c.value}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">${c.sub}</div>
+            </div>`).join('');
     }
 
-    /* ══ TABLA ══ */
+    /* ══ TABLA: insumo, gerencia, presupuesto, facturado, ahorro/desviación ══ */
     function renderTable(insumos) {
         const isMobile = () => window.innerWidth < 768;
-        let totPresu = 0, totFact = 0, totDif = 0;
+        let totPresu = 0, totFact = 0;
 
         document.getElementById('cmpTableBody').innerHTML = insumos.map(ins => {
-            const m    = ins.metricas;
-            const dp   = m.desviacion_pct;
-            const dif  = m.desviacion_monto;
-            const dc   = desvColor(dp);
-            const barW = Math.min(Math.abs(dp ?? 0), 100);
-            const mob  = isMobile();
+            const m   = ins.metricas;
+            const dc  = colorPorMontos(m);
+            const mob = isMobile();
 
             totPresu += m.presupuesto_generales || 0;
-            totFact  += m.total_facturado       || 0;
-            totDif   += dif || 0;
+            totFact  += m.total_facturado || 0;
 
-            /* ── Presupuesto cell: pastilla amarilla si no hay datos ── */
             const presuCell = m.presupuesto_generales
                 ? `<span style="font-family:monospace;font-size:13px;color:#6366f1;">${f(m.presupuesto_generales)}</span>`
                 : `<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;">
                        <i class="fas fa-triangle-exclamation" style="font-size:8px;"></i> Sin presupuesto
                    </span>`;
 
-            /* ── Desviación cell: "No calculable" si no hay presupuesto ── */
-            const desvCell = dp != null
-                ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
-                       <span style="font-family:monospace;font-size:13px;font-weight:700;color:${dc};">${pct(dp)}</span>
-                       <div style="width:56px;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;">
-                           <div style="width:${barW}%;height:100%;background:${dc};border-radius:99px;"></div>
-                       </div>
-                   </div>`
-                : `<span style="font-size:11px;color:#94a3b8;font-style:italic;">No calculable</span>`;
-
-            /* ── Fila desktop ── */
             const desk = `
             <tr class="cmp-row-desk" style="display:${mob?'none':'table-row'};border-bottom:1px solid #f1f5f9;">
                 <td style="padding:10px 16px;font-weight:600;font-size:13px;max-width:200px;">
@@ -827,34 +572,22 @@
                 <td style="padding:10px 16px;font-size:12px;">${gBadge(ins.gerencia_id, ins.gerencia)}</td>
                 <td style="padding:10px 16px;text-align:right;">${presuCell}</td>
                 <td style="padding:10px 16px;text-align:right;font-family:monospace;font-size:13px;font-weight:700;color:${dc};">${f(m.total_facturado)}</td>
-                <td style="padding:10px 16px;text-align:right;font-family:monospace;font-size:13px;color:${dc};">${dif != null ? (dif >= 0 ? '+' : '') + f(dif) : '—'}</td>
-                <td style="padding:10px 16px;text-align:right;">${desvCell}</td>
-                <td style="padding:10px 16px;text-align:center;">${estadoBadge(dp)}</td>
+                <td style="padding:10px 16px;text-align:center;">${estadoBadgeMontos(m)}</td>
             </tr>`;
 
-            /* ── Fila mobile ── */
             const presuMob = m.presupuesto_generales
                 ? `<span style="font-family:monospace;font-weight:600;color:#6366f1;">${f(m.presupuesto_generales)}</span>`
-                : `<span style="font-size:10px;color:#b45309;font-weight:700;">⚠ Sin asignar</span>`;
-
-            const desvMob = dp != null
-                ? `<div style="display:flex;align-items:center;gap:6px;">
-                       <span style="font-family:monospace;font-weight:700;color:${dc};">${pct(dp)}</span>
-                       <div style="flex:1;max-width:40px;height:4px;background:#f1f5f9;border-radius:99px;overflow:hidden;">
-                           <div style="width:${barW}%;height:100%;background:${dc};"></div>
-                       </div>
-                   </div>`
-                : `<span style="font-size:10px;color:#94a3b8;font-style:italic;">Sin datos</span>`;
+                : `<span style="font-size:10px;color:#b45309;font-weight:700;">Sin presupuesto</span>`;
 
             const mob_ = `
             <tr class="cmp-row-mob" style="display:${mob?'table-row':'none'};border-bottom:1px solid #f1f5f9;">
-                <td colspan="7" style="padding:12px 16px;">
+                <td colspan="5" style="padding:12px 16px;">
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
                         <div style="display:flex;align-items:center;gap:8px;min-width:0;">
                             <span style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:${dc};margin-top:2px;"></span>
                             <span style="font-weight:600;font-size:14px;line-height:1.3;">${ins.nombre}</span>
                         </div>
-                        <div style="flex-shrink:0;">${estadoBadge(dp)}</div>
+                        <div style="flex-shrink:0;">${estadoBadgeMontos(m)}</div>
                     </div>
                     <div style="margin-left:18px;">
                         <div style="margin-bottom:8px;">${gBadge(ins.gerencia_id, ins.gerencia)}</div>
@@ -867,14 +600,6 @@
                                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">Facturado</div>
                                 <div style="font-family:monospace;font-weight:700;color:${dc};">${f(m.total_facturado)}</div>
                             </div>
-                            <div>
-                                <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">Diferencia</div>
-                                <div style="font-family:monospace;color:${dc};">${dif != null ? (dif >= 0 ? '+' : '') + f(dif) : '—'}</div>
-                            </div>
-                            <div>
-                                <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">Desviación %</div>
-                                ${desvMob}
-                            </div>
                         </div>
                     </div>
                 </td>
@@ -882,29 +607,25 @@
             return desk + mob_;
         }).join('');
 
-        /* ── Footer totales ── */
-        const difTP = totPresu > 0 ? ((totFact - totPresu) / totPresu) * 100 : null;
-        const difC  = desvColor(difTP);
-        const mob   = isMobile();
+        const difC = colorTotales(totPresu, totFact);
+        const mob  = isMobile();
+        const totalesMetricas = { presupuesto_generales: totPresu > 0 ? totPresu : null, total_facturado: totFact };
 
         document.getElementById('cmpTableFoot').innerHTML = `
-            <tr class="cmp-foot-desk" style="display:${mob?'none':'table-row'};background:#18171c;">
-                <td colspan="2" style="padding:10px 16px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;">Total general</td>
-                <td style="padding:10px 16px;text-align:right;font-family:monospace;color:#6366f1;font-weight:700;">${f(totPresu)}</td>
-                <td style="padding:10px 16px;text-align:right;font-family:monospace;font-weight:700;color:${difC};">${f(totFact)}</td>
-                <td style="padding:10px 16px;text-align:right;font-family:monospace;color:${difC};">${totDif >= 0 ? '+' : ''}${f(totDif)}</td>
-                <td style="padding:10px 16px;text-align:right;font-family:monospace;font-weight:700;color:${difC};">${pct(difTP)}</td>
-                <td></td>
+            <tr class="cmp-foot-desk border-t-2 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900" style="display:${mob?'none':'table-row'};">
+                <td colspan="2" class="px-4 py-2.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">Total general</td>
+                <td class="px-4 py-2.5 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">${f(totPresu)}</td>
+                <td class="px-4 py-2.5 text-right font-mono font-bold" style="color:${difC};">${f(totFact)}</td>
+                <td class="px-4 py-2.5 text-center">${estadoBadgeMontos(totalesMetricas)}</td>
             </tr>
-            <tr class="cmp-foot-mob" style="display:${mob?'table-row':'none'};background:#f8fafc;">
-                <td colspan="7" style="padding:12px 16px;">
-                    <div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Total general</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12px;">
-                        <div><span style="color:#94a3b8;">Presupuesto: </span><span style="font-family:monospace;font-weight:700;color:#6366f1;">${f(totPresu)}</span></div>
-                        <div><span style="color:#94a3b8;">Facturado: </span><span style="font-family:monospace;font-weight:700;color:${difC};">${f(totFact)}</span></div>
-                        <div><span style="color:#94a3b8;">Diferencia: </span><span style="font-family:monospace;font-weight:700;color:${difC};">${totDif >= 0 ? '+' : ''}${f(totDif)}</span></div>
-                        <div><span style="color:#94a3b8;">Desviación: </span><span style="font-family:monospace;font-weight:700;color:${difC};">${pct(difTP)}</span></div>
+            <tr class="cmp-foot-mob border-t-2 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900" style="display:${mob?'table-row':'none'};">
+                <td colspan="5" class="p-3 md:p-4">
+                    <div class="text-[10px] font-extrabold uppercase text-slate-500 dark:text-slate-400 mb-1.5">Total general</div>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                        <div><span class="text-slate-500 dark:text-slate-400">Presupuesto: </span><span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">${f(totPresu)}</span></div>
+                        <div><span class="text-slate-500 dark:text-slate-400">Facturado: </span><span class="font-mono font-bold" style="color:${difC};">${f(totFact)}</span></div>
                     </div>
+                    <div class="mt-2">${estadoBadgeMontos(totalesMetricas)}</div>
                 </td>
             </tr>`;
 
@@ -921,23 +642,27 @@
 
     /* ══ SUBTÍTULO y FILTROS ACTIVOS ══ */
     function buildSubtitle() {
-        const g = document.getElementById('cmpGerencia');
-        const m = document.getElementById('cmpMes');
-        const a = document.getElementById('cmpAnio');
+        const g = document.getElementById('gerenci_id');
+        const m = document.getElementById('mesFilter');
+        const a = document.getElementById('añoFilter');
         const parts = [];
-        if (g.value) parts.push(g.options[g.selectedIndex].text);
-        if (m.value) parts.push(MESES_FULL[parseInt(m.value)]);
-        if (a.value) parts.push(a.value);
+        if (g && g.value) parts.push(g.options[g.selectedIndex].text);
+        if (m && m.value) parts.push(MESES_FULL[parseInt(m.value, 10)]);
+        if (a && a.value) parts.push(a.value);
         return parts.length ? parts.join(' · ') : 'Todos los datos';
     }
 
     function updateFiltrosActivos() {
         const badge = document.getElementById('cmpFiltrosActivos');
+        const g = document.getElementById('gerenci_id');
+        const m = document.getElementById('mesFilter');
+        const a = document.getElementById('añoFilter');
+        const i = document.getElementById('cmpInsumo');
         const n = [
-            document.getElementById('cmpGerencia').value,
-            document.getElementById('cmpMes').value,
-            document.getElementById('cmpAnio').value,
-            document.getElementById('cmpInsumo').value.trim()
+            g && g.value ? g.value : '',
+            m && m.value ? m.value : '',
+            a && a.value ? a.value : '',
+            i ? i.value.trim() : ''
         ].filter(Boolean).length;
         if (n > 0) {
             badge.textContent = `${n} filtro${n!==1?'s':''} activo${n!==1?'s':''}`;
@@ -957,10 +682,14 @@
         updateFiltrosActivos();
 
         const params = new URLSearchParams();
-        const g = document.getElementById('cmpGerencia').value;
-        const m = document.getElementById('cmpMes').value;
-        const a = document.getElementById('cmpAnio').value;
-        const i = document.getElementById('cmpInsumo').value.trim();
+        const gEl = document.getElementById('gerenci_id');
+        const mEl = document.getElementById('mesFilter');
+        const aEl = document.getElementById('añoFilter');
+        const iEl = document.getElementById('cmpInsumo');
+        const g = gEl ? gEl.value : '';
+        const m = mEl ? mEl.value : '';
+        const a = aEl ? aEl.value : '';
+        const i = iEl ? iEl.value.trim() : '';
         if (g) params.append('gerencia_id', g);
         if (m) params.append('mes', m);
         if (a) params.append('anio', a);
@@ -1004,19 +733,42 @@
         }
     }
 
-    document.getElementById('formComparativaFilter').addEventListener('submit', e => { e.preventDefault(); cargarComparativa(); });
-    document.getElementById('cmpBtnReset').addEventListener('click', () => {
-        document.getElementById('cmpGerencia').value = '';
-        document.getElementById('cmpMes').value      = '';
-        document.getElementById('cmpAnio').value     = '{{ date("Y") }}';
-        document.getElementById('cmpInsumo').value   = '';
-        cargarComparativa();
-    });
-    ['cmpGerencia','cmpMes','cmpAnio'].forEach(id => {
-        document.getElementById(id).addEventListener('change', () => cargarComparativa());
-    });
-
     let _cmpCargado = false;
+    window.reloadComparativaFromGlobal = function () {
+        _cmpCargado = true;
+        cargarComparativa();
+    };
+
+    const cmpBtnFiltrarInsumo = document.getElementById('cmpBtnFiltrarInsumo');
+    if (cmpBtnFiltrarInsumo) {
+        cmpBtnFiltrarInsumo.addEventListener('click', () => cargarComparativa());
+    }
+
+    const cmpBtnReset = document.getElementById('cmpBtnReset');
+    if (cmpBtnReset) {
+        cmpBtnReset.addEventListener('click', () => {
+            const formGlobal = document.getElementById('formFilter');
+            const mesDef = formGlobal?.dataset?.mesDefault || '';
+            const anioDef = formGlobal?.dataset?.anioDefault || '';
+            const gEl = document.getElementById('gerenci_id');
+            const mEl = document.getElementById('mesFilter');
+            const aEl = document.getElementById('añoFilter');
+            if (gEl) gEl.value = '';
+            if (mEl) mEl.value = mesDef;
+            if (aEl) aEl.value = anioDef;
+            const ins = document.getElementById('cmpInsumo');
+            if (ins) ins.value = '';
+            if (typeof window.syncGerenciaFacturasBanner === 'function') {
+                window.syncGerenciaFacturasBanner();
+            }
+            if (window.jQuery && window.jQuery('#facturasTable').length) {
+                window.jQuery('#facturasTable').DataTable().ajax.reload(null, false);
+            }
+            _cmpCargado = true;
+            cargarComparativa();
+        });
+    }
+
     window.initComparativa = function () {
         if (!_cmpCargado) {
             _cmpCargado = true;
