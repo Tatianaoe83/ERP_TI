@@ -221,7 +221,18 @@ class FacturasController extends AppBaseController
             $data = $this->leerPdfExtranjero($request->file('pdf')->getRealPath(), 'Proveedor Extranjero');
 
             if (!empty($data['error'])) {
-                return response()->json(['error' => 'No se pudieron extraer datos del PDF.'], 422);
+                $motivo = $data['motivo'] ?? '';
+                if ($motivo === 'sin_texto_extraible') {
+                    $msg = 'El servidor no extrajo texto de este PDF. El navegador intentará leerlo (texto u OCR) si publicó los archivos de `npm run production` (js y /vendor). Si no, use el XML del CFDI.';
+                } elseif ($motivo === 'importe_no_detectado') {
+                    $msg = 'No se detectó subtotal ni total en el PDF. Revise el archivo o use el XML del CFDI.';
+                } elseif ($motivo === 'pdf_ilegible') {
+                    $msg = 'No se pudo leer el archivo PDF. Verifique que no esté dañado o protegido.';
+                } else {
+                    $msg = 'No se pudieron extraer datos del PDF.';
+                }
+
+                return response()->json(['error' => $msg], 422);
             }
 
             $emisorPdf = $data['emisor'] ?? '';
@@ -231,6 +242,46 @@ class FacturasController extends AppBaseController
                 'uuid'    => null,
                 'mes'     => (int)now()->format('n'),
                 'anio'    => (int)now()->format('Y'),
+                'total'   => $data['total'] ?? 0,
+                'moneda'  => 'MXN',
+                'es_pdf'  => true,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Analiza texto ya extraído del PDF en el cliente (pdf.js / tesseract.js) — sin OCR en el servidor (HostGator).
+     */
+    public function previsualizarPdfDesdeTexto(Request $request): JsonResponse
+    {
+        $request->validate([
+            'texto' => 'required|string|max:500000',
+        ]);
+
+        try {
+            $texto = (string) $request->input('texto');
+            $data = $this->analizarTextoExtranjeroDesdePdf($texto, 'Proveedor Extranjero');
+
+            if (! empty($data['error'])) {
+                $motivo = $data['motivo'] ?? '';
+                if ($motivo === 'sin_texto_extraible') {
+                    $msg = 'El texto recibido es demasiado corto para detectar importes.';
+                } elseif ($motivo === 'importe_no_detectado') {
+                    $msg = 'No se detectó subtotal ni total en el texto extraído. Revise el PDF o use el XML del CFDI.';
+                } else {
+                    $msg = 'No se pudieron interpretar los datos del texto del PDF.';
+                }
+
+                return response()->json(['error' => $msg], 422);
+            }
+
+            return response()->json([
+                'emisor'  => $data['emisor'] ?? '',
+                'uuid'    => null,
+                'mes'     => (int) now()->format('n'),
+                'anio'    => (int) now()->format('Y'),
                 'total'   => $data['total'] ?? 0,
                 'moneda'  => 'MXN',
                 'es_pdf'  => true,
@@ -257,7 +308,51 @@ class FacturasController extends AppBaseController
         ]);
 
         try {
-            DB::transaction(function () use ($request) {
+            $hasXml = $request->hasFile('archivo_xml') && $request->file('archivo_xml')->isValid();
+            $hasPdf = $request->hasFile('archivo_pdf') && $request->file('archivo_pdf')->isValid();
+            if ($hasXml && $hasPdf) {
+                return response()->json([
+                    'message' => 'Adjunte solo el XML del CFDI o solo el PDF, no ambos archivos a la vez.',
+                ], 422);
+            }
+            if (! $hasXml && ! $hasPdf) {
+                return response()->json([
+                    'message' => 'Debe adjuntar el XML del CFDI o un PDF (uno solamente).',
+                ], 422);
+            }
+
+            $parsedXml = null;
+            if ($hasXml) {
+                $parsedXml = $this->parsearCfdi($request->file('archivo_xml')->getRealPath());
+            }
+
+            $uuid = trim((string)($request->input('UUID', '')));
+            $emisor = trim((string)($request->input('Emisor', '')));
+            $rawG = $request->input('GerenciaID');
+            $gerenciaId = ($rawG === null || $rawG === '') ? null : (int) $rawG;
+
+            if ($parsedXml) {
+                if ($uuid === '' && ! empty($parsedXml['uuid'])) {
+                    $uuid = trim((string) $parsedXml['uuid']);
+                }
+                if ($emisor === '' && ! empty($parsedXml['emisor'])) {
+                    $emisor = trim((string) $parsedXml['emisor']);
+                }
+            }
+
+            if ($uuid !== '') {
+                $existeUuid = DB::table('facturas')
+                    ->whereNull('deleted_at')
+                    ->whereRaw('LOWER(TRIM(UUID)) = ?', [strtolower($uuid)])
+                    ->exists();
+                if ($existeUuid) {
+                    return response()->json([
+                        'message' => 'Este comprobante (XML) ya está registrado en el sistema. No se puede volver a subir.',
+                    ], 422);
+                }
+            }
+
+            DB::transaction(function () use ($request, $parsedXml) {
                 $xmlRuta = null;
                 $pdfRuta = null;
 
@@ -268,52 +363,43 @@ class FacturasController extends AppBaseController
                     $pdfRuta = $request->file('archivo_pdf')->store('facturas/pdf', 'public');
                 }
 
-                $uuid       = trim((string)($request->input('UUID', '')));
-                $emisor     = trim((string)($request->input('Emisor', '')));
-                $gerenciaId = $request->input('GerenciaID') ?: null;
-                $mes        = $request->input('Mes') ?: null;
-                $anio       = $request->input('Anio') ?: null;
-                $nombre     = trim((string)($request->input('Nombre', '')));
-                $costo      = (float)$request->input('Costo', 0);
-                $importe    = $request->input('Importe') ? (float)$request->input('Importe') : null;
+                $uuid = trim((string) ($request->input('UUID', '')));
+                $emisor = trim((string) ($request->input('Emisor', '')));
+                $rawG = $request->input('GerenciaID');
+                $gerenciaId = ($rawG === null || $rawG === '') ? null : (int) $rawG;
+                $mes = $request->input('Mes') ?: null;
+                $anio = $request->input('Anio') ?: null;
+                $nombre = trim((string) ($request->input('Nombre', '')));
+                $costo = (float) $request->input('Costo', 0);
+                $importe = $request->input('Importe') ? (float) $request->input('Importe') : null;
 
-                $totalXml = null;
-
-                // Parsear XML si existe
-                if ($xmlRuta && $request->hasFile('archivo_xml')) {
-                    $parsed = $this->parsearCfdi($request->file('archivo_xml')->getRealPath());
-                    if (empty($uuid) && !empty($parsed['uuid']))     $uuid   = $parsed['uuid'];
-                    if (empty($emisor) && !empty($parsed['emisor'])) $emisor = $parsed['emisor'];
-                    if (empty($mes) && !empty($parsed['mes']))       $mes    = $parsed['mes'];
-                    if (empty($anio) && !empty($parsed['anio']))     $anio   = $parsed['anio'];
-                    
-                    // Obtener el SubTotal del XML
-                    $totalXml = (float)($parsed['total'] ?? 0);
-                    
-                    // Usar el SubTotal del XML como Costo si está disponible
+                if ($parsedXml) {
+                    if ($uuid === '' && ! empty($parsedXml['uuid'])) {
+                        $uuid = trim((string) $parsedXml['uuid']);
+                    }
+                    if ($emisor === '' && ! empty($parsedXml['emisor'])) {
+                        $emisor = trim((string) $parsedXml['emisor']);
+                    }
+                    if (($mes === null || $mes === '') && ! empty($parsedXml['mes'])) {
+                        $mes = $parsedXml['mes'];
+                    }
+                    if (($anio === null || $anio === '') && ! empty($parsedXml['anio'])) {
+                        $anio = $parsedXml['anio'];
+                    }
+                    $totalXml = (float) ($parsedXml['total'] ?? 0);
                     if ($totalXml > 0) {
                         $costo = $totalXml;
                     }
                 }
 
-                // Limpiar registros duplicados si hay UUID
-                if ($uuid) {
-                    DB::table('facturas')
-                        ->where('UUID', $uuid)
-                        ->whereNull('SolicitudID')
-                        ->delete();
-                }
-
-                // Obtener InsumoID si se especificó InsumoNombre
-                $insumoNombre = trim((string)($request->input('InsumoNombre', '')));
-                $insumoID     = $insumoNombre
+                $insumoNombre = trim((string) ($request->input('InsumoNombre', '')));
+                $insumoID = $insumoNombre
                     ? DB::table('cortes')
-                    ->whereNull('deleted_at')
-                    ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower($insumoNombre)])
-                    ->max('CortesID')
+                        ->whereNull('deleted_at')
+                        ->whereRaw('LOWER(TRIM(NombreInsumo)) = ?', [strtolower($insumoNombre)])
+                        ->max('CortesID')
                     : null;
 
-                // Crear UNA SOLA factura con el total
                 DB::table('facturas')->insert([
                     'SolicitudID'  => null,
                     'GerenciaID'   => $gerenciaId,
@@ -324,8 +410,8 @@ class FacturasController extends AppBaseController
                     'Anio'         => $anio,
                     'InsumoNombre' => $insumoNombre ?: null,
                     'InsumoID'     => $insumoID ?: null,
-                    'UUID'         => $uuid ?: null,
-                    'Emisor'       => $emisor ?: null,
+                    'UUID'         => $uuid !== '' ? $uuid : null,
+                    'Emisor'       => $emisor !== '' ? $emisor : null,
                     'ArchivoRuta'  => $xmlRuta,
                     'PdfRuta'      => $pdfRuta,
                     'created_at'   => now(),
@@ -335,7 +421,7 @@ class FacturasController extends AppBaseController
 
             return response()->json(['message' => 'Factura guardada correctamente.'], 201);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Error al guardar: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Error al guardar: '.$e->getMessage()], 500);
         }
     }
 
@@ -1081,14 +1167,18 @@ class FacturasController extends AppBaseController
         }
     }
 
-    private function leerPdfExtranjero(string $ruta, string $proveedorHint): array
+    /**
+     * Texto del PDF (parser servidor o texto/OCR en el navegador). Detecta emisor, subtotal/total y conceptos.
+     */
+    private function analizarTextoExtranjeroDesdePdf(string $text, string $proveedorHint): array
     {
-        try {
-            $parser = new \Smalot\PdfParser\Parser();
-            $text   = $parser->parseFile($ruta)->getText();
-        } catch (\Throwable) {
-            return ['error' => true, 'total' => 0, 'conceptos' => []];
+        $text = preg_replace("/[\x00-\x08\x0B\x0C\x0E-\x1F]/u", '', $text ?? '');
+        $textNorm = trim(preg_replace('/\s+/u', ' ', $text));
+        if (strlen($textNorm) < 25) {
+            return ['error' => true, 'motivo' => 'sin_texto_extraible', 'total' => 0, 'emisor' => '', 'conceptos' => []];
         }
+
+        $textMoney = preg_replace('/[Oo]/', '0', $text);
 
         $lower     = strtolower($text);
         $provLower = strtolower(trim($proveedorHint));
@@ -1097,25 +1187,55 @@ class FacturasController extends AppBaseController
         $esHostgator = str_contains($lower, 'hostgator') || str_contains($lower, 'newfold digital') || str_contains($provLower, 'hostgator');
 
         $emisor = $proveedorHint ?: 'Proveedor Extranjero';
-        if ($esStarlink)      $emisor = 'STARLINK';
-        elseif ($esHostgator) $emisor = 'HOSTGATOR';
+        if ($esStarlink) {
+            $emisor = 'STARLINK';
+        } elseif ($esHostgator) {
+            $emisor = 'HOSTGATOR';
+        }
 
-        $ivaExplicito = (bool)preg_match('/\b(?:iva|i\.v\.a|vat|tax(?:es)?)\b[^\d\n]{0,30}[\d,]+\.\d{2}/i', $text);
+        if ($emisor === 'Proveedor Extranjero' || $emisor === $proveedorHint) {
+            foreach (preg_split('/\r?\n/', substr($text, 0, 3000)) as $line) {
+                $line = trim($line);
+                if (strlen($line) < 6 || strlen($line) > 120) {
+                    continue;
+                }
+                if (preg_match('/\b(inc\.?|llc|ltd\.?|l\.l\.c\.|corp\.?|corporation|s\.a\.|s\.l\.|gmbh|b\.v\.|plc)\b/i', $line)) {
+                    $emisor = $line;
+                    break;
+                }
+            }
+        }
+
+        $ivaExplicito = (bool) preg_match('/\b(?:iva|i\.v\.a|vat|tax(?:es)?)\b[^\d\n]{0,30}[\d,]+\.\d{2}/i', $text);
         $subtotalDoc  = null;
         $totalDoc = null;
 
-        if (preg_match('/(?:sub\s*total|subtotal|net\s*amount)[^\d\n]{0,20}([\d,]+\.\d{2})/i', $text, $m))
-            $subtotalDoc = (float)str_replace(',', '', $m[1]);
-        if (preg_match('/(?:^|\n)[^\n]{0,30}(?:total|amount\s*due|balance\s*due|invoice\s*total)[^\d\n]{0,20}([\d,]+\.\d{2})/im', $text, $m))
-            $totalDoc = (float)str_replace(',', '', $m[1]);
+        if (preg_match('/(?:sub\s*total|subtotal|net\s*amount)\s*[:#]?\s*([\d]{1,3}(?:,\d{3})*\.\d{2})\b/i', $textMoney, $m)) {
+            $subtotalDoc = (float) str_replace(',', '', $m[1]);
+        }
+        if ($subtotalDoc === null && preg_match('/(?:sub\s*total|subtotal|net\s*amount)\s*[:#]?\s*([\d]{1,3}(?:\.\d{3})*,\d{2})\b/ui', $textMoney, $m)) {
+            $subtotalDoc = (float) str_replace(',', '.', str_replace('.', '', $m[1]));
+        }
+        if ($subtotalDoc === null && preg_match('/(?:sub[\s\-]*t[0o]tal|sublotal|subtota[li1])\s*[:#.\s\-]{0,20}([\d]{1,3}(?:[,.]\d{3})*[.,]\d{2})/iu', $textMoney, $m)) {
+            $raw = str_replace(',', '.', preg_replace('/\.(?=\d{3}\b)/', '', str_replace('O', '0', $m[1])));
+            $subtotalDoc = (float) $raw;
+        }
+        if (preg_match('/(?:^|\n)[^\n]{0,30}(?:total|amount\s*due|balance\s*due|invoice\s*total)\s*[:#]?\s*([\d]{1,3}(?:,\d{3})*\.\d{2})\b/im', $textMoney, $m)) {
+            $totalDoc = (float) str_replace(',', '', $m[1]);
+        }
+        if ($totalDoc === null && preg_match('/(?:^|\n)[^\n]{0,40}(?:total|amount\s*due|balance\s*due|invoice\s*total)\s*[:#]?\s*([\d]{1,3}(?:\.\d{3})*,\d{2})\b/im', $textMoney, $m)) {
+            $totalDoc = (float) str_replace(',', '.', str_replace('.', '', $m[1]));
+        }
 
         $ivaRatio = false;
         if ($subtotalDoc && $totalDoc && $totalDoc > $subtotalDoc) {
             $r = $totalDoc / $subtotalDoc;
-            if ($r >= 1.14 && $r <= 1.18) $ivaRatio = true;
+            if ($r >= 1.14 && $r <= 1.18) {
+                $ivaRatio = true;
+            }
         }
 
-        $tieneIva = ($ivaExplicito || $ivaRatio) && !$esHostgator;
+        $tieneIva = ($ivaExplicito || $ivaRatio) && ! $esHostgator;
         $total    = 0.0;
 
         if ($subtotalDoc !== null) {
@@ -1123,9 +1243,9 @@ class FacturasController extends AppBaseController
         } elseif ($totalDoc !== null) {
             $total = $tieneIva ? round($totalDoc / 1.16, 2) : $totalDoc;
         } else {
-            preg_match_all('/\$\s*([\d,]+\.\d{2})/', $text, $m);
-            if (!empty($m[1])) {
-                $mayor = max(array_map(fn($n) => (float)str_replace(',', '', $n), $m[1]));
+            preg_match_all('/\$\s*([\d,]+\.\d{2})/', $textMoney, $m);
+            if (! empty($m[1])) {
+                $mayor = max(array_map(fn ($n) => (float) str_replace(',', '', $n), $m[1]));
                 $total = $tieneIva ? round($mayor / 1.16, 2) : $mayor;
             }
         }
@@ -1135,7 +1255,25 @@ class FacturasController extends AppBaseController
             $conceptos[] = ['nombre' => ucwords(strtolower($emisor)) ?: 'Servicio Extranjero', 'importe' => $total];
         }
 
+        if ($total <= 0) {
+            return ['error' => true, 'motivo' => 'importe_no_detectado', 'total' => 0, 'emisor' => $emisor, 'conceptos' => []];
+        }
+
         return ['error' => false, 'emisor' => $emisor, 'total' => $total, 'conceptos' => $conceptos];
+    }
+
+    private function leerPdfExtranjero(string $ruta, string $proveedorHint): array
+    {
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $textPlano = $parser->parseFile($ruta)->getText();
+        } catch (\Throwable) {
+            return ['error' => true, 'motivo' => 'pdf_ilegible', 'total' => 0, 'conceptos' => []];
+        }
+
+        $textPlano = preg_replace("/[\x00-\x08\x0B\x0C\x0E-\x1F]/u", '', $textPlano ?? '');
+
+        return $this->analizarTextoExtranjeroDesdePdf($textPlano, $proveedorHint);
     }
 
     private function extraerConceptosPdf(string $text, bool $quitarIva): array

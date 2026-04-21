@@ -97,6 +97,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/facturas/previsualizar-pdf', [App\Http\Controllers\FacturasController::class, 'previsualizarPdf'])
     ->name('facturas.previsualizarPdf');
 
+    Route::post('/facturas/previsualizar-pdf-texto', [App\Http\Controllers\FacturasController::class, 'previsualizarPdfDesdeTexto'])
+        ->name('facturas.previsualizarPdfDesdeTexto');
+
     Route::post('/facturas/{id}/reemplazar-archivo', [App\Http\Controllers\FacturasController::class, 'reemplazarArchivo'])
     ->name('facturas.reemplazar');
     Route::get('facturas/comparativa', [FacturasController::class, 'comparativa'])->name('facturas.comparativa');

@@ -17,6 +17,29 @@ mix.js("resources/js/app.js", "public/js").postCss(
     [require("tailwindcss")]
 );
 
+mix.js("resources/js/factura-pdf-ocr.js", "public/js/factura-pdf-ocr.js").version();
+
+mix.copy(
+    "node_modules/pdfjs-dist/build/pdf.worker.min.mjs",
+    "public/vendor/pdfjs/pdf.worker.min.mjs"
+);
+mix.copy(
+    "node_modules/tesseract.js/dist/worker.min.js",
+    "public/vendor/tesseract-js/worker.min.js"
+);
+mix.copyDirectory(
+    "node_modules/tesseract.js-core",
+    "public/vendor/tesseract-js-core"
+);
+mix.copy(
+    "node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz",
+    "public/vendor/tesseract-lang/eng.traineddata.gz"
+);
+mix.copy(
+    "node_modules/@tesseract.js-data/spa/4.0.0/spa.traineddata.gz",
+    "public/vendor/tesseract-lang/spa.traineddata.gz"
+);
+
 mix.styles(
     [
         "public/css/social-icons.css",
