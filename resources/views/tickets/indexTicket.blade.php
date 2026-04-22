@@ -4704,7 +4704,7 @@ async cargarDatosTicket(ticketId) {
 
         async function loadTipos() {
             try {
-                const response = await fetch('/api/tipos');
+                const response = await fetch('/tickets/tipos');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -4736,7 +4736,7 @@ async cargarDatosTicket(ticketId) {
                     return;
                 }
                 
-                const response = await fetch(`/api/subtipos-by-tipo?tipo_id=${tipoId}`);
+                const response = await fetch(`/tickets/subtipos?tipo_id=${tipoId}`);
                 const data = await response.json();
                 
                 if (data.success && data.subtipos.length > 0) {
@@ -4765,7 +4765,7 @@ async cargarDatosTicket(ticketId) {
                     return;
                 }
                 
-                const response = await fetch(`/api/tertipos-by-subtipo?subtipo_id=${subtipoId}`);
+                const response = await fetch(`/tickets/tertipos?subtipo_id=${subtipoId}`);
                 const data = await response.json();
                 
                 if (data.success && data.tertipos.length > 0) {
