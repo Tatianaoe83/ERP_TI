@@ -39,10 +39,12 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400">Administra y visualiza el historial.</p>
             </div>
         </div>
-        <button type="button" id="btnAbrirFacturaDirecta"
-            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shrink-0">
-            <i class="fas fa-plus"></i> Nueva Factura
-        </button>
+        @can('crear-facturas')
+            <button type="button" id="btnAbrirFacturaDirecta"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shrink-0">
+                <i class="fas fa-plus"></i> Nueva Factura
+            </button>
+        @endcan
     </div>
 
     @php
@@ -104,19 +106,23 @@
                 class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 bg-indigo-600 text-white">
                 <i class="fas fa-receipt"></i> Facturas
             </button>
-            <button type="button" onclick="switchTab('historial')" id="tab-historial"
-                class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                <i class="fas fa-history"></i> Comparativa
-            </button>
+            @can('ver-comparativa')
+                <button type="button" onclick="switchTab('historial')" id="tab-historial"
+                    class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                    <i class="fas fa-history"></i> Comparativa
+                </button>
+            @endcan
         </div>
     </div>
 
     <div id="content-facturas" class="tab-content active">
         @include('facturas.table')
     </div>
-    <div id="content-historial" class="tab-content">
-        @include('facturas.tabla_historial')
-    </div>
+    @can('ver-comparativa')
+        <div id="content-historial" class="tab-content">
+            @include('facturas.tabla_historial')
+        </div>
+    @endcan
 
     {{-- MODAL NUEVA FACTURA --}}
     <div id="modalFacturaDirecta"
@@ -314,7 +320,7 @@
     const BASE   = 'flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ';
     const NORMAL = 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200';
     const ACTIVE = 'bg-indigo-600 text-white';
-    const TABS   = ['facturas', 'historial'];
+    const TABS   = ['facturas'@can('ver-comparativa'), 'historial'@endcan];
     window.switchTab = function (tab) {
         TABS.forEach(t => {
             document.getElementById('tab-' + t).className = BASE + (t === tab ? ACTIVE : NORMAL);
@@ -680,12 +686,16 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        $('btnAbrirFacturaDirecta').addEventListener('click', abrirModal);
-        $('btnCerrarFacturaDirecta').addEventListener('click', cerrarModal);
-        $('btnCancelarFacturaDirecta').addEventListener('click', cerrarModal);
-        $('btnGuardarFacturaDirecta').addEventListener('click', guardar);
-        $('modalFacturaDirecta').addEventListener('click', e => { if (e.target === $('modalFacturaDirecta')) cerrarModal(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modalFacturaDirecta').classList.contains('hidden')) cerrarModal(); });
+        if ($('btnAbrirFacturaDirecta')) $('btnAbrirFacturaDirecta').addEventListener('click', abrirModal);
+        if ($('btnCerrarFacturaDirecta')) $('btnCerrarFacturaDirecta').addEventListener('click', cerrarModal);
+        if ($('btnCancelarFacturaDirecta')) $('btnCancelarFacturaDirecta').addEventListener('click', cerrarModal);
+        if ($('btnGuardarFacturaDirecta')) $('btnGuardarFacturaDirecta').addEventListener('click', guardar);
+        if ($('modalFacturaDirecta')) $('modalFacturaDirecta').addEventListener('click', e => { if (e.target === $('modalFacturaDirecta')) cerrarModal(); });
+        document.addEventListener('keydown', e => {
+            const modal = $('modalFacturaDirecta');
+            if (!modal) return;
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) cerrarModal();
+        });
         
         // Cargar insumos cuando cambia la gerencia
         $('fdGerencia').addEventListener('change', async function () {
@@ -698,7 +708,7 @@
         setupDragDrop('zonaPdf', async file => { await handlePdfFile(file); });
 
         // Precarga la comparativa al entrar para evitar espera al cambiar de pestaña.
-        if (typeof window.initComparativa === 'function') {
+        if (typeof window.initComparativa === 'function' && document.getElementById('content-historial')) {
             setTimeout(() => window.initComparativa(), 0);
         }
     });

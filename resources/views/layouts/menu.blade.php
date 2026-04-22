@@ -1,14 +1,46 @@
 <script src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+@php
+    $user = auth()->user();
+    $puedeVerEmpresa = $user && (
+        $user->can('ver-unidadesdenegocio') ||
+        $user->can('ver-gerencias') ||
+        $user->can('ver-obras') ||
+        $user->can('ver-departamentos') ||
+        $user->can('ver-puestos') ||
+        $user->can('ver-empleados')
+    );
+    $puedeVerActivos = $user && (
+        $user->can('ver-Lineastelefonicas') ||
+        $user->can('ver-equipos') ||
+        $user->can('ver-insumos') ||
+        $user->can('ver-categorias') ||
+        $user->can('ver-planes')
+    );
+    $puedeVerMovimientos = $user && $user->can('transferir-inventario');
+    $puedeVerReportes = $user && (
+        $user->can('ver-presupuesto') ||
+        $user->can('ver-reportes') ||
+        $user->can('ver-informe')
+    );
+    $puedeVerAdministracion = $user && (
+        $user->can('ver-presupuestos') ||
+        $user->can('ver-facturas')
+    );
+@endphp
+
 <ul x-data="{ open: null }" class="flex flex-col gap-2 md:gap-3 mr-2 md:mr-9 ml-2 md:ml-0 {{ Request::is('*') ? 'active' : '' }}">
-    <li>
-        <a href="/tickets"
-            class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
-            <i class="fas fa-desktop text-center w-5 md:w-auto text-base"></i>
-            <span class="font-medium sidebar-text">Soporte</span>
-        </a>
-    </li>
+    @if($user && $user->can('ver-soporte'))
+        <li>
+            <a href="/tickets"
+                class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
+                <i class="fas fa-desktop text-center w-5 md:w-auto text-base"></i>
+                <span class="font-medium sidebar-text">Soporte</span>
+            </a>
+        </li>
+    @endif
+    @if($puedeVerEmpresa)
     <li class="rounded-xl overflow-hidden">
         <button @click="open === 1 ? open = null : open = 1"
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
@@ -75,7 +107,9 @@
             @endif
         </ul>
     </li>
+    @endif
 
+    @if($puedeVerActivos)
     <li class="rounded-xl overflow-hidden">
         <button @click="open === 2 ? open = null : open = 2"
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
@@ -133,7 +167,9 @@
             @endif
         </ul>
     </li>
+    @endif
 
+    @if($puedeVerMovimientos)
     <li class="rounded-xl overflow-hidden">
         <button @click="open === 3 ? open = null : open = 3"
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
@@ -155,7 +191,9 @@
             @endif
         </ul>
     </li>
+    @endif
 
+    @if($puedeVerReportes)
     <li class="rounded-xl overflow-hidden">
         <button @click="open === 4 ? open = null : open = 4"
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
@@ -195,7 +233,9 @@
             @endif
         </ul>
     </li>
+    @endif
 
+    @if($puedeVerAdministracion)
     <li class="rounded-xl overflow-hidden">
         <button @click="open === 5 ? open = null : open = 5"
             class="w-full flex items-center justify-between px-3 md:px-3 py-2.5 md:py-2 text-left text-[#101D49] font-medium hover:bg-[#101D49] hover:text-white transition rounded-xl dark:text-white text-sm md:text-base">
@@ -207,7 +247,7 @@
         </button>
         <ul x-show="open === 5" x-collapse class="px-3 md:px-4 pt-1 space-y-1 text-xs md:text-sm">
             <li>
-                @if(auth()->check() && auth()->user()->can('cortes.view'))
+                @if(auth()->check() && auth()->user()->can('ver-presupuestos'))
                 <a href="/cortes" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
                     <span class="sidebar-text">Presupuestos Oficiales</span>
@@ -215,7 +255,7 @@
                 @endif
             </li>
             <li>
-                @if(auth()->check() && auth()->user()->can('facturas.view'))
+                @if(auth()->check() && auth()->user()->can('ver-facturas'))
                 <a href="/facturas" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white">
                     <i class="fas fa-money-check-alt w-4 md:w-auto text-sm"></i>
                     <span class="sidebar-text">Facturas</span>
@@ -224,6 +264,7 @@
             </li>
         </ul>
     </li>
+    @endif
 
     <li>
         @if(auth()->check() && auth()->user()->can('ver-usuarios'))

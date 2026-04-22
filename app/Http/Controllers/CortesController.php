@@ -39,7 +39,8 @@ class CortesController extends AppBaseController
     public function __construct(CortesRepository $cortesRepo)
     {
         $this->cortesRepository = $cortesRepo;
-        $this->middleware('permission:cortes.view', ['only' => ['index', 'obtenerCorteGuardado']]);
+        $this->middleware('permission:ver-presupuestos', ['only' => ['index', 'indexVista', 'obtenerCorteGuardado', 'obtenerInsumos', 'show']]);
+        $this->middleware('permission:generar-cortes', ['only' => ['store', 'storeAll', 'saveXML', 'readXML', 'create', 'edit', 'update', 'destroy']]);
     }
 
     public function index(Request $request)

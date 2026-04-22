@@ -33,8 +33,26 @@ class FacturasController extends AppBaseController
     public function __construct(FacturasRepository $facturasRepo)
     {
         $this->facturasRepository = $facturasRepo;
-        $this->middleware('permission:facturas.view',   ['only' => ['index']]);
-        $this->middleware('permission:facturas.create', ['only' => ['create', 'store']]);
+        $this->middleware('permission:ver-facturas', ['only' => [
+            'index',
+            'indexVista',
+            'historial',
+            'obtenerDatos',
+            'show',
+        ]]);
+        $this->middleware('permission:crear-facturas', ['only' => [
+            'create',
+            'store',
+            'storeDirecta',
+            'actualizarMes',
+            'actualizarInsumo',
+            'actualizarDatos',
+            'actualizarCompleto',
+            'reemplazarArchivo',
+            'update',
+            'destroy',
+        ]]);
+        $this->middleware('permission:ver-comparativa', ['only' => ['comparativa']]);
     }
 
     public function index()
