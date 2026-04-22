@@ -26,7 +26,9 @@
     );
     $puedeVerAdministracion = $user && (
         $user->can('ver-presupuestos') ||
-        $user->can('ver-facturas')
+        $user->can('generar-cortes') ||
+        $user->can('ver-facturas') ||
+        $user->can('ver-comparativa')
     );
 @endphp
 
