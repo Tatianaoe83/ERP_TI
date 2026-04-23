@@ -22,6 +22,9 @@
     .dark .zona-archivo-xml.tiene-archivo { background-color: rgba(49,46,129,0.15); }
     .zona-archivo-pdf.tiene-archivo { border-color: #34d399; background-color: rgba(236,253,245,0.5); }
     .dark .zona-archivo-pdf.tiene-archivo { background-color: rgba(6,78,59,0.12); }
+
+    /* SweetAlert2 por defecto queda por debajo del modal (z-9999); debe verse encima */
+    .swal2-container.swal2-on-modal { z-index: 100000 !important; }
 </style>
 
 <div class="w-full mx-auto max-w-7xl">
@@ -36,10 +39,12 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400">Administra y visualiza el historial.</p>
             </div>
         </div>
-        <button type="button" id="btnAbrirFacturaDirecta"
-            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shrink-0">
-            <i class="fas fa-plus"></i> Nueva Factura
-        </button>
+        @can('crear-facturas')
+            <button type="button" id="btnAbrirFacturaDirecta"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shrink-0">
+                <i class="fas fa-plus"></i> Nueva Factura
+            </button>
+        @endcan
     </div>
 
     @php
@@ -101,19 +106,23 @@
                 class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 bg-indigo-600 text-white">
                 <i class="fas fa-receipt"></i> Facturas
             </button>
-            <button type="button" onclick="switchTab('historial')" id="tab-historial"
-                class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                <i class="fas fa-history"></i> Comparativa
-            </button>
+            @can('ver-comparativa')
+                <button type="button" onclick="switchTab('historial')" id="tab-historial"
+                    class="flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                    <i class="fas fa-history"></i> Comparativa
+                </button>
+            @endcan
         </div>
     </div>
 
     <div id="content-facturas" class="tab-content active">
         @include('facturas.table')
     </div>
-    <div id="content-historial" class="tab-content">
-        @include('facturas.tabla_historial')
-    </div>
+    @can('ver-comparativa')
+        <div id="content-historial" class="tab-content">
+            @include('facturas.tabla_historial')
+        </div>
+    @endcan
 
     {{-- MODAL NUEVA FACTURA --}}
     <div id="modalFacturaDirecta"
@@ -141,11 +150,15 @@
 
                 <div class="flex items-start gap-2.5 px-4 py-3 rounded-lg bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/50">
                     <i class="fas fa-info-circle text-violet-500 text-sm mt-0.5 shrink-0"></i>
-                    <p class="text-xs text-violet-700 dark:text-violet-300">
-                        Sube primero el <strong>XML</strong> para validar el CFDI y autocompletar los campos.
-                        El <strong>PDF</strong> es opcional y sirve como respaldo visual.
+                    <p class="text-xs text-violet-700 dark:text-violet-300 leading-relaxed">
+                        Debes elegir <strong>una sola opción</strong>: <strong>XML</strong> del CFDI (recomendado en México) <span class="text-violet-500">o</span> <strong>PDF</strong> de factura (típico en proveedores extranjeros).
+                        Si subes uno, el otro se descarta automáticamente.
                     </p>
                 </div>
+
+                <p id="errFdArchivo" class="hidden -mt-1 text-xs text-red-600 dark:text-red-400 font-semibold flex items-center gap-1.5">
+                    <i class="fas fa-exclamation-triangle"></i> <span>Adjunta el XML del CFDI o un PDF (uno solo).</span>
+                </p>
 
                 {{-- Archivos --}}
                 <div class="grid grid-cols-2 gap-4">
@@ -171,7 +184,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">PDF <span class="font-normal normal-case tracking-normal text-slate-400">(opcional)</span></label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">PDF</label>
                         <label id="zonaPdf"
                             class="zona-archivo zona-archivo-pdf flex flex-col items-center justify-center gap-2 h-24 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:border-emerald-500 transition-all group">
                             <input type="file" id="inputPdf" accept=".pdf,application/pdf" class="hidden">
@@ -186,8 +199,11 @@
                         <div id="spinnerPdf" class="hidden mt-1.5 flex items-center gap-1.5 text-xs text-emerald-500">
                             <i class="fas fa-spinner fa-spin"></i> Extrayendo datos...
                         </div>
-                        <p id="avisoPdfExtranjero" class="hidden mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-                            <i class="fas fa-globe mr-1"></i>PDF procesado como proveedor extranjero
+                        <p id="avisoPdfExtranjero" class="hidden mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 leading-snug">
+                            <i class="fas fa-file-lines mr-1"></i>Datos leídos del texto del PDF (subtotal/total y emisor cuando el formato lo permite).
+                        </p>
+                        <p id="errorPdf" class="hidden mt-1.5 text-xs text-red-500 flex items-start gap-1">
+                            <i class="fas fa-exclamation-circle mt-0.5 shrink-0"></i> <span></span>
                         </p>
                     </div>
 
@@ -230,18 +246,9 @@
                         <p id="errFdInsumo" class="hidden mt-1 text-xs text-red-500 flex items-center gap-1"><i class="fas fa-exclamation-circle"></i> Seleccione un insumo</p>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Importe</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-mono">$</span>
-                            <input type="number" id="fdImporte" step="0.01" min="0" placeholder="0.00"
-                                class="w-full h-10 pl-7 pr-4 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Costo <span class="text-red-500">*</span></label>
-                        <div class="relative">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Costo (subtotal facturado) <span class="text-red-500">*</span></label>
+                        <div class="relative max-w-md">
                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-mono">$</span>
                             <input type="number" id="fdCosto" step="0.01" min="0" placeholder="0.00"
                                 class="w-full h-10 pl-7 pr-4 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 placeholder-slate-300 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 outline-none transition-all">
@@ -279,6 +286,13 @@
                 </div>
             </div>
 
+            <div id="errFdGuardar" class="hidden px-6 py-3 border-t border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/40 shrink-0">
+                <p class="text-xs font-semibold text-rose-800 dark:text-rose-200 flex items-start gap-2">
+                    <i class="fas fa-shield-halved mt-0.5 shrink-0"></i>
+                    <span id="errFdGuardarText" class="leading-snug"></span>
+                </p>
+            </div>
+
             <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-3 shrink-0">
                 <button type="button" id="btnCancelarFacturaDirecta"
                     class="h-10 px-5 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -296,6 +310,8 @@
 @endsection
 
 @push('third_party_scripts')
+<script>window.__facturaOcrBase = @json(rtrim(url('/'), '/'));</script>
+<script src="{{ mix('js/factura-pdf-ocr.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 
@@ -304,7 +320,7 @@
     const BASE   = 'flex-1 sm:flex-none px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ';
     const NORMAL = 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200';
     const ACTIVE = 'bg-indigo-600 text-white';
-    const TABS   = ['facturas', 'historial'];
+    const TABS   = ['facturas'@can('ver-comparativa'), 'historial'@endcan];
     window.switchTab = function (tab) {
         TABS.forEach(t => {
             document.getElementById('tab-' + t).className = BASE + (t === tab ? ACTIVE : NORMAL);
@@ -327,11 +343,48 @@
     const state = {
         xmlFile: null,
         pdfFile: null,
+        pdfObjectUrl: null,
         parsed: null,
         origenParsed: null,
         conceptosInsumos: {},
         tieneConceptosXml: false,
     };
+
+    function revocarPdfPreview() {
+        if (state.pdfObjectUrl) {
+            try { URL.revokeObjectURL(state.pdfObjectUrl); } catch (_) {}
+            state.pdfObjectUrl = null;
+        }
+        if ($('pdfPreviewFrame')) $('pdfPreviewFrame').src = '';
+        if ($('pdfPreviewContainer')) $('pdfPreviewContainer').classList.add('hidden');
+    }
+
+    function limpiarArchivoPdf() {
+        if (state.origenParsed === 'pdf') {
+            state.parsed = null;
+            state.origenParsed = null;
+        }
+        state.pdfFile = null;
+        if ($('inputPdf')) $('inputPdf').value = '';
+        hide('spinnerPdf');
+        hide('avisoPdfExtranjero');
+        hide('errorPdf');
+        resetZonaPdf();
+        revocarPdfPreview();
+    }
+
+    function limpiarArchivoXml() {
+        if (state.origenParsed === 'xml') {
+            state.parsed = null;
+            state.origenParsed = null;
+        }
+        state.xmlFile = null;
+        if ($('inputXml')) $('inputXml').value = '';
+        hide('spinnerXml');
+        hide('errorXml');
+        resetZonaXml();
+        if ($('fdAnio')) $('fdAnio').disabled = false;
+    }
 
     const mesesNombres = {1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',7:'Julio',8:'Agosto',9:'Septiembre',10:'Octubre',11:'Noviembre',12:'Diciembre'};
     const $ = id => document.getElementById(id);
@@ -345,14 +398,13 @@
 
     function resetModal() {
         state.xmlFile = null; state.pdfFile = null; state.parsed = null; state.origenParsed = null;
+        revocarPdfPreview();
         ['inputXml','inputPdf'].forEach(id => { if ($(id)) $(id).value = ''; });
-        ['fdNombre','fdGerencia','fdImporte','fdCosto','fdMes','fdAnio','fdInsumoSelect'].forEach(id => { if ($(id)) $(id).value = ''; });
-        ['spinnerXml','spinnerPdf','errorXml','errFdNombre','errFdCosto','errFdGerencia','errFdInsumo','avisoPdfExtranjero'].forEach(hide);
+        ['fdNombre','fdGerencia','fdCosto','fdMes','fdAnio','fdInsumoSelect'].forEach(id => { if ($(id)) $(id).value = ''; });
+        ['spinnerXml','spinnerPdf','errorXml','errorPdf','errFdNombre','errFdCosto','errFdGerencia','errFdInsumo','avisoPdfExtranjero','errFdGuardar','errFdArchivo'].forEach(hide);
         // Habilitar el campo año nuevamente
         if ($('fdAnio')) $('fdAnio').disabled = false;
         resetZonaXml(); resetZonaPdf();
-        $('pdfPreviewContainer').classList.add('hidden');
-        $('pdfPreviewFrame').src = '';
         // Cargar insumos vacíos
         const sel = $('fdInsumoSelect');
         if (sel) sel.innerHTML = '<option value="">Seleccione insumo</option>';
@@ -393,22 +445,21 @@
     }
 
     function poblarCampos(data, origen) {
-        const yaHayXml = state.origenParsed === 'xml';
-        if (origen === 'pdf' && yaHayXml) return;
-
         state.parsed = data; state.origenParsed = origen;
 
         if (data.emisor && !$('fdNombre').value.trim()) $('fdNombre').value = data.emisor;
         if (data.total) {
             const t = parseFloat(data.total);
-            if (!isNaN(t)) { $('fdImporte').value = t.toFixed(2); if (!$('fdCosto').value) $('fdCosto').value = t.toFixed(2); }
+            if (!isNaN(t)) $('fdCosto').value = t.toFixed(2);
         }
         if (data.mes) $('fdMes').value = data.mes;
         if (data.anio) $('fdAnio').value = data.anio;
         
-        // Deshabilitar el año si viene del XML
         if (origen === 'xml' && data.anio) {
             $('fdAnio').disabled = true;
+        }
+        if (origen === 'pdf' && $('fdAnio')) {
+            $('fdAnio').disabled = false;
         }
     }
 
@@ -429,10 +480,18 @@
             $('errorXml').querySelector('span').textContent = e.message;
             show('errorXml');
             $('zonaXml').classList.remove('tiene-archivo');
+            state.xmlFile = null;
+            if (state.origenParsed === 'xml') {
+                state.parsed = null;
+                state.origenParsed = null;
+            }
+            if ($('inputXml')) $('inputXml').value = '';
         } finally { hide('spinnerXml'); }
     }
 
     async function parsearPdf(file) {
+        hide('errorPdf');
+        hide('avisoPdfExtranjero');
         show('spinnerPdf');
         const form = new FormData();
         form.append('pdf', file);
@@ -440,13 +499,97 @@
         try {
             const res = await fetch('{{ route("facturas.previsualizarPdf") }}', { method: 'POST', body: form, headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             const data = await res.json();
-            if (res.ok && !data.error) poblarCampos(data, 'pdf');
-        } catch (_) {} finally { hide('spinnerPdf'); }
+            if (res.ok && !data.error) {
+                poblarCampos(data, 'pdf');
+                show('avisoPdfExtranjero');
+                const av = $('avisoPdfExtranjero');
+                if (av) av.innerHTML = '<i class="fas fa-file-lines mr-1"></i>Datos según el texto extraído del PDF.';
+                return;
+            }
+
+            const baseErr = (data && data.error) ? data.error : 'No se pudo procesar el PDF en el servidor.';
+            if (typeof window.extraerTextoFacturaPdfParaServidor === 'function') {
+                const textoCliente = await window.extraerTextoFacturaPdfParaServidor(file, () => {});
+                const textoNorm = (textoCliente || '').replace(/\s+/g, ' ').trim();
+                if (textoNorm.length >= 15) {
+                    const r2 = await fetch('{{ route("facturas.previsualizarPdfDesdeTexto") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({ texto: textoCliente }),
+                    });
+                    const d2 = await r2.json();
+                    if (r2.ok && !d2.error) {
+                        poblarCampos(d2, 'pdf');
+                        show('avisoPdfExtranjero');
+                        const av = $('avisoPdfExtranjero');
+                        if (av) av.innerHTML = '<i class="fas fa-file-lines mr-1"></i>Texto leído en su navegador (pdf.js / Tesseract.js); el servidor solo calculó importes.';
+                        return;
+                    }
+                    throw new Error((d2 && d2.error) ? d2.error : baseErr);
+                }
+            }
+            throw new Error(baseErr);
+        } catch (e) {
+            const span = $('errorPdf') && $('errorPdf').querySelector('span');
+            if (span) span.textContent = e.message || 'Error al leer el PDF.';
+            show('errorPdf');
+            state.pdfFile = null;
+            if (state.origenParsed === 'pdf') {
+                state.parsed = null;
+                state.origenParsed = null;
+            }
+            if ($('inputPdf')) $('inputPdf').value = '';
+            resetZonaPdf();
+            revocarPdfPreview();
+        } finally { hide('spinnerPdf'); }
+    }
+
+    function notificarErrorGuardarFactura(mensaje) {
+        const wrap = $('errFdGuardar');
+        const span = $('errFdGuardarText');
+        if (wrap && span) {
+            span.textContent = mensaje;
+            wrap.classList.remove('hidden');
+            wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        if (typeof Swal !== 'undefined' && Swal.fire) {
+            Swal.fire({
+                icon: 'error',
+                title: 'No se puede guardar',
+                text: mensaje,
+                confirmButtonColor: '#e11d48',
+                customClass: { container: 'swal2-on-modal' },
+            });
+        } else if (typeof swal !== 'undefined') {
+            swal('Error', mensaje, 'error');
+        } else if (typeof iziToast !== 'undefined') {
+            iziToast.error({ title: 'Error', message: mensaje, position: 'topCenter', timeout: 9000 });
+        } else {
+            window.alert(mensaje);
+        }
     }
 
     function validar() {
         let ok = true;
-        ['errFdNombre','errFdCosto','errFdGerencia','errFdInsumo'].forEach(hide);
+        ['errFdNombre','errFdCosto','errFdGerencia','errFdInsumo','errFdGuardar','errFdArchivo'].forEach(hide);
+        const tieneXml = !!state.xmlFile;
+        const tienePdf = !!state.pdfFile;
+        if (!tieneXml && !tienePdf) {
+            show('errFdArchivo');
+            const s = $('errFdArchivo') && $('errFdArchivo').querySelector('span');
+            if (s) s.textContent = 'Adjunta el XML del CFDI o un PDF (uno solo).';
+            ok = false;
+        } else if (tieneXml && tienePdf) {
+            show('errFdArchivo');
+            const s = $('errFdArchivo') && $('errFdArchivo').querySelector('span');
+            if (s) s.textContent = 'Solo puede haber un archivo: quite el XML o el PDF.';
+            ok = false;
+        }
         if (!$('fdNombre').value.trim()) { show('errFdNombre'); ok = false; }
         if (!$('fdGerencia').value) { show('errFdGerencia'); ok = false; }
         if (!$('fdInsumoSelect').value) { show('errFdInsumo'); ok = false; }
@@ -456,6 +599,7 @@
 
     async function guardar() {
         if (!validar()) return;
+        hide('errFdGuardar');
         const btn = $('btnGuardarFacturaDirecta');
         btn.disabled = true;
         $('textoGuardar').textContent = 'Guardando...';
@@ -465,8 +609,9 @@
         form.append('Nombre', $('fdNombre').value.trim());
         form.append('GerenciaID', $('fdGerencia').value);
         form.append('InsumoNombre', $('fdInsumoSelect').value);
-        form.append('Importe', $('fdImporte').value || '');
-        form.append('Costo', $('fdCosto').value);
+        const monto = $('fdCosto').value || '';
+        form.append('Costo', monto);
+        form.append('Importe', monto);
         form.append('Mes', $('fdMes').value || '');
         form.append('Anio', $('fdAnio').value || '');
 
@@ -479,14 +624,34 @@
 
         try {
             const res = await fetch('{{ route("facturas.storeDirecta") }}', { method: 'POST', body: form, headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message ?? 'No se pudo guardar la factura.');
+            let data = {};
+            try { data = await res.json(); } catch (_) {}
+            if (!res.ok) {
+                const fromErrors = data.errors ? Object.values(data.errors).flat().filter(Boolean).join(' ') : '';
+                throw new Error(data.message || data.error || fromErrors || 'No se pudo guardar la factura.');
+            }
             cerrarModal();
-            if (window.Swal) Swal.fire({ icon: 'success', title: 'Factura guardada', text: 'La factura fue registrada correctamente.', timer: 3000, showConfirmButton: false, toast: true, position: 'top-end', background: '#f9fafb', color: '#1e293b' });
+            if (typeof Swal !== 'undefined' && Swal.fire) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Factura guardada',
+                    text: 'La factura fue registrada correctamente.',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end',
+                    background: '#f9fafb',
+                    color: '#1e293b',
+                    customClass: { container: 'swal2-on-modal' },
+                });
+            } else if (typeof iziToast !== 'undefined') {
+                iziToast.success({ title: 'OK', message: 'Factura registrada correctamente.', position: 'topRight', timeout: 3500 });
+            }
             if (window.jQuery && window.jQuery('#facturasTable').length) window.jQuery('#facturasTable').DataTable().ajax.reload(null, false);
             if (typeof window.reloadComparativaFromGlobal === 'function') window.reloadComparativaFromGlobal();
         } catch (e) {
-            if (window.Swal) Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: '#f9fafb', color: '#1e293b', confirmButtonColor: '#e11d48' });
+            const msg = (e && e.message) ? e.message : 'No se pudo guardar la factura.';
+            notificarErrorGuardarFactura(msg);
         } finally {
             btn.disabled = false;
             $('textoGuardar').textContent = 'Guardar Factura';
@@ -500,25 +665,37 @@
         zona.addEventListener('drop', e => { e.preventDefault(); zona.classList.remove('dragging'); const f = e.dataTransfer?.files?.[0]; if (f) onFile(f); });
     }
 
-    async function handleXmlFile(file) { if (!file) return; state.xmlFile = file; await parsearXml(file); }
+    async function handleXmlFile(file) {
+        if (!file) return;
+        limpiarArchivoPdf();
+        state.xmlFile = file;
+        await parsearXml(file);
+    }
     async function handlePdfFile(file) {
         if (!file) return;
+        limpiarArchivoXml();
         state.pdfFile = file;
+        revocarPdfPreview();
+        state.pdfObjectUrl = URL.createObjectURL(file);
         $('textoPdf').textContent = file.name.length > 20 ? file.name.substring(0, 20) + '…' : file.name;
         $('iconoPdf').innerHTML = '<i class="fas fa-check-circle text-emerald-500"></i>';
         $('zonaPdf').classList.add('tiene-archivo');
-        $('pdfPreviewFrame').src = URL.createObjectURL(file);
+        $('pdfPreviewFrame').src = state.pdfObjectUrl;
         $('pdfPreviewContainer').classList.remove('hidden');
         await parsearPdf(file);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        $('btnAbrirFacturaDirecta').addEventListener('click', abrirModal);
-        $('btnCerrarFacturaDirecta').addEventListener('click', cerrarModal);
-        $('btnCancelarFacturaDirecta').addEventListener('click', cerrarModal);
-        $('btnGuardarFacturaDirecta').addEventListener('click', guardar);
-        $('modalFacturaDirecta').addEventListener('click', e => { if (e.target === $('modalFacturaDirecta')) cerrarModal(); });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modalFacturaDirecta').classList.contains('hidden')) cerrarModal(); });
+        if ($('btnAbrirFacturaDirecta')) $('btnAbrirFacturaDirecta').addEventListener('click', abrirModal);
+        if ($('btnCerrarFacturaDirecta')) $('btnCerrarFacturaDirecta').addEventListener('click', cerrarModal);
+        if ($('btnCancelarFacturaDirecta')) $('btnCancelarFacturaDirecta').addEventListener('click', cerrarModal);
+        if ($('btnGuardarFacturaDirecta')) $('btnGuardarFacturaDirecta').addEventListener('click', guardar);
+        if ($('modalFacturaDirecta')) $('modalFacturaDirecta').addEventListener('click', e => { if (e.target === $('modalFacturaDirecta')) cerrarModal(); });
+        document.addEventListener('keydown', e => {
+            const modal = $('modalFacturaDirecta');
+            if (!modal) return;
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) cerrarModal();
+        });
         
         // Cargar insumos cuando cambia la gerencia
         $('fdGerencia').addEventListener('change', async function () {
@@ -531,7 +708,7 @@
         setupDragDrop('zonaPdf', async file => { await handlePdfFile(file); });
 
         // Precarga la comparativa al entrar para evitar espera al cambiar de pestaña.
-        if (typeof window.initComparativa === 'function') {
+        if (typeof window.initComparativa === 'function' && document.getElementById('content-historial')) {
             setTimeout(() => window.initComparativa(), 0);
         }
     });

@@ -241,6 +241,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap gap-3 items-center lg:pb-0.5">
+                @can('generar-cortes')
                 <button type="button" id="generarTodos"
                     title="Genera y guarda el presupuesto de TODAS las gerencias activas"
                     class="h-11 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 border-violet-400 dark:border-violet-600 text-violet-700 dark:text-violet-300 bg-gray-50 dark:bg-slate-900 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all duration-200">
@@ -252,6 +253,7 @@
                            bg-indigo-600 hover:bg-indigo-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
                     <i class="fas fa-calculator"></i> <span>Generar Presupuesto</span>
                 </button>
+                @endcan
             </div>
         </div>
     </div>

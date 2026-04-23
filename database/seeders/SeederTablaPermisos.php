@@ -101,6 +101,18 @@ class SeederTablaPermisos extends Seeder
             'editar-rol',
             'borrar-rol',
 
+            // Módulo soporte
+            'ver-soporte',
+
+            // Permisos de administración: presupuestos oficiales
+            'ver-presupuestos',
+            'generar-cortes',
+
+            // Permisos de administración: facturas
+            'crear-facturas',
+            'ver-facturas',
+            'ver-comparativa',
+
          
         ];
 

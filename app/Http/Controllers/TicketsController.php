@@ -25,6 +25,7 @@ class TicketsController extends Controller
     public function __construct(SimpleEmailService $emailService)
     {
         $this->emailService = $emailService;
+        $this->middleware('permission:ver-soporte');
     }
 
     // Carga el dashboard principal con tickets, solicitudes y métricas del mes
