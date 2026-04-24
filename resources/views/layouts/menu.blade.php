@@ -28,7 +28,8 @@
         $user->can('ver-presupuestos') ||
         $user->can('generar-cortes') ||
         $user->can('ver-facturas') ||
-        $user->can('ver-comparativa')
+        $user->can('ver-comparativa') ||
+        $user->can('ver-mantenimientos')
     );
 @endphp
 
@@ -42,6 +43,18 @@
             </a>
         </li>
     @endif
+
+
+        @if(auth()->check() && auth()->user()->can('ver-mantenimientos'))
+        <li>
+        <a href="/mantenimientos" class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
+            <i class="fas fa-tools w-4 md:w-auto text-sm"></i>
+            <span class="sidebar-text">Mantenimientos</span>
+        </a>
+        </li>
+        @endif
+  
+    
     @if($puedeVerEmpresa)
     <li class="rounded-xl overflow-hidden">
         <button @click="open === 1 ? open = null : open = 1"

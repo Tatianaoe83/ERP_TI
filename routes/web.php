@@ -10,6 +10,7 @@ use App\Http\Controllers\PresupuestoController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CortesController;
 use App\Http\Controllers\FacturasController;
+use App\Http\Controllers\MantenimientosController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\SolicitudAprobacionController;
 use App\Http\Controllers\SolicitudesController;
@@ -114,6 +115,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::patch('facturas/{id}/registrar-cambio', [FacturasController::class, 'ultimoCambioPorUsuario'])->name('facturas.registrarCambio');
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:crear-facturas');
     Route::resource('facturas', FacturasController::class);
+    Route::get('mantenimientos', [MantenimientosController::class, 'index'])->name('mantenimientos.index');
+    Route::post('mantenimientos/generar', [MantenimientosController::class, 'generar'])->name('mantenimientos.generar');
+    Route::patch('mantenimientos/{mantenimiento}/realizado', [MantenimientosController::class, 'marcarRealizado'])->name('mantenimientos.realizado');
 
     Route::post('cortes/store-all', [CortesController::class, 'storeAll'])->name('cortes.storeAll');
     Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
