@@ -20,6 +20,19 @@
             </div>
         </div>
         <div>
+            <label for="anio-mantenimientos" class="mb-1 text-sm text-[#101D49] dark:text-white">Año</label>
+            <select
+                id="anio-mantenimientos"
+                wire:model="anio"
+                class="form-control"
+            >
+                <option value="todos">Todos</option>
+                @foreach($aniosDisponibles as $anioDisponible)
+                    <option value="{{ $anioDisponible }}">{{ $anioDisponible }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
             <label for="estatus-mantenimientos" class="mb-1 text-sm text-[#101D49] dark:text-white">Filtrar por estatus</label>
             <select
                 id="estatus-mantenimientos"
@@ -32,7 +45,28 @@
                 <option value="todos">Todos</option>
             </select>
         </div>
+        <div>
+            <label for="por-pagina-mantenimientos" class="mb-1 text-sm text-[#101D49] dark:text-white">Registros por página</label>
+            <select
+                id="por-pagina-mantenimientos"
+                wire:model="perPage"
+                class="form-control"
+            >
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+        </div>
     
+    </div>
+
+    <div class="mant-table-summary mb-3">
+        @if($mantenimientos->total() > 0)
+            Mostrando {{ $mantenimientos->firstItem() }}-{{ $mantenimientos->lastItem() }} de {{ $mantenimientos->total() }} registro(s).
+        @else
+            Total: 0 registro(s).
+        @endif
     </div>
 
     @if($mantenimientos->isEmpty())
@@ -134,8 +168,13 @@
             </table>
         </div>
 
-        <div class="mt-3 d-flex justify-content-center">
-            {{ $mantenimientos->links() }}
+        <div class="mt-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="mant-table-summary">
+                Página {{ $mantenimientos->currentPage() }} de {{ $mantenimientos->lastPage() }}
+            </div>
+            <div>
+                {{ $mantenimientos->links() }}
+            </div>
         </div>
     @endif
 
@@ -337,6 +376,12 @@
                 line-height: 1.25;
             }
 
+            .mant-table-summary {
+                color: #64748b;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
             .mant-empty-state {
                 align-items: center;
                 background: #f8fafc;
@@ -412,6 +457,10 @@
             .dark .mant-empty-state {
                 background: rgba(15, 23, 42, .35);
                 border-color: rgba(148, 163, 184, .25);
+                color: #cbd5e1;
+            }
+
+            .dark .mant-table-summary {
                 color: #cbd5e1;
             }
 

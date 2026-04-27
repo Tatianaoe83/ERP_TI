@@ -16,6 +16,8 @@ class MantenimientosTable extends Component
 
     public string $estatus = 'pendiente';
     public string $search = '';
+    public string $anio = '';
+    public int $perPage = 15;
     public bool $modalReprogramarAbierto = false;
     public bool $modalDetalleAbierto = false;
     public ?int $mantenimientoSeleccionadoId = null;
@@ -26,6 +28,7 @@ class MantenimientosTable extends Component
     public function mount(): void
     {
         Carbon::setLocale('es');
+        $this->anio = (string) now()->year;
     }
 
     public function updatedEstatus(): void
@@ -35,6 +38,20 @@ class MantenimientosTable extends Component
 
     public function updatedSearch(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedAnio(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        if (!in_array($this->perPage, [10, 15, 25, 50], true)) {
+            $this->perPage = 15;
+        }
+
         $this->resetPage();
     }
 
@@ -136,6 +153,10 @@ class MantenimientosTable extends Component
             ->orderBy('g.NombreGerencia')
             ->orderBy('e.NombreEmpleado');
 
+        if ($this->anio !== 'todos') {
+            $query->where('mantenimientos.AnioProgramacion', (int) $this->anio);
+        }
+
         if ($this->estatus === 'pendiente') {
             $query->where('mantenimientos.Estatus', 'Pendiente');
         } elseif ($this->estatus === 'realizado') {
@@ -169,10 +190,17 @@ class MantenimientosTable extends Component
             });
         }
 
-        $mantenimientos = $query->paginate(15);
+        $mantenimientos = $query->paginate($this->perPage);
+        $aniosDisponibles = Mantenimiento::query()
+            ->whereNotNull('AnioProgramacion')
+            ->select('AnioProgramacion')
+            ->distinct()
+            ->orderByDesc('AnioProgramacion')
+            ->pluck('AnioProgramacion');
 
         return view('livewire.mantenimientos-table', [
             'mantenimientos' => $mantenimientos,
+            'aniosDisponibles' => $aniosDisponibles,
         ]);
     }
 }
