@@ -197,10 +197,16 @@ Route::post('/solicitudes/{id}/solicitar-recotizacion', [SolicitudesController::
 Route::post('/solicitudes/{id}/aprobar-{nivel}', [SolicitudAprobacionController::class, 'aprobarPorNivel'])->name('solicitudes.aprobar-nivel');
 Route::post('/solicitudes/{id}/rechazar-{nivel}', [SolicitudAprobacionController::class, 'rechazarPorNivel'])->name('solicitudes.rechazar-nivel');
 Route::get('/elegir-ganador/{token}', [SolicitudesController::class, 'elegirGanadorConToken'])->name('solicitudes.elegir-ganador-token');
+//test de modal
+Route::get('/test-modal', function () {
+    return view('test-modal');
+});
 
 Route::fallback(function () {
     if (auth()->check()) {
         return redirect()->route('home')->with('warning', 'La página solicitada no existe. Has sido redirigido al dashboard.');
     }
     return redirect('/login')->with('error', 'Debes iniciar sesión para acceder al sistema.');
+
+
 });
