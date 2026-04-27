@@ -19,6 +19,7 @@ use App\Models\UnidadesDeNegocio;
 use App\Models\Insumos;
 use App\Models\Gerencia;
 use App\Models\Equipos;
+use App\Models\Mantenimiento;
 use App\Models\User;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
@@ -545,6 +546,10 @@ class InventarioController extends AppBaseController
                 $equipo->EmpleadoID = $empleadoSeleccionado;
                 $equipo->save();
             }
+
+            Mantenimiento::whereIn('InventarioID', $equiposSeleccionados)
+                ->where('Estatus', 'Pendiente')
+                ->update(['EmpleadoID' => $empleadoSeleccionado]);
         } else {
             Flash::error('Inventario no encontrado');
         }

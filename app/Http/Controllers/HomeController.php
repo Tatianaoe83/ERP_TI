@@ -14,6 +14,7 @@ use App\Models\Obras;
 use App\Models\Gerencia;
 use App\Models\UnidadesDeNegocio;
 use DB;
+use Illuminate\Support\Facades\Schema;
 
 class HomeController extends Controller
 {
@@ -30,7 +31,7 @@ class HomeController extends Controller
     /**
      * Show the application dashboard.
      *
-     * @return \Illuminate\Contracts\Support\Renderable
+     * @return \Illuminate\Contracts\Support\Renderable|string
      */
     public function index(Request $request)
     {
@@ -80,6 +81,35 @@ class HomeController extends Controller
         $totalObras = Obras::where('Estado', true)->count();
         $totalGerencias = Gerencia::where('Estado', true)->count();
         $totalUnidadesNegocio = UnidadesDeNegocio::where('Estado', true)->count();
+
+        $anioActual = now()->year;
+        $mantenimientosAnio = ['pendientes' => 0, 'requiere_asignacion' => 0, 'realizados' => 0, 'anio' => $anioActual];
+
+        if (Schema::hasTable('mantenimientos') && Schema::hasColumn('mantenimientos', 'AnioProgramacion')) {
+            $mantenimientosBase = DB::table('mantenimientos as m')
+                ->leftJoin('inventarioequipo as ie', 'ie.InventarioID', '=', 'm.InventarioID')
+                ->leftJoin('empleados as e', 'e.EmpleadoID', '=', 'ie.EmpleadoID')
+                ->where('m.AnioProgramacion', $anioActual);
+
+            $mantenimientosAnio['realizados'] = (clone $mantenimientosBase)
+                ->where('m.Estatus', 'Realizado')
+                ->count();
+
+            $mantenimientosAnio['requiere_asignacion'] = (clone $mantenimientosBase)
+                ->where('m.Estatus', '!=', 'Realizado')
+                ->where(function ($query) {
+                    $query->where('e.Estado', false)
+                        ->orWhereNull('e.EmpleadoID')
+                        ->orWhereRaw("UPPER(COALESCE(e.tipo_persona, '')) <> 'FISICA'");
+                })
+                ->count();
+
+            $mantenimientosAnio['pendientes'] = (clone $mantenimientosBase)
+                ->where('m.Estatus', 'Pendiente')
+                ->where('e.Estado', true)
+                ->whereRaw("UPPER(COALESCE(e.tipo_persona, '')) = 'FISICA'")
+                ->count();
+        }
 
         // Insumos por categoría 'licencia' agrupados por nombre con paginación
         $insumosPorLicencia = $this->getInsumosPorLicencia($request);
@@ -132,6 +162,7 @@ class HomeController extends Controller
                 'gerencias' => $totalGerencias,
                 'unidades_negocio' => $totalUnidadesNegocio,
             ],
+            'mantenimientos' => $mantenimientosAnio,
             'insumos_por_licencia' => $insumosPorLicencia,
             'equipos_por_categoria' => $equiposPorCategoria,
             'estadisticas_gerencia' => $estadisticasPorGerencia,
@@ -153,6 +184,7 @@ class HomeController extends Controller
                     'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0],
                 ],
                 'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
+                'mantenimientos' => ['pendientes' => 0, 'requiere_asignacion' => 0, 'realizados' => 0, 'anio' => now()->year],
                 'insumos_por_licencia' => collect(),
                 'equipos_por_categoria' => collect(),
                 'estadisticas_gerencia' => collect(),
