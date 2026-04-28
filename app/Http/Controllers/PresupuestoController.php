@@ -500,6 +500,7 @@ class PresupuestoController extends Controller
 
 
                 $tablapresup_lics = [];
+                $fecha_renovacion= [];
                 $columnaspresup_lics = [];
                 $totalespresup_lics = []; 
                 $granTotalpresup_lics = 0; 

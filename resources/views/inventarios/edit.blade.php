@@ -215,6 +215,13 @@
 
                 </div>
               </div>
+              <div class="row">
+              <div class="col-md-6">
+                <div class="dark:text-white">
+                  <label>Fecha de renovacion</label>
+                  <input type="text" class="form-control" id="editFrecuenciaDePago" name="editFrecuenciaDePago" required readonly>
+                </div>
+              </div>
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Observaciones</label>

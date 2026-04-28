@@ -65,3 +65,11 @@
     {!! Form::label('MontoRenovacionFianza', 'Monto renovacion fianza:') !!}
     <p>{{ $lineasTelefonicas->MontoRenovacionFianza }}</p>
 </div>
+
+<!-- Fechafianza De Renovacion -->
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
+    {!! Form::label('FechaRenovacion', 'Fecha renovacion:') !!}
+    <p>{{ $lineasTelefonicas->FechaRenovacion }}</p>
+</div>
+
+

@@ -1,11 +1,11 @@
 <!-- Nombreinsumo Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('NombreInsumo', 'Nombre insumo:') !!}
     {!! Form::text('NombreInsumo', null, ['class' => 'form-control','maxlength' => 100,'maxlength' => 100]) !!}
 </div>
 
 <!-- Categoriaid Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('CategoriaID', 'Categoria:') !!}
 
     {!!Form::select('CategoriaID',App\Models\Categorias::all()-> where ("TipoID", 1)->
@@ -14,23 +14,30 @@
 </div>
 
 <!-- Costomensual Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('CostoMensual_fields', 'Costo mensual:') !!}
     {!! Form::number('CostoMensual_fields', $costoMensual_fields, ['class' => 'form-control', 'step' => '0.01', 'id' => 'CostoMensual_fields']) !!}
 </div>
 
 <!-- Costoanual Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('CostoAnual_fields', 'Costo anual:') !!}
     {!! Form::number('CostoAnual_fields', $costoAnual_fields, ['class' => 'form-control', 'step' => '0.01', 'id' => 'CostoAnual_fields']) !!}
 </div>
 
 <!-- Importe Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('Importe', 'Inflación (%):') !!}
     {!! Form::text('Importe', '0.00', ['class' => 'form-control', 'id' => 'Importe_fields', 'placeholder' => 'Ej: 10.50']) !!}
     <small class="form-text text-muted">Porcentaje de Inflación que se aplica al costo</small>
 </div>
+
+<!-- Fecha de renovacion -->
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
+    {!! Form::label('FechaRenovacion', 'Fecha de Renovación:') !!}
+    {!! Form::date('FechaRenovacion', null, ['class' => 'form-control']) !!}
+</div>
+
 
 <!-- Costos con Inflación -->
 <div class="col-sm-12">
@@ -62,7 +69,7 @@
 </div>
 
 <!-- Frecuenciadepago Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('FrecuenciaDePago', 'Frecuencia de pago:') !!}
     {!! Form::select('FrecuenciaDePago', ['Mensual' => 'Mensual', 'Pago único' => 'Pago único', 'Anual' => 'Anual'], null, ['class' => 'form-control', 'id' => 'FrecuenciaDePago']) !!}
 </div>
@@ -271,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <!-- Observaciones Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('Observaciones', 'Observaciones:') !!}
     {!! Form::textarea('Observaciones', null, ['class' => 'form-control','maxlength' => 255,'maxlength' => 255,'rows' => 3]) !!}
 </div>

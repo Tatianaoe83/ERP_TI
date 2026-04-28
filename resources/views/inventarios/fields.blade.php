@@ -210,6 +210,7 @@
                             <th>Costo Mensual</th>
                             <th>Costo Anual</th>
                             <th>Frecuencia de Pago</th>
+                            <th>Fecha de Renovacion</th>
                             <th>Observaciones</th>
                             <th>Fecha de Asignacion</th>
                             <th>Num. Serie</th>
@@ -243,6 +244,7 @@
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
                             <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
+                            <td>{{ $insumosAsignado->fecha_renovacion }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
                             <td>{{ $insumosAsignado->FechaAsignacion }}</td>
                             <td>{{ $insumosAsignado->NumSerie }}</td>
@@ -269,6 +271,7 @@
                                 <th>Costo Mensual</th>
                                 <th>Costo Anual</th>
                                 <th>Frecuencia de Pago</th>
+                                <th>Fecha de Renovacion</th>
                                 <th>Observaciones</th>
 
                             </tr>
@@ -290,6 +293,7 @@
                                 <td>{{ $insumo->CostoMensual }}</td>
                                 <td>{{ $insumo->CostoAnual }}</td>
                                 <td>{{ $insumo->FrecuenciaDePago }}</td>
+                                <td>{{ $insumo->fecha_renovacion }}</td>
                                 <td>{{ $insumo->Observaciones }}</td>
 
                             </tr>
@@ -845,11 +849,12 @@
         $('#editCostoMensual').val(row.find("td:eq(3)").text());
         $('#editCostoAnual').val(row.find("td:eq(4)").text());
         $('#editFrecuenciaDePago').val(row.find("td:eq(5)").text());
-        $('#editobserv').val(row.find("td:eq(6)").text());
-        $('#editFechaDeAsigna').val(row.find("td:eq(7)").text());
-        $('#editNumSerieInsu').val(row.find("td:eq(8)").text());
-        $('#editComentariosInsumo').val(row.find("td:eq(9)").text());
-        $('#editMesDePago').val(row.find("td:eq(10)").text());
+        $('#editFechaDeRenovacion').val(row.find("td:eq(6)").text()); // 👈 aquí
+        $('#editobserv').val(row.find("td:eq(7)").text());
+        $('#editFechaDeAsigna').val(row.find("td:eq(8)").text());
+        $('#editNumSerieInsu').val(row.find("td:eq(9)").text());
+        $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
+        $('#editMesDePago').val(row.find("td:eq(11)").text());
 
         $('#editModalInsumo').modal('show');
     });
@@ -1000,11 +1005,12 @@
         row.find('td:eq(4)').text(insumo.Modelo);
         row.find('td:eq(5)').text(insumo.Precio);
         row.find('td:eq(6)').text(insumo.FechaAsignacion);
-        row.find('td:eq(7)').text(insumo.FechaDeCompra);
-        row.find('td:eq(8)').text(insumo.NumSerie);
-        row.find('td:eq(9)').text(insumo.Folio);
-        row.find('td:eq(10)').text(insumo.Gerenciainsumo);
-        row.find('td:eq(11)').text(insumo.Comentarios);
+        row.find('td:eq(7)').text(insumo.fecha_renovacion);
+        row.find('td:eq(8)').text(insumo.FechaDeCompra);
+        row.find('td:eq(9)').text(insumo.NumSerie);
+        row.find('td:eq(10)').text(insumo.Folio);
+        row.find('td:eq(11)').text(insumo.Gerenciainsumo);
+        row.find('td:eq(12)').text(insumo.Comentarios);
     }
 
 
@@ -1026,6 +1032,7 @@
             <td>${insumo.CostoMensual}</td>
             <td>${insumo.CostoAnual}</td>
             <td>${insumo.FrecuenciaDePago}</td>
+            <td>${insumo.fecha_renovacion}</td>
             <td>${insumo.Observaciones}</td>
             <td>${insumo.FechaAsignacion}</td>
             <td>${insumo.NumSerie}</td>

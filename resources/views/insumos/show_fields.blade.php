@@ -16,6 +16,12 @@
     <p>{{ number_format($insumos->Importe, 2) }}%</p>
 </div>
 
+<!-- Fecha de renovacion -->
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
+    {!! Form::label('FechaRenovacion', 'Fecha de Renovación:') !!}
+    <p>{{ $insumos->FechaRenovacion }}</p>
+</div>
+
 <!-- Costos Sin Inflación -->
 <div class="col-sm-12">
     <div class="card mt-3">
