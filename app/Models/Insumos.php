@@ -46,6 +46,7 @@ class Insumos extends Model implements Auditable
         'Importe',
         'FrecuenciaDePago',
         'Observaciones',
+        'FechaRenovacion',
         'created_at',
         'updated_at'
     ];
@@ -64,6 +65,7 @@ class Insumos extends Model implements Auditable
         'Importe' => 'decimal:2',
         'FrecuenciaDePago' => 'string',
         'Observaciones' => 'string',
+        'FechaRenovacion' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
@@ -80,7 +82,8 @@ class Insumos extends Model implements Auditable
         'CostoAnual' => 'required|numeric',
         'Importe' => 'nullable|numeric',
         'FrecuenciaDePago' => 'required|string|max:50',
-        'Observaciones' => 'nullable|string|max:255'
+        'Observaciones' => 'nullable|string|max:255',
+        'FechaRenovacion' => 'nullable|date'
     ];
 
     /**

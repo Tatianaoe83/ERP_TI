@@ -29,7 +29,7 @@ class InventarioInsumo extends Model implements Auditable
         'CostoMensual',
         'CostoAnual',
         'FrecuenciaDePago',
-        'FechaDeRenovacion',
+        'FechaRenovacion',
         'Observaciones',
         'FechaAsignacion',
         'NumSerie',

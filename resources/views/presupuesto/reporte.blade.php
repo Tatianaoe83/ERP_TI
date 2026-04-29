@@ -99,7 +99,6 @@
                     @foreach($columnaspresup_lics as $columna => $_)
                         <th>{{ $columna }}</th>
                     @endforeach
-                    <th>Fecha de Renovación</th>
                     <th>TotalPorEmpleado</th>
                 </tr>
             </thead>
@@ -115,7 +114,6 @@
                     @foreach($columnaspresup_lics as $columna => $_)
                         <td> $ {{ $empleado[$columna] ?? 0 }}</td>
                     @endforeach
-                    <td></td>
                     <td>$ {{ number_format($empleado['TotalPorEmpleado'], 0) }}</td>
                 </tr>
             @endforeach
@@ -127,7 +125,6 @@
                 @foreach($columnaspresup_lics as $columna => $_)
                     <td><strong>$ {{ number_format($totalespresup_lics[$columna] ?? 0) }}</strong></td>
                 @endforeach
-                <td></td>
                  <td><strong>$ {{ number_format($granTotalpresup_lics, 0) }}</strong></td>
             </tr>
 

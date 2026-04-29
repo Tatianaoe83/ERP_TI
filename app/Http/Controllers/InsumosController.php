@@ -50,7 +50,8 @@ class InsumosController extends AppBaseController
                 'insumos.CostoAnual',
                 'insumos.Importe',
                 'insumos.FrecuenciaDePago',
-                'insumos.Observaciones'
+                'insumos.Observaciones',
+                'insumos.FechaRenovacion'
             ]);
 
             
@@ -224,7 +225,7 @@ class InsumosController extends AppBaseController
         $datosOriginales = $insumos->toArray();
 
         // Verificar si hay cambios en los campos que se sincronizan con inventario
-        $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'Importe', 'FrecuenciaDePago', 'Observaciones'];
+        $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'Importe', 'FrecuenciaDePago', 'Observaciones', 'FechaRenovacion'];
         $hayCambios = false;
         $camposModificados = [];
 
@@ -289,7 +290,8 @@ class InsumosController extends AppBaseController
                 'CostoAnual' => $insumoActualizado->CostoAnual,
                 'Importe' => $insumoActualizado->Importe,
                 'FrecuenciaDePago' => $insumoActualizado->FrecuenciaDePago,
-                'Observaciones' => $insumoActualizado->Observaciones
+                'Observaciones' => $insumoActualizado->Observaciones,
+                'FechaRenovacion' => $insumoActualizado->FechaRenovacion
             ]);
             $registrosActualizados++;
             

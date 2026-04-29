@@ -27,7 +27,8 @@ class LineasTelefonicasRepository extends BaseRepository
         'CostoFianza',
         'Activo',
         'Disponible',
-        'MontoRenovacionFianza'
+        'MontoRenovacionFianza',
+        'FechaRenovacion'
     ];
 
     /**

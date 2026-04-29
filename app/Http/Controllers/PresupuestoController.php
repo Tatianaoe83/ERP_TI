@@ -591,7 +591,73 @@ class PresupuestoController extends Controller
                 return Excel::download(new ReportExport($request->GerenciaID, $request->tipo), $fileName);
        }
         
+    }
 
+    public function verificarFechas(Request $request)
+    {
+        try {
+            $gerenciaId = $request->GerenciaID;
+
+            // 1. Insumos Asignados
+            $insumosSinFecha = DB::table('inventarioinsumo as ii')
+                ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
+                ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+                ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+                ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
+                ->where('d.GerenciaID', $gerenciaId)
+                ->where('e.Estado', 1)
+                ->where(function($query) {
+                    $query->whereNull('ii.FechaRenovacion')
+                        ->orWhere('ii.FechaRenovacion', '')
+                        ->orWhere('ii.FechaRenovacion', '0000-00-00');
+                })
+                ->select('e.NombreEmpleado', 'ii.NombreInsumo as Articulo', 'g.NombreGerencia', DB::raw("'Insumo' as Tipo"))
+                ->get();
+
+            // 2. Líneas Asignadas
+            $lineasSinFecha = DB::table('inventariolineas as il')
+                ->join('empleados as e', 'il.EmpleadoID', '=', 'e.EmpleadoID')
+                ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+                ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+                ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
+                ->where('d.GerenciaID', $gerenciaId)
+                ->where('e.Estado', 1)
+                ->where(function($query) {
+                    $query->whereNull('il.FechaRenovacion')
+                        ->orWhere('il.FechaRenovacion', '')
+                        ->orWhere('il.FechaRenovacion', '0000-00-00');
+                })
+                ->select('e.NombreEmpleado', 'il.NumTelefonico as Articulo', 'g.NombreGerencia', DB::raw("'Línea (Asignada)' as Tipo"))
+                ->get();
+
+            // 3. Líneas en Catálogo
+            $lineasMaestrasSinFecha = DB::table('lineastelefonicas as lt')
+                ->join('obras as o', 'lt.ObraID', '=', 'o.ObraID')
+                ->join('unidadesdenegocio as un', 'o.UnidadNegocioID', '=', 'un.UnidadNegocioID')
+                ->join('gerencia as g', 'g.UnidadNegocioID', '=', 'un.UnidadNegocioID')
+                ->where('g.GerenciaID', $gerenciaId)
+                ->where(function($query) {
+                    $query->whereNull('lt.FechaRenovacion')
+                        ->orWhere('lt.FechaRenovacion', '')
+                        ->orWhere('lt.FechaRenovacion', '0000-00-00');
+                })
+                ->select(DB::raw("'Sin asignar' as NombreEmpleado"), 'lt.NumTelefonico as Articulo', 'g.NombreGerencia', DB::raw("'Línea (Catálogo)' as Tipo"))
+                ->get();
+
+            $faltantes = $insumosSinFecha->merge($lineasSinFecha)->merge($lineasMaestrasSinFecha);
+
+            return response()->json([
+                'success' => true,
+                'faltantes' => $faltantes,
+                'count' => $faltantes->count()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
     }
 }
 

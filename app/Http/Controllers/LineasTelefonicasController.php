@@ -262,7 +262,7 @@ class LineasTelefonicasController extends AppBaseController
         $datosOriginales = $lineasTelefonicas->toArray();
 
         // Verificar si hay cambios en los campos que se sincronizan con inventario
-        $camposSincronizacion = ['PlanID', 'CuentaPadre', 'CuentaHija', 'TipoLinea', 'ObraID', 'FechaFianza', 'CostoFianza', 'MontoRenovacionFianza','NumTelefonico','Activo'];
+        $camposSincronizacion = ['PlanID', 'CuentaPadre', 'CuentaHija', 'TipoLinea', 'ObraID', 'FechaFianza', 'CostoFianza', 'MontoRenovacionFianza','NumTelefonico','Activo','FechaRenovacion'];
         $hayCambios = false;
         $camposModificados = [];
 
@@ -392,6 +392,7 @@ class LineasTelefonicasController extends AppBaseController
                     'FechaFianza' => $lineaActualizada->FechaFianza,
                     'CostoFianza' => $lineaActualizada->CostoFianza,
                     'MontoRenovacionFianza' => $lineaActualizada->MontoRenovacionFianza,
+                    'FechaRenovacion' => $lineaActualizada->FechaRenovacion,
                     
                 ]);
                 $registrosActualizados++;

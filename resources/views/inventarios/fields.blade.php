@@ -244,7 +244,7 @@
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
                             <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
-                            <td>{{ $insumosAsignado->fecha_renovacion }}</td>
+                            <td>{{ $insumosAsignado->FechaRenovacion }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
                             <td>{{ $insumosAsignado->FechaAsignacion }}</td>
                             <td>{{ $insumosAsignado->NumSerie }}</td>
@@ -293,7 +293,7 @@
                                 <td>{{ $insumo->CostoMensual }}</td>
                                 <td>{{ $insumo->CostoAnual }}</td>
                                 <td>{{ $insumo->FrecuenciaDePago }}</td>
-                                <td>{{ $insumo->fecha_renovacion }}</td>
+                                <td>{{ $insumo->FechaRenovacion }}</td>
                                 <td>{{ $insumo->Observaciones }}</td>
 
                             </tr>
@@ -336,6 +336,7 @@
                             <th>Fecha Asignación</th>
                             <th>Comentario</th>
                             <th>Monto Renovación Fianza</th>
+                            <th>Fecha Renovación</th>
 
 
 
@@ -374,6 +375,7 @@
                             <td>{{ $LineasAsignado->FechaAsignacion}}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
+                            <td>{{ $LineasAsignado->FechaRenovacion}}</td>
 
                         </tr>
                         @endforeach
@@ -401,6 +403,7 @@
                                 <th>Costo Fianza</th>
                                 <th>Activo</th>
                                 <th>Monto Renovación Fianza</th>
+                                <th>Fecha Renovación</th>
 
 
 
@@ -435,7 +438,7 @@
                                 </td>
 
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
-
+                                <td>{{ $Linea->FechaRenovacion}}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -643,6 +646,7 @@
             Folio: $('#editFolio').val(),
             FechaDeCompra: $('#editFechaDeCompra').val(),
             Comentarios: $('#editComentarios').val(),
+            FechaRenovacion: $('#editFechaDeRenovacion').val(),
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -723,6 +727,8 @@
         row.find('td:eq(9)').text(equipo.Folio);
         row.find('td:eq(10)').text(equipo.GerenciaEquipo);
         row.find('td:eq(11)').text(equipo.Comentarios);
+        row.find('td:eq(12)').text(equipo.FechaRenovacion);
+        row.find('.edit-btn').data('id', equipo.InventarioID);
     }
 
     // Agregar una nueva fila en la tabla (para equipo creado)
@@ -871,13 +877,15 @@
         let costomensual = row.find("td:eq(3)").text();
         let costoanual = row.find("td:eq(4)").text();
         let frecuenciadepago = row.find("td:eq(5)").text();
-        let observaciones = row.find("td:eq(6)").text();
+        let fecharenovacion = row.find("td:eq(6)").text();
+        let observaciones = row.find("td:eq(7)").text();
 
         $('#editCategoriaInsumo').val(categoria);
         $('#editNombreInsumo').val(nombreinsumo);
         $('#editCostoMensual').val(costomensual);
         $('#editCostoAnual').val(costoanual);
         $('#editFrecuenciaDePago').val(frecuenciadepago);
+        $('#editFechaDeRenovacion').val(fecharenovacion);
         $('#editobserv').val(observaciones);
         $('#editId_insumo').val('');
         $('#editEmp_insumo').val(id_E);
@@ -926,6 +934,7 @@
             CostoMensual: $('#editCostoMensual').val(),
             CostoAnual: $('#editCostoAnual').val(),
             FrecuenciaDePago: $('#editFrecuenciaDePago').val(),
+            FechaRenovacion: $('#editFechaDeRenovacion').val(),
             Observaciones: $('#editobserv').val(),
             FechaAsignacion: $('#editFechaDeAsigna').val(),
             NumSerie: $('#editNumSerieInsu').val(),
@@ -1032,7 +1041,7 @@
             <td>${insumo.CostoMensual}</td>
             <td>${insumo.CostoAnual}</td>
             <td>${insumo.FrecuenciaDePago}</td>
-            <td>${insumo.fecha_renovacion}</td>
+            <td>${insumo.FechaRenovacion}</td>
             <td>${insumo.Observaciones}</td>
             <td>${insumo.FechaAsignacion}</td>
             <td>${insumo.NumSerie}</td>

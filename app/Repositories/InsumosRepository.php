@@ -22,7 +22,8 @@ class InsumosRepository extends BaseRepository
         'CostoMensual',
         'CostoAnual',
         'FrecuenciaDePago',
-        'Observaciones'
+        'Observaciones',
+        'FechaRenovacion'
     ];
 
     /**

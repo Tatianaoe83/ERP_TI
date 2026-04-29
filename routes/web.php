@@ -66,6 +66,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::POST('mantenimiento/{id}', [InventarioController::class, 'mantenimiento'])->name('inventarios.mantenimiento');
     Route::resource('inventarios', App\Http\Controllers\InventarioController::class);
 
+    Route::post('presupuesto/verificar', [PresupuestoController::class, 'verificarFechas'])->name('presupuesto.verificar');
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
 

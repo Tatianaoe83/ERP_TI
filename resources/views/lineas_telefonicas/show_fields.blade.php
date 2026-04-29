@@ -68,8 +68,8 @@
 
 <!-- Fechafianza De Renovacion -->
 <div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
-    {!! Form::label('FechaRenovacion', 'Fecha renovacion:') !!}
-    <p>{{ $lineasTelefonicas->FechaRenovacion }}</p>
+    {!! Form::label('FechaRenovacion', 'Fecha de renovacion:') !!}
+    <p>{{ $lineasTelefonicas->FechaRenovacion ?? 'Sin fecha' }}</p>
 </div>
 
 
