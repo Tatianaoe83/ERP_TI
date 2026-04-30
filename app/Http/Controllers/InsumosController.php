@@ -59,6 +59,9 @@ class InsumosController extends AppBaseController
                 ->addColumn('action', function($row){
                     return view('insumos.datatables_actions', ['id' => $row->ID])->render();
                 })
+                ->editColumn('FechaRenovacion', function ($row) {
+                    return $row->FechaRenovacion ? \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y') : '';
+                })
                 ->rawColumns(['action'])
                 ->make(true);
         }

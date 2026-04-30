@@ -217,12 +217,6 @@
               </div>
               <div class="col-md-6">
                 <div class="dark:text-white">
-                  <label>Fecha de renovacion</label>
-                  <input type="date" class="form-control" id="editFechaDeRenovacion" name="editFechaDeRenovacion">
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="dark:text-white">
                   <label>Observaciones</label>
                   <input type="text" class="form-control" id="editobserv" name="editobserv" readonly>
                 </div>
@@ -332,6 +326,10 @@
                 </div>
               </div>
             </div>
+
+            <!-- Campos ocultos para capturar datos de abajo automáticamente -->
+            <input type="hidden" id="editMontoRenovacionFianza" name="MontoRenovacionFianza">
+            <input type="hidden" id="editFechaRenovacion" name="FechaRenovacion">
 
           </div>
         </form>

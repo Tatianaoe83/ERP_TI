@@ -298,6 +298,11 @@ function initializeInsumoEdit() {
         if (!$('#CostoAnual').val() || $('#CostoAnual').val() < 0) {
             isValid = false;
         }
+
+        // Validar FechaRenovacion (Requerida según el nuevo flujo de presupuestos)
+        if (!$('#FechaRenovacion').val()) {
+            isValid = false;
+        }
         
         // Habilitar/deshabilitar botón
         if (!isValid) {

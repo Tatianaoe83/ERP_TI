@@ -392,23 +392,29 @@ class InventarioController extends AppBaseController
 
     public function editarlinea($id, Request $request)
     {
+        try {
+            $inventariotelf = InventarioLineas::where('InventarioID', $id)->first();
 
+            if (!$inventariotelf) {
+                return response()->json(['success' => false, 'message' => 'Registro de telefonía no encontrado.'], 404);
+            }
 
-        $inventariotelf = InventarioLineas::where('InventarioID', $id)->first();
+            $data = $request->all();
 
-        if (!$inventariotelf) {
-            return response()->json(['error' => 'Equipo no encontrado'], 404);
+            $inventariotelf->update($data);
+
+            return response()->json([
+                'telefono' => $inventariotelf,
+                'success' => true
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Error al editar línea asignada: " . $e->getMessage());
+            return response()->json([
+                'success' => false, 
+                'message' => 'Ocurrió un error al guardar los datos: ' . $e->getMessage()
+            ], 500);
         }
-
-        $data = $request->all();
-
-
-        $inventariotelf->update($data);
-
-        return response()->json([
-            'telefono' => $inventariotelf,
-            'success' => true
-        ]);
     }
 
     public function crearlinea($id, $telf, Request $request)
@@ -416,9 +422,9 @@ class InventarioController extends AppBaseController
 
 
         $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.FechaRenovacion', 'lineastelefonicas.LineaID', 'planes.NombrePlan AS PlanTel')
-            ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
-            ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
-            ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
+                ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
+                ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
+                ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
             ->where('lineastelefonicas.LineaID', $telf)->get();
 
 
@@ -429,16 +435,16 @@ class InventarioController extends AppBaseController
 
         $data = array_merge($data, $lineaData->toArray());
 
-        $empleado = Empleados::select('obras.ObraID', 'obras.NombreObra AS NombreObra')
-            ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+            $empleado = Empleados::select('obras.ObraID', 'obras.NombreObra AS NombreObra')
+                ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->where('EmpleadoID', $id)->get();
 
         $empleadoData = $empleado->first();
 
         $data = array_merge($data, $empleadoData->toArray());
+            
 
-
-        $inventariotelf = InventarioLineas::create($data);
+            $inventariotelf = InventarioLineas::create($data);
 
         $Lineas = DB::table('lineastelefonicas')
             ->where('LineaID', $telf)
@@ -446,10 +452,10 @@ class InventarioController extends AppBaseController
 
         $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first();
 
-        return response()->json([
-            'telefono' => $inventariotelf,
-            'success' => true
-        ]);
+            return response()->json([
+                'telefono' => $inventariotelf,
+                'success' => true
+            ]);
     }
 
     public function destroylinea($id)

@@ -117,13 +117,13 @@
                         @foreach ($equiposAsignados as $equiposAsignado)
                         <tr data-id="{{ $equiposAsignado->InventarioID }}">
                             <td>
-                                <button class='btn btn-outline-secondary btn-xs edit-btn' data-id="{{ $equiposAsignado->InventarioID }}">
+                                <button class='btn btn-outline-secondary btn-xs edit-btn mt-2' data-id="{{ $equiposAsignado->InventarioID }}">
                                     <i class="fa fa-edit"></i>
                                 </button>
                                 {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroy', $equiposAsignado->InventarioID], 'style' => 'display:inline']) !!}
                                 {!! Form::button('<i class="fa fa-trash"></i>', [
                                 'type' => 'submit',
-                                'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn',
+                                'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn mt-2',
                                 'data-id' => $equiposAsignado->InventarioID
                                 ]) !!}
                                 {!! Form::close() !!}
@@ -877,7 +877,11 @@
         let costomensual = row.find("td:eq(3)").text();
         let costoanual = row.find("td:eq(4)").text();
         let frecuenciadepago = row.find("td:eq(5)").text();
-        let fecharenovacion = row.find("td:eq(6)").text();
+        let fecharenovacion = row.find("td:eq(6)").text().trim();
+        // Si la fecha trae hora (ej. 2026-04-29 00:00:00), tomamos solo los primeros 10 caracteres
+        if (fecharenovacion.length > 10) {
+            fecharenovacion = fecharenovacion.substring(0, 10);
+        }
         let observaciones = row.find("td:eq(7)").text();
 
         $('#editCategoriaInsumo').val(categoria);
@@ -1143,21 +1147,35 @@
         $('#editEmp_linea').val('');
         $('#editcomenl').val(row.find("td:eq(12)").text());
         $('#editfechalinea').val(row.find("td:eq(11)").text());
+        $('#editMontoRenovacionFianza').val(row.find("td:eq(13)").text());
+        $('#editFechaRenovacion').val(row.find("td:eq(14)").text());
 
         $('#editModalLinea').modal('show');
     });
 
     $(document).on('click', '.crear-btn-linea', function() {
-
+        let row = $(this).closest('tr');
         let id_E = '{{ $inventario->EmpleadoID }}';
 
         $('#editFormLinea')[0].reset();
 
         document.getElementById('titulolinea').innerHTML = 'Crear Linea';
         var id = $(this).data('id');
+        
+        // Capturar datos de abajo automáticamente
+        let monto = row.find("td:eq(10)").text().trim();
+        let fecha = row.find("td:eq(11)").text().trim();
+        
+        // Limpiar fecha si trae hora
+        if (fecha.length > 10) {
+            fecha = fecha.substring(0, 10);
+        }
+
         $('#editId_linea').val('');
         $('#editId_linea2').val(id);
         $('#editEmp_linea').val(id_E);
+        $('#editMontoRenovacionFianza').val(monto);
+        $('#editFechaRenovacion').val(fecha);
 
         $('#editModalLinea').modal('show');
     });
@@ -1200,7 +1218,9 @@
 
         let formData = {
             FechaAsignacion: $('#editfechalinea').val(),
-            Comentarios: $('#editcomenl').val()
+            Comentarios: $('#editcomenl').val(),
+            MontoRenovacionFianza: $('#editMontoRenovacionFianza').val(),
+            FechaRenovacion: $('#editFechaRenovacion').val()
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1254,10 +1274,14 @@
             },
             error: function(error) {
                 console.error('Error:', error);
+                let errorMessage = 'Ocurrió un error al guardar los datos';
+                if (error.responseJSON && error.responseJSON.message) {
+                    errorMessage = error.responseJSON.message;
+                }
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'Ocurrió un error al guardar los datos',
+                    text: errorMessage,
                     customClass: {
                         popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                     }
@@ -1271,6 +1295,8 @@
         let row = $(`tr[data-id=${telefono.InventarioID}]`);
         row.find('td:eq(11)').text(telefono.FechaAsignacion);
         row.find('td:eq(12)').text(telefono.Comentarios);
+        row.find('td:eq(13)').text(telefono.MontoRenovacionFianza);
+        row.find('td:eq(14)').text(telefono.FechaRenovacion);
     }
 
 
@@ -1298,7 +1324,8 @@
             telefono.CostoFianza,
             telefono.FechaAsignacion,
             telefono.Comentarios,
-            telefono.MontoRenovacionFianza
+            telefono.MontoRenovacionFianza,
+            telefono.FechaRenovacion
         ];
 
         table.row.add(newRow).draw(false);

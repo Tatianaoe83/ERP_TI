@@ -58,6 +58,7 @@ class LineasTelefonicasController extends AppBaseController
                     'lineastelefonicas.Disponible',
                     'lineastelefonicas.Activo',
                     'lineastelefonicas.MontoRenovacionFianza',
+                    'lineastelefonicas.FechaRenovacion',
                     \DB::raw("(SELECT e.tipo_persona FROM inventariolineas il INNER JOIN empleados e ON e.EmpleadoID = il.EmpleadoID WHERE il.LineaID = lineastelefonicas.LineaID ORDER BY il.FechaAsignacion DESC LIMIT 1) as tipo_asignacion"),
                 ]);
 
@@ -80,6 +81,9 @@ class LineasTelefonicasController extends AppBaseController
                     } else {
                         return '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
                     }
+                })
+                ->editColumn('FechaRenovacion', function ($row) {
+                    return $row->FechaRenovacion ? \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y') : '';
                 })
                 ->rawColumns(['action', 'estado_disponibilidad', 'estado_activo'])
                 ->make(true);

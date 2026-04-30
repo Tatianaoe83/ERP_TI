@@ -30,6 +30,12 @@ class InsumosDataTable extends DataTable
                 }
                 return number_format((float)$row->Importe, 2) . '%';
             })
+            ->editColumn('FechaRenovacion', function ($row) {
+                if (empty($row->FechaRenovacion)) {
+                    return '';
+                }
+                return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
+            })
             ->rawColumns(['action'])
             ->setRowId('ID');
     }
@@ -53,7 +59,8 @@ class InsumosDataTable extends DataTable
                 'insumos.CostoAnual',
                 'insumos.Importe',
                 'insumos.FrecuenciaDePago',
-                'insumos.Observaciones'
+                'insumos.Observaciones',
+                'insumos.FechaRenovacion'
             ]);
     }
 
@@ -180,6 +187,13 @@ class InsumosDataTable extends DataTable
                 'data' => 'Observaciones',
                 'name' => 'Observaciones',
                 'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'FechaRenovacion' => [
+                'title' => 'Fecha Renovación',
+                'data' => 'FechaRenovacion',
+                'name' => 'FechaRenovacion',
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'defaultContent' => ''
             ],
 
             Column::computed('action')
