@@ -125,8 +125,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 document.getElementById('listaFaltantes').innerHTML = html;
                 modal.show();
+
+                // AGREGADO: Disparar la descarga aunque haya faltantes (según petición)
+                setTimeout(() => {
+                    submitButtonInput.value = tipoBoton;
+                    form.submit();
+                }, 500); // Pequeño delay para que el modal se alcance a ver
             } else {
-                // Si todo está bien, enviar el formulario
+                // Si todo está bien, enviar el formulario normalmente
                 submitButtonInput.value = tipoBoton;
                 form.submit();
             }

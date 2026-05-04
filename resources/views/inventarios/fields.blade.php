@@ -370,12 +370,12 @@
                             <td>{{ $LineasAsignado->CuentaHija}}</td>
                             <td>{{ $LineasAsignado->TipoLinea}}</td>  
                             <td>{{ $LineasAsignado->lineastelefonicas->obras->NombreObra ?? 'Sin asignar'}}</td>
-                            <td>{{ $LineasAsignado->FechaFianza}}</td>
+                            <td>{{ $LineasAsignado->FechaFianza ? \Carbon\Carbon::parse($LineasAsignado->FechaFianza)->format('d/m/Y') : '' }}</td>
                             <td>{{ $LineasAsignado->CostoFianza}}</td>
-                            <td>{{ $LineasAsignado->FechaAsignacion}}</td>
+                            <td>{{ $LineasAsignado->FechaAsignacion ? \Carbon\Carbon::parse($LineasAsignado->FechaAsignacion)->format('d/m/Y') : '' }}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
-                            <td>{{ $LineasAsignado->FechaRenovacion}}</td>
+                            <td>{{ $LineasAsignado->FechaRenovacion ? \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') : '' }}</td>
 
                         </tr>
                         @endforeach
@@ -428,7 +428,7 @@
                                 <td>{{ $Linea->CuentaHija}}</td>
                                 <td>{{ $Linea->TipoLinea}}</td>
                                 <td>{{ $Linea->obras->NombreObra}}</td>
-                                <td>{{ $Linea->FechaFianza}}</td>
+                                <td>{{ $Linea->FechaFianza ? \Carbon\Carbon::parse($Linea->FechaFianza)->format('d/m/Y') : '' }}</td>
                                 <td>{{ $Linea->CostoFianza}}</td>
                                 <td>
                                     <input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled1" checked disabled>
@@ -438,7 +438,7 @@
                                 </td>
 
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
-                                <td>{{ $Linea->FechaRenovacion}}</td>
+                                <td>{{ $Linea->FechaRenovacion ? \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('d/m/Y') : '' }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -1012,18 +1012,17 @@
 
     function updateisnumoTableRow(insumo) {
         let row = $(`tr[data-id=${insumo.InventarioID}]`);
-        row.find('td:eq(1)').text(insumo.Categoriainsumo);
-        row.find('td:eq(2)').text(insumo.Marca);
-        row.find('td:eq(3)').text(insumo.Caracteristicas);
-        row.find('td:eq(4)').text(insumo.Modelo);
-        row.find('td:eq(5)').text(insumo.Precio);
-        row.find('td:eq(6)').text(insumo.FechaAsignacion);
-        row.find('td:eq(7)').text(insumo.fecha_renovacion);
-        row.find('td:eq(8)').text(insumo.FechaDeCompra);
+        row.find('td:eq(1)').text(insumo.CateogoriaInsumo);
+        row.find('td:eq(2)').text(insumo.NombreInsumo);
+        row.find('td:eq(3)').text(insumo.CostoMensual);
+        row.find('td:eq(4)').text(insumo.CostoAnual);
+        row.find('td:eq(5)').text(insumo.FrecuenciaDePago);
+        row.find('td:eq(6)').text(insumo.FechaRenovacion);
+        row.find('td:eq(7)').text(insumo.Observaciones);
+        row.find('td:eq(8)').text(insumo.FechaAsignacion);
         row.find('td:eq(9)').text(insumo.NumSerie);
-        row.find('td:eq(10)').text(insumo.Folio);
-        row.find('td:eq(11)').text(insumo.Gerenciainsumo);
-        row.find('td:eq(12)').text(insumo.Comentarios);
+        row.find('td:eq(10)').text(insumo.Comentarios);
+        row.find('td:eq(11)').text(insumo.MesDePago);
     }
 
 
@@ -1165,6 +1164,20 @@
         // Capturar datos de abajo automáticamente
         let monto = row.find("td:eq(10)").text().trim();
         let fecha = row.find("td:eq(11)").text().trim();
+        let fianza = row.find("td:eq(7)").text().trim(); // Fecha de Fianza en la tabla
+
+        // VALIDACIÓN: Si no tiene fecha de fianza, avisar y no continuar
+        if (!fianza || fianza === "") {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fecha de Fianza Requerida',
+                text: 'Esta línea no tiene Fecha de Fianza en el catálogo. Por favor, captúrela en el catálogo de líneas antes de asignarla.',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
+            });
+            return;
+        }
         
         // Limpiar fecha si trae hora
         if (fecha.length > 10) {

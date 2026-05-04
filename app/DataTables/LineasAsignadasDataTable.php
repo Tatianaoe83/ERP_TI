@@ -20,6 +20,12 @@ class LineasAsignadasDataTable extends DataTable
         $dataTable = new QueryDataTable($query);
 
         return $dataTable
+            ->editColumn('fecha_asignacion', function ($row) {
+                return $row->fecha_asignacion ? \Carbon\Carbon::parse($row->fecha_asignacion)->format('d/m/Y') : '';
+            })
+            ->editColumn('fecha_renovacion', function ($row) {
+                return $row->fecha_renovacion ? \Carbon\Carbon::parse($row->fecha_renovacion)->format('d/m/Y') : '';
+            })
             ->setRowId('InventarioID');
     }
 
@@ -46,7 +52,8 @@ class LineasAsignadasDataTable extends DataTable
                 'inventariolineas.CostoRentaMensual as costo_renta_mensual',
                 'inventariolineas.CuentaPadre as cuenta_padre',
                 'inventariolineas.CuentaHija as cuenta_hija',
-                'inventariolineas.MontoRenovacionFianza as monto_renovacion_fianza'
+                'inventariolineas.MontoRenovacionFianza as monto_renovacion_fianza',
+                'inventariolineas.FechaRenovacion as fecha_renovacion'
             ]);
 
         // Aplicar filtros
@@ -204,6 +211,12 @@ class LineasAsignadasDataTable extends DataTable
                 'title' => 'Monto Renovación Fianza',
                 'data' => 'monto_renovacion_fianza',
                 'name' => 'inventariolineas.MontoRenovacionFianza',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'fecha_renovacion' => [
+                'title' => 'Fecha Renovación',
+                'data' => 'fecha_renovacion',
+                'name' => 'inventariolineas.FechaRenovacion',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
 

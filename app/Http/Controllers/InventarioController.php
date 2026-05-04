@@ -359,6 +359,15 @@ class InventarioController extends AppBaseController
         $data['EmpleadoID'] = $id;
         $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
         $data['InsumoID'] = $idinsumo[0]->ID;
+        
+        // Si no viene fecha en el request, intentar obtenerla del catálogo
+        if (!$request->filled('FechaRenovacion')) {
+            $insumoMaster = Insumos::find($data['InsumoID']);
+            if ($insumoMaster) {
+                $data['FechaRenovacion'] = $insumoMaster->FechaRenovacion;
+            }
+        }
+
         $inventarioinsumo = InventarioInsumo::create($data);
 
         return response()->json([
@@ -400,6 +409,11 @@ class InventarioController extends AppBaseController
             }
 
             $data = $request->all();
+
+            // Asegurar que la fecha de renovación se actualice si viene en el request
+            if ($request->filled('FechaRenovacion')) {
+                $data['FechaRenovacion'] = $request->FechaRenovacion;
+            }
 
             $inventariotelf->update($data);
 
@@ -443,8 +457,15 @@ class InventarioController extends AppBaseController
 
         $data = array_merge($data, $empleadoData->toArray());
             
+        // Asegurar que los campos de fecha se transfieran correctamente (Prioridad al modal si tiene datos)
+        if ($lineaData) {
+            $data['FechaFianza'] = $request->input('FechaFianza', $lineaData->FechaFianza);
+            $data['FechaRenovacion'] = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
+            $data['MontoRenovacionFianza'] = $request->input('MontoRenovacionFianza', $lineaData->MontoRenovacionFianza);
+            $data['CostoFianza'] = $lineaData->CostoFianza;
+        }
 
-            $inventariotelf = InventarioLineas::create($data);
+        $inventariotelf = InventarioLineas::create($data);
 
         $Lineas = DB::table('lineastelefonicas')
             ->where('LineaID', $telf)
