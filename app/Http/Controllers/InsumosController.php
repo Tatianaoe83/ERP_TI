@@ -60,7 +60,7 @@ class InsumosController extends AppBaseController
                     return view('insumos.datatables_actions', ['id' => $row->ID])->render();
                 })
                 ->editColumn('FechaRenovacion', function ($row) {
-                    return $row->FechaRenovacion ? \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y') : '';
+                    return $row->FechaRenovacion ? \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y') : 'Sin asignar';
                 })
                 ->rawColumns(['action'])
                 ->make(true);

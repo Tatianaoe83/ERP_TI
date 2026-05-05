@@ -61,6 +61,16 @@
                 </tbody>
             </table>
         </div>
+
+        
+        <div class="mt-4 p-3 bg-[#1a1a1a] rounded border border-secondary" id="infoAdicionalEmpleados">
+            <h6 class="text-white mb-3 border-bottom pb-2">Información de Empleados (Gerencia)</h6>
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <p class="mb-0 text-white"><strong>Total Empleados:</strong> <span id="totalEmpleadosModal" class="badge bg-primary fs-6">0</span></p>
+                <p class="mb-0 text-white"><strong>Sin Asignar (Emp):</strong> <span id="sinAsignarModal" class="badge bg-warning text-dark fs-6">0</span></p>
+                <p class="mb-0 text-white"><strong>Líneas Catálogo:</strong> <span id="lineasCatalogoModal" class="badge bg-info text-dark fs-6">0</span></p>
+            </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
@@ -124,6 +134,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     </tr>`;
                 });
                 document.getElementById('listaFaltantes').innerHTML = html;
+                
+                // Actualizar contadores
+                document.getElementById('totalEmpleadosModal').innerText = data.totalEmpleados || 0;
+                document.getElementById('sinAsignarModal').innerText = data.empleadosSinAsignar || 0;
+                document.getElementById('lineasCatalogoModal').innerText = data.lineasCatalogoSinAsignar || 0;
+
                 modal.show();
 
                 // AGREGADO: Disparar la descarga aunque haya faltantes (según petición)

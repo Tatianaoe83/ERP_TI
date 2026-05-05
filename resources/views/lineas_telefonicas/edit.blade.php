@@ -101,6 +101,7 @@ function initializeLineaEdit() {
         var tipoLinea = $('#TipoLinea').val();
         var obraId = $('#ObraID option:selected').text();
         var fechaFianza = $('#FechaFianza').val();
+        var fechaRenovacion = $('#FechaRenovacion').val();
         var costoFianza = $('#CostoFianza').val();
         var montoRenovacion = $('#MontoRenovacionFianza').val();
         
@@ -126,9 +127,11 @@ function initializeLineaEdit() {
                         <div class="mb-2">
                             <strong>Tipo de Línea:</strong> ${tipoLinea || 'Sin tipo de línea'}
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <strong>Fecha Fianza:</strong> ${fechaFianza || 'Sin fecha fianza'}
                         </div>
+                        <div class="mb-1">
+                            <strong>Fecha Renovación:</strong> ${fechaRenovacion || 'Sin fecha de renovación'}
                         <div class="mb-3">
                             <strong>Costo Fianza:</strong> ${costoFianza || 'Sin costo fianza'}
                         </div>

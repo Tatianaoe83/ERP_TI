@@ -32,7 +32,7 @@ class InsumosDataTable extends DataTable
             })
             ->editColumn('FechaRenovacion', function ($row) {
                 if (empty($row->FechaRenovacion)) {
-                    return '';
+                    return 'Sin asignar';
                 }
                 return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
             })
@@ -193,7 +193,6 @@ class InsumosDataTable extends DataTable
                 'data' => 'FechaRenovacion',
                 'name' => 'FechaRenovacion',
                 'class' => 'dark:bg-[#101010] dark:text-white',
-                'defaultContent' => ''
             ],
 
             Column::computed('action')

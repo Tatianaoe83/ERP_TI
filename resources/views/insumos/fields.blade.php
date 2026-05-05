@@ -34,8 +34,13 @@
 
 <!-- Fecha de renovacion -->
 <div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
-    {!! Form::label('FechaRenovacion', 'Fecha de Renovación:') !!}
-    {!! Form::date('FechaRenovacion', null, ['class' => 'form-control']) !!}
+{!! Form::label('FechaRenovacion', 'Fecha de renovación:') !!}
+  {!! Form::date('FechaRenovacion', 
+    isset($insumos->FechaRenovacion) 
+        ? \Carbon\Carbon::parse($insumos->FechaRenovacion)->format('Y-m-d') 
+        : null, 
+    ['class' => 'form-control']) 
+!!}
 </div>
 
 

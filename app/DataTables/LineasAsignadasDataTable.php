@@ -18,14 +18,30 @@ class LineasAsignadasDataTable extends DataTable
     public function dataTable($query)
     {
         $dataTable = new QueryDataTable($query);
+                return $dataTable
+                    ->editColumn('fecha_asignacion', function ($row) {
+            if (!$row->fecha_asignacion || $row->fecha_asignacion === '0000-00-00') {
+                return 'Sin asignar';
+            }
 
-        return $dataTable
-            ->editColumn('fecha_asignacion', function ($row) {
-                return $row->fecha_asignacion ? \Carbon\Carbon::parse($row->fecha_asignacion)->format('d/m/Y') : '';
-            })
-            ->editColumn('fecha_renovacion', function ($row) {
-                return $row->fecha_renovacion ? \Carbon\Carbon::parse($row->fecha_renovacion)->format('d/m/Y') : '';
-            })
+            try {
+                return \Carbon\Carbon::parse($row->fecha_asignacion)->format('d/m/Y');
+            } catch (\Exception $e) {
+                return 'Sin asignar';
+            }
+        })
+
+        ->editColumn('fecha_renovacion', function ($row) {
+            if (!$row->fecha_renovacion || $row->fecha_renovacion === '0000-00-00') {
+                return 'Sin asignar';
+            }
+
+            try {
+                return \Carbon\Carbon::parse($row->fecha_renovacion)->format('d/m/Y');
+            } catch (\Exception $e) {
+                return 'Sin asignar';
+            }
+        })
             ->setRowId('InventarioID');
     }
 

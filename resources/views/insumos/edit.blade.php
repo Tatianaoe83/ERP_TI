@@ -104,6 +104,7 @@ function initializeInsumoEdit() {
         var costoMensual = $('#CostoMensual').val();
         var costoAnual = $('#CostoAnual').val();
         var frecuenciaDePago = $('#FrecuenciaDePago').val();
+        var fechaRenovacion = $('#FechaRenovacion').val();
         var observaciones = $('#Observaciones').val();
         
         // Cargar información del inventario
@@ -128,6 +129,8 @@ function initializeInsumoEdit() {
                         <div class="mb-2">
                             <strong>Frecuencia de Pago:</strong> ${frecuenciaDePago || 'Sin frecuencia'}
                         </div>
+                        <div class="mb-2">
+                            <strong>Fecha de Renovación:</strong> ${fechaRenovacion || 'Sin fecha de renovación'}
                         <div class="mb-3">
                             <strong>Observaciones:</strong> ${observaciones || 'Sin observaciones'}
                         </div>

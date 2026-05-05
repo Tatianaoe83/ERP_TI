@@ -244,7 +244,7 @@
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
                             <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
-                            <td>{{ $insumosAsignado->FechaRenovacion }}</td>
+                            <td>{{ empty($insumosAsignado->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
                             <td>{{ $insumosAsignado->FechaAsignacion }}</td>
                             <td>{{ $insumosAsignado->NumSerie }}</td>
@@ -293,7 +293,7 @@
                                 <td>{{ $insumo->CostoMensual }}</td>
                                 <td>{{ $insumo->CostoAnual }}</td>
                                 <td>{{ $insumo->FrecuenciaDePago }}</td>
-                                <td>{{ $insumo->FechaRenovacion }}</td>
+                                <td>{{ empty($insumo->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($insumo->FechaRenovacion)->format('d/m/Y') }}</td>
                                 <td>{{ $insumo->Observaciones }}</td>
 
                             </tr>
@@ -375,7 +375,7 @@
                             <td>{{ $LineasAsignado->FechaAsignacion ? \Carbon\Carbon::parse($LineasAsignado->FechaAsignacion)->format('d/m/Y') : '' }}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
-                            <td>{{ $LineasAsignado->FechaRenovacion ? \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') : '' }}</td>
+                            <td>{{ empty($LineasAsignado->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
 
                         </tr>
                         @endforeach
@@ -438,7 +438,7 @@
                                 </td>
 
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
-                                <td>{{ $Linea->FechaRenovacion ? \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('d/m/Y') : '' }}</td>
+                                <td>{{ empty($Linea->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('d/m/Y') }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -1151,34 +1151,7 @@
 
         $('#editModalLinea').modal('show');
     });
-
-    $(document).on('click', '.crear-btn-linea', function() {
-        let row = $(this).closest('tr');
-        let id_E = '{{ $inventario->EmpleadoID }}';
-
-        $('#editFormLinea')[0].reset();
-
-        document.getElementById('titulolinea').innerHTML = 'Crear Linea';
-        var id = $(this).data('id');
-        
-        // Capturar datos de abajo automáticamente
-        let monto = row.find("td:eq(10)").text().trim();
-        let fecha = row.find("td:eq(11)").text().trim();
-        let fianza = row.find("td:eq(7)").text().trim(); // Fecha de Fianza en la tabla
-
-        // VALIDACIÓN: Si no tiene fecha de fianza, avisar y no continuar
-        if (!fianza || fianza === "") {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Fecha de Fianza Requerida',
-                text: 'Esta línea no tiene Fecha de Fianza en el catálogo. Por favor, captúrela en el catálogo de líneas antes de asignarla.',
-                customClass: {
-                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
-                }
-            });
-            return;
-        }
-        
+      
         // Limpiar fecha si trae hora
         if (fecha.length > 10) {
             fecha = fecha.substring(0, 10);

@@ -646,10 +646,55 @@ class PresupuestoController extends Controller
 
             $faltantes = $insumosSinFecha->merge($lineasSinFecha)->merge($lineasMaestrasSinFecha);
 
+            // 4. Conteo de Empleados (Total y Sin Asignar)
+            $totalEmpleados = DB::table('empleados as e')
+                ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+                ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+                ->where('d.GerenciaID', $gerenciaId)
+                ->where('e.Estado', 1)
+                ->whereNull('e.deleted_at')
+                ->distinct('e.NombreEmpleado')
+                ->count('e.NombreEmpleado');
+
+            $empleadosSinAsignar = DB::table('empleados as e')
+                ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+                ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+                ->where('d.GerenciaID', $gerenciaId)
+                ->where('e.Estado', 1)
+                ->whereNull('e.deleted_at')
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('inventarioequipo as ie')
+                        ->whereRaw('ie.EmpleadoID = e.EmpleadoID');
+                })
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('inventarioinsumo as ii')
+                        ->whereRaw('ii.EmpleadoID = e.EmpleadoID');
+                })
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('inventariolineas as il')
+                        ->whereRaw('il.EmpleadoID = e.EmpleadoID');
+                })
+                ->distinct('e.NombreEmpleado')
+                ->count('e.NombreEmpleado');
+
+            $lineasCatalogoSinAsignar = DB::table('lineastelefonicas as lt')
+                ->join('obras as o', 'lt.ObraID', '=', 'o.ObraID')
+                ->join('unidadesdenegocio as un', 'o.UnidadNegocioID', '=', 'un.UnidadNegocioID')
+                ->join('gerencia as g', 'g.UnidadNegocioID', '=', 'un.UnidadNegocioID')
+                ->where('g.GerenciaID', $gerenciaId)
+                ->where('lt.Disponible', 1)
+                ->count();
+
             return response()->json([
                 'success' => true,
                 'faltantes' => $faltantes,
-                'count' => $faltantes->count()
+                'count' => $faltantes->count(),
+                'totalEmpleados' => $totalEmpleados,
+                'empleadosSinAsignar' => $empleadosSinAsignar,
+                'lineasCatalogoSinAsignar' => $lineasCatalogoSinAsignar
             ]);
         } catch (\Exception $e) {
             return response()->json([

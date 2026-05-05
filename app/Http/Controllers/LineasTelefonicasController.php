@@ -83,7 +83,7 @@ class LineasTelefonicasController extends AppBaseController
                     }
                 })
                 ->editColumn('FechaRenovacion', function ($row) {
-                    return $row->FechaRenovacion ? \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y') : '';
+                    return $row->FechaRenovacion ? \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y') : 'Sin asignar';
                 })
                 ->rawColumns(['action', 'estado_disponibilidad', 'estado_activo'])
                 ->make(true);

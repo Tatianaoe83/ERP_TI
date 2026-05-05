@@ -69,7 +69,7 @@ class LineasTelefonicasDataTable extends DataTable
         })
         ->editColumn('FechaRenovacion', function ($row) {
             if (empty($row->FechaRenovacion)) {
-                return '';
+                return 'Sin asignar';
             }
             return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
         })
@@ -248,7 +248,7 @@ class LineasTelefonicasDataTable extends DataTable
                 'data' => 'FechaRenovacion',
                 'name' => 'FechaRenovacion',
                 'class' => 'dark:bg-[#101010] dark:text-white',
-                'defaultContent' => ''
+               
             ],
             Column::computed('estado_disponibilidad')
                 ->title('Estado Disponibilidad')

@@ -42,8 +42,13 @@
 
 <!-- Fechafianza Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
-    {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
-    {!! Form::date('FechaFianza', null, ['class' => 'form-control']) !!}
+     {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
+   {!! Form::date('FechaFianza', 
+    isset($lineasTelefonicas->FechaFianza) 
+        ? $lineasTelefonicas->FechaFianza->format('Y-m-d') 
+        : null, 
+    ['class' => 'form-control']) 
+!!}
 </div>
 
 
@@ -85,6 +90,11 @@
 
 <!-- Fechafianza De Renovacion -->
 <div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
-    {!! Form::label('FechaRenovacion', 'Fecha renovacion:') !!}
-    {!! Form::date('FechaRenovacion', null, ['class' => 'form-control']) !!}
+  {!! Form::label('FechaRenovacion', 'Fecha renovación:') !!}
+    {!! Form::date('FechaRenovacion', 
+        !empty($lineasTelefonicas->FechaRenovacion) 
+            ? \Carbon\Carbon::parse($lineasTelefonicas->FechaRenovacion)->format('Y-m-d') 
+            : null, 
+        ['class' => 'form-control']) 
+    !!}
 </div>
