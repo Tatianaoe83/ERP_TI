@@ -37,6 +37,11 @@ class InventarioInsumo extends Model implements Auditable
         'MesDePago'
     ];
 
+     protected $casts = [
+        'FechaFianza' => 'date:d/m/Y',
+        'FechaRenovacion' =>'datetime:d/m/Y',
+    ];
+
     public function empleados()
     {
         return $this->belongsTo(\App\Models\Empleados::class, 'EmpleadoID');

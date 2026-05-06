@@ -1151,7 +1151,20 @@
 
         $('#editModalLinea').modal('show');
     });
-      
+    $(document).on('click', '.crear-btn-linea', function() {
+        let id_E = '{{ $inventario->EmpleadoID }}';
+
+        $('#editFormLinea')[0].reset();
+
+        document.getElementById('titulolinea').innerHTML = 'Asignar Linea';
+        let row = $(this).closest('tr');
+        
+        let boton = $(this);
+        let id = boton.data('id');
+
+        let monto = row.find("td:eq(10)").text();
+        let fecha = row.find("td:eq(11)").text().trim();
+
         // Limpiar fecha si trae hora
         if (fecha.length > 10) {
             fecha = fecha.substring(0, 10);

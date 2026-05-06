@@ -36,6 +36,10 @@ class InsumosDataTable extends DataTable
                 }
                 return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
             })
+
+            
+
+            
             ->rawColumns(['action'])
             ->setRowId('ID');
     }

@@ -49,8 +49,8 @@ class InventarioLineas extends Model implements Auditable
     ];
 
     protected $casts = [
-        'FechaFianza' => 'date', // Laravel lo manejará como una fecha automáticamente
-        'FechaRenovacion' => 'date', // Laravel lo manejará como una fecha automáticamente
+        'FechaFianza' => 'date:d/m/Y',
+        'FechaRenovacion' =>'datetime:d/m/Y', 
     ];
 
     public function empleados()

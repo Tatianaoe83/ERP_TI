@@ -73,6 +73,12 @@ class LineasTelefonicasDataTable extends DataTable
             }
             return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
         })
+        ->editColumn('FechaFianza', function ($row) {
+            if (empty($row->FechaFianza)) {
+                return 'Sin asignar';
+            }
+            return \Carbon\Carbon::parse($row->FechaFianza)->format('d/m/Y');
+        })
         ->rawColumns(['action', 'estado_disponibilidad', 'estado_activo'])
         ->setRowId('LineaID');
 
