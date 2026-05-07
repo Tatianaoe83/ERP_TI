@@ -113,9 +113,11 @@ class InsumosController extends AppBaseController
                         'frecuencia_pago' => $record->FrecuenciaDePago,
                         'observaciones' => $record->Observaciones,
                         'empleado' => $record->empleado,
-                        'fecha_asignacion' => $record->FechaAsignacion ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') : null
-                    ];
-                });
+                        'fecha_asignacion' => $record->FechaAsignacion 
+                            ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') 
+                            : 'Sin Asignar'
+        ];
+    });
 
             return response()->json(['records' => $records]);
         } catch (\Exception $e) {

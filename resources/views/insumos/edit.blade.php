@@ -302,11 +302,7 @@ function initializeInsumoEdit() {
             isValid = false;
         }
 
-        // Validar FechaRenovacion (Requerida según el nuevo flujo de presupuestos)
-        if (!$('#FechaRenovacion').val()) {
-            isValid = false;
-        }
-        
+
         // Habilitar/deshabilitar botón
         if (!isValid) {
             $('#btn-guardar').prop('disabled', true).addClass('disabled');

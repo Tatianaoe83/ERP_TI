@@ -313,10 +313,6 @@ function initializeLineaEdit() {
             isValid = false;
         }
         
-        if (!$('#FechaFianza').val()) {
-            isValid = false;
-        }
-        
         if (!$('#CostoFianza').val() || $('#CostoFianza').val() < 0) {
             isValid = false;
         }

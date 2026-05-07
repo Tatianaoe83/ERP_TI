@@ -38,6 +38,7 @@ class InventarioInsumo extends Model implements Auditable
     ];
 
      protected $casts = [
+        'FechaAsignacion' => 'date',
         'FechaFianza' => 'date:d/m/Y',
         'FechaRenovacion' =>'datetime:d/m/Y',
     ];

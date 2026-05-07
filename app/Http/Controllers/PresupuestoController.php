@@ -593,167 +593,33 @@ class PresupuestoController extends Controller
         
     }
 
- public function verificarFechas(Request $request)
+public function verificarFechas(Request $request)
 {
     try {
         $gerenciaId = $request->GerenciaID;
 
-        // ==============================
-        // 1. INSUMOS ASIGNADOS SIN FECHA
-        // ==============================
-        $insumosSinFecha = DB::table('inventarioinsumo as ii')
-            ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
-            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-            ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
-            ->where('d.GerenciaID', $gerenciaId)
-            ->where('e.Estado', 1)
-            ->whereNull('ii.deleted_at')
-            ->where(function($query) {
-                $query->whereNull('ii.FechaRenovacion')
-                    ->orWhere('ii.FechaRenovacion', '')
-                    ->orWhere('ii.FechaRenovacion', '0000-00-00');
-            })
-            ->select(
-                'e.NombreEmpleado',
-                'ii.NombreInsumo as Articulo',
-                'g.NombreGerencia',
-                DB::raw("'Insumo' as Tipo")
-            )
-            ->get();
-
-        // ==============================
-        // 2. LÍNEAS ASIGNADAS SIN FECHA
-        // ==============================
-        $lineasSinFecha = DB::table('inventariolineas as il')
-            ->join('empleados as e', 'il.EmpleadoID', '=', 'e.EmpleadoID')
-            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-            ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
-            ->where('d.GerenciaID', $gerenciaId)
-            ->where('e.Estado', 1)
-            ->whereNull('il.deleted_at')
-            ->where(function($query) {
-                $query->whereNull('il.FechaRenovacion')
-                    ->orWhere('il.FechaRenovacion', '')
-                    ->orWhere('il.FechaRenovacion', '0000-00-00');
-            })
-            ->select(
-                'e.NombreEmpleado',
-                'il.NumTelefonico as Articulo',
-                'g.NombreGerencia',
-                DB::raw("'Línea (Asignada)' as Tipo")
-            )
-            ->get();
-
-        // ==============================
-        // 3. LÍNEAS CATÁLOGO SIN FECHA (POR GERENCIA)
-        // ==============================
-        $lineasMaestrasSinFecha = DB::table('lineastelefonicas as lt')
-            ->join('obras as o', 'lt.ObraID', '=', 'o.ObraID')
-            ->join('unidadesdenegocio as un', 'o.UnidadNegocioID', '=', 'un.UnidadNegocioID')
-            ->join('gerencia as g', 'g.UnidadNegocioID', '=', 'un.UnidadNegocioID')
-            ->where('g.GerenciaID', $gerenciaId)
-            ->where(function($query) {
-                $query->whereNull('lt.FechaRenovacion')
-                    ->orWhere('lt.FechaRenovacion', '')
-                    ->orWhere('lt.FechaRenovacion', '0000-00-00');
-            })
-            ->select(
-                DB::raw("'Sin asignar' as NombreEmpleado"),
-                'lt.NumTelefonico as Articulo',
-                'g.NombreGerencia',
-                DB::raw("'Línea (Catálogo)' as Tipo")
-            )
-            ->get();
-
-        // ==============================
-        // 4. 🌍 LÍNEAS GLOBAL SIN ASIGNAR CON FECHA
-        // ==============================
-        $lineasGlobalDetalle = DB::table('lineastelefonicas as lt')
-            ->leftJoin('inventariolineas as il', function($join) {
-                $join->on('il.LineaID', '=', 'lt.LineaID')
-                     ->whereNull('il.deleted_at');
-            })
-            ->whereNull('il.LineaID')
+        // 1. LÍNEAS DISPONIBLES (HUÉRFANAS) CON FECHA
+        $lineasDisponiblesConFecha = DB::table('lineastelefonicas as lt')
+            ->where('lt.Disponible', 1)
             ->whereNotNull('lt.FechaRenovacion')
-            ->where('lt.FechaRenovacion', '!=', '')
-            ->where('lt.FechaRenovacion', '!=', '0000-00-00')
-            ->where('lt.Disponible', 1)
-            ->select(
-                DB::raw("'Sin asignar' as NombreEmpleado"),
-                'lt.NumTelefonico as Articulo',
-                DB::raw("'Global' as NombreGerencia"),
-                DB::raw("'Línea (Global)' as Tipo")
-            )
+            ->whereNotIn('lt.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+            ->select(DB::raw("'Sin asignar' as NombreEmpleado"), 'lt.NumTelefonico as Articulo', DB::raw("'Disponible' as Tipo"))
             ->get();
 
-        // ==============================
-        // 5. 🌍 INSUMOS GLOBAL SIN ASIGNAR CON FECHA
-        // ==============================
+        // 2. INSUMOS DISPONIBLES (HUÉRFANOS) CON FECHA
         $insumosGlobalDetalle = DB::table('insumos as i')
-            ->leftJoin('inventarioinsumo as ii', function($join){
-                $join->on('ii.InsumoID', '=', 'i.ID') // 🔥 CORREGIDO
-                     ->whereNull('ii.deleted_at');
-            })
-            ->whereNull('ii.InsumoID')
             ->whereNotNull('i.FechaRenovacion')
-            ->where('i.FechaRenovacion', '!=', '')
-            ->where('i.FechaRenovacion', '!=', '0000-00-00')
-            ->select(
-                DB::raw("'Sin asignar' as NombreEmpleado"),
-                'i.NombreInsumo as Articulo',
-                DB::raw("'Global' as NombreGerencia"),
-                DB::raw("'Insumo (Global)' as Tipo")
-            )
+            ->whereNotIn('i.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))->from('inventarioinsumo as ii')
+                    ->whereColumn('ii.InsumoID', 'i.ID')
+                    ->whereNull('ii.deleted_at')
+                    ->where('ii.EmpleadoID', '>', 0);
+            })
+            ->select(DB::raw("'Sin asignar' as NombreEmpleado"), 'i.NombreInsumo as Articulo', DB::raw("'Insumo (Global)' as Tipo"))
             ->get();
 
-        // ==============================
-        // MERGE GENERAL
-        // ==============================
-        $faltantes = $insumosSinFecha
-            ->merge($lineasSinFecha)
-            ->merge($lineasMaestrasSinFecha)
-            ->merge($lineasGlobalDetalle)
-            ->merge($insumosGlobalDetalle);
-
-        // ==============================
-        // CONTADORES
-        // ==============================
-        $totalEmpleados = DB::table('empleados as e')
-            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-            ->where('d.GerenciaID', $gerenciaId)
-            ->where('e.Estado', 1)
-            ->whereNull('e.deleted_at')
-            ->distinct('e.NombreEmpleado')
-            ->count('e.NombreEmpleado');
-
-        $empleadosSinAsignar = DB::table('empleados as e')
-            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-            ->where('d.GerenciaID', $gerenciaId)
-            ->where('e.Estado', 1)
-            ->whereNull('e.deleted_at')
-            ->whereNotExists(function ($query) {
-                $query->select(DB::raw(1))->from('inventarioequipo as ie')
-                    ->whereRaw('ie.EmpleadoID = e.EmpleadoID');
-            })
-            ->whereNotExists(function ($query) {
-                $query->select(DB::raw(1))->from('inventarioinsumo as ii')
-                    ->whereRaw('ii.EmpleadoID = e.EmpleadoID');
-            })
-            ->whereNotExists(function ($query) {
-                $query->select(DB::raw(1))->from('inventariolineas as il')
-                    ->whereRaw('il.EmpleadoID = e.EmpleadoID');
-            })
-            ->distinct('e.NombreEmpleado')
-            ->count('e.NombreEmpleado');
-
-        $lineasCatalogoSinAsignar = DB::table('lineastelefonicas as lt')
-            ->where('lt.Disponible', 1)
-            ->count();
-
+        // 3. CONTEO DE EMPLEADOS SIN MES DE PAGO (BLOQUEADOR PRINCIPAL)
         $empleadosSinMesPago = DB::table('empleados as e')
             ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
             ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
@@ -761,43 +627,42 @@ class PresupuestoController extends Controller
             ->where('e.Estado', 1)
             ->whereNull('e.deleted_at')
             ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                  ->from('inventarioinsumo as ii')
-                  ->whereRaw('ii.EmpleadoID = e.EmpleadoID')
-                  ->whereNotNull('ii.FechaRenovacion')
-                  ->where('ii.FechaRenovacion', '!=', '')
-                  ->where('ii.FechaRenovacion', '!=', '0000-00-00')
-                  ->where(function($qq){
-                      $qq->whereNull('ii.MesDePago')
-                         ->orWhere('ii.MesDePago', '')
-                         ->orWhere('ii.MesDePago', 'N/A');
-                  });
-            })
-            ->distinct('e.EmpleadoID')
+                $q->select(DB::raw(1))->from('inventarioinsumo as ii')
+                    ->whereRaw('ii.EmpleadoID = e.EmpleadoID')
+                    ->whereNotNull('ii.FechaRenovacion')
+                    ->whereNotIn('ii.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+                    ->where(function ($qq) { 
+                        $qq->whereNull('ii.MesDePago')
+                           ->orWhere('ii.MesDePago', '')
+                           ->orWhere('ii.MesDePago', 'N/A'); 
+                    });
+            })->distinct()->count('e.EmpleadoID');
+
+        // 4. TOTAL DE EMPLEADOS (SOLO INFORMATIVO)
+        $totalEmpleados = DB::table('empleados as e')
+            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+            ->where('d.GerenciaID', $gerenciaId)
+            ->where('e.Estado', 1)
+            ->whereNull('e.deleted_at')
+            ->distinct()
             ->count('e.EmpleadoID');
 
-        // ==============================
-        // RESPUESTA
-        // ==============================
+        // Unimos los "huérfanos" para la lista de faltantes
+        $faltantes = $lineasDisponiblesConFecha->merge($insumosGlobalDetalle);
+
         return response()->json([
             'success' => true,
             'faltantes' => $faltantes,
-            'count' => $faltantes->count(),
+            'count' => $faltantes->count(), // Líneas + Insumos huérfanos
             'totalEmpleados' => $totalEmpleados,
-            'empleadosSinAsignar' => $empleadosSinAsignar,
-            'lineasCatalogoSinAsignar' => $lineasCatalogoSinAsignar,
             'empleadosSinMesPago' => $empleadosSinMesPago,
-
-            // 🌍 globales
-            'lineasSinAsignarConFecha' => $lineasGlobalDetalle->count(),
+            'lineasSinAsignarConFecha' => $lineasDisponiblesConFecha->count(),
             'insumosSinAsignarConFecha' => $insumosGlobalDetalle->count()
         ]);
 
     } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 }
 }

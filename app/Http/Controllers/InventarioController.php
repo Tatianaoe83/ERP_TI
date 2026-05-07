@@ -456,6 +456,31 @@ class InventarioController extends AppBaseController
         $empleadoData = $empleado->first();
 
         $data = array_merge($data, $empleadoData->toArray());
+        $fechaRenovRaw = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
+        
+        if ($fechaRenovRaw == 'Sin asignar' || $fechaRenovRaw == 'Sin asigna' || empty($fechaRenovRaw)) {
+            $data['FechaRenovacion'] = null;
+        } else {
+            // Intentamos convertir DD/MM/YYYY a YYYY-MM-DD para SQL
+            try {
+                $data['FechaRenovacion'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaRenovRaw))->format('Y-m-d');
+            } catch (\Exception $e) {
+                $data['FechaRenovacion'] = null; 
+            }
+        }
+
+        // 2. Limpieza y Formateo de Fecha de Fianza (Evita el error de fianza vacía)
+        $fechaFianzaRaw = $request->input('FechaFianza', $lineaData->FechaFianza);
+        
+        if ($fechaFianzaRaw == 'Sin asignar' || $fechaFianzaRaw == 'Sin asigna' || empty($fechaFianzaRaw)) {
+            $data['FechaFianza'] = null;
+        } else {
+            try {
+                $data['FechaFianza'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaFianzaRaw))->format('Y-m-d');
+            } catch (\Exception $e) {
+                $data['FechaFianza'] = null;
+            }
+        }
             
         // Asegurar que los campos de fecha se transfieran correctamente (Prioridad al modal si tiene datos)
         if ($lineaData) {

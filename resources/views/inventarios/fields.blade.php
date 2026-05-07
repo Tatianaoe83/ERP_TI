@@ -246,8 +246,7 @@
                             <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
                             <td>{{ empty($insumosAsignado->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
-                            <td>{{ $insumosAsignado->FechaAsignacion }}</td>
-                            <td>{{ $insumosAsignado->NumSerie }}</td>
+<td>{{ $insumosAsignado->FechaAsignacion ? \Carbon\Carbon::parse($insumosAsignado->FechaAsignacion)->format('d/m/Y') : 'Sin asignar' }}</td>                            <td>{{ $insumosAsignado->NumSerie }}</td>
                             <td>{{ $insumosAsignado->Comentarios }}</td>
                             <td>{{ $insumosAsignado->MesDePago }}</td>
                         </tr>
