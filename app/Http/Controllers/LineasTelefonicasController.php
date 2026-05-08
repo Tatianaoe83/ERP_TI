@@ -313,8 +313,7 @@ class LineasTelefonicasController extends AppBaseController
         if ($cambioEnPlan) {
             $hayCambios = true;
         }
-        
-        // Actualizar la línea telefónica
+\Log::info($request->all());        // Actualizar la línea telefónica
         $lineasTelefonicas = $this->lineasTelefonicasRepository->update($request->all(), $id);
 
         // Obtener los datos actualizados

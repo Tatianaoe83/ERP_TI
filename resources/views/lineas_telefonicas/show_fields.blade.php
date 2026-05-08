@@ -66,10 +66,17 @@
     <p>{{ $lineasTelefonicas->MontoRenovacionFianza }}</p>
 </div>
 
-<!-- Fechafianza De Renovacion -->
-<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
-    {!! Form::label('FechaRenovacion', 'Fecha de renovacion:') !!}
-    <p>{{ $lineasTelefonicas->FechaRenovacion ?? 'Sin asignar' }}</p>
+<!-- Fecha De Renovacion -->
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
+    {!! Form::label('FechaRenovacion', 'Fecha de renovacion:') !!} 
+    <p>
+        {{
+            !empty($lineasTelefonicas->FechaRenovacion) &&
+            $lineasTelefonicas->FechaRenovacion != 'Sin asignar'
+                ? \Carbon\Carbon::parse($lineasTelefonicas->FechaRenovacion)->format('d/m/Y')
+                : 'Sin asignar'
+        }}
+    </p>
 </div>
 
 

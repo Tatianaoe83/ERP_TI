@@ -49,8 +49,8 @@ class InventarioLineas extends Model implements Auditable
     ];
 
     protected $casts = [
-        'FechaFianza' => 'date:Y-m-d',
-        'FechaRenovacion' =>'date:Y-m-d', 
+       'FechaFianza' => 'date',
+        'FechaRenovacion' =>'date', 
     ];
 
     public function empleados()

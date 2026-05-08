@@ -19,7 +19,14 @@
 <!-- Fecha de renovacion -->
 <div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('FechaRenovacion', 'Fecha de Renovación:') !!}
-    <p>{{ $insumos->FechaRenovacion ?? 'Sin asignar' }}</p>
+    <p>
+        {{
+            !empty($insumos->FechaRenovacion) &&
+            $insumos->FechaRenovacion != 'Sin asignar'
+                ? \Carbon\Carbon::parse($insumos->FechaRenovacion)->format('d/m/Y')
+                : 'Sin asignar'
+        }}
+    </p>
 </div>
 
 <!-- Costos Sin Inflación -->

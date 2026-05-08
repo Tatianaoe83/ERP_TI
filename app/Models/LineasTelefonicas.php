@@ -70,12 +70,12 @@ class LineasTelefonicas extends Model implements Auditable
         'CuentaHija' => 'string',
         'TipoLinea' => 'string',
         'ObraID' => 'integer',
-        'FechaFianza' => 'date:d/m/Y',
+        'FechaFianza' => 'date',
         'CostoFianza' => 'integer',
         'Activo' => 'boolean',
         'Disponible' => 'boolean',
         'MontoRenovacionFianza' => 'integer',
-        'FechaRenovacion' => 'date:d/m/Y',   
+         'FechaRenovacion' =>'date',  
     ];
 
     /**

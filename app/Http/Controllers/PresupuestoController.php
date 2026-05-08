@@ -598,47 +598,43 @@ public function verificarFechas(Request $request)
     try {
         $gerenciaId = $request->GerenciaID;
 
-        // 1. LÍNEAS DISPONIBLES (HUÉRFANAS) CON FECHA
-        $lineasDisponiblesConFecha = DB::table('lineastelefonicas as lt')
-            ->where('lt.Disponible', 1)
-            ->whereNotNull('lt.FechaRenovacion')
-            ->whereNotIn('lt.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
-            ->select(DB::raw("'Sin asignar' as NombreEmpleado"), 'lt.NumTelefonico as Articulo', DB::raw("'Disponible' as Tipo"))
-            ->get();
-
-        // 2. INSUMOS DISPONIBLES (HUÉRFANOS) CON FECHA
-        $insumosGlobalDetalle = DB::table('insumos as i')
-            ->whereNotNull('i.FechaRenovacion')
-            ->whereNotIn('i.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
-            ->whereNotExists(function ($q) {
-                $q->select(DB::raw(1))->from('inventarioinsumo as ii')
-                    ->whereColumn('ii.InsumoID', 'i.ID')
-                    ->whereNull('ii.deleted_at')
-                    ->where('ii.EmpleadoID', '>', 0);
-            })
-            ->select(DB::raw("'Sin asignar' as NombreEmpleado"), 'i.NombreInsumo as Articulo', DB::raw("'Insumo (Global)' as Tipo"))
-            ->get();
-
-        // 3. CONTEO DE EMPLEADOS SIN MES DE PAGO (BLOQUEADOR PRINCIPAL)
-        $empleadosSinMesPago = DB::table('empleados as e')
+        // 1. CONTEO DE INSUMOS MENSUALES FALTANTES (Cotejado con tu SQL)
+        $insumosSinMesPagoMensual = DB::table('inventarioinsumo as ii')
+            ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
             ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
             ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
             ->where('d.GerenciaID', $gerenciaId)
             ->where('e.Estado', 1)
             ->whereNull('e.deleted_at')
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))->from('inventarioinsumo as ii')
-                    ->whereRaw('ii.EmpleadoID = e.EmpleadoID')
-                    ->whereNotNull('ii.FechaRenovacion')
-                    ->whereNotIn('ii.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
-                    ->where(function ($qq) { 
-                        $qq->whereNull('ii.MesDePago')
-                           ->orWhere('ii.MesDePago', '')
-                           ->orWhere('ii.MesDePago', 'N/A'); 
-                    });
-            })->distinct()->count('e.EmpleadoID');
+            ->whereNotNull('ii.FechaRenovacion')
+            ->whereNotIn('ii.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+            ->where('ii.FrecuenciaDePago', 'LIKE', '%ensual%')
+            ->where(function ($qq) { 
+                $qq->whereNull('ii.MesDePago')
+                   ->orWhere('ii.MesDePago', '')
+                   ->orWhere('ii.MesDePago', 'N/A'); 
+            })
+            ->count(); // Cuenta cada insumo individualmente
 
-        // 4. TOTAL DE EMPLEADOS (SOLO INFORMATIVO)
+        // 2. CONTEO DE INSUMOS ANUALES FALTANTES
+        $insumosSinMesPagoAnual = DB::table('inventarioinsumo as ii')
+            ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
+            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+            ->where('d.GerenciaID', $gerenciaId)
+            ->where('e.Estado', 1)
+            ->whereNull('e.deleted_at')
+            ->whereNotNull('ii.FechaRenovacion')
+            ->whereNotIn('ii.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+            ->where('ii.FrecuenciaDePago', 'LIKE', '%nual%')
+            ->where(function ($qq) { 
+                $qq->whereNull('ii.MesDePago')
+                   ->orWhere('ii.MesDePago', '')
+                   ->orWhere('ii.MesDePago', 'N/A'); 
+            })
+            ->count();
+
+        // 3. TOTAL DE EMPLEADOS (Para el badge verde)
         $totalEmpleados = DB::table('empleados as e')
             ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
             ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
@@ -648,17 +644,30 @@ public function verificarFechas(Request $request)
             ->distinct()
             ->count('e.EmpleadoID');
 
-        // Unimos los "huérfanos" para la lista de faltantes
-        $faltantes = $lineasDisponiblesConFecha->merge($insumosGlobalDetalle);
+        // 4. LÍNEAS Y INSUMOS HUÉRFANOS (Sin asignar)
+        $lineasOrfanas = DB::table('lineastelefonicas')
+            ->where('Disponible', 1)
+            ->whereNotNull('FechaRenovacion')
+            ->whereNotIn('FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+            ->count();
+
+        $insumosOrfanos = DB::table('insumos as i')
+            ->whereNotNull('i.FechaRenovacion')
+            ->whereNotIn('i.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))->from('inventarioinsumo as ii')
+                    ->whereColumn('ii.InsumoID', 'i.ID')
+                    ->whereNull('ii.deleted_at')
+                    ->where('ii.EmpleadoID', '>', 0);
+            })->count();
 
         return response()->json([
             'success' => true,
-            'faltantes' => $faltantes,
-            'count' => $faltantes->count(), // Líneas + Insumos huérfanos
             'totalEmpleados' => $totalEmpleados,
-            'empleadosSinMesPago' => $empleadosSinMesPago,
-            'lineasSinAsignarConFecha' => $lineasDisponiblesConFecha->count(),
-            'insumosSinAsignarConFecha' => $insumosGlobalDetalle->count()
+            'empleadosSinMesPagoMensual' => $insumosSinMesPagoMensual, // Ahora devuelve el total de registros
+            'empleadosSinMesPagoAnual' => $insumosSinMesPagoAnual,
+            'lineasSinAsignarConFecha' => $lineasOrfanas,
+            'insumosSinAsignarConFecha' => $insumosOrfanos
         ]);
 
     } catch (\Exception $e) {
