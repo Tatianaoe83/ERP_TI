@@ -344,6 +344,12 @@ class InventarioController extends AppBaseController
         $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
         $data['InsumoID'] = $idinsumo[0]->ID;
 
+        // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
+        $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+        if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
+            $data['FechaRenovacion'] = null;
+        }
+
         $inventarioinsumo->update($data);
 
         return response()->json([
@@ -360,10 +366,16 @@ class InventarioController extends AppBaseController
         $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
         $data['InsumoID'] = $idinsumo[0]->ID;
         
+        // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
+        $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+        if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
+            $data['FechaRenovacion'] = null;
+        }
+
         // Si no viene fecha en el request, intentar obtenerla del catálogo
-        if (!$request->filled('FechaRenovacion')) {
+        if (!$request->filled('FechaRenovacion') || $data['FechaRenovacion'] === null) {
             $insumoMaster = Insumos::find($data['InsumoID']);
-            if ($insumoMaster) {
+            if ($insumoMaster && !empty($insumoMaster->FechaRenovacion) && !in_array($insumoMaster->FechaRenovacion, $invalidValues)) {
                 $data['FechaRenovacion'] = $insumoMaster->FechaRenovacion;
             }
         }
@@ -484,8 +496,33 @@ class InventarioController extends AppBaseController
             
         // Asegurar que los campos de fecha se transfieran correctamente (Prioridad al modal si tiene datos)
         if ($lineaData) {
-            $data['FechaFianza'] = $request->input('FechaFianza', $lineaData->FechaFianza);
-            $data['FechaRenovacion'] = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
+            // Obtener valores crudos
+            $rawFechaFianza = $request->input('FechaFianza', $lineaData->FechaFianza);
+            $rawFechaRenov = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
+            
+            // Limpiar: si es un string no-fecha, convertir a null
+            $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+            
+            if (in_array($rawFechaFianza, $invalidValues) || empty($rawFechaFianza)) {
+                $data['FechaFianza'] = null;
+            } else {
+                try {
+                    $data['FechaFianza'] = \Carbon\Carbon::parse(str_replace('/', '-', $rawFechaFianza))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $data['FechaFianza'] = null;
+                }
+            }
+            
+            if (in_array($rawFechaRenov, $invalidValues) || empty($rawFechaRenov)) {
+                $data['FechaRenovacion'] = null;
+            } else {
+                try {
+                    $data['FechaRenovacion'] = \Carbon\Carbon::parse(str_replace('/', '-', $rawFechaRenov))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $data['FechaRenovacion'] = null;
+                }
+            }
+            
             $data['MontoRenovacionFianza'] = $request->input('MontoRenovacionFianza', $lineaData->MontoRenovacionFianza);
             $data['CostoFianza'] = $lineaData->CostoFianza;
         }

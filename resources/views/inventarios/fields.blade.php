@@ -244,7 +244,7 @@
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
                             <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
-                            <td>{{ empty($insumosAsignado->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
+                            <td>{{ (empty($insumosAsignado->FechaRenovacion) || in_array($insumosAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
 <td>{{ $insumosAsignado->FechaAsignacion ? \Carbon\Carbon::parse($insumosAsignado->FechaAsignacion)->format('d/m/Y') : 'Sin asignar' }}</td>                            <td>{{ $insumosAsignado->NumSerie }}</td>
                             <td>{{ $insumosAsignado->Comentarios }}</td>
@@ -292,7 +292,7 @@
                                 <td>{{ $insumo->CostoMensual }}</td>
                                 <td>{{ $insumo->CostoAnual }}</td>
                                 <td>{{ $insumo->FrecuenciaDePago }}</td>
-                                <td>{{ empty($insumo->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($insumo->FechaRenovacion)->format('d/m/Y') }}</td>
+                                <td>{{ (empty($insumo->FechaRenovacion) || in_array($insumo->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumo->FechaRenovacion)->format('d/m/Y') }}</td>
                                 <td>{{ $insumo->Observaciones }}</td>
 
                             </tr>
@@ -374,7 +374,7 @@
                             <td>{{ $LineasAsignado->FechaAsignacion ? \Carbon\Carbon::parse($LineasAsignado->FechaAsignacion)->format('d/m/Y') : '' }}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
-                            <td>{{ empty($LineasAsignado->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
+                            <td>{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
 
                         </tr>
                         @endforeach
@@ -437,7 +437,7 @@
                                 </td>
 
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
-                                <td>{{ empty($Linea->FechaRenovacion) ? 'Sin asignar' : \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('d/m/Y') }}</td>
+                                <td>{{ (empty($Linea->FechaRenovacion) || in_array($Linea->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('d/m/Y') }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -881,6 +881,10 @@
         if (fecharenovacion.length > 10) {
             fecharenovacion = fecharenovacion.substring(0, 10);
         }
+        // Si la fecha es un texto como 'Sin asignar', enviar vacío en vez del string
+        if (fecharenovacion === 'Sin asignar' || fecharenovacion === 'Sin asigna' || fecharenovacion === '0000-00-00') {
+            fecharenovacion = '';
+        }
         let observaciones = row.find("td:eq(7)").text();
 
         $('#editCategoriaInsumo').val(categoria);
@@ -931,13 +935,19 @@
         let url = id ? '/inventarios/editar-insumo/' + id : '/inventarios/crear-insumo/' + id_E;
         let method = id ? 'PUT' : 'POST';
 
+        // Limpiar FechaRenovacion: enviar vacío si tiene texto no-fecha
+        let fechaRenovInsumo = $('#editFechaDeRenovacion').val();
+        if (fechaRenovInsumo === 'Sin asignar' || fechaRenovInsumo === 'Sin asigna' || fechaRenovInsumo === '0000-00-00') {
+            fechaRenovInsumo = '';
+        }
+
         let formData = {
             CateogoriaInsumo: $('#editCategoriaInsumo').val(),
             NombreInsumo: $('#editNombreInsumo').val(),
             CostoMensual: $('#editCostoMensual').val(),
             CostoAnual: $('#editCostoAnual').val(),
             FrecuenciaDePago: $('#editFrecuenciaDePago').val(),
-            FechaRenovacion: $('#editFechaDeRenovacion').val(),
+            FechaRenovacion: fechaRenovInsumo,
             Observaciones: $('#editobserv').val(),
             FechaAsignacion: $('#editFechaDeAsigna').val(),
             NumSerie: $('#editNumSerieInsu').val(),
@@ -1169,6 +1179,11 @@
             fecha = fecha.substring(0, 10);
         }
 
+        // Si la fecha es un texto como 'Sin asignar', enviar vacío en vez del string
+        if (fecha === 'Sin asignar' || fecha === 'Sin asigna' || fecha === '0000-00-00') {
+            fecha = '';
+        }
+
         $('#editId_linea').val('');
         $('#editId_linea2').val(id);
         $('#editEmp_linea').val(id_E);
@@ -1214,11 +1229,17 @@
         let url = id ? '/inventarios/editar-linea/' + id : '/inventarios/crear-linea/' + id_E + '/' + id2;
         let method = id ? 'PUT' : 'POST';
 
+        // Limpiar FechaRenovacion: enviar vacío si tiene texto no-fecha
+        let fechaRenov = $('#editFechaRenovacion').val();
+        if (fechaRenov === 'Sin asignar' || fechaRenov === 'Sin asigna' || fechaRenov === '0000-00-00') {
+            fechaRenov = '';
+        }
+
         let formData = {
             FechaAsignacion: $('#editfechalinea').val(),
             Comentarios: $('#editcomenl').val(),
             MontoRenovacionFianza: $('#editMontoRenovacionFianza').val(),
-            FechaRenovacion: $('#editFechaRenovacion').val()
+            FechaRenovacion: fechaRenov
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

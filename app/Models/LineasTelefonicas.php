@@ -74,7 +74,7 @@ class LineasTelefonicas extends Model implements Auditable
         'CostoFianza' => 'integer',
         'Activo' => 'boolean',
         'Disponible' => 'boolean',
-        'MontoRenovacionFianza' => 'integer',
+         'MontoRenovacionFianza' => 'integer',
          'FechaRenovacion' =>'date',  
     ];
 

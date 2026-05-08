@@ -22,7 +22,7 @@
     <p>
         {{
             !empty($insumos->FechaRenovacion) &&
-            $insumos->FechaRenovacion != 'Sin asignar'
+            !in_array($insumos->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])
                 ? \Carbon\Carbon::parse($insumos->FechaRenovacion)->format('d/m/Y')
                 : 'Sin asignar'
         }}

@@ -36,7 +36,7 @@
 <div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
 {!! Form::label('FechaRenovacion', 'Fecha de renovación:') !!}
   {!! Form::date('FechaRenovacion', 
-    isset($insumos->FechaRenovacion) 
+    (isset($insumos->FechaRenovacion) && !empty($insumos->FechaRenovacion) && !in_array($insumos->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00']))
         ? \Carbon\Carbon::parse($insumos->FechaRenovacion)->format('Y-m-d') 
         : null, 
     ['class' => 'form-control']) 
