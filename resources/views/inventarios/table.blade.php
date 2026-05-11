@@ -47,8 +47,17 @@
                         <label class="text-[#101D49] dark:text-white">Buscar Inventario:</label>
                         <input type="text" class="form-control" id="filtro-inventario">
                     </div>
-
-
+                </div>
+                <div class="col-xs-6 col-sm-6 col-md-6">
+                    <div class="form-group">
+                        <label class="text-[#101D49] dark:text-white">Tipo de Persona:</label>
+                        <select class="form-control" id="filtro-persona">
+                            <option value="" selected>Seleccionar tipo de persona</option>
+                            <option value="FISICA">FISICA</option>
+                            <option value="REFERENCIADO">REFERENCIADO</option>
+                            <option value="PRESUPUESTO">PRESUPUESTO</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -100,13 +109,14 @@
                 responsive: true,
                 searching: false,
                 pageLength: 7,
-                ajax: {
+               ajax: {
                     url: '{{ route("inventarios.indexVista") }}',
                     data: function(d) {
                         d.nombre = $('#filtro-nombre').val();
                         d.obra = $('#filtro-obra').val();
                         d.puesto = $('#filtro-puesto').val();
                         d.filtro_inventario = $('#filtro-inventario').val();
+                        d.tipo_persona = $('#filtro-persona').val();
                     }
                 },
                 columns: [{
@@ -149,7 +159,7 @@
                 ]
             });
 
-            $('#filtro-nombre, #filtro-obra, #filtro-puesto, #filtro-inventario').on('keyup change', function() {
+            $('#filtro-nombre, #filtro-obra, #filtro-puesto, #filtro-inventario, #filtro-persona ').on('keyup change', function() {
                 table.ajax.reload();
             });
 
@@ -170,7 +180,18 @@
                     });
                 }
             });
+            $('#filtro-persona').on('change', function () {
+
+            if ($(this).val() === '') {
+                $(this).addClass('text-secondary');
+            } else {
+                $(this).removeClass('text-secondary');
+            }
+
         });
+        });
+
+        
     </script>
 
     @endpush

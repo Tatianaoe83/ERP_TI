@@ -645,10 +645,16 @@ public function verificarFechas(Request $request)
             ->count('e.EmpleadoID');
 
         // 4. LÍNEAS Y INSUMOS HUÉRFANOS (Sin asignar)
-        $lineasOrfanas = DB::table('lineastelefonicas')
-            ->where('Disponible', 1)
-            ->whereNotNull('FechaRenovacion')
-            ->whereNotIn('FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+        $lineasOrfanas = DB::table('lineastelefonicas as l')
+            ->whereNull('l.deleted_at')
+            ->whereNotNull('l.FechaRenovacion')
+            ->whereNotIn('l.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                ->from('inventariolineas as il')
+                ->whereColumn('il.LineaID', 'l.LineaID')
+                ->whereNull('il.deleted_at');
+            })
             ->count();
 
         $insumosOrfanos = DB::table('insumos as i')

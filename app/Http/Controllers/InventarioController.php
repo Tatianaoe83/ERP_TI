@@ -54,6 +54,18 @@ class InventarioController extends AppBaseController
     {
         $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+             // LÓGICA DEL TIPO DE PERSONA
+        ->when($request->filled('tipo_persona'), function ($q) use ($request) {
+
+            // Si selecciona algo, filtra exactamente por eso
+            $q->where('empleados.tipo_persona', $request->tipo_persona);
+
+        }, function ($q) {
+
+            // Si NO selecciona nada:
+            // mostrar todos menos PRESUPUESTO
+            $q->where('empleados.tipo_persona', '!=', 'PRESUPUESTO');
+        })
             ->select([
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
@@ -422,9 +434,10 @@ class InventarioController extends AppBaseController
 
             $data = $request->all();
 
-            // Asegurar que la fecha de renovación se actualice si viene en el request
-            if ($request->filled('FechaRenovacion')) {
-                $data['FechaRenovacion'] = $request->FechaRenovacion;
+            // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
+            $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+            if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
+                $data['FechaRenovacion'] = null;
             }
 
             $inventariotelf->update($data);

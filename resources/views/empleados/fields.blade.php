@@ -41,7 +41,7 @@
 <!-- tipo_persona Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('tipo_persona', 'Tipo de persona:') !!}
-    {!! Form::select('tipo_persona', ['FISICA' => 'FISICA', 'REFERENCIADO' => 'REFERENCIADO'], null, ['class' => 'form-control', 'placeholder' => 'Seleccionar tipo de persona']) !!}
+    {!! Form::select('tipo_persona', ['FISICA' => 'FISICA', 'REFERENCIADO' => 'REFERENCIADO' ,'PRESUPUESTO' => 'PRESUPUESTO'], null, ['class' => 'form-control', 'placeholder' => 'Seleccionar tipo de persona']) !!}
 </div>
 <!-- Estado Field - Oculto con valor por defecto 1 -->
 {!! Form::hidden('Estado', 1) !!}

@@ -712,6 +712,32 @@
         });
     });
 
+    // Helper para formatear fechas a dd/mm/yyyy o 'Sin asignar'
+    function formatFechaRenovacion(fecha) {
+        if (!fecha || fecha === 'Sin asignar' || fecha === 'Sin asigna' || fecha === '0000-00-00' || fecha === 'null') {
+            return 'Sin asignar';
+        }
+        let raw = fecha.toString().substring(0, 10);
+        let parts = raw.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return parts[2] + '/' + parts[1] + '/' + parts[0];
+        }
+        return fecha;
+    }
+
+    // Helper para convertir dd/mm/yyyy a yyyy-mm-dd (para inputs type=date)
+    function fechaDisplayToInput(fechaDisplay) {
+        if (!fechaDisplay || fechaDisplay === 'Sin asignar' || fechaDisplay === 'Sin asigna' || fechaDisplay === '0000-00-00') {
+            return '';
+        }
+        let parts = fechaDisplay.trim().split('/');
+        if (parts.length === 3 && parts[2].length === 4) {
+            return parts[2] + '-' + parts[1] + '-' + parts[0];
+        }
+        // Si ya está en yyyy-mm-dd, retornar como está
+        return fechaDisplay.trim().substring(0, 10);
+    }
+
     // Actualizar una fila en la tabla después de editar
     function updateTableRow(equipo) {
         let row = $(`tr[data-id=${equipo.InventarioID}]`);
@@ -726,7 +752,6 @@
         row.find('td:eq(9)').text(equipo.Folio);
         row.find('td:eq(10)').text(equipo.GerenciaEquipo);
         row.find('td:eq(11)').text(equipo.Comentarios);
-        row.find('td:eq(12)').text(equipo.FechaRenovacion);
         row.find('.edit-btn').data('id', equipo.InventarioID);
     }
 
@@ -854,9 +879,10 @@
         $('#editCostoMensual').val(row.find("td:eq(3)").text());
         $('#editCostoAnual').val(row.find("td:eq(4)").text());
         $('#editFrecuenciaDePago').val(row.find("td:eq(5)").text());
-        $('#editFechaDeRenovacion').val(row.find("td:eq(6)").text()); // 👈 aquí
+        // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el input date
+        $('#editFechaDeRenovacion').val(fechaDisplayToInput(row.find("td:eq(6)").text()));
         $('#editobserv').val(row.find("td:eq(7)").text());
-        $('#editFechaDeAsigna').val(row.find("td:eq(8)").text());
+        $('#editFechaDeAsigna').val(fechaDisplayToInput(row.find("td:eq(8)").text()));
         $('#editNumSerieInsu').val(row.find("td:eq(9)").text());
         $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
         $('#editMesDePago').val(row.find("td:eq(11)").text());
@@ -1026,9 +1052,9 @@
         row.find('td:eq(3)').text(insumo.CostoMensual);
         row.find('td:eq(4)').text(insumo.CostoAnual);
         row.find('td:eq(5)').text(insumo.FrecuenciaDePago);
-        row.find('td:eq(6)').text(insumo.FechaRenovacion);
+        row.find('td:eq(6)').text(formatFechaRenovacion(insumo.FechaRenovacion));
         row.find('td:eq(7)').text(insumo.Observaciones);
-        row.find('td:eq(8)').text(insumo.FechaAsignacion);
+        row.find('td:eq(8)').text(formatFechaRenovacion(insumo.FechaAsignacion));
         row.find('td:eq(9)').text(insumo.NumSerie);
         row.find('td:eq(10)').text(insumo.Comentarios);
         row.find('td:eq(11)').text(insumo.MesDePago);
@@ -1053,9 +1079,9 @@
             <td>${insumo.CostoMensual}</td>
             <td>${insumo.CostoAnual}</td>
             <td>${insumo.FrecuenciaDePago}</td>
-            <td>${insumo.FechaRenovacion}</td>
+            <td>${formatFechaRenovacion(insumo.FechaRenovacion)}</td>
             <td>${insumo.Observaciones}</td>
-            <td>${insumo.FechaAsignacion}</td>
+            <td>${formatFechaRenovacion(insumo.FechaAsignacion)}</td>
             <td>${insumo.NumSerie}</td>
             <td>${insumo.Comentarios}</td>
             <td>${insumo.MesDePago}</td>
@@ -1154,9 +1180,10 @@
         $('#editId_linea2').val('');
         $('#editEmp_linea').val('');
         $('#editcomenl').val(row.find("td:eq(12)").text());
-        $('#editfechalinea').val(row.find("td:eq(11)").text());
+        $('#editfechalinea').val(fechaDisplayToInput(row.find("td:eq(11)").text()));
         $('#editMontoRenovacionFianza').val(row.find("td:eq(13)").text());
-        $('#editFechaRenovacion').val(row.find("td:eq(14)").text());
+        // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el hidden input
+        $('#editFechaRenovacion').val(fechaDisplayToInput(row.find("td:eq(14)").text()));
 
         $('#editModalLinea').modal('show');
     });
@@ -1312,10 +1339,10 @@
 
     function updatetelefTableRow(telefono) {
         let row = $(`tr[data-id=${telefono.InventarioID}]`);
-        row.find('td:eq(11)').text(telefono.FechaAsignacion);
+        row.find('td:eq(11)').text(formatFechaRenovacion(telefono.FechaAsignacion));
         row.find('td:eq(12)').text(telefono.Comentarios);
         row.find('td:eq(13)').text(telefono.MontoRenovacionFianza);
-        row.find('td:eq(14)').text(telefono.FechaRenovacion);
+        row.find('td:eq(14)').text(formatFechaRenovacion(telefono.FechaRenovacion));
     }
 
 
@@ -1339,12 +1366,12 @@
             telefono.CuentaHija,
             telefono.TipoLinea,
             telefono.Obra,
-            telefono.FechaFianza,
+            formatFechaRenovacion(telefono.FechaFianza),
             telefono.CostoFianza,
-            telefono.FechaAsignacion,
+            formatFechaRenovacion(telefono.FechaAsignacion),
             telefono.Comentarios,
             telefono.MontoRenovacionFianza,
-            telefono.FechaRenovacion
+            formatFechaRenovacion(telefono.FechaRenovacion)
         ];
 
         table.row.add(newRow).draw(false);

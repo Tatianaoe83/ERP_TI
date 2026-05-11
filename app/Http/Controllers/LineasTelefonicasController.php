@@ -82,6 +82,12 @@ class LineasTelefonicasController extends AppBaseController
                         return '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
                     }
                 })
+                ->editColumn('FechaFianza', function ($row) {
+                    if (empty($row->FechaFianza) || in_array($row->FechaFianza, ['Sin asignar', 'Sin asigna', '0000-00-00'])) {
+                        return 'Sin asignar';
+                    }
+                    return \Carbon\Carbon::parse($row->FechaFianza)->format('d/m/Y');
+                })
                 ->editColumn('FechaRenovacion', function ($row) {
                     if (empty($row->FechaRenovacion) || in_array($row->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) {
                         return 'Sin asignar';
@@ -131,6 +137,7 @@ class LineasTelefonicasController extends AppBaseController
                     'inventariolineas.Estado',
                     'inventariolineas.Comentarios',
                     'inventariolineas.MontoRenovacionFianza',
+                    'inventariolineas.FechaRenovacion',
                     'empleados.NombreEmpleado as empleado',
                     'obras.NombreObra as obra'
                 ])
@@ -152,6 +159,7 @@ class LineasTelefonicasController extends AppBaseController
                         'estado' => $record->Estado,
                         'comentarios' => $record->Comentarios,
                         'monto_renovacion_fianza' => $record->MontoRenovacionFianza,
+                        'fecha_renovacion' => $record->FechaRenovacion ? \Carbon\Carbon::parse($record->FechaRenovacion)->format('d/m/Y') : 'Sin asignar',
                         'empleado' => $record->empleado
                     ];
                 });

@@ -22,6 +22,7 @@
         <div>
           <button type="button" class="btn btn-success" id="btn-validar-pdf">Generar PDF</button>
           <button type="button" class="btn btn-primary" id="btn-validar-excel">Generar Excel</button>
+          <button type="button" class="btn btn-warning" id="btn-test">Ver reporte test</button>
           <input type="hidden" name="submitbutton" id="submitbutton">
         </div>
       </div>
@@ -91,16 +92,21 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
     const form = document.getElementById('presupuestoForm');
     const btnPdf = document.getElementById('btn-validar-pdf');
     const btnExcel = document.getElementById('btn-validar-excel');
+    const btnTest = document.getElementById('btn-test');
+
     const submitButtonInput = document.getElementById('submitbutton');
+
     const modalElement = document.getElementById('modalFaltantes');
     const modal = new bootstrap.Modal(modalElement);
 
     function validarYEnviar(tipoBoton) {
+
         const gerenciaId = document.getElementById('GerenciaID').value;
-        
+
         if (!gerenciaId) {
             alert('Por favor selecciona una Gerencia');
             return;
@@ -108,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         btnPdf.disabled = true;
         btnExcel.disabled = true;
+        btnTest.disabled = true;
 
         fetch('{{ route("presupuesto.verificar") }}', {
             method: 'POST',
@@ -115,32 +122,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ GerenciaID: gerenciaId })
+            body: JSON.stringify({
+                GerenciaID: gerenciaId
+            })
         })
         .then(response => response.json())
         .then(data => {
+
             btnPdf.disabled = false;
             btnExcel.disabled = false;
+            btnTest.disabled = false;
 
             if (data.success === false) {
                 alert('Error de validación: ' + (data.error || 'Desconocido'));
                 return;
             }
 
-            // Mapeo de datos al Modal con las nuevas líneas separadas
+            // Referencias modal
             const totalEmp = document.getElementById('totalEmpleadosModal');
             const sinMesPagoMensual = document.getElementById('sinMesPagoMensualModal');
             const sinMesPagoAnual = document.getElementById('sinMesPagoAnualModal');
             const lineasConFecha = document.getElementById('lineasSinAsignarConFechaModal');
             const insumosConFecha = document.getElementById('insumosSinAsignarConFechaModal');
 
-            if (totalEmp) totalEmp.innerText = data.totalEmpleados || 0;
-            if (sinMesPagoMensual) sinMesPagoMensual.innerText = data.empleadosSinMesPagoMensual || 0;
-            if (sinMesPagoAnual) sinMesPagoAnual.innerText = data.empleadosSinMesPagoAnual || 0;
-            if (lineasConFecha) lineasConFecha.innerText = data.lineasSinAsignarConFecha || 0;
-            if (insumosConFecha) insumosConFecha.innerText = data.insumosSinAsignarConFecha || 0;
+            // Pintar datos
+            if (totalEmp) {
+                totalEmp.innerText = data.totalEmpleados || 0;
+            }
 
-            // Lógica de validación actualizada: si cualquiera es mayor a 0, bloquea y muestra modal
+            if (sinMesPagoMensual) {
+                sinMesPagoMensual.innerText = data.empleadosSinMesPagoMensual || 0;
+            }
+
+            if (sinMesPagoAnual) {
+                sinMesPagoAnual.innerText = data.empleadosSinMesPagoAnual || 0;
+            }
+
+            if (lineasConFecha) {
+                lineasConFecha.innerText = data.lineasSinAsignarConFecha || 0;
+            }
+
+            if (insumosConFecha) {
+                insumosConFecha.innerText = data.insumosSinAsignarConFecha || 0;
+            }
+
+            // Validación general
             const tieneFaltantes = (
                 data.empleadosSinMesPagoMensual > 0 ||
                 data.empleadosSinMesPagoAnual > 0 ||
@@ -148,23 +174,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.insumosSinAsignarConFecha > 0
             );
 
+            // BOTÓN TEST:
+            // Muestra modal PERO genera PDF de todas formas
+            if (tipoBoton === 'test') {
+
+                if (tieneFaltantes) {
+                    modal.show();
+                }
+
+                submitButtonInput.value = 'pdf';
+                form.submit();
+
+                return;
+            }
+
+            // BOTONES NORMALES
             if (tieneFaltantes) {
+
                 modal.show();
+
             } else {
+
                 submitButtonInput.value = tipoBoton;
                 form.submit();
             }
+
         })
         .catch(error => {
+
             console.error('Error:', error);
+
             btnPdf.disabled = false;
             btnExcel.disabled = false;
+            btnTest.disabled = false;
+
             alert('Ocurrió un error al validar los datos.');
         });
     }
 
-    btnPdf.addEventListener('click', () => validarYEnviar('pdf'));
-    btnExcel.addEventListener('click', () => validarYEnviar('excel'));
+    // Eventos botones
+    btnPdf.addEventListener('click', function() {
+        validarYEnviar('pdf');
+    });
+
+    btnExcel.addEventListener('click', function() {
+        validarYEnviar('excel');
+    });
+
+    btnTest.addEventListener('click', function() {
+        validarYEnviar('test');
+    });
+
 });
 </script>
 @endsection
