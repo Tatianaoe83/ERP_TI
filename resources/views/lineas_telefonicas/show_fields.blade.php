@@ -37,7 +37,14 @@
 <!-- Fechafianza Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
-    <p>{{ $lineasTelefonicas->FechaFianza }}</p>
+    <p>
+        {{
+            !empty($lineasTelefonicas->FechaFianza) &&
+            !in_array($lineasTelefonicas->FechaFianza, ['Sin asignar', 'Sin asigna', '0000-00-00'])
+                ? \Carbon\Carbon::parse($lineasTelefonicas->FechaFianza)->format('d/m/Y')
+                : 'Sin asignar'
+        }}
+    </p>
 </div>
 
 <!-- Costofianza Field -->

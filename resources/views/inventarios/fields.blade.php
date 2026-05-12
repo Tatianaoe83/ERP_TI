@@ -427,15 +427,13 @@
                                 <td>{{ $Linea->CuentaHija}}</td>
                                 <td>{{ $Linea->TipoLinea}}</td>
                                 <td>{{ $Linea->obras->NombreObra}}</td>
-                                <td>{{ $Linea->FechaFianza ? \Carbon\Carbon::parse($Linea->FechaFianza)->format('d/m/Y') : '' }}</td>
+                                <td>{{(empty($Linea->FechaFianza) ||in_array($Linea->FechaFianza, ['Sin asignar', 'Sin asigna', '0000-00-00']))? 'Sin asignar': \Carbon\Carbon::parse($Linea->FechaFianza)->format('d/m/Y')}}</td>
                                 <td>{{ $Linea->CostoFianza}}</td>
                                 <td>
                                     <input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled1" checked disabled>
                                     <label class="form-check-label" for="flexCheckCheckedDisabled1">
                                     </label>
-
                                 </td>
-
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
                                 <td>{{ (empty($Linea->FechaRenovacion) || in_array($Linea->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('d/m/Y') }}</td>
                             </tr>
