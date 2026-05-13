@@ -662,7 +662,7 @@ public function verificarFechas(Request $request)
             ->whereNotIn('l.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
 
              // FILTRO DE ESTADOS
-            ->where('l.Disponible', '0')
+            ->where('l.Disponible', '1')
             ->where('l.Activo', '1')
 
             // NUEVO FILTRO
