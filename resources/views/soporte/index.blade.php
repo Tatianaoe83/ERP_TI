@@ -304,7 +304,8 @@
                             </div>
                             <div>
                                 <label for="numeroTelefono" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Número Telefónico *</label>
-                                <input type="number" id="numeroTelefono" placeholder="10 dígitos" name="Numero" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 text-sm md:text-base" disabled />
+                                <input type="text" id="numeroTelefono" placeholder="10 dígitos" inputmode="numeric" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 text-sm md:text-base" disabled />
+                                <input type="hidden" name="Numero" id="numeroTelefonoReal">
                             </div>
                             <div>
                                 <label for="codeAnyDesk" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Código AnyDesk</label>
@@ -456,6 +457,7 @@
         window.datosUbicacion = [];
         window.correoSolicitudValido = false; // Para el formulario Solicitud
         window.correoTicketValido = false; // Para el formulario Ticket
+        window.telefonoReal = ''; // Valor real de 10 dígitos para validación y envío
 
         $(document).ready(function() {
 
@@ -574,21 +576,86 @@
                 }
             });
 
-            // Validar Teléfono
-            $('#numeroTelefono').on('input', function() {
-                var val = $(this).val().replace(/\D/g, '');
-                $(this).val(val);
-                var $err = $('#telefono-error');
-                if (!$err.length) $(this).after('<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>');
 
-                if (val.length === 10) {
-                    $('#telefono-error').addClass('hidden');
-                    $(this).removeClass('border-red-500').addClass('border-green-500');
-                } else {
-                    $('#telefono-error').removeClass('hidden').text('Debe tener 10 dígitos');
-                    $(this).addClass('border-red-500');
-                }
-            });
+$('#numeroTelefono').on('keydown', function (e) {
+
+    // Permitir borrar (Backspace o Delete)
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+        window.telefonoReal = window.telefonoReal.slice(0, -1);
+    }
+
+    // Permitir solo números
+    else if (/^\d$/.test(e.key)) {
+        if (window.telefonoReal.length < 10) {
+            window.telefonoReal += e.key;
+        }
+    }
+
+    // Bloquear escritura real en input
+    e.preventDefault();
+
+    renderTelefono();
+});
+
+// Manejar pegado (Paste) para mantener seguridad y sincronización
+$('#numeroTelefono').on('paste', function(e) {
+    e.preventDefault();
+    const pasteData = (e.originalEvent || e).clipboardData.getData('text');
+    const limpio = pasteData.replace(/\D/g, '').substring(0, 10 - window.telefonoReal.length);
+    
+    if (limpio.length > 0) {
+        window.telefonoReal += limpio;
+        renderTelefono();
+    }
+});
+
+function renderTelefono() {
+    let visible = '';
+    if (window.telefonoReal.length <= 3) {
+        visible = window.telefonoReal;
+    } else {
+        visible = window.telefonoReal.substring(0, 3);
+        let ocultos = Math.min(
+            window.telefonoReal.length - 3,
+            4
+        );
+        visible += '*'.repeat(ocultos);
+        if (window.telefonoReal.length > 7) {
+            visible += window.telefonoReal.substring(7);
+        }
+    }
+
+    $('#numeroTelefono').val(visible);
+    $('#numeroTelefonoReal').val(window.telefonoReal); // Sincronizar campo oculto para el envío
+
+    // VALIDACIÓN
+    var $err = $('#telefono-error');
+    if (!$err.length) {
+        $('#numeroTelefono').after(
+            '<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>'
+        );
+        $err = $('#telefono-error');
+    }
+
+    if (window.telefonoReal.length === 10) {
+
+        $err.addClass('hidden');
+
+        $('#numeroTelefono')
+            .removeClass('border-red-500')
+            .addClass('border-green-500');
+
+    } else {
+
+        $err
+            .removeClass('hidden')
+            .text('Debe tener 10 dígitos');
+
+        $('#numeroTelefono')
+            .removeClass('border-green-500')
+            .addClass('border-red-500');
+    }
+}
 
             // Validar AnyDesk y Descripción (Visual)
             $('#codeAnyDesk, #descripcionTicket').on('input', function() {
@@ -648,7 +715,7 @@
                 // --- VALIDACIÓN TICKET ---
                 else if (esTicket) {
                     var correoT = $('#correoEmpleado').val().trim();
-                    var tel = $('#numeroTelefono').val().replace(/\D/g, '');
+                    var tel = window.telefonoReal;
                     var desc = $('#descripcionTicket').val().trim();
 
                     if (!correoT) errores.push('El correo es requerido.');
@@ -675,6 +742,9 @@
                     return false;
                 }
 
+                // Restaurar valor real del teléfono antes de enviar (Ya no es necesario visulamente, se usa el hidden)
+                // $('#numeroTelefono').val(window.telefonoReal);
+
                 // Habilitar campos deshabilitados para que se envíen en el POST
                 $('input, select, textarea').prop('disabled', false);
             });
@@ -686,6 +756,19 @@
 
         function esCorreoValido(correo) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+        }
+
+        // Función para enmascarar número telefónico (999****999)
+        var valorRealTelefono = ''; // Variable para almacenar el valor real
+        function enmascararNumero(numero) {
+            var limpio = (numero || '').toString().replace(/\D/g, '');
+            valorRealTelefono = limpio; // Guardar el valor real
+            window.telefonoReal = limpio; // Sincronizar con el estado global
+            $('#numeroTelefonoReal').val(limpio); // Sincronizar campo oculto
+            if (limpio.length === 10) {
+                return limpio.substring(0, 3) + '****' + limpio.substring(7);
+            }
+            return limpio;
         }
 
         // --- SOLICITUD ---
@@ -722,10 +805,10 @@
                     window.correoSolicitudValido = true;
 
                     // 1. Llenar campos visuales
-                    $('#autoEmpleadosSolicitud').val(data.NombreEmpleado).removeClass('border-blue-500').addClass('border-green-500');
-                    $('#NombreGerencia').val(data.NombreGerencia);
-                    $('#NombreObra').val(data.NombreObra);
-                    $('#NombrePuesto').val(data.NombrePuesto);
+                    $('#autoEmpleadosSolicitud').val(data.NombreEmpleado).removeClass('border-blue-500 border-red-500 border-gray-300').addClass('border-green-500');
+                    $('#NombreGerencia').val(data.NombreGerencia).removeClass('border-red-500 border-blue-500 border-gray-300').addClass('border-green-500');
+                    $('#NombreObra').val(data.NombreObra).removeClass('border-red-500 border-blue-500 border-gray-300').addClass('border-green-500');
+                    $('#NombrePuesto').val(data.NombrePuesto).removeClass('border-red-500 border-blue-500 border-gray-300').addClass('border-green-500');
 
                     // 2. Llenar IDs ocultos
                     $('#EmpleadoIDSolicitud').val(data.EmpleadoID);
@@ -833,9 +916,9 @@
                 },
                 success: function(data) {
                     window.correoTicketValido = true;
-                    $('#autoEmpleadosTicket').val(data.NombreEmpleado).addClass('border-green-500');
+                    $('#autoEmpleadosTicket').val(data.NombreEmpleado).removeClass('border-red-500 border-blue-500 border-gray-300').addClass('border-green-500');
                     $('#EmpleadoID').val(data.EmpleadoID);
-                    $('#numeroTelefono').val(data.NumTelefono).removeClass('border-red-500').addClass('border-green-500');
+                    $('#numeroTelefono').val(enmascararNumero(data.NumTelefono)).removeClass('border-red-500').addClass('border-green-500');
                     // Habilitar campos
                     $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', false).removeClass('bg-gray-100');
                     $('#btnEnviar').prop('disabled', false).removeClass('cursor-not-allowed');
@@ -990,6 +1073,8 @@
                 inputs.forEach(input => {
                     input.value = "";
                 });
+                window.telefonoReal = ''; // Limpiar el estado global al resetear
+                $('#numeroTelefonoReal').val(''); // Limpiar el campo oculto
             }
 
             const title = document.getElementById("title");
@@ -1459,9 +1544,9 @@
                     success: function(data) {
                         window.correoTicketValido = true;
                         correoValido = true;
-                        $('#autoEmpleadosTicket').val(data.NombreEmpleado).removeClass('border-blue-500').addClass('border-green-500');
+                        $('#autoEmpleadosTicket').val(data.NombreEmpleado).removeClass('border-blue-500 border-red-500 border-gray-300').addClass('border-green-500');
                         $('#EmpleadoID').val(data.EmpleadoID);
-                        $('#numeroTelefono').val(data.NumTelefono).removeClass('border-red-500').addClass('border-green-500');
+                        $('#numeroTelefono').val(enmascararNumero(data.NumTelefono)).removeClass('border-red-500').addClass('border-green-500');
                         $errorDiv.addClass('hidden');
 
                         // Habilitar campos
@@ -1516,10 +1601,10 @@
                         correoSolicitudValido = true;
                         window.correoSolicitudValido = true;
 
-                        $empleadoInput.val(data.NombreEmpleado).removeClass('border-blue-500 border-red-500').addClass('border-green-500');
-                        $gerenciaInput.val(data.NombreGerencia || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
-                        $obraInput.val(data.NombreObra || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
-                        $puestoInput.val(data.NombrePuesto || '').removeClass('border-blue-500 border-red-500').addClass('border-green-500');
+                        $empleadoInput.val(data.NombreEmpleado).removeClass('border-blue-500 border-red-500 border-gray-300').addClass('border-green-500');
+                        $gerenciaInput.val(data.NombreGerencia || '').removeClass('border-blue-500 border-red-500 border-gray-300').addClass('border-green-500');
+                        $obraInput.val(data.NombreObra || '').removeClass('border-blue-500 border-red-500 border-gray-300').addClass('border-green-500');
+                        $puestoInput.val(data.NombrePuesto || '').removeClass('border-blue-500 border-red-500 border-gray-300').addClass('border-green-500');
 
                         $empleadoIDInput.val(data.EmpleadoID);
                         $gerenciaIDInput.val(data.GerenciaID || '');
@@ -1598,31 +1683,6 @@
                 });
             }
 
-            // Validación del número telefónico (10 dígitos)
-            $('#numeroTelefono').on('input', function() {
-                const numero = $(this).val().replace(/\D/g, ''); // Solo números
-                const $errorDiv = $('#telefono-error');
-
-                // Crear div de error si no existe
-                if ($errorDiv.length === 0) {
-                    $(this).after('<div id="telefono-error" class="text-red-500 text-sm hidden mb-2"></div>');
-                }
-
-                if (numero.length === 0) {
-                    $('#telefono-error').addClass('hidden').text('');
-                    $(this).removeClass('border-red-500 border-green-500').addClass('border-gray-300');
-                } else if (numero.length === 10) {
-                    $('#telefono-error').addClass('hidden').text('');
-                    $(this).removeClass('border-red-500 border-gray-300').addClass('border-green-500');
-                } else {
-                    $('#telefono-error').removeClass('hidden').text('El número telefónico debe tener exactamente 10 dígitos');
-                    $(this).removeClass('border-green-500 border-gray-300').addClass('border-red-500');
-                }
-
-                // Actualizar el valor solo con números
-                $(this).val(numero);
-            });
-
             // Validación del código AnyDesk
             $('#codeAnyDesk').on('input', function() {
                 const anyDesk = $(this).val().trim();
@@ -1667,7 +1727,7 @@
 
                 // Validar si es el formulario de Ticket
                 if ($('#ticket-form').is(':visible')) {
-                    const numero = $('#numeroTelefono').val().replace(/\D/g, '');
+                    const numero =  window.telefonoReal;
                     const anyDesk = $('#codeAnyDesk').val().trim();
                     const descripcion = $('#descripcionTicket').val().trim();
                     const correo = $('#correoEmpleado').val().trim();
@@ -1751,6 +1811,7 @@
 
                 // Asegurar que el campo de correo esté habilitado antes de enviar
                 if ($('#ticket-form').is(':visible')) {
+                    // $('#numeroTelefono').val(window.telefonoReal); // Comentado por seguridad visual
                     $('#correoEmpleado').prop('disabled', false);
                 }
             });
@@ -2281,7 +2342,7 @@
                 if (esTicket) {
                     const correo     = $('#correoEmpleado').val().trim();
                     const empleadoID = $('#EmpleadoID').val();
-                    const numero     = $('#numeroTelefono').val().replace(/\D/g, '');
+                    const numero     = window.telefonoReal;
                     const desc       = $('#descripcionTicket').val().trim();
 
                     if (!correo)
@@ -2337,6 +2398,7 @@
                 }
 
                 lockForm();                                       
+                // $('#numeroTelefono').val(window.telefonoReal); // Comentado por seguridad visual
                 $('input:disabled, select:disabled, textarea:disabled').prop('disabled', false);
 
                 if (esTicket) {

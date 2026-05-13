@@ -29,7 +29,14 @@
 <!-- Numtelefono Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('NumTelefono', 'Num telefono:') !!}
-    {!! Form::text('NumTelefono', null, ['class' => 'form-control','maxlength' => 50,'maxlength' => 50]) !!}
+    {!! Form::text('NumTelefono', null, [
+    'class' => 'form-control',
+    'maxlength' => 10,
+    'minlength' => 10,
+    'required' => true,
+    'pattern' => '[0-9]{10}',
+    'title' => 'Debe contener exactamente 10 dígitos'
+]) !!}
 </div>
 
 <!-- Correo Field -->

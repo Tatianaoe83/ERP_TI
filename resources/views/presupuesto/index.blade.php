@@ -22,7 +22,7 @@
         <div>
           <button type="button" class="btn btn-success" id="btn-validar-pdf">Generar PDF</button>
           <button type="button" class="btn btn-primary" id="btn-validar-excel">Generar Excel</button>
-          <button type="button" class="btn btn-warning" id="btn-test">Ver reporte test</button>
+          <!-- <button type="button" class="btn btn-warning" id="btn-test">Ver reporte test</button> -->
           <input type="hidden" name="submitbutton" id="submitbutton">
         </div>
       </div>
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('presupuestoForm');
     const btnPdf = document.getElementById('btn-validar-pdf');
     const btnExcel = document.getElementById('btn-validar-excel');
-    const btnTest = document.getElementById('btn-test');
+    //const btnTest = document.getElementById('btn-test');
 
     const submitButtonInput = document.getElementById('submitbutton');
 
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         btnPdf.disabled = true;
         btnExcel.disabled = true;
-        btnTest.disabled = true;
+        //(btnTest.disabled = true;
 
         fetch('{{ route("presupuesto.verificar") }}', {
             method: 'POST',
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             btnPdf.disabled = false;
             btnExcel.disabled = false;
-            btnTest.disabled = false;
+            //btnTest.disabled = false;
 
             if (data.success === false) {
                 alert('Error de validación: ' + (data.error || 'Desconocido'));
@@ -176,17 +176,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // BOTÓN TEST:
             // Muestra modal PERO genera PDF de todas formas
-            if (tipoBoton === 'test') {
+            // if (tipoBoton === 'test') {
 
-                if (tieneFaltantes) {
-                    modal.show();
-                }
+               // if (tieneFaltantes) {
+                //    modal.show();
+                //}
 
-                submitButtonInput.value = 'pdf';
-                form.submit();
+                //submitButtonInput.value = 'pdf';
+                ///form.submit();
 
-                return;
-            }
+                //return;
+            //}
 
             // BOTONES NORMALES
             if (tieneFaltantes) {
@@ -220,10 +220,10 @@ document.addEventListener('DOMContentLoaded', function() {
     btnExcel.addEventListener('click', function() {
         validarYEnviar('excel');
     });
-
-    btnTest.addEventListener('click', function() {
-        validarYEnviar('test');
-    });
+// BOTÓN TEST:
+   // btnTest.addEventListener('click', function() {
+     //   validarYEnviar('test');
+    //});
 
 });
 </script>
