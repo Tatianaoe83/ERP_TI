@@ -675,11 +675,6 @@ class TicketsController extends Controller
             if ($nuevoEstatus === 'En progreso') {
                 $ticket->refresh();
                 $ticket->load(['tipoticket', 'responsableTI']);
-                try {
-                    (new TicketNotificationService())->verificarYNotificarExceso($ticket);
-                } catch (\Exception $e) {
-                    Log::error("Error verificando exceso de tiempo al cambiar a En progreso: " . $e->getMessage());
-                }
             }
 
             return response()->json([
