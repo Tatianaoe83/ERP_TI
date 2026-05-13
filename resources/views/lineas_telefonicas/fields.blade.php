@@ -56,7 +56,7 @@
 <!-- Costofianza Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('CostoFianza', 'Costo fianza:') !!}
-    {!! Form::number('CostoFianza', 0.00, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
+    {!! Form::number('CostoFianza', isset($lineasTelefonicas) ? $lineasTelefonicas->CostoFianza : 0, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
 </div>
 
 <!-- Activo Field -->
@@ -85,7 +85,7 @@
 <!-- Montorenovacionfianza Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('MontoRenovacionFianza', 'Monto renovacion fianza:') !!}
-    {!! Form::number('MontoRenovacionFianza', 0.00, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
+    {!! Form::number('MontoRenovacionFianza', isset($lineasTelefonicas) ? $lineasTelefonicas->MontoRenovacionFianza : 0, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
 </div>
 
 <!-- Fechafianza De Renovacion -->
