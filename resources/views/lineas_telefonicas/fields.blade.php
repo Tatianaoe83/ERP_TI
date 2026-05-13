@@ -1,11 +1,11 @@
 <!-- Numtelefonico Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('NumTelefonico', 'Num telefonico:') !!}
     {!! Form::text('NumTelefonico', null, ['class' => 'form-control','maxlength' => 50,'maxlength' => 50]) !!}
 </div>
 
 <!-- Planid Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('PlanID', 'Plan:') !!}
 
     {!!Form::select('PlanID',App\Models\Planes::all()->
@@ -14,25 +14,25 @@
 </div>
 
 <!-- Cuentapadre Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('CuentaPadre', 'Cuenta padre:') !!}
     {!! Form::text('CuentaPadre', null, ['class' => 'form-control','maxlength' => 100,'maxlength' => 100]) !!}
 </div>
 
 <!-- Cuentahija Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('CuentaHija', 'Cuenta hija:') !!}
     {!! Form::text('CuentaHija', null, ['class' => 'form-control','maxlength' => 100,'maxlength' => 100]) !!}
 </div>
 
 <!-- Tipolinea Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('TipoLinea', 'Tipo linea:') !!}
     {!! Form::text('TipoLinea', null, ['class' => 'form-control','maxlength' => 50,'maxlength' => 50]) !!}
 </div>
 
 <!-- Obraid Field -->
-<div class="col-sm-6">
+<div class="col-sm-6 mt-2">
     {!! Form::label('ObraID', 'Obra:') !!}
 
     {!!Form::select('ObraID',App\Models\Obras::all()->
@@ -41,15 +41,20 @@
 </div>
 
 <!-- Fechafianza Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
-    {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
-    {!! Form::date('FechaFianza', null, ['class' => 'form-control']) !!}
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
+     {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
+   {!! Form::date('FechaFianza', 
+    isset($lineasTelefonicas->FechaFianza) 
+        ? $lineasTelefonicas->FechaFianza->format('Y-m-d') 
+        : null, 
+    ['class' => 'form-control']) 
+!!}
 </div>
 
 
 
 <!-- Costofianza Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('CostoFianza', 'Costo fianza:') !!}
     {!! Form::number('CostoFianza', 0.00, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
 </div>
@@ -78,7 +83,18 @@
 
 
 <!-- Montorenovacionfianza Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
     {!! Form::label('MontoRenovacionFianza', 'Monto renovacion fianza:') !!}
     {!! Form::number('MontoRenovacionFianza', 0.00, ['class' => 'form-control','min' => '0','placeholder' => '0']) !!}
+</div>
+
+<!-- Fechafianza De Renovacion -->
+<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
+  {!! Form::label('FechaRenovacion', 'Fecha renovación:') !!}
+    {!! Form::date('FechaRenovacion', 
+        (!empty($lineasTelefonicas->FechaRenovacion) && !in_array($lineasTelefonicas->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00']))
+            ? \Carbon\Carbon::parse($lineasTelefonicas->FechaRenovacion)->format('Y-m-d') 
+            : null, 
+        ['class' => 'form-control']) 
+    !!}
 </div>

@@ -500,6 +500,7 @@ class PresupuestoController extends Controller
 
 
                 $tablapresup_lics = [];
+                $fecha_renovacion= [];
                 $columnaspresup_lics = [];
                 $totalespresup_lics = []; 
                 $granTotalpresup_lics = 0; 
@@ -590,7 +591,123 @@ class PresupuestoController extends Controller
                 return Excel::download(new ReportExport($request->GerenciaID, $request->tipo), $fileName);
        }
         
-
     }
+
+public function verificarFechas(Request $request)
+{
+    try {
+        $gerenciaId = $request->GerenciaID;
+
+        // Año siguiente
+        $anioSiguiente = now()->year + 1;
+
+        // 1. CONTEO DE INSUMOS MENSUALES FALTANTES
+        $insumosSinMesPagoMensual = DB::table('inventarioinsumo as ii')
+            ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
+            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+            ->where('d.GerenciaID', $gerenciaId)
+            ->where('e.Estado', 1)
+            ->whereNull('e.deleted_at')
+            ->whereNotNull('ii.FechaRenovacion')
+            ->whereNotIn('ii.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+
+            // NUEVO FILTRO
+            ->whereYear('ii.FechaRenovacion', $anioSiguiente)
+
+            ->where('ii.FrecuenciaDePago', 'LIKE', '%ensual%')
+            ->where(function ($qq) {
+                $qq->whereNull('ii.MesDePago')
+                   ->orWhere('ii.MesDePago', '')
+                   ->orWhere('ii.MesDePago', 'N/A');
+            })
+            ->count();
+
+        // 2. CONTEO DE INSUMOS ANUALES FALTANTES
+        $insumosSinMesPagoAnual = DB::table('inventarioinsumo as ii')
+            ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
+            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+            ->where('d.GerenciaID', $gerenciaId)
+            ->where('e.Estado', 1)
+            ->whereNull('e.deleted_at')
+            ->whereNotNull('ii.FechaRenovacion')
+            ->whereNotIn('ii.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+
+            // NUEVO FILTRO
+            ->whereYear('ii.FechaRenovacion', $anioSiguiente)
+
+            ->where('ii.FrecuenciaDePago', 'LIKE', '%nual%')
+            ->where(function ($qq) {
+                $qq->whereNull('ii.MesDePago')
+                   ->orWhere('ii.MesDePago', '')
+                   ->orWhere('ii.MesDePago', 'N/A');
+            })
+            ->count();
+
+        // 3. TOTAL DE EMPLEADOS
+        $totalEmpleados = DB::table('empleados as e')
+            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
+            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
+            ->where('d.GerenciaID', $gerenciaId)
+            ->where('e.Estado', 1)
+            ->whereNull('e.deleted_at')
+            ->distinct()
+            ->count('e.EmpleadoID');
+
+        // 4. LÍNEAS HUÉRFANAS
+        $lineasOrfanas = DB::table('lineastelefonicas as l')
+            ->whereNull('l.deleted_at')
+            ->whereNotNull('l.FechaRenovacion')
+            ->whereNotIn('l.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+
+             // FILTRO DE ESTADOS
+            ->where('l.Disponible', '1')
+            ->where('l.Activo', '1')
+
+            // NUEVO FILTRO
+            ->whereYear('l.FechaRenovacion', $anioSiguiente)
+
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                ->from('inventariolineas as il')
+                ->whereColumn('il.LineaID', 'l.LineaID')
+                ->whereNull('il.deleted_at');
+            })
+            ->count();
+
+        // 5. INSUMOS HUÉRFANOS
+        $insumosOrfanos = DB::table('insumos as i')
+            ->whereNotNull('i.FechaRenovacion')
+            ->whereNotIn('i.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
+
+            // NUEVO FILTRO
+            ->whereYear('i.FechaRenovacion', $anioSiguiente)
+
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('inventarioinsumo as ii')
+                    ->whereColumn('ii.InsumoID', 'i.ID')
+                    ->whereNull('ii.deleted_at')
+                    ->where('ii.EmpleadoID', '>', 0);
+            })
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'totalEmpleados' => $totalEmpleados,
+            'empleadosSinMesPagoMensual' => $insumosSinMesPagoMensual,
+            'empleadosSinMesPagoAnual' => $insumosSinMesPagoAnual,
+            'lineasSinAsignarConFecha' => $lineasOrfanas,
+            'insumosSinAsignarConFecha' => $insumosOrfanos
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }
 

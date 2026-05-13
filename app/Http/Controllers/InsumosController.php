@@ -50,13 +50,20 @@ class InsumosController extends AppBaseController
                 'insumos.CostoAnual',
                 'insumos.Importe',
                 'insumos.FrecuenciaDePago',
-                'insumos.Observaciones'
+                'insumos.Observaciones',
+                'insumos.FechaRenovacion'
             ]);
 
             
             return DataTables::of($unidades)
                 ->addColumn('action', function($row){
                     return view('insumos.datatables_actions', ['id' => $row->ID])->render();
+                })
+                ->editColumn('FechaRenovacion', function ($row) {
+                    if (empty($row->FechaRenovacion) || in_array($row->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) {
+                        return 'Sin asignar';
+                    }
+                    return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
                 })
                 ->rawColumns(['action'])
                 ->make(true);
@@ -109,9 +116,11 @@ class InsumosController extends AppBaseController
                         'frecuencia_pago' => $record->FrecuenciaDePago,
                         'observaciones' => $record->Observaciones,
                         'empleado' => $record->empleado,
-                        'fecha_asignacion' => $record->FechaAsignacion ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') : null
-                    ];
-                });
+                        'fecha_asignacion' => $record->FechaAsignacion 
+                            ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') 
+                            : 'Sin Asignar'
+        ];
+    });
 
             return response()->json(['records' => $records]);
         } catch (\Exception $e) {
@@ -224,7 +233,7 @@ class InsumosController extends AppBaseController
         $datosOriginales = $insumos->toArray();
 
         // Verificar si hay cambios en los campos que se sincronizan con inventario
-        $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'Importe', 'FrecuenciaDePago', 'Observaciones'];
+        $camposSincronizacion = ['CategoriaID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'Importe', 'FrecuenciaDePago', 'Observaciones', 'FechaRenovacion'];
         $hayCambios = false;
         $camposModificados = [];
 
@@ -289,7 +298,8 @@ class InsumosController extends AppBaseController
                 'CostoAnual' => $insumoActualizado->CostoAnual,
                 'Importe' => $insumoActualizado->Importe,
                 'FrecuenciaDePago' => $insumoActualizado->FrecuenciaDePago,
-                'Observaciones' => $insumoActualizado->Observaciones
+                'Observaciones' => $insumoActualizado->Observaciones,
+                'FechaRenovacion' => $insumoActualizado->FechaRenovacion
             ]);
             $registrosActualizados++;
             

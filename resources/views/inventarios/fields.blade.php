@@ -117,13 +117,13 @@
                         @foreach ($equiposAsignados as $equiposAsignado)
                         <tr data-id="{{ $equiposAsignado->InventarioID }}">
                             <td>
-                                <button class='btn btn-outline-secondary btn-xs edit-btn' data-id="{{ $equiposAsignado->InventarioID }}">
+                                <button class='btn btn-outline-secondary btn-xs edit-btn mt-2' data-id="{{ $equiposAsignado->InventarioID }}">
                                     <i class="fa fa-edit"></i>
                                 </button>
                                 {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroy', $equiposAsignado->InventarioID], 'style' => 'display:inline']) !!}
                                 {!! Form::button('<i class="fa fa-trash"></i>', [
                                 'type' => 'submit',
-                                'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn',
+                                'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn mt-2',
                                 'data-id' => $equiposAsignado->InventarioID
                                 ]) !!}
                                 {!! Form::close() !!}
@@ -210,6 +210,7 @@
                             <th>Costo Mensual</th>
                             <th>Costo Anual</th>
                             <th>Frecuencia de Pago</th>
+                            <th>Fecha de Renovacion</th>
                             <th>Observaciones</th>
                             <th>Fecha de Asignacion</th>
                             <th>Num. Serie</th>
@@ -243,9 +244,9 @@
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
                             <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
+                            <td>{{ (empty($insumosAsignado->FechaRenovacion) || in_array($insumosAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
-                            <td>{{ $insumosAsignado->FechaAsignacion }}</td>
-                            <td>{{ $insumosAsignado->NumSerie }}</td>
+<td>{{ $insumosAsignado->FechaAsignacion ? \Carbon\Carbon::parse($insumosAsignado->FechaAsignacion)->format('d/m/Y') : 'Sin asignar' }}</td>                            <td>{{ $insumosAsignado->NumSerie }}</td>
                             <td>{{ $insumosAsignado->Comentarios }}</td>
                             <td>{{ $insumosAsignado->MesDePago }}</td>
                         </tr>
@@ -269,6 +270,7 @@
                                 <th>Costo Mensual</th>
                                 <th>Costo Anual</th>
                                 <th>Frecuencia de Pago</th>
+                                <th>Fecha de Renovacion</th>
                                 <th>Observaciones</th>
 
                             </tr>
@@ -290,6 +292,7 @@
                                 <td>{{ $insumo->CostoMensual }}</td>
                                 <td>{{ $insumo->CostoAnual }}</td>
                                 <td>{{ $insumo->FrecuenciaDePago }}</td>
+                                <td>{{ (empty($insumo->FechaRenovacion) || in_array($insumo->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumo->FechaRenovacion)->format('d/m/Y') }}</td>
                                 <td>{{ $insumo->Observaciones }}</td>
 
                             </tr>
@@ -332,6 +335,7 @@
                             <th>Fecha Asignación</th>
                             <th>Comentario</th>
                             <th>Monto Renovación Fianza</th>
+                            <th>Fecha Renovación</th>
 
 
 
@@ -365,11 +369,12 @@
                             <td>{{ $LineasAsignado->CuentaHija}}</td>
                             <td>{{ $LineasAsignado->TipoLinea}}</td>  
                             <td>{{ $LineasAsignado->lineastelefonicas->obras->NombreObra ?? 'Sin asignar'}}</td>
-                            <td>{{ $LineasAsignado->FechaFianza}}</td>
+                            <td>{{ $LineasAsignado->FechaFianza ? \Carbon\Carbon::parse($LineasAsignado->FechaFianza)->format('d/m/Y') : '' }}</td>
                             <td>{{ $LineasAsignado->CostoFianza}}</td>
-                            <td>{{ $LineasAsignado->FechaAsignacion}}</td>
+                            <td>{{ $LineasAsignado->FechaAsignacion ? \Carbon\Carbon::parse($LineasAsignado->FechaAsignacion)->format('d/m/Y') : '' }}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
+                            <td>{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
 
                         </tr>
                         @endforeach
@@ -397,6 +402,7 @@
                                 <th>Costo Fianza</th>
                                 <th>Activo</th>
                                 <th>Monto Renovación Fianza</th>
+                                <th>Fecha Renovación</th>
 
 
 
@@ -421,17 +427,15 @@
                                 <td>{{ $Linea->CuentaHija}}</td>
                                 <td>{{ $Linea->TipoLinea}}</td>
                                 <td>{{ $Linea->obras->NombreObra}}</td>
-                                <td>{{ $Linea->FechaFianza}}</td>
+                                <td>{{(empty($Linea->FechaFianza) ||in_array($Linea->FechaFianza, ['Sin asignar', 'Sin asigna', '0000-00-00']))? 'Sin asignar': \Carbon\Carbon::parse($Linea->FechaFianza)->format('d/m/Y')}}</td>
                                 <td>{{ $Linea->CostoFianza}}</td>
                                 <td>
                                     <input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled1" checked disabled>
                                     <label class="form-check-label" for="flexCheckCheckedDisabled1">
                                     </label>
-
                                 </td>
-
                                 <td>{{ $Linea->MontoRenovacionFianza}}</td>
-
+                                <td>{{ (empty($Linea->FechaRenovacion) || in_array($Linea->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('d/m/Y') }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -639,6 +643,7 @@
             Folio: $('#editFolio').val(),
             FechaDeCompra: $('#editFechaDeCompra').val(),
             Comentarios: $('#editComentarios').val(),
+            FechaRenovacion: $('#editFechaDeRenovacion').val(),
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -705,6 +710,32 @@
         });
     });
 
+    // Helper para formatear fechas a dd/mm/yyyy o 'Sin asignar'
+    function formatFechaRenovacion(fecha) {
+        if (!fecha || fecha === 'Sin asignar' || fecha === 'Sin asigna' || fecha === '0000-00-00' || fecha === 'null') {
+            return 'Sin asignar';
+        }
+        let raw = fecha.toString().substring(0, 10);
+        let parts = raw.split('-');
+        if (parts.length === 3 && parts[0].length === 4) {
+            return parts[2] + '/' + parts[1] + '/' + parts[0];
+        }
+        return fecha;
+    }
+
+    // Helper para convertir dd/mm/yyyy a yyyy-mm-dd (para inputs type=date)
+    function fechaDisplayToInput(fechaDisplay) {
+        if (!fechaDisplay || fechaDisplay === 'Sin asignar' || fechaDisplay === 'Sin asigna' || fechaDisplay === '0000-00-00') {
+            return '';
+        }
+        let parts = fechaDisplay.trim().split('/');
+        if (parts.length === 3 && parts[2].length === 4) {
+            return parts[2] + '-' + parts[1] + '-' + parts[0];
+        }
+        // Si ya está en yyyy-mm-dd, retornar como está
+        return fechaDisplay.trim().substring(0, 10);
+    }
+
     // Actualizar una fila en la tabla después de editar
     function updateTableRow(equipo) {
         let row = $(`tr[data-id=${equipo.InventarioID}]`);
@@ -719,6 +750,7 @@
         row.find('td:eq(9)').text(equipo.Folio);
         row.find('td:eq(10)').text(equipo.GerenciaEquipo);
         row.find('td:eq(11)').text(equipo.Comentarios);
+        row.find('.edit-btn').data('id', equipo.InventarioID);
     }
 
     // Agregar una nueva fila en la tabla (para equipo creado)
@@ -845,11 +877,13 @@
         $('#editCostoMensual').val(row.find("td:eq(3)").text());
         $('#editCostoAnual').val(row.find("td:eq(4)").text());
         $('#editFrecuenciaDePago').val(row.find("td:eq(5)").text());
-        $('#editobserv').val(row.find("td:eq(6)").text());
-        $('#editFechaDeAsigna').val(row.find("td:eq(7)").text());
-        $('#editNumSerieInsu').val(row.find("td:eq(8)").text());
-        $('#editComentariosInsumo').val(row.find("td:eq(9)").text());
-        $('#editMesDePago').val(row.find("td:eq(10)").text());
+        // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el input date
+        $('#editFechaDeRenovacion').val(fechaDisplayToInput(row.find("td:eq(6)").text()));
+        $('#editobserv').val(row.find("td:eq(7)").text());
+        $('#editFechaDeAsigna').val(fechaDisplayToInput(row.find("td:eq(8)").text()));
+        $('#editNumSerieInsu').val(row.find("td:eq(9)").text());
+        $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
+        $('#editMesDePago').val(row.find("td:eq(11)").text());
 
         $('#editModalInsumo').modal('show');
     });
@@ -866,13 +900,23 @@
         let costomensual = row.find("td:eq(3)").text();
         let costoanual = row.find("td:eq(4)").text();
         let frecuenciadepago = row.find("td:eq(5)").text();
-        let observaciones = row.find("td:eq(6)").text();
+        let fecharenovacion = row.find("td:eq(6)").text().trim();
+        // Si la fecha trae hora (ej. 2026-04-29 00:00:00), tomamos solo los primeros 10 caracteres
+        if (fecharenovacion.length > 10) {
+            fecharenovacion = fecharenovacion.substring(0, 10);
+        }
+        // Si la fecha es un texto como 'Sin asignar', enviar vacío en vez del string
+        if (fecharenovacion === 'Sin asignar' || fecharenovacion === 'Sin asigna' || fecharenovacion === '0000-00-00') {
+            fecharenovacion = '';
+        }
+        let observaciones = row.find("td:eq(7)").text();
 
         $('#editCategoriaInsumo').val(categoria);
         $('#editNombreInsumo').val(nombreinsumo);
         $('#editCostoMensual').val(costomensual);
         $('#editCostoAnual').val(costoanual);
         $('#editFrecuenciaDePago').val(frecuenciadepago);
+        $('#editFechaDeRenovacion').val(fecharenovacion);
         $('#editobserv').val(observaciones);
         $('#editId_insumo').val('');
         $('#editEmp_insumo').val(id_E);
@@ -915,12 +959,19 @@
         let url = id ? '/inventarios/editar-insumo/' + id : '/inventarios/crear-insumo/' + id_E;
         let method = id ? 'PUT' : 'POST';
 
+        // Limpiar FechaRenovacion: enviar vacío si tiene texto no-fecha
+        let fechaRenovInsumo = $('#editFechaDeRenovacion').val();
+        if (fechaRenovInsumo === 'Sin asignar' || fechaRenovInsumo === 'Sin asigna' || fechaRenovInsumo === '0000-00-00') {
+            fechaRenovInsumo = '';
+        }
+
         let formData = {
             CateogoriaInsumo: $('#editCategoriaInsumo').val(),
             NombreInsumo: $('#editNombreInsumo').val(),
             CostoMensual: $('#editCostoMensual').val(),
             CostoAnual: $('#editCostoAnual').val(),
             FrecuenciaDePago: $('#editFrecuenciaDePago').val(),
+            FechaRenovacion: fechaRenovInsumo,
             Observaciones: $('#editobserv').val(),
             FechaAsignacion: $('#editFechaDeAsigna').val(),
             NumSerie: $('#editNumSerieInsu').val(),
@@ -994,17 +1045,17 @@
 
     function updateisnumoTableRow(insumo) {
         let row = $(`tr[data-id=${insumo.InventarioID}]`);
-        row.find('td:eq(1)').text(insumo.Categoriainsumo);
-        row.find('td:eq(2)').text(insumo.Marca);
-        row.find('td:eq(3)').text(insumo.Caracteristicas);
-        row.find('td:eq(4)').text(insumo.Modelo);
-        row.find('td:eq(5)').text(insumo.Precio);
-        row.find('td:eq(6)').text(insumo.FechaAsignacion);
-        row.find('td:eq(7)').text(insumo.FechaDeCompra);
-        row.find('td:eq(8)').text(insumo.NumSerie);
-        row.find('td:eq(9)').text(insumo.Folio);
-        row.find('td:eq(10)').text(insumo.Gerenciainsumo);
-        row.find('td:eq(11)').text(insumo.Comentarios);
+        row.find('td:eq(1)').text(insumo.CateogoriaInsumo);
+        row.find('td:eq(2)').text(insumo.NombreInsumo);
+        row.find('td:eq(3)').text(insumo.CostoMensual);
+        row.find('td:eq(4)').text(insumo.CostoAnual);
+        row.find('td:eq(5)').text(insumo.FrecuenciaDePago);
+        row.find('td:eq(6)').text(formatFechaRenovacion(insumo.FechaRenovacion));
+        row.find('td:eq(7)').text(insumo.Observaciones);
+        row.find('td:eq(8)').text(formatFechaRenovacion(insumo.FechaAsignacion));
+        row.find('td:eq(9)').text(insumo.NumSerie);
+        row.find('td:eq(10)').text(insumo.Comentarios);
+        row.find('td:eq(11)').text(insumo.MesDePago);
     }
 
 
@@ -1026,8 +1077,9 @@
             <td>${insumo.CostoMensual}</td>
             <td>${insumo.CostoAnual}</td>
             <td>${insumo.FrecuenciaDePago}</td>
+            <td>${formatFechaRenovacion(insumo.FechaRenovacion)}</td>
             <td>${insumo.Observaciones}</td>
-            <td>${insumo.FechaAsignacion}</td>
+            <td>${formatFechaRenovacion(insumo.FechaAsignacion)}</td>
             <td>${insumo.NumSerie}</td>
             <td>${insumo.Comentarios}</td>
             <td>${insumo.MesDePago}</td>
@@ -1126,22 +1178,42 @@
         $('#editId_linea2').val('');
         $('#editEmp_linea').val('');
         $('#editcomenl').val(row.find("td:eq(12)").text());
-        $('#editfechalinea').val(row.find("td:eq(11)").text());
+        $('#editfechalinea').val(fechaDisplayToInput(row.find("td:eq(11)").text()));
+        $('#editMontoRenovacionFianza').val(row.find("td:eq(13)").text());
+        // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el hidden input
+        $('#editFechaRenovacion').val(fechaDisplayToInput(row.find("td:eq(14)").text()));
 
         $('#editModalLinea').modal('show');
     });
-
     $(document).on('click', '.crear-btn-linea', function() {
-
         let id_E = '{{ $inventario->EmpleadoID }}';
 
         $('#editFormLinea')[0].reset();
 
-        document.getElementById('titulolinea').innerHTML = 'Crear Linea';
-        var id = $(this).data('id');
+        document.getElementById('titulolinea').innerHTML = 'Asignar Linea';
+        let row = $(this).closest('tr');
+        
+        let boton = $(this);
+        let id = boton.data('id');
+
+        let monto = row.find("td:eq(10)").text();
+        let fecha = row.find("td:eq(11)").text().trim();
+
+        // Limpiar fecha si trae hora
+        if (fecha.length > 10) {
+            fecha = fecha.substring(0, 10);
+        }
+
+        // Si la fecha es un texto como 'Sin asignar', enviar vacío en vez del string
+        if (fecha === 'Sin asignar' || fecha === 'Sin asigna' || fecha === '0000-00-00') {
+            fecha = '';
+        }
+
         $('#editId_linea').val('');
         $('#editId_linea2').val(id);
         $('#editEmp_linea').val(id_E);
+        $('#editMontoRenovacionFianza').val(monto);
+        $('#editFechaRenovacion').val(fecha);
 
         $('#editModalLinea').modal('show');
     });
@@ -1182,9 +1254,17 @@
         let url = id ? '/inventarios/editar-linea/' + id : '/inventarios/crear-linea/' + id_E + '/' + id2;
         let method = id ? 'PUT' : 'POST';
 
+        // Limpiar FechaRenovacion: enviar vacío si tiene texto no-fecha
+        let fechaRenov = $('#editFechaRenovacion').val();
+        if (fechaRenov === 'Sin asignar' || fechaRenov === 'Sin asigna' || fechaRenov === '0000-00-00') {
+            fechaRenov = '';
+        }
+
         let formData = {
             FechaAsignacion: $('#editfechalinea').val(),
-            Comentarios: $('#editcomenl').val()
+            Comentarios: $('#editcomenl').val(),
+            MontoRenovacionFianza: $('#editMontoRenovacionFianza').val(),
+            FechaRenovacion: fechaRenov
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1238,10 +1318,14 @@
             },
             error: function(error) {
                 console.error('Error:', error);
+                let errorMessage = 'Ocurrió un error al guardar los datos';
+                if (error.responseJSON && error.responseJSON.message) {
+                    errorMessage = error.responseJSON.message;
+                }
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'Ocurrió un error al guardar los datos',
+                    text: errorMessage,
                     customClass: {
                         popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                     }
@@ -1253,8 +1337,10 @@
 
     function updatetelefTableRow(telefono) {
         let row = $(`tr[data-id=${telefono.InventarioID}]`);
-        row.find('td:eq(11)').text(telefono.FechaAsignacion);
+        row.find('td:eq(11)').text(formatFechaRenovacion(telefono.FechaAsignacion));
         row.find('td:eq(12)').text(telefono.Comentarios);
+        row.find('td:eq(13)').text(telefono.MontoRenovacionFianza);
+        row.find('td:eq(14)').text(formatFechaRenovacion(telefono.FechaRenovacion));
     }
 
 
@@ -1278,11 +1364,12 @@
             telefono.CuentaHija,
             telefono.TipoLinea,
             telefono.Obra,
-            telefono.FechaFianza,
+            formatFechaRenovacion(telefono.FechaFianza),
             telefono.CostoFianza,
-            telefono.FechaAsignacion,
+            formatFechaRenovacion(telefono.FechaAsignacion),
             telefono.Comentarios,
-            telefono.MontoRenovacionFianza
+            telefono.MontoRenovacionFianza,
+            formatFechaRenovacion(telefono.FechaRenovacion)
         ];
 
         table.row.add(newRow).draw(false);

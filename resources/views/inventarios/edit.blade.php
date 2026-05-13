@@ -327,6 +327,10 @@
               </div>
             </div>
 
+            <!-- Campos ocultos para capturar datos de abajo automáticamente -->
+            <input type="hidden" id="editMontoRenovacionFianza" name="MontoRenovacionFianza">
+            <input type="hidden" id="editFechaRenovacion" name="FechaRenovacion">
+
           </div>
         </form>
 

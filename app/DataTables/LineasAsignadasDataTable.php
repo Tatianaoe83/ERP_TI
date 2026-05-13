@@ -18,8 +18,30 @@ class LineasAsignadasDataTable extends DataTable
     public function dataTable($query)
     {
         $dataTable = new QueryDataTable($query);
+                return $dataTable
+                    ->editColumn('fecha_asignacion', function ($row) {
+            if (!$row->fecha_asignacion || $row->fecha_asignacion === '0000-00-00') {
+                return 'Sin asignar';
+            }
 
-        return $dataTable
+            try {
+                return \Carbon\Carbon::parse($row->fecha_asignacion)->format('d/m/Y');
+            } catch (\Exception $e) {
+                return 'Sin asignar';
+            }
+        })
+
+        ->editColumn('fecha_renovacion', function ($row) {
+            if (!$row->fecha_renovacion || $row->fecha_renovacion === '0000-00-00') {
+                return 'Sin asignar';
+            }
+
+            try {
+                return \Carbon\Carbon::parse($row->fecha_renovacion)->format('d/m/Y');
+            } catch (\Exception $e) {
+                return 'Sin asignar';
+            }
+        })
             ->setRowId('InventarioID');
     }
 
@@ -46,7 +68,8 @@ class LineasAsignadasDataTable extends DataTable
                 'inventariolineas.CostoRentaMensual as costo_renta_mensual',
                 'inventariolineas.CuentaPadre as cuenta_padre',
                 'inventariolineas.CuentaHija as cuenta_hija',
-                'inventariolineas.MontoRenovacionFianza as monto_renovacion_fianza'
+                'inventariolineas.MontoRenovacionFianza as monto_renovacion_fianza',
+                'inventariolineas.FechaRenovacion as fecha_renovacion'
             ]);
 
         // Aplicar filtros
@@ -204,6 +227,12 @@ class LineasAsignadasDataTable extends DataTable
                 'title' => 'Monto Renovación Fianza',
                 'data' => 'monto_renovacion_fianza',
                 'name' => 'inventariolineas.MontoRenovacionFianza',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'fecha_renovacion' => [
+                'title' => 'Fecha Renovación',
+                'data' => 'fecha_renovacion',
+                'name' => 'inventariolineas.FechaRenovacion',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
 

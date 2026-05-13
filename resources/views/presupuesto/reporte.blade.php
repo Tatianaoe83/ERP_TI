@@ -125,7 +125,7 @@
                 @foreach($columnaspresup_lics as $columna => $_)
                     <td><strong>$ {{ number_format($totalespresup_lics[$columna] ?? 0) }}</strong></td>
                 @endforeach
-                <td><strong>$ {{ number_format($granTotalpresup_lics, 0) }}</strong></td>
+                 <td><strong>$ {{ number_format($granTotalpresup_lics, 0) }}</strong></td>
             </tr>
 
         </tbody>

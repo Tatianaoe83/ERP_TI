@@ -67,6 +67,18 @@ class LineasTelefonicasDataTable extends DataTable
                 $query->where('lineastelefonicas.Activo', $keyword);
             }
         })
+        ->editColumn('FechaRenovacion', function ($row) {
+            if (empty($row->FechaRenovacion)) {
+                return 'Sin asignar';
+            }
+            return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
+        })
+        ->editColumn('FechaFianza', function ($row) {
+            if (empty($row->FechaFianza)) {
+                return 'Sin asignar';
+            }
+            return \Carbon\Carbon::parse($row->FechaFianza)->format('d/m/Y');
+        })
         ->rawColumns(['action', 'estado_disponibilidad', 'estado_activo'])
         ->setRowId('LineaID');
 
@@ -97,6 +109,7 @@ class LineasTelefonicasDataTable extends DataTable
                 'lineastelefonicas.Disponible',
                 'lineastelefonicas.Activo',
                 'lineastelefonicas.MontoRenovacionFianza',
+                'lineastelefonicas.FechaRenovacion',
                 \DB::raw("(SELECT e.tipo_persona FROM inventariolineas il INNER JOIN empleados e ON e.EmpleadoID = il.EmpleadoID WHERE il.LineaID = lineastelefonicas.LineaID ORDER BY il.FechaAsignacion DESC LIMIT 1) as tipo_asignacion"),
             ]);
     }
@@ -235,6 +248,13 @@ class LineasTelefonicasDataTable extends DataTable
                 'data' => 'MontoRenovacionFianza',
                 'name' => 'MontoRenovacionFianza',
                 'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'FechaRenovacion' => [
+                'title' => 'Fecha Renovación',
+                'data' => 'FechaRenovacion',
+                'name' => 'FechaRenovacion',
+                'class' => 'dark:bg-[#101010] dark:text-white',
+               
             ],
             Column::computed('estado_disponibilidad')
                 ->title('Estado Disponibilidad')

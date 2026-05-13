@@ -1,3 +1,5 @@
+
+
 <!-- Nombreempleado Field -->
 <div class="col-sm-12">
     {!! Form::label('NombreEmpleado', 'Nombreempleado:') !!}
