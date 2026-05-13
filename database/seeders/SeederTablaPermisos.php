@@ -112,6 +112,8 @@ class SeederTablaPermisos extends Seeder
             'crear-facturas',
             'ver-facturas',
             'ver-comparativa',
+            'ver-mantenimientos',
+            'editar-mantenimientos',
 
          
         ];
