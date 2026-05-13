@@ -28,7 +28,7 @@
 <!-- Importe Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
     {!! Form::label('Importe', 'Inflación (%):') !!}
-    {!! Form::text('Importe', '0.00', ['class' => 'form-control', 'id' => 'Importe_fields', 'placeholder' => 'Ej: 10.50']) !!}
+    {!! Form::text('Importe', isset($insumos) ? $insumos->Importe : 0, ['class' => 'form-control', 'id' => 'Importe_fields', 'placeholder' => 'Ej: 10.50']) !!}
     <small class="form-text text-muted">Porcentaje de Inflación que se aplica al costo</small>
 </div>
 
