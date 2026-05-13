@@ -1720,6 +1720,8 @@
                 else if ($('#solicitud-form').is(':visible')) {
                     const correo = $('#correoEmpleadoSolicitud').val().trim();
                     const empleadoID = $('#EmpleadoIDSolicitud').val();
+                    const descripcionMotivo = $('#DescripcionMotivo').val().trim();
+                    const requerimientos = $('#Requerimientos').val().trim();
 
                     if (!correo) {
                         errores.push('El correo electrónico es requerido');
@@ -1730,6 +1732,16 @@
                         // Resaltar el campo de correo
                         $('#correoEmpleadoSolicitud').addClass('border-red-500').focus();
                         $('#correo-solicitud-error').removeClass('hidden').text('Debe validar el correo electrónico antes de enviar');
+                    }
+
+                    // Validar Descripción del Motivo
+                    if (!descripcionMotivo) {
+                        errores.push('La descripción del motivo es requerida');
+                    }
+
+                    // Validar Requerimientos
+                    if (!requerimientos) {
+                        errores.push('Los requerimientos específicos son requeridos');
                     }
                 }
 
@@ -2306,9 +2318,11 @@
                 }
 
                 if (esSolicitud) {
-                    const correo     = $('#correoEmpleadoSolicitud').val().trim();
-                    const empleadoID = $('#EmpleadoIDSolicitud').val();
-                    const proyecto   = $('#Proyecto').val();
+                    const correo             = $('#correoEmpleadoSolicitud').val().trim();
+                    const empleadoID         = $('#EmpleadoIDSolicitud').val();
+                    const proyecto           = $('#Proyecto').val();
+                    const descripcionMotivo  = $('#DescripcionMotivo').val().trim();
+                    const requerimientos     = $('#Requerimientos').val().trim();
 
                     if (!correo)
                         errores.push('El correo electrónico es requerido.');
@@ -2320,7 +2334,9 @@
                         $('#correo-solicitud-error').removeClass('hidden').text('Valida el correo antes de enviar.');
                     }
 
-                    if (!proyecto) errores.push('Debes seleccionar una ubicación (Proyecto).');
+                    if (!proyecto)            errores.push('Debes seleccionar una ubicación (Proyecto).');
+                    if (!descripcionMotivo)   errores.push('La descripción del motivo es requerida.');
+                    if (!requerimientos)      errores.push('Los requerimientos específicos son requeridos.');
                 }
 
                 if (errores.length > 0) {
