@@ -64,7 +64,7 @@ class InventarioController extends AppBaseController
 
             // Si NO selecciona nada:
             // mostrar todos menos PRESUPUESTO
-            $q->where('empleados.tipo_persona', '!=', 'PRESUPUESTO');
+            $q->where('empleados.tipo_persona', '!=', 'EXTRAORDINARIO');
         })
             ->select([
                 'empleados.EmpleadoID',

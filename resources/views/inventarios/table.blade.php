@@ -129,8 +129,8 @@
                                 REFERENCIADO
                             </option>
 
-                            <option value="PRESUPUESTO">
-                                PRESUPUESTO
+                            <option value="EXTRAORDINARIO">
+                                EXTRAORDINARIO
                             </option>
 
                         </select>
