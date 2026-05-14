@@ -33,7 +33,6 @@
     'class' => 'form-control',
     'maxlength' => 10,
     'minlength' => 10,
-    'required' => true,
     'pattern' => '[0-9]{10}',
     'title' => 'Debe contener exactamente 10 dígitos'
 ]) !!}
