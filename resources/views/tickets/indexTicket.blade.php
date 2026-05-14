@@ -433,6 +433,34 @@
                 <span x-text="selected.numero" class="font-mono"></span>
             </div>
         </div>
+         <div class="flex items-center gap-3" x-show="selected.puesto">
+            <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-briefcase"></i>
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Puesto:</span>
+                <span x-text="selected.puesto" class="font-mono"></span>
+            </div>
+        </div>
+        <div class="flex items-center gap-3" x-show="selected.departamento">
+            <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Departamento:</span>
+                <span x-text="selected.departamento" class="font-mono"></span>
+            </div>
+        </div>
+         <div class="flex items-center gap-3" x-show="selected.gerencia">
+            <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-sitemap"></i>
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Gerencia:</span>
+                <span x-text="selected.gerencia" class="font-mono"></span>
+            </div>
+        </div>
+         
 
         <div class="flex items-center gap-3" x-show="selected.anydesk">
             <div class="text-red-500 dark:text-red-400 flex-shrink-0 w-4 text-center">
@@ -1956,6 +1984,15 @@
                     if (ticket.empleado && ticket.empleado.correo) {
                         elemento.setAttribute('data-ticket-correo', ticket.empleado.correo || '');
                     }
+                    if (ticket.puesto) {
+                        elemento.setAttribute('data-ticket-puesto', ticket.puesto);
+                    }
+                    if (ticket.gerencia) {
+                        elemento.setAttribute('data-ticket-gerencia', ticket.gerencia);
+                    }
+                    if (ticket.departamento) {
+                        elemento.setAttribute('data-ticket-departamento', ticket.departamento);
+                    }
                     if (ticket.responsable && ticket.responsable.nombre) {
                         elemento.setAttribute('data-ticket-responsable', ticket.responsable.nombre);
                     } else if (ticket.responsable === null || !ticket.responsable) {
@@ -2726,6 +2763,9 @@
                             const ticketNumero = el.getAttribute('data-ticket-numero') || el.dataset.ticketNumero || '';
                             const ticketCorreo = el.getAttribute('data-ticket-correo') || el.dataset.ticketCorreo;
                             const ticketFecha = el.getAttribute('data-ticket-fecha') || el.dataset.ticketFecha;
+                            const ticketPuesto = el.getAttribute('data-ticket-puesto') || el.dataset.ticketPuesto;
+                            const ticketGerencia = el.getAttribute('data-ticket-gerencia') || el.dataset.ticketGerencia;
+                            const ticketDepartamento = el.getAttribute('data-ticket-departamento') || el.dataset.ticketDepartamento;
                             // Leer responsable y tiempo - usar getAttribute con el nombre completo del atributo
                             const ticketResponsable = el.getAttribute('data-ticket-responsable') || '';
                             const ticketTiempoTranscurrido = el.getAttribute('data-ticket-tiempo-transcurrido') || '';
@@ -2742,6 +2782,9 @@
                                     anydesk: ticketAnydesk,
                                     numero: ticketNumero,
                                     correo: ticketCorreo || '',
+                                    puesto: ticketPuesto || '',
+                                    gerencia: ticketGerencia || '',
+                                    departamento: ticketDepartamento || '',
                                     fecha: ticketFecha || '',
                                 estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
                                 responsable: ticketResponsable ? ticketResponsable.trim() : '',
@@ -2941,7 +2984,7 @@
                 });
             },
 
-async cargarDatosTicket(ticketId) {
+            async cargarDatosTicket(ticketId) {
                 try {
                     const response = await fetch(`/tickets/${ticketId}`, {
                         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
@@ -2966,6 +3009,9 @@ async cargarDatosTicket(ticketId) {
                                 this.selected.anydesk = data.ticket.anydesk || '';
                                 this.selected.estatus = data.ticket.Estatus || '';
                                 this.selected.imagen = data.ticket.imagen || '';
+                                this.selected.puesto = data.ticket.puesto || '';
+                                this.selected.gerencia = data.ticket.gerencia || '';
+                                this.selected.departamento = data.ticket.departamento || '';
 
                                 // 3. CORRECCIÓN: Leer la resolución del servidor
                                 this.selected.resolucion = data.ticket.Resolucion || data.ticket.resolucion || '';
@@ -3037,6 +3083,9 @@ async cargarDatosTicket(ticketId) {
                                 this.selected.estatus = data.ticket.Estatus || '';
                                 this.selected.imagen = data.ticket.imagen || '';
                                 this.selected.resolucion = data.ticket.Resolucion || data.ticket.resolucion || '';
+                                this.selected.puesto = data.ticket.puesto || '';
+                                this.selected.gerencia = data.ticket.gerencia || '';
+                                this.selected.departamento = data.ticket.departamento || '';
                             }
                             
                             this.$nextTick(() => { this.actualizarEstadoEditor(); });
@@ -3401,6 +3450,9 @@ async cargarDatosTicket(ticketId) {
                     anydesk: elementoConDatos.getAttribute('data-ticket-anydesk') || elementoConDatos.dataset.ticketAnydesk || '',
                     numero: elementoConDatos.getAttribute('data-ticket-numero') || elementoConDatos.dataset.ticketNumero || '',
                     correo: elementoConDatos.getAttribute('data-ticket-correo') || elementoConDatos.dataset.ticketCorreo || '',
+                    puesto: elementoConDatos.getAttribute('data-ticket-puesto') || elementoConDatos.dataset.ticketPuesto || '',
+                    gerencia: elementoConDatos.getAttribute('data-ticket-gerencia') || elementoConDatos.dataset.ticketGerencia || '',
+                    departamento: elementoConDatos.getAttribute('data-ticket-departamento') || elementoConDatos.dataset.ticketDepartamento || '',
                     fecha: elementoConDatos.getAttribute('data-ticket-fecha') || elementoConDatos.dataset.ticketFecha || new Date().toLocaleString('es-ES'),
                     imagen: elementoConDatos.getAttribute('data-ticket-imagen') || elementoConDatos.dataset.ticketImagen || ''
                 };

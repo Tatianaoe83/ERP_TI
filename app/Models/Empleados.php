@@ -78,7 +78,7 @@ class Empleados extends Model implements Auditable
         'NumTelefono' => 'required|string|max:50',
         'Correo' => 'required|string|max:150',
         'Estado' => 'required|boolean',
-        'tipo_persona' => 'required|in:FISICA,REFERENCIADO,PRESUPUESTO|required',
+        'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO|required',
         'deleted_at' => 'nullable'
     ];
 

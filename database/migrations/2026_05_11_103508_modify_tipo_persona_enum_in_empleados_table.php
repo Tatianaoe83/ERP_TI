@@ -16,7 +16,7 @@ class ModifyTipoPersonaEnumInEmpleadosTable extends Migration
         DB::statement("
             ALTER TABLE empleados 
             CHANGE tipo_persona tipo_persona 
-            ENUM('FISICA','REFERENCIADO','PRESUPUESTO')
+            ENUM('FISICA','REFERENCIADO','EXTRAORDINARIO')
             CHARACTER SET utf8mb4 
             COLLATE utf8mb4_general_ci 
             NULL DEFAULT 'FISICA'

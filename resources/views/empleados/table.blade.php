@@ -75,7 +75,7 @@
                             <option value="">Todos los tipos</option>
                             <option value="FISICA">FISICA</option>
                             <option value="REFERENCIADO">REFERENCIADO</option>
-                            <option value="PRESUPUESTO">PRESUPUESTO</option>
+                            <option value="EXTRAORDINARIO">EXTRAORDINARIO</option>
                         </select>
                     </div>
                 </div>
