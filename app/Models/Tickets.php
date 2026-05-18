@@ -138,6 +138,11 @@ class Tickets extends Model
         'deleted_at' => 'nullable'
     ];
 
+    public function calificacion()
+    {
+        return $this->hasOne(Calificacion::class, 'ticket_id', 'TicketID');
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/

@@ -31,6 +31,10 @@ class CreateSatisfactionSurveysTables extends Migration
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
 
             $table->foreign('ticket_id')->references('TicketID')->on('tickets')->onDelete('cascade');
+
+            $table->unique('ticket_id');
+            $table->index('status');
+            $table->index('expires_at');
         });
     }
 

@@ -11,6 +11,7 @@ use App\Models\Subtipos;
 use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
 use App\Services\TicketNotificationService;
+use App\Services\TicketSatisfactionSurveyService;
 use Illuminate\Http\Request;
 use App\Models\SolicitudActivo;
 use App\Http\Controllers\Traits\MetricasSolicitudesTrait;
@@ -674,6 +675,11 @@ class TicketsController extends Controller
             }
 
             $ticket->save();
+
+            // Enviar encuesta de satisfacción cuando el ticket pasa a Cerrado por primera vez
+            if ($estatusAnterior !== 'Cerrado' && $ticket->Estatus === 'Cerrado') {
+                app(TicketSatisfactionSurveyService::class)->sendSurveyForClosedTicket($ticket->fresh());
+            }
 
             if ($nuevoEstatus === 'En progreso') {
                 $ticket->refresh();
