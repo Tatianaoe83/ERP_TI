@@ -42,7 +42,7 @@ class TicketsController extends Controller
         $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
         $modoRango  = $esRango;
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'chat' => function ($query) {
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
@@ -519,6 +519,26 @@ class TicketsController extends Controller
                 $mesIter->addMonth();
             }
 
+            // Calcular promedios de calificación
+            $ticketsConCalificacion = $cerrados->filter(
+                fn($t) => $t->calificacion && $t->calificacion->status === 'completed'
+            );
+
+            $calificacionPromedio = [
+                'fastness' => 0,
+                'attention' => 0,
+                'resolution' => 0,
+                'general' => 0,
+                'total_respuestas' => $ticketsConCalificacion->count()
+            ];
+
+            if ($ticketsConCalificacion->count() > 0) {
+                $calificacionPromedio['fastness'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->fastness), 1);
+                $calificacionPromedio['attention'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->attention), 1);
+                $calificacionPromedio['resolution'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->resolution), 1);
+                $calificacionPromedio['general'] = round(($calificacionPromedio['fastness'] + $calificacionPromedio['attention'] + $calificacionPromedio['resolution']) / 3, 1);
+            }
+
             $metricas[] = [
                 'empleado_id'                => $empleado->EmpleadoID,
                 'nombre'                     => $empleado->NombreEmpleado,
@@ -533,6 +553,7 @@ class TicketsController extends Controller
                 'tickets_por_mes'            => $ticketsPorMes,
                 'tickets_por_prioridad'      => $ticketsEmpleado->groupBy('Prioridad')->map(fn($g) => $g->count()),
                 'tickets_por_clasificacion'  => $ticketsEmpleado->groupBy('Clasificacion')->map(fn($g) => $g->count()),
+                'calificacion_promedio'      => $calificacionPromedio,
             ];
         }
 
@@ -1330,7 +1351,7 @@ class TicketsController extends Controller
         $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
         $modoRango  = $esRango;
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'chat' => function ($query) {
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 

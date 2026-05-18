@@ -667,6 +667,50 @@
                             </div>
                         </div>
 
+                        @if(isset($empleado['calificacion_promedio']) && $empleado['calificacion_promedio']['total_respuestas'] > 0)
+                        <div class="mb-3 sm:mb-6 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-[#2A2F3A] bg-transparent">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
+                                 <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                     <i class="fas fa-star text-yellow-500"></i>
+                                     Satisfacción del Usuario
+                                 </h5>
+                                 <span class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 sm:px-3 py-1 rounded-md">
+                                     {{ $empleado['calificacion_promedio']['total_respuestas'] }} {{ $empleado['calificacion_promedio']['total_respuestas'] == 1 ? 'encuesta' : 'encuestas' }}
+                                 </span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(99, 102, 241, 0.05);">
+                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Rapidez</p>
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['fastness'], 1) }}</span>
+                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(168, 85, 247, 0.05);">
+                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Atención</p>
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['attention'], 1) }}</span>
+                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(236, 72, 153, 0.05);">
+                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Resolución</p>
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['resolution'], 1) }}</span>
+                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(34, 197, 94, 0.05);">
+                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Prom. General</p>
+                                    <div class="flex items-center justify-center gap-1.5">
+                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['general'], 1) }}</span>
+                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="mb-3 sm:mb-6">
                             @php
                             $fechaInicio = \Carbon\Carbon::parse($metricasProductividad['fecha_inicio_periodo']);
