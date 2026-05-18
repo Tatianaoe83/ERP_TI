@@ -66,6 +66,8 @@
                             <option value="anual">Anual</option>
                         </select>
 
+
+
                         {!! Form::label('GerenciaID', 'Gerencia:', ['class' => 'text-[#101D49] dark:text-white']) !!}
 
                         {!! Form::select(
@@ -135,6 +137,7 @@
                         <option value="anual">Anual</option>
 
                     </select>
+                  
 
                     {!! Form::label('GerenciaID_inv', 'Gerencia:', ['class' => 'text-[#101D49] dark:text-white']) !!}
 
