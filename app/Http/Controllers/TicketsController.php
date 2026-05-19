@@ -521,7 +521,7 @@ class TicketsController extends Controller
 
             // Calcular promedios de calificación
             $ticketsConCalificacion = $cerrados->filter(
-                fn($t) => $t->calificacion && $t->calificacion->status === 'completed'
+                fn($t) => $t->calificacion && in_array($t->calificacion->status, ['completed', 'partially_completed'])
             );
 
             $calificacionPromedio = [
