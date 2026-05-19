@@ -250,6 +250,64 @@
                 </div>
             </div>
 
+            {{-- Tarjeta de Calificación Promedio --}}
+            @if(isset($metricasProductividad['calificacion_promedio']) && $metricasProductividad['calificacion_promedio']['total_respuestas'] > 0)
+            <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold dark:text-white flex items-center gap-2">
+                            <i class="fas fa-star text-yellow-500"></i>
+                            Calificación de Satisfacción
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Basado en {{ $metricasProductividad['calificacion_promedio']['total_respuestas'] }} encuesta(s) completada(s)
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    {{-- Rapidez --}}
+                    <div class="p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-700 dark:text-blue-400">Rapidez</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                {{ number_format($metricasProductividad['calificacion_promedio']['fastness'], 1) }}
+                            </span>
+                            <span class="text-sm text-blue-500 dark:text-blue-400">/5</span>
+                        </div>
+                    </div>
+
+                    {{-- Atención --}}
+                    <div class="p-4 rounded-lg bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-green-700 dark:text-green-400">Atención</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-bold text-green-600 dark:text-green-400">
+                                {{ number_format($metricasProductividad['calificacion_promedio']['attention'], 1) }}
+                            </span>
+                            <span class="text-sm text-green-500 dark:text-green-400">/5</span>
+                        </div>
+                    </div>
+
+                    {{-- Resolución --}}
+                    <div class="p-4 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-purple-700 dark:text-purple-400">Resolución</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                                {{ number_format($metricasProductividad['calificacion_promedio']['resolution'], 1) }}
+                            </span>
+                            <span class="text-sm text-purple-500 dark:text-purple-400">/5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <hr class="my-8 border-gray-200 dark:border-[#2A2F3A]">
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

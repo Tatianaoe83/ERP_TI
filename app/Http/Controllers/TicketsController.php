@@ -137,6 +137,23 @@ class TicketsController extends Controller
             );
         }
 
+        $calificacionTicketsGeneral = $ticketsCerradosMes->filter(
+            fn($t) => $t->calificacion && in_array($t->calificacion->status, ['completed', 'partially_completed'])
+        );
+
+        $calificacionPromedio = [
+            'fastness' => 0,
+            'attention' => 0,
+            'resolution' => 0,
+            'total_respuestas' => $calificacionTicketsGeneral->count()
+        ];
+
+        if ($calificacionTicketsGeneral->count() > 0) {
+            $calificacionPromedio['fastness'] = round($calificacionTicketsGeneral->avg(fn($t) => $t->calificacion->fastness), 1);
+            $calificacionPromedio['attention'] = round($calificacionTicketsGeneral->avg(fn($t) => $t->calificacion->attention), 1);
+            $calificacionPromedio['resolution'] = round($calificacionTicketsGeneral->avg(fn($t) => $t->calificacion->resolution), 1);
+            }
+
         $ticketsPorResponsable = $ticketsDelMes->filter(fn($t) => $t->ResponsableTI !== null)
             ->groupBy('ResponsableTI')
             ->map(function ($grupo) {
@@ -443,6 +460,7 @@ class TicketsController extends Controller
             'totales_por_responsable'            => $totalesPorResponsable,
             'fecha_inicio_periodo'               => $fechaInicioMes->format('Y-m-d'),
             'fecha_fin_periodo'                  => $fechaFinMes->format('Y-m-d'),
+            'calificacion_promedio'              => $calificacionPromedio,
         ];
     }
 
@@ -533,10 +551,10 @@ class TicketsController extends Controller
             ];
 
             if ($ticketsConCalificacion->count() > 0) {
-                $calificacionPromedio['fastness'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->fastness), 1);
-                $calificacionPromedio['attention'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->attention), 1);
-                $calificacionPromedio['resolution'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->resolution), 1);
-                $calificacionPromedio['general'] = round(($calificacionPromedio['fastness'] + $calificacionPromedio['attention'] + $calificacionPromedio['resolution']) / 3, 1);
+                $calificacionPromedio['fastness'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->fastness), 2);
+                $calificacionPromedio['attention'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->attention), 2);
+                $calificacionPromedio['resolution'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->resolution), 2);
+                $calificacionPromedio['general'] = round(($calificacionPromedio['fastness'] + $calificacionPromedio['attention'] + $calificacionPromedio['resolution']) / 3, 2);
             }
 
             $metricas[] = [
