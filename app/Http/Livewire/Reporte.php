@@ -108,6 +108,12 @@ class Reporte extends Component
         }
 
         $this->relacionActual = '';
+        $this->aplicarOrdenPorDefecto();
+    }
+
+    public function updatedColumnasSeleccionadas()
+    {
+        $this->aplicarOrdenPorDefecto();
     }
 
     public function updatedFiltros($value, $key)
@@ -300,5 +306,63 @@ class Reporte extends Component
         $this->relacionesSeleccionadas = [];
         $this->relacionActual          = '';
         $this->columnasRelacionActual  = [];
+    }
+
+    private function aplicarOrdenPorDefecto(): void
+    {
+        if (empty($this->columnasSeleccionadas)) {
+            $this->ordenColumna = '';
+            return;
+        }
+
+        if ($this->ordenColumna && in_array($this->ordenColumna, $this->columnasSeleccionadas, true)) {
+            return;
+        }
+
+        $this->ordenColumna = $this->resolverColumnaOrdenPorDefecto($this->columnasSeleccionadas);
+        $this->ordenDireccion = 'asc';
+    }
+
+    private function resolverColumnaOrdenPorDefecto(array $columnas): string
+    {
+        $preferidas = [
+            'NombreEmpleado',
+            'Nombre',
+            'NombreObra',
+            'NombrePuesto',
+            'NombreGerencia',
+            'NombreDepartamento',
+            'Correo',
+            'Folio',
+            'NumSerie',
+            'Marca',
+            'Modelo',
+        ];
+
+        foreach ($preferidas as $campo) {
+            foreach ($columnas as $columna) {
+                if (Str::afterLast($columna, '.') === $campo) {
+                    return $columna;
+                }
+            }
+        }
+
+        foreach ($columnas as $columna) {
+            $nombreCampo = Str::afterLast($columna, '.');
+            if (stripos($nombreCampo, 'nombre') !== false) {
+                return $columna;
+            }
+        }
+
+        if ($this->modelo) {
+            $prefijo = $this->modelo . '.';
+            foreach ($columnas as $columna) {
+                if (Str::startsWith($columna, $prefijo)) {
+                    return $columna;
+                }
+            }
+        }
+
+        return $columnas[0];
     }
 }
