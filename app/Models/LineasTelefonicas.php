@@ -53,7 +53,8 @@ class LineasTelefonicas extends Model implements Auditable
         'CostoFianza',
         'Activo',
         'Disponible',
-        'MontoRenovacionFianza'
+        'MontoRenovacionFianza',
+        'FechaRenovacion'
     ];
 
     /**
@@ -73,7 +74,8 @@ class LineasTelefonicas extends Model implements Auditable
         'CostoFianza' => 'integer',
         'Activo' => 'boolean',
         'Disponible' => 'boolean',
-        'MontoRenovacionFianza' => 'integer'
+         'MontoRenovacionFianza' => 'integer',
+         'FechaRenovacion' =>'date',  
     ];
 
     /**
@@ -92,7 +94,8 @@ class LineasTelefonicas extends Model implements Auditable
         'CostoFianza' => 'required|integer|min:0',
         'Activo' => 'required|boolean',
         'Disponible' => 'required|boolean',
-        'MontoRenovacionFianza' => 'nullable|integer|min:0'
+        'MontoRenovacionFianza' => 'nullable|integer|min:0',
+        'FechaRenovacion' => 'nullable|date'
     ];
 
     /**
@@ -107,4 +110,7 @@ class LineasTelefonicas extends Model implements Auditable
     {
         return $this->belongsTo(\App\Models\Planes::class, 'PlanID');
     }
+
+
 }
+

@@ -16,6 +16,19 @@
     <p>{{ number_format($insumos->Importe, 2) }}%</p>
 </div>
 
+<!-- Fecha de renovacion -->
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
+    {!! Form::label('FechaRenovacion', 'Fecha de Renovación:') !!}
+    <p>
+        {{
+            !empty($insumos->FechaRenovacion) &&
+            !in_array($insumos->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])
+                ? \Carbon\Carbon::parse($insumos->FechaRenovacion)->format('d/m/Y')
+                : 'Sin asignar'
+        }}
+    </p>
+</div>
+
 <!-- Costos Sin Inflación -->
 <div class="col-sm-12">
     <div class="card mt-3">

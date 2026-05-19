@@ -55,6 +55,18 @@ class InventarioController extends AppBaseController
     {
         $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+             // LÓGICA DEL TIPO DE PERSONA
+        ->when($request->filled('tipo_persona'), function ($q) use ($request) {
+
+            // Si selecciona algo, filtra exactamente por eso
+            $q->where('empleados.tipo_persona', $request->tipo_persona);
+
+        }, function ($q) {
+
+            // Si NO selecciona nada:
+            // mostrar todos menos PRESUPUESTO
+            $q->where('empleados.tipo_persona', '!=', 'EXTRAORDINARIO');
+        })
             ->select([
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
@@ -345,6 +357,12 @@ class InventarioController extends AppBaseController
         $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
         $data['InsumoID'] = $idinsumo[0]->ID;
 
+        // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
+        $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+        if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
+            $data['FechaRenovacion'] = null;
+        }
+
         $inventarioinsumo->update($data);
 
         return response()->json([
@@ -360,6 +378,21 @@ class InventarioController extends AppBaseController
         $data['EmpleadoID'] = $id;
         $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
         $data['InsumoID'] = $idinsumo[0]->ID;
+        
+        // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
+        $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+        if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
+            $data['FechaRenovacion'] = null;
+        }
+
+        // Si no viene fecha en el request, intentar obtenerla del catálogo
+        if (!$request->filled('FechaRenovacion') || $data['FechaRenovacion'] === null) {
+            $insumoMaster = Insumos::find($data['InsumoID']);
+            if ($insumoMaster && !empty($insumoMaster->FechaRenovacion) && !in_array($insumoMaster->FechaRenovacion, $invalidValues)) {
+                $data['FechaRenovacion'] = $insumoMaster->FechaRenovacion;
+            }
+        }
+
         $inventarioinsumo = InventarioInsumo::create($data);
 
         return response()->json([
@@ -393,33 +426,45 @@ class InventarioController extends AppBaseController
 
     public function editarlinea($id, Request $request)
     {
+        try {
+            $inventariotelf = InventarioLineas::where('InventarioID', $id)->first();
 
+            if (!$inventariotelf) {
+                return response()->json(['success' => false, 'message' => 'Registro de telefonía no encontrado.'], 404);
+            }
 
-        $inventariotelf = InventarioLineas::where('InventarioID', $id)->first();
+            $data = $request->all();
 
-        if (!$inventariotelf) {
-            return response()->json(['error' => 'Equipo no encontrado'], 404);
+            // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
+            $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+            if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
+                $data['FechaRenovacion'] = null;
+            }
+
+            $inventariotelf->update($data);
+
+            return response()->json([
+                'telefono' => $inventariotelf,
+                'success' => true
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Error al editar línea asignada: " . $e->getMessage());
+            return response()->json([
+                'success' => false, 
+                'message' => 'Ocurrió un error al guardar los datos: ' . $e->getMessage()
+            ], 500);
         }
-
-        $data = $request->all();
-
-
-        $inventariotelf->update($data);
-
-        return response()->json([
-            'telefono' => $inventariotelf,
-            'success' => true
-        ]);
     }
 
     public function crearlinea($id, $telf, Request $request)
     {
 
 
-        $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.LineaID', 'planes.NombrePlan AS PlanTel')
-            ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
-            ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
-            ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
+        $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.FechaRenovacion', 'lineastelefonicas.LineaID', 'planes.NombrePlan AS PlanTel')
+                ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
+                ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
+                ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
             ->where('lineastelefonicas.LineaID', $telf)->get();
 
 
@@ -430,14 +475,71 @@ class InventarioController extends AppBaseController
 
         $data = array_merge($data, $lineaData->toArray());
 
-        $empleado = Empleados::select('obras.ObraID', 'obras.NombreObra AS NombreObra')
-            ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+            $empleado = Empleados::select('obras.ObraID', 'obras.NombreObra AS NombreObra')
+                ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->where('EmpleadoID', $id)->get();
 
         $empleadoData = $empleado->first();
 
         $data = array_merge($data, $empleadoData->toArray());
+        $fechaRenovRaw = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
+        
+        if ($fechaRenovRaw == 'Sin asignar' || $fechaRenovRaw == 'Sin asigna' || empty($fechaRenovRaw)) {
+            $data['FechaRenovacion'] = null;
+        } else {
+            // Intentamos convertir DD/MM/YYYY a YYYY-MM-DD para SQL
+            try {
+                $data['FechaRenovacion'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaRenovRaw))->format('Y-m-d');
+            } catch (\Exception $e) {
+                $data['FechaRenovacion'] = null; 
+            }
+        }
 
+        // 2. Limpieza y Formateo de Fecha de Fianza (Evita el error de fianza vacía)
+        $fechaFianzaRaw = $request->input('FechaFianza', $lineaData->FechaFianza);
+        
+        if ($fechaFianzaRaw == 'Sin asignar' || $fechaFianzaRaw == 'Sin asigna' || empty($fechaFianzaRaw)) {
+            $data['FechaFianza'] = null;
+        } else {
+            try {
+                $data['FechaFianza'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaFianzaRaw))->format('Y-m-d');
+            } catch (\Exception $e) {
+                $data['FechaFianza'] = null;
+            }
+        }
+            
+        // Asegurar que los campos de fecha se transfieran correctamente (Prioridad al modal si tiene datos)
+        if ($lineaData) {
+            // Obtener valores crudos
+            $rawFechaFianza = $request->input('FechaFianza', $lineaData->FechaFianza);
+            $rawFechaRenov = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
+            
+            // Limpiar: si es un string no-fecha, convertir a null
+            $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
+            
+            if (in_array($rawFechaFianza, $invalidValues) || empty($rawFechaFianza)) {
+                $data['FechaFianza'] = null;
+            } else {
+                try {
+                    $data['FechaFianza'] = \Carbon\Carbon::parse(str_replace('/', '-', $rawFechaFianza))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $data['FechaFianza'] = null;
+                }
+            }
+            
+            if (in_array($rawFechaRenov, $invalidValues) || empty($rawFechaRenov)) {
+                $data['FechaRenovacion'] = null;
+            } else {
+                try {
+                    $data['FechaRenovacion'] = \Carbon\Carbon::parse(str_replace('/', '-', $rawFechaRenov))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $data['FechaRenovacion'] = null;
+                }
+            }
+            
+            $data['MontoRenovacionFianza'] = $request->input('MontoRenovacionFianza', $lineaData->MontoRenovacionFianza);
+            $data['CostoFianza'] = $lineaData->CostoFianza;
+        }
 
         $inventariotelf = InventarioLineas::create($data);
 
@@ -447,10 +549,10 @@ class InventarioController extends AppBaseController
 
         $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first();
 
-        return response()->json([
-            'telefono' => $inventariotelf,
-            'success' => true
-        ]);
+            return response()->json([
+                'telefono' => $inventariotelf,
+                'success' => true
+            ]);
     }
 
     public function destroylinea($id)

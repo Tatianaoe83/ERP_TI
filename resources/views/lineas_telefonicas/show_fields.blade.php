@@ -37,7 +37,14 @@
 <!-- Fechafianza Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('FechaFianza', 'Fecha fianza:') !!}
-    <p>{{ $lineasTelefonicas->FechaFianza }}</p>
+    <p>
+        {{
+            !empty($lineasTelefonicas->FechaFianza) &&
+            !in_array($lineasTelefonicas->FechaFianza, ['Sin asignar', 'Sin asigna', '0000-00-00'])
+                ? \Carbon\Carbon::parse($lineasTelefonicas->FechaFianza)->format('d/m/Y')
+                : 'Sin asignar'
+        }}
+    </p>
 </div>
 
 <!-- Costofianza Field -->
@@ -65,3 +72,18 @@
     {!! Form::label('MontoRenovacionFianza', 'Monto renovacion fianza:') !!}
     <p>{{ $lineasTelefonicas->MontoRenovacionFianza }}</p>
 </div>
+
+<!-- Fecha De Renovacion -->
+<div class="col-sm-6 text-[#101D49] dark:text-white mt-2">
+    {!! Form::label('FechaRenovacion', 'Fecha de renovacion:') !!} 
+    <p>
+        {{
+            !empty($lineasTelefonicas->FechaRenovacion) &&
+            !in_array($lineasTelefonicas->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])
+                ? \Carbon\Carbon::parse($lineasTelefonicas->FechaRenovacion)->format('d/m/Y')
+                : 'Sin asignar'
+        }}
+    </p>
+</div>
+
+

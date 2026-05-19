@@ -567,6 +567,9 @@ class TicketsController extends Controller
                     'correo'         => $ticket->empleado ? $ticket->empleado->Correo : '',
                     'numero'         => $ticket->Numero,
                     'anydesk'        => $ticket->CodeAnyDesk,
+                    'puesto'         => $ticket->empleado->puestos ? $ticket->empleado->puestos->NombrePuesto   : 'sin puesto',
+                    'gerencia'       => $ticket->empleado->puestos ? $ticket->empleado->puestos->departamentos->gerencia->NombreGerencia : 'sin gerencia',
+                    'departamento'   => $ticket->empleado->puestos ? $ticket->empleado->puestos->departamentos->NombreDepartamento : 'sin departamento',
                 ],
             ]);
         } catch (\Exception $e) {

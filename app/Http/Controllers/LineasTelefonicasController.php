@@ -58,6 +58,7 @@ class LineasTelefonicasController extends AppBaseController
                     'lineastelefonicas.Disponible',
                     'lineastelefonicas.Activo',
                     'lineastelefonicas.MontoRenovacionFianza',
+                    'lineastelefonicas.FechaRenovacion',
                     \DB::raw("(SELECT e.tipo_persona FROM inventariolineas il INNER JOIN empleados e ON e.EmpleadoID = il.EmpleadoID WHERE il.LineaID = lineastelefonicas.LineaID ORDER BY il.FechaAsignacion DESC LIMIT 1) as tipo_asignacion"),
                 ]);
 
@@ -80,6 +81,18 @@ class LineasTelefonicasController extends AppBaseController
                     } else {
                         return '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
                     }
+                })
+                ->editColumn('FechaFianza', function ($row) {
+                    if (empty($row->FechaFianza) || in_array($row->FechaFianza, ['Sin asignar', 'Sin asigna', '0000-00-00'])) {
+                        return 'Sin asignar';
+                    }
+                    return \Carbon\Carbon::parse($row->FechaFianza)->format('d/m/Y');
+                })
+                ->editColumn('FechaRenovacion', function ($row) {
+                    if (empty($row->FechaRenovacion) || in_array($row->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) {
+                        return 'Sin asignar';
+                    }
+                    return \Carbon\Carbon::parse($row->FechaRenovacion)->format('d/m/Y');
                 })
                 ->rawColumns(['action', 'estado_disponibilidad', 'estado_activo'])
                 ->make(true);
@@ -124,6 +137,7 @@ class LineasTelefonicasController extends AppBaseController
                     'inventariolineas.Estado',
                     'inventariolineas.Comentarios',
                     'inventariolineas.MontoRenovacionFianza',
+                    'inventariolineas.FechaRenovacion',
                     'empleados.NombreEmpleado as empleado',
                     'obras.NombreObra as obra'
                 ])
@@ -145,6 +159,7 @@ class LineasTelefonicasController extends AppBaseController
                         'estado' => $record->Estado,
                         'comentarios' => $record->Comentarios,
                         'monto_renovacion_fianza' => $record->MontoRenovacionFianza,
+                        'fecha_renovacion' => $record->FechaRenovacion ? \Carbon\Carbon::parse($record->FechaRenovacion)->format('d/m/Y') : 'Sin asignar',
                         'empleado' => $record->empleado
                     ];
                 });
@@ -262,7 +277,7 @@ class LineasTelefonicasController extends AppBaseController
         $datosOriginales = $lineasTelefonicas->toArray();
 
         // Verificar si hay cambios en los campos que se sincronizan con inventario
-        $camposSincronizacion = ['PlanID', 'CuentaPadre', 'CuentaHija', 'TipoLinea', 'ObraID', 'FechaFianza', 'CostoFianza', 'MontoRenovacionFianza','NumTelefonico','Activo'];
+        $camposSincronizacion = ['PlanID', 'CuentaPadre', 'CuentaHija', 'TipoLinea', 'ObraID', 'FechaFianza', 'CostoFianza', 'MontoRenovacionFianza','NumTelefonico','Activo','FechaRenovacion'];
         $hayCambios = false;
         $camposModificados = [];
 
@@ -309,8 +324,7 @@ class LineasTelefonicasController extends AppBaseController
         if ($cambioEnPlan) {
             $hayCambios = true;
         }
-        
-        // Actualizar la línea telefónica
+\Log::info($request->all());        // Actualizar la línea telefónica
         $lineasTelefonicas = $this->lineasTelefonicasRepository->update($request->all(), $id);
 
         // Obtener los datos actualizados
@@ -392,6 +406,7 @@ class LineasTelefonicasController extends AppBaseController
                     'FechaFianza' => $lineaActualizada->FechaFianza,
                     'CostoFianza' => $lineaActualizada->CostoFianza,
                     'MontoRenovacionFianza' => $lineaActualizada->MontoRenovacionFianza,
+                    'FechaRenovacion' => $lineaActualizada->FechaRenovacion,
                     
                 ]);
                 $registrosActualizados++;

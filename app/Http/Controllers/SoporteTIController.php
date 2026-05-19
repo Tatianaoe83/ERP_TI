@@ -192,6 +192,7 @@ public function crearTickets(Request $request)
                  if (!empty($names)) $ticketData['imagen'] = json_encode($names);
  
                  Tickets::create($ticketData);
+                 
                  return redirect()->back()->with(['success' => 'Ticket guardado correctamente', 'tipo' => 'Ticket']);
              } catch (\Exception $e) {
                  return redirect()->back()->with('error', 'Error al guardar ticket: ' . $e->getMessage());
