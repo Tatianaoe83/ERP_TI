@@ -29,7 +29,7 @@ class TicketSatisfactionSurveyService
 
         $ticket->loadMissing('empleado');
 
-        if (! $ticket->empleado) {
+        if (!$ticket->empleado) {
             return null;
         }
 
@@ -89,10 +89,10 @@ class TicketSatisfactionSurveyService
 
         return DB::transaction(function () use ($ticket) {
             return Calificacion::create([
-                'ticket_id'  => $ticket->TicketID,
-                'status'     => Calificacion::STATUS_PENDING,
-                'sent_at'    => null,
-                'expires_at' => now()->addDays(7),
+                'ticket_id' => $ticket->TicketID,
+                'status' => Calificacion::STATUS_PENDING,
+                'sent_at' => null,
+                'expires_at' => now()->addDays(1),
             ]);
         });
     }
@@ -105,7 +105,7 @@ class TicketSatisfactionSurveyService
     {
         $resolution = $ticket->Resolucion ?? null;
 
-        if (! blank($resolution)) {
+        if (!blank($resolution)) {
             return trim($resolution);
         }
 
@@ -128,7 +128,7 @@ class TicketSatisfactionSurveyService
                     ->orWhereNull('attention');
             })
             ->update([
-                'status'     => Calificacion::STATUS_NOT_ANSWERED,
+                'status' => Calificacion::STATUS_NOT_ANSWERED,
                 'updated_at' => now(),
             ]);
     }

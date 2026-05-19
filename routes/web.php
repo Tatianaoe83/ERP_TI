@@ -179,6 +179,10 @@ Route::get('/SoporteTI', [SoporteTIController::class, 'index']);
 
 // Encuestas de satisfacción de tickets (sin auth, protegidas por firma temporal)
 Route::get(
+    '/tickets/encuesta/{survey}',
+    [TicketSatisfactionAnswerController::class, 'show']
+)->name('tickets.satisfaction.survey');
+Route::get(
     '/tickets/calificacion/{survey}/{field}/{rating}',
     [TicketSatisfactionAnswerController::class, 'store']
 )->name('tickets.satisfaction.answer');

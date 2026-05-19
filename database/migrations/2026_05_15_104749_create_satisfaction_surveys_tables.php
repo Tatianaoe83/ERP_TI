@@ -22,7 +22,7 @@ class CreateSatisfactionSurveysTables extends Migration
             $table->unsignedTinyInteger('resolution')->nullable();
             $table->unsignedTinyInteger('attention')->nullable();
 
-            $table->enum('status', ['pending', 'completed', 'not_answered'])->default('pending');
+            $table->enum('status', ['pending', 'completed', 'not_answered', 'partially_completed'])->default('pending');
 
             $table->timestamp('sent_at')->nullable();
             $table->timestamp('answered_at')->nullable();

@@ -17,6 +17,7 @@ class Calificacion extends Model
 
     public const STATUS_PENDING = 'pending';
     public const STATUS_COMPLETED = 'completed';
+    public const STATUS_PARTIALLY_COMPLETED = 'partially_completed';
     public const STATUS_NOT_ANSWERED = 'not_answered';
 
     public const FIELD_FASTNESS = 'fastness';
@@ -97,14 +98,26 @@ class Calificacion extends Model
         return $this->status === self::STATUS_PENDING;
     }
 
-    public function markAsCompletedIfReady(): void
+    public function isPartiallyCompleted(): bool
     {
-        if (! $this->isCompleted()) {
-            return;
+        return $this->status === self::STATUS_PARTIALLY_COMPLETED;
+    }
+
+    public function updateProgressStatus(): void
+    {
+        $answeredCount = collect([$this->fastness, $this->resolution, $this->attention])
+            ->filter(fn($v) => $v !== null)
+            ->count();
+
+        if ($answeredCount === 3) {
+            $this->status = self::STATUS_COMPLETED;
+            if (empty($this->answered_at)) {
+                $this->answered_at = now();
+            }
+        } elseif ($answeredCount > 0) {
+            $this->status = self::STATUS_PARTIALLY_COMPLETED;
         }
 
-        $this->status = self::STATUS_COMPLETED;
-        $this->answered_at = now();
         $this->save();
     }
 
