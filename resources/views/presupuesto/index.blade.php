@@ -2,35 +2,93 @@
 
 @section('content')
 
-<div x-data="{
-    tab: 1,
-    cambiarTab(numeroTab) {
-        this.tab = numeroTab;
+<style>
+[x-cloak] {
+    display: none !important;
+}
+
+.presupuesto-container {
+    width: 100%;
+    min-height: 100vh;
+}
+
+.tab-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    width: 100%;
+    animation: fadeTab .65s ease;
+}
+
+.dark .tab-card {
+    background: #09152F;
+}
+
+.dark .form-control {
+    background: #374151 !important;
+    border-color: #4B5563 !important;
+    color: white !important;
+}
+
+.dark .form-control::placeholder {
+    color: #D1D5DB !important;
+}
+
+@keyframes fadeTab {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
     }
-}" class="px-2 w-full max-w-full overflow-x-hidden">
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<div
+    x-data="{
+        tab: 1,
+        cambiarTab(numeroTab) {
+            this.tab = numeroTab;
+        }
+    }"
+    class="presupuesto-container px-4 py-4"
+>
 
     <!-- Tabs -->
-    <div class="w-full mb-2">
+    <div class="w-full mb-6">
+
         <div
-            class="flex items-center border-b border-gray-200 w-full"
+            class="flex items-center border-b border-gray-200 dark:border-gray-700 w-full"
             role="tablist">
 
+            <!-- TAB BUTTON 1 -->
             <button
                 @click="cambiarTab(1)"
-                :class="tab === 1 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                class="flex-1 relative px-4 py-3 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent">
+                :class="tab === 1
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'"
+                class="flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent">
 
-                <i :class="tab === 1 ? 'fas fa-ticket-alt text-xs text-blue-600' : 'fas fa-ticket-alt text-xs text-gray-500'"></i>
+                <i class="fas fa-file-invoice"></i>
+
                 <span>Presupuestos</span>
             </button>
 
+            <!-- TAB BUTTON 2 -->
             @can('tickets.ver-productividad')
             <button
                 @click="cambiarTab(2)"
-                :class="tab === 2 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                class="flex-1 relative px-4 py-3 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent">
+                :class="tab === 2
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'"
+                class="flex-1 px-4 py-3 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent">
 
-                <i :class="tab === 2 ? 'fas fa-chart-line text-xs text-blue-600' : 'fas fa-chart-line text-xs text-gray-500'"></i>
+                <i class="fas fa-boxes"></i>
+
                 <span>Inventarios</span>
             </button>
             @endcan
@@ -38,151 +96,236 @@
         </div>
     </div>
 
-    <!-- TAB 1 -->
-    <div x-show="tab === 1" x-transition>
+    <!-- CONTENIDO -->
+    <div class="w-full">
 
-        <div class="row">
+        <!-- TAB PRESUPUESTOS -->
+        <template x-if="tab === 1">
 
-            <div class="col-12 col-md-12 col-lg-12">
+           <div
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="w-full"
+    >
 
-                <h4 class="text-[#101D49] dark:text-white mt-4">
-                    Generar reportes de presupuestos
-                </h4>
+                <div class="tab-card">
 
-                <form enctype="multipart/form-data"
-                    action="{{ route('presupuesto.descargar') }}"
-                    method="POST"
-                    target="_blank"
-                    id="presupuestoForm">
+                    <h4 class="text-[#101D49] dark:text-white text-2xl font-semibold mb-6">
+                        Generar reportes de presupuestos
+                    </h4>
 
-                    {{ csrf_field() }}
+                    <form
+                        enctype="multipart/form-data"
+                        action="{{ route('presupuesto.descargar') }}"
+                        method="POST"
+                        target="_blank"
+                        id="presupuestoForm"
+                    >
 
-                    <div class="flex flex-col gap-2">
+                        @csrf
 
-                        {!! Form::label('tipo', 'Tipo:', ['class' => 'text-[#101D49] dark:text-white']) !!}
+                        <div class="flex flex-col gap-5">
 
-                        <select name="tipo" id="semestre" class="form-control mb-4" required>
-                            <option value="mens">Mensual</option>
-                            <option value="anual">Anual</option>
-                        </select>
+                            <!-- Tipo -->
+                            <div>
 
+                                <label class="text-[#101D49] dark:text-white block mb-2 font-medium">
+                                    Tipo
+                                </label>
 
+                                <select
+                                    name="tipo"
+                                    id="semestre"
+                                    class="form-control"
+                                    required
+                                >
+                                    <option value="mens">Mensual</option>
+                                    <option value="anual">Anual</option>
+                                </select>
 
-                        {!! Form::label('GerenciaID', 'Gerencia:', ['class' => 'text-[#101D49] dark:text-white']) !!}
+                            </div>
 
-                        {!! Form::select(
-                            'GerenciaID',
-                            $genusuarios->pluck('NombreGerencia','GerenciaID'),
-                            null,
-                            [
-                                'placeholder' => 'Seleccionar',
-                                'class'=>'jz form-control',
-                                'required',
-                                'style' => 'width: 100%',
-                            ]
-                        ) !!}
+                            <!-- Gerencia -->
+                            <div>
 
-                        <div class="mt-4">
-                            <button type="button" class="btn btn-success" id="btn-validar-pdf">
-                                Generar PDF
-                            </button>
+                                <label class="text-[#101D49] dark:text-white block mb-2 font-medium">
+                                    Gerencia
+                                </label>
 
-                            <button type="button" class="btn btn-primary" id="btn-validar-excel">
-                                Generar Excel
-                            </button>
+                                {!! Form::select(
+                                    'GerenciaID',
+                                    $genusuarios->pluck('NombreGerencia','GerenciaID'),
+                                    null,
+                                    [
+                                        'placeholder' => 'Seleccionar',
+                                        'class'=>'jz form-control',
+                                        'id' => 'GerenciaID',
+                                        'required',
+                                        'style' => 'width:100%'
+                                    ]
+                                ) !!}
 
-                            <input type="hidden" name="submitbutton" id="submitbutton">
+                            </div>
+
+                            <!-- Buttons -->
+                            <div class="flex flex-wrap gap-3 pt-2">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-success"
+                                    id="btn-validar-pdf"
+                                >
+                                    Generar PDF
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-primary"
+                                    id="btn-validar-excel"
+                                >
+                                    Generar Excel
+                                </button>
+
+                                <input
+                                    type="hidden"
+                                    name="submitbutton"
+                                    id="submitbutton"
+                                >
+
+                            </div>
+
                         </div>
 
-                    </div>
+                    </form>
 
-                </form>
+                </div>
 
             </div>
 
-        </div>
+        </template>
 
-    </div>
+        <!-- TAB INVENTARIOS -->
+        @can('tickets.ver-productividad')
 
-   <!-- TAB 2 -->
-@can('tickets.ver-productividad')
-<div x-show="tab === 2" x-transition>
+        <template x-if="tab === 2">
 
-    <div class="row">
+            <div
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="w-full"
+    >
 
-        <div class="col-12 col-md-12 col-lg-12">
+                <div class="tab-card">
 
-            <h4 class="text-[#101D49] dark:text-white mt-4">
-                Generar reportes de inventarios
-            </h4>
+                    <h4 class="text-[#101D49] dark:text-white text-2xl font-semibold mb-6">
+                        Generar reportes de inventarios
+                    </h4>
 
-            <form enctype="multipart/form-data"
-                action="{{ route('presupuesto.descargar') }}"
-                method="POST"
-                target="_blank"
-                id="inventarioForm">
+                    <form
+                        enctype="multipart/form-data"
+                        action="{{ route('presupuesto.descargar') }}"
+                        method="POST"
+                        target="_blank"
+                        id="inventarioForm"
+                    >
 
-                {{ csrf_field() }}
+                        @csrf
 
-                <div class="flex flex-col gap-2">
+                        <div class="flex flex-col gap-5">
 
-                    {!! Form::label('tipo_inv', 'Tipo:', ['class' => 'text-[#101D49] dark:text-white']) !!}
+                            <!-- Tipo -->
+                            <div>
 
-                    <select name="tipo"
-                        id="semestre_inventario"
-                        class="form-control mb-4"
-                        required>
+                                <label class="text-[#101D49] dark:text-white block mb-2 font-medium">
+                                    Tipo
+                                </label>
 
-                        <option value="mens">Mensual</option>
-                        <option value="anual">Anual</option>
+                                <select
+                                    name="tipo"
+                                    id="semestre_inventario"
+                                    class="form-control"
+                                    required
+                                >
+                                    <option value="mens">Mensual</option>
+                                    <option value="anual">Anual</option>
+                                </select>
 
-                    </select>
-                  
+                            </div>
 
-                    {!! Form::label('GerenciaID_inv', 'Gerencia:', ['class' => 'text-[#101D49] dark:text-white']) !!}
+                            <!-- Gerencia -->
+                            <div>
 
-                    {!! Form::select(
-                        'GerenciaID',
-                        $genusuarios->pluck('NombreGerencia','GerenciaID'),
-                        null,
-                        [
-                            'placeholder' => 'Seleccionar',
-                            'class'=>'jz form-control',
-                            'id' => 'GerenciaID_inventario',
-                            'required',
-                            'style' => 'width: 100%',
-                        ]
-                    ) !!}
+                                <label class="text-[#101D49] dark:text-white block mb-2 font-medium">
+                                    Gerencia
+                                </label>
 
-                    <div class="mt-4">
+                                {!! Form::select(
+                                    'GerenciaID',
+                                    $genusuarios->pluck('NombreGerencia','GerenciaID'),
+                                    null,
+                                    [
+                                        'placeholder' => 'Seleccionar',
+                                        'class'=>'jz form-control',
+                                        'id' => 'GerenciaID_inventario',
+                                        'required',
+                                        'style' => 'width:100%'
+                                    ]
+                                ) !!}
 
-                        <button type="button"
-                            class="btn btn-success"
-                            id="btn-pdf-inventario">
-                            Generar PDF
-                        </button>
+                            </div>
 
-                        <button type="button"
-                            class="btn btn-primary"
-                            id="btn-excel-inventario">
-                            Generar Excel
-                        </button>
+                            <!-- Buttons -->
+                            <div class="flex flex-wrap gap-3 pt-2">
 
-                        <input type="hidden"
-                            name="submitbutton"
-                            id="submitbutton_inventario">
-                    </div>
+                                <button
+                                    type="button"
+                                    class="btn btn-success"
+                                    id="btn-pdf-inventario"
+                                >
+                                    Generar PDF
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-primary"
+                                    id="btn-excel-inventario"
+                                >
+                                    Generar Excel
+                                </button>
+
+                                <input
+                                    type="hidden"
+                                    name="submitbutton"
+                                    id="submitbutton_inventario"
+                                >
+
+                            </div>
+
+                        </div>
+
+                    </form>
+
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endcan
 
+            </div>
+
+        </template>
+
+        @endcan
+
+    </div>
+
+</div>
 
 @include('presupuesto.modal')
-
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
