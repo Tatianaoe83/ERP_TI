@@ -1,3 +1,7 @@
+@php
+    $empleadoActivo = $empleadoActivo ?? ($inventario->Estado == 1 || $inventario->Estado === true);
+@endphp
+
 <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item">
         <a class="nav-link active dark:text-white" data-toggle="tab" href="#empleados">Empleado</a>
@@ -12,6 +16,12 @@
         <a class="nav-link" data-toggle="tab" href="#linea">Línea de telefonía</a>
     </li>
 </ul>
+
+@if(!$empleadoActivo)
+<div class="alert alert-warning mt-3 mb-0">
+    Este empleado está <strong>inactivo</strong>. Solo puede consultar su inventario; no es posible asignar, editar ni eliminar elementos.
+</div>
+@endif
 
 <div class="tab-content mt-3">
 
@@ -117,6 +127,7 @@
                         @foreach ($equiposAsignados as $equiposAsignado)
                         <tr data-id="{{ $equiposAsignado->InventarioID }}">
                             <td>
+                                @if($empleadoActivo)
                                 <button class='btn btn-outline-secondary btn-xs edit-btn mt-2' data-id="{{ $equiposAsignado->InventarioID }}">
                                     <i class="fa fa-edit"></i>
                                 </button>
@@ -127,6 +138,9 @@
                                 'data-id' => $equiposAsignado->InventarioID
                                 ]) !!}
                                 {!! Form::close() !!}
+                                @else
+                                <span class="text-muted small">—</span>
+                                @endif
 
                             </td>
                             <td>{{ $equiposAsignado->CategoriaEquipo }}</td>
@@ -147,6 +161,7 @@
             </div>
 
             <!-- equiposAsignados Disponibles -->
+            @if($empleadoActivo)
             <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Equipos Disponibles</span>
 
             <div class="drag-area" id="disponibles">
@@ -184,6 +199,8 @@
                     </table>
                 </div>
             </div>
+
+            @endif
 
 
 
@@ -223,6 +240,7 @@
                         @foreach ($insumosAsignados as $insumosAsignado)
                         <tr data-id="{{ $insumosAsignado->InventarioID }}">
                             <td>
+                                @if($empleadoActivo)
                                 <button class='btn btn-outline-secondary btn-xs edit-btn-insum' data-id="{{ $insumosAsignado->InventarioID }}">
                                     <i class="fa fa-edit"></i>
                                 </button>
@@ -234,6 +252,9 @@
                                 'data-id' => $insumosAsignado->InventarioID
                                 ]) !!}
                                 {!! Form::close() !!}
+                                @else
+                                <span class="text-muted small">—</span>
+                                @endif
 
 
                             </td>
@@ -258,6 +279,7 @@
             </div>
 
             <!-- insumos Disponibles -->
+            @if($empleadoActivo)
             <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Insumos Disponibles</span>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
@@ -302,6 +324,8 @@
                 </div>
             </div>
 
+            @endif
+
 
         </div>
 
@@ -345,6 +369,7 @@
                         @foreach ($LineasAsignados as $LineasAsignado)
                         <tr data-id="{{ $LineasAsignado->InventarioID }}">
                             <td>
+                                @if($empleadoActivo)
                                 <button class='btn btn-outline-secondary btn-xs edit-btn-linea' data-id="{{ $LineasAsignado->InventarioID }}">
                                     <i class="fa fa-edit"></i>
                                 </button>
@@ -356,6 +381,9 @@
                                 'data-id' => $LineasAsignado->InventarioID
                                 ]) !!}
                                 {!! Form::close() !!}
+                                @else
+                                <span class="text-muted small">—</span>
+                                @endif
 
 
                             </td>
@@ -385,6 +413,7 @@
             </div>
 
             <!-- lineas Disponibles -->
+            @if($empleadoActivo)
             <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Lineas Disponibles</span>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
@@ -443,6 +472,8 @@
                 </div>
             </div>
 
+            @endif
+
 
         </div>
 
@@ -463,7 +494,28 @@
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
+    const empleadoInventarioActivo = @json($empleadoActivo);
+
+    function bloquearAccionInventarioInactivo() {
+        if (!empleadoInventarioActivo) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Empleado inactivo',
+                text: 'No se pueden realizar acciones de inventario porque el empleado está dado de baja.',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
+            });
+            return true;
+        }
+
+        return false;
+    }
+</script>
+
+<script>
     $(document).ready(function() {
+        if ($('#equiposTable').length) {
         let table1_1 = $('#equiposTable').DataTable({
             "responsive": true,
             "paging": true,
@@ -473,7 +525,9 @@
             "ordering": true,
             "info": true,
         });
+        }
 
+        if ($('#insumosTable').length) {
         let table2_1 = $('#insumosTable').DataTable({
             "responsive": true,
             "paging": true,
@@ -483,7 +537,9 @@
             "ordering": true,
             "info": true,
         });
+        }
 
+        if ($('#lineasTable').length) {
         let table3_1 = $('#lineasTable').DataTable({
             "responsive": true,
             "paging": true,
@@ -494,6 +550,7 @@
             "info": true,
 
         });
+        }
 
         let table = $('#equiposAsignadosTable').DataTable({
             "responsive": true,
@@ -547,6 +604,10 @@
     // Seccion equipo 
     // Editar equipo (abriendo el modal con los datos)
     $(document).on('click', '.edit-btn', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         let row = $(this).closest('tr');
         let id = row.data('id');
 
@@ -571,6 +632,10 @@
 
     // Crear equipo (con valores vacíos para nuevo registro)
     $(document).on('click', '.crear-btn', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         let id_E = '{{ $inventario->EmpleadoID }}';
 
         $('#editForm')[0].reset();
@@ -598,6 +663,10 @@
     // Enviar formulario de edición o creación con AJAX
     $(document).on('click', '.submit_equipo', function(event) {
         event.preventDefault();
+
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
 
         $('.error-message').remove();
         $('.is-invalid').removeClass('is-invalid');
@@ -787,6 +856,10 @@
     $(document).on('click', '.delete-btn', function(event) {
         event.preventDefault();
 
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         var id = $(this).data('id'); // ✅ Obtener el ID del botón delete-btn
 
         if (!id) {
@@ -864,6 +937,10 @@
     // Seccion insumo
 
     $(document).on('click', '.edit-btn-insum', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         let row = $(this).closest('tr');
         let id = row.data('id');
 
@@ -889,6 +966,10 @@
     });
 
     $(document).on('click', '.crear-btn-insumo', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         let id_E = '{{ $inventario->EmpleadoID }}';
 
         $('#editFormInsumo')[0].reset();
@@ -927,6 +1008,10 @@
 
     $(document).on('click', '.submit_insumo', function(event) {
         event.preventDefault();
+
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
 
         $('.error-message').remove();
         $('.is-invalid').removeClass('is-invalid');
@@ -1091,6 +1176,10 @@
     $(document).on('click', '.delete-btn-insumo', function(event) {
         event.preventDefault();
 
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         var id = $(this).data('id');
 
         if (!id) {
@@ -1168,6 +1257,10 @@
     // Seccion telefono
 
     $(document).on('click', '.edit-btn-linea', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         let row = $(this).closest('tr');
         let id = row.data('id');
 
@@ -1186,6 +1279,10 @@
         $('#editModalLinea').modal('show');
     });
     $(document).on('click', '.crear-btn-linea', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
         let id_E = '{{ $inventario->EmpleadoID }}';
 
         $('#editFormLinea')[0].reset();
@@ -1221,6 +1318,10 @@
 
     $(document).on('click', '.submit_linea', function(event) {
         event.preventDefault();
+
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
 
         $('.error-message').remove();
         $('.is-invalid').removeClass('is-invalid');
@@ -1377,6 +1478,10 @@
 
     $(document).on('click', '.delete-btn-linea', function(event) {
         event.preventDefault();
+
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
 
         var id = $(this).data('id');
 

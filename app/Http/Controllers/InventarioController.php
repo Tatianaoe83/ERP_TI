@@ -53,20 +53,20 @@ class InventarioController extends AppBaseController
 
     public function indexVista(Request $request)
     {
+        $buscando = $request->filled('nombre') || $request->filled('filtro_inventario');
+        $estatusTodos = $request->has('estatus') && $request->estatus === '';
+
         $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-             // LÓGICA DEL TIPO DE PERSONA
-        ->when($request->filled('tipo_persona'), function ($q) use ($request) {
+            ->when($request->filled('tipo_persona'), function ($q) use ($request) {
+                $q->where('empleados.tipo_persona', $request->tipo_persona);
+            }, function ($q) use ($buscando, $estatusTodos) {
+                if ($buscando || $estatusTodos) {
+                    return;
+                }
 
-            // Si selecciona algo, filtra exactamente por eso
-            $q->where('empleados.tipo_persona', $request->tipo_persona);
-
-        }, function ($q) {
-
-            // Si NO selecciona nada:
-            // mostrar todos menos PRESUPUESTO
-            $q->where('empleados.tipo_persona', '!=', 'EXTRAORDINARIO');
-        })
+                $q->whereIn('empleados.tipo_persona', ['FISICA', 'REFERENCIADO']);
+            })
             ->select([
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
@@ -79,7 +79,14 @@ class InventarioController extends AppBaseController
             ->orderBy('empleados.EmpleadoID', 'desc')
             ->when($request->nombre, fn($q) => $q->where('empleados.NombreEmpleado', 'like', '%' . $request->nombre . '%'))
             ->when($request->obra, fn($q) => $q->where('obras.NombreObra', 'like', '%' . $request->obra . '%'))
-            ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', 'like', '%' . $request->puesto . '%'));
+            ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', 'like', '%' . $request->puesto . '%'))
+            ->when($request->has('estatus'), function ($q) use ($request) {
+                if ($request->estatus !== '') {
+                    $q->where('empleados.Estado', (int) $request->estatus);
+                }
+            }, function ($q) {
+                $q->where('empleados.Estado', 1);
+            });
 
 
         if ($request->filled('filtro_inventario')) {
@@ -108,7 +115,10 @@ class InventarioController extends AppBaseController
 
         return DataTables::of($unidades)
             ->addColumn('action', function ($row) {
-                return view('inventarios.datatables_actions', ['id' => $row->EmpleadoID])->render();
+                return view('inventarios.datatables_actions', [
+                    'id' => $row->EmpleadoID,
+                    'activo' => $row->Estado == 1 || $row->Estado === true,
+                ])->render();
             })
             ->editColumn('Estado', function ($row) {
                 if ($row->Estado == 1 || $row->Estado === true) {
@@ -264,6 +274,7 @@ class InventarioController extends AppBaseController
 
         return view('inventarios.edit')->with([
             'inventario' => $inventario,
+            'empleadoActivo' => (bool) $inventario->Estado,
             'equiposAsignados' => $EquiposAsignados,
             'equipos' => $Equipos,
             'insumosAsignados' => $InsumosAsignados,
@@ -291,6 +302,10 @@ class InventarioController extends AppBaseController
             return response()->json(['error' => 'Equipo no encontrado'], 404);
         }
 
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $inventarioEquipo->EmpleadoID)) {
+            return $respuesta;
+        }
+
         $data = $request->all();
 
         $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
@@ -307,6 +322,9 @@ class InventarioController extends AppBaseController
 
     public function crearequipo($id, Request $request)
     {
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $id)) {
+            return $respuesta;
+        }
 
         $data = $request->all();
         $data['EmpleadoID'] = $id;
@@ -333,6 +351,10 @@ class InventarioController extends AppBaseController
      */
     public function destroy(InventarioEquipo $inventario)
     {
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $inventario->EmpleadoID)) {
+            return $respuesta;
+        }
+
         $inventario->delete();
 
         return response()->json([
@@ -351,6 +373,10 @@ class InventarioController extends AppBaseController
 
         if (!$inventarioinsumo) {
             return response()->json(['error' => 'Equipo no encontrado'], 404);
+        }
+
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $inventarioinsumo->EmpleadoID)) {
+            return $respuesta;
         }
 
         $data = $request->all();
@@ -373,6 +399,9 @@ class InventarioController extends AppBaseController
 
     public function crearinsumo($id, Request $request)
     {
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $id)) {
+            return $respuesta;
+        }
 
         $data = $request->all();
         $data['EmpleadoID'] = $id;
@@ -412,6 +441,10 @@ class InventarioController extends AppBaseController
             return response()->json(['error' => 'Insumo no encontrado'], 404);
         }
 
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $inventaInsumo->EmpleadoID)) {
+            return $respuesta;
+        }
+
         // Eliminar el insumo
         $inventaInsumo->delete();
 
@@ -431,6 +464,10 @@ class InventarioController extends AppBaseController
 
             if (!$inventariotelf) {
                 return response()->json(['success' => false, 'message' => 'Registro de telefonía no encontrado.'], 404);
+            }
+
+            if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $inventariotelf->EmpleadoID)) {
+                return $respuesta;
             }
 
             $data = $request->all();
@@ -459,7 +496,9 @@ class InventarioController extends AppBaseController
 
     public function crearlinea($id, $telf, Request $request)
     {
-
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $id)) {
+            return $respuesta;
+        }
 
         $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.FechaRenovacion', 'lineastelefonicas.LineaID', 'planes.NombrePlan AS PlanTel')
                 ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
@@ -557,19 +596,19 @@ class InventarioController extends AppBaseController
 
     public function destroylinea($id)
     {
-
-        // Buscar el insumo por InventarioID
         $inventarioLineas = InventarioLineas::where('InventarioID', $id)->first();
 
-        $Lineas = DB::table('lineastelefonicas')
-            ->where('NumTelefonico', $inventarioLineas->NumTelefonico)
-            ->update(['Disponible' => 1]);
-
-        // Verificar si el insumo existe
         if (!$inventarioLineas) {
             return response()->json(['error' => 'Linea no encontrado'], 404);
         }
 
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $inventarioLineas->EmpleadoID)) {
+            return $respuesta;
+        }
+
+        DB::table('lineastelefonicas')
+            ->where('NumTelefonico', $inventarioLineas->NumTelefonico)
+            ->update(['Disponible' => 1]);
 
         $inventarioLineas->delete();
 
@@ -605,6 +644,11 @@ class InventarioController extends AppBaseController
 
         if (empty($inventario)) {
             Flash::error('Inventario no encontrado');
+            return redirect(route('inventarios.index'));
+        }
+
+        if (!$inventario->Estado) {
+            Flash::warning('No se puede transferir inventario de un empleado dado de baja.');
             return redirect(route('inventarios.index'));
         }
 
@@ -957,5 +1001,19 @@ class InventarioController extends AppBaseController
         $pdf = PDF::loadView('inventarios.pdfMante', $data);
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream("Mantenimiento.pdf", array("Attachment" => false));
+    }
+
+    private function respuestaSiEmpleadoInactivo(int $empleadoId)
+    {
+        $empleado = Empleados::find($empleadoId);
+
+        if (!$empleado || !$empleado->Estado) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pueden realizar acciones de inventario porque el empleado está dado de baja.',
+            ], 422);
+        }
+
+        return null;
     }
 }

@@ -24,8 +24,17 @@ class UpdateEmpleadosRequest extends FormRequest
      */
     public function rules()
     {
-        $rules = Empleados::$rules;
-        
-        return $rules;
+        return Empleados::rulesFor(
+            $this->input('tipo_persona'),
+            (int) $this->route('empleado'),
+            $this->input('Estado', 1)
+        );
+    }
+
+    public function messages()
+    {
+        return [
+            'Correo.unique' => 'El correo ya está registrado en otro empleado activo.',
+        ];
     }
 }
