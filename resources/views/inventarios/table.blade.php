@@ -115,7 +115,7 @@
                             Tipo de Persona:
                         </label>
 
-                        <select class="form-control text-secondary"
+                        <select class="form-control jz1"
                             id="filtro-persona">
 
                             <option value="" selected>

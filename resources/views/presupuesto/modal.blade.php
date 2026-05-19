@@ -25,7 +25,7 @@
 
             <div class="modal-body">
 
-                <p class="text-secondary dark:text-gray-300">
+                <p class=" dark:text-gray-300">
                     Se han detectado datos incompletos en los inventarios.
                     Para visualizar el presupuesto detallado,
                     es necesario corregir los siguientes puntos:
@@ -34,14 +34,14 @@
                 <div class="mt-4 p-4 bg-[#1a1a1a] rounded border border-secondary"
                     id="infoAdicionalEmpleados">
 
-                    <h6 class="text-white mb-3 border-bottom border-secondary pb-2">
+                    <h6 class="mb-3 border-bottom  pb-2">
                         <i class="fas fa-users"></i>
                         Estado de Empleados e Insumos
                     </h6>
 
                     <div class="d-flex flex-column gap-3">
 
-                        <p class="mb-0 text-white d-flex justify-content-between align-items-center">
+                        <p class="mb-0  d-flex justify-content-between align-items-center">
                             <strong>Total De Empleados:</strong>
 
                             <span id="totalEmpleadosModal"
@@ -50,7 +50,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0 text-white d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center">
                             <strong>
                                 Empleados Con Insumos Mensuales
                                 Con Fecha De Renovacion
@@ -63,7 +63,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0 text-white d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center">
                             <strong>
                                 Empleados Con Insumos Anuales
                                 Con Fecha De Renovacion
@@ -76,7 +76,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0 text-white d-flex justify-content-between align-items-center">
+                        <p class="mb-0  d-flex justify-content-between align-items-center">
                             <strong>
                                 Lineas Telefonicas Disponibles
                                 Con Fecha De Renovacion
@@ -89,7 +89,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0 text-white d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center">
                             <strong>
                                 Insumos Disponibles
                                 Con Fecha De Renovacion

@@ -657,6 +657,7 @@ public function verificarFechas(Request $request)
 
         // 1. CONTEO DE INSUMOS MENSUALES FALTANTES
         $insumosSinMesPagoMensual = DB::table('inventarioinsumo as ii')
+            ->whereNull('ii.deleted_at')
             ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
             ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
             ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
@@ -679,6 +680,7 @@ public function verificarFechas(Request $request)
 
         // 2. CONTEO DE INSUMOS ANUALES FALTANTES
         $insumosSinMesPagoAnual = DB::table('inventarioinsumo as ii')
+            ->whereNull('ii.deleted_at')
             ->join('empleados as e', 'ii.EmpleadoID', '=', 'e.EmpleadoID')
             ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
             ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
@@ -689,8 +691,7 @@ public function verificarFechas(Request $request)
             ->whereNotIn('ii.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
 
             // NUEVO FILTRO
-            ->whereRaw('YEAR(DATE_ADD(ii.FechaRenovacion, INTERVAL 1 YEAR)) = ?', [$anioSiguiente])
-
+            ->whereYear('ii.FechaRenovacion', $anioSiguiente)
             ->where('ii.FrecuenciaDePago', 'LIKE', '%nual%')
             ->where(function ($qq) {
                 $qq->whereNull('ii.MesDePago')
@@ -719,11 +720,8 @@ public function verificarFechas(Request $request)
             ->where('l.Disponible', '1')
             ->where('l.Activo', '1')
 
-            // NUEVO FILTRO (Trae tanto las que ya son 2027 como las de 2026 que proyectan a 2027)
-            ->where(function($query) use ($anioSiguiente) {
-                $query->whereYear('l.FechaRenovacion', $anioSiguiente)
-                      ->orWhereRaw('YEAR(DATE_ADD(l.FechaRenovacion, INTERVAL 1 YEAR)) = ?', [$anioSiguiente]);
-            })
+            // NUEVO FILTRO
+            ->whereYear('l.FechaRenovacion', $anioSiguiente)
             ->whereNotExists(function ($q) {
                 $q->select(DB::raw(1))
                 ->from('inventariolineas as il')
@@ -734,14 +732,12 @@ public function verificarFechas(Request $request)
 
         // 5. INSUMOS HUÉRFANOS
         $insumosOrfanos = DB::table('insumos as i')
+            ->whereNull('i.deleted_at')
             ->whereNotNull('i.FechaRenovacion')
             ->whereNotIn('i.FechaRenovacion', ['', '0000-00-00', 'Sin asignar', 'Sin asigna'])
 
-            // NUEVO FILTRO (Trae tanto los que ya son del siguiente año como los de este año que proyectan al siguiente)
-            ->where(function($query) use ($anioSiguiente) {
-                $query->whereYear('i.FechaRenovacion', $anioSiguiente)
-                      ->orWhereRaw('YEAR(DATE_ADD(i.FechaRenovacion, INTERVAL 1 YEAR)) = ?', [$anioSiguiente]);
-            })
+            // NUEVO FILTRO
+             ->whereYear('i.FechaRenovacion', $anioSiguiente)
 
             ->whereNotExists(function ($q) {
                 $q->select(DB::raw(1))
