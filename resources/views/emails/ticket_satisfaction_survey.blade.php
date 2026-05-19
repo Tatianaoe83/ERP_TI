@@ -1,5 +1,5 @@
 @php
-    $expiresAt = $survey->expires_at ?? now()->addDays(7);
+    $expiresAt = $survey->expires_at ?? now()->addDays(1);
     $surveyUrl = route('tickets.satisfaction.survey', ['survey' => $survey->uuid]);
 @endphp
 <!DOCTYPE html>
@@ -120,18 +120,23 @@
                                 </tr>
                             </table>
 
+                            <p style="margin:18px 0 0; font-size:11px; color:#9ca3af; line-height:1.6;">
+                                Si el botón no funciona, copia y pega este enlace en tu navegador:<br>
+                                <a href="{{ $surveyUrl }}" target="_blank" style="color:#2563eb; word-break:break-all;">{{ $surveyUrl }}</a>
+                            </p>
+
                         </td>
                     </tr>
 
                     {{-- ── Footer ── --}}
                     <tr>
                         <td class="section" align="center"
-                            style="padding:20px 36px; background-color:#f9fafb;">
-                            <p style="margin:0 0 4px; font-size:12px; color:#6b7280;">
+                            style="padding:20px 36px; background-color:#e5e7eb;">
+                            <p style="margin:0 0 4px; font-size:12px; color:#374151;">
                                 Este enlace expira el
                                 <strong>{{ $expiresAt->locale('es')->translatedFormat('d M Y') }}</strong>
                             </p>
-                            <p style="margin:0; font-size:12px; color:#9ca3af;">
+                            <p style="margin:0; font-size:12px; color:#6b7280;">
                                 Soporte Técnico · Por favor no respondas a este correo.
                             </p>
                         </td>
