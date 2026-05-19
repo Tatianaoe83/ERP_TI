@@ -17,13 +17,11 @@ class ExpireTicketSatisfactionSurveys extends Command
             ->where('status', Calificacion::STATUS_PENDING)
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now())
-            ->where(function ($query) {
-                $query->whereNull('fastness')
-                    ->orWhereNull('resolution')
-                    ->orWhereNull('attention');
-            })
+            ->whereNull('fastness')
+            ->whereNull('resolution')
+            ->whereNull('attention')
             ->update([
-                'status'     => Calificacion::STATUS_NOT_ANSWERED,
+                'status' => Calificacion::STATUS_NOT_ANSWERED,
                 'updated_at' => now(),
             ]);
 
