@@ -22,7 +22,10 @@ class EmpleadosDataTable extends DataTable
 
         return $dataTable
             ->addColumn('action', function ($row) {
-                return view('empleados.datatables_actions', ['id' => $row->EmpleadoID])->render();
+                return view('empleados.datatables_actions', [
+                    'id' => $row->EmpleadoID,
+                    'activo' => $row->Estado == 1 || $row->Estado === true,
+                ])->render();
             })
             ->editColumn('Estado', function ($row) {
                 if ($row->Estado == 1 || $row->Estado === true) {

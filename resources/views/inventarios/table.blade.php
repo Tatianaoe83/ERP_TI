@@ -73,7 +73,7 @@
             <div class="row">
 
                 <!-- Puesto -->
-                <div class="col-xs-6 col-sm-4 col-md-4">
+                <div class="col-xs-6 col-sm-6 col-md-3">
 
                     <div class="form-group">
 
@@ -90,7 +90,7 @@
                 </div>
 
                 <!-- Inventario -->
-                <div class="col-xs-6 col-sm-4 col-md-4">
+                <div class="col-xs-6 col-sm-6 col-md-3">
 
                     <div class="form-group">
 
@@ -107,7 +107,7 @@
                 </div>
 
                 <!-- Tipo Persona -->
-                <div class="col-xs-6 col-sm-3 col-md-4">
+                <div class="col-xs-6 col-sm-6 col-md-3">
 
                     <div class="form-group">
 
@@ -115,7 +115,7 @@
                             Tipo de Persona:
                         </label>
 
-                        <select class="form-control text-secondary"
+                        <select class="form-control jz1"
                             id="filtro-persona">
 
                             <option value="" selected>
@@ -133,6 +133,25 @@
                                 EXTRAORDINARIO
                             </option>
 
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <!-- Estatus -->
+                <div class="col-xs-6 col-sm-6 col-md-3">
+
+                    <div class="form-group">
+
+                        <label class="text-[#101D49] dark:text-white">
+                            Estatus:
+                        </label>
+
+                        <select class="form-control" id="filtro-estatus">
+                            <option value="1" selected>Activo</option>
+                            <option value="0">Inactivo</option>
+                            <option value="">Todos</option>
                         </select>
 
                     </div>
@@ -213,6 +232,7 @@
                         d.puesto = $('#filtro-puesto').val();
                         d.filtro_inventario = $('#filtro-inventario').val();
                         d.tipo_persona = $('#filtro-persona').val();
+                        d.estatus = $('#filtro-estatus').val();
 
                     }
                 },
@@ -328,7 +348,7 @@
 
                 });
 
-            $('#filtro-obra, #filtro-puesto, #filtro-persona')
+            $('#filtro-obra, #filtro-puesto, #filtro-persona, #filtro-estatus')
                 .on('change', function() {
 
                     table.ajax.reload();

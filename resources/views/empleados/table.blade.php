@@ -12,64 +12,16 @@
             <div class="clearfix"></div>
             <!-- Filtros responsivos -->
             <div class="row mb-4">
-                <!-- Primera fila de filtros -->
+                <!-- Fila 1: identificación -->
                 <div class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="form-group">
+                    <div class="form-group mb-0">
                         <label for="filtro_nombre" class="text-[#101D49] dark:text-white">Nombre:</label>
                         <input type="text" id="filtro_nombre" class="form-control" placeholder="Buscar por nombre...">
                     </div>
                 </div>
-                
+
                 <div class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="form-group">
-                        <label for="filtro_puesto" class="text-[#101D49] dark:text-white">Puesto:</label>
-                        <select id="filtro_puesto" class="jz1 form-control">
-                            <option value="">Todos los puestos</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="form-group">
-                        <label for="filtro_departamento" class="text-[#101D49] dark:text-white">Departamento:</label>
-                        <select id="filtro_departamento" class="jz1 form-control">
-                            <option value="">Todos los departamentos</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <!-- Segunda fila de filtros -->
-                <div class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="form-group">
-                        <label for="filtro_estado" class="text-[#101D49] dark:text-white">Estado:</label>
-                        <select id="filtro_estado" class="jz1 form-control">
-                            <option value="">Todos</option>
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="form-group">
-                        <label for="filtro_obra" class="text-[#101D49] dark:text-white">Obra:</label>
-                        <select id="filtro_obra" class="jz1 form-control">
-                            <option value="">Todas las obras</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="form-group">
-                        <label for="filtro_gerencia" class="text-[#101D49] dark:text-white">Gerencia:</label>
-                        <select id="filtro_gerencia" class="jz1 form-control">
-                            <option value="">Todas las gerencias</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-md-6 col-lg-4 mb-3">
-                    <div class="form-group">
+                    <div class="form-group mb-0">
                         <label for="filtro_tipo_persona" class="text-[#101D49] dark:text-white">Tipo de Persona:</label>
                         <select id="filtro_tipo_persona" class="jz1 form-control">
                             <option value="">Todos los tipos</option>
@@ -79,10 +31,58 @@
                         </select>
                     </div>
                 </div>
-                
-                <!-- Botón de limpiar filtros -->
-                <div class="col-12 text-center">
-                    <button id="limpiarFiltros" class="btn btn-success">
+
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="form-group mb-0">
+                        <label for="filtro_estado" class="text-[#101D49] dark:text-white">Estado:</label>
+                        <select id="filtro_estado" class="jz1 form-control">
+                            <option value="">Todos</option>
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fila 2: organización -->
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="form-group mb-0">
+                        <label for="filtro_gerencia" class="text-[#101D49] dark:text-white">Gerencia:</label>
+                        <select id="filtro_gerencia" class="jz1 form-control">
+                            <option value="">Todas las gerencias</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="form-group mb-0">
+                        <label for="filtro_departamento" class="text-[#101D49] dark:text-white">Departamento:</label>
+                        <select id="filtro_departamento" class="jz1 form-control">
+                            <option value="">Todos los departamentos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="form-group mb-0">
+                        <label for="filtro_puesto" class="text-[#101D49] dark:text-white">Puesto:</label>
+                        <select id="filtro_puesto" class="jz1 form-control">
+                            <option value="">Todos los puestos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fila 3: ubicación y acciones -->
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="form-group mb-0">
+                        <label for="filtro_obra" class="text-[#101D49] dark:text-white">Obra:</label>
+                        <select id="filtro_obra" class="jz1 form-control">
+                            <option value="">Todas las obras</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6 col-lg-8 mb-3 d-flex align-items-end justify-content-md-end">
+                    <button id="limpiarFiltros" type="button" class="btn btn-success">
                         <i class="fa fa-times"></i> Limpiar Filtros
                     </button>
                 </div>
@@ -425,6 +425,34 @@
                         confirmButtonColor: '#17a2b8'
                     });
                 @endif
+            });
+
+            $(document).on('click', '.btn-cambiar-estado-empleado', function (event) {
+                event.preventDefault();
+
+                var form = $(this).closest('form');
+                var accion = $(this).data('accion');
+                var esActivacion = accion === 'activar';
+
+                Swal.fire({
+                    title: esActivacion
+                        ? '¿Desea activar este empleado?'
+                        : '¿Está seguro de que desea dar de baja este empleado?',
+                    text: esActivacion
+                        ? 'Se validará que su correo no esté en uso por otro empleado activo.'
+                        : 'Se verificará que no tenga inventario asociado.',
+                    icon: 'warning',
+                    showDenyButton: true,
+                    confirmButtonText: esActivacion ? 'Activar' : 'Confirmar',
+                    denyButtonText: 'Cerrar',
+                    confirmButtonColor: esActivacion ? '#28a745' : '#ffc107',
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    } else if (result.isDenied) {
+                        Swal.fire('Cambios no generados');
+                    }
+                });
             });
             </script>
             

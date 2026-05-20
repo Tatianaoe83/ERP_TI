@@ -24,8 +24,27 @@ class UpdateEmpleadosRequest extends FormRequest
      */
     public function rules()
     {
-        $rules = Empleados::$rules;
-        
-        return $rules;
+        return Empleados::rulesFor(
+            $this->input('tipo_persona'),
+            (int) $this->route('empleado'),
+            $this->input('Estado')
+        );
+    }
+
+    protected function prepareForValidation()
+    {
+        if ($this->input('Estado') === null || $this->input('Estado') === '') {
+            $empleado = Empleados::find($this->route('empleado'));
+            $this->merge(['Estado' => $empleado ? (int) ($empleado->getAttributes()['Estado'] ?? ($empleado->Estado ? 1 : 0)) : 1]);
+        } else {
+            $this->merge(['Estado' => (int) $this->input('Estado')]);
+        }
+    }
+
+    public function messages()
+    {
+        return [
+            'Correo.unique' => 'El correo ya está registrado en otro empleado activo.',
+        ];
     }
 }

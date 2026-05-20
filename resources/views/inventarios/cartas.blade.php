@@ -27,7 +27,7 @@
 
                                     {!!Form::select('IdEquipo',App\Models\InventarioEquipo::select(DB::raw("CONCAT(Folio,' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
                                     ->where('EmpleadoID', '=', $id)
-                                    ->pluck('NombreEq','InventarioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%'])!!}
+                                    ->pluck('NombreEq','InventarioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%', 'required' => true])!!}
                                 </div>
                             </div>
 

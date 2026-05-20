@@ -34,7 +34,7 @@
             <div class="d-flex align-items-start justify-content-between mb-3">
                 <div>
                     <h4 class="mb-1 text-[#101D49] dark:text-white">Generar programación</h4>
-                    <p class="mb-0 text-muted">Selecciona la fecha inicial y arrastra las gerencias en el orden en que quieres programarlas.</p>
+                    <p class="mb-0 text-muted">Selecciona la fecha inicial y arrastra las gerencias en el orden en que quieres programarlas. Solo se incluirán empleados físicos activos con laptop o PC.</p>
                 </div>
                 <button
                     id="btn-cerrar-programacion-mantenimientos"

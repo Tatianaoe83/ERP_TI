@@ -83,7 +83,7 @@ class HomeController extends Controller
         $totalUnidadesNegocio = UnidadesDeNegocio::where('Estado', true)->count();
 
         $anioActual = now()->year;
-        $mantenimientosAnio = ['pendientes' => 0, 'requiere_asignacion' => 0, 'realizados' => 0, 'anio' => $anioActual];
+        $mantenimientosAnio = ['pendientes' => 0, 'realizados' => 0, 'anio' => $anioActual];
 
         if (Schema::hasTable('mantenimientos') && Schema::hasColumn('mantenimientos', 'AnioProgramacion')) {
             $mantenimientosBase = DB::table('mantenimientos as m')
@@ -93,15 +93,6 @@ class HomeController extends Controller
 
             $mantenimientosAnio['realizados'] = (clone $mantenimientosBase)
                 ->where('m.Estatus', 'Realizado')
-                ->count();
-
-            $mantenimientosAnio['requiere_asignacion'] = (clone $mantenimientosBase)
-                ->where('m.Estatus', '!=', 'Realizado')
-                ->where(function ($query) {
-                    $query->where('e.Estado', false)
-                        ->orWhereNull('e.EmpleadoID')
-                        ->orWhereRaw("UPPER(COALESCE(e.tipo_persona, '')) <> 'FISICA'");
-                })
                 ->count();
 
             $mantenimientosAnio['pendientes'] = (clone $mantenimientosBase)
@@ -184,7 +175,7 @@ class HomeController extends Controller
                     'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0],
                 ],
                 'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
-                'mantenimientos' => ['pendientes' => 0, 'requiere_asignacion' => 0, 'realizados' => 0, 'anio' => now()->year],
+                'mantenimientos' => ['pendientes' => 0, 'realizados' => 0, 'anio' => now()->year],
                 'insumos_por_licencia' => collect(),
                 'equipos_por_categoria' => collect(),
                 'estadisticas_gerencia' => collect(),
