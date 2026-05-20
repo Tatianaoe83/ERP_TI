@@ -34,6 +34,7 @@ class Calificacion extends Model
         'sent_at',
         'answered_at',
         'expires_at',
+        'user_comment',
     ];
 
     protected $casts = [
@@ -73,6 +74,7 @@ class Calificacion extends Model
             self::FIELD_FASTNESS,
             self::FIELD_RESOLUTION,
             self::FIELD_ATTENTION,
+            'user_comment',
         ];
     }
 

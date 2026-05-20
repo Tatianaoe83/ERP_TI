@@ -186,6 +186,10 @@ Route::get(
     '/tickets/calificacion/{survey}/{field}/{rating}',
     [TicketSatisfactionAnswerController::class, 'store']
 )->name('tickets.satisfaction.answer');
+Route::post(
+    '/tickets/encuesta/{survey}/comentario',
+    [TicketSatisfactionAnswerController::class, 'storeComment']
+)->name('tickets.satisfaction.comment');
 Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
 Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
 Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmpleadoPorCorreo']);

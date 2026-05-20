@@ -121,4 +121,34 @@ class TicketSatisfactionAnswerController extends Controller
 
         return redirect()->route('tickets.satisfaction.survey', ['survey' => $survey]);
     }
+
+    public function storeComment(Request $request, string $survey)
+    {
+        $calificacion = Calificacion::where('uuid', $survey)->first();
+
+        if (! $calificacion) {
+            return response()->json(['error' => 'La encuesta no existe.'], 404);
+        }
+
+        if ($calificacion->isExpired()) {
+            return response()->json(['error' => 'Este enlace ha expirado.'], 403);
+        }
+
+        if ($calificacion->isNotAnswered()) {
+            return response()->json(['error' => 'Esta encuesta ya no está disponible.'], 403);
+        }
+
+        $validated = $request->validate([
+            'user_comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $comment = isset($validated['user_comment']) ? trim($validated['user_comment']) : null;
+
+        if (! empty($comment)) {
+            $calificacion->user_comment = $comment;
+            $calificacion->save();
+        }
+
+        return response()->json(['success' => true]);
+    }
 }

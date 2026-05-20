@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Califica tu experiencia · Ticket #{{ $calificacion->ticket?->TicketID ?? '' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -63,10 +64,13 @@
         currentStep: 0,
         totalSteps: 3,
         showCelebration: {{ $allCompleted ? 'true' : 'false' }},
+        showCommentStep: false,
         fields: ['fastness', 'attention', 'resolution'],
         answered: {{ json_encode(array_filter(['fastness' => $calificacion->fastness, 'attention' => $calificacion->attention, 'resolution' => $calificacion->resolution], fn($v) => $v !== null)) }},
         isExpired: {{ $isExpired ? 'true' : 'false' }},
         isSubmitting: false,
+        commentText: '',
+        commentSubmitting: false,
         
         init() {
             if (Object.keys(this.answered).length === this.totalSteps) {
@@ -97,7 +101,7 @@
                 
                 if (response.ok) {
                     if (Object.keys(this.answered).length === this.totalSteps) {
-                        setTimeout(() => { this.showCelebration = true; }, 400);
+                        setTimeout(() => { this.showCommentStep = true; }, 400);
                     } else {
                         setTimeout(() => { this.nextStep(); }, 400);
                     }
@@ -118,7 +122,7 @@
             if (this.currentStep < this.totalSteps - 1) {
                 this.currentStep++;
             } else if (Object.keys(this.answered).length === this.totalSteps) {
-                this.showCelebration = true;
+                this.showCommentStep = true;
             }
         },
         
@@ -126,6 +130,39 @@
             if (this.currentStep > 0) {
                 this.currentStep--;
             }
+        },
+
+        async submitComment() {
+            this.commentSubmitting = true;
+            const comment = this.commentText.trim();
+            try {
+                let response = await fetch('{{ route('tickets.satisfaction.comment', ['survey' => $calificacion->uuid]) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ user_comment: comment || null })
+                });
+                if (response.ok) {
+                    this.showCommentStep = false;
+                    this.showCelebration = true;
+                } else {
+                    alert('Error al guardar el comentario. Intenta de nuevo.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error de conexión.');
+            } finally {
+                this.commentSubmitting = false;
+            }
+        },
+
+        skipComment() {
+            this.showCommentStep = false;
+            this.showCelebration = true;
         }
      }" x-cloak>
 
@@ -206,7 +243,7 @@
             @endif
 
             {{-- Survey Steps --}}
-            <div x-show="!showCelebration" class="flex-1 flex flex-col justify-center relative min-h-[300px]">
+            <div x-show="!showCelebration && !showCommentStep" class="flex-1 flex flex-col justify-center relative min-h-[300px]">
                 @foreach ($fields as $fieldKey => $fieldInfo)
                     @php
                         $index = array_search($fieldKey, array_keys($fields));
@@ -262,6 +299,51 @@
                 @endforeach
             </div>
 
+            {{-- Comment Step --}}
+            <div x-show="showCommentStep && !showCelebration" x-transition:enter="fade-enter"
+                class="flex-1 flex flex-col justify-center absolute inset-0 bg-white z-20 p-8 md:p-12">
+
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 text-blue-500 rounded-full mx-auto mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Comentario adicional <span class="text-slate-400 font-normal text-lg">(opcional)</span></h2>
+                    <p class="text-slate-500 text-sm">¿Tienes algo más que compartir sobre la atención recibida?</p>
+                </div>
+
+                <div class="max-w-md mx-auto w-full">
+                    <textarea
+                        x-model="commentText"
+                        :disabled="commentSubmitting"
+                        maxlength="2000"
+                        rows="4"
+                        placeholder="Escribe tu comentario aquí..."
+                        class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm text-slate-700 placeholder-slate-400 transition"
+                    ></textarea>
+                    <div class="flex justify-end mt-1">
+                        <span class="text-xs text-slate-400" x-text="`${commentText.length}/2000`"></span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 justify-center mt-6">
+                    <button @click="skipComment()" :disabled="commentSubmitting"
+                        class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none disabled:opacity-50">
+                        Omitir
+                    </button>
+                    <button @click="submitComment()" :disabled="commentSubmitting"
+                        class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm focus:outline-none flex items-center gap-2 disabled:opacity-60">
+                        <svg x-show="commentSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        <span x-text="commentSubmitting ? 'Enviando...' : 'Enviar y finalizar'"></span>
+                    </button>
+                </div>
+            </div>
+
             {{-- Celebration / Summary --}}
             <div x-show="showCelebration" x-transition:enter="fade-enter"
                 class="flex-1 flex flex-col justify-center text-center absolute inset-0 bg-white z-20 p-8 md:p-12">
@@ -296,7 +378,7 @@
             </div>
 
             {{-- Navigation Controls --}}
-            <div x-show="!showCelebration"
+            <div x-show="!showCelebration && !showCommentStep"
                 class="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center z-10">
                 <button @click="prevStep()" :class="currentStep === 0 ? 'invisible' : ''"
                     class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none">
