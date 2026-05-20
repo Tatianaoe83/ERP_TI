@@ -11,6 +11,7 @@ use App\Models\Subtipos;
 use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
 use App\Services\TicketNotificationService;
+use App\Services\TicketSatisfactionSurveyService;
 use Illuminate\Http\Request;
 use App\Models\SolicitudActivo;
 use App\Http\Controllers\Traits\MetricasSolicitudesTrait;
@@ -41,7 +42,7 @@ class TicketsController extends Controller
         $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
         $modoRango  = $esRango;
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'chat' => function ($query) {
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
@@ -63,7 +64,7 @@ class TicketsController extends Controller
         ])->orderBy('created_at', 'desc')->get();
 
         $solicitudesStatus   = [$solicitudes->all()];
-        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
+        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
 
         return view('tickets.index', compact(
             'ticketsStatus',
@@ -135,6 +136,23 @@ class TicketsController extends Controller
                 1
             );
         }
+
+        $calificacionTicketsGeneral = $ticketsCerradosMes->filter(
+            fn($t) => $t->calificacion && in_array($t->calificacion->status, ['completed', 'partially_completed'])
+        );
+
+        $calificacionPromedio = [
+            'fastness' => 0,
+            'attention' => 0,
+            'resolution' => 0,
+            'total_respuestas' => $calificacionTicketsGeneral->count()
+        ];
+
+        if ($calificacionTicketsGeneral->count() > 0) {
+            $calificacionPromedio['fastness'] = round($calificacionTicketsGeneral->avg(fn($t) => $t->calificacion->fastness), 1);
+            $calificacionPromedio['attention'] = round($calificacionTicketsGeneral->avg(fn($t) => $t->calificacion->attention), 1);
+            $calificacionPromedio['resolution'] = round($calificacionTicketsGeneral->avg(fn($t) => $t->calificacion->resolution), 1);
+            }
 
         $ticketsPorResponsable = $ticketsDelMes->filter(fn($t) => $t->ResponsableTI !== null)
             ->groupBy('ResponsableTI')
@@ -442,6 +460,7 @@ class TicketsController extends Controller
             'totales_por_responsable'            => $totalesPorResponsable,
             'fecha_inicio_periodo'               => $fechaInicioMes->format('Y-m-d'),
             'fecha_fin_periodo'                  => $fechaFinMes->format('Y-m-d'),
+            'calificacion_promedio'              => $calificacionPromedio,
         ];
     }
 
@@ -518,6 +537,26 @@ class TicketsController extends Controller
                 $mesIter->addMonth();
             }
 
+            // Calcular promedios de calificación
+            $ticketsConCalificacion = $cerrados->filter(
+                fn($t) => $t->calificacion && in_array($t->calificacion->status, ['completed', 'partially_completed'])
+            );
+
+            $calificacionPromedio = [
+                'fastness' => 0,
+                'attention' => 0,
+                'resolution' => 0,
+                'general' => 0,
+                'total_respuestas' => $ticketsConCalificacion->count()
+            ];
+
+            if ($ticketsConCalificacion->count() > 0) {
+                $calificacionPromedio['fastness'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->fastness), 2);
+                $calificacionPromedio['attention'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->attention), 2);
+                $calificacionPromedio['resolution'] = round($ticketsConCalificacion->avg(fn($t) => $t->calificacion->resolution), 2);
+                $calificacionPromedio['general'] = round(($calificacionPromedio['fastness'] + $calificacionPromedio['attention'] + $calificacionPromedio['resolution']) / 3, 2);
+            }
+
             $metricas[] = [
                 'empleado_id'                => $empleado->EmpleadoID,
                 'nombre'                     => $empleado->NombreEmpleado,
@@ -532,6 +571,7 @@ class TicketsController extends Controller
                 'tickets_por_mes'            => $ticketsPorMes,
                 'tickets_por_prioridad'      => $ticketsEmpleado->groupBy('Prioridad')->map(fn($g) => $g->count()),
                 'tickets_por_clasificacion'  => $ticketsEmpleado->groupBy('Clasificacion')->map(fn($g) => $g->count()),
+                'calificacion_promedio'      => $calificacionPromedio,
             ];
         }
 
@@ -675,14 +715,14 @@ class TicketsController extends Controller
 
             $ticket->save();
 
+            // Enviar encuesta de satisfacción cuando el ticket pasa a Cerrado por primera vez
+            if ($estatusAnterior !== 'Cerrado' && $ticket->Estatus === 'Cerrado') {
+                app(TicketSatisfactionSurveyService::class)->sendSurveyForClosedTicket($ticket->fresh());
+            }
+
             if ($nuevoEstatus === 'En progreso') {
                 $ticket->refresh();
                 $ticket->load(['tipoticket', 'responsableTI']);
-                try {
-                    (new TicketNotificationService())->verificarYNotificarExceso($ticket);
-                } catch (\Exception $e) {
-                    Log::error("Error verificando exceso de tiempo al cambiar a En progreso: " . $e->getMessage());
-                }
             }
 
             return response()->json([
@@ -1329,12 +1369,12 @@ class TicketsController extends Controller
         $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
         $modoRango  = $esRango;
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'chat' => function ($query) {
+        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
-        $metricasSolicitudes   = $this->calcularMetricasSolicitudes($esRango ? $mesInicio : $mes, $esRango ? $anioInicio : $anio);
+        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
 
         $html = view('tickets.productividad', [
             'metricasProductividad' => $metricasProductividad,
