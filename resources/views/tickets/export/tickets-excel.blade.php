@@ -1,11 +1,11 @@
 <table>
     <tr>
-        <td colspan="20" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #1E40AF;">
+        <td colspan="24" style="background-color: #1E3A8A; color: #FFFFFF; font-size: 18px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #1E40AF;">
             REPORTE MENSUAL DE TICKETS - DETALLE
         </td>
     </tr>
     <tr>
-        <td colspan="20" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
+        <td colspan="24" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
             <strong>Período:</strong> {{ \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} | 
             <strong>Total de Tickets:</strong> <span style="color: #1E40AF; font-weight: bold;">{{ $tickets->count() }}</span> | 
             <strong>Cerrados:</strong> <span style="color: #059669; font-weight: bold;">{{ $resumen['tickets_cerrados'] ?? 0 }}</span> | 
@@ -34,6 +34,10 @@
         <th>Incidencia</th>
         <th>Código AnyDesk</th>
         <th>Número</th>
+        <th>Cal. Rapidez</th>
+        <th>Cal. Atención</th>
+        <th>Cal. Resolución</th>
+        <th>Comentario</th>
     </tr>
     @forelse($tickets as $ticket)
     <tr style="{{ $loop->even ? 'background-color: #F9FAFB;' : 'background-color: #FFFFFF;' }}">
@@ -102,10 +106,22 @@
         </td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->CodeAnyDesk ? strip_tags($ticket->CodeAnyDesk) : '-' }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->Numero ? strip_tags($ticket->Numero) : '-' }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">
+            {{ $ticket->calificacion && $ticket->calificacion->fastness !== null ? $ticket->calificacion->fastness . '/5' : 'Sin calificación' }}
+        </td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">
+            {{ $ticket->calificacion && $ticket->calificacion->attention !== null ? $ticket->calificacion->attention . '/5' : 'Sin calificación' }}
+        </td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">
+            {{ $ticket->calificacion && $ticket->calificacion->resolution !== null ? $ticket->calificacion->resolution . '/5' : 'Sin calificación' }}
+        </td>
+        <td style="padding: 8px; border: 1px solid #E5E7EB;">
+            {{ $ticket->calificacion && $ticket->calificacion->user_comment ? $ticket->calificacion->user_comment : 'Sin comentarios' }}
+        </td>
     </tr>
     @empty
     <tr>
-        <td colspan="19" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay tickets disponibles para este mes</td>
+        <td colspan="23" style="text-align: center; padding: 20px; border: 1px solid #E5E7EB; color: #6B7280; font-style: italic;">No hay tickets disponibles para este mes</td>
     </tr>
     @endforelse
 </table>

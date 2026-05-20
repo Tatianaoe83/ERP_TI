@@ -1407,6 +1407,7 @@ class TicketsController extends Controller
             'tipoticket',
             'subtipo',
             'tertipo',
+            'calificacion',
         ])->whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
 
         $resumen = $this->calcularResumenMensual($tickets, $fechaInicio, $fechaFin);
@@ -1438,6 +1439,7 @@ class TicketsController extends Controller
             'tipoticket',
             'subtipo',
             'tertipo',
+            'calificacion',
         ])->whereBetween('created_at', [$fechaInicioAnterior, $fechaFinActual])->get();
 
         $ticketsMesActual = $ticketsDosMeses->filter(
