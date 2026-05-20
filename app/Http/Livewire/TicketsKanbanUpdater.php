@@ -8,26 +8,11 @@ use Illuminate\Support\Str;
 
 class TicketsKanbanUpdater extends Component
 {
-    public $ticketsStatus = [
-        'nuevos' => [],
-        'proceso' => [],
-        'resueltos' => [],
-    ];
+    protected $listeners = ['ticket-estatus-actualizado' => '$refresh'];
 
-    public $ticketsExcedidos = [];
-    public $tiemposProgreso = [];
-
-    protected $listeners = ['ticket-estatus-actualizado' => 'actualizarDatos'];
-
-    public function mount()
+    private function fetchTickets()
     {
-        $this->actualizarDatos();
-    }
-
-    public function actualizarDatos()
-    {
-        // QUERY
-        $tickets = Tickets::with([
+        return Tickets::with([
             'empleado',
             'responsableTI',
             'tipoticket',
@@ -37,37 +22,6 @@ class TicketsKanbanUpdater extends Component
         ])
         ->orderBy('created_at', 'desc')
         ->get();
-
-        // Clasificación por estatus
-        $this->ticketsStatus = [
-            'nuevos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Pendiente')->values()
-            ),
-            'proceso' => $this->formatearTickets(
-                $tickets->where('Estatus', 'En progreso')->values()
-            ),
-            'resueltos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Cerrado')->values()
-            ),
-        ];
-
-        // Procesar tiempos y excedidos usando la misma colección
-        $this->procesarTiempos($tickets);
-
-        // Hash optimizado
-        $hashDatos = hash('xxh3', json_encode([
-            'tickets' => $this->ticketsStatus,
-            'tiempos' => $this->tiemposProgreso
-        ]));
-
-        // Emitir evento para Alpine
-        $this->emit('tickets-actualizados-kanban', [
-            'ticketsStatus' => $this->ticketsStatus,
-            'ticketsExcedidos' => $this->ticketsExcedidos,
-            'tiemposProgreso' => $this->tiemposProgreso,
-            'hash' => $hashDatos,
-            'timestamp' => now()->toIso8601String()
-        ]);
     }
 
     private function formatearTickets($tickets)
@@ -96,8 +50,8 @@ class TicketsKanbanUpdater extends Component
 
     private function procesarTiempos($tickets)
     {
-        $this->ticketsExcedidos = [];
-        $this->tiemposProgreso = [];
+        $ticketsExcedidos = [];
+        $tiemposProgreso = [];
 
         $ticketsEnProgreso = $tickets
             ->where('Estatus', 'En progreso')
@@ -106,13 +60,12 @@ class TicketsKanbanUpdater extends Component
         foreach ($ticketsEnProgreso as $ticket) {
 
             if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) {
-                $this->tiemposProgreso[$ticket->TicketID] = null;
+                $tiemposProgreso[$ticket->TicketID] = null;
                 continue;
             }
 
             $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
 
-            // Cálculo directo sin depender de accessor pesado
             $tiempoTranscurrido = $ticket->FechaInicioProgreso
                 ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
                 : 0;
@@ -121,8 +74,7 @@ class TicketsKanbanUpdater extends Component
                 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100
                 : 0;
 
-            // Guardar progreso
-            $this->tiemposProgreso[$ticket->TicketID] = [
+            $tiemposProgreso[$ticket->TicketID] = [
                 'transcurrido' => round($tiempoTranscurrido, 1),
                 'estimado' => round($tiempoEstimadoHoras, 1),
                 'porcentaje' => round($porcentajeUsado, 1),
@@ -131,13 +83,12 @@ class TicketsKanbanUpdater extends Component
                     : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
             ];
 
-            // Detectar excedidos
             if ($tiempoTranscurrido > $tiempoEstimadoHoras) {
 
                 $tiempoExcedido = round($tiempoTranscurrido - $tiempoEstimadoHoras, 2);
                 $porcentajeExcedido = round(($tiempoTranscurrido / $tiempoEstimadoHoras) * 100, 1);
 
-                $this->ticketsExcedidos[] = [
+                $ticketsExcedidos[] = [
                     'id' => $ticket->TicketID,
                     'descripcion' => Str::limit($ticket->Descripcion, 80),
                     'responsable' => $ticket->responsableTI
@@ -158,18 +109,38 @@ class TicketsKanbanUpdater extends Component
             }
         }
 
-        // Ordenar excedidos por mayor tiempo excedido
-        usort($this->ticketsExcedidos, function ($a, $b) {
+        usort($ticketsExcedidos, function ($a, $b) {
             return $b['tiempo_excedido'] <=> $a['tiempo_excedido'];
         });
+
+        return [
+            'tiemposProgreso' => $tiemposProgreso,
+            'ticketsExcedidos' => $ticketsExcedidos,
+        ];
     }
 
     public function render()
     {
+        $tickets = $this->fetchTickets();
+
+        $ticketsStatus = [
+            'nuevos' => $this->formatearTickets(
+                $tickets->where('Estatus', 'Pendiente')->values()
+            ),
+            'proceso' => $this->formatearTickets(
+                $tickets->where('Estatus', 'En progreso')->values()
+            ),
+            'resueltos' => $this->formatearTickets(
+                $tickets->where('Estatus', 'Cerrado')->values()
+            ),
+        ];
+
+        $tiempos = $this->procesarTiempos($tickets);
+
         return view('livewire.tickets-kanban-updater', [
-            'ticketsStatus' => $this->ticketsStatus,
-            'ticketsExcedidos' => $this->ticketsExcedidos,
-            'tiemposProgreso' => $this->tiemposProgreso,
+            'ticketsStatus'    => $ticketsStatus,
+            'ticketsExcedidos' => $tiempos['ticketsExcedidos'],
+            'tiemposProgreso'  => $tiempos['tiemposProgreso'],
         ]);
     }
 }

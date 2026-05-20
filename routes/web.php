@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TicketSatisfactionAnswerController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RolController;
@@ -94,16 +95,16 @@ Route::group(['middleware' => ['auth']], function () {
         Route::get('/export-lineas-asignadas-excel', [App\Http\Controllers\ReportesEspecificosController::class, 'exportLineasAsignadasExcel'])->name('export-lineas-asignadas-excel');
     });
     Route::post('/facturas/parsear-xml', [App\Http\Controllers\FacturasController::class, 'parsearXml'])
-    ->name('facturas.parsearXml');
+        ->name('facturas.parsearXml');
 
     Route::post('/facturas/previsualizar-pdf', [App\Http\Controllers\FacturasController::class, 'previsualizarPdf'])
-    ->name('facturas.previsualizarPdf');
+        ->name('facturas.previsualizarPdf');
 
     Route::post('/facturas/previsualizar-pdf-texto', [App\Http\Controllers\FacturasController::class, 'previsualizarPdfDesdeTexto'])
         ->name('facturas.previsualizarPdfDesdeTexto');
 
     Route::post('/facturas/{id}/reemplazar-archivo', [App\Http\Controllers\FacturasController::class, 'reemplazarArchivo'])
-    ->name('facturas.reemplazar');
+        ->name('facturas.reemplazar');
     Route::get('facturas/comparativa', [FacturasController::class, 'comparativa'])->name('facturas.comparativa');
     Route::get('facturas/historial', [FacturasController::class, 'historial'])->name('facturas.historial');
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
@@ -175,6 +176,20 @@ Route::group(['middleware' => ['auth']], function () {
 
 // Soporte TI (sin auth)
 Route::get('/SoporteTI', [SoporteTIController::class, 'index']);
+
+// Encuestas de satisfacción de tickets (sin auth, protegidas por firma temporal)
+Route::get(
+    '/tickets/encuesta/{survey}',
+    [TicketSatisfactionAnswerController::class, 'show']
+)->name('tickets.satisfaction.survey');
+Route::get(
+    '/tickets/calificacion/{survey}/{field}/{rating}',
+    [TicketSatisfactionAnswerController::class, 'store']
+)->name('tickets.satisfaction.answer');
+Route::post(
+    '/tickets/encuesta/{survey}/comentario',
+    [TicketSatisfactionAnswerController::class, 'storeComment']
+)->name('tickets.satisfaction.comment');
 Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
 Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
 Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmpleadoPorCorreo']);

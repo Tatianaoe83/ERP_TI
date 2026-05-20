@@ -67,6 +67,10 @@ class TicketsSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
                     'Q' => 20,  // Tertipo
                     'R' => 15,  // Código AnyDesk
                     'S' => 12,  // Número
+                    'U' => 14,  // Cal. Rapidez
+                    'V' => 14,  // Cal. Atención
+                    'W' => 14,  // Cal. Resolución
+                    'X' => 45,  // Comentario
                 ];
                 
                 foreach (range('A', $highestColumn) as $col) {

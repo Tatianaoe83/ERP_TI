@@ -564,6 +564,54 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             }
         }
 
+        // ===== Calificaciones de satisfacción =====
+        $califRaw = ['fastness' => [], 'attention' => [], 'resolution' => []];
+        $califPorResponsable = [];
+
+        foreach ($tickets as $ticket) {
+            $ticketDate = Carbon::parse($ticket->created_at);
+            if ($ticketDate->month !== $mesTarget || $ticketDate->year !== $anioTarget) {
+                continue;
+            }
+            $cal = $ticket->calificacion;
+            if (!$cal) {
+                continue;
+            }
+            $resp = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
+            foreach (['fastness', 'attention', 'resolution'] as $field) {
+                if ($cal->{$field} !== null) {
+                    $califRaw[$field][] = $cal->{$field};
+                    $califPorResponsable[$resp][$field][] = $cal->{$field};
+                }
+            }
+        }
+
+        $avg = fn(array $arr) => count($arr) > 0 ? round(array_sum($arr) / count($arr), 1) : null;
+
+        $califGeneral = [
+            'fastness'   => $avg($califRaw['fastness']),
+            'attention'  => $avg($califRaw['attention']),
+            'resolution' => $avg($califRaw['resolution']),
+            'general'    => $avg(array_merge($califRaw['fastness'], $califRaw['attention'], $califRaw['resolution'])),
+            'count'      => count($califRaw['fastness']),
+        ];
+
+        $califResumen = [];
+        foreach ($califPorResponsable as $resp => $campos) {
+            $f = $avg($campos['fastness']   ?? []);
+            $a = $avg($campos['attention']  ?? []);
+            $r = $avg($campos['resolution'] ?? []);
+            $g = $avg(array_merge($campos['fastness'] ?? [], $campos['attention'] ?? [], $campos['resolution'] ?? []));
+            $califResumen[$resp] = [
+                'fastness'   => $f,
+                'attention'  => $a,
+                'resolution' => $r,
+                'general'    => $g,
+                'count'      => count($campos['fastness'] ?? []),
+            ];
+        }
+        uasort($califResumen, fn($a, $b) => ($b['general'] ?? 0) <=> ($a['general'] ?? 0));
+
         $this->reportData = [
             'usuarios' => array_values($usuariosUnicos),
             'usuariosAmbosMeses' => array_values($usuariosAmbosMeses),
@@ -591,6 +639,8 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             'textoAnormales' => 'Generalmente los tickets de duración anormal son aquellos que exceden el día laboral de duración (>8 hrs) y tiene que ver con falta de respuesta del que crea el ticket, incorrecta ejecución del proceso de atención (TI; principalmente en los primeros meses de la implementación del sistema), problema de múltiples respuestas o escalado.',
             'promResolucionHoras' => number_format($promedioTotales / 3600, 1),
             'promRespuestaHoras' => number_format($promedioPrimerRespuestaGeneral / 3600, 1),
+            'califGeneral'        => $califGeneral,
+            'califPorResponsable' => $califResumen,
         ];
 
         $this->prepared = true;
@@ -1101,6 +1151,64 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $this->layout['solicitudes_comparacion']['totalRow'] = $row;
             $this->layout['solicitudes_comparacion']['end'] = $row;
             $row++;
+        }
+
+        // ========== CALIFICACIONES DE SATISFACCIÓN ==========
+        $califGeneral     = $d['califGeneral']        ?? [];
+        $califResponsable = $d['califPorResponsable'] ?? [];
+
+        $rows[] = [];
+        $row++;
+
+        $this->layout['calificaciones'] = [
+            'title'           => $row,
+            'generalHeader'   => $row + 1,
+            'generalRow'      => $row + 2,
+            'responsableHeader' => null,
+            'responsableData' => [],
+        ];
+
+        $rows[] = ['Tickets: Calificaciones de Satisfacción — ' . ($d['mesNombreTarget'] ?? '')];
+        $row++;
+
+        $rows[] = ['Apartado', 'Rapidez ★/5', 'Atención ★/5', 'Resolución ★/5', 'Promedio General ★/5', 'Encuestas'];
+        $row++;
+
+        $fmt = fn($v) => $v !== null ? $v : 'Sin datos';
+
+        $rows[] = [
+            'General',
+            $fmt($califGeneral['fastness']   ?? null),
+            $fmt($califGeneral['attention']  ?? null),
+            $fmt($califGeneral['resolution'] ?? null),
+            $fmt($califGeneral['general']    ?? null),
+            $califGeneral['count'] ?? 0,
+        ];
+        $row++;
+
+        $rows[] = [];
+        $row++;
+
+        if (!empty($califResponsable)) {
+            $this->layout['calificaciones']['responsableHeader'] = $row;
+
+            $rows[] = ['Responsable TI', 'Rapidez ★/5', 'Atención ★/5', 'Resolución ★/5', 'Promedio General ★/5', 'Encuestas'];
+            $row++;
+
+            foreach ($califResponsable as $resp => $data) {
+                $rows[] = [
+                    $resp,
+                    $fmt($data['fastness']   ?? null),
+                    $fmt($data['attention']  ?? null),
+                    $fmt($data['resolution'] ?? null),
+                    $fmt($data['general']    ?? null),
+                    $data['count'] ?? 0,
+                ];
+                $this->layout['calificaciones']['responsableData'][] = $row;
+                $row++;
+            }
+
+            $this->layout['calificaciones']['responsableEnd'] = $row - 1;
         }
 
         return $rows;
@@ -2151,6 +2259,27 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                     // Total row
                     $this->applyStyle($sheet, 'A' . $this->layout['solicitudes_comparacion']['totalRow'], $styles['green_row']);
                     $this->applyStyle($sheet, 'B' . $this->layout['solicitudes_comparacion']['totalRow'] . ':E' . $this->layout['solicitudes_comparacion']['totalRow'], $styles['green_center']);
+                }
+
+                // ========== ESTILOS PARA CALIFICACIONES ==========
+                if (isset($this->layout['calificaciones'])) {
+                    $sheet->mergeCells('A' . $this->layout['calificaciones']['title'] . ':F' . $this->layout['calificaciones']['title']);
+                    $this->applyStyle($sheet, 'A' . $this->layout['calificaciones']['title'] . ':F' . $this->layout['calificaciones']['title'], $styles['section_title']);
+
+                    $this->applyStyle($sheet, 'A' . $this->layout['calificaciones']['generalHeader'] . ':F' . $this->layout['calificaciones']['generalHeader'], $styles['table_header']);
+                    $this->applyStyle($sheet, 'A' . $this->layout['calificaciones']['generalRow'], $styles['label']);
+                    $this->applyStyle($sheet, 'B' . $this->layout['calificaciones']['generalRow'] . ':F' . $this->layout['calificaciones']['generalRow'], $styles['green_center']);
+
+                    if (!empty($this->layout['calificaciones']['responsableData'])) {
+                        $this->applyStyle($sheet, 'A' . $this->layout['calificaciones']['responsableHeader'] . ':F' . $this->layout['calificaciones']['responsableHeader'], $styles['table_header']);
+
+                        foreach ($this->layout['calificaciones']['responsableData'] as $index => $rRow) {
+                            $styleKey  = ($index % 2 === 0) ? 'normal'  : 'normal_alt';
+                            $centerKey = ($index % 2 === 0) ? 'center'  : 'center_alt';
+                            $this->applyStyle($sheet, "A{$rRow}", $styles[$styleKey]);
+                            $this->applyStyle($sheet, "B{$rRow}:F{$rRow}", $styles[$centerKey]);
+                        }
+                    }
                 }
             },
         ];

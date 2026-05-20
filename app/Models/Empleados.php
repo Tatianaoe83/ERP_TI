@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Eloquent as Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Validation\Rule;
 use OwenIt\Auditing\Contracts\Auditable;
 
 
@@ -76,87 +75,12 @@ class Empleados extends Model implements Auditable
         'NombreEmpleado' => 'required|string|max:100',
         'PuestoID' => 'required|integer',
         'ObraID' => 'required|integer',
-        'NumTelefono' => 'required|string|max:50',
-        'Correo' => 'required|string|max:150',
-        'Estado' => 'required|in:0,1',
+        'NumTelefono' => 'nullable|string|max:50',
+        'Correo' => 'nullable|string|max:150',
+        'Estado' => 'required|boolean',
         'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO|required',
         'deleted_at' => 'nullable'
     ];
-
-    public static function rulesFor(?string $tipoPersona = null, ?int $empleadoId = null, $estado = 1): array
-    {
-        $esFisica = strtoupper((string) $tipoPersona) === 'FISICA';
-        $estaActivo = in_array($estado, [1, '1', true], true);
-
-        $correoRules = $esFisica
-            ? ['required', 'string', 'email', 'max:150']
-            : ['nullable', 'string', 'email', 'max:150'];
-
-        if ($estaActivo) {
-            $uniqueCorreo = Rule::unique('empleados', 'Correo')
-                ->where(fn ($query) => $query->where('Estado', 1)->whereNull('deleted_at'));
-
-            if ($empleadoId) {
-                $uniqueCorreo->ignore($empleadoId, 'EmpleadoID');
-            }
-
-            $correoRules[] = $uniqueCorreo;
-        }
-
-        return [
-            'NombreEmpleado' => 'required|string|max:100',
-            'PuestoID' => 'required|integer',
-            'ObraID' => 'required|integer',
-            'NumTelefono' => $esFisica
-                ? 'required|string|regex:/^[0-9]{10}$/'
-                : 'nullable|string|max:50',
-            'Correo' => $correoRules,
-            'Estado' => 'required|in:0,1',
-            'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO',
-            'deleted_at' => 'nullable',
-        ];
-    }
-
-    public static function correoUtilizable(?string $correo): bool
-    {
-        $correo = trim((string) $correo);
-
-        return $correo !== '' && strtoupper($correo) !== 'N/A';
-    }
-
-    public static function correoEnUsoPorActivo(?string $correo, ?int $exceptEmpleadoId = null): bool
-    {
-        if (!self::correoUtilizable($correo)) {
-            return false;
-        }
-
-        $query = static::query()
-            ->where('Estado', 1)
-            ->whereNull('deleted_at')
-            ->where('Correo', trim($correo));
-
-        if ($exceptEmpleadoId) {
-            $query->where('EmpleadoID', '!=', $exceptEmpleadoId);
-        }
-
-        return $query->exists();
-    }
-
-    public static function puedeActivarse(Empleados $empleado): array
-    {
-        $esFisica = strtoupper((string) $empleado->tipo_persona) === 'FISICA';
-        $correo = trim((string) $empleado->Correo);
-
-        if ($esFisica && !self::correoUtilizable($correo)) {
-            return [false, 'No se puede activar: el empleado físico debe tener un correo válido.'];
-        }
-
-        if (self::correoUtilizable($correo) && self::correoEnUsoPorActivo($correo, $empleado->EmpleadoID)) {
-            return [false, 'No se puede activar: el correo ya está registrado en otro empleado activo.'];
-        }
-
-        return [true, ''];
-    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
