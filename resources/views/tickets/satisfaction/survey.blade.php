@@ -133,8 +133,14 @@
         },
 
         async submitComment() {
+            const trimmedComment = this.commentText.trim();
+            
+            if (!trimmedComment) {
+                alert('Por favor escribe un comentario antes de enviar.');
+                return;
+            }
+            
             this.commentSubmitting = true;
-            const comment = this.commentText.trim();
             try {
                 let response = await fetch('{{ route('tickets.satisfaction.comment', ['survey' => $calificacion->uuid]) }}', {
                     method: 'POST',
@@ -144,7 +150,7 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ user_comment: comment || null })
+                    body: JSON.stringify({ user_comment: trimmedComment })
                 });
                 if (response.ok) {
                     this.showCommentStep = false;
@@ -176,9 +182,19 @@
                         Ticket #{{ $ticket?->TicketID ?? '—' }}
                     </div>
 
+                    @php
+                        $nombreCompleto = $ticket?->responsableTI?->NombreEmpleado ?? '';
+                        $partesNombre = explode(' ', $nombreCompleto);
+                        $nombre1 = $partesNombre[2] ?? '';
+                        $nombre2 = $partesNombre[3] ?? '';
+                        $appellido1 = $partesNombre[0] ?? '';
+                        $apellido2 = $partesNombre[1] ?? '';
+                        $nombreMostrar = trim("$nombre1 $nombre2 $appellido1 $apellido2");
+                    @endphp
+
                     @if($ticket?->responsableTI?->NombreEmpleado)
                         <div class="text-sm text-slate-400">
-                            Te atendió: <strong class="text-white">{{ $ticket->responsableTI->NombreEmpleado }}</strong>
+                            Te atendió: <strong class="text-white">{{ $nombreMostrar }}</strong>
                         </div>
                     @endif
                 </div>
@@ -211,11 +227,6 @@
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Progreso</span>
                     <span class="text-sm font-bold text-slate-700"
                         x-text="`${Object.keys(answered).length} / 3`"></span>
-                </div>
-                <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden relative">
-                    <div class="absolute top-0 left-0 h-full bg-blue-600 transition-all duration-500 ease-out rounded-full"
-                        :style="`width: ${(Object.keys(answered).length / 3) * 100}%`">
-                    </div>
                 </div>
 
                 <div class="flex gap-2 mt-4">
@@ -333,8 +344,8 @@
                         class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none disabled:opacity-50">
                         Omitir
                     </button>
-                    <button @click="submitComment()" :disabled="commentSubmitting"
-                        class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm focus:outline-none flex items-center gap-2 disabled:opacity-60">
+                    <button @click="submitComment()" :disabled="commentSubmitting || !commentText.trim()"
+                        class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm focus:outline-none flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
                         <svg x-show="commentSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
