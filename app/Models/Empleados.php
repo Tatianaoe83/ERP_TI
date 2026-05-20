@@ -78,7 +78,7 @@ class Empleados extends Model implements Auditable
         'ObraID' => 'required|integer',
         'NumTelefono' => 'required|string|max:50',
         'Correo' => 'required|string|max:150',
-        'Estado' => 'required|boolean',
+        'Estado' => 'required|in:0,1',
         'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO|required',
         'deleted_at' => 'nullable'
     ];
@@ -111,7 +111,7 @@ class Empleados extends Model implements Auditable
                 ? 'required|string|regex:/^[0-9]{10}$/'
                 : 'nullable|string|max:50',
             'Correo' => $correoRules,
-            'Estado' => 'required|boolean',
+            'Estado' => 'required|in:0,1',
             'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO',
             'deleted_at' => 'nullable',
         ];

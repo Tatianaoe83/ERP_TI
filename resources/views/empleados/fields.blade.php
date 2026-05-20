@@ -62,7 +62,14 @@
 </div>
 
 <!-- Estado Field -->
-{!! Form::hidden('Estado', old('Estado', isset($empleados) ? $empleados->Estado : 1)) !!}
+@php
+    $estadoEmpleado = 1;
+    if (isset($empleados)) {
+        $estadoEmpleado = (int) ($empleados->getAttributes()['Estado'] ?? ($empleados->Estado ? 1 : 0));
+    }
+    $estadoEmpleado = (int) old('Estado', $estadoEmpleado);
+@endphp
+<input type="hidden" name="Estado" value="{{ $estadoEmpleado }}">
 
 <script>
 window.addEventListener('load', function () {

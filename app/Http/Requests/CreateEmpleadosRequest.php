@@ -27,8 +27,19 @@ class CreateEmpleadosRequest extends FormRequest
         return Empleados::rulesFor(
             $this->input('tipo_persona'),
             null,
-            $this->input('Estado', 1)
+            $this->input('Estado')
         );
+    }
+
+    protected function prepareForValidation()
+    {
+        $estado = $this->input('Estado');
+
+        if ($estado === null || $estado === '') {
+            $estado = 1;
+        }
+
+        $this->merge(['Estado' => (int) $estado]);
     }
 
     public function messages()

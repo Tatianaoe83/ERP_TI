@@ -9,7 +9,7 @@
 
         <div class="modal-content dark:bg-[#101010] bg-white">
 
-            <div class="modal-header border-secondary">
+            <div class="modal-header border-gray-200 dark:border-secondary">
 
                 <h5 class="modal-title text-danger" id="modalFaltantesLabel">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -25,23 +25,23 @@
 
             <div class="modal-body">
 
-                <p class=" dark:text-gray-300">
+                <p class="text-[#101D49] dark:text-gray-300">
                     Se han detectado datos incompletos en los inventarios.
                     Para visualizar el presupuesto detallado,
                     es necesario corregir los siguientes puntos:
                 </p>
 
-                <div class="mt-4 p-4 bg-[#1a1a1a] rounded border border-secondary"
+                <div class="mt-4 p-4 bg-gray-100 dark:bg-[#1a1a1a] rounded border border-gray-200 dark:border-secondary text-[#101D49] dark:text-gray-200"
                     id="infoAdicionalEmpleados">
 
-                    <h6 class="mb-3 border-bottom  pb-2">
+                    <h6 class="mb-3 border-bottom border-gray-300 dark:border-secondary pb-2 text-[#101D49] dark:text-white">
                         <i class="fas fa-users"></i>
                         Estado de Empleados e Insumos
                     </h6>
 
                     <div class="d-flex flex-column gap-3">
 
-                        <p class="mb-0  d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center text-[#101D49] dark:text-gray-200">
                             <strong>Total De Empleados:</strong>
 
                             <span id="totalEmpleadosModal"
@@ -50,7 +50,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0 d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center text-[#101D49] dark:text-gray-200">
                             <strong>
                                 Empleados Con Insumos Mensuales
                                 Con Fecha De Renovacion
@@ -63,7 +63,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0 d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center text-[#101D49] dark:text-gray-200">
                             <strong>
                                 Empleados Con Insumos Anuales
                                 Con Fecha De Renovacion
@@ -76,7 +76,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0  d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center text-[#101D49] dark:text-gray-200">
                             <strong>
                                 Lineas Telefonicas Disponibles
                                 Con Fecha De Renovacion
@@ -89,7 +89,7 @@
                             </span>
                         </p>
 
-                        <p class="mb-0 d-flex justify-content-between align-items-center">
+                        <p class="mb-0 d-flex justify-content-between align-items-center text-[#101D49] dark:text-gray-200">
                             <strong>
                                 Insumos Disponibles
                                 Con Fecha De Renovacion
@@ -108,7 +108,7 @@
 
             </div>
 
-            <div class="modal-footer border-secondary">
+            <div class="modal-footer border-gray-200 dark:border-secondary">
 
                 <button type="button"
                     class="btn btn-secondary"

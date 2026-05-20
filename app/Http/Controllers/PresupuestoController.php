@@ -122,6 +122,7 @@ class PresupuestoController extends Controller
 
 
         $numerogerencia = (int) $request->GerenciaID;
+        $metadatosDocumento = $this->metadatosDocumentoReporte($request->input('modo', 'presupuesto'));
 
         $GerenciaTb = Empleados::query()
         ->select(
@@ -608,6 +609,9 @@ class PresupuestoController extends Controller
               
                 $data = ["title" => $request->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
                         "dato" => $request->tipo == 'mens' ? 'Mensual' : 'Anual',
+                        'tipoDocumento' => $metadatosDocumento['tipoDocumento'],
+                        'anioDocumento' => $metadatosDocumento['anioDocumento'],
+                        'modo' => $metadatosDocumento['modo'],
                         'datosheader' => $datosheader,
                         'GerenciaTb' => $GerenciaTb->first() ?? '',
                         'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
@@ -635,14 +639,16 @@ class PresupuestoController extends Controller
                 $pdf->render();
                 $gerencia = $GerenciaTb->first();
                 $nombreGerencia = $gerencia ? $gerencia->NombreGerencia : 'Sin_Gerencia';
-                return $pdf->stream('Reporte_Presupuesto_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.pdf');
+                $prefijoArchivo = $metadatosDocumento['modo'] === 'inventario' ? 'Reporte_Inventario' : 'Reporte_Presupuesto';
+                return $pdf->stream($prefijoArchivo . '_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.pdf');
 
         
        }else{
                 $gerencia = $GerenciaTb->first();
                 $nombreGerencia = $gerencia ? $gerencia->NombreGerencia : 'Sin_Gerencia';
-                $fileName = 'Reporte_Presupuesto_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.xlsx';
-                return Excel::download(new ReportExport($request->GerenciaID, $request->tipo), $fileName);
+                $prefijoArchivo = $metadatosDocumento['modo'] === 'inventario' ? 'Reporte_Inventario' : 'Reporte_Presupuesto';
+                $fileName = $prefijoArchivo . '_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.xlsx';
+                return Excel::download(new ReportExport($request->GerenciaID, $request->tipo, $metadatosDocumento['modo']), $fileName);
        }
         
     }
@@ -764,6 +770,17 @@ public function verificarFechas(Request $request)
         ], 500);
     }
 }
+
+    private function metadatosDocumentoReporte(?string $modo): array
+    {
+        $modo = $modo === 'inventario' ? 'inventario' : 'presupuesto';
+
+        return [
+            'modo' => $modo,
+            'tipoDocumento' => $modo === 'inventario' ? 'INVENTARIO' : 'PRESUPUESTO',
+            'anioDocumento' => $modo === 'presupuesto' ? now()->year + 1 : now()->year,
+        ];
+    }
 
     private function obtenerInsumosAnualesFiltrados($gerenciaId, $tipoPersona = null)
     {

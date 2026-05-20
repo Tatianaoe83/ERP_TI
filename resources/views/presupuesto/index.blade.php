@@ -185,6 +185,8 @@
 
                     @csrf
 
+                    <input type="hidden" name="modo" value="presupuesto">
+
                     <div class="flex flex-col gap-5">
 
                         <!-- TIPO -->
@@ -292,6 +294,8 @@
                 >
 
                     @csrf
+
+                    <input type="hidden" name="modo" value="inventario">
 
                     <div class="flex flex-col gap-5">
 

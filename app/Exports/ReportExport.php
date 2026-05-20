@@ -25,6 +25,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
     private $gerencia;
     private $tipo;
+    private $modo;
 
     //  Contadores
     public $tablapresup_licsCount;
@@ -38,10 +39,11 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
 
 
 
-    public function __construct(int $gerencia, string $tipo)
+    public function __construct(int $gerencia, string $tipo, string $modo = 'presupuesto')
     {
         $this->gerencia  = $gerencia;
         $this->tipo = $tipo;
+        $this->modo = $modo === 'inventario' ? 'inventario' : 'presupuesto';
     }
 
 
@@ -548,6 +550,9 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $data = [
             "title" => $this->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
             "dato" => $this->tipo == 'mens' ? 'Mensual' : 'Anual',
+            'tipoDocumento' => $this->modo === 'inventario' ? 'INVENTARIO' : 'PRESUPUESTO',
+            'anioDocumento' => $this->modo === 'presupuesto' ? now()->year + 1 : now()->year,
+            'modo' => $this->modo,
             'datosheader' => $datosheader,
             'GerenciaTb' => $GerenciaTb[0] ?? '',
             'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
