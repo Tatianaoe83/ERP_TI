@@ -135,11 +135,14 @@
         async submitComment() {
             const trimmedComment = this.commentText.trim();
             
+            // Si está vacío, simplemente continuar sin enviar
             if (!trimmedComment) {
-                alert('Por favor escribe un comentario antes de enviar.');
+                this.showCommentStep = false;
+                this.showCelebration = true;
                 return;
             }
             
+            // Si tiene contenido, enviarlo
             this.commentSubmitting = true;
             try {
                 let response = await fetch('{{ route('tickets.satisfaction.comment', ['survey' => $calificacion->uuid]) }}', {
@@ -321,8 +324,8 @@
                                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Comentario adicional <span class="text-slate-400 font-normal text-lg">(opcional)</span></h2>
-                    <p class="text-slate-500 text-sm">¿Tienes algo más que compartir sobre la atención recibida?</p>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Comentario adicional</h2>
+                    <p class="text-slate-500 text-sm">¿Tienes algo más que compartir sobre la atención recibida?<br><span class="text-xs text-slate-400 mt-1 inline-block">Deja el campo vacío si prefieres continuar sin comentar</span></p>
                 </div>
 
                 <div class="max-w-md mx-auto w-full">
@@ -339,18 +342,14 @@
                     </div>
                 </div>
 
-                <div class="flex gap-3 justify-center mt-6">
-                    <button @click="skipComment()" :disabled="commentSubmitting"
-                        class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors focus:outline-none disabled:opacity-50">
-                        Omitir
-                    </button>
-                    <button @click="submitComment()" :disabled="commentSubmitting || !commentText.trim()"
-                        class="px-5 py-2.5 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm focus:outline-none flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                <div class="flex justify-center mt-6">
+                    <button @click="submitComment()" :disabled="commentSubmitting"
+                        class="px-6 py-3 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm focus:outline-none flex items-center gap-2 disabled:opacity-60">
                         <svg x-show="commentSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                         </svg>
-                        <span x-text="commentSubmitting ? 'Enviando...' : 'Enviar y finalizar'"></span>
+                        <span x-text="commentSubmitting ? 'Enviando...' : 'Continuar'"></span>
                     </button>
                 </div>
             </div>
