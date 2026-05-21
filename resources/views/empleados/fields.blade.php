@@ -49,5 +49,12 @@
     {!! Form::label('tipo_persona', 'Tipo de persona:') !!}
     {!! Form::select('tipo_persona', ['FISICA' => 'FISICA', 'REFERENCIADO' => 'REFERENCIADO' ,'EXTRAORDINARIO' => 'EXTRAORDINARIO'], null, ['class' => 'form-control', 'placeholder' => 'Seleccionar tipo de persona']) !!}
 </div>
-<!-- Estado Field - Oculto con valor por defecto 1 -->
-{!! Form::hidden('Estado', 1) !!}
+<!-- Estado Field -->
+@php
+    $estadoEmpleado = 1;
+    if (isset($empleados)) {
+        $estadoEmpleado = (int) ($empleados->getAttributes()['Estado'] ?? ($empleados->Estado ? 1 : 0));
+    }
+    $estadoEmpleado = (int) old('Estado', $estadoEmpleado);
+@endphp
+<input type="hidden" name="Estado" value="{{ $estadoEmpleado }}">
