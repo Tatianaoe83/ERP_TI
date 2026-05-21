@@ -8,6 +8,17 @@
     aria-labelledby="modalProductividadLabel"
     aria-hidden="true">
 
+    <style>
+    #modalProductividad table {
+        border-collapse: collapse;
+    }
+
+    #modalProductividad th,
+    #modalProductividad td {
+        border: 2px solid #bfc5ce !important;
+    }
+</style>
+
     <div class="modal-dialog modal-xl modal-dialog-centered">
 
         <div class="modal-content border-0 rounded-4 overflow-hidden shadow-lg bg-white dark:bg-[#0B1120]">
@@ -65,7 +76,7 @@
 
                 <!-- Tabla -->
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle table-bordered">
                         <thead>
                             <tr>
                                 <th>ID</th>
