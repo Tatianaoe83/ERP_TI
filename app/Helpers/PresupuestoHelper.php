@@ -8,11 +8,13 @@ use App\Models\Empleados;
 class PresupuestoHelper
 {
     // Método para obtener el reporte de accesorios y mantenimientos por gerencia mensual o anual
-    public static function reporteAccesoriosYMantenimientos(int $gerenciaId, string $tipo = 'mens')
+    public static function reporteAccesoriosYMantenimientos(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $campoCosto = $tipo === 'mens' ? 'CostoMensual' : 'CostoAnual';
+        $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
         
         return Empleados::query()
+            ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
@@ -52,11 +54,13 @@ class PresupuestoHelper
     }
     
     // Método para obtener el reporte de hardware por gerencia mensual o anual
-    public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens')
+    public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $campoCosto = $tipo === 'mens' ? 'CostoMensual' : 'CostoAnual';
+        $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
         
         return Empleados::query()
+            ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
@@ -89,7 +93,7 @@ class PresupuestoHelper
     }
     
     // Método para obtener el reporte de licencias por gerencia mensual o anual
-    public static function reporteLicenciasPorGerencia(int $gerenciaId, string $tipo = 'mens')
+    public static function reporteLicenciasPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         // Obtener costos de Windows PRO
         $costoWin10Pro = DB::table('inventarioinsumo')
@@ -102,8 +106,10 @@ class PresupuestoHelper
         
         $multiplicador = $tipo === 'mens' ? 1 : 12;
         $campoCosto = $tipo === 'mens' ? 'CostoMensual' : 'CostoAnual';
+        $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
         
         return Empleados::query()
+            ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
@@ -151,9 +157,12 @@ class PresupuestoHelper
     }
     
     // Método para obtener el reporte de líneas de datos por gerencia mensual o anual
-    public static function reporteLineasDatosPorGerencia(int $gerenciaId, string $tipo = 'mens')
+    public static function reporteLineasDatosPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
+        $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
+        
         return Empleados::query()
+            ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
@@ -209,9 +218,12 @@ class PresupuestoHelper
     }
     
     // Método para obtener el reporte de líneas GPS por gerencia mensual o anual
-    public static function reporteLineasGPSPorGerencia(int $gerenciaId, string $tipo = 'mens')
+    public static function reporteLineasGPSPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
+        $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
+        
         return Empleados::query()
+            ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
@@ -267,9 +279,12 @@ class PresupuestoHelper
     }
     
     // Método para obtener el reporte de líneas de voz por gerencia mensual o anual
-    public static function reporteLineasVozPorGerencia(int $gerenciaId, string $tipo = 'mens')
+    public static function reporteLineasVozPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
+        $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
+        
         return Empleados::query()
+            ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })

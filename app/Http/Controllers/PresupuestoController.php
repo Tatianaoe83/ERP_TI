@@ -121,39 +121,14 @@ class PresupuestoController extends Controller
 
     public function descargar(request $request){
 
-
         $numerogerencia = (int) $request->GerenciaID;
         $metadatosDocumento = $this->metadatosDocumentoReporte($request->input('modo', 'presupuesto'));
+        $tiposPersona = $metadatosDocumento['modo'] === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
 
-        $GerenciaTb = Empleados::query()
-        ->select(
-            "gerencia.NombreGerencia",
-            "gerencia.NombreGerente",
-            DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
-        )
-        ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
-        ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
-        ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
-        ->where('gerencia.GerenciaID', '=', $numerogerencia)
-        ->where('empleados.Estado', '=', 1)
-        ->whereIn('empleados.tipo_persona', ['FISICA', 'REFERENCIADO'])
-        ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
-        ->get();
+        // Obtener gerencia para nombre del archivo y vista (solo 1 query simple)
+        $gerencia = Gerencia::find($numerogerencia);
 
        if ($request->submitbutton == 'pdf'){
-
-
-                // Calcular totales directamente desde las tablas para verificar
-                $employeeQuery = DB::table('empleados as e')
-                    ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-                    ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-                    ->where('d.GerenciaID', $numerogerencia)
-                    ->where('e.Estado', 1)
-                    ->whereIn('e.tipo_persona', ['FISICA', 'REFERENCIADO'])
-                    ->whereNull('e.deleted_at');
-        
-                $employeeIds = (clone $employeeQuery)->pluck('e.EmpleadoID')->toArray();
-                $employeeNames = (clone $employeeQuery)->pluck('e.NombreEmpleado')->toArray();
 
                 // Consultas de presupuesto en store procedures
                 // $presup_hardware  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
@@ -163,53 +138,16 @@ class PresupuestoController extends Controller
                 // $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
                 // $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
                 
-                $presup_hardware = PresupuestoHelper::reporteHardwarePorGerencia($numerogerencia, $request->tipo)->toArray();
-                $presup_otrosinsums = PresupuestoHelper::reporteAccesoriosYMantenimientos($numerogerencia, $request->tipo)->toArray();
-                $presup_lics = PresupuestoHelper::reporteLicenciasPorGerencia($numerogerencia, $request->tipo)->toArray();
-                $presup_acces = PresupuestoHelper::reporteLineasVozPorGerencia($numerogerencia, $request->tipo)->toArray();
-                $presup_datos = PresupuestoHelper::reporteLineasDatosPorGerencia($numerogerencia, $request->tipo)->toArray();
-                $presup_gps = PresupuestoHelper::reporteLineasGPSPorGerencia($numerogerencia, $request->tipo)->toArray();
+                $presup_hardware = PresupuestoHelper::reporteHardwarePorGerencia($numerogerencia, $request->tipo, $metadatosDocumento['modo'])->toArray();
+                $presup_otrosinsums = PresupuestoHelper::reporteAccesoriosYMantenimientos($numerogerencia, $request->tipo, $metadatosDocumento['modo'])->toArray();
+                $presup_lics = PresupuestoHelper::reporteLicenciasPorGerencia($numerogerencia, $request->tipo, $metadatosDocumento['modo'])->toArray();
+                $presup_acces = PresupuestoHelper::reporteLineasVozPorGerencia($numerogerencia, $request->tipo, $metadatosDocumento['modo'])->toArray();
+                $presup_datos = PresupuestoHelper::reporteLineasDatosPorGerencia($numerogerencia, $request->tipo, $metadatosDocumento['modo'])->toArray();
+                $presup_gps = PresupuestoHelper::reporteLineasGPSPorGerencia($numerogerencia, $request->tipo, $metadatosDocumento['modo'])->toArray();
 
-                // Filtrar por los empleados correspondientes
-                $presup_hardware = array_values(array_filter($presup_hardware, function($row) use ($employeeIds, $employeeNames) {
-                    if (isset($row->EmpleadoID)) {
-                        return in_array($row->EmpleadoID, $employeeIds);
-                    }
-                    return in_array($row->NombreEmpleado, $employeeNames);
-                }));
-                $presup_otrosinsums = array_values(array_filter($presup_otrosinsums, function($row) use ($employeeIds, $employeeNames) {
-                    if (isset($row->EmpleadoID)) {
-                        return in_array($row->EmpleadoID, $employeeIds);
-                    }
-                    return in_array($row->NombreEmpleado, $employeeNames);
-                }));
-                $presup_lics = array_values(array_filter($presup_lics, function($row) use ($employeeIds, $employeeNames) {
-                    if (isset($row->EmpleadoID)) {
-                        return in_array($row->EmpleadoID, $employeeIds);
-                    }
-                    return in_array($row->NombreEmpleado, $employeeNames);
-                }));
-                $presup_acces = array_values(array_filter($presup_acces, function($row) use ($employeeIds, $employeeNames) {
-                    if (isset($row->EmpleadoID)) {
-                        return in_array($row->EmpleadoID, $employeeIds);
-                    }
-                    return in_array($row->NombreEmpleado, $employeeNames);
-                }));
-                $presup_datos = array_values(array_filter($presup_datos, function($row) use ($employeeIds, $employeeNames) {
-                    if (isset($row->EmpleadoID)) {
-                        return in_array($row->EmpleadoID, $employeeIds);
-                    }
-                    return in_array($row->NombreEmpleado, $employeeNames);
-                }));
-                $presup_gps = array_values(array_filter($presup_gps, function($row) use ($employeeIds, $employeeNames) {
-                    if (isset($row->EmpleadoID)) {
-                        return in_array($row->EmpleadoID, $employeeIds);
-                    }
-                    return in_array($row->NombreEmpleado, $employeeNames);
-                }));
-                
-                
-                $tipoPersonaFilter = " AND e.tipo_persona IN ('FISICA', 'REFERENCIADO') ";
+                // Construir filtro SQL dinámico para queries de impresoras/internet
+                $tiposPersonaStr = implode("', '", $tiposPersona);
+                $tipoPersonaFilter = " AND e.tipo_persona IN ('" . $tiposPersonaStr . "') ";
                 $query_params = [$numerogerencia];
 
                 //Sumar costos de Renta de Impresora
@@ -615,14 +553,13 @@ class PresupuestoController extends Controller
                 }
 
               
-              
                 $data = ["title" => $request->tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
                         "dato" => $request->tipo == 'mens' ? 'Mensual' : 'Anual',
                         'tipoDocumento' => $metadatosDocumento['tipoDocumento'],
                         'anioDocumento' => $metadatosDocumento['anioDocumento'],
                         'modo' => $metadatosDocumento['modo'],
                         'datosheader' => $datosheader,
-                        'GerenciaTb' => $GerenciaTb->first() ?? '',
+                        'GerenciaTb' => $gerencia ?? null,
                         'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
                         'columnaspresup_otrosinsums' => $columnaspresup_otrosinsums,
                         'totalespresup_otrosinsums' => $totalespresup_otrosinsums,
@@ -646,15 +583,13 @@ class PresupuestoController extends Controller
                 $pdf = PDF::loadView('presupuesto.reporte', $data);
                 $pdf->setPaper('A4', 'landscape');
                 $pdf->render();
-                $gerencia = $GerenciaTb->first();
-                $nombreGerencia = $gerencia ? $gerencia->NombreGerencia : 'Sin_Gerencia';
+                $nombreGerencia = $gerencia->NombreGerencia ?? 'Sin_Gerencia';
                 $prefijoArchivo = $metadatosDocumento['modo'] === 'inventario' ? 'Reporte_Inventario' : 'Reporte_Presupuesto';
                 return $pdf->stream($prefijoArchivo . '_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.pdf');
 
         
        }else{
-                $gerencia = $GerenciaTb->first();
-                $nombreGerencia = $gerencia ? $gerencia->NombreGerencia : 'Sin_Gerencia';
+                $nombreGerencia = $gerencia->NombreGerencia ?? 'Sin_Gerencia';
                 $prefijoArchivo = $metadatosDocumento['modo'] === 'inventario' ? 'Reporte_Inventario' : 'Reporte_Presupuesto';
                 $fileName = $prefijoArchivo . '_' . $nombreGerencia . '_' . ($request->tipo == 'mens' ? 'Mensual' : 'Anual') . '.xlsx';
                 return Excel::download(new ReportExport($request->GerenciaID, $request->tipo, $metadatosDocumento['modo']), $fileName);

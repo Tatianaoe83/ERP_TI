@@ -56,34 +56,10 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     {
 
         $numerogerencia = (int) $this->gerencia;
+        $tiposPersona = $this->modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
 
-        $GerenciaTb = Empleados::query()
-            ->select(
-                "gerencia.NombreGerencia",
-                "gerencia.NombreGerente",
-                DB::raw('COUNT(DISTINCT empleados.EmpleadoID) AS CantidadEmpleados')
-            )
-            ->join("puestos", "empleados.PuestoID", "=", "puestos.PuestoID")
-            ->join("departamentos", "departamentos.DepartamentoID", "=", "puestos.DepartamentoID")
-            ->rightJoin("gerencia", "departamentos.GerenciaID", "=", "gerencia.GerenciaID")
-            ->where('gerencia.GerenciaID', '=', $numerogerencia)
-            ->where('empleados.Estado', '=', 1)
-            ->whereIn('empleados.tipo_persona', ['FISICA', 'REFERENCIADO'])
-            ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia', 'gerencia.NombreGerente')
-            ->get();
-
-
-        // Fetch matching employees to filter
-        $employeeQuery = DB::table('empleados as e')
-            ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-            ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-            ->where('d.GerenciaID', $numerogerencia)
-            ->where('e.Estado', 1)
-            ->whereIn('e.tipo_persona', ['FISICA', 'REFERENCIADO'])
-            ->whereNull('e.deleted_at');
-
-        $employeeIds = (clone $employeeQuery)->pluck('e.EmpleadoID')->toArray();
-        $employeeNames = (clone $employeeQuery)->pluck('e.NombreEmpleado')->toArray();
+        // Obtener gerencia para la vista (solo 1 query simple)
+        $gerencia = Gerencia::find($numerogerencia);
 
         // Calcular totales directamente desde las tablas para verificar
         /* $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
@@ -93,52 +69,16 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
         $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]); */
 
-        $presup_hardware = PresupuestoHelper::reporteHardwarePorGerencia($numerogerencia, $this->tipo)->toArray();
-        $presup_otrosinsums = PresupuestoHelper::reporteAccesoriosYMantenimientos($numerogerencia, $this->tipo)->toArray();
-        $presup_lics = PresupuestoHelper::reporteLicenciasPorGerencia($numerogerencia, $this->tipo)->toArray();
-        $presup_acces = PresupuestoHelper::reporteLineasVozPorGerencia($numerogerencia, $this->tipo)->toArray();
-        $presup_datos = PresupuestoHelper::reporteLineasDatosPorGerencia($numerogerencia, $this->tipo)->toArray();
-        $presup_gps = PresupuestoHelper::reporteLineasGPSPorGerencia($numerogerencia, $this->tipo)->toArray();
+        $presup_hardware = PresupuestoHelper::reporteHardwarePorGerencia($numerogerencia, $this->tipo, $this->modo)->toArray();
+        $presup_otrosinsums = PresupuestoHelper::reporteAccesoriosYMantenimientos($numerogerencia, $this->tipo, $this->modo)->toArray();
+        $presup_lics = PresupuestoHelper::reporteLicenciasPorGerencia($numerogerencia, $this->tipo, $this->modo)->toArray();
+        $presup_acces = PresupuestoHelper::reporteLineasVozPorGerencia($numerogerencia, $this->tipo, $this->modo)->toArray();
+        $presup_datos = PresupuestoHelper::reporteLineasDatosPorGerencia($numerogerencia, $this->tipo, $this->modo)->toArray();
+        $presup_gps = PresupuestoHelper::reporteLineasGPSPorGerencia($numerogerencia, $this->tipo, $this->modo)->toArray();
 
-
-        // Memory filter by the allowed employees
-        $presup_hardware = array_values(array_filter($presup_hardware, function($row) use ($employeeIds, $employeeNames) {
-            if (isset($row->EmpleadoID)) {
-                return in_array($row->EmpleadoID, $employeeIds);
-            }
-            return in_array($row->NombreEmpleado, $employeeNames);
-        }));
-        $presup_otrosinsums = array_values(array_filter($presup_otrosinsums, function($row) use ($employeeIds, $employeeNames) {
-            if (isset($row->EmpleadoID)) {
-                return in_array($row->EmpleadoID, $employeeIds);
-            }
-            return in_array($row->NombreEmpleado, $employeeNames);
-        }));
-        $presup_lics = array_values(array_filter($presup_lics, function($row) use ($employeeIds, $employeeNames) {
-            if (isset($row->EmpleadoID)) {
-                return in_array($row->EmpleadoID, $employeeIds);
-            }
-            return in_array($row->NombreEmpleado, $employeeNames);
-        }));
-        $presup_acces = array_values(array_filter($presup_acces, function($row) use ($employeeIds, $employeeNames) {
-            if (isset($row->EmpleadoID)) {
-                return in_array($row->EmpleadoID, $employeeIds);
-            }
-            return in_array($row->NombreEmpleado, $employeeNames);
-        }));
-        $presup_datos = array_values(array_filter($presup_datos, function($row) use ($employeeIds, $employeeNames) {
-            if (isset($row->EmpleadoID)) {
-                return in_array($row->EmpleadoID, $employeeIds);
-            }
-            return in_array($row->NombreEmpleado, $employeeNames);
-        }));
-        $presup_gps = array_values(array_filter($presup_gps, function($row) use ($employeeIds, $employeeNames) {
-            if (isset($row->EmpleadoID)) {
-                return in_array($row->EmpleadoID, $employeeIds);
-            }
-            return in_array($row->NombreEmpleado, $employeeNames);
-        }));
-
+        // Construir filtro SQL dinámico para queries de impresoras/internet
+        $tiposPersonaStr = implode("', '", $tiposPersona);
+        $tipoPersonaFilter = " AND e.tipo_persona IN ('" . $tiposPersonaStr . "') ";
 
           //Sumar costos de Renta de Impresora
           if ($this->tipo == 'mens') {
@@ -153,7 +93,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
         INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
         WHERE g.GerenciaID = ?
-            AND e.tipo_persona IN ('FISICA', 'REFERENCIADO')
+            " . $tipoPersonaFilter . "
             AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
             ", [$numerogerencia]);
 
@@ -167,7 +107,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
     INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
     WHERE g.GerenciaID = ?
-        AND e.tipo_persona IN ('FISICA', 'REFERENCIADO')
+        " . $tipoPersonaFilter . "
         AND ii.CateogoriaInsumo = 'INTERNET'
         ", [$numerogerencia]);
 
@@ -187,7 +127,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
                INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
                WHERE g.GerenciaID = ?
-                   AND e.tipo_persona IN ('FISICA', 'REFERENCIADO')
+                   " . $tipoPersonaFilter . "
                    AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
                GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual
            ) as impresoras_unicas
@@ -203,7 +143,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
            WHERE g.GerenciaID = ?
-               AND e.tipo_persona IN ('FISICA', 'REFERENCIADO')
+               " . $tipoPersonaFilter . "
                AND ii.CateogoriaInsumo = 'INTERNET'
    ", [$numerogerencia]);
         }
@@ -563,7 +503,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             'anioDocumento' => $this->modo === 'presupuesto' ? now()->year + 1 : now()->year,
             'modo' => $this->modo,
             'datosheader' => $datosheader,
-            'GerenciaTb' => $GerenciaTb[0] ?? '',
+            'GerenciaTb' => $gerencia ?? null,
             'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
             'columnaspresup_otrosinsums' => $columnaspresup_otrosinsums,
             'totalespresup_otrosinsums' => $totalespresup_otrosinsums,
