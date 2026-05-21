@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Gerencia;
 use App\Models\Gerencias_usuarios;
 use App\Models\Empleados;
+use App\Helpers\PresupuestoHelper;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ReportExport;
@@ -154,12 +155,20 @@ class PresupuestoController extends Controller
                 $employeeIds = (clone $employeeQuery)->pluck('e.EmpleadoID')->toArray();
                 $employeeNames = (clone $employeeQuery)->pluck('e.NombreEmpleado')->toArray();
 
-                $presup_hardware  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_otrosinsums = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_lics  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
-                $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
+                // Consultas de presupuesto en store procedures
+                // $presup_hardware  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
+                // $presup_otrosinsums = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
+                // $presup_lics  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
+                // $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
+                // $presup_datos = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
+                // $presup_gps = $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
+                
+                $presup_hardware = PresupuestoHelper::reporteHardwarePorGerencia($numerogerencia, $request->tipo)->toArray();
+                $presup_otrosinsums = PresupuestoHelper::reporteAccesoriosYMantenimientos($numerogerencia, $request->tipo)->toArray();
+                $presup_lics = PresupuestoHelper::reporteLicenciasPorGerencia($numerogerencia, $request->tipo)->toArray();
+                $presup_acces = PresupuestoHelper::reporteLineasVozPorGerencia($numerogerencia, $request->tipo)->toArray();
+                $presup_datos = PresupuestoHelper::reporteLineasDatosPorGerencia($numerogerencia, $request->tipo)->toArray();
+                $presup_gps = PresupuestoHelper::reporteLineasGPSPorGerencia($numerogerencia, $request->tipo)->toArray();
 
                 // Filtrar por los empleados correspondientes
                 $presup_hardware = array_values(array_filter($presup_hardware, function($row) use ($employeeIds, $employeeNames) {

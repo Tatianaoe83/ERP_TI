@@ -5,6 +5,7 @@ namespace App\Exports;
 
 use App\Models\Gerencia;
 use App\Models\Empleados;
+use App\Helpers\PresupuestoHelper;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Illuminate\Support\Facades\DB;
@@ -85,12 +86,20 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $employeeNames = (clone $employeeQuery)->pluck('e.NombreEmpleado')->toArray();
 
         // Calcular totales directamente desde las tablas para verificar
-        $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
+        /* $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
         $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
         $presup_lics  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
         $presup_acces =  $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
         $presup_datos = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasDatosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasDatosPorGerenciaAnual(?)',[$numerogerencia]);
-        $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]);
+        $presup_gps = $this->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasGPSPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasGPSPorGerenciaAnual(?)',[$numerogerencia]); */
+
+        $presup_hardware = PresupuestoHelper::reporteHardwarePorGerencia($numerogerencia, $this->tipo)->toArray();
+        $presup_otrosinsums = PresupuestoHelper::reporteAccesoriosYMantenimientos($numerogerencia, $this->tipo)->toArray();
+        $presup_lics = PresupuestoHelper::reporteLicenciasPorGerencia($numerogerencia, $this->tipo)->toArray();
+        $presup_acces = PresupuestoHelper::reporteLineasVozPorGerencia($numerogerencia, $this->tipo)->toArray();
+        $presup_datos = PresupuestoHelper::reporteLineasDatosPorGerencia($numerogerencia, $this->tipo)->toArray();
+        $presup_gps = PresupuestoHelper::reporteLineasGPSPorGerencia($numerogerencia, $this->tipo)->toArray();
+
 
         // Memory filter by the allowed employees
         $presup_hardware = array_values(array_filter($presup_hardware, function($row) use ($employeeIds, $employeeNames) {
