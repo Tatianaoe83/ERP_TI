@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\DataTables\CortesDataTable;
 use App\Http\Requests\UpdateCortesRequest;
 use App\Repositories\CortesRepository;
 use Flash;
@@ -127,7 +125,28 @@ class CortesController extends AppBaseController
                 $mensuales
             );
 
-            return DataTables::of($resultado)->make(true);
+            // Agrupar por NombreInsumo
+            $agrupado = collect($resultado)
+                ->sortBy('NombreInsumo')
+                ->groupBy('NombreInsumo')
+                ->map(function ($items, $nombre) {
+                    $montos = $items->map(function ($item) {
+                        // Convertir nombre de mes a número
+                        $mesNum = array_search($item['Mes'], self::NUM_TO_NAME);
+                        return [
+                            'Mes' => $mesNum,
+                            'Costo' => $item['Costo'],
+                        ];
+                    })->values();
+                    return [
+                        'NombreInsumo' => $nombre,
+                        'MontosPorMes' => $montos,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            return response()->json(['data' => $agrupado]);
         } catch (\Throwable $th) {
             report($th);
             return $request->expectsJson()
@@ -276,6 +295,7 @@ class CortesController extends AppBaseController
                     ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
                     ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
                     ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
+                    ->whereIn('e.tipo_persona', ['FISICA', 'EXTRAORDINARIO']    )
                     ->where('g.GerenciaID', $gerenciaID);
             }
 
@@ -292,8 +312,14 @@ class CortesController extends AppBaseController
                     ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
                     ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
                     ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
+                    ->whereIn('e.tipo_persona', ['FISICA', 'EXTRAORDINARIO']    )
                     ->where('g.GerenciaID', $gerenciaID);
+            
+                    
             }
+            
+
+            // Métodos específicos para obtener cada tipo de insumo, utilizando las consultas base
 
             private function obtenerLineasMensuales(int $gerenciaID): array
             {
@@ -312,18 +338,23 @@ class CortesController extends AppBaseController
                     $tipoNorm = ucfirst(strtolower($row->TipoLinea));
                     $nombreInsumo = $row->Compania . ' ' . $tipoNorm;
                     foreach (self::NUM_TO_NAME as $mes) {
-                        $reporte[] = [
-                            'NombreInsumo' => $nombreInsumo,
-                            'Mes'          => $mes,
-                            'Costo'        => round($row->Total, 0),
-                            'Orden'        => 5,
-                            'GerenciaID'   => $gerenciaID,
-                        ];
+                        $costo = round($row->Total, 0);
+                        if ($costo > 0) {
+                            $reporte[] = [
+                                'NombreInsumo' => $nombreInsumo,
+                                'Mes'          => $mes,
+                                'Costo'        => $costo,
+                                'Orden'        => 5,
+                                'GerenciaID'   => $gerenciaID,
+                            ];
+                        }
                     }
                 }
 
                 return $reporte;
             }
+
+            // Método para obtener fianzas, considerando solo las líneas de voz y datos, y agrupando por compañía y tipo de línea
 
             private function obtenerFianzas(int $gerenciaID): array
             {
@@ -364,19 +395,22 @@ class CortesController extends AppBaseController
                     }
 
                     foreach ($valoresMeses as $mes => $total) {
-                        $reporte[] = [
-                            'NombreInsumo' => $nombreInsumo,
-                            'Mes'          => $mes,
-                            'Costo'        => round($total, 0),
-                            'Orden'        => 4,
-                            'GerenciaID'   => $gerenciaID,
-                        ];
+                        if (round($total, 0) > 0) {
+                            $reporte[] = [
+                                'NombreInsumo' => $nombreInsumo,
+                                'Mes'          => $mes,
+                                'Costo'        => round($total, 0),
+                                'Orden'        => 4,
+                                'GerenciaID'   => $gerenciaID,
+                            ];
+                        }
                     }
                 }
 
                 return $reporte;
             }
-
+            
+            // Método para obtener inversiones, considerando renovaciones de fianzas y ciertos insumos de categoría específica, y agrupando por mes
             private function obtenerInversiones(int $gerenciaID): array
             {
                 $reporte = [];
@@ -387,13 +421,7 @@ class CortesController extends AppBaseController
 
                 $rows = $this->inventarioQuery($gerenciaID)
                     ->whereIn('i.FrecuenciaDePago', ['Anual', 'Pago único'])
-                    ->whereIn('i.CateogoriaInsumo', [
-                        'LAPTOP',
-                        'MONITOR',
-                        'NO BREAK',
-                        'TABLET',
-                        'IMPRESORA'
-                    ])
+                    ->whereIn('i.CateogoriaInsumo', [ 'LAPTOP','MONITOR','NO BREAK', 'TABLET','IMPRESORA' ])
                     ->get();
 
                 $valoresMeses = array_fill_keys(array_values(self::NUM_TO_NAME), 0.0);
@@ -411,17 +439,21 @@ class CortesController extends AppBaseController
                 $valoresMeses['Junio'] += $totalRenovacionFianzas;
 
                 foreach ($valoresMeses as $mes => $total) {
-                    $reporte[] = [
-                        'NombreInsumo' => 'INVERSIONES',
-                        'Mes'          => $mes,
-                        'Costo'        => round($total, 0),
-                        'Orden'        => 6,
-                        'GerenciaID'   => $gerenciaID,
-                    ];
+                    if (round($total, 0) > 0) {
+                        $reporte[] = [
+                            'NombreInsumo' => 'INVERSIONES',
+                            'Mes'          => $mes,
+                            'Costo'        => round($total, 0),
+                            'Orden'        => 6,
+                            'GerenciaID'   => $gerenciaID,
+                        ];
+                    }
                 }
 
                 return $reporte;
             }
+
+            // Método para obtener licencias, considerando reglas específicas para ciertos insumos de Windows según la gerencia, y agrupando por nombre de insumo y mes
 
             private function obtenerLicencias(int $gerenciaID): array
             {
@@ -480,18 +512,22 @@ class CortesController extends AppBaseController
                     }
 
                     foreach ($valoresMeses as $mes => $total) {
-                        $reporte[] = [
-                            'NombreInsumo' => $nombreInsumo,
-                            'Mes'          => $mes,
-                            'Costo'        => round($total, 0),
-                            'Orden'        => 2,
-                            'GerenciaID'   => $gerenciaID,
-                        ];
+                        if (round($total, 0) > 0) {
+                            $reporte[] = [
+                                'NombreInsumo' => $nombreInsumo,
+                                'Mes'          => $mes,
+                                'Costo'        => round($total, 0),
+                                'Orden'        => 2,
+                                'GerenciaID'   => $gerenciaID,
+                            ];
+                        }
                     }
                 }
 
                 return $reporte;
             }
+
+            // Método para obtener otros insumos anuales, excluyendo ciertas categorías específicas, y agrupando por nombre de insumo y mes, con reglas especiales para "REPARACIONES" y "RENTA DE IMPRESORA"
 
             private function obtenerOtrosAnuales(int $gerenciaID): array
             {
@@ -507,13 +543,11 @@ class CortesController extends AppBaseController
                         'ACCESORIOS',
                         'BATERIA UPS',
                         'IMPRESORA',
-                        'REPARACIONES',
                     ])
                     ->get();
 
                 $mapped = $rows->map(function ($item) {
-                    $item->MappedNombreInsumo = $item->CateogoriaInsumo === 'REPARACIONES'
-                        ? 'ACCESORIOS Y REFACCIONES'
+                    $item->MappedNombreInsumo = $item->CateogoriaInsumo === 'REPARACIONES'? 'ACCESORIOS Y REFACCIONES'
                         : $item->NombreInsumo;
                     return $item;
                 });
@@ -540,30 +574,28 @@ class CortesController extends AppBaseController
                     }
 
                     foreach ($valoresMeses as $mes => $total) {
-                        $reporte[] = [
-                            'NombreInsumo' => $nombreInsumo,
-                            'Mes'          => $mes,
-                            'Costo'        => round($total, 0),
-                            'Orden'        => 3,
-                            'GerenciaID'   => $gerenciaID,
-                        ];
+                        if (round($total, 0) > 0) {
+                            $reporte[] = [
+                                'NombreInsumo' => $nombreInsumo,
+                                'Mes'          => $mes,
+                                'Costo'        => round($total, 0),
+                                'Orden'        => 3,
+                                'GerenciaID'   => $gerenciaID,
+                            ];
+                        }
                     }
                 }
 
                 return $reporte;
             }
 
+            // Método para obtener insumos mensuales, considerando ciertos insumos de categoría específica, y agrupando por nombre de insumo y mes
+
             private function obtenerMensuales(int $gerenciaID): array
             {
                 $rows = $this->inventarioQuery($gerenciaID)
                     ->where('i.FrecuenciaDePago', 'Mensual')
-                    ->whereIn('i.CateogoriaInsumo', [
-                        'LICENCIA',
-                        'HOSTING',
-                        'STARLINK',
-                        'INTERNET',
-                        'TABLET'
-                    ])
+                    ->whereIn('i.CateogoriaInsumo', [ 'LICENCIA', 'HOSTING', 'STARLINK','INTERNET','TABLET' ])
                     ->get();
 
                 $grouped = $rows->groupBy('NombreInsumo');
@@ -576,21 +608,20 @@ class CortesController extends AppBaseController
                             ? (float) $item->CostoMensual
                             : ((float) $item->CostoMensual * 1.07);
                     }
-
-                    foreach (self::NUM_TO_NAME as $mes) {
-                        $resultado[] = [
-                            'NombreInsumo' => $nombreInsumo,
-                            'Mes'          => $mes,
-                            'Costo'        => round($costoTotal, 0),
-                            'Orden'        => 1,
-                            'GerenciaID'   => $gerenciaID,
-                        ];
+                    if (round($costoTotal, 0) > 0) {
+                        foreach (self::NUM_TO_NAME as $mes) {
+                            $resultado[] = [
+                                'NombreInsumo' => $nombreInsumo,
+                                'Mes'          => $mes,
+                                'Costo'        => round($costoTotal, 0),
+                                'Orden'        => 1,
+                                'GerenciaID'   => $gerenciaID,
+                            ];
+                        }
                     }
                 }
-
                 return $resultado;
             }
-
 
     private function procesarInsumosParaCorte(int $gerenciaID, int $año): array
     {
