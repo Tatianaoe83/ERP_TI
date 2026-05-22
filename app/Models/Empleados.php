@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Eloquent as Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
 use OwenIt\Auditing\Contracts\Auditable;
 
 
@@ -77,8 +78,8 @@ class Empleados extends Model implements Auditable
         'ObraID' => 'required|integer',
         'NumTelefono' => 'nullable|string|max:50',
         'Correo' => 'nullable|string|max:150',
-        'Estado' => 'required|boolean',
-        'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO|required',
+        'Estado' => 'required|in:0,1',
+        'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO',
         'deleted_at' => 'nullable'
     ];
 
