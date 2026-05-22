@@ -82,6 +82,58 @@ class Empleados extends Model implements Auditable
         'deleted_at' => 'nullable'
     ];
 
+    // Reglas de validación dinámicas para creación y actualización
+    public static function rulesFor($tipoPersona = null, $empleadoId = null, $estado = null)
+    {
+        $rules = [
+            'NombreEmpleado' => 'required|string|max:100',
+            'PuestoID' => 'required|integer|exists:puestos,PuestoID',
+            'ObraID' => 'required|integer|exists:obras,ObraID',
+            'NumTelefono' => 'nullable|string|max:50',
+            'Correo' => 'nullable|string|max:150|email',
+            'Estado' => 'required|boolean',
+            'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO',
+        ];
+
+        // Validación de correo único solo para empleados activos
+        if ($estado == 1 || $estado === true) {
+            $uniqueRule = \Illuminate\Validation\Rule::unique('empleados', 'Correo')
+                ->where(function ($query) {
+                    return $query->where('Estado', 1);
+                });
+            
+            if ($empleadoId) {
+                $uniqueRule->ignore($empleadoId, 'EmpleadoID');
+            }
+            
+            $rules['Correo'] = ['nullable', 'string', 'max:150', 'email', $uniqueRule];
+        }
+
+        return $rules;
+    }
+
+    // Verifica si un empleado inactivo puede ser activado
+    public static function puedeActivarse($empleado)
+    {
+        if ($empleado->Estado) {
+            return [false, 'El empleado ya está activo.'];
+        }
+
+        // Verificar si el correo ya existe en otro empleado activo
+        if ($empleado->Correo) {
+            $correoExiste = self::where('Correo', $empleado->Correo)
+                ->where('Estado', 1)
+                ->where('EmpleadoID', '!=', $empleado->EmpleadoID)
+                ->exists();
+
+            if ($correoExiste) {
+                return [false, 'No se puede activar el empleado porque el correo ' . $empleado->Correo . ' ya está registrado en otro empleado activo.'];
+            }
+        }
+
+        return [true, ''];
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
