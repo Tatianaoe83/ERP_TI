@@ -37,7 +37,7 @@ class Kernel extends ConsoleKernel
             ->runInBackground();
 
         // Marcar encuestas de satisfacción vencidas una vez al día
-        $schedule->command('tickets:surveys-expire')->daily();
+        $schedule->command('tickets:surveys-expire')->everyFiveHours();
     }
 
     /**
