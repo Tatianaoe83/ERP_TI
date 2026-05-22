@@ -49,6 +49,28 @@
     {!! Form::label('tipo_persona', 'Tipo de persona:') !!}
     {!! Form::select('tipo_persona', ['FISICA' => 'FISICA', 'REFERENCIADO' => 'REFERENCIADO' ,'EXTRAORDINARIO' => 'EXTRAORDINARIO'], null, ['class' => 'form-control', 'placeholder' => 'Seleccionar tipo de persona']) !!}
 </div>
+
+<!-- Leyenda informativa Tipos de Persona -->
+<div class="col-sm-12 mt-3 mb-4">
+    <div class="p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10">
+        <div class="flex items-start gap-2">
+            <div class="text-sm">
+                <p class="font-semibold text-blue-700 dark:text-blue-300 mb-2">Tipos de Persona:</p>
+                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+                    <li class="flex items-start gap-2">
+                        <span><strong class="text-green-700 dark:text-green-400">FÍSICA:</strong> Empleado regular activo en nómina con funciones operativas o administrativas.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span><strong class="text-orange-700 dark:text-orange-400">EXTRAORDINARIO:</strong> Puesto vacante o plaza sin asignar que requiere ser cubierta.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span><strong class="text-purple-700 dark:text-purple-400">REFERENCIADO:</strong> Registro de control para almacenes, inventarios o recursos de gerencia (no es personal).</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- Estado Field -->
 @php
     $estadoEmpleado = 1;
