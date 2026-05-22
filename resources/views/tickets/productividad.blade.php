@@ -265,14 +265,14 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     {{-- Rapidez --}}
-                    <div class="p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+                    <div class="p-3 sm:p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm font-medium text-blue-700 dark:text-blue-400">Rapidez</span>
                         </div>
                         <div class="flex items-baseline gap-2">
-                            <span class="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                            <span class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                                 {{ number_format($metricasProductividad['calificacion_promedio']['fastness'], 1) }}
                             </span>
                             <span class="text-sm text-blue-500 dark:text-blue-400">/5</span>
@@ -280,12 +280,12 @@
                     </div>
 
                     {{-- Atención --}}
-                    <div class="p-4 rounded-lg bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
+                    <div class="p-3 sm:p-4 rounded-lg bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm font-medium text-green-700 dark:text-green-400">Atención</span>
                         </div>
                         <div class="flex items-baseline gap-2">
-                            <span class="text-3xl font-bold text-green-600 dark:text-green-400">
+                            <span class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
                                 {{ number_format($metricasProductividad['calificacion_promedio']['attention'], 1) }}
                             </span>
                             <span class="text-sm text-green-500 dark:text-green-400">/5</span>
@@ -293,12 +293,12 @@
                     </div>
 
                     {{-- Resolución --}}
-                    <div class="p-4 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30">
+                    <div class="p-3 sm:p-4 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm font-medium text-purple-700 dark:text-purple-400">Resolución</span>
                         </div>
                         <div class="flex items-baseline gap-2">
-                            <span class="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                            <span class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
                                 {{ number_format($metricasProductividad['calificacion_promedio']['resolution'], 1) }}
                             </span>
                             <span class="text-sm text-purple-500 dark:text-purple-400">/5</span>
@@ -679,7 +679,7 @@
                                     <i class="fas fa-user-tie text-lg sm:text-xl text-blue-500"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <h4 class="text-lg sm:text-xl font-bold dark:text-white truncate">{{ $empleado['nombre'] ?? 'Sin nombre' }}</h4>
+                                    <h4 class="text-lg sm:text-sm font-bold dark:text-white truncate">{{ $empleado['nombre'] ?? 'Sin nombre' }}</h4>
                                     <p class="text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF]">
                                         Total: <span class="font-semibold">{{ $empleado['total'] ?? 0 }} tks</span>
                                     </p>
@@ -849,7 +849,7 @@
                             <h5 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 flex items-center gap-2 dark:text-white">
                                 <i class="fas fa-signal text-[#3B82F6]"></i> Prioridades
                             </h5>
-                            <div class="grid grid-cols-3 gap-2 sm:gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
                                 @php
                                 $prioridades = [
                                 'Alta' => ['color' => '#F87171', 'bg' => '#F87171', 'icon' => 'fa-exclamation-triangle'],
