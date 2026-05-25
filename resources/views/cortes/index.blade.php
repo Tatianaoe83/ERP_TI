@@ -255,7 +255,30 @@
                 </button>
                 @endcan
             </div>
+            
         </div>
+        <div class="w-full mt-4">
+                <p class="text-lg text-slate-500 dark:text-slate-400 "> </p>
+            </div>
+
+    <div class="flex items-start gap-3 p-4 mb-6 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg">
+                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-lg mt-0.5"></i>
+                    <div>
+                        <p class="text-base text-blue-800 dark:text-blue-200 font-medium mb-1 pb-2">
+                            Tipos de persona incluidos en este reporte:
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100">
+                                <i class="fas fa-user mr-1.5"></i>
+                                FÍSICA
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100">
+                                <i class="fas fa-user-plus mr-1.5"></i>
+                                EXTRAORDINARIO
+                            </span>
+                        </div>
+                    </div>
+                </div>
     </div>
 
     <div class="px-6 md:px-8 py-5 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950/50">
