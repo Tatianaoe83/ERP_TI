@@ -446,7 +446,6 @@ class TicketsController extends Controller
             'tiempo_promedio_resolucion'         => $tiempoPromedioResolucion,
             'tiempo_promedio_respuesta'          => $tiempoPromedioRespuesta,
             'tickets_por_responsable'            => $ticketsPorResponsable,
-             'tickets_detallados'                 => $ticketsDelMes,
             'tickets_por_prioridad'              => $ticketsPorPrioridad,
             'tickets_por_clasificacion'          => $ticketsPorClasificacion,
             'resueltos_por_dia'                  => $resueltosPorDia,

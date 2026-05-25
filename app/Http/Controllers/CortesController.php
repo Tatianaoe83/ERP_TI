@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\DataTables\CortesDataTable;
 use App\Http\Requests\UpdateCortesRequest;
 use App\Repositories\CortesRepository;
 use Flash;
@@ -8,15 +10,12 @@ use App\Http\Controllers\AppBaseController;
 use App\Models\Cortes;
 use App\Models\Gerencia;
 use App\Models\Insumos;
-use App\Models\InventarioInsumo;
-use App\Models\InventarioLineas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Response;
 use Yajra\DataTables\Facades\DataTables;
-
 
 class CortesController extends AppBaseController
 {
@@ -110,44 +109,58 @@ class CortesController extends AppBaseController
         }
 
         try {
-            $lineasMensuales = $this->obtenerLineasMensuales($gerenciaID);
-            $fianzas = $this->obtenerFianzas($gerenciaID);
-            $inversiones = $this->obtenerInversiones($gerenciaID);
-            $licencias = $this->obtenerLicencias($gerenciaID);
-            $otrosAnuales = $this->obtenerOtrosAnuales($gerenciaID);
-            $mensuales = $this->obtenerMensuales($gerenciaID);
+            $rows = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]));
 
-            $resultado = array_merge(
-                $lineasMensuales,
-                $fianzas,
-                $inversiones,
-                $licencias,
-                $otrosAnuales,
-                $mensuales
-            );
+            if ($rows->isEmpty()) {
+                return $request->expectsJson()
+                    ? response()->json([
+                        'draw'            => (int) $request->input('draw', 0),
+                        'recordsTotal'    => 0,
+                        'recordsFiltered' => 0,
+                        'data'            => [],
+                    ])
+                    : back()->with('warning', 'No hay datos para la gerencia');
+            }
 
-            // Agrupar por NombreInsumo
-            $agrupado = collect($resultado)
-                ->sortBy('NombreInsumo')
+            $resultado = $rows
                 ->groupBy('NombreInsumo')
-                ->map(function ($items, $nombre) {
-                    $montos = $items->map(function ($item) {
-                        // Convertir nombre de mes a número
-                        $mesNum = array_search($item['Mes'], self::NUM_TO_NAME);
-                        return [
-                            'Mes' => $mesNum,
-                            'Costo' => $item['Costo'],
-                        ];
-                    })->values();
+                ->map(function (Collection $items, $nombre) {
+                    $montosPorMes = $items
+                        ->map(function ($r) {
+                            $costo  = round((float) ($r->Costo ?? 0), 2);
+                            if ($costo <= 0) return null;
+                            $mesRaw = $r->Mes ?? null;
+                            $mesNum = is_numeric($mesRaw)
+                                ? max(1, min(12, (int) $mesRaw))
+                                : (self::MES_MAP[strtolower((string) $mesRaw)] ?? null);
+                            if (!$mesNum) return null;
+                            return ['Mes' => $mesNum, 'Costo' => $costo];
+                        })
+                        ->filter()
+                        ->values();
+
+                    if ($montosPorMes->isEmpty()) return null;
+
+                    $distintos = $montosPorMes->pluck('Costo')->unique()->sort()->values()->all();
+
+                    $nombreInsumo = html_entity_decode((string) $nombre, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
                     return [
-                        'NombreInsumo' => $nombre,
-                        'MontosPorMes' => $montos,
+                        'NombreInsumo'  => $nombreInsumo,
+                        'MontosPorMes'  => $montosPorMes->all(),
+                        'Distintos'     => $distintos,
+                        'SelectedIndex' => 0,
+                        'Margen'        => 0,
                     ];
                 })
+                ->filter()
                 ->values()
-                ->all();
+                ->filter(function (array $row) {
+                    return strcasecmp(trim((string) ($row['NombreInsumo'] ?? '')), 'Costo base') !== 0;
+                })
+                ->values();
 
-            return response()->json(['data' => $agrupado]);
+            return DataTables::of($resultado)->make(true);
         } catch (\Throwable $th) {
             report($th);
             return $request->expectsJson()
@@ -282,359 +295,17 @@ class CortesController extends AppBaseController
         return Carbon::now()->isAfter($limite);
     }
 
-
-            // Método para obtener la consulta base del inventario, filtrada por gerencia
-            private function inventarioQuery(int $gerenciaID)
-            {
-                return InventarioInsumo::query()
-                    ->from('inventarioinsumo as i')
-                    ->select(
-                        'i.*',
-                        'g.GerenciaID'
-                    )
-                    ->join('empleados as e', 'i.EmpleadoID', '=', 'e.EmpleadoID')
-                    ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-                    ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-                    ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
-                    ->whereIn('e.tipo_persona', ['FISICA', 'EXTRAORDINARIO']    )
-                    ->where('g.GerenciaID', $gerenciaID);
-            }
-
-            // Método para obtener la consulta base de las líneas de inventario, filtrada por gerencia
-            private function lineasQuery(int $gerenciaID)
-            {
-                return InventarioLineas::query()
-                    ->from('inventariolineas as il')
-                    ->select(
-                        'il.*',
-                        'g.GerenciaID'
-                    )
-                    ->join('empleados as e', 'il.EmpleadoID', '=', 'e.EmpleadoID')
-                    ->join('puestos as p', 'e.PuestoID', '=', 'p.PuestoID')
-                    ->join('departamentos as d', 'p.DepartamentoID', '=', 'd.DepartamentoID')
-                    ->join('gerencia as g', 'd.GerenciaID', '=', 'g.GerenciaID')
-                    ->whereIn('e.tipo_persona', ['FISICA', 'EXTRAORDINARIO']    )
-                    ->where('g.GerenciaID', $gerenciaID);
-            
-                    
-            }
-            
-
-            // Métodos específicos para obtener cada tipo de insumo, utilizando las consultas base
-
-            private function obtenerLineasMensuales(int $gerenciaID): array
-            {
-                $reporte = [];
-
-                $rows = $this->lineasQuery($gerenciaID)
-                    ->select(
-                        'il.Compania',
-                        'il.TipoLinea',
-                        DB::raw('SUM(il.CostoRentaMensual) as Total')
-                    )
-                    ->groupBy('il.Compania', 'il.TipoLinea')
-                    ->get();
-
-                foreach ($rows as $row) {
-                    $tipoNorm = ucfirst(strtolower($row->TipoLinea));
-                    $nombreInsumo = $row->Compania . ' ' . $tipoNorm;
-                    foreach (self::NUM_TO_NAME as $mes) {
-                        $costo = round($row->Total, 0);
-                        if ($costo > 0) {
-                            $reporte[] = [
-                                'NombreInsumo' => $nombreInsumo,
-                                'Mes'          => $mes,
-                                'Costo'        => $costo,
-                                'Orden'        => 5,
-                                'GerenciaID'   => $gerenciaID,
-                            ];
-                        }
-                    }
-                }
-
-                return $reporte;
-            }
-
-            // Método para obtener fianzas, considerando solo las líneas de voz y datos, y agrupando por compañía y tipo de línea
-
-            private function obtenerFianzas(int $gerenciaID): array
-            {
-                $reporte = [];
-
-                $rows = $this->lineasQuery($gerenciaID)
-                    ->select(
-                        'il.Compania',
-                        'il.TipoLinea',
-                        'il.FechaFianza',
-                        'il.CostoFianza'
-                    )
-                    ->whereIn('il.TipoLinea', ['Voz', 'Datos', 'GPS', 'voz', 'datos', 'gps', 'VOZ', 'DATOS'])
-                    ->get();
-
-                // Normalize TipoLinea for consistent PHP grouping
-                $rows->transform(function ($item) {
-                    $item->TipoLineaNorm = ucfirst(strtolower($item->TipoLinea));
-                    $item->NombreInsumoNorm = $item->Compania . ' FIANZA - ' . $item->TipoLineaNorm;
-                    return $item;
-                });
-
-                $grouped = $rows->groupBy('NombreInsumoNorm');
-
-                foreach ($grouped as $nombreInsumo => $items) {
-                    $valoresMeses = array_fill_keys(array_values(self::NUM_TO_NAME), 0.0);
-
-                    foreach ($items as $item) {
-                        if (!$item->FechaFianza) {
-                            continue;
-                        }
-                        $mesNum = (int) Carbon::parse($item->FechaFianza)->month;
-                        $mesNombre = self::NUM_TO_NAME[$mesNum] ?? null;
-
-                        if ($mesNombre && isset($valoresMeses[$mesNombre])) {
-                            $valoresMeses[$mesNombre] += (float) $item->CostoFianza;
-                        }
-                    }
-
-                    foreach ($valoresMeses as $mes => $total) {
-                        if (round($total, 0) > 0) {
-                            $reporte[] = [
-                                'NombreInsumo' => $nombreInsumo,
-                                'Mes'          => $mes,
-                                'Costo'        => round($total, 0),
-                                'Orden'        => 4,
-                                'GerenciaID'   => $gerenciaID,
-                            ];
-                        }
-                    }
-                }
-
-                return $reporte;
-            }
-            
-            // Método para obtener inversiones, considerando renovaciones de fianzas y ciertos insumos de categoría específica, y agrupando por mes
-            private function obtenerInversiones(int $gerenciaID): array
-            {
-                $reporte = [];
-
-                $totalRenovacionFianzas = (float) $this->lineasQuery($gerenciaID)
-                    ->whereNotNull('il.MontoRenovacionFianza')
-                    ->sum('il.MontoRenovacionFianza');
-
-                $rows = $this->inventarioQuery($gerenciaID)
-                    ->whereIn('i.FrecuenciaDePago', ['Anual', 'Pago único'])
-                    ->whereIn('i.CateogoriaInsumo', [ 'LAPTOP','MONITOR','NO BREAK', 'TABLET','IMPRESORA' ])
-                    ->get();
-
-                $valoresMeses = array_fill_keys(array_values(self::NUM_TO_NAME), 0.0);
-
-                foreach ($rows as $row) {
-                    $mesRaw = $row->MesDePago;
-                    $mesLower = strtolower(trim((string)$mesRaw));
-                    $mesNum = self::MES_MAP[$mesLower] ?? null;
-                    $mesNormalized = self::NUM_TO_NAME[$mesNum] ?? null;
-                    if ($mesNormalized && isset($valoresMeses[$mesNormalized])) {
-                        $valoresMeses[$mesNormalized] += (float) $row->CostoAnual;
-                    }
-                }
-
-                $valoresMeses['Junio'] += $totalRenovacionFianzas;
-
-                foreach ($valoresMeses as $mes => $total) {
-                    if (round($total, 0) > 0) {
-                        $reporte[] = [
-                            'NombreInsumo' => 'INVERSIONES',
-                            'Mes'          => $mes,
-                            'Costo'        => round($total, 0),
-                            'Orden'        => 6,
-                            'GerenciaID'   => $gerenciaID,
-                        ];
-                    }
-                }
-
-                return $reporte;
-            }
-
-            // Método para obtener licencias, considerando reglas específicas para ciertos insumos de Windows según la gerencia, y agrupando por nombre de insumo y mes
-
-            private function obtenerLicencias(int $gerenciaID): array
-            {
-                $reporte = [];
-
-                $costoWindows10Pro = 0.00;
-                $costoWindows11Pro = 0.00;
-
-                if (!in_array($gerenciaID, [17, 18], true)) {
-                    $maxWindows10 = DB::table('inventarioinsumo')
-                        ->where('NombreInsumo', 'WINDOWS 10 PRO')
-                        ->max(DB::raw('CostoMensual * 1.07')) ?? 0.00;
-                    $costoWindows10Pro = round((float) $maxWindows10);
-
-                    $maxWindows11 = DB::table('inventarioinsumo')
-                        ->where('NombreInsumo', 'WINDOWS 11 PRO')
-                        ->max(DB::raw('CostoAnual * 1.07')) ?? 0.00;
-                    $costoWindows11Pro = round((float) $maxWindows11);
-                }
-
-                $rows = $this->inventarioQuery($gerenciaID)
-                    ->whereIn('i.FrecuenciaDePago', ['Anual', 'Pago único'])
-                    ->where('i.CateogoriaInsumo', 'LICENCIA')
-                    ->get();
-
-                $grouped = $rows->groupBy('NombreInsumo');
-
-                foreach ($grouped as $nombreInsumo => $items) {
-                    if (in_array($gerenciaID, [17, 18], true) && str_starts_with(strtoupper($nombreInsumo), 'WINDOWS')) {
-                        continue;
-                    }
-
-                    $valoresMeses = array_fill_keys(array_values(self::NUM_TO_NAME), 0.0);
-
-                    foreach ($items as $item) {
-                        $mesRaw = $item->MesDePago;
-                        $mesLower = strtolower(trim((string)$mesRaw));
-                        $mesNum = self::MES_MAP[$mesLower] ?? null;
-                        $mesNormalized = self::NUM_TO_NAME[$mesNum] ?? null;
-                        if (!$mesNormalized || !isset($valoresMeses[$mesNormalized])) {
-                            continue;
-                        }
-
-                        $costo = 0.0;
-                        if ($nombreInsumo === 'WINDOWS 10 HOME') {
-                            $costo = $costoWindows10Pro;
-                        } elseif ($nombreInsumo === 'WINDOWS 11 HOME') {
-                            $costo = $costoWindows11Pro;
-                        } elseif (in_array($nombreInsumo, ['WINDOWS 10 PRO', 'WINDOWS 11 PRO'], true)) {
-                            $costo = 0.00;
-                        } else {
-                            $costo = (float) $item->CostoAnual * 1.07;
-                        }
-
-                        $valoresMeses[$mesNormalized] += $costo;
-                    }
-
-                    foreach ($valoresMeses as $mes => $total) {
-                        if (round($total, 0) > 0) {
-                            $reporte[] = [
-                                'NombreInsumo' => $nombreInsumo,
-                                'Mes'          => $mes,
-                                'Costo'        => round($total, 0),
-                                'Orden'        => 2,
-                                'GerenciaID'   => $gerenciaID,
-                            ];
-                        }
-                    }
-                }
-
-                return $reporte;
-            }
-
-            // Método para obtener otros insumos anuales, excluyendo ciertas categorías específicas, y agrupando por nombre de insumo y mes, con reglas especiales para "REPARACIONES" y "RENTA DE IMPRESORA"
-
-            private function obtenerOtrosAnuales(int $gerenciaID): array
-            {
-                $reporte = [];
-
-                $rows = $this->inventarioQuery($gerenciaID)
-                    ->whereIn('i.FrecuenciaDePago', ['Anual', 'Pago único'])
-                    ->whereNotIn('i.CateogoriaInsumo', [
-                        'LAPTOP',
-                        'MONITOR',
-                        'NO BREAK',
-                        'LICENCIA',
-                        'ACCESORIOS',
-                        'BATERIA UPS',
-                        'IMPRESORA',
-                    ])
-                    ->get();
-
-                $mapped = $rows->map(function ($item) {
-                    $item->MappedNombreInsumo = $item->CateogoriaInsumo === 'REPARACIONES'? 'ACCESORIOS Y REFACCIONES'
-                        : $item->NombreInsumo;
-                    return $item;
-                });
-
-                $grouped = $mapped->groupBy('MappedNombreInsumo');
-
-                foreach ($grouped as $nombreInsumo => $items) {
-                    $valoresMeses = array_fill_keys(array_values(self::NUM_TO_NAME), 0.0);
-
-                    foreach ($items as $item) {
-                        $mesRaw = $item->MesDePago;
-                        $mesLower = strtolower(trim((string)$mesRaw));
-                        $mesNum = self::MES_MAP[$mesLower] ?? null;
-                        $mesNormalized = self::NUM_TO_NAME[$mesNum] ?? null;
-                        if (!$mesNormalized || !isset($valoresMeses[$mesNormalized])) {
-                            continue;
-                        }
-
-                        $costo = $item->CateogoriaInsumo === 'RENTA DE IMPRESORA'
-                            ? (float) $item->CostoAnual
-                            : (float) $item->CostoAnual * 1.07;
-
-                        $valoresMeses[$mesNormalized] += $costo;
-                    }
-
-                    foreach ($valoresMeses as $mes => $total) {
-                        if (round($total, 0) > 0) {
-                            $reporte[] = [
-                                'NombreInsumo' => $nombreInsumo,
-                                'Mes'          => $mes,
-                                'Costo'        => round($total, 0),
-                                'Orden'        => 3,
-                                'GerenciaID'   => $gerenciaID,
-                            ];
-                        }
-                    }
-                }
-
-                return $reporte;
-            }
-
-            // Método para obtener insumos mensuales, considerando ciertos insumos de categoría específica, y agrupando por nombre de insumo y mes
-
-            private function obtenerMensuales(int $gerenciaID): array
-            {
-                $rows = $this->inventarioQuery($gerenciaID)
-                    ->where('i.FrecuenciaDePago', 'Mensual')
-                    ->whereIn('i.CateogoriaInsumo', [ 'LICENCIA', 'HOSTING', 'STARLINK','INTERNET','TABLET' ])
-                    ->get();
-
-                $grouped = $rows->groupBy('NombreInsumo');
-                $resultado = [];
-
-                foreach ($grouped as $nombreInsumo => $items) {
-                    $costoTotal = 0.0;
-                    foreach ($items as $item) {
-                        $costoTotal += in_array($item->CateogoriaInsumo, ['INTERNET', 'STARLINK'], true)
-                            ? (float) $item->CostoMensual
-                            : ((float) $item->CostoMensual * 1.07);
-                    }
-                    if (round($costoTotal, 0) > 0) {
-                        foreach (self::NUM_TO_NAME as $mes) {
-                            $resultado[] = [
-                                'NombreInsumo' => $nombreInsumo,
-                                'Mes'          => $mes,
-                                'Costo'        => round($costoTotal, 0),
-                                'Orden'        => 1,
-                                'GerenciaID'   => $gerenciaID,
-                            ];
-                        }
-                    }
-                }
-                return $resultado;
-            }
-
     private function procesarInsumosParaCorte(int $gerenciaID, int $año): array
     {
-        $rows = collect($this->generarReporteInsumos($gerenciaID));
+        $rows     = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]));
         $toInsert = [];
 
         $rows->groupBy('NombreInsumo')->each(function (Collection $items, $nombre) use ($año, $gerenciaID, &$toInsert) {
             foreach ($items as $r) {
-                $costo  = round((float) ($r['Costo'] ?? 0), 2);
+                $costo  = round((float) ($r->Costo ?? 0), 2);
                 if ($costo <= 0) continue;
 
-                $mesRaw = $r['Mes'] ?? null;
+                $mesRaw = $r->Mes ?? null;
                 $mesNum = is_numeric($mesRaw)
                     ? max(1, min(12, (int) $mesRaw))
                     : (self::MES_MAP[strtolower((string) $mesRaw)] ?? null);
@@ -861,17 +532,5 @@ class CortesController extends AppBaseController
         $this->cortesRepository->delete($id);
         Flash::success('Cortes deleted successfully.');
         return redirect(route('cortes.index'));
-    }
-
-    public function generarReporteInsumos(int $gerenciaID): array
-    {
-        return array_merge(
-            $this->obtenerMensuales($gerenciaID),
-            $this->obtenerLicencias($gerenciaID),
-            $this->obtenerOtrosAnuales($gerenciaID),
-            $this->obtenerFianzas($gerenciaID),
-            $this->obtenerLineasMensuales($gerenciaID),
-            $this->obtenerInversiones($gerenciaID)
-        );
     }
 }
