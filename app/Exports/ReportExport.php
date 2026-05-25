@@ -61,6 +61,18 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         // Obtener gerencia para la vista (solo 1 query simple)
         $gerencia = Gerencia::find($numerogerencia);
 
+        // Contar empleados de la gerencia según tipo de persona usando Eloquent
+        $cantidadEmpleados = Empleados::whereHas('puestos.departamentos', function($query) use ($numerogerencia) {
+            $query->where('GerenciaID', $numerogerencia);
+        })
+        ->whereIn('tipo_persona', $tiposPersona)
+        ->count();
+
+        // Agregar la cantidad de empleados al objeto gerencia
+        if ($gerencia) {
+            $gerencia->CantidadEmpleados = $cantidadEmpleados;
+        }
+
         // Calcular totales directamente desde las tablas para verificar
         /* $presup_hardware  = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
         $presup_otrosinsums = $this->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
