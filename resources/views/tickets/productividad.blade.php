@@ -72,7 +72,7 @@
                                 }
                                 const container = document.getElementById('productividad-container');
                                 if (container) {
-                                    container.outerHTML = data.html;
+                                    container.innerHTML = data.html;
                                 }
                                 const nuevo = document.getElementById('productividad-container');
                                 if (nuevo && window.Alpine && typeof Alpine.initTree === 'function') {
@@ -97,6 +97,8 @@
                                             inicializarGraficasEmpleados();
                                         }
                                     }
+                                          inicializarTablaTickets();
+
                                 }, 80);
                             } else {
                                 this.cargando = false;
@@ -320,6 +322,8 @@
                         <canvas id="chartEstado" role="img" aria-label="Distribución de tickets por estado"></canvas>
                     </div>
                 </div>
+
+              
 
                 <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
@@ -1092,6 +1096,8 @@
 
 </div>
 
+  @include('tickets.modal-productividad')
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -1397,6 +1403,8 @@
         return false;
     }
 
+    
+    
     function inicializarGraficas() {
         // Verificar que los elementos existan
         if (!document.getElementById('chartEstado')) {
@@ -1489,6 +1497,8 @@
                 maintainAspectRatio: false,
                 animation: animacionGraficas,
                 cutout: '62%',
+                onClick: function () {
+                     const modal = new bootstrap.Modal( document.getElementById('modalProductividad') ); modal.show(); },
                 onHover: cursorSobreGrafica,
                 plugins: {
                     legend: {
@@ -1515,6 +1525,7 @@
                     }),
                     datalabels: datalabelsDona(sumaEstados, dark)
                 }
+                
             }
         });
 

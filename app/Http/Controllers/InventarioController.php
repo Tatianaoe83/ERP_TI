@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateInventarioRequest;
 use App\Repositories\InventarioRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
+use Illuminate\View\View;
 use Response;
 use App\Models\Empleados;
 use App\Models\InventarioEquipo;
@@ -46,7 +47,7 @@ class InventarioController extends AppBaseController
      *
      * @return Response
      */
-    public function index()
+    public function index(): View
     {
         return view('inventarios.index');
     }
@@ -65,8 +66,15 @@ class InventarioController extends AppBaseController
                     return;
                 }
 
-                $q->whereIn('empleados.tipo_persona', ['FISICA', 'REFERENCIADO']);
-            })
+            // Si selecciona algo, filtra exactamente por eso
+            $q->where('empleados.tipo_persona', $request->tipo_persona);
+
+        }, function ($q) {
+
+            // Si NO selecciona nada:
+            // mostrar todos menos EXTRAORDINARIO
+            $q->where('empleados.tipo_persona', '!=', 'EXTRAORDINARIO');
+        })
             ->select([
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
