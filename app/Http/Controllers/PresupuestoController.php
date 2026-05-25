@@ -374,7 +374,44 @@ class PresupuestoController extends Controller
                     ]
                 ];               
             
-                $presup_cal_pagos = $this->obtenerInsumosAnualesFiltrados($numerogerencia);
+            $cortesController = app(\App\Http\Controllers\CortesController::class);
+
+            $reporte = collect($cortesController->generarReporteInsumos($numerogerencia));
+
+            $presup_cal_pagos = $reporte
+                ->groupBy('NombreInsumo')
+                ->map(function ($items, $nombre) {
+
+                    $fila = (object)[
+                        'NombreInsumo' => $nombre,
+                        'Enero' => 0,
+                        'Febrero' => 0,
+                        'Marzo' => 0,
+                        'Abril' => 0,
+                        'Mayo' => 0,
+                        'Junio' => 0,
+                        'Julio' => 0,
+                        'Agosto' => 0,
+                        'Septiembre' => 0,
+                        'Octubre' => 0,
+                        'Noviembre' => 0,
+                        'Diciembre' => 0,
+                        'Orden' => $items->first()['Orden'] ?? 0,
+                    ];
+
+                    foreach ($items as $item) {
+                        $mes = $item['Mes'];
+
+                        if (property_exists($fila, $mes)) {
+                            $fila->$mes += round((float)$item['Costo'], 0);
+                        }
+                    }
+
+                    return $fila;
+                })
+                ->sortBy('Orden')
+                ->values()
+                ->toArray();
 
                 // Inicializar las variables para las sumas de cada mes
                 $sumaEnero = 0;

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Response;
 use Yajra\DataTables\Facades\DataTables;
 
+
 class CortesController extends AppBaseController
 {
     private $cortesRepository;
@@ -862,7 +863,7 @@ class CortesController extends AppBaseController
         return redirect(route('cortes.index'));
     }
 
-    private function generarReporteInsumos(int $gerenciaID): array
+    public function generarReporteInsumos(int $gerenciaID): array
     {
         return array_merge(
             $this->obtenerMensuales($gerenciaID),

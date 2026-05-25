@@ -555,7 +555,7 @@ $(function () {
         return hit && !Number.isNaN(Number(hit.Costo)) ? Number(hit.Costo) : 0;
     }
 
-    const thCorte = 'py-2 px-2 sm:px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider';
+    const thCorte = 'py-2 px-4 sm:px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider';
 
     const columnasMeses = MESES.map((nombreMes, i) => ({
         data      : null,
@@ -579,7 +579,7 @@ $(function () {
         paging      : false,
         lengthChange: false,
         info        : false,
-        autoWidth   : false,
+        fixedHeader: true,
         scrollX     : true,
         dom         : 'rt<"dt-corte-footer flex flex-col sm:flex-row justify-end items-center gap-3 p-5 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950">',
         language: {
@@ -888,6 +888,7 @@ $(function () {
         await abrirCorteGuardado(gid, anio, nombre);
     });
 
+    //contenido
     function renderTablaGuardados(data) {
         const thead = $('#tabla-guardados-head');
         const tbody = $('#tabla-guardados-body');
