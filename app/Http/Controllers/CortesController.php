@@ -109,7 +109,7 @@ class CortesController extends AppBaseController
         }
 
         try {
-            $rows = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]));
+            $rows = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia7(?)', [$gerenciaID]));
 
             if ($rows->isEmpty()) {
                 return $request->expectsJson()
@@ -126,20 +126,41 @@ class CortesController extends AppBaseController
                 ->groupBy('NombreInsumo')
                 ->map(function (Collection $items, $nombre) {
                     $montosPorMes = $items
-                        ->map(function ($r) {
+                        ->map(function ($r) use ($nombre) {
                             $costo  = round((float) ($r->Costo ?? 0), 2);
                             if ($costo <= 0) return null;
+                            
                             $mesRaw = $r->Mes ?? null;
                             $mesNum = is_numeric($mesRaw)
                                 ? max(1, min(12, (int) $mesRaw))
                                 : (self::MES_MAP[strtolower((string) $mesRaw)] ?? null);
+                            
+                            // 🔍 LOGGING TEMPORAL - Detectar meses no parseados
+                            if (!$mesNum && $costo > 0) {
+                                \Log::warning("❌ Mes NO parseado - Insumo descartado", [
+                                    'insumo'       => $nombre,
+                                    'mesRaw'       => $mesRaw,
+                                    'mesRawType'   => gettype($mesRaw),
+                                    'mesRawLength' => strlen((string)$mesRaw),
+                                    'mesRawTrim'   => trim((string)$mesRaw),
+                                    'mesRawLower'  => strtolower((string)$mesRaw),
+                                    'costo'        => $costo,
+                                ]);
+                            }
+                            
                             if (!$mesNum) return null;
                             return ['Mes' => $mesNum, 'Costo' => $costo];
                         })
                         ->filter()
                         ->values();
 
-                    if ($montosPorMes->isEmpty()) return null;
+                    if ($montosPorMes->isEmpty()) {
+                        \Log::info("⚠️ Insumo SIN meses válidos - ELIMINADO del resultado", [
+                            'insumo' => $nombre,
+                            'totalFilas' => $items->count()
+                        ]);
+                        return null;
+                    }
 
                     $distintos = $montosPorMes->pluck('Costo')->unique()->sort()->values()->all();
 
@@ -297,7 +318,7 @@ class CortesController extends AppBaseController
 
     private function procesarInsumosParaCorte(int $gerenciaID, int $año): array
     {
-        $rows     = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia6(?)', [$gerenciaID]));
+        $rows     = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia7(?)', [$gerenciaID]));
         $toInsert = [];
 
         $rows->groupBy('NombreInsumo')->each(function (Collection $items, $nombre) use ($año, $gerenciaID, &$toInsert) {
