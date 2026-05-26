@@ -10,6 +10,7 @@ use App\Http\Controllers\AppBaseController;
 use App\Models\Cortes;
 use App\Models\Gerencia;
 use App\Models\Insumos;
+use App\Helpers\PresupuestoHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -109,7 +110,7 @@ class CortesController extends AppBaseController
         }
 
         try {
-            $rows = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia7(?)', [$gerenciaID]));
+            $rows = PresupuestoHelper::obtenerInsumosAnualesPorGerencia($gerenciaID);
 
             if ($rows->isEmpty()) {
                 return $request->expectsJson()
@@ -318,7 +319,7 @@ class CortesController extends AppBaseController
 
     private function procesarInsumosParaCorte(int $gerenciaID, int $año): array
     {
-        $rows     = collect(DB::select('CALL ObtenerInsumosAnualesPorGerencia7(?)', [$gerenciaID]));
+        $rows     = PresupuestoHelper::obtenerInsumosAnualesPorGerencia($gerenciaID);
         $toInsert = [];
 
         $rows->groupBy('NombreInsumo')->each(function (Collection $items, $nombre) use ($año, $gerenciaID, &$toInsert) {
