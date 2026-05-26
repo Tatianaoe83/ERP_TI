@@ -23,4 +23,34 @@
     {!! Form::close() !!}
 
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // ubicamos el valor original del tipo de persona
+    const tipoOriginal = "{{ $empleados->tipo_persona }}".trim().toUpperCase();
+
+    // Al cambiar el tipo de persona
+    $('#tipo_persona').on('change', function () {
+
+        // obtenemos el nuevo valor seleccionado
+        let nuevoTipo = ($(this).val() || '').trim().toUpperCase();
+
+        // Validamos cambios no permitidos
+        if (
+            (tipoOriginal === 'FISICA' && nuevoTipo === 'EXTRAORDINARIO') ||
+            (tipoOriginal === 'EXTRAORDINARIO' && nuevoTipo === 'FISICA')
+        ) {
+
+            Swal.fire({
+                title: 'No se puede realizar esta acción',
+                text: 'No está permitido cambiar entre físico y extraordinario.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+
+            // regresar al valor original
+            $(this).val(tipoOriginal).trigger('change');
+        }
+    });
+});
+</script>
 @endsection
