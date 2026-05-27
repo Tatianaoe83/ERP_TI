@@ -160,6 +160,40 @@ class OutlookEmailService
                 'leido' => false
             ]);
 
+            // Incrementar notificaciones pendientes y guardar fecha de última respuesta
+            try {
+                // Normalizar remitente (soporta formatos "Nombre <email@dominio>" o solo email)
+                if (preg_match('/<(.+?)>$/', $from, $m)) {
+                    $remitenteEmail = strtolower($m[1]);
+                } else {
+                    $remitenteEmail = strtolower(trim((string) $from));
+                }
+
+                // Direcciones de soporte para ignorar
+                $supportAddresses = array_filter([
+                    strtolower(config('mail.from.address') ?? ''),
+                    strtolower(config('email_tickets.smtp.from_address') ?? ''),
+                ]);
+
+                // Detección simple de correos automáticos
+                $isAuto = preg_match('/no-?reply|no-?responder|mailer-daemon|auto-?reply|automated|noreply/i', $remitenteEmail)
+                    || stripos($subject, 'undeliverable') !== false
+                    || stripos($body, 'Este es un mensaje automático') !== false
+                    || stripos($body, 'no responder') !== false;
+
+                // Si no es un correo enviado por soporte y no parece automático, incrementar contador
+                if (!in_array($remitenteEmail, $supportAddresses) && !$isAuto) {
+                    try {
+                        \App\Models\Tickets::where('TicketID', $ticketId)->increment('notificaciones_pendientes', 1);
+                        \App\Models\Tickets::where('TicketID', $ticketId)->update(['fecha_ultima_respuesta' => now()]);
+                    } catch (\Exception $e) {
+                        Log::error("No se pudo actualizar notificaciones para ticket #{$ticketId}: " . $e->getMessage());
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Error procesando actualización de notificaciones para ticket #{$ticketId}: " . $e->getMessage());
+            }
+
             Log::info("Correo entrante procesado exitosamente", [
                 'ticket_id' => $ticketId,
                 'message_id' => $messageId,

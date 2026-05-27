@@ -2956,6 +2956,19 @@
             abrirModal(datos) {
                 this.selected = datos;
                 this.mostrar = true;
+                // Resetear notificaciones pendientes en el servidor al abrir el modal
+                try {
+                    fetch(`/tickets/${datos.id}/mark-notifications-read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({})
+                    }).catch(err => console.warn('No se pudo resetear notificaciones:', err));
+                } catch (e) {
+                    console.warn('Error iniciando petición para resetear notificaciones:', e);
+                }
                 this.asuntoCorreo = `Re: Ticket #${datos.id}`;
                 this.mostrarCc = false;
                 this.mostrarBcc = false;

@@ -36,8 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Validamos cambios no permitidos
         if (
-            (tipoOriginal === 'FISICA' && nuevoTipo === 'EXTRAORDINARIO') ||
-            (tipoOriginal === 'EXTRAORDINARIO' && nuevoTipo === 'FISICA')
+            (tipoOriginal === 'FISICA' && nuevoTipo === 'EXTRAORDINARIO')
         ) {
 
             Swal.fire({

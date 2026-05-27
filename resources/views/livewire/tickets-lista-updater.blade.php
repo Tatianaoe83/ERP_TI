@@ -6,14 +6,14 @@
         class="space-y-4 w-full max-w-full overflow-x-hidden pb-6">
 
         @foreach ([
-            'nuevos' => ['titulo' => 'Nuevos', 'data' => $ticketsNuevos],
-            'proceso' => ['titulo' => 'En Progreso', 'data' => $ticketsProceso],
-            'resueltos' => ['titulo' => 'Resueltos', 'data' => $ticketsResueltos],
+        'nuevos' => ['titulo' => 'Nuevos', 'data' => $ticketsNuevos],
+        'proceso' => ['titulo' => 'En Progreso', 'data' => $ticketsProceso],
+        'resueltos' => ['titulo' => 'Resueltos', 'data' => $ticketsResueltos],
         ] as $key => $grupoData)
 
         @php
-            $titulo = $grupoData['titulo'];
-            $grupo = $grupoData['data'];
+        $titulo = $grupoData['titulo'];
+        $grupo = $grupoData['data'];
         @endphp
 
         <div class="rounded-lg overflow-hidden shadow-sm bg-gray-50 dark:bg-[#1C1F26] border border-gray-300 dark:border-[#2A2F3A]">
@@ -32,27 +32,27 @@
                 @forelse ($grupo as $ticket)
 
                 @php
-                    $nombreResponsable = null;
-                    $nombreEmpleado = optional($ticket->empleado)->NombreEmpleado ?? '';
-                    $correoEmpleado = optional($ticket->empleado)->Correo ?? optional($ticket->empleado)->correo ?? '';
-                    $partes = preg_split('/\s+/', trim($nombreEmpleado));
-                    if (count($partes) >= 3) array_splice($partes, 1, 1);
-                    $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
+                $nombreResponsable = null;
+                $nombreEmpleado = optional($ticket->empleado)->NombreEmpleado ?? '';
+                $correoEmpleado = optional($ticket->empleado)->Correo ?? optional($ticket->empleado)->correo ?? '';
+                $partes = preg_split('/\s+/', trim($nombreEmpleado));
+                if (count($partes) >= 3) array_splice($partes, 1, 1);
+                $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
 
-                    if (!empty($ticket->responsableTI)) {
-                        $nombreResp = $ticket->responsableTI->NombreEmpleado ?? '';
-                        $p = preg_split('/\s+/', trim($nombreResp));
-                        if (count($p) >= 3) array_splice($p, 1, 1);
-                        $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
-                    }
+                if (!empty($ticket->responsableTI)) {
+                $nombreResp = $ticket->responsableTI->NombreEmpleado ?? '';
+                $p = preg_split('/\s+/', trim($nombreResp));
+                if (count($p) >= 3) array_splice($p, 1, 1);
+                $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
+                }
 
-                    $tiempoInfo = $tiemposProgreso[$ticket->TicketID] ?? null;
+                $tiempoInfo = $tiemposProgreso[$ticket->TicketID] ?? null;
                 @endphp
 
                 <div
                     wire:key="ticket-lista-{{ $ticket->TicketID }}"
                     class="p-4 cursor-pointer transition-all duration-200 bg-gray-50 dark:bg-[#1C1F26] hover:bg-gray-100 dark:hover:bg-[#242933] border-l-4 border-l-transparent hover:border-l-blue-500"
-                    
+
                     data-ticket-id="{{ $ticket->TicketID }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion ?? '', ENT_QUOTES, 'UTF-8') }}"
@@ -64,7 +64,7 @@
                     data-ticket-numero="{{ $ticket->numero ?? $ticket->Numero ?? '' }}"
                     data-ticket-anydesk="{{ $ticket->code_anydesk ?? $ticket->CodeAnydesk ?? '' }}"
                     data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
-                    
+
                     @click="abrirModalDesdeElemento($el)">
 
                     <div class="flex flex-col sm:flex-row justify-between gap-4">
@@ -97,7 +97,28 @@
                                 <span class="flex items-center gap-1.5">
                                     <i class="fas fa-calendar-alt"></i>
                                     <span>{{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i') }}</span>
+
                                 </span>
+                                <span>
+                                    <span class="flex items-center gap-1.5">
+                                        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5">
+                                            <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
+                                                notifications
+                                            </span>
+
+                                            @if(($ticket->notificaciones_pendientes ?? 0) > 0)
+                                            <span class="absolute -top-1 -right-1
+            bg-red-500 text-white
+            text-[10px] leading-none font-medium
+            rounded-full w-4 h-4
+            flex items-center justify-center">
+                                                {{ $ticket->notificaciones_pendientes }}
+                                            </span>
+                                            @endif
+                                        </div>
+                                    </span>
+                                </span>
+
 
                                 @if($key === 'proceso' && $nombreResponsable)
                                 <span class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">

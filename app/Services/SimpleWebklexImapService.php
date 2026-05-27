@@ -7,6 +7,7 @@ use Webklex\PHPIMAP\ClientManager;
 use App\Models\Tickets;
 use App\Models\TicketChat;
 use App\Models\Empleados;
+use Illuminate\Support\Facades\Log;
 
 class SimpleWebklexImapService
 {
@@ -265,9 +266,24 @@ class SimpleWebklexImapService
             $threadId = $this->extraerThreadId($message);
             $messageId = $message->getMessageId();
             $dominio = $this->extraerDominio($fromEmail);
+
+            // Log inicial para diagnóstico temporal
+            try {
+                Log::info('IMAP: procesando mensaje', [
+                    'from' => $fromEmail,
+                    'from_name' => $fromName,
+                    'subject' => $subject,
+                    'message_id' => $messageId,
+                    'thread_id' => $threadId,
+                    'domain' => $dominio,
+                ]);
+            } catch (\Exception $e) {
+                // Ignorar errores de logging
+            }
             
             // Filtrar solo correos de dominios permitidos (proser y konkret)
             if (!$this->esDominioPermitido($dominio)) {
+                try { Log::info('IMAP: descartado por dominio no permitido', ['from' => $fromEmail, 'domain' => $dominio]); } catch (\Exception $e) {}
                 return false;
             }
             
@@ -284,6 +300,7 @@ class SimpleWebklexImapService
                 // Verificar que el ticket esté en "En progreso"
                 // Solo procesar respuestas de tickets en estado "En progreso"
                 if ($ticket->Estatus !== 'En progreso') {
+                    try { Log::info('IMAP: descartado por estatus del ticket', ['ticket' => $ticket->TicketID, 'estatus' => $ticket->Estatus]); } catch (\Exception $e) {}
                     return false;
                 }
                 
@@ -296,22 +313,27 @@ class SimpleWebklexImapService
                 }
                 
                 if ($yaProcesado) {
+                    try { Log::info('IMAP: correo ya procesado (dup)', ['ticket' => $ticket->TicketID, 'message_id' => $messageId, 'thread_id' => $threadId]); } catch (\Exception $e) {}
                     return false;
                 }
                 
                 $resultado = $this->crearRespuestaUsuario($ticket, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $from, $messageId, $threadId);
                 
                 if ($resultado) {
+                    try { Log::info('IMAP: respuesta de usuario guardada', ['ticket' => $ticket->TicketID, 'chat_id' => $resultado->id ?? null]); } catch (\Exception $e) {}
                     return true;
                 } else {
+                    try { Log::info('IMAP: fallo al guardar respuesta de usuario', ['ticket' => $ticket->TicketID]); } catch (\Exception $e) {}
                     return false;
                 }
             } else {
                 // Intentar crear nuevo ticket
                 $nuevoTicket = $this->intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
                 if ($nuevoTicket && is_object($nuevoTicket) && isset($nuevoTicket->TicketID)) {
+                    try { Log::info('IMAP: nuevo ticket creado desde correo', ['ticket' => $nuevoTicket->TicketID, 'from' => $fromEmail]); } catch (\Exception $e) {}
                     return true;
                 } else {
+                    try { Log::info('IMAP: no se creó ticket nuevo', ['from' => $fromEmail, 'subject' => $subject]); } catch (\Exception $e) {}
                     return false;
                 }
             }

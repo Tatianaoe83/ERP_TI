@@ -150,6 +150,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/tickets/marcar-leidos', [TicketsController::class, 'marcarMensajesComoLeidos']);
     Route::post('/tickets/sincronizar-correos', [TicketsController::class, 'sincronizarCorreos']);
     Route::post('/tickets/agregar-respuesta-manual', [TicketsController::class, 'agregarRespuestaManual']);
+    Route::post('/tickets/{id}/mark-notifications-read', [TicketsController::class, 'markNotificationsRead'])->name('tickets.mark-notifications-read');
     Route::post('/tickets/enviar-instrucciones', [TicketsController::class, 'enviarInstruccionesRespuesta']);
     Route::post('/tickets/actualizar-tiempo-estimado', [TicketsController::class, 'actualizarTiempoEstimado']);
     Route::post('/tickets/actualizar-metricas-masivo', [TicketsController::class, 'actualizarMetricasMasivo']);

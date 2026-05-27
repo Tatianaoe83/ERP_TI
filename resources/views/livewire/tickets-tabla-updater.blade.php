@@ -69,6 +69,7 @@
                 {{-- HEADER --}}
                 <thead class="bg-gray-100 dark:bg-[#242933]">
                     <tr>
+                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase"></th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase">ID</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Descripción</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Empleado</th>
@@ -125,6 +126,26 @@
                             data-ticket-estado="{{ $estadoActual }}"
 
                             @click="abrirModalDesdeElemento($el)">
+                            {{-- ID --}}
+                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
+                                                           <span class="flex items-center gap-1.5">
+                                        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5">
+                                            <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
+                                                notifications
+                                            </span>
+
+                                            @if(($ticket->notificaciones_pendientes ?? 0) > 0)
+                                            <span class="absolute -top-1 -right-1
+            bg-red-500 text-white
+            text-[10px] leading-none font-medium
+            rounded-full w-4 h-4
+            flex items-center justify-center">
+                                                {{ $ticket->notificaciones_pendientes }}
+                                            </span>
+                                            @endif
+                                        </div>
+    
+                            </td>
 
                             {{-- ID --}}
                             <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">

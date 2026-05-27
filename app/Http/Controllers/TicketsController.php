@@ -964,6 +964,34 @@ class TicketsController extends Controller
         }
     }
 
+    /**
+     * Resetear notificaciones pendientes al abrir el modal del ticket
+     */
+    public function markNotificationsRead(Request $request, $id)
+    {
+        try {
+            $ticket = Tickets::find($id);
+            if (!$ticket) {
+                return response()->json(['success' => false, 'message' => 'Ticket no encontrado'], 404);
+            }
+
+            // Reset contador
+            $ticket->notificaciones_pendientes = 0;
+            $ticket->save();
+
+            // Marcar mensajes de usuario como leídos
+            TicketChat::where('ticket_id', $id)
+                ->where('remitente', 'usuario')
+                ->where('leido', false)
+                ->update(['leido' => true]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Error reseteando notificaciones para ticket #'.$id.': '.$e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error interno'], 500);
+        }
+    }
+
     // Retorna subtipos filtrados por tipo
     public function getSubtiposByTipo(Request $request)
     {
