@@ -501,25 +501,32 @@ class PresupuestoHelper
             in_array($i->CateogoriaInsumo, ['LAPTOP', 'MONITOR', 'NO BREAK', 'TABLET', 'IMPRESORA'])
         );
 
-        if ($insumosHardware->isNotEmpty()) {
-            foreach ($meses as $numMes => $mes) {
-                $costo = $insumosHardware->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)->sum('CostoAnual');
-                if ($mes === 'Junio') {
-                    $costo += $totalRenovacionFianzas;
-                }
+        // Calcular costos por mes
+        $costosTotalesPorMes = [];
+        foreach ($meses as $mes) {
+            $costo = $insumosHardware->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)->sum('CostoAnual');
+            if ($mes === 'Junio') {
+                $costo += $totalRenovacionFianzas;
+            }
+            $costosTotalesPorMes[$mes] = $costo;
+        }
+
+        // Solo generar INVERSIONES si hay al menos un mes con costo > 0
+        $totalAnual = array_sum($costosTotalesPorMes);
+        if ($totalAnual > 0) {
+            foreach ($meses as $mes) {
                 $resultado->push((object)[
                     'NombreInsumo' => 'INVERSIONES',
                     'Mes'          => $mes,
-                    'Costo'        => (int) round($costo),
+                    'Costo'        => (int) round($costosTotalesPorMes[$mes]),
                     'Orden'        => 6,
                     'GerenciaID'   => $gerenciaId,
                 ]);
             }
         }
 
-        // Ordenar: Orden → NombreInsumo → número de mes
+        // Ordenar: NombreInsumo (A-Z) → número de mes
         return $resultado->sortBy([
-            fn ($a, $b) => $a->Orden <=> $b->Orden,
             fn ($a, $b) => strcmp($a->NombreInsumo, $b->NombreInsumo),
             fn ($a, $b) => $mesIndice[$a->Mes] <=> $mesIndice[$b->Mes],
         ])->values();
