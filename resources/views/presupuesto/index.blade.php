@@ -92,8 +92,49 @@
     color: #6B7280;
 }
 
-.tab-inactive:hover {
-    color: #374151;
+.dark .tab-inactive:hover {
+    color: #D1D5DB;
+}
+
+/* BANNERS INFORMATIVOS */
+.info-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    margin-bottom: 1.25rem;
+    border-radius: 0.75rem;
+    border-left: 4px solid #6366f1;
+    background: #eef2ff;
+    font-size: 0.85rem;
+    color: #4338ca;
+}
+.dark .info-banner {
+    background: #1e1b4b;
+    border-left-color: #818cf8;
+    color: #a5b4fc;
+}
+
+.info-banner__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.info-banner__title {
+    font-weight: 700;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 0;
+}
+
+.info-banner__text {
+    font-size: 0.8125rem;
+    margin: 0;
+    opacity: 0.9;
+    line-height: 1.4;
 }
 </style>
 
@@ -168,6 +209,13 @@
             class="tab-panel tab-animate"
             x-cloak
         >
+
+            <div class="info-banner">
+                <div class="info-banner__content">
+                    <p class="info-banner__title">Tipos de empleados incluidos</p>
+                    <p class="info-banner__text">Este reporte solo toma en cuenta empleados tipo <strong>FÍSICA</strong> y <strong>EXTRAORDINARIO</strong>.</p>
+                </div>
+            </div>
 
             <div class="tab-card">
 
@@ -278,6 +326,13 @@
             class="tab-panel tab-animate"
             x-cloak
         >
+
+            <div class="info-banner">
+                <div class="info-banner__content">
+                    <p class="info-banner__title">Tipos de empleados incluidos</p>
+                    <p class="info-banner__text">Este reporte solo toma en cuenta empleados tipo <strong>FÍSICA</strong> y <strong>REFERENCIADO</strong>.</p>
+                </div>
+            </div>
 
             <div class="tab-card">
 
