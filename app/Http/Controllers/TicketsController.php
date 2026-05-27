@@ -1809,4 +1809,234 @@ class TicketsController extends Controller
             return response()->json(['error' => 'Error interno: ' . $e->getMessage()], 500);
         }
     }
+
+    // Retorna el detalle de tickets según el filtro de gráfica seleccionado
+    public function getTicketsDetalleGrafica(Request $request)
+    {
+        try {
+            $request->validate([
+                'chart_type' => 'required|string',
+                'filter_key' => 'required|string',
+                'filter_value' => 'nullable|string',
+                'mes' => 'nullable|integer|min:1|max:12',
+                'anio' => 'nullable|integer|min:2020|max:2100',
+                'mes_inicio' => 'nullable|integer|min:1|max:12',
+                'anio_inicio' => 'nullable|integer|min:2020|max:2100',
+                'mes_fin' => 'nullable|integer|min:1|max:12',
+                'anio_fin' => 'nullable|integer|min:2020|max:2100',
+            ]);
+
+            $chartType = $request->input('chart_type');
+            $filterKey = $request->input('filter_key');
+            $filterValue = $request->input('filter_value');
+
+            // Construir query base con filtros de fecha
+            $query = $this->buildProductividadTicketsQuery($request);
+
+            // Aplicar filtro específico según el tipo de gráfica
+            $query = $this->applyProductividadChartFilter($query, $chartType, $filterKey, $filterValue);
+
+            // Obtener tickets con relaciones necesarias
+            $tickets = $query->with([
+                'empleado',
+                'empleado.gerencia',
+                'responsableTI',
+                'tipoticket',
+                'subtipo',
+                'tertipo',
+                'calificacion'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->limit(500)
+            ->get();
+
+            // Formatear respuesta
+            $ticketsFormatted = $tickets->map(function ($ticket) {
+                $calificacion = $ticket->calificacion;
+                
+                return [
+                    'TicketID' => $ticket->TicketID,
+                    'Numero' => $ticket->Numero ?? $ticket->TicketID,
+                    'Descripcion' => $ticket->Descripcion,
+                    'Prioridad' => $ticket->Prioridad,
+                    'Clasificacion' => $ticket->Clasificacion,
+                    'Estatus' => $ticket->Estatus,
+                    'ResponsableTI' => $ticket->responsableTI ? $ticket->responsableTI->NombreEmpleado : 'Sin asignar',
+                    'ResponsableTI_ID' => $ticket->ResponsableTI,
+                    'Solicitante' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Desconocido',
+                    'Solicitante_ID' => $ticket->EmpleadoID,
+                    'Gerencia' => optional($ticket->empleado->gerencia)->NombreGerencia ?? 'N/A',
+                    'Tipo' => $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'N/A',
+                    'Subtipo' => $ticket->subtipo ? $ticket->subtipo->NombreSubtipo : 'N/A',
+                    'Tertipo' => $ticket->tertipo ? $ticket->tertipo->NombreTertipo : 'N/A',
+                    'created_at' => $ticket->created_at ? $ticket->created_at->format('d/m/Y H:i') : 'N/A',
+                    'FechaInicioProgreso' => $ticket->FechaInicioProgreso ? $ticket->FechaInicioProgreso->format('d/m/Y H:i') : null,
+                    'FechaFinProgreso' => $ticket->FechaFinProgreso ? $ticket->FechaFinProgreso->format('d/m/Y H:i') : null,
+                    // Calificaciones desde la encuesta
+                    'Rapidez' => $calificacion && $calificacion->fastness !== null ? $calificacion->fastness : null,
+                    'Resolucion' => $calificacion && $calificacion->resolution !== null ? $calificacion->resolution : null,
+                    'Atencion' => $calificacion && $calificacion->attention !== null ? $calificacion->attention : null,
+                    'Calificacion_Status' => $calificacion ? $calificacion->status : null,
+                    'Comentario' => $calificacion && $calificacion->user_comment ? $calificacion->user_comment : null,
+                    // Métricas calculadas
+                    'TiempoRespuesta' => $ticket->tiempo_respuesta_formateado,
+                    'TiempoResolucion' => $ticket->tiempo_resolucion_formateado,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'tickets' => $ticketsFormatted,
+                'total' => $ticketsFormatted->count(),
+                'filter_label' => $this->getFilterLabel($chartType, $filterKey, $filterValue),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Validación fallida en getTicketsDetalleGrafica', [
+                'errors' => $e->errors(),
+                'request' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Parámetros inválidos: ' . implode(', ', array_map(fn($m) => implode(', ', $m), $e->errors()))
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error en getTicketsDetalleGrafica: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Error al obtener el detalle de tickets: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Construye query base con filtros de fecha aplicados
+    private function buildProductividadTicketsQuery(Request $request)
+    {
+        $mes = (int)$request->input('mes', now()->month);
+        $anio = (int)$request->input('anio', now()->year);
+
+        $esRango = $request->has('mes_inicio') && $request->has('mes_fin');
+        $mesInicio = $esRango ? (int)$request->input('mes_inicio') : null;
+        $anioInicio = $esRango ? (int)$request->input('anio_inicio') : null;
+        $mesFin = $esRango ? (int)$request->input('mes_fin') : null;
+        $anioFin = $esRango ? (int)$request->input('anio_fin') : null;
+
+        $query = Tickets::query();
+
+        if ($esRango) {
+            $fechaInicio = \Carbon\Carbon::create($anioInicio, $mesInicio, 1)->startOfMonth();
+            $fechaFin = \Carbon\Carbon::create($anioFin, $mesFin, 1)->endOfMonth();
+            $query->whereBetween('created_at', [$fechaInicio, $fechaFin]);
+        } else {
+            $fechaInicio = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+            $fechaFin = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+            $query->whereBetween('created_at', [$fechaInicio, $fechaFin]);
+        }
+
+        return $query;
+    }
+
+    // Aplica filtro específico según el tipo de gráfica y valor seleccionado
+    private function applyProductividadChartFilter($query, $chartType, $filterKey, $filterValue)
+    {
+        switch ($chartType) {
+            case 'estado':
+            case 'distribucion_estado':
+                if ($filterValue) {
+                    $query->where('Estatus', $filterValue);
+                }
+                break;
+
+            case 'prioridad':
+            case 'tickets_por_prioridad':
+                if ($filterValue) {
+                    $query->where('Prioridad', $filterValue);
+                }
+                break;
+
+            case 'clasificacion':
+            case 'tickets_por_clasificacion':
+                if ($filterValue) {
+                    $query->where('Clasificacion', $filterValue);
+                }
+                break;
+
+            case 'tipo':
+            case 'tickets_por_tipo':
+                if ($filterValue) {
+                    $query->whereHas('tipoticket', function ($q) use ($filterValue) {
+                        $q->where('NombreTipo', $filterValue);
+                    });
+                }
+                break;
+
+            case 'responsable':
+            case 'tickets_por_responsable':
+                if ($filterValue) {
+                    $query->where('ResponsableTI', (int)$filterValue);
+                }
+                break;
+
+            case 'gerencia_solicitante':
+            case 'tickets_por_gerencia_solicitante':
+                if ($filterValue) {
+                    $query->whereHas('empleado.gerencia', function ($q) use ($filterValue) {
+                        $q->where('NombreGerencia', $filterValue);
+                    });
+                }
+                break;
+
+            case 'resueltos':
+            case 'creados':
+            case 'tendencias':
+                // Para gráficas de tiempo, no aplicar filtro adicional
+                // Ya están filtradas por fecha en buildProductividadTicketsQuery
+                if ($filterKey === 'resueltos') {
+                    $query->where('Estatus', 'Cerrado');
+                } elseif ($filterKey === 'creados') {
+                    // No hay filtro adicional, todos los tickets del período
+                }
+                break;
+
+            default:
+                // Si no reconocemos el tipo, no aplicar filtro adicional
+                break;
+        }
+
+        return $query;
+    }
+
+    // Genera etiqueta legible para el filtro seleccionado
+    private function getFilterLabel($chartType, $filterKey, $filterValue)
+    {
+        $labels = [
+            'estado' => 'Estado',
+            'distribucion_estado' => 'Estado',
+            'prioridad' => 'Prioridad',
+            'tickets_por_prioridad' => 'Prioridad',
+            'clasificacion' => 'Clasificación',
+            'tickets_por_clasificacion' => 'Clasificación',
+            'tipo' => 'Tipo',
+            'tickets_por_tipo' => 'Tipo',
+            'responsable' => 'Responsable TI',
+            'tickets_por_responsable' => 'Responsable TI',
+            'gerencia_solicitante' => 'Gerencia',
+            'tickets_por_gerencia_solicitante' => 'Gerencia',
+            'resueltos' => 'Tickets Resueltos',
+            'creados' => 'Tickets Creados',
+            'tendencias' => 'Tendencias',
+        ];
+
+        $label = $labels[$chartType] ?? 'Tickets';
+        
+        if ($filterValue) {
+            return $label . ': ' . $filterValue;
+        }
+
+        return $label;
+    }
 }
