@@ -131,17 +131,17 @@ class PresupuestoController extends Controller
         $numeroEmpleados = Empleados::whereHas('puestos.departamentos', function ($query) use ($numerogerencia) {
             $query->where('GerenciaID', $numerogerencia);
         })
-        ->whereIn('tipo_persona', $tiposPersona)
-        ->count();
+            ->whereIn('tipo_persona', $tiposPersona)
+            ->count();
 
-        if($gerencia){
+        if ($gerencia) {
             $gerencia->CantidadEmpleados = $numeroEmpleados;
         }
 
         if ($request->submitbutton == 'pdf') {
 
             // Consultas de presupuesto en store procedures
-            // $presup_hardware  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
+            // $presup_hardware  = $request->tipo == 'mens' ? DB::select('ObtenerInsumosAnualesPorGerencia sp_GenerarReporteHardwarePorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteHardwarePorGerenciaAnual(?)',[$numerogerencia]);
             // $presup_otrosinsums = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteAccesoriosYMantenimientosPorGerenciaAnual(?)',[$numerogerencia]);
             // $presup_lics  = $request->tipo == 'mens' ? DB::select('call sp_GenerarReporteLicenciasPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_GenerarReporteLicenciasPorGerenciaAnual(?)',[$numerogerencia]);
             // $presup_acces =  $request->tipo == 'mens' ? DB::select('call sp_ReportePresupuestoLineasVozPorGerencia(?)',[$numerogerencia]) : DB::select('call sp_ReportePresupuestoLineasVozPorGerenciaAnual(?)',[$numerogerencia]);
@@ -332,7 +332,7 @@ class PresupuestoController extends Controller
                 ]
             ];
 
-            $presup_cal_pagos = $this->obtenerInsumosAnualesFiltrados($numerogerencia);
+            $presup_cal_pagos = $this->obtenerInsumosAnualesFiltrados($numerogerencia, $tiposPersona);
 
             // Inicializar las variables para las sumas de cada mes
             $sumaEnero = 0;
@@ -737,9 +737,11 @@ class PresupuestoController extends Controller
         ];
     }
 
-    private function obtenerInsumosAnualesFiltrados($gerenciaId, $tipoPersona = null)
+    private function obtenerInsumosAnualesFiltrados($gerenciaId, array $tiposPersona = ['FISICA', 'EXTRAORDINARIO'])
     {
-        $tipoPersonaFilter = " AND e.tipo_persona IN ('FISICA', 'REFERENCIADO') ";
+        // Construir filtro dinámico según los tipos de persona permitidos
+        $tiposPersonaStr = implode("', '", $tiposPersona);
+        $tipoPersonaFilter = " AND e.tipo_persona IN ('" . $tiposPersonaStr . "') ";
         $bindings = ['gerenciaId' => $gerenciaId];
 
         // 1. Obtener costos de Windows 10 Pro
@@ -907,6 +909,7 @@ class PresupuestoController extends Controller
             'totalRenovacionFianzas' => $totalRenovacionFianzas,
             'totalRenovacionFianzas2' => $totalRenovacionFianzas
         ]);
+
         $res3 = DB::select($sqlInversiones, $invBindings);
         $reporteTemp = array_merge($reporteTemp, $res3);
 
