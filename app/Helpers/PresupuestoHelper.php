@@ -338,4 +338,197 @@ class PresupuestoHelper
             ->filter(fn($row) => $row->Total > 0)
             ->values();
     }
+
+    // Método para obtener el reporte anual de insumos por gerencia (con orden específico)
+    public static function obtenerInsumosAnualesPorGerencia(int $gerenciaId): \Illuminate\Support\Collection
+    {
+        $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        $mesIndice = array_flip($meses);
+
+        $esExentaWindows = in_array($gerenciaId, [17, 18]);
+
+        // 1. Costos base de Windows (con 7% de incremento, redondeados)
+        $costoWin10Pro = $esExentaWindows ? 0 : (int) round(
+            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 10 PRO')->max('CostoMensual') ?? 0) * 1.07
+        );
+        $costoWin11Pro = $esExentaWindows ? 0 : (int) round(
+            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 11 PRO')->max('CostoAnual') ?? 0) * 1.07
+        );
+
+        // 2. Cargar empleados de la gerencia con sus insumos y líneas
+        $empleados = Empleados::query()
+            ->whereIn('tipo_persona', ['FISICA', 'EXTRAORDINARIO'])
+            ->whereHas('puestos.departamentos.gerencia', function ($q) use ($gerenciaId) {
+                $q->where('gerencia.GerenciaID', $gerenciaId);
+            })
+            ->with([
+                'inventarioinsumo' => function ($q) {
+                    $q->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CateogoriaInsumo',
+                               'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'MesDePago');
+                },
+                'inventariolineas' => function ($q) {
+                    $q->select('InventarioID', 'EmpleadoID', 'Compania', 'TipoLinea',
+                               'CostoRentaMensual', 'CostoFianza', 'FechaFianza', 'MontoRenovacionFianza');
+                },
+            ])
+            ->get();
+
+        // 3. Total renovación fianzas (se suma a Junio en INVERSIONES)
+        $totalRenovacionFianzas = $empleados->sum(
+            fn ($e) => $e->inventariolineas->whereNotNull('MontoRenovacionFianza')->sum('MontoRenovacionFianza')
+        );
+
+        $todosInsumos = $empleados->flatMap(fn ($e) => $e->inventarioinsumo);
+        $todasLineas  = $empleados->flatMap(fn ($e) => $e->inventariolineas);
+
+        $resultado = collect();
+
+        // --- ORDEN 1: Insumos Mensuales Directos ---
+        $todosInsumos
+            ->filter(fn ($i) =>
+                $i->FrecuenciaDePago === 'Mensual' &&
+                in_array($i->CateogoriaInsumo, ['LICENCIA', 'HOSTING', 'STARLINK', 'INTERNET', 'TABLET'])
+            )
+            ->groupBy('NombreInsumo')
+            ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, &$resultado) {
+                $costoMensual = $grupo->sum('CostoMensual');
+                if ($costoMensual * 12 <= 0) return;
+                foreach ($meses as $mes) {
+                    $resultado->push((object)[
+                        'NombreInsumo' => $nombre,
+                        'Mes'          => $mes,
+                        'Costo'        => (int) round($costoMensual),
+                        'Orden'        => 1,
+                        'GerenciaID'   => $gerenciaId,
+                    ]);
+                }
+            });
+
+        // --- ORDEN 2: Licencias Anuales ---
+        $todosInsumos
+            ->filter(fn ($i) =>
+                in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
+                $i->CateogoriaInsumo === 'LICENCIA' &&
+                !($esExentaWindows && str_contains(strtoupper($i->NombreInsumo), 'WINDOWS'))
+            )
+            ->groupBy('NombreInsumo')
+            ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, $costoWin10Pro, $costoWin11Pro, &$resultado) {
+                foreach ($meses as $mes) {
+                    $costo = $grupo->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)
+                        ->sum(function ($i) use ($nombre, $costoWin10Pro, $costoWin11Pro) {
+                            return match ($nombre) {
+                                'WINDOWS 10 HOME'                   => $costoWin10Pro,
+                                'WINDOWS 11 HOME'                   => $costoWin11Pro,
+                                'WINDOWS 10 PRO', 'WINDOWS 11 PRO'  => 0,
+                                default                             => $i->CostoAnual ?? 0,
+                            };
+                        });
+                    $resultado->push((object)[
+                        'NombreInsumo' => $nombre,
+                        'Mes'          => $mes,
+                        'Costo'        => (int) round($costo),
+                        'Orden'        => 2,
+                        'GerenciaID'   => $gerenciaId,
+                    ]);
+                }
+            });
+
+        // --- ORDEN 3: Otros Insumos anuales (no hardware, no licencia) ---
+        $todosInsumos
+            ->filter(fn ($i) =>
+                in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
+                !in_array($i->CateogoriaInsumo, ['LAPTOP', 'MONITOR', 'NO BREAK', 'LICENCIA', 'ACCESORIOS', 'BATERIA UPS', 'IMPRESORA'])
+            )
+            ->groupBy(fn ($i) => $i->CateogoriaInsumo === 'REPARACIONES' ? 'ACCESORIOS Y REFACCIONES' : $i->NombreInsumo)
+            ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, &$resultado) {
+                foreach ($meses as $mes) {
+                    $costo = $grupo->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)->sum('CostoAnual');
+                    $resultado->push((object)[
+                        'NombreInsumo' => $nombre,
+                        'Mes'          => $mes,
+                        'Costo'        => (int) round($costo),
+                        'Orden'        => 3,
+                        'GerenciaID'   => $gerenciaId,
+                    ]);
+                }
+            });
+
+        // --- ORDEN 4: Fianzas por compañía/tipo de línea ---
+        $todasLineas
+            ->filter(fn ($l) => in_array(strtoupper(trim($l->TipoLinea ?? '')), ['VOZ', 'DATOS', 'GPS']))
+            ->groupBy(fn ($l) => strtoupper(trim($l->Compania ?? '')) . '|' . strtoupper(trim($l->TipoLinea ?? '')))
+            ->each(function ($grupo, $key) use ($meses, $gerenciaId, &$resultado) {
+                [$compania, $tipoLinea] = explode('|', $key, 2);
+                $nombre = $compania . ' FIANZA - ' . $tipoLinea;
+                foreach ($meses as $numMes => $mes) {
+                    $mesNum = $numMes + 1;
+                    $costo = $grupo
+                        ->filter(fn ($l) => $l->FechaFianza && $l->FechaFianza->month === $mesNum)
+                        ->sum('CostoFianza');
+                    $resultado->push((object)[
+                        'NombreInsumo' => $nombre,
+                        'Mes'          => $mes,
+                        'Costo'        => (int) round($costo),
+                        'Orden'        => 4,
+                        'GerenciaID'   => $gerenciaId,
+                    ]);
+                }
+            });
+
+        // --- ORDEN 5: Líneas Mensuales (renta por compañía/tipo) ---
+        $todasLineas
+            ->groupBy(fn ($l) => strtoupper(trim($l->Compania ?? '')) . '|' . strtoupper(trim($l->TipoLinea ?? '')))
+            ->each(function ($grupo, $key) use ($meses, $gerenciaId, &$resultado) {
+                [$compania, $tipoLinea] = explode('|', $key, 2);
+                $nombre = $compania . ' ' . $tipoLinea;
+                $costoMensual = $grupo->sum('CostoRentaMensual');
+                if ($costoMensual * 12 <= 0) return;
+                foreach ($meses as $mes) {
+                    $resultado->push((object)[
+                        'NombreInsumo' => $nombre,
+                        'Mes'          => $mes,
+                        'Costo'        => (int) round($costoMensual),
+                        'Orden'        => 5,
+                        'GerenciaID'   => $gerenciaId,
+                    ]);
+                }
+            });
+
+        // --- ORDEN 6: Inversiones (hardware anual + renovación fianzas en Junio) ---
+        $insumosHardware = $todosInsumos->filter(fn ($i) =>
+            in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
+            in_array($i->CateogoriaInsumo, ['LAPTOP', 'MONITOR', 'NO BREAK', 'TABLET', 'IMPRESORA'])
+        );
+
+        // Calcular costos por mes
+        $costosTotalesPorMes = [];
+        foreach ($meses as $mes) {
+            $costo = $insumosHardware->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)->sum('CostoAnual');
+            if ($mes === 'Junio') {
+                $costo += $totalRenovacionFianzas;
+            }
+            $costosTotalesPorMes[$mes] = $costo;
+        }
+
+        // Solo generar INVERSIONES si hay al menos un mes con costo > 0
+        $totalAnual = array_sum($costosTotalesPorMes);
+        if ($totalAnual > 0) {
+            foreach ($meses as $mes) {
+                $resultado->push((object)[
+                    'NombreInsumo' => 'INVERSIONES',
+                    'Mes'          => $mes,
+                    'Costo'        => (int) round($costosTotalesPorMes[$mes]),
+                    'Orden'        => 6,
+                    'GerenciaID'   => $gerenciaId,
+                ]);
+            }
+        }
+
+        // Ordenar: NombreInsumo (A-Z) → número de mes
+        return $resultado->sortBy([
+            fn ($a, $b) => strcmp($a->NombreInsumo, $b->NombreInsumo),
+            fn ($a, $b) => $mesIndice[$a->Mes] <=> $mesIndice[$b->Mes],
+        ])->values();
+    }
 }

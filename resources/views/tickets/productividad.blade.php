@@ -1,4 +1,6 @@
-<div class="space-y-6 min-h-screen p-6" id="productividad-container" x-data="{ activeTab: sessionStorage.getItem('prodTab') || 'general' }" x-init="$watch('activeTab', val => sessionStorage.setItem('prodTab', val))">
+<div class="space-y-6 min-h-screen p-6" id="productividad-container"
+    x-data="{ activeTab: sessionStorage.getItem('prodTab') || 'general' }"
+    x-init="$watch('activeTab', val => sessionStorage.setItem('prodTab', val))">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Reporte de Productividad</h2>
@@ -6,15 +8,14 @@
         </div>
 
         @php
-            $mesInicioInit  = $mesInicio  ?? ($mes  ?? now()->month);
+            $mesInicioInit = $mesInicio ?? ($mes ?? now()->month);
             $anioInicioInit = $anioInicio ?? ($anio ?? now()->year);
-            $mesFinInit     = $mesFin     ?? ($mes  ?? now()->month);
-            $anioFinInit    = $anioFin    ?? ($anio ?? now()->year);
-            $mesActual      = now()->month;
-            $anioActual     = now()->year;
+            $mesFinInit = $mesFin ?? ($mes ?? now()->month);
+            $anioFinInit = $anioFin ?? ($anio ?? now()->year);
+            $mesActual = now()->month;
+            $anioActual = now()->year;
         @endphp
-        <div class="flex items-center gap-4 flex-wrap"
-            x-data="{
+        <div class="flex items-center gap-4 flex-wrap" x-data="{
                 mesInicio:  {{ $mesInicioInit }},
                 anioInicio: {{ $anioInicioInit }},
                 mesFin:     {{ $mesFinInit }},
@@ -115,9 +116,11 @@
             }">
 
             {{-- Filtro rango de meses (siempre visible) --}}
-            <div class="flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] p-1.5 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm flex-wrap">
+            <div
+                class="flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] p-1.5 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm flex-wrap">
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Desde</span>
-                <select x-model="mesInicio" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="mesInicio" @change="cargarProductividad()" :disabled="cargando"
+                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @php
                         $mesesOrdenados = [];
                         for ($i = $mesActual; $i <= 12; $i++) {
@@ -128,22 +131,29 @@
                         }
                     @endphp
                     @foreach($mesesOrdenados as $i)
-                        <option value="{{ $i }}">{{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}</option>
+                        <option value="{{ $i }}">
+                            {{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}
+                        </option>
                     @endforeach
                 </select>
-                <select x-model="anioInicio" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="anioInicio" @change="cargarProductividad()" :disabled="cargando"
+                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = $anioActual; $i >= $anioActual - 5; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
                 </select>
                 <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Hasta</span>
-                <select x-model="mesFin" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="mesFin" @change="cargarProductividad()" :disabled="cargando"
+                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @foreach($mesesOrdenados as $i)
-                        <option value="{{ $i }}">{{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}</option>
+                        <option value="{{ $i }}">
+                            {{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}
+                        </option>
                     @endforeach
                 </select>
-                <select x-model="anioFin" @change="cargarProductividad()" :disabled="cargando" class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
+                <select x-model="anioFin" @change="cargarProductividad()" :disabled="cargando"
+                    class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
                     @for($i = $anioActual; $i >= $anioActual - 5; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
@@ -162,7 +172,8 @@
 
     <div class="border-b border-gray-200 dark:border-[#2A2F3A] mb-6">
         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <button @click="activeTab = 'general'; setTimeout(() => { inicializarGraficas(); inicializarGraficasEmpleados(); }, 100);"
+            <button
+                @click="activeTab = 'general'; setTimeout(() => { inicializarGraficas(); inicializarGraficasEmpleados(); }, 100);"
                 :class="activeTab === 'general' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
                 <i class="fas fa-chart-pie"></i> Resumen de Tickets
@@ -178,7 +189,9 @@
 
     <div class="relative" x-data="{ modalAbierto: false, infoModal: {} }">
 
-        <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
+        <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 transform translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
 
             <script id="productividad-json-data" type="application/json">
                 {!! json_encode($metricasProductividad) !!}
@@ -190,7 +203,9 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium dark:text-[#9CA3AF]">Total de Tickets</p>
-                            <p class="text-3xl font-bold mt-2 dark:text-white">{{ $metricasProductividad['total_tickets'] }}</p>
+                            <p class="text-3xl font-bold mt-2 dark:text-white">
+                                {{ $metricasProductividad['total_tickets'] }}
+                            </p>
                         </div>
                         <div class="rounded-full p-4 bg-blue-500/15">
                             <i class="fas fa-ticket-alt text-blue-500 text-2xl"></i>
@@ -202,11 +217,13 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium dark:text-[#9CA3AF]">Tickets Cerrados</p>
-                            <p class="text-3xl font-bold mt-2 dark:text-white">{{ $metricasProductividad['tickets_cerrados'] }}</p>
+                            <p class="text-3xl font-bold mt-2 dark:text-white">
+                                {{ $metricasProductividad['tickets_cerrados'] }}
+                            </p>
                             <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">
                                 {{ $metricasProductividad['total_tickets'] > 0
-                                    ? round(($metricasProductividad['tickets_cerrados'] / $metricasProductividad['total_tickets']) * 100, 1)
-                                    : 0 }}% del total
+    ? round(($metricasProductividad['tickets_cerrados'] / $metricasProductividad['total_tickets']) * 100, 1)
+    : 0 }}% del total
                             </p>
                         </div>
                         <div class="rounded-full p-4 bg-green-500/15">
@@ -221,8 +238,8 @@
                             <p class="text-sm font-medium dark:text-[#9CA3AF]">Tiempo Promedio Resolución</p>
                             <p class="text-3xl font-bold mt-2 dark:text-white">
                                 {{ $metricasProductividad['tiempo_promedio_resolucion'] > 0
-                                    ? number_format($metricasProductividad['tiempo_promedio_resolucion'], 1)
-                                    : '0' }}
+    ? number_format($metricasProductividad['tiempo_promedio_resolucion'], 1)
+    : '0' }}
                             </p>
                             <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
                         </div>
@@ -238,8 +255,8 @@
                             <p class="text-sm font-medium dark:text-[#9CA3AF]">Tiempo Promedio Respuesta</p>
                             <p class="text-3xl font-bold mt-2 dark:text-white">
                                 {{ $metricasProductividad['tiempo_promedio_respuesta'] > 0
-                                    ? number_format($metricasProductividad['tiempo_promedio_respuesta'], 1)
-                                    : '0' }}
+    ? number_format($metricasProductividad['tiempo_promedio_respuesta'], 1)
+    : '0' }}
                             </p>
                             <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
                         </div>
@@ -252,127 +269,161 @@
 
             {{-- Tarjeta de Calificación Promedio --}}
             @if(isset($metricasProductividad['calificacion_promedio']) && $metricasProductividad['calificacion_promedio']['total_respuestas'] > 0)
-            <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-lg font-semibold dark:text-white flex items-center gap-2">
-                            <i class="fas fa-star text-yellow-500"></i>
-                            Calificación de Satisfacción
-                        </h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            Basado en {{ $metricasProductividad['calificacion_promedio']['total_respuestas'] }} encuesta(s) completada(s)
-                        </p>
+                <div
+                    class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold dark:text-white flex items-center gap-2">
+                                <i class="fas fa-star text-yellow-500"></i>
+                                Calificación de Satisfacción
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Basado en {{ $metricasProductividad['calificacion_promedio']['total_respuestas'] }}
+                                encuesta(s) completada(s)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                        {{-- Rapidez --}}
+                        <div
+                            class="p-3 sm:p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-blue-700 dark:text-blue-400">Rapidez</span>
+                            </div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                    {{ number_format($metricasProductividad['calificacion_promedio']['fastness'], 1) }}
+                                </span>
+                                <span class="text-sm text-blue-500 dark:text-blue-400">/5</span>
+                            </div>
+                        </div>
+
+                        {{-- Atención --}}
+                        <div
+                            class="p-3 sm:p-4 rounded-lg bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-green-700 dark:text-green-400">Atención</span>
+                            </div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
+                                    {{ number_format($metricasProductividad['calificacion_promedio']['attention'], 1) }}
+                                </span>
+                                <span class="text-sm text-green-500 dark:text-green-400">/5</span>
+                            </div>
+                        </div>
+
+                        {{-- Resolución --}}
+                        <div
+                            class="p-3 sm:p-4 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-purple-700 dark:text-purple-400">Resolución</span>
+                            </div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
+                                    {{ number_format($metricasProductividad['calificacion_promedio']['resolution'], 1) }}
+                                </span>
+                                <span class="text-sm text-purple-500 dark:text-purple-400">/5</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                    {{-- Rapidez --}}
-                    <div class="p-3 sm:p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-blue-700 dark:text-blue-400">Rapidez</span>
-                        </div>
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
-                                {{ number_format($metricasProductividad['calificacion_promedio']['fastness'], 1) }}
-                            </span>
-                            <span class="text-sm text-blue-500 dark:text-blue-400">/5</span>
-                        </div>
-                    </div>
-
-                    {{-- Atención --}}
-                    <div class="p-3 sm:p-4 rounded-lg bg-green-50/50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-green-700 dark:text-green-400">Atención</span>
-                        </div>
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
-                                {{ number_format($metricasProductividad['calificacion_promedio']['attention'], 1) }}
-                            </span>
-                            <span class="text-sm text-green-500 dark:text-green-400">/5</span>
-                        </div>
-                    </div>
-
-                    {{-- Resolución --}}
-                    <div class="p-3 sm:p-4 rounded-lg bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800/30">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-purple-700 dark:text-purple-400">Resolución</span>
-                        </div>
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">
-                                {{ number_format($metricasProductividad['calificacion_promedio']['resolution'], 1) }}
-                            </span>
-                            <span class="text-sm text-purple-500 dark:text-purple-400">/5</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
             @endif
 
             <hr class="my-8 border-gray-200 dark:border-[#2A2F3A]">
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-blue-200/90 dark:hover:border-blue-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:ring-blue-400/25 focus-within:border-blue-300/80 dark:focus-within:border-blue-500/40">
+                <div
+                    class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-blue-200/90 dark:hover:border-blue-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:ring-blue-400/25 focus-within:border-blue-300/80 dark:focus-within:border-blue-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Distribución por Estado</h3>
-                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                        <span
+                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                            aria-hidden="true">Hover</span>
                     </div>
-                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                    <div
+                        class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
                         <canvas id="chartEstado" role="img" aria-label="Distribución de tickets por estado"></canvas>
                     </div>
                 </div>
 
-                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
+                <div
+                    class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-emerald-200/90 dark:hover:border-emerald-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-emerald-500/20 dark:focus-within:ring-emerald-400/25 focus-within:border-emerald-300/80 dark:focus-within:border-emerald-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Tickets Creados vs Resueltos</h3>
-                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                        <span
+                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                            aria-hidden="true">Hover</span>
                     </div>
-                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
-                        <canvas id="chartResueltosPorDia" role="img" aria-label="Tickets creados y resueltos por día"></canvas>
+                    <div
+                        class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                        <canvas id="chartResueltosPorDia" role="img"
+                            aria-label="Tickets creados y resueltos por día"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Comparación de Tiempos-->
-            <div class="group rounded-xl shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white to-gray-50/60 dark:from-[#111827]/45 dark:to-[#0B0F14]/70 transition-all duration-300 ease-out hover:shadow-xl hover:shadow-amber-100/30 dark:hover:shadow-black/50 hover:border-amber-200/70 dark:hover:border-amber-500/30 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-amber-500/20 dark:focus-within:ring-amber-400/25">
+            <div
+                class="group rounded-xl shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white to-gray-50/60 dark:from-[#111827]/45 dark:to-[#0B0F14]/70 transition-all duration-300 ease-out hover:shadow-xl hover:shadow-amber-100/30 dark:hover:shadow-black/50 hover:border-amber-200/70 dark:hover:border-amber-500/30 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-amber-500/20 dark:focus-within:ring-amber-400/25">
                 <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
                     <div>
                         <h3 class="text-lg font-semibold dark:text-white">Comparación de Tiempos</h3>
-                        <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Evolución de tiempos promedio de respuesta, resolución y total</p>
+                        <p class="text-sm mt-1 text-gray-500 dark:text-gray-400">Evolución de tiempos promedio de
+                            respuesta, resolución y total</p>
                     </div>
-                    <span class="shrink-0 self-start text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                    <span
+                        class="shrink-0 self-start text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                        aria-hidden="true">Hover</span>
                 </div>
-                <div class="h-80 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/30 dark:bg-black/20 group-hover:bg-gray-50/60 dark:group-hover:bg-black/30">
-                    <canvas id="chartComparacionTiempos6Meses" role="img" aria-label="Comparación de tiempos en los últimos meses"></canvas>
+                <div
+                    class="h-80 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/30 dark:bg-black/20 group-hover:bg-gray-50/60 dark:group-hover:bg-black/30">
+                    <canvas id="chartComparacionTiempos6Meses" role="img"
+                        aria-label="Comparación de tiempos en los últimos meses"></canvas>
                 </div>
             </div>
 
-            <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-indigo-200/90 dark:hover:border-indigo-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/25">
+            <div
+                class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-indigo-200/90 dark:hover:border-indigo-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:focus-within:ring-indigo-400/25">
                 <div class="flex items-center justify-between gap-2 mb-3">
-                    <h3 class="text-lg font-semibold dark:text-white">Distribución por Clasificación (En Progreso y Cerrados)</h3>
-                    <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                    <h3 class="text-lg font-semibold dark:text-white">Distribución por Clasificación (En Progreso y
+                        Cerrados)</h3>
+                    <span
+                        class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                        aria-hidden="true">Hover</span>
                 </div>
-                <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
-                    <canvas id="chartClasificacion" role="img" aria-label="Distribución por clasificación de ticket"></canvas>
+                <div
+                    class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                    <canvas id="chartClasificacion" role="img"
+                        aria-label="Distribución por clasificación de ticket"></canvas>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-rose-200/80 dark:hover:border-rose-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-rose-500/20 dark:focus-within:ring-rose-400/25">
+                <div
+                    class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-rose-200/80 dark:hover:border-rose-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-rose-500/20 dark:focus-within:ring-rose-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Tickets por Prioridad</h3>
-                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                        <span
+                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                            aria-hidden="true">Hover</span>
                     </div>
-                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                    <div
+                        class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
                         <canvas id="chartPrioridad" role="img" aria-label="Tickets por prioridad"></canvas>
                     </div>
                 </div>
 
-                <div class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-violet-200/90 dark:hover:border-violet-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-violet-500/20 dark:focus-within:ring-violet-400/25">
+                <div
+                    class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-violet-200/90 dark:hover:border-violet-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-violet-500/20 dark:focus-within:ring-violet-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
                         <h3 class="text-lg font-semibold dark:text-white">Distribución por Tipo de Ticket (Top 12)</h3>
-                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                        <span
+                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                            aria-hidden="true">Hover</span>
                     </div>
-                    <div class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
+                    <div
+                        class="relative h-[300px] rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/40 dark:bg-black/25 group-hover:bg-gray-50/70 dark:group-hover:bg-black/35">
                         <canvas id="chartTipoTicket" role="img" aria-label="Distribución por tipo de ticket"></canvas>
                     </div>
                 </div>
@@ -384,60 +435,87 @@
                     <table class="w-full">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-[#2A2F3A]">
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Responsable</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Total</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Cerrados</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">En Progreso</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Pendientes</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Problemas</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Servicios</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Tasa de Cierre</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Responsable</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Total</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Cerrados</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    En Progreso</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Pendientes</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Problemas</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Servicios</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Tasa de Cierre</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
                             @forelse($metricasProductividad['tickets_por_responsable'] as $responsable)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-[#1F2937]/50 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium dark:text-gray-200">{{ $responsable['nombre'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm dark:text-gray-300">{{ $responsable['total'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                        {{ $responsable['cerrados'] }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                        {{ $responsable['en_progreso'] }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                        {{ $responsable['pendientes'] }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-                                        {{ $responsable['problemas'] ?? 0 }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                        {{ $responsable['servicios'] ?? 0 }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    @if($responsable['total'] > 0)
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                        {{ round(($responsable['cerrados'] / $responsable['total']) * 100, 1) }}%
-                                    </span>
-                                    @else
-                                    <span class="text-gray-400">-</span>
-                                    @endif
-                                </td>
-                            </tr>
+                                <tr class="hover:bg-gray-50 dark:hover:bg-[#1F2937]/50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium dark:text-gray-200">
+                                        {{ $responsable['nombre'] }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm dark:text-gray-300">
+                                        {{ $responsable['total'] }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                            {{ $responsable['cerrados'] }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                            {{ $responsable['en_progreso'] }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                            {{ $responsable['pendientes'] }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+                                            {{ $responsable['problemas'] ?? 0 }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span
+                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                            {{ $responsable['servicios'] ?? 0 }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        @if($responsable['total'] > 0)
+                                            <span
+                                                class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                                {{ round(($responsable['cerrados'] / $responsable['total']) * 100, 1) }}%
+                                            </span>
+                                        @else
+                                            <span class="text-gray-400">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
                             @empty
-                            <tr>
-                                <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No hay datos disponibles</td>
-                            </tr>
+                                <tr>
+                                    <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        No hay datos disponibles</td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -447,44 +525,57 @@
             <!-- Incidencias por Gerencia del Solicitante -->
             <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
                 <h3 class="text-lg font-semibold mb-4 dark:text-white">Incidencias por Gerencia del Solicitante</h3>
-                <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">Distribución de tickets según la gerencia del empleado solicitante</p>
+                <p class="text-sm mb-4 text-gray-500 dark:text-gray-400">Distribución de tickets según la gerencia del
+                    empleado solicitante</p>
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-[#2A2F3A]">
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Gerencia</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Total</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Tipo de Incidencia (Top 5)</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Gerencia</th>
+                                <th
+                                    class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Total</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Tipo de Incidencia (Top 5)</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
                             @forelse($metricasProductividad['tickets_por_gerencia_solicitante'] ?? [] as $gerencia)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-[#1F2937]/50 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium dark:text-gray-200">{{ $gerencia['gerencia'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                        {{ $gerencia['total'] }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm">
-                                    @if(!empty($gerencia['tertipos']))
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($gerencia['tertipos'] as $tertipo => $cantidad)
-                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-                                            {{ $tertipo }}
-                                            <span class="ml-1 px-1.5 py-0.5 bg-purple-200 dark:bg-purple-800 rounded-full text-purple-900 dark:text-purple-100">{{ $cantidad }}</span>
+                                <tr class="hover:bg-gray-50 dark:hover:bg-[#1F2937]/50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium dark:text-gray-200">
+                                        {{ $gerencia['gerencia'] }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                        <span
+                                            class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                            {{ $gerencia['total'] }}
                                         </span>
-                                        @endforeach
-                                    </div>
-                                    @else
-                                    <span class="text-gray-400 dark:text-gray-500 text-xs italic">Sin clasificar</span>
-                                    @endif
-                                </td>
-                            </tr>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm">
+                                        @if(!empty($gerencia['tertipos']))
+                                            <div class="flex flex-wrap gap-2">
+                                                @foreach($gerencia['tertipos'] as $tertipo => $cantidad)
+                                                    <span
+                                                        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                                        {{ $tertipo }}
+                                                        <span
+                                                            class="ml-1 px-1.5 py-0.5 bg-purple-200 dark:bg-purple-800 rounded-full text-purple-900 dark:text-purple-100">{{ $cantidad }}</span>
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-gray-400 dark:text-gray-500 text-xs italic">Sin clasificar</span>
+                                        @endif
+                                    </td>
+                                </tr>
                             @empty
-                            <tr>
-                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No hay datos disponibles</td>
-                            </tr>
+                                <tr>
+                                    <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                        No hay datos disponibles</td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -494,17 +585,25 @@
             <!-- Incidencias por Responsable TI Asignado (Tabla Pivotizada) -->
             <div class="rounded-lg shadow-md p-6 border border-gray-200 dark:border-[#2A2F3A]">
                 <h3 class="text-lg font-semibold mb-2 dark:text-white">Incidencias por Responsable TI Asignado</h3>
-                <p class="text-sm mb-6 text-gray-500 dark:text-gray-400">Matriz de distribución de tickets: Tipos → Subtipos vs Responsables TI Asignados</p>
-                
+                <p class="text-sm mb-6 text-gray-500 dark:text-gray-400">Matriz de distribución de tickets: Tipos →
+                    Subtipos vs Responsables TI Asignados</p>
+
                 <!-- Tabla Pivotizada -->
                 <div class="overflow-x-auto mb-8">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b-2 border-gray-300 dark:border-[#2A2F3A]">
-                                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">Etiquetas de Fila</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">Total General</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">
+                                    Etiquetas de Fila</th>
+                                <th
+                                    class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">
+                                    Total General</th>
                                 @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
-                                    <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">{{ $nombre }}</th>
+                                    <th
+                                        class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-[#1F2937]">
+                                        {{ $nombre }}
+                                    </th>
                                 @endforeach
                             </tr>
                         </thead>
@@ -512,37 +611,44 @@
                             @php $totalGeneral = 0; @endphp
                             @forelse($metricasProductividad['matriz_incidencias_responsable'] as $tipo => $tipoData)
                                 @php $totalGeneral += $tipoData['total']; @endphp
-                                
+
                                 <!-- Fila del TIPO (1- Hardware, 1- Comunicación, etc.) -->
-                                <tr class="bg-blue-100 dark:bg-blue-900/30 border-t-2 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
-                                    <td class="px-4 py-3 text-sm font-bold text-blue-900 dark:text-blue-100">{{ $tipo }}</td>
+                                <tr
+                                    class="bg-blue-100 dark:bg-blue-900/30 border-t-2 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                                    <td class="px-4 py-3 text-sm font-bold text-blue-900 dark:text-blue-100">{{ $tipo }}
+                                    </td>
                                     <td class="px-4 py-3 text-center">
-                                        <span class="px-3 py-1 text-xs font-bold rounded-full bg-blue-600 text-white dark:bg-blue-700">{{ $tipoData['total'] }}</span>
+                                        <span
+                                            class="px-3 py-1 text-xs font-bold rounded-full bg-blue-600 text-white dark:bg-blue-700">{{ $tipoData['total'] }}</span>
                                     </td>
                                     @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
                                         <td class="px-4 py-3 text-center">
                                             @if(isset($tipoData['responsables'][$id]) && $tipoData['responsables'][$id] > 0)
-                                                <span class="px-2 py-1 text-xs font-bold rounded-full bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100">{{ $tipoData['responsables'][$id] }}</span>
+                                                <span
+                                                    class="px-2 py-1 text-xs font-bold rounded-full bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100">{{ $tipoData['responsables'][$id] }}</span>
                                             @else
                                                 <span class="text-gray-400 dark:text-gray-600">-</span>
                                             @endif
                                         </td>
                                     @endforeach
                                 </tr>
-                                
+
                                 <!-- Filas de SUBTIPOS (2- Computadoras, 2- Impresoras, etc.) -->
                                 @foreach($tipoData['subtipos'] as $subtipo => $subtipoData)
-                                    <tr class="dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#1F2937]/30 transition-colors border-b border-gray-100 dark:border-[#2A2F3A]">
+                                    <tr
+                                        class="dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#1F2937]/30 transition-colors border-b border-gray-100 dark:border-[#2A2F3A]">
                                         <td class="px-4 py-2 pl-8 text-sm text-gray-700 dark:text-gray-300">
                                             <i class="fas fa-level-up-alt fa-rotate-90 text-gray-400 mr-2"></i>{{ $subtipo }}
                                         </td>
                                         <td class="px-4 py-2 text-center">
-                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ $subtipoData['total'] }}</span>
+                                            <span
+                                                class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ $subtipoData['total'] }}</span>
                                         </td>
                                         @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
                                             <td class="px-4 py-2 text-center">
                                                 @if(isset($subtipoData['responsables'][$id]) && $subtipoData['responsables'][$id] > 0)
-                                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">{{ $subtipoData['responsables'][$id] }}</span>
+                                                    <span
+                                                        class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">{{ $subtipoData['responsables'][$id] }}</span>
                                                 @else
                                                     <span class="text-gray-300 dark:text-gray-600">-</span>
                                                 @endif
@@ -552,40 +658,50 @@
                                 @endforeach
                             @empty
                                 <tr>
-                                    <td colspan="{{ count($metricasProductividad['responsables_ti_list']) + 2 }}" class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No hay datos disponibles</td>
+                                    <td colspan="{{ count($metricasProductividad['responsables_ti_list']) + 2 }}"
+                                        class="px-4 py-4 text-center text-sm text-gray-500 dark:text-gray-400">No hay datos
+                                        disponibles</td>
                                 </tr>
                             @endforelse
-                            
+
                             <!-- Fila de Totales -->
-                            <tr class="bg-gray-200 dark:bg-[#1F2937] font-bold border-t-2 border-gray-400 dark:border-[#2A2F3A]">
+                            <tr
+                                class="bg-gray-200 dark:bg-[#1F2937] font-bold border-t-2 border-gray-400 dark:border-[#2A2F3A]">
                                 <td class="px-4 py-3 text-sm dark:text-white">TOTAL GENERAL</td>
                                 <td class="px-4 py-3 text-center">
-                                    <span class="px-3 py-1 text-xs font-bold rounded-full bg-blue-600 text-white">{{ $totalGeneral }}</span>
+                                    <span
+                                        class="px-3 py-1 text-xs font-bold rounded-full bg-blue-600 text-white">{{ $totalGeneral }}</span>
                                 </td>
                                 @foreach($metricasProductividad['responsables_ti_list'] as $id => $nombre)
                                     <td class="px-4 py-3 text-center">
-                                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-blue-600 text-white">{{ $metricasProductividad['totales_por_responsable'][$id] ?? 0 }}</span>
+                                        <span
+                                            class="px-2 py-1 text-xs font-bold rounded-full bg-blue-600 text-white">{{ $metricasProductividad['totales_por_responsable'][$id] ?? 0 }}</span>
                                     </td>
                                 @endforeach
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                
+
                 <!-- Gráfica de Barras Apiladas -->
-                <div class="group rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1F2937]/50 shadow-inner transition-all duration-300 ease-out hover:shadow-md hover:border-cyan-200/70 dark:hover:border-cyan-500/30 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-cyan-500/20 dark:focus-within:ring-cyan-400/25">
+                <div
+                    class="group rounded-xl p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1F2937]/50 shadow-inner transition-all duration-300 ease-out hover:shadow-md hover:border-cyan-200/70 dark:hover:border-cyan-500/30 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-cyan-500/20 dark:focus-within:ring-cyan-400/25">
                     <div class="flex items-center justify-between gap-2 mb-4">
-                        <h4 class="text-sm font-semibold dark:text-white">Visualización: Incidencias por Tipo y Responsable</h4>
-                        <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
+                        <h4 class="text-sm font-semibold dark:text-white">Visualización: Incidencias por Tipo y
+                            Responsable</h4>
+                        <span
+                            class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                            aria-hidden="true">Hover</span>
                     </div>
-                    <div class="h-[700px] rounded-lg overflow-hidden transition-[background] duration-300 bg-white/40 dark:bg-black/20 group-hover:bg-white/60 dark:group-hover:bg-black/30">
-                        <canvas id="chartIncidenciasMatriz" role="img" aria-label="Incidencias por tipo y responsable"></canvas>
+                    <div
+                        class="h-[700px] rounded-lg overflow-hidden transition-[background] duration-300 bg-white/40 dark:bg-black/20 group-hover:bg-white/60 dark:group-hover:bg-black/30">
+                        <canvas id="chartIncidenciasMatriz" role="img"
+                            aria-label="Incidencias por tipo y responsable"></canvas>
                     </div>
                 </div>
             </div>
 
-            <div class="rounded-lg border border-gray-200 dark:border-[#2A2F3A] p-3 sm:p-6 shadow-md"
-                x-data="{ 
+            <div class="rounded-lg border border-gray-200 dark:border-[#2A2F3A] p-3 sm:p-6 shadow-md" x-data="{ 
                      totalEmpleados: {{ count($metricasProductividad['metricas_por_empleado']) }},
                      currentEmpleado: (typeof prodEmpleadoIdxInicial === 'function' ? prodEmpleadoIdxInicial({{ count($metricasProductividad['metricas_por_empleado']) }}) : 0),
                      persistirEmpleado() {
@@ -615,326 +731,389 @@
                              }, 320);
                          }
                      }
-                 }"
-                @keydown.arrow-left.window="anterior()"
-                @keydown.arrow-right.window="siguiente()">
+                 }" @keydown.arrow-left.window="anterior()" @keydown.arrow-right.window="siguiente()">
 
                 <!-- Header con navegación -->
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                <div
+                    class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <div>
                         <h3 class="text-base sm:text-lg font-semibold dark:text-white">Desempeño por Empleado TI</h3>
-                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Análisis mensual del rendimiento</p>
+                        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">Análisis mensual del rendimiento
+                        </p>
                     </div>
 
                     @if(count($metricasProductividad['metricas_por_empleado']) > 0)
-                    <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-                        <span class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap" x-text="`${currentEmpleado + 1}/${totalEmpleados}`"></span>
-                        <button
-                            @click="anterior()"
-                            :disabled="currentEmpleado === 0"
-                            :class="currentEmpleado === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'"
-                            class="px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 disabled:pointer-events-none text-xs sm:text-sm">
-                            <i class="fas fa-chevron-left"></i>
-                            <span class="hidden sm:inline">Anterior</span>
-                        </button>
-                        <button
-                            @click="siguiente()"
-                            :disabled="currentEmpleado === totalEmpleados - 1"
-                            :class="currentEmpleado === totalEmpleados - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'"
-                            class="px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 disabled:pointer-events-none text-xs sm:text-sm">
-                            <span class="hidden sm:inline">Siguiente</span>
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
+                        <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+                            <span
+                                class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                                x-text="`${currentEmpleado + 1}/${totalEmpleados}`"></span>
+                            <button @click="anterior()" :disabled="currentEmpleado === 0"
+                                :class="currentEmpleado === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'"
+                                class="px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 disabled:pointer-events-none text-xs sm:text-sm">
+                                <i class="fas fa-chevron-left"></i>
+                                <span class="hidden sm:inline">Anterior</span>
+                            </button>
+                            <button @click="siguiente()" :disabled="currentEmpleado === totalEmpleados - 1"
+                                :class="currentEmpleado === totalEmpleados - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'"
+                                class="px-2 sm:px-3 py-1.5 sm:py-2 bg-blue-500 text-white rounded-lg transition-all duration-200 flex items-center gap-1 sm:gap-2 disabled:pointer-events-none text-xs sm:text-sm">
+                                <span class="hidden sm:inline">Siguiente</span>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
                     @endif
                 </div>
 
                 <!-- Indicadores de navegación (dots) -->
                 @if(count($metricasProductividad['metricas_por_empleado']) > 1)
-                <div class="flex justify-center gap-1 sm:gap-2 mb-3 sm:mb-6 overflow-x-auto px-2">
-                    @foreach($metricasProductividad['metricas_por_empleado'] as $index => $emp)
-                    <button
-                        @click="currentEmpleado = {{ $index }}; persistirEmpleado(); setTimeout(function() { if (typeof resizeChartsProductividadEmpleados === 'function') resizeChartsProductividadEmpleados(); }, 320)"
-                        :class="currentEmpleado === {{ $index }} ? 'bg-blue-500 w-8' : 'bg-gray-300 dark:bg-gray-600 w-3'"
-                        class="h-3 rounded-full transition-all duration-300 hover:bg-blue-400"
-                        title="{{ $emp['nombre'] ?? 'Empleado ' . ($index + 1) }}">
-                    </button>
-                    @endforeach
-                </div>
+                    <div class="flex justify-center gap-1 sm:gap-2 mb-3 sm:mb-6 overflow-x-auto px-2">
+                        @foreach($metricasProductividad['metricas_por_empleado'] as $index => $emp)
+                            <button
+                                @click="currentEmpleado = {{ $index }}; persistirEmpleado(); setTimeout(function() { if (typeof resizeChartsProductividadEmpleados === 'function') resizeChartsProductividadEmpleados(); }, 320)"
+                                :class="currentEmpleado === {{ $index }} ? 'bg-blue-500 w-8' : 'bg-gray-300 dark:bg-gray-600 w-3'"
+                                class="h-3 rounded-full transition-all duration-300 hover:bg-blue-400"
+                                title="{{ $emp['nombre'] ?? 'Empleado ' . ($index + 1) }}">
+                            </button>
+                        @endforeach
+                    </div>
                 @endif
 
                 <div class="relative">
                     @forelse($metricasProductividad['metricas_por_empleado'] as $index => $empleado)
-                    <div x-show="currentEmpleado === {{ $index }}"
-                        x-transition:enter="transition ease-out duration-300"
-                        x-transition:enter-start="opacity-0 transform translate-x-8"
-                        x-transition:enter-end="opacity-100 transform translate-x-0"
-                        x-transition:leave="transition ease-in duration-300"
-                        x-transition:leave-start="opacity-100 transform translate-x-0"
-                        x-transition:leave-end="opacity-0 transform -translate-x-8"
-                        class="rounded-lg p-3 sm:p-6 border border-gray-100 dark:border-[#2A2F3A] bg-gray-50/30 dark:bg-transparent transition-colors">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-6 pb-3 sm:pb-4 border-b-2 border-gray-200 dark:border-[#2A2F3A]">
-                            <div class="flex items-center gap-2 sm:gap-4 min-w-0">
-                                <div class="rounded-full p-2 sm:p-3 flex-shrink-0" style="background-color: rgba(59, 130, 246, 0.15);">
-                                    <i class="fas fa-user-tie text-lg sm:text-xl text-blue-500"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <h4 class="text-lg sm:text-sm font-bold dark:text-white truncate">{{ $empleado['nombre'] ?? 'Sin nombre' }}</h4>
-                                    <p class="text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF]">
-                                        Total: <span class="font-semibold">{{ $empleado['total'] ?? 0 }} tks</span>
-                                    </p>
-                                </div>
-                            </div>
+                                    <div x-show="currentEmpleado === {{ $index }}" x-transition:enter="transition ease-out duration-300"
+                                        x-transition:enter-start="opacity-0 transform translate-x-8"
+                                        x-transition:enter-end="opacity-100 transform translate-x-0"
+                                        x-transition:leave="transition ease-in duration-300"
+                                        x-transition:leave-start="opacity-100 transform translate-x-0"
+                                        x-transition:leave-end="opacity-0 transform -translate-x-8"
+                                        class="rounded-lg p-3 sm:p-6 border border-gray-100 dark:border-[#2A2F3A] bg-gray-50/30 dark:bg-transparent transition-colors">
+                                        <div
+                                            class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-6 pb-3 sm:pb-4 border-b-2 border-gray-200 dark:border-[#2A2F3A]">
+                                            <div class="flex items-center gap-2 sm:gap-4 min-w-0">
+                                                <div class="rounded-full p-2 sm:p-3 flex-shrink-0"
+                                                    style="background-color: rgba(59, 130, 246, 0.15);">
+                                                    <i class="fas fa-user-tie text-lg sm:text-xl text-blue-500"></i>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <h4 class="text-lg sm:text-sm font-bold dark:text-white truncate">
+                                                        {{ $empleado['nombre'] ?? 'Sin nombre' }}
+                                                    </h4>
+                                                    <p class="text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF]">
+                                                        Total: <span class="font-semibold">{{ $empleado['total'] ?? 0 }} tks</span>
+                                                    </p>
+                                                </div>
+                                            </div>
 
-                            <div class="flex items-center gap-2 sm:gap-6 flex-shrink-0">
-                                @php
-                                $tasa = $empleado['tasa_cierre'] ?? 0;
-                                $colorTasa = $tasa >= 70 ? 'text-[#4ADE80]' : ($tasa >= 50 ? 'text-[#FBBF24]' : 'text-[#F87171]');
-                                @endphp
-                                <div class="text-center rounded-lg px-2 sm:px-4 py-1 sm:py-2">
-                                    <p class="text-xs mb-0.5 sm:mb-1 text-gray-500 dark:text-gray-400">Tasa</p>
-                                    <p class="text-xl sm:text-2xl font-bold {{ $colorTasa }}">{{ $tasa }}%</p>
-                                </div>
+                                            <div class="flex items-center gap-2 sm:gap-6 flex-shrink-0">
+                                                @php
+                                                    $tasa = $empleado['tasa_cierre'] ?? 0;
+                                                    $colorTasa = $tasa >= 70 ? 'text-[#4ADE80]' : ($tasa >= 50 ? 'text-[#FBBF24]' : 'text-[#F87171]');
+                                                @endphp
+                                                <div class="text-center rounded-lg px-2 sm:px-4 py-1 sm:py-2">
+                                                    <p class="text-xs mb-0.5 sm:mb-1 text-gray-500 dark:text-gray-400">Tasa</p>
+                                                    <p class="text-xl sm:text-2xl font-bold {{ $colorTasa }}">{{ $tasa }}%</p>
+                                                </div>
 
-                                <div class="text-center rounded-lg px-2 sm:px-4 py-1 sm:py-2">
-                                    <p class="text-xs mb-0.5 sm:mb-1 text-gray-500 dark:text-gray-400">T. Prom.</p>
-                                    <p class="text-xl sm:text-2xl font-bold text-[#3B82F6]">
-                                        {{ isset($empleado['tiempo_promedio_resolucion']) && $empleado['tiempo_promedio_resolucion'] > 0
-                                            ? number_format($empleado['tiempo_promedio_resolucion'], 1)
-                                            : '0' }}h
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                                                <div class="text-center rounded-lg px-2 sm:px-4 py-1 sm:py-2">
+                                                    <p class="text-xs mb-0.5 sm:mb-1 text-gray-500 dark:text-gray-400">T. Prom.</p>
+                                                    <p class="text-xl sm:text-2xl font-bold text-[#3B82F6]">
+                                                        {{ isset($empleado['tiempo_promedio_resolucion']) && $empleado['tiempo_promedio_resolucion'] > 0
+                        ? number_format($empleado['tiempo_promedio_resolucion'], 1)
+                        : '0' }}h
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-6">
-                            <div class="rounded-lg p-2 sm:p-4 text-center border" style="background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
-                                <i class="fas fa-check-circle text-[#4ADE80] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
-                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">Cerrados</p>
-                                <p class="text-2xl sm:text-3xl font-bold text-[#4ADE80]">{{ $empleado['cerrados'] }}</p>
-                            </div>
-                            <div class="rounded-lg p-2 sm:p-4 text-center border" style="background-color: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);">
-                                <i class="fas fa-clock text-[#FBBF24] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
-                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">En Prog.</p>
-                                <p class="text-2xl sm:text-3xl font-bold text-[#FBBF24]">{{ $empleado['en_progreso'] }}</p>
-                            </div>
-                            <div class="rounded-lg p-2 sm:p-4 text-center border" style="background-color: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3);">
-                                <i class="fas fa-exclamation-circle text-[#F87171] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
-                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">Pendientes</p>
-                                <p class="text-2xl sm:text-3xl font-bold text-[#F87171]">{{ $empleado['pendientes'] }}</p>
-                            </div>
-                        </div>
+                                        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                                            <div class="rounded-lg p-2 sm:p-4 text-center border"
+                                                style="background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3);">
+                                                <i class="fas fa-check-circle text-[#4ADE80] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
+                                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">Cerrados</p>
+                                                <p class="text-2xl sm:text-3xl font-bold text-[#4ADE80]">{{ $empleado['cerrados'] }}</p>
+                                            </div>
+                                            <div class="rounded-lg p-2 sm:p-4 text-center border"
+                                                style="background-color: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);">
+                                                <i class="fas fa-clock text-[#FBBF24] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
+                                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">En Prog.</p>
+                                                <p class="text-2xl sm:text-3xl font-bold text-[#FBBF24]">{{ $empleado['en_progreso'] }}
+                                                </p>
+                                            </div>
+                                            <div class="rounded-lg p-2 sm:p-4 text-center border"
+                                                style="background-color: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.3);">
+                                                <i
+                                                    class="fas fa-exclamation-circle text-[#F87171] text-lg sm:text-2xl mb-1 sm:mb-2"></i>
+                                                <p class="text-xs sm:text-sm mb-1 text-gray-600 dark:text-gray-300">Pendientes</p>
+                                                <p class="text-2xl sm:text-3xl font-bold text-[#F87171]">{{ $empleado['pendientes'] }}
+                                                </p>
+                                            </div>
+                                        </div>
 
-                        @if(isset($empleado['calificacion_promedio']) && $empleado['calificacion_promedio']['total_respuestas'] > 0)
-                        <div class="mb-3 sm:mb-6 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-[#2A2F3A] bg-transparent">
-                            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
-                                 <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                                     <i class="fas fa-star text-yellow-500"></i>
-                                     Satisfacción del Usuario
-                                 </h5>
-                                 <span class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 sm:px-3 py-1 rounded-md">
-                                     {{ $empleado['calificacion_promedio']['total_respuestas'] }} {{ $empleado['calificacion_promedio']['total_respuestas'] == 1 ? 'encuesta' : 'encuestas' }}
-                                 </span>
-                            </div>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(99, 102, 241, 0.05);">
-                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Rapidez</p>
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['fastness'], 1) }}</span>
-                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
-                                    </div>
-                                </div>
-                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(168, 85, 247, 0.05);">
-                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Atención</p>
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['attention'], 1) }}</span>
-                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
-                                    </div>
-                                </div>
-                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(236, 72, 153, 0.05);">
-                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Resolución</p>
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['resolution'], 1) }}</span>
-                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
-                                    </div>
-                                </div>
-                                <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800" style="background-color: rgba(34, 197, 94, 0.05);">
-                                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Prom. General</p>
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <span class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['general'], 1) }}</span>
-                                        <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <div class="mb-3 sm:mb-6">
-                            @php
-                            $fechaInicio = \Carbon\Carbon::parse($metricasProductividad['fecha_inicio_periodo']);
-                            $fechaFin = \Carbon\Carbon::parse($metricasProductividad['fecha_fin_periodo']);
-                            $diasEnRango = $fechaInicio->diffInDays($fechaFin) + 1;
-                            $esRangoUnico = $fechaInicio->format('Y-m') === $fechaFin->format('Y-m');
-                            $mesesEnRango = ($fechaInicio->diffInMonths($fechaFin)) + 1;
-                            
-                            $labelMeses = $esRangoUnico ? '1 mes' : ($mesesEnRango . ' meses');
-                            @endphp
-                            <h5 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-4 flex items-center gap-2 dark:text-white">
-                                <i class="fas fa-calendar-alt text-[#3B82F6]"></i> {{ $labelMeses }}
-                            </h5>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-3">
-                                @php
-                                $meses = array_keys($empleado['tickets_por_mes']);
-                                $mesesEspanol = [
-                                'Jan' => 'Ene', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Abr',
-                                'May' => 'May', 'Jun' => 'Jun', 'Jul' => 'Jul', 'Aug' => 'Ago',
-                                'Sep' => 'Sep', 'Oct' => 'Oct', 'Nov' => 'Nov', 'Dec' => 'Dic'
-                                ];
-                                @endphp
-                                @foreach($meses as $mes)
-                                @php
-                                $datosMes = $empleado['tickets_por_mes'][$mes];
-                                $totalMes = $datosMes['total'];
-                                $cerradosMes = $datosMes['cerrados'];
-                                $tasaCierreMes = $totalMes > 0 ? round(($cerradosMes / $totalMes) * 100, 1) : 0;
-                                $mesFormateado = $mes;
-                                foreach($mesesEspanol as $en => $es) {
-                                $mesFormateado = str_replace($en, $es, $mesFormateado);
-                                }
-                                @endphp
-                                <div class="border-2 {{ $totalMes > 0 ? 'border-[#3B82F6]' : 'border-gray-200 dark:border-[#2A2F3A]' }} bg-gray-50 dark:bg-transparent rounded-lg p-2 sm:p-3 hover:border-[#4A8FF6] transition-all">
-                                    <div class="flex items-center justify-between mb-1 sm:mb-2">
-                                        <h6 class="font-bold text-xs sm:text-sm dark:text-gray-200">{{ $mesFormateado }}</h6>
-                                        @if($totalMes > 0)
-                                        <span class="px-1.5 py-0.5 text-xs font-semibold rounded text-[12px] {{ $tasaCierreMes >= 70 ? 'bg-[#4ADE80]/20 text-[#4ADE80]' : ($tasaCierreMes >= 50 ? 'bg-[#FBBF24]/20 text-[#FBBF24]' : 'bg-[#F87171]/20 text-[#F87171]') }}">
-                                            {{ $tasaCierreMes }}%
-                                        </span>
-                                        @else
-                                        <span class="text-gray-400 dark:text-[#6B7280] text-xs">-</span>
+                                        @if(isset($empleado['calificacion_promedio']) && $empleado['calificacion_promedio']['total_respuestas'] > 0)
+                                            <div
+                                                class="mb-3 sm:mb-6 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-[#2A2F3A] bg-transparent">
+                                                <div class="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
+                                                    <h5
+                                                        class="text-sm font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                                        <i class="fas fa-star text-yellow-500"></i>
+                                                        Satisfacción del Usuario
+                                                    </h5>
+                                                    <span
+                                                        class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 sm:px-3 py-1 rounded-md">
+                                                        {{ $empleado['calificacion_promedio']['total_respuestas'] }}
+                                                        {{ $empleado['calificacion_promedio']['total_respuestas'] == 1 ? 'encuesta' : 'encuestas' }}
+                                                    </span>
+                                                </div>
+                                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                                                    <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800"
+                                                        style="background-color: rgba(99, 102, 241, 0.05);">
+                                                        <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                            Rapidez</p>
+                                                        <div class="flex items-center justify-center gap-1.5">
+                                                            <span
+                                                                class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['fastness'], 1) }}</span>
+                                                            <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800"
+                                                        style="background-color: rgba(168, 85, 247, 0.05);">
+                                                        <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                            Atención</p>
+                                                        <div class="flex items-center justify-center gap-1.5">
+                                                            <span
+                                                                class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['attention'], 1) }}</span>
+                                                            <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800"
+                                                        style="background-color: rgba(236, 72, 153, 0.05);">
+                                                        <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                            Resolución</p>
+                                                        <div class="flex items-center justify-center gap-1.5">
+                                                            <span
+                                                                class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['resolution'], 1) }}</span>
+                                                            <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="rounded-lg p-2 sm:p-3 text-center border border-gray-200 dark:border-gray-800"
+                                                        style="background-color: rgba(34, 197, 94, 0.05);">
+                                                        <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                                            Prom. General</p>
+                                                        <div class="flex items-center justify-center gap-1.5">
+                                                            <span
+                                                                class="text-sm sm:text-xl font-bold text-gray-800 dark:text-gray-100">{{ number_format($empleado['calificacion_promedio']['general'], 1) }}</span>
+                                                            <i class="fas fa-star text-yellow-400 text-[10px] sm:text-sm"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         @endif
-                                    </div>
 
-                                    @if($totalMes > 0)
-                                    <div class="space-y-1">
-                                        <div class="flex items-center justify-between text-xs">
-                                            <span class="text-gray-500 dark:text-[#9CA3AF]">Total</span>
-                                            <span class="font-bold dark:text-white">{{ $totalMes }}</span>
-                                        </div>
-                                        <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
-                                            <div class="bg-[#3B82F6] h-1 sm:h-2 rounded-full" style="width: 100%"></div>
+                                        <div class="mb-3 sm:mb-6">
+                                            @php
+                                                $fechaInicio = \Carbon\Carbon::parse($metricasProductividad['fecha_inicio_periodo']);
+                                                $fechaFin = \Carbon\Carbon::parse($metricasProductividad['fecha_fin_periodo']);
+                                                $diasEnRango = $fechaInicio->diffInDays($fechaFin) + 1;
+                                                $esRangoUnico = $fechaInicio->format('Y-m') === $fechaFin->format('Y-m');
+                                                $mesesEnRango = ($fechaInicio->diffInMonths($fechaFin)) + 1;
+
+                                                $labelMeses = $esRangoUnico ? '1 mes' : ($mesesEnRango . ' meses');
+                                            @endphp
+                                            <h5
+                                                class="text-xs sm:text-sm font-semibold mb-2 sm:mb-4 flex items-center gap-2 dark:text-white">
+                                                <i class="fas fa-calendar-alt text-[#3B82F6]"></i> {{ $labelMeses }}
+                                            </h5>
+                                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-3">
+                                                @php
+                                                    $meses = array_keys($empleado['tickets_por_mes']);
+                                                    $mesesEspanol = [
+                                                        'Jan' => 'Ene',
+                                                        'Feb' => 'Feb',
+                                                        'Mar' => 'Mar',
+                                                        'Apr' => 'Abr',
+                                                        'May' => 'May',
+                                                        'Jun' => 'Jun',
+                                                        'Jul' => 'Jul',
+                                                        'Aug' => 'Ago',
+                                                        'Sep' => 'Sep',
+                                                        'Oct' => 'Oct',
+                                                        'Nov' => 'Nov',
+                                                        'Dec' => 'Dic'
+                                                    ];
+                                                @endphp
+                                                @foreach($meses as $mes)
+                                                    @php
+                                                        $datosMes = $empleado['tickets_por_mes'][$mes];
+                                                        $totalMes = $datosMes['total'];
+                                                        $cerradosMes = $datosMes['cerrados'];
+                                                        $tasaCierreMes = $totalMes > 0 ? round(($cerradosMes / $totalMes) * 100, 1) : 0;
+                                                        $mesFormateado = $mes;
+                                                        foreach ($mesesEspanol as $en => $es) {
+                                                            $mesFormateado = str_replace($en, $es, $mesFormateado);
+                                                        }
+                                                    @endphp
+                                                    <div
+                                                        class="border-2 {{ $totalMes > 0 ? 'border-[#3B82F6]' : 'border-gray-200 dark:border-[#2A2F3A]' }} bg-gray-50 dark:bg-transparent rounded-lg p-2 sm:p-3 hover:border-[#4A8FF6] transition-all">
+                                                        <div class="flex items-center justify-between mb-1 sm:mb-2">
+                                                            <h6 class="font-bold text-xs sm:text-sm dark:text-gray-200">{{ $mesFormateado }}
+                                                            </h6>
+                                                            @if($totalMes > 0)
+                                                                <span
+                                                                    class="px-1.5 py-0.5 text-xs font-semibold rounded text-[12px] {{ $tasaCierreMes >= 70 ? 'bg-[#4ADE80]/20 text-[#4ADE80]' : ($tasaCierreMes >= 50 ? 'bg-[#FBBF24]/20 text-[#FBBF24]' : 'bg-[#F87171]/20 text-[#F87171]') }}">
+                                                                    {{ $tasaCierreMes }}%
+                                                                </span>
+                                                            @else
+                                                                <span class="text-gray-400 dark:text-[#6B7280] text-xs">-</span>
+                                                            @endif
+                                                        </div>
+
+                                                        @if($totalMes > 0)
+                                                            <div class="space-y-1">
+                                                                <div class="flex items-center justify-between text-xs">
+                                                                    <span class="text-gray-500 dark:text-[#9CA3AF]">Total</span>
+                                                                    <span class="font-bold dark:text-white">{{ $totalMes }}</span>
+                                                                </div>
+                                                                <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
+                                                                    <div class="bg-[#3B82F6] h-1 sm:h-2 rounded-full" style="width: 100%"></div>
+                                                                </div>
+
+                                                                <div class="flex items-center justify-between mt-1 text-xs">
+                                                                    <span class="flex items-center gap-0.5">
+                                                                        <i class="fas fa-check text-[#4ADE80] text-xs"></i> <span
+                                                                            class="dark:text-gray-300">Ok</span>
+                                                                    </span>
+                                                                    <span class="text-sm font-bold text-[#4ADE80]">{{ $cerradosMes }}</span>
+                                                                </div>
+                                                                <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
+                                                                    <div class="bg-[#4ADE80] h-1 sm:h-2 rounded-full"
+                                                                        style="width: {{ min($tasaCierreMes, 100) }}%"></div>
+                                                                </div>
+                                                            </div>
+                                                        @else
+                                                            <div class="text-center py-2 text-gray-400 dark:text-[#6B7280]">
+                                                                <i class="fas fa-inbox text-lg mb-0.5"></i>
+                                                                <p class="text-xs">Sin tks</p>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
                                         </div>
 
-                                        <div class="flex items-center justify-between mt-1 text-xs">
-                                            <span class="flex items-center gap-0.5">
-                                                <i class="fas fa-check text-[#4ADE80] text-xs"></i> <span class="dark:text-gray-300">Ok</span>
-                                            </span>
-                                            <span class="text-sm font-bold text-[#4ADE80]">{{ $cerradosMes }}</span>
+                                        <div>
+                                            <h5
+                                                class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 flex items-center gap-2 dark:text-white">
+                                                <i class="fas fa-signal text-[#3B82F6]"></i> Prioridades
+                                            </h5>
+                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+                                                @php
+                                                    $prioridades = [
+                                                        'Alta' => ['color' => '#F87171', 'bg' => '#F87171', 'icon' => 'fa-exclamation-triangle'],
+                                                        'Media' => ['color' => '#FBBF24', 'bg' => '#FBBF24', 'icon' => 'fa-exclamation-circle'],
+                                                        'Baja' => ['color' => '#4ADE80', 'bg' => '#4ADE80', 'icon' => 'fa-info-circle']
+                                                    ];
+                                                @endphp
+                                                @foreach($prioridades as $prioridad => $config)
+                                                    <div
+                                                        class="rounded-lg p-2 sm:p-3 bg-gray-50 dark:bg-[#1F2937] border border-transparent dark:border-[#2A2F3A]">
+                                                        <div class="flex items-center justify-between mb-1">
+                                                            <div class="flex items-center gap-1">
+                                                                <i class="fas {{ $config['icon'] }} text-xs sm:text-sm"
+                                                                    style="color: {{ $config['color'] }};"></i>
+                                                                <span
+                                                                    class="text-xs sm:text-sm font-semibold dark:text-gray-200">{{ $prioridad }}</span>
+                                                            </div>
+                                                            <span class="text-lg sm:text-xl font-bold dark:text-white">
+                                                                {{ $empleado['tickets_por_prioridad'][$prioridad] ?? 0 }}
+                                                            </span>
+                                                        </div>
+                                                        <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
+                                                            <div class="h-1 sm:h-2 rounded-full transition-all duration-300"
+                                                                style="background-color: {{ $config['bg'] }}; width: {{ $empleado['total'] > 0 ? min((($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100, 100) : 0 }}%">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
                                         </div>
-                                        <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
-                                            <div class="bg-[#4ADE80] h-1 sm:h-2 rounded-full" style="width: {{ min($tasaCierreMes, 100) }}%"></div>
-                                        </div>
-                                    </div>
-                                    @else
-                                    <div class="text-center py-2 text-gray-400 dark:text-[#6B7280]">
-                                        <i class="fas fa-inbox text-lg mb-0.5"></i>
-                                        <p class="text-xs">Sin tks</p>
-                                    </div>
-                                    @endif
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
 
-                        <div>
-                            <h5 class="text-xs sm:text-sm font-semibold mb-2 sm:mb-3 flex items-center gap-2 dark:text-white">
-                                <i class="fas fa-signal text-[#3B82F6]"></i> Prioridades
-                            </h5>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
-                                @php
-                                $prioridades = [
-                                'Alta' => ['color' => '#F87171', 'bg' => '#F87171', 'icon' => 'fa-exclamation-triangle'],
-                                'Media' => ['color' => '#FBBF24', 'bg' => '#FBBF24', 'icon' => 'fa-exclamation-circle'],
-                                'Baja' => ['color' => '#4ADE80', 'bg' => '#4ADE80', 'icon' => 'fa-info-circle']
-                                ];
-                                @endphp
-                                @foreach($prioridades as $prioridad => $config)
-                                <div class="rounded-lg p-2 sm:p-3 bg-gray-50 dark:bg-[#1F2937] border border-transparent dark:border-[#2A2F3A]">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <div class="flex items-center gap-1">
-                                            <i class="fas {{ $config['icon'] }} text-xs sm:text-sm" style="color: {{ $config['color'] }};"></i>
-                                            <span class="text-xs sm:text-sm font-semibold dark:text-gray-200">{{ $prioridad }}</span>
+                                        <div
+                                            class="group mt-8 rounded-xl border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white/80 to-gray-50/60 dark:from-[#111827]/40 dark:to-[#0B0F14]/50 p-4 shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:border-blue-200/80 dark:hover:border-blue-500/35 focus-within:ring-2 focus-within:ring-blue-500/15 dark:focus-within:ring-blue-400/20">
+                                            <div class="flex items-center justify-between gap-2 mb-3">
+                                                <h5 class="text-sm font-semibold flex items-center gap-2 dark:text-white">
+                                                    <i class="fas fa-chart-bar text-[#3B82F6]"></i> Total vs cerrados por mes
+                                                </h5>
+                                                <span
+                                                    class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none"
+                                                    aria-hidden="true">Hover</span>
+                                            </div>
+                                            <div
+                                                class="relative h-64 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/50 dark:bg-black/25 group-hover:bg-gray-50/80 dark:group-hover:bg-black/35">
+                                                <canvas id="chartEmpleado{{ $empleado['empleado_id'] }}" role="img"
+                                                    aria-label="Gráfico de tickets por mes para {{ $empleado['nombre'] ?? 'empleado' }}"></canvas>
+                                            </div>
                                         </div>
-                                        <span class="text-lg sm:text-xl font-bold dark:text-white">
-                                            {{ $empleado['tickets_por_prioridad'][$prioridad] ?? 0 }}
-                                        </span>
                                     </div>
-                                    <div class="w-full bg-gray-200 dark:bg-[#2A2F3A] rounded-full h-1 sm:h-2">
-                                        <div class="h-1 sm:h-2 rounded-full transition-all duration-300" style="background-color: {{ $config['bg'] }}; width: {{ $empleado['total'] > 0 ? min((($empleado['tickets_por_prioridad'][$prioridad] ?? 0) / $empleado['total']) * 100, 100) : 0 }}%"></div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <div class="group mt-8 rounded-xl border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white/80 to-gray-50/60 dark:from-[#111827]/40 dark:to-[#0B0F14]/50 p-4 shadow-sm transition-all duration-300 ease-out hover:shadow-md hover:border-blue-200/80 dark:hover:border-blue-500/35 focus-within:ring-2 focus-within:ring-blue-500/15 dark:focus-within:ring-blue-400/20">
-                            <div class="flex items-center justify-between gap-2 mb-3">
-                                <h5 class="text-sm font-semibold flex items-center gap-2 dark:text-white">
-                                    <i class="fas fa-chart-bar text-[#3B82F6]"></i> Total vs cerrados por mes
-                                </h5>
-                                <span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" aria-hidden="true">Hover</span>
-                            </div>
-                            <div class="relative h-64 rounded-lg overflow-hidden transition-[background] duration-300 bg-gray-50/50 dark:bg-black/25 group-hover:bg-gray-50/80 dark:group-hover:bg-black/35">
-                                <canvas id="chartEmpleado{{ $empleado['empleado_id'] }}" role="img" aria-label="Gráfico de tickets por mes para {{ $empleado['nombre'] ?? 'empleado' }}"></canvas>
-                            </div>
-                        </div>
-                    </div>
                     @empty
-                    <div class="text-center py-8 sm:py-12 border-2 border-dashed border-gray-200 dark:border-[#2A2F3A] rounded-lg">
-                        <i class="fas fa-users text-3xl sm:text-5xl mb-2 sm:mb-4 text-gray-400 dark:text-[#6B7280]"></i>
-                        <p class="text-base sm:text-lg font-semibold dark:text-gray-300">No hay métricas disponibles</p>
-                        <p class="text-xs sm:text-sm mt-1 sm:mt-2 text-gray-500 dark:text-[#9CA3AF]">Los empleados aparecerán aquí con tickets asignados</p>
-                    </div>
+                        <div
+                            class="text-center py-8 sm:py-12 border-2 border-dashed border-gray-200 dark:border-[#2A2F3A] rounded-lg">
+                            <i class="fas fa-users text-3xl sm:text-5xl mb-2 sm:mb-4 text-gray-400 dark:text-[#6B7280]"></i>
+                            <p class="text-base sm:text-lg font-semibold dark:text-gray-300">No hay métricas disponibles</p>
+                            <p class="text-xs sm:text-sm mt-1 sm:mt-2 text-gray-500 dark:text-[#9CA3AF]">Los empleados
+                                aparecerán aquí con tickets asignados</p>
+                        </div>
                     @endforelse
                 </div>
             </div>
         </div>
 
-        <div x-show="activeTab === 'solicitudes'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
+        <div x-show="activeTab === 'solicitudes'" x-cloak x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 transform translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="rounded-2xl p-6 border border-blue-100 bg-blue-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
+                <div
+                    class="rounded-2xl p-6 border border-blue-100 bg-blue-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
                     <div class="flex items-center gap-4">
-                        <div class="p-3 bg-blue-500 text-white rounded-xl shadow-sm"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
+                        <div class="p-3 bg-blue-500 text-white rounded-xl shadow-sm"><i
+                                class="fas fa-file-invoice-dollar text-xl"></i></div>
                         <div>
                             <p class="text-sm font-medium text-blue-900/70 dark:text-gray-400">Promedio Cotización</p>
                             <h4 class="text-2xl font-bold text-blue-900 dark:text-white">
-                                {{ number_format($metricasSolicitudes['promedio_cotizacion_horas'] ?? 0, 1) }} <span class="text-sm font-normal text-blue-900/70 dark:text-gray-400">hrs</span>
+                                {{ number_format($metricasSolicitudes['promedio_cotizacion_horas'] ?? 0, 1) }} <span
+                                    class="text-sm font-normal text-blue-900/70 dark:text-gray-400">hrs</span>
                             </h4>
                         </div>
                     </div>
                 </div>
 
-                <div class="rounded-2xl p-6 border border-emerald-100 bg-emerald-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
+                <div
+                    class="rounded-2xl p-6 border border-emerald-100 bg-emerald-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
                     <div class="flex items-center gap-4">
-                        <div class="p-3 bg-emerald-500 text-white rounded-xl shadow-sm"><i class="fas fa-cogs text-xl"></i></div>
+                        <div class="p-3 bg-emerald-500 text-white rounded-xl shadow-sm"><i
+                                class="fas fa-cogs text-xl"></i></div>
                         <div>
-                            <p class="text-sm font-medium text-emerald-900/70 dark:text-gray-400">Promedio Configuración</p>
+                            <p class="text-sm font-medium text-emerald-900/70 dark:text-gray-400">Promedio Configuración
+                            </p>
                             <h4 class="text-2xl font-bold text-emerald-900 dark:text-white">
-                                {{ number_format($metricasSolicitudes['promedio_configuracion_dias'] ?? 0, 1) }} <span class="text-sm font-normal text-emerald-900/70 dark:text-gray-400">hrs</span>
+                                {{ number_format($metricasSolicitudes['promedio_configuracion_dias'] ?? 0, 1) }} <span
+                                    class="text-sm font-normal text-emerald-900/70 dark:text-gray-400">hrs</span>
                             </h4>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="rounded-2xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm overflow-hidden bg-gray-50 dark:bg-transparent">
+            <div
+                class="rounded-2xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm overflow-hidden bg-gray-50 dark:bg-transparent">
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-transparent">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white"><i class="fas fa-list-ul mr-2 text-gray-400"></i> Desglose de Tiempos por Solicitud</h3>
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white"><i
+                            class="fas fa-list-ul mr-2 text-gray-400"></i> Desglose de Tiempos por Solicitud</h3>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm whitespace-nowrap">
-                        <thead class="uppercase tracking-wider border-b-2 border-gray-200 dark:border-[#2A2F3A] bg-gray-100 dark:bg-[#1F2937]/30 text-gray-500 dark:text-[#9CA3AF]">
+                        <thead
+                            class="uppercase tracking-wider border-b-2 border-gray-200 dark:border-[#2A2F3A] bg-gray-100 dark:bg-[#1F2937]/30 text-gray-500 dark:text-[#9CA3AF]">
                             <tr>
                                 <th scope="col" class="px-6 py-4 font-semibold">ID Sol.</th>
                                 <th scope="col" class="px-6 py-4 font-semibold">Creación</th>
@@ -946,66 +1125,74 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A] bg-gray-50 dark:bg-transparent">
                             @forelse($metricasSolicitudes['desglose'] ?? [] as $sol)
-                            <tr @click="infoModal = { id: '{{ $sol['id'] }}', empleado: '{{ addslashes($sol['empleado'] ?? '') }}', proyecto: '{{ addslashes($sol['proyecto'] ?? '') }}', motivo: '{{ addslashes($sol['motivo'] ?? '') }}', descripcion: '{{ addslashes($sol['descripcion_motivo'] ?? '') }}', estatus: '{{ $sol['estatus'] ?? '' }}', creacion: '{{ $sol['fecha_creacion'] }}', actualizacion: '{{ $sol['fecha_actualizacion'] ?? '' }}' }; modalAbierto = true;"
-                                class="hover:bg-gray-100 dark:hover:bg-[#1F2937]/50 transition-colors cursor-pointer">
+                                <tr @click="infoModal = { id: '{{ $sol['id'] }}', empleado: '{{ addslashes($sol['empleado'] ?? '') }}', proyecto: '{{ addslashes($sol['proyecto'] ?? '') }}', motivo: '{{ addslashes($sol['motivo'] ?? '') }}', descripcion: '{{ addslashes($sol['descripcion_motivo'] ?? '') }}', estatus: '{{ $sol['estatus'] ?? '' }}', creacion: '{{ $sol['fecha_creacion'] }}', actualizacion: '{{ $sol['fecha_actualizacion'] ?? '' }}' }; modalAbierto = true;"
+                                    class="hover:bg-gray-100 dark:hover:bg-[#1F2937]/50 transition-colors cursor-pointer">
 
-                                <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">#{{ $sol['id'] }}</td>
-                                <td class="px-6 py-4 text-gray-500 dark:text-[#9CA3AF]">{{ $sol['fecha_creacion'] }}</td>
+                                    <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">#{{ $sol['id'] }}</td>
+                                    <td class="px-6 py-4 text-gray-500 dark:text-[#9CA3AF]">{{ $sol['fecha_creacion'] }}
+                                    </td>
 
-                                <td class="px-6 py-4 text-center">
-                                    @if($sol['tiempo_cotizacion_horas'] !== null)
-                                    <span class="inline-flex px-2 py-1 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-medium text-xs">
-                                        {{ $sol['tiempo_cotizacion_horas'] }} h
-                                    </span>
-                                    @else
-                                    <span class="text-gray-400 dark:text-gray-600">-</span>
-                                    @endif
-                                </td>
+                                    <td class="px-6 py-4 text-center">
+                                        @if($sol['tiempo_cotizacion_horas'] !== null)
+                                            <span
+                                                class="inline-flex px-2 py-1 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-medium text-xs">
+                                                {{ $sol['tiempo_cotizacion_horas'] }} h
+                                            </span>
+                                        @else
+                                            <span class="text-gray-400 dark:text-gray-600">-</span>
+                                        @endif
+                                    </td>
 
-                                <td class="px-6 py-4 text-center">
-                                    @if($sol['tiempo_configuracion_dias'] !== null)
-                                    <span class="inline-flex px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium text-xs">
-                                        {{ $sol['tiempo_configuracion_dias'] }} h
-                                    </span>
-                                    @else
-                                    <span class="text-gray-400 dark:text-gray-500 text-xs italic">Pendiente</span>
-                                    @endif
-                                </td>
+                                    <td class="px-6 py-4 text-center">
+                                        @if($sol['tiempo_configuracion_dias'] !== null)
+                                            <span
+                                                class="inline-flex px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium text-xs">
+                                                {{ $sol['tiempo_configuracion_dias'] }} h
+                                            </span>
+                                        @else
+                                            <span class="text-gray-400 dark:text-gray-500 text-xs italic">Pendiente</span>
+                                        @endif
+                                    </td>
 
-                                <td class="px-6 py-4 text-right font-bold text-gray-700 dark:text-gray-300">
-                                    {{ $sol['tiempo_total_dias'] !== null ? $sol['tiempo_total_dias'] . ' h' : '-' }}
-                                </td>
+                                    <td class="px-6 py-4 text-right font-bold text-gray-700 dark:text-gray-300">
+                                        {{ $sol['tiempo_total_dias'] !== null ? $sol['tiempo_total_dias'] . ' h' : '-' }}
+                                    </td>
 
-                                <td class="px-6 py-4 text-center">
-                                    @php
-                                    $fSub = $sol['facturas_subidas'] ?? 0;
-                                    $fNec = $sol['facturas_necesarias'] ?? 0;
-                                    @endphp
-                                    @if($fNec > 0)
-                                    @if($fSub >= $fNec)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
-                                        <i class="fas fa-check-circle"></i> {{ $fSub }}/{{ $fNec }} Completas
-                                    </span>
-                                    @elseif($fSub > 0)
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
-                                        <i class="fas fa-exclamation-triangle"></i> {{ $fSub }}/{{ $fNec }} Parcial
-                                    </span>
-                                    @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                                        <i class="fas fa-times-circle"></i> Faltan (0/{{ $fNec }})
-                                    </span>
-                                    @endif
-                                    @else
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
-                                        N/A
-                                    </span>
-                                    @endif
-                                </td>
-                            </tr>
+                                    <td class="px-6 py-4 text-center">
+                                        @php
+                                            $fSub = $sol['facturas_subidas'] ?? 0;
+                                            $fNec = $sol['facturas_necesarias'] ?? 0;
+                                        @endphp
+                                        @if($fNec > 0)
+                                            @if($fSub >= $fNec)
+                                                <span
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800">
+                                                    <i class="fas fa-check-circle"></i> {{ $fSub }}/{{ $fNec }} Completas
+                                                </span>
+                                            @elseif($fSub > 0)
+                                                <span
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
+                                                    <i class="fas fa-exclamation-triangle"></i> {{ $fSub }}/{{ $fNec }} Parcial
+                                                </span>
+                                            @else
+                                                <span
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
+                                                    <i class="fas fa-times-circle"></i> Faltan (0/{{ $fNec }})
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span
+                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-500 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400">
+                                                N/A
+                                            </span>
+                                        @endif
+                                    </td>
+                                </tr>
                             @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-[#9CA3AF]">No hay solicitudes procesadas en este periodo.</td>
-                            </tr>
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-[#9CA3AF]">No hay
+                                        solicitudes procesadas en este periodo.</td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -1014,11 +1201,9 @@
         </div>
 
         {{-- Modal de Información Rápida SLA (Alpine.js) --}}
-        <div x-show="modalAbierto"
-            style="display: none;"
+        <div x-show="modalAbierto" style="display: none;"
             class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm"
-            @click.self="modalAbierto = false"
-            @keydown.escape.window="modalAbierto = false">
+            @click.self="modalAbierto = false" @keydown.escape.window="modalAbierto = false">
 
             <div class="relative w-full max-w-lg mx-4 bg-slate-50 dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden"
                 x-transition:enter="transition ease-out duration-300"
@@ -1029,15 +1214,19 @@
                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
 
                 {{-- Encabezado --}}
-                <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
+                <div
+                    class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800">
                     <div>
                         <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">
                             Detalles Solicitud #<span x-text="infoModal.id"></span>
                         </h3>
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 mt-1 inline-block" x-text="infoModal.estatus || 'Pendiente'">
+                        <span
+                            class="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 mt-1 inline-block"
+                            x-text="infoModal.estatus || 'Pendiente'">
                         </span>
                     </div>
-                    <button @click="modalAbierto = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <button @click="modalAbierto = false"
+                        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
@@ -1047,41 +1236,54 @@
 
                     {{-- Info del solicitante --}}
                     <div class="flex items-start gap-3">
-                        <div class="mt-1 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
+                        <div
+                            class="mt-1 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 dark:bg-blue-900/50 dark:text-blue-400">
                             <i class="fas fa-user"></i>
                         </div>
                         <div>
                             <label class="text-xs font-bold uppercase tracking-wider text-slate-400">Solicitante</label>
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200" x-text="infoModal.empleado"></p>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"
+                                x-text="infoModal.empleado"></p>
                             <p class="text-xs text-slate-500" x-text="infoModal.proyecto"></p>
                         </div>
                     </div>
 
                     {{-- Motivo --}}
-                    <div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 mt-2">
-                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Motivo Principal</label>
+                    <div
+                        class="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700 mt-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1">Motivo
+                            Principal</label>
                         <p class="text-sm font-medium text-slate-700 dark:text-slate-300" x-text="infoModal.motivo"></p>
 
-                        <p class="text-xs mt-2 text-slate-500 italic" x-show="infoModal.descripcion">"<span x-text="infoModal.descripcion"></span>"</p>
+                        <p class="text-xs mt-2 text-slate-500 italic" x-show="infoModal.descripcion">"<span
+                                x-text="infoModal.descripcion"></span>"</p>
                     </div>
 
                     {{-- Fechas Clave --}}
                     <div class="grid grid-cols-2 gap-4 mt-2">
-                        <div class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                            <label class="text-xs font-bold text-slate-400 block"><i class="fas fa-calendar-plus mr-1"></i> Creada el</label>
-                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1" x-text="infoModal.creacion"></p>
+                        <div
+                            class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                            <label class="text-xs font-bold text-slate-400 block"><i
+                                    class="fas fa-calendar-plus mr-1"></i> Creada el</label>
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1"
+                                x-text="infoModal.creacion"></p>
                         </div>
-                        <div class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                            <label class="text-xs font-bold text-slate-400 block"><i class="fas fa-clock mr-1"></i> Última act.</label>
-                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1" x-text="infoModal.actualizacion || 'N/A'"></p>
+                        <div
+                            class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                            <label class="text-xs font-bold text-slate-400 block"><i class="fas fa-clock mr-1"></i>
+                                Última act.</label>
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1"
+                                x-text="infoModal.actualizacion || 'N/A'"></p>
                         </div>
                     </div>
 
                 </div>
 
                 {{-- Footer --}}
-                <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-end">
-                    <button @click="modalAbierto = false" class="px-4 py-2 bg-red-500 text-white dark:bg-red-500 rounded-lg text-sm font-medium hover:bg-red-600 dark:hover:bg-red-600 transition-colors">
+                <div
+                    class="px-6 py-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+                    <button @click="modalAbierto = false"
+                        class="px-4 py-2 bg-red-500 text-white dark:bg-red-500 rounded-lg text-sm font-medium hover:bg-red-600 dark:hover:bg-red-600 transition-colors">
                         Cerrar Detalles
                     </button>
                 </div>
@@ -1090,11 +1292,222 @@
         </div>
     </div>
 
+    {{-- Modal de Detalle de Tickets desde Gráficas --}}
+    <div x-data="{ 
+        modalDetalleAbierto: false, 
+        cargandoDetalle: false, 
+        errorDetalle: '', 
+        tituloDetalle: '', 
+        ticketsDetalle: [],
+        totalDetalle: 0,
+        cerrarModalDetalle() {
+            this.modalDetalleAbierto = false;
+            this.ticketsDetalle = [];
+            this.errorDetalle = '';
+            this.tituloDetalle = '';
+            this.totalDetalle = 0;
+        },
+        renderEstrellas(rating) {
+            if (rating === null || rating === undefined) return '<span class=\'text-slate-500 text-sm\'>Sin calificar</span>';
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    stars += '<i class=\'fas fa-star text-yellow-400\'></i>';
+                } else {
+                    stars += '<i class=\'far fa-star text-slate-600\'></i>';
+                }
+            }
+            return stars;
+        }
+    }" 
+    x-init="$watch('modalDetalleAbierto', value => {
+        if (value) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    })"
+    @keydown.escape.window="cerrarModalDetalle()" x-show="modalDetalleAbierto" x-cloak
+        class="fixed top-0 left-0 right-0 bottom-0 w-full h-full z-[99999] flex items-center justify-center overflow-hidden"
+        style="background-color: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); margin: 0; padding: 0;"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click.self="cerrarModalDetalle()">
+
+        <div class="relative w-full max-w-7xl mx-4 bg-slate-800 rounded-xl shadow-2xl border border-slate-600/60 flex flex-col overflow-hidden"
+            style="max-height: 85vh;" x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 translate-y-2" @click.stop>
+
+            {{-- Header del Modal --}}
+            <div
+                class="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-slate-900 rounded-t-xl">
+                <div>
+                    <h3 class="text-lg font-bold text-white" x-text="tituloDetalle || 'Detalle de Tickets'"></h3>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        <span x-show="!cargandoDetalle && totalDetalle > 0">
+                            <span x-text="totalDetalle"></span> registro<span x-show="totalDetalle !== 1">s</span>
+                            encontrado<span x-show="totalDetalle !== 1">s</span>
+                        </span>
+                        <span x-show="cargandoDetalle">Cargando...</span>
+                    </p>
+                </div>
+                <button @click="cerrarModalDetalle()"
+                    class="w-9 h-9 rounded-lg bg-slate-700 hover:bg-red-600/80 border border-slate-600 text-slate-300 hover:text-white transition-all duration-150 flex items-center justify-center text-sm font-bold">
+                    ✕
+                </button>
+            </div>
+
+            {{-- Contenido del Modal --}}
+            <div class="flex-1 overflow-y-auto p-4 bg-slate-900">
+
+                {{-- Loader --}}
+                <div x-show="cargandoDetalle" class="flex flex-col items-center justify-center py-16">
+                    <div class="w-16 h-16 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
+                    <p class="text-slate-300 text-base font-medium mt-4">Cargando tickets...</p>
+                </div>
+
+                {{-- Error --}}
+                <div x-show="!cargandoDetalle && errorDetalle"
+                    class="flex flex-col items-center justify-center py-16 px-4">
+                    <div
+                        class="w-16 h-16 bg-red-900/60 rounded-full flex items-center justify-center mb-3 border border-red-700/60 text-red-400 text-3xl font-bold">
+                        ⚠
+                    </div>
+                    <p class="text-slate-200 text-base font-semibold mb-1">Error al cargar los datos</p>
+                    <p class="text-slate-400 text-sm text-center" x-text="errorDetalle"></p>
+                </div>
+
+                {{-- Estado vacío --}}
+                <div x-show="!cargandoDetalle && !errorDetalle && ticketsDetalle.length === 0"
+                    class="flex flex-col items-center justify-center py-16 px-4">
+                    <div
+                        class="w-16 h-16 bg-slate-700/60 rounded-full flex items-center justify-center mb-3 border border-slate-600 text-slate-400 text-3xl">
+                        📭
+                    </div>
+                    <p class="text-slate-200 text-base font-semibold mb-1">Sin resultados</p>
+                    <p class="text-slate-400 text-sm text-center">No hay tickets para este filtro</p>
+                </div>
+
+                {{-- Tabla de Tickets --}}
+                <div x-show="!cargandoDetalle && !errorDetalle && ticketsDetalle.length > 0"
+                    class="overflow-x-auto rounded-lg border border-slate-600/60">
+                    <table class="w-full">
+                        <thead class="bg-slate-800 sticky top-0 z-10">
+                            <tr class="border-b border-slate-700">
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    ID</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide">
+                                    Descripción</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Solicitante</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Gerencia</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Prioridad</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Estado</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Responsable TI</th>
+                                <th
+                                    class="px-4 py-3 text-center text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Rapidez</th>
+                                <th
+                                    class="px-4 py-3 text-center text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Resolución</th>
+                                <th
+                                    class="px-4 py-3 text-center text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    Atención</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-700/60 bg-slate-800">
+                            <template x-for="ticket in ticketsDetalle" :key="ticket.TicketID">
+                                <tr class="hover:bg-slate-700/50 transition-colors duration-100">
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                        <span class="font-mono font-bold text-blue-400"
+                                            x-text="'#' + ticket.TicketID"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 max-w-md">
+                                        <div class="line-clamp-2 leading-relaxed" :title="ticket.Descripcion"
+                                            x-text="ticket.Descripcion"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 whitespace-nowrap"
+                                        x-text="ticket.Solicitante"></td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 whitespace-nowrap"
+                                        x-text="ticket.Gerencia"></td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                                            :class="{
+                                            'bg-red-600/20 text-red-400 ring-1 ring-red-600/40':         ticket.Prioridad === 'Alta',
+                                            'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40': ticket.Prioridad === 'Media',
+                                            'bg-green-600/20 text-green-400 ring-1 ring-green-600/40':   ticket.Prioridad === 'Baja'
+                                        }" x-text="ticket.Prioridad">
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
+                                            :class="{
+                                            'bg-slate-600/40 text-slate-300 ring-1 ring-slate-500/40':  ticket.Estatus === 'Pendiente',
+                                            'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/40':     ticket.Estatus === 'En progreso',
+                                            'bg-green-600/20 text-green-400 ring-1 ring-green-500/40':  ticket.Estatus === 'Cerrado'
+                                        }" x-text="ticket.Estatus">
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-slate-300 whitespace-nowrap"
+                                        x-text="ticket.ResponsableTI"></td>
+                                    <td class="px-4 py-3 text-sm text-center whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-0.5"
+                                            x-html="renderEstrellas(ticket.Rapidez)"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-center whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-0.5"
+                                            x-html="renderEstrellas(ticket.Resolucion)"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-center whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-0.5"
+                                            x-html="renderEstrellas(ticket.Atencion)"></div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            {{-- Footer del Modal --}}
+            <div
+                class="flex items-center justify-between px-6 py-3 border-t border-slate-700 bg-slate-900/80 rounded-b-xl">
+                <div class="text-xs text-slate-500">
+                    Presiona <kbd
+                        class="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-slate-300 font-mono text-xs">ESC</kbd>
+                    para cerrar
+                </div>
+                <button @click="cerrarModalDetalle()"
+                    class="px-5 py-2 rounded-lg font-semibold text-sm transition-all bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600/80 hover:border-slate-500">
+                    Cerrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+
 </div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
 <script>
     Chart.register(ChartDataLabels);
@@ -1114,6 +1527,117 @@
 
     function isDarkMode() {
         return document.documentElement.classList.contains('dark');
+    }
+
+    /**
+     * Maneja el clic en elementos de gráficas para mostrar detalle de tickets.
+     * @param {Event} event - Evento de clic
+     * @param {Array} elements - Elementos seleccionados de Chart.js
+     * @param {Chart} chart - Instancia de Chart.js
+     * @param {String} chartType - Tipo de gráfica (estado, prioridad, etc.)
+     */
+    function handleChartClick(event, elements, chart, chartType) {
+        if (!elements || elements.length === 0) return;
+
+        const element = elements[0];
+        const datasetIndex = element.datasetIndex;
+        const index = element.index;
+
+        // Obtener el label y value del elemento clicado
+        let filterKey = chartType;
+        let filterValue = null;
+
+        if (chart.data.labels && chart.data.labels[index]) {
+            filterValue = chart.data.labels[index];
+        }
+
+        // Para gráficas apiladas o con múltiples datasets
+        if (chart.data.datasets && chart.data.datasets[datasetIndex] && chart.data.datasets[datasetIndex].label) {
+            filterKey = chartType;
+            filterValue = chart.data.datasets[datasetIndex].label;
+        }
+
+        // Si el label es "Sin tickets" o similar, no hacer nada
+        if (!filterValue || filterValue.includes('Sin tickets') || filterValue.includes('sin datos')) {
+            return;
+        }
+
+        // Obtener filtros actuales del dashboard
+        const filtroContainer = document.querySelector('#productividad-container [x-data*="mesInicio"]');
+        let mesInicio = null, anioInicio = null, mesFin = null, anioFin = null;
+
+        if (filtroContainer && window.Alpine && typeof Alpine.$data === 'function') {
+            try {
+                const data = Alpine.$data(filtroContainer);
+                mesInicio = data.mesInicio;
+                anioInicio = data.anioInicio;
+                mesFin = data.mesFin;
+                anioFin = data.anioFin;
+            } catch (e) {
+                console.warn('No se pudieron obtener los filtros Alpine:', e);
+            }
+        }
+
+        // Construir parámetros para el endpoint
+        const params = new URLSearchParams();
+        params.append('chart_type', chartType);
+        params.append('filter_key', filterKey);
+        params.append('filter_value', filterValue);
+
+        if (mesInicio && anioInicio && mesFin && anioFin) {
+            params.append('mes_inicio', mesInicio);
+            params.append('anio_inicio', anioInicio);
+            params.append('mes_fin', mesFin);
+            params.append('anio_fin', anioFin);
+        }
+
+        // Obtener el componente Alpine del modal
+        const modalContainer = document.querySelector('[x-data*="modalDetalleAbierto"]');
+        if (!modalContainer) {
+            console.error('No se encontró el contenedor del modal de detalle');
+            return;
+        }
+
+        let modalData;
+        try {
+            modalData = Alpine.$data(modalContainer);
+        } catch (e) {
+            console.error('Error al obtener datos Alpine del modal:', e);
+            return;
+        }
+
+        // Abrir modal y mostrar loader
+        modalData.modalDetalleAbierto = true;
+        modalData.cargandoDetalle = true;
+        modalData.errorDetalle = '';
+        modalData.ticketsDetalle = [];
+        modalData.tituloDetalle = 'Cargando...';
+        modalData.totalDetalle = 0;
+
+        // Hacer fetch al endpoint
+        fetch(`{{ route('tickets.detalle-grafica') }}?${params.toString()}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
+            .then(data => {
+                modalData.cargandoDetalle = false;
+
+                if (data.success) {
+                    modalData.ticketsDetalle = data.tickets || [];
+                    modalData.totalDetalle = data.total || 0;
+                    modalData.tituloDetalle = data.filter_label || 'Detalle de Tickets';
+                } else {
+                    modalData.errorDetalle = data.error || 'Error al cargar los tickets';
+                }
+            })
+            .catch(error => {
+                console.error('Error al obtener detalle de tickets:', error);
+                modalData.cargandoDetalle = false;
+                modalData.errorDetalle = 'Error al comunicarse con el servidor. Por favor, intente nuevamente.';
+            });
     }
 
     /** Colores y bordes por tema (solo presentación; los datos no cambian). */
@@ -1247,7 +1771,7 @@
 
     function datalabelsBarrasHorizontales(colores, dark) {
         return {
-            display: function(ctx) {
+            display: function (ctx) {
                 const v = Number(ctx.dataset.data[ctx.dataIndex]);
                 return !isNaN(v) && v > 0;
             },
@@ -1259,7 +1783,7 @@
             align: 'end',
             offset: 4,
             clip: false,
-            formatter: function(value) {
+            formatter: function (value) {
                 const n = Number(value);
                 if (isNaN(n) || n <= 0) {
                     return '';
@@ -1271,7 +1795,7 @@
 
     function datalabelsMatrizApilada() {
         return {
-            display: function(ctx) {
+            display: function (ctx) {
                 const v = Number(ctx.dataset.data[ctx.dataIndex]);
                 return !isNaN(v) && v > 0;
             },
@@ -1282,7 +1806,7 @@
             textStrokeWidth: 2,
             font: { weight: 'bold', size: 9 },
             clip: false,
-            formatter: function(value) {
+            formatter: function (value) {
                 const n = Number(value);
                 return !isNaN(n) && n > 0 ? String(n) : '';
             }
@@ -1291,7 +1815,7 @@
 
     function datalabelsDona(sumaTotal, dark) {
         return {
-            display: function(ctx) {
+            display: function (ctx) {
                 const v = Number(ctx.dataset.data[ctx.dataIndex]);
                 if (!sumaTotal || sumaTotal <= 0 || !v || isNaN(v)) {
                     return false;
@@ -1302,7 +1826,7 @@
             textStrokeColor: dark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.92)',
             textStrokeWidth: 2,
             font: { weight: 'bold', size: 12 },
-            formatter: function(value) {
+            formatter: function (value) {
                 const n = Number(value);
                 return !isNaN(n) && n > 0 ? String(n) : '';
             }
@@ -1331,7 +1855,7 @@
             if (ch && typeof ch.destroy === 'function') {
                 try {
                     ch.destroy();
-                } catch (e) {}
+                } catch (e) { }
             }
         }
         destruir(chartEstado);
@@ -1358,12 +1882,12 @@
             md = null;
         }
         if (md && md.metricas_por_empleado && md.metricas_por_empleado.length) {
-            md.metricas_por_empleado.forEach(function(emp) {
+            md.metricas_por_empleado.forEach(function (emp) {
                 var k = 'chartEmpleado' + emp.empleado_id;
                 if (window[k] && typeof window[k].destroy === 'function') {
                     try {
                         window[k].destroy();
-                    } catch (e3) {}
+                    } catch (e3) { }
                 }
                 window[k] = null;
             });
@@ -1490,6 +2014,9 @@
                 animation: animacionGraficas,
                 cutout: '62%',
                 onHover: cursorSobreGrafica,
+                onClick: function (event, elements, chart) {
+                    handleChartClick(event, elements, chart, 'estado');
+                },
                 plugins: {
                     legend: {
                         position: 'bottom',
@@ -1533,41 +2060,41 @@
             data: {
                 labels: fechasFormateadas,
                 datasets: [{
-                        label: 'Tickets Creados',
-                        data: valoresCreados,
-                        borderColor: p.lineCreadosStroke,
-                        backgroundColor: p.lineCreadosFill,
-                        borderWidth: dark ? 2.5 : 2,
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: dark ? 2.5 : 3,
-                        pointHoverRadius: 9,
-                        pointHitRadius: 18,
-                        pointBackgroundColor: p.puntoCreados.fill,
-                        pointBorderColor: p.puntoCreados.stroke,
-                        pointBorderWidth: 2,
-                        pointHoverBackgroundColor: p.puntoCreados.hFill,
-                        pointHoverBorderColor: p.puntoCreados.hStroke,
-                        pointHoverBorderWidth: 2
-                    },
-                    {
-                        label: 'Tickets Resueltos',
-                        data: valoresResueltos,
-                        borderColor: p.lineResStroke,
-                        backgroundColor: p.lineResFill,
-                        borderWidth: dark ? 2.5 : 2,
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: dark ? 2.5 : 3,
-                        pointHoverRadius: 9,
-                        pointHitRadius: 18,
-                        pointBackgroundColor: p.puntoRes.fill,
-                        pointBorderColor: p.puntoRes.stroke,
-                        pointBorderWidth: 2,
-                        pointHoverBackgroundColor: p.puntoRes.hFill,
-                        pointHoverBorderColor: p.puntoRes.hStroke,
-                        pointHoverBorderWidth: 2
-                    }
+                    label: 'Tickets Creados',
+                    data: valoresCreados,
+                    borderColor: p.lineCreadosStroke,
+                    backgroundColor: p.lineCreadosFill,
+                    borderWidth: dark ? 2.5 : 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: dark ? 2.5 : 3,
+                    pointHoverRadius: 9,
+                    pointHitRadius: 18,
+                    pointBackgroundColor: p.puntoCreados.fill,
+                    pointBorderColor: p.puntoCreados.stroke,
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: p.puntoCreados.hFill,
+                    pointHoverBorderColor: p.puntoCreados.hStroke,
+                    pointHoverBorderWidth: 2
+                },
+                {
+                    label: 'Tickets Resueltos',
+                    data: valoresResueltos,
+                    borderColor: p.lineResStroke,
+                    backgroundColor: p.lineResFill,
+                    borderWidth: dark ? 2.5 : 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: dark ? 2.5 : 3,
+                    pointHoverRadius: 9,
+                    pointHitRadius: 18,
+                    pointBackgroundColor: p.puntoRes.fill,
+                    pointBorderColor: p.puntoRes.stroke,
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: p.puntoRes.hFill,
+                    pointHoverBorderColor: p.puntoRes.hStroke,
+                    pointHoverBorderWidth: 2
+                }
                 ]
             },
             options: {
@@ -1575,6 +2102,14 @@
                 maintainAspectRatio: false,
                 animation: animacionGraficas,
                 onHover: cursorSobreGrafica,
+                onClick: function (event, elements, chart) {
+                    if (elements && elements.length > 0) {
+                        const element = elements[0];
+                        const datasetIndex = element.datasetIndex;
+                        const chartType = datasetIndex === 0 ? 'creados' : 'resueltos';
+                        handleChartClick(event, elements, chart, chartType);
+                    }
+                },
                 interaction: {
                     mode: 'index',
                     intersect: false
@@ -1624,7 +2159,7 @@
                         intersect: false,
                         position: 'nearest',
                         callbacks: {
-                            title: function(items) {
+                            title: function (items) {
                                 if (!items || !items.length) {
                                     return '';
                                 }
@@ -1635,7 +2170,7 @@
                                 const lab = items[0].chart && items[0].chart.data.labels[i];
                                 return lab != null ? String(lab) : '';
                             },
-                            label: function(ctx) {
+                            label: function (ctx) {
                                 const v = ctx.parsed && typeof ctx.parsed.y === 'number' ? ctx.parsed.y : Number(ctx.raw);
                                 const n = isNaN(v) ? 0 : v;
                                 return (ctx.dataset.label || '') + ': ' + n + ' tickets';
@@ -1676,7 +2211,6 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: animacionGraficas,
-                onHover: cursorSobreGrafica,
                 interaction: {
                     mode: 'nearest',
                     axis: 'y',
@@ -1742,6 +2276,9 @@
                     animation: animacionGraficas,
                     cutout: '62%',
                     onHover: cursorSobreGrafica,
+                    onClick: function (event, elements, chart) {
+                        handleChartClick(event, elements, chart, 'clasificacion');
+                    },
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -1762,7 +2299,7 @@
                             intersect: false,
                             position: 'nearest',
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     const n = valorNumericoTooltipDona(context);
                                     let label = context.label || '';
                                     if (label) {
@@ -1807,7 +2344,6 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: animacionGraficas,
-                    onHover: cursorSobreGrafica,
                     interaction: {
                         mode: 'nearest',
                         axis: 'y',
@@ -1867,41 +2403,41 @@
                 data: {
                     labels: hayDatos ? mesesLabels : ['Sin datos'],
                     datasets: [{
-                            label: 'Tiempo de Respuesta',
-                            data: hayDatos ? tiemposRespuesta : [0],
-                            backgroundColor: p.comp[0].bg,
-                            hoverBackgroundColor: p.comp[0].h,
-                            borderColor: p.comp[0].b,
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false,
-                            barThickness: 'flex',
-                            maxBarThickness: 56
-                        },
-                        {
-                            label: 'Tiempo de Resolución',
-                            data: hayDatos ? tiemposResolucion : [0],
-                            backgroundColor: p.comp[1].bg,
-                            hoverBackgroundColor: p.comp[1].h,
-                            borderColor: p.comp[1].b,
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false,
-                            barThickness: 'flex',
-                            maxBarThickness: 56
-                        },
-                        {
-                            label: 'Tiempo Total',
-                            data: hayDatos ? tiemposTotal : [0],
-                            backgroundColor: p.comp[2].bg,
-                            hoverBackgroundColor: p.comp[2].h,
-                            borderColor: p.comp[2].b,
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false,
-                            barThickness: 'flex',
-                            maxBarThickness: 56
-                        }
+                        label: 'Tiempo de Respuesta',
+                        data: hayDatos ? tiemposRespuesta : [0],
+                        backgroundColor: p.comp[0].bg,
+                        hoverBackgroundColor: p.comp[0].h,
+                        borderColor: p.comp[0].b,
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barThickness: 'flex',
+                        maxBarThickness: 56
+                    },
+                    {
+                        label: 'Tiempo de Resolución',
+                        data: hayDatos ? tiemposResolucion : [0],
+                        backgroundColor: p.comp[1].bg,
+                        hoverBackgroundColor: p.comp[1].h,
+                        borderColor: p.comp[1].b,
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barThickness: 'flex',
+                        maxBarThickness: 56
+                    },
+                    {
+                        label: 'Tiempo Total',
+                        data: hayDatos ? tiemposTotal : [0],
+                        backgroundColor: p.comp[2].bg,
+                        hoverBackgroundColor: p.comp[2].h,
+                        borderColor: p.comp[2].b,
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barThickness: 'flex',
+                        maxBarThickness: 56
+                    }
                     ]
                 },
                 options: {
@@ -1921,7 +2457,7 @@
                                 font: {
                                     size: 11
                                 },
-                                callback: function(value) {
+                                callback: function (value) {
                                     return value.toFixed(1) + ' hrs';
                                 }
                             },
@@ -1979,7 +2515,7 @@
                                 size: 12
                             },
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     const y = context.parsed && typeof context.parsed.y === 'number' ? context.parsed.y : Number(context.raw);
                                     const n = isNaN(y) ? 0 : y;
                                     return ' ' + context.dataset.label + ': ' + n.toFixed(2) + ' hrs';
@@ -1987,7 +2523,7 @@
                             }
                         }),
                         datalabels: {
-                            display: function(ctx) {
+                            display: function (ctx) {
                                 if (!hayDatos) {
                                     return false;
                                 }
@@ -2001,7 +2537,7 @@
                                 weight: 'bold',
                                 size: 10
                             },
-                            formatter: function(value) {
+                            formatter: function (value) {
                                 const n = Number(value);
                                 if (isNaN(n) || n <= 0) {
                                     return '';
@@ -2025,11 +2561,11 @@
         if (ctxIncidenciasMatriz) {
             const matrizData = metricasData.matriz_incidencias_responsable || {};
             const responsablesList = metricasData.responsables_ti_list || {};
-            
+
             // Preparar labels (todos los subtipos con su tipo padre)
             const labels = [];
             const datasets = [];
-            
+
             // Crear un dataset por responsable
             const responsablesArray = Object.keys(responsablesList);
             // Primero, crear los labels (tipos → subtipos) y preparar datos
@@ -2039,12 +2575,12 @@
                     labels.push(`${tipo} → ${subtipo}`);
                 });
             });
-            
+
             // Crear datasets por responsable
             responsablesArray.forEach((responsableID, idx) => {
                 const responsableNombre = responsablesList[responsableID];
                 const data = [];
-                
+
                 Object.keys(matrizData).forEach((tipo) => {
                     const tipoData = matrizData[tipo];
                     Object.keys(tipoData.subtipos).forEach((subtipo) => {
@@ -2053,7 +2589,7 @@
                         data.push(valor);
                     });
                 });
-                
+
                 datasets.push({
                     label: responsableNombre,
                     data: data,
@@ -2065,9 +2601,9 @@
                     borderSkipped: false
                 });
             });
-            
+
             const hayDatos = labels.length > 0 && datasets.some(ds => ds.data.some(v => v > 0));
-            
+
             chartIncidenciasMatriz = new Chart(ctxIncidenciasMatriz.getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -2137,14 +2673,14 @@
                             titleFont: { size: 12, weight: 'bold' },
                             bodyFont: { size: 12 },
                             callbacks: {
-                                title: function(items) {
+                                title: function (items) {
                                     if (!items || !items.length) {
                                         return '';
                                     }
                                     const i = items[0].dataIndex;
                                     return labels[i] != null ? String(labels[i]) : '';
                                 },
-                                label: function(context) {
+                                label: function (context) {
                                     const px = context.parsed && typeof context.parsed.x === 'number' ? context.parsed.x : Number(context.raw);
                                     const n = isNaN(px) ? 0 : px;
                                     if (n <= 0) {
@@ -2153,7 +2689,7 @@
                                     return context.dataset.label + ': ' + n + ' tickets';
                                 }
                             },
-                            filter: function(tooltipItem) {
+                            filter: function (tooltipItem) {
                                 const px = tooltipItem.parsed && typeof tooltipItem.parsed.x === 'number' ? tooltipItem.parsed.x : Number(tooltipItem.raw);
                                 return !isNaN(px) && px > 0;
                             }
@@ -2198,11 +2734,11 @@
     }
 
     // Intentar inicializar cuando el DOM esté listo
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         let intentos = 0;
         const maxIntentos = 10;
 
-        const intervalo = setInterval(function() {
+        const intervalo = setInterval(function () {
             intentos++;
             if (inicializarCuandoVisible() || intentos >= maxIntentos) {
                 clearInterval(intervalo);
@@ -2214,12 +2750,12 @@
 
     // Observar cuando el tab cambie (debounce: evita destruir Chart.js al mover el tooltip o al reconciliar Alpine)
     let prodTabMutDebounce = null;
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const container = document.querySelector('[x-data*="tab"]');
         if (container) {
-            const observer = new MutationObserver(function() {
+            const observer = new MutationObserver(function () {
                 clearTimeout(prodTabMutDebounce);
-                prodTabMutDebounce = setTimeout(function() {
+                prodTabMutDebounce = setTimeout(function () {
                     const canvasEstado = document.getElementById('chartEstado');
                     if (!canvasEstado || !isElementVisible(canvasEstado)) {
                         return;
@@ -2244,13 +2780,13 @@
         let prodVisMutDebounce = null;
         const productividadDiv = document.querySelector('[x-show*="tab === 2"]');
         if (productividadDiv) {
-            const productividadObserver = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
+            const productividadObserver = new MutationObserver(function (mutations) {
+                mutations.forEach(function (mutation) {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                         const style = window.getComputedStyle(productividadDiv);
                         if (style.display !== 'none' && !productividadDiv.hasAttribute('x-cloak')) {
                             clearTimeout(prodVisMutDebounce);
-                            prodVisMutDebounce = setTimeout(function() {
+                            prodVisMutDebounce = setTimeout(function () {
                                 const canvasEstado = document.getElementById('chartEstado');
                                 if (!canvasEstado || !isElementVisible(canvasEstado)) {
                                     return;
@@ -2276,14 +2812,14 @@
         }
 
         if (window.Alpine) {
-            setTimeout(function() {
+            setTimeout(function () {
                 inicializarCuandoVisible();
             }, 300);
         }
 
         let intentosGraficas = 0;
         const maxIntentosGraficas = 20;
-        const intervaloGraficas = setInterval(function() {
+        const intervaloGraficas = setInterval(function () {
             intentosGraficas++;
             const productividadVisible = document.querySelector('[x-show*="tab === 2"]');
             if (productividadVisible) {
@@ -2345,7 +2881,7 @@
                     if (window[chartKey] instanceof Chart && typeof window[chartKey].destroy === 'function') {
                         try {
                             window[chartKey].destroy();
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                     window[chartKey] = null;
                 }
@@ -2389,26 +2925,26 @@
                         type: 'bar',
                         data: {
                             labels: mesesEspanolLabels,
-                            datasets: [                                {
-                                    label: 'Total de Tickets',
-                                    data: totales,
-                                    backgroundColor: pEmp.empTot.bg,
-                                    hoverBackgroundColor: pEmp.empTot.h,
-                                    borderColor: pEmp.empTot.b,
-                                    borderWidth: 2,
-                                    borderRadius: 8,
-                                    borderSkipped: false
-                                },
-                                {
-                                    label: 'Tickets Cerrados',
-                                    data: cerrados,
-                                    backgroundColor: pEmp.empCer.bg,
-                                    hoverBackgroundColor: pEmp.empCer.h,
-                                    borderColor: pEmp.empCer.b,
-                                    borderWidth: 2,
-                                    borderRadius: 8,
-                                    borderSkipped: false
-                                }
+                            datasets: [{
+                                label: 'Total de Tickets',
+                                data: totales,
+                                backgroundColor: pEmp.empTot.bg,
+                                hoverBackgroundColor: pEmp.empTot.h,
+                                borderColor: pEmp.empTot.b,
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
+                            },
+                            {
+                                label: 'Tickets Cerrados',
+                                data: cerrados,
+                                backgroundColor: pEmp.empCer.bg,
+                                hoverBackgroundColor: pEmp.empCer.h,
+                                borderColor: pEmp.empCer.b,
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
+                            }
                             ]
                         },
                         options: {
@@ -2468,7 +3004,7 @@
                                         size: 13
                                     },
                                     callbacks: {
-                                        label: function(context) {
+                                        label: function (context) {
                                             let label = context.dataset.label || '';
                                             if (label) {
                                                 label += ': ';
@@ -2492,7 +3028,7 @@
                     window[chartKey] = null;
                 }
             });
-            setTimeout(function() {
+            setTimeout(function () {
                 if (typeof resizeChartsProductividadEmpleados === 'function') {
                     resizeChartsProductividadEmpleados();
                 }
@@ -2507,7 +3043,7 @@
         if (!metricasData || !metricasData.metricas_por_empleado) {
             return;
         }
-        metricasData.metricas_por_empleado.forEach(function(empleado) {
+        metricasData.metricas_por_empleado.forEach(function (empleado) {
             const chartKey = 'chartEmpleado' + empleado.empleado_id;
             const ch = window[chartKey];
             if (ch && typeof ch.resize === 'function') {
@@ -2536,10 +3072,10 @@
     }
 
     // Escuchar cuando se hace clic en el tab de productividad
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const target = e.target.closest('button');
         if (target && target.textContent && target.textContent.includes('Productividad')) {
-            setTimeout(function() {
+            setTimeout(function () {
                 inicializarGraficas();
                 inicializarGraficasEmpleados();
             }, 400);
@@ -2549,9 +3085,9 @@
     // Alpine actualiza el DOM con mucha frecuencia: no recrear Chart.js cada vez (rompe tooltips y parece que “vuelve al primero”).
     if (window.Alpine) {
         let alpineProdChartsDebounce = null;
-        document.addEventListener('alpine:updated', function() {
+        document.addEventListener('alpine:updated', function () {
             clearTimeout(alpineProdChartsDebounce);
-            alpineProdChartsDebounce = setTimeout(function() {
+            alpineProdChartsDebounce = setTimeout(function () {
                 const productividadVisible = document.querySelector('[x-show*="tab === 2"]');
                 if (!productividadVisible) {
                     return;
@@ -2575,11 +3111,11 @@
     }
 
     // MutationObserver para detectar cambios en dark mode y reinicializar gráficas
-    const observerDarkMode = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
+    const observerDarkMode = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 // Solo reinicializar si las gráficas están visibles
-                setTimeout(function() {
+                setTimeout(function () {
                     const productividadContainer = document.getElementById('productividad-container');
                     if (productividadContainer) {
                         const style = window.getComputedStyle(productividadContainer);
