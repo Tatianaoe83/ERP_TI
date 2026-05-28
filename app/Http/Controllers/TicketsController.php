@@ -1865,7 +1865,7 @@ class TicketsController extends Controller
                     'ResponsableTI_ID' => $ticket->ResponsableTI,
                     'Solicitante' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Desconocido',
                     'Solicitante_ID' => $ticket->EmpleadoID,
-                    'Gerencia' => optional($ticket->empleado->gerencia)->NombreGerencia ?? 'N/A',
+                    'Gerencia' => $ticket->empleado->puestos->departamentos->gerencia->NombreGerencia ?? 'N/A',
                     'Tipo' => $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'N/A',
                     'Subtipo' => $ticket->subtipo ? $ticket->subtipo->NombreSubtipo : 'N/A',
                     'Tertipo' => $ticket->tertipo ? $ticket->tertipo->NombreTertipo : 'N/A',
