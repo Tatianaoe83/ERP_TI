@@ -87,20 +87,30 @@
                         </p>
 
                         <div class="relative flex-shrink-0 w-6 h-6 mt-0.5">
-                            <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
-                                notifications
-                            </span>
+    <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
+        notifications
+    </span>
 
-                            @if(($ticket['notificaciones_pendientes'] ?? 0) > 0)
-                            <span class="absolute -top-1 -right-1
-                bg-red-500 text-white
-                text-[10px] leading-none font-medium
-                rounded-full w-4 h-4
-                flex items-center justify-center">
-                                {{ $ticket['notificaciones_pendientes'] }}
-                            </span>
-                            @endif
-                        </div>
+    @php
+        // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
+        $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
+            ->latest('id')
+            ->first();
+            
+        $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
+    @endphp
+
+    {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
+    @if($notificaciones > 0)
+    <span class="absolute -top-5 -right-5
+        bg-red-500 text-white
+        text-[10px] leading-none font-medium
+        rounded-full w-4 h-4
+        flex items-center justify-center">
+        {{ $notificaciones }}
+    </span>
+    @endif
+</div>
                     </div>
                     {{-- Footer --}}
                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-2">

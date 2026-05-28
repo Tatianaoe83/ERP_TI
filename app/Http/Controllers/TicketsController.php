@@ -46,6 +46,19 @@ class TicketsController extends Controller
             $query->orderBy('created_at', 'desc')->limit(1);
         }])->orderBy('created_at', 'desc')->get();
 
+       $tickets = $tickets->map(function ($ticket) {
+    $ultimoMensaje = $ticket->chat->first();
+    
+    // Calculamos si el último es del usuario
+    $notificaciones = ($ultimoMensaje && $ultimoMensaje->remitente === 'usuario') ? 1 : 0;
+    
+    // ¡AQUÍ ESTÁ EL TRUCO! 
+    // Sobreescribimos el valor de la columna para que tu vista reciba el 1 en '$ticket['notificaciones_pendientes']'
+    $ticket->setAttribute('notificaciones_pendientes', $notificaciones);
+    
+    return $ticket;
+});
+
         $ticketsStatus = [
             'nuevos'    => $tickets->where('Estatus', 'Pendiente'),
             'proceso'   => $tickets->where('Estatus', 'En progreso'),
