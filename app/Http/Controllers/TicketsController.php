@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use App\Models\SolicitudActivo;
 use App\Http\Controllers\Traits\MetricasSolicitudesTrait;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class TicketsController extends Controller
@@ -844,11 +845,11 @@ class TicketsController extends Controller
                 foreach (array_unique($matches[1]) as $urlImagen) {
                     $nombreArchivo = basename(parse_url($urlImagen, PHP_URL_PATH));
                     $rutaRelativa  = 'tickets/adjuntos/' . $nombreArchivo;
-                    $rutaAbsoluta  = \Illuminate\Support\Facades\Storage::disk('public')->path($rutaRelativa);
+                    $rutaAbsoluta  = Storage::disk('public')->path($rutaRelativa);
 
                     Log::info("Buscando imagen en disco: {$rutaAbsoluta}");
 
-                    if (!\Illuminate\Support\Facades\Storage::disk('public')->exists($rutaRelativa)) {
+                    if (!Storage::disk('public')->exists($rutaRelativa)) {
                         Log::warning("Imagen no encontrada: {$rutaRelativa}");
                         continue;
                     }
@@ -862,14 +863,14 @@ class TicketsController extends Controller
                             'path'         => $rutaAbsoluta,
                             'storage_path' => $rutaRelativa,
                             'url'          => asset('storage/' . $rutaRelativa),
-                            'size'         => \Illuminate\Support\Facades\Storage::disk('public')->size($rutaRelativa),
-                            'mime_type'    => \Illuminate\Support\Facades\Storage::disk('public')->mimeType($rutaRelativa),
+                            'size'         => Storage::disk('public')->size($rutaRelativa),
+                            'mime_type'    => Storage::disk('public')->mimeType($rutaRelativa),
                             'tipo'         => 'imagen_embebida',
                         ];
                     }
 
-                    $contenidoArchivo  = \Illuminate\Support\Facades\Storage::disk('public')->get($rutaRelativa);
-                    $mimeType          = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($rutaRelativa);
+                    $contenidoArchivo  = Storage::disk('public')->get($rutaRelativa);
+                    $mimeType          = Storage::disk('public')->mimeType($rutaRelativa);
                     $dataUri           = 'data:' . $mimeType . ';base64,' . base64_encode($contenidoArchivo);
                     $mensajeParaCorreo = str_replace($urlImagen, $dataUri, $mensajeParaCorreo);
 
@@ -1282,7 +1283,7 @@ class TicketsController extends Controller
             $tipo->save();
 
             if ($tiempoAnterior != $nuevoTiempo) {
-                $notificationService = new \App\Services\TicketNotificationService();
+                $notificationService = new TicketNotificationService();
                 $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo($tipo->TipoID, $nuevoTiempo);
                 Log::info("Tipo {$tipo->TipoID}: Intervalo actualizado de {$tiempoAnterior} a {$nuevoTiempo} minutos. {$ticketsActualizados} tickets actualizados.");
             }
@@ -1332,7 +1333,7 @@ class TicketsController extends Controller
                     Tipoticket::where('TipoID', $tipoId)->update(['TiempoEstimadoMinutos' => $tiempoEstimado]);
 
                     if ($tiempoAnterior != $tiempoEstimado) {
-                        $notificationService = new \App\Services\TicketNotificationService();
+                        $notificationService = new TicketNotificationService();
                         $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo($tipoId, $tiempoEstimado);
                         Log::info("Tipo {$tipoId}: Intervalo actualizado de {$tiempoAnterior} a {$tiempoEstimado} minutos. {$ticketsActualizados} tickets actualizados.");
                     }
@@ -1446,9 +1447,9 @@ class TicketsController extends Controller
             fn($t) => $t->created_at->between($fechaInicioActual, $fechaFinActual)
         );
 
-        $todosTipos    = \App\Models\Tipoticket::all();
-        $todosSubtipos = \App\Models\Subtipos::all();
-        $todosTertipos = \App\Models\Tertipos::all();
+        $todosTipos    = Tipoticket::all();
+        $todosSubtipos = Subtipos::all();
+        $todosTertipos = Tertipos::all();
 
         $catalogo = [];
         foreach ($todosTipos as $tipo) {
