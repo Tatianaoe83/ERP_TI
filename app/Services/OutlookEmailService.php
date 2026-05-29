@@ -157,8 +157,15 @@ class OutlookEmailService
                 'thread_id' => $threadId,
                 'adjuntos' => $attachments,
                 'es_correo' => true,
-                'leido' => false
+                'leido' => false,
+                'notificaciones_pendientes' => 1,
             ]);
+
+            try {
+                \Livewire\Livewire::dispatch('correoRecibido', ['ticket_id' => $ticketId]);
+            } catch (\Exception $e) {
+                Log::error("No se pudo disparar el evento Livewire en tiempo real: " . $e->getMessage());
+            }
 
             // Incrementar notificaciones pendientes y guardar fecha de última respuesta
             try {

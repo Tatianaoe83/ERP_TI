@@ -101,18 +101,28 @@
                                 </span>
                                 <span>
                                     <span class="flex items-center gap-1.5">
-                                        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5">
+                                        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
                                             <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
                                                 notifications
                                             </span>
 
-                                            @if(($ticket->notificaciones_pendientes ?? 0) > 0)
-                                            <span class="absolute -top-1 -right-1
-            bg-red-500 text-white
-            text-[10px] leading-none font-medium
-            rounded-full w-4 h-4
-            flex items-center justify-center">
-                                                {{ $ticket->notificaciones_pendientes }}
+                                            @php
+                                            // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
+                                            $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
+                                            ->latest('id')
+                                            ->first();
+
+                                            $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
+                                            @endphp
+
+                                            {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
+                                            @if($notificaciones > 0)
+                                            <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
+                                            bg-red-500 text-white
+                                            text-[10px] leading-none font-medium
+                                            rounded-full w-4 h-4
+                                            flex items-center justify-center">
+                                                1
                                             </span>
                                             @endif
                                         </div>

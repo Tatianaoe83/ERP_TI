@@ -8,10 +8,10 @@
 
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 @if($ticketsTabla->count())
-                    Mostrando {{ $ticketsTabla->firstItem() }} - {{ $ticketsTabla->lastItem() }}
-                    de {{ $ticketsTabla->total() }} tickets
+                Mostrando {{ $ticketsTabla->firstItem() }} - {{ $ticketsTabla->lastItem() }}
+                de {{ $ticketsTabla->total() }} tickets
                 @else
-                    Sin registros
+                Sin registros
                 @endif
             </div>
 
@@ -34,7 +34,7 @@
 
             {{-- PRIORIDAD --}}
             <select wire:model.live="filtroPrioridad"
-                    class="px-3 py-2 rounded-lg border text-sm
+                class="px-3 py-2 rounded-lg border text-sm
                         bg-gray-50 dark:bg-[#242933]
                         border-gray-300 dark:border-[#2A2F3A]">
                 <option value="">Todas las prioridades</option>
@@ -45,7 +45,7 @@
 
             {{-- ESTADO --}}
             <select wire:model.live="filtroEstado"
-                    class="px-3 py-2 rounded-lg border text-sm
+                class="px-3 py-2 rounded-lg border text-sm
                         bg-gray-50 dark:bg-[#242933]
                         border-gray-300 dark:border-[#2A2F3A]">
                 <option value="">Todos los estados</option>
@@ -56,8 +56,8 @@
 
             {{-- LIMPIAR --}}
             <button wire:click="limpiarFiltros"
-                    type="button"
-                    class="px-3 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition">
+                type="button"
+                class="px-3 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition">
                 Limpiar filtros
             </button>
 
@@ -69,7 +69,7 @@
                 {{-- HEADER --}}
                 <thead class="bg-gray-100 dark:bg-[#242933]">
                     <tr>
-                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase"></th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase"></th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase">ID</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Descripción</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Empleado</th>
@@ -87,84 +87,95 @@
 
                     @forelse($ticketsTabla as $ticket)
 
-                        @php
-                            $nombreEmpleado = optional($ticket->empleado)->NombreEmpleado ?? '';
-                            $correoEmpleado = optional($ticket->empleado)->Correo ?? optional($ticket->empleado)->correo ?? '';
+                    @php
+                    $nombreEmpleado = optional($ticket->empleado)->NombreEmpleado ?? '';
+                    $correoEmpleado = optional($ticket->empleado)->Correo ?? optional($ticket->empleado)->correo ?? '';
 
-                            $partes = preg_split('/\s+/', trim($nombreEmpleado));
-                            if (count($partes) >= 3) array_splice($partes, 1, 1);
-                            $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
+                    $partes = preg_split('/\s+/', trim($nombreEmpleado));
+                    if (count($partes) >= 3) array_splice($partes, 1, 1);
+                    $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
 
-                            $nombreResponsable = null;
-                            if (!empty($ticket->responsableTI)) {
-                                $resp = $ticket->responsableTI->NombreEmpleado ?? '';
-                                $p = preg_split('/\s+/', trim($resp));
-                                if (count($p) >= 3) array_splice($p, 1, 1);
-                                $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
-                            }
+                    $nombreResponsable = null;
+                    if (!empty($ticket->responsableTI)) {
+                    $resp = $ticket->responsableTI->NombreEmpleado ?? '';
+                    $p = preg_split('/\s+/', trim($resp));
+                    if (count($p) >= 3) array_splice($p, 1, 1);
+                    $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
+                    }
 
-                            $tiempoInfo = $tiemposProgreso[$ticket->TicketID] ?? null;
-                            
-                            // Atrapamos el estado correctamente
-                            $estadoActual = $ticket->Estatus ?? $ticket->Estado ?? $ticket->estatus ?? '-';
-                        @endphp
+                    $tiempoInfo = $tiemposProgreso[$ticket->TicketID] ?? null;
 
-                        <tr wire:key="ticket-tabla-{{ $ticket->TicketID }}"
-                            class="transition cursor-pointer hover:bg-gray-100 dark:hover:bg-[#273244]"
+                    // Atrapamos el estado correctamente
+                    $estadoActual = $ticket->Estatus ?? $ticket->Estado ?? $ticket->estatus ?? '-';
+                    @endphp
 
-                            data-ticket-id="{{ $ticket->TicketID }}"
-                            data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
-                            data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion ?? '', ENT_QUOTES, 'UTF-8') }}"
-                            data-ticket-prioridad="{{ $ticket->Prioridad ?? '' }}"
-                            data-ticket-empleado="{{ $nombreFormateado }}"
-                            data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
-                            data-ticket-correo="{{ $correoEmpleado }}"
-                            data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i:s') }}"
-                            data-ticket-numero="{{ $ticket->numero ?? $ticket->Numero ?? '' }}"
-                            data-ticket-anydesk="{{ $ticket->code_anydesk ?? $ticket->CodeAnydesk ?? '' }}"
-                            data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
-                            data-ticket-estado="{{ $estadoActual }}"
+                    <tr wire:key="ticket-tabla-{{ $ticket->TicketID }}"
+                        class="transition cursor-pointer hover:bg-gray-100 dark:hover:bg-[#273244]"
 
-                            @click="abrirModalDesdeElemento($el)">
-                            {{-- ID --}}
-                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
-                                                           <span class="flex items-center gap-1.5">
-                                        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5">
-                                            <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
-                                                notifications
-                                            </span>
+                        data-ticket-id="{{ $ticket->TicketID }}"
+                        data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
+                        data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion ?? '', ENT_QUOTES, 'UTF-8') }}"
+                        data-ticket-prioridad="{{ $ticket->Prioridad ?? '' }}"
+                        data-ticket-empleado="{{ $nombreFormateado }}"
+                        data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
+                        data-ticket-correo="{{ $correoEmpleado }}"
+                        data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i:s') }}"
+                        data-ticket-numero="{{ $ticket->numero ?? $ticket->Numero ?? '' }}"
+                        data-ticket-anydesk="{{ $ticket->code_anydesk ?? $ticket->CodeAnydesk ?? '' }}"
+                        data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
+                        data-ticket-estado="{{ $estadoActual }}"
 
-                                            @if(($ticket->notificaciones_pendientes ?? 0) > 0)
-                                            <span class="absolute -top-1 -right-1
-            bg-red-500 text-white
-            text-[10px] leading-none font-medium
-            rounded-full w-4 h-4
-            flex items-center justify-center">
-                                                {{ $ticket->notificaciones_pendientes }}
-                                            </span>
-                                            @endif
-                                        </div>
-    
-                            </td>
+                        @click="abrirModalDesdeElemento($el)">
+                        {{-- ID --}}
+                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
+                            <span class="flex items-center gap-1.5">
+                                <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
+                                        notifications
+                                    </span>
 
-                            {{-- ID --}}
-                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
-                                #{{ $ticket->TicketID }}
-                            </td>
 
-                            {{-- DESCRIPCIÓN --}}
-                            <td class="px-6 py-4 max-w-md truncate text-gray-600 dark:text-gray-300">
-                                {{ \Illuminate\Support\Str::limit($ticket->Descripcion, 80) }}
-                            </td>
+                                    @php
+                                    // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
+                                    $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
+                                    ->latest('id')
+                                    ->first();
 
-                            {{-- EMPLEADO --}}
-                            <td class="px-6 py-4 text-gray-900 dark:text-gray-200">
-                                {{ $nombreFormateado }}
-                            </td>
+                                    $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
+                                    @endphp
 
-                            {{-- PRIORIDAD --}}
-                            <td class="px-6 py-4">
-                                <span class="text-xs font-semibold px-2 py-1 rounded-full
+                                    {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
+                                    @if($notificaciones > 0)
+                                    <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
+                                    bg-red-500 text-white
+                                    text-[10px] leading-none font-medium
+                                    rounded-full w-4 h-4
+                                    flex items-center justify-center">
+                                        1
+                                    </span>
+                                    @endif
+                                </div>
+
+                        </td>
+
+                        {{-- ID --}}
+                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
+                            #{{ $ticket->TicketID }}
+                        </td>
+
+                        {{-- DESCRIPCIÓN --}}
+                        <td class="px-6 py-4 max-w-md truncate text-gray-600 dark:text-gray-300">
+                            {{ \Illuminate\Support\Str::limit($ticket->Descripcion, 80) }}
+                        </td>
+
+                        {{-- EMPLEADO --}}
+                        <td class="px-6 py-4 text-gray-900 dark:text-gray-200">
+                            {{ $nombreFormateado }}
+                        </td>
+
+                        {{-- PRIORIDAD --}}
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full
                                     @if($ticket->Prioridad == 'Baja')
                                         text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/20
                                     @elseif($ticket->Prioridad == 'Media')
@@ -172,13 +183,13 @@
                                     @else
                                         text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-500/20
                                     @endif">
-                                    {{ $ticket->Prioridad ?? '-' }}
-                                </span>
-                            </td>
+                                {{ $ticket->Prioridad ?? '-' }}
+                            </span>
+                        </td>
 
-                            {{-- ESTADO --}}
-                            <td class="px-6 py-4">
-                                <span class="text-xs font-semibold px-2 py-1 rounded-full
+                        {{-- ESTADO --}}
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-semibold px-2 py-1 rounded-full
                                     @if($estadoActual == 'Pendiente')
                                         text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/20
                                     @elseif($estadoActual == 'En progreso')
@@ -188,44 +199,44 @@
                                     @else
                                         text-gray-700 bg-gray-100 dark:text-gray-400 dark:bg-gray-500/20
                                     @endif">
-                                    {{ $estadoActual }}
-                                </span>
-                            </td>
+                                {{ $estadoActual }}
+                            </span>
+                        </td>
 
-                            {{-- FECHA --}}
-                            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                {{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i') }}
-                            </td>
+                        {{-- FECHA --}}
+                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            {{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i') }}
+                        </td>
 
-                            {{-- RESPONSABLE --}}
-                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
-                                {{ $nombreResponsable ?? '-' }}
-                            </td>
+                        {{-- RESPONSABLE --}}
+                        <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
+                            {{ $nombreResponsable ?? '-' }}
+                        </td>
 
-                            {{-- TIEMPO --}}
-                            <td class="px-6 py-4 text-xs">
-                                @if($tiempoInfo)
-                                    {{ number_format($tiempoInfo['transcurrido'], 1) }}h /
-                                    {{ number_format($tiempoInfo['estimado'], 1) }}h
-                                @else
-                                    -
-                                @endif
-                            </td>
+                        {{-- TIEMPO --}}
+                        <td class="px-6 py-4 text-xs">
+                            @if($tiempoInfo)
+                            {{ number_format($tiempoInfo['transcurrido'], 1) }}h /
+                            {{ number_format($tiempoInfo['estimado'], 1) }}h
+                            @else
+                            -
+                            @endif
+                        </td>
 
-                            {{-- ACCIONES --}}
-                            <td class="px-6 py-4">
-                                <i class="fas fa-eye text-blue-500"></i>
-                            </td>
+                        {{-- ACCIONES --}}
+                        <td class="px-6 py-4">
+                            <i class="fas fa-eye text-blue-500"></i>
+                        </td>
 
-                        </tr>
+                    </tr>
 
                     @empty
-                        <tr>
-                            <td colspan="9"
-                                class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
-                                No hay tickets disponibles.
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="9"
+                            class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No hay tickets disponibles.
+                        </td>
+                    </tr>
                     @endforelse
 
                 </tbody>
@@ -234,9 +245,9 @@
 
         {{-- PAGINACIÓN --}}
         @if(method_exists($ticketsTabla, 'links'))
-            <div class="px-4 py-3 border-t border-gray-200 dark:border-[#2A2F3A]">
-                {{ $ticketsTabla->links() }}
-            </div>
+        <div class="px-4 py-3 border-t border-gray-200 dark:border-[#2A2F3A]">
+            {{ $ticketsTabla->links() }}
+        </div>
         @endif
 
     </div>

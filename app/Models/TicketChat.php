@@ -21,7 +21,8 @@ class TicketChat extends Model
         'thread_id',
         'adjuntos',
         'es_correo',
-        'leido'
+        'leido',
+        'notificaciones_pendientes',
     ];
 
     protected $casts = [

@@ -992,6 +992,10 @@ class TicketsController extends Controller
             $ticket->notificaciones_pendientes = 0;
             $ticket->save();
 
+            TicketChat::where('ticket_id', $id)
+            ->where('notificaciones_pendientes', 1)
+            ->update(['notificaciones_pendientes' => 0]);
+
             // Marcar mensajes de usuario como leídos
             TicketChat::where('ticket_id', $id)
                 ->where('remitente', 'usuario')

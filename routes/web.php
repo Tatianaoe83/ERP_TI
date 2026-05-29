@@ -18,6 +18,7 @@ use App\Http\Controllers\SolicitudesController;
 use App\Http\Controllers\SoporteTIController;
 use App\Http\Controllers\TicketsController;
 use App\Http\Livewire\ReportesLista;
+use App\Models\TicketChat;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -144,6 +145,14 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/tickets/excedidos', [TicketsController::class, 'obtenerTicketsExcedidos'])->name('tickets.excedidos');
     Route::get('/tickets/reporte-mensual', [TicketsController::class, 'reporteMensual'])->name('tickets.reporte-mensual');
     Route::get('/tickets/exportar-reporte-mensual-excel', [TicketsController::class, 'exportarReporteMensualExcel'])->name('tickets.exportar-reporte-mensual-excel');
+    // Endpoint ligero para polling en tiempo real de notificaciones pendientes (debe estar ANTES de /tickets/{id})
+    Route::get('/tickets/notificaciones-pendientes', function () {
+        $pendientes = \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
+            ->selectRaw('ticket_id, SUM(notificaciones_pendientes) as total')
+            ->groupBy('ticket_id')
+            ->pluck('total', 'ticket_id');
+        return response()->json(['pendientes' => $pendientes]);
+    });
     Route::post('/tickets/update', [TicketsController::class, 'update']);
     Route::post('/tickets/enviar-respuesta', [TicketsController::class, 'enviarRespuesta']);
     Route::post('/tickets/mensaje-interno', [TicketsController::class, 'agregarMensajeInterno']);
@@ -210,10 +219,7 @@ Route::post('/solicitudes/{id}/solicitar-recotizacion', [SolicitudesController::
 Route::post('/solicitudes/{id}/aprobar-{nivel}', [SolicitudAprobacionController::class, 'aprobarPorNivel'])->name('solicitudes.aprobar-nivel');
 Route::post('/solicitudes/{id}/rechazar-{nivel}', [SolicitudAprobacionController::class, 'rechazarPorNivel'])->name('solicitudes.rechazar-nivel');
 Route::get('/elegir-ganador/{token}', [SolicitudesController::class, 'elegirGanadorConToken'])->name('solicitudes.elegir-ganador-token');
-//test de modal
-Route::get('/test-modal', function () {
-    return view('test-modal');
-});
+
 
 Route::fallback(function () {
     if (auth()->check()) {
@@ -223,3 +229,13 @@ Route::fallback(function () {
 
 
 });
+
+Route::post('/tickets/{id}/mark-notifications-read', function ($id) {
+    // Buscamos el último chat de este ticket que tenga notificaciones pendientes y las ponemos en 0
+    TicketChat::where('ticket_id', $id)
+        ->where('notificaciones_pendientes', '>', 0)
+        ->update(['notificaciones_pendientes' => 0]);
+
+    return response()->json(['success' => true]);
+})->middleware(['web']);
+
