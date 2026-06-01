@@ -1006,7 +1006,7 @@
 
                                     <button
                                         @click="enviarRespuesta()"
-                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0"
+                                        :disabled="selected.estatus === 'Cerrado' || ticketEstatus === 'Cerrado' || (selected.estatus === 'Pendiente' || ticketEstatus === 'Pendiente') || !tieneContenido() || !asuntoCorreo || asuntoCorreo.trim().length === 0 || cargando"
                                         class="font-medium py-2 px-6 rounded-lg transition text-sm flex items-center gap-2 text-white
                        bg-blue-600 hover:bg-blue-700
                        dark:bg-blue-600 dark:hover:bg-blue-500
@@ -3883,9 +3883,13 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
             },
 
             async enviarRespuesta() {
+                // Evitar envíos simultáneos
+                if (this.cargando) return;
+                this.cargando = true;
                 // 1. Validar que el ticket no esté en Pendiente
                 if (this.selected.estatus === 'Pendiente' || this.ticketEstatus === 'Pendiente') {
                     this.mostrarNotificacion('No se pueden enviar mensajes cuando el ticket está en estado "Pendiente". Cambia el estado a "En progreso".', 'error');
+                    this.cargando = false;
                     return;
                 }
                 
@@ -3903,15 +3907,15 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
                 // 3. Validaciones antes de enviar
                 if (!contenidoMensaje.trim()) {
                     this.mostrarNotificacion('El mensaje no puede estar vacío', 'error');
+                    this.cargando = false;
                     return;
                 }
                 
                 if (!this.asuntoCorreo.trim()) {
                     this.mostrarNotificacion('El asunto es requerido', 'error');
+                    this.cargando = false;
                     return;
                 }
-
-                this.cargando = true;
 
                 try {
                     const asuntoNormalizado = this.normalizarAsunto(this.asuntoCorreo);

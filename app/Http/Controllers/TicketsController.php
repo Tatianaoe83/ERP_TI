@@ -1836,14 +1836,22 @@ class TicketsController extends Controller
             $extension   = $file->getClientOriginalExtension() ?: 'png';
             $nombreUnico = uniqid('img_', true) . '.' . $extension;
 
-            $rutaStorage = $file->storeAs('tickets/adjuntos', $nombreUnico, 'public');
-
-            if (!$rutaStorage) {
-                Log::error('TinyMCE upload: storeAs devolvió false');
-                return response()->json(['error' => 'No se pudo guardar el archivo'], 500);
+            $disk = \Illuminate\Support\Facades\Storage::disk('public');
+            // Asegurar que exista el directorio
+            if (!$disk->exists('tickets/adjuntos')) {
+                $disk->makeDirectory('tickets/adjuntos');
             }
 
-            return response()->json(['location' => asset('storage/' . $rutaStorage)]);
+            $rutaStorage = 'tickets/adjuntos/' . $nombreUnico;
+
+            try {
+                $disk->putFileAs('tickets/adjuntos', $file, $nombreUnico);
+            } catch (\Exception $e) {
+                Log::error('TinyMCE upload error al guardar archivo: ' . $e->getMessage());
+                return response()->json(['error' => 'No se pudo guardar el archivo: ' . $e->getMessage()], 500);
+            }
+
+            return response()->json(['location' => asset('storage/' . $rutaStorage), 'storage_path' => $rutaStorage]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             $error = implode(', ', $e->errors()['file'] ?? ['Archivo no válido']);
             Log::error("TinyMCE upload validación: {$error}");

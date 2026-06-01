@@ -48,7 +48,7 @@ class SmtpEmailReceiver
             }
 
             // Crear entrada en el chat simulando una respuesta recibida
-            TicketChat::create([
+            $chat = TicketChat::create([
                 'ticket_id' => $ticketId,
                 'mensaje' => $respuestaData['mensaje'],
                 'remitente' => 'usuario',
@@ -57,8 +57,17 @@ class SmtpEmailReceiver
                 'message_id' => $this->generarMessageId(),
                 'thread_id' => $this->obtenerThreadIdDelTicket($ticketId),
                 'es_correo' => true,
-                'leido' => false
+                'leido' => false,
+                'notificaciones_pendientes' => 1
             ]);
+
+            // Incrementar notificaciones pendientes directamente en el modelo
+            try {
+                $chat->notificaciones_pendientes = ($chat->notificaciones_pendientes ?? 0) + 1;
+                $chat->save();
+            } catch (\Exception $e) {
+                \Log::debug('No se pudo actualizar ticket_chats.notificaciones_pendientes (modelo): ' . $e->getMessage());
+            }
 
             Log::info("Respuesta manual agregada al ticket #{$ticketId}");
             return true;

@@ -315,7 +315,7 @@ class ImapEmailReceiver
             }
 
             // Crear entrada en el chat del ticket
-            TicketChat::create([
+            $chat = TicketChat::create([
                 'ticket_id' => $ticketId,
                 'mensaje' => $mensaje,
                 'remitente' => 'usuario',
@@ -324,8 +324,17 @@ class ImapEmailReceiver
                 'message_id' => $messageId,
                 'thread_id' => $threadId,
                 'es_correo' => true,
-                'leido' => false
+                'leido' => false,
+                'notificaciones_pendientes' => 1
             ]);
+
+            // Incrementar notificaciones pendientes directamente en el modelo
+            try {
+                $chat->notificaciones_pendientes = ($chat->notificaciones_pendientes ?? 0) + 1;
+                $chat->save();
+            } catch (\Exception $e) {
+                \Log::debug('No se pudo actualizar ticket_chats.notificaciones_pendientes (modelo): ' . $e->getMessage());
+            }
 
             Log::info("Respuesta por correo agregada al ticket #{$ticketId} desde {$empleado->Correo}");
             return true;
@@ -367,7 +376,7 @@ class ImapEmailReceiver
             $ticket->save();
 
             // Crear primera entrada en el chat
-            TicketChat::create([
+            $chat = TicketChat::create([
                 'ticket_id' => $ticket->TicketID,
                 'mensaje' => "Ticket creado automáticamente desde correo:\n\n" . $body,
                 'remitente' => 'usuario',
@@ -376,7 +385,8 @@ class ImapEmailReceiver
                 'message_id' => $messageId,
                 'thread_id' => $threadId,
                 'es_correo' => true,
-                'leido' => false
+                'leido' => false,
+                'notificaciones_pendientes' => 1
             ]);
 
             Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo} | Asunto: {$descripcionConFormato}");

@@ -8,7 +8,7 @@ use App\Models\Tickets;
 use App\Models\TicketChat;
 use App\Models\Empleados;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Storage;
 class SimpleWebklexImapService
 {
     protected $client;
@@ -616,7 +616,8 @@ class SimpleWebklexImapService
                 'message_id' => $this->normalizarMessageId($finalMessageId),
                 'thread_id' => $this->normalizarThreadId($finalThreadId),
                 'es_correo' => true,
-                'leido' => false
+                'leido' => false,
+                'notificaciones_pendientes' => 1
             ];
             
             // Agregar contenido HTML si existe y está limpio
@@ -658,6 +659,15 @@ class SimpleWebklexImapService
             // Guardar en la base de datos
             try {
                 $ticketChat = TicketChat::create($datosChat);
+
+                // Incrementar el contador en el modelo directamente (más fiable)
+                try {
+                    $ticketChat->notificaciones_pendientes = ($ticketChat->notificaciones_pendientes ?? 0) + 1;
+                    $ticketChat->save();
+                } catch (\Exception $e) {
+                    \Log::debug('No se pudo actualizar ticket_chats.notificaciones_pendientes (modelo): ' . $e->getMessage());
+                }
+
                 return $ticketChat;
             } catch (\Exception $e) {
                 throw $e;
@@ -726,7 +736,8 @@ class SimpleWebklexImapService
                 'message_id' => $this->normalizarMessageId($finalMessageId),
                 'thread_id' => $this->normalizarThreadId($finalThreadId),
                 'es_correo' => true,
-                'leido' => false
+                'leido' => false,
+                'notificaciones_pendientes' => 1
             ];
             
             // Agregar contenido HTML si existe
@@ -766,6 +777,8 @@ class SimpleWebklexImapService
             // Guardar en la base de datos
             try {
                 $ticketChat = TicketChat::create($datosChat);
+
+                // Notificaciones marcadas en el registro `ticket_chats` al crear el chat
             } catch (\Exception $e) {
                 throw $e;
             }
@@ -912,36 +925,60 @@ class SimpleWebklexImapService
     /**
      * Extraer adjuntos del mensaje
      */
-    protected function extraerAdjuntos($message)
-    {
-        try {
-            $attachments = $message->getAttachments();
-            
-            if (!$attachments || $attachments->isEmpty()) {
-                return [];
-            }
-            
-            $adjuntos = [];
-            
-            foreach ($attachments as $attachment) {
-                try {
-                    $adjuntos[] = [
-                        'nombre' => $attachment->getName(),
-                        'tipo' => $attachment->getContentType(),
-                        'tamaño' => $attachment->getSize(),
-                        'id' => $attachment->getId()
-                    ];
-                } catch (\Exception $e) {
-                    // Ignorar error de adjunto individual
-                }
-            }
-            
-            return $adjuntos;
-            
-        } catch (\Exception $e) {
+   protected function extraerAdjuntos($message)
+{
+    try {
+        $attachments = $message->getAttachments();
+
+        if (!$attachments || $attachments->isEmpty()) {
             return [];
         }
+
+        $adjuntos = [];
+
+        foreach ($attachments as $attachment) {
+            try {
+
+                $nombreOriginal = $attachment->getName() ?: 'archivo';
+                $nombreArchivo = uniqid() . '_' . $nombreOriginal;
+
+                $storagePath = 'tickets/adjuntos/' . $nombreArchivo;
+
+                // Guardar físicamente el archivo
+                Storage::disk('public')->put(
+                    $storagePath,
+                    $attachment->getContent()
+                );
+
+                $adjuntos[] = [
+                    'name' => $nombreOriginal,
+                    'storage_path' => $storagePath,
+                    'url' => Storage::url($storagePath),
+                    'size' => $attachment->getSize(),
+                    'mime_type' => $attachment->getContentType(),
+                    'tipo' => str_starts_with(
+                        $attachment->getContentType() ?? '',
+                        'image/'
+                    ) ? 'imagen' : 'archivo'
+                ];
+
+            } catch (\Exception $e) {
+                \Log::warning('Error procesando adjunto IMAP', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return $adjuntos;
+
+    } catch (\Exception $e) {
+        \Log::error('Error extrayendo adjuntos IMAP', [
+            'error' => $e->getMessage()
+        ]);
+
+        return [];
     }
+}
     
     /**
      * Método de diagnóstico
@@ -1245,29 +1282,43 @@ class SimpleWebklexImapService
     /**
      * Validar estructura de adjuntos
      */
-    private function validarAdjuntos($adjuntos)
-    {
-        if (!is_array($adjuntos)) {
-            return [];
-        }
-        
-        $adjuntosValidados = [];
-        
-        foreach ($adjuntos as $adjunto) {
-            if (is_array($adjunto)) {
-                $adjuntoValido = [
-                    'nombre' => isset($adjunto['nombre']) ? substr(trim($adjunto['nombre']), 0, 255) : 'archivo',
-                    'tipo' => isset($adjunto['tipo']) ? substr(trim($adjunto['tipo']), 0, 100) : 'application/octet-stream',
-                    'tamaño' => isset($adjunto['tamaño']) ? (int) $adjunto['tamaño'] : 0,
-                    'id' => isset($adjunto['id']) ? substr(trim($adjunto['id']), 0, 255) : null
-                ];
-                
-                $adjuntosValidados[] = $adjuntoValido;
-            }
-        }
-        
-        return $adjuntosValidados;
+   private function validarAdjuntos($adjuntos)
+{
+    if (!is_array($adjuntos)) {
+        return [];
     }
+
+    $adjuntosValidados = [];
+
+    foreach ($adjuntos as $adjunto) {
+        if (is_array($adjunto)) {
+
+            $adjuntoValido = [
+                'nombre' => isset($adjunto['nombre']) ? substr(trim($adjunto['nombre']), 0, 255) : 'archivo',
+                'tipo' => isset($adjunto['tipo']) ? substr(trim($adjunto['tipo']), 0, 100) : 'application/octet-stream',
+                'tamaño' => isset($adjunto['tamaño']) ? (int) $adjunto['tamaño'] : 0,
+                'id' => isset($adjunto['id']) ? substr(trim($adjunto['id']), 0, 255) : null,
+
+                // NUEVOS CAMPOS
+                'storage_path' => isset($adjunto['storage_path'])
+                    ? substr(trim($adjunto['storage_path']), 0, 500)
+                    : null,
+
+                'url' => isset($adjunto['url'])
+                    ? substr(trim($adjunto['url']), 0, 1000)
+                    : null,
+
+                'mime_type' => isset($adjunto['mime_type'])
+                    ? substr(trim($adjunto['mime_type']), 0, 100)
+                    : null,
+            ];
+
+            $adjuntosValidados[] = $adjuntoValido;
+        }
+    }
+
+    return $adjuntosValidados;
+}
     
     /**
      * Validar datos antes de guardar en BD
