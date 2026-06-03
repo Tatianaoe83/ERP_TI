@@ -81,7 +81,8 @@ class InventarioController extends AppBaseController
             ->when($request->obra, fn($q) => $q->where('obras.NombreObra', 'like', '%' . $request->obra . '%'))
             ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', 'like', '%' . $request->puesto . '%'))
             ->when($request->has('estatus'), function ($q) use ($request) {
-                if ($request->estatus !== '') {
+                // Treat '2' as "Todos": do not apply any Estado filter
+                if ($request->estatus !== '' && $request->estatus !== '2') {
                     $q->where('empleados.Estado', (int) $request->estatus);
                 }
             }, function ($q) {
@@ -118,14 +119,19 @@ class InventarioController extends AppBaseController
                 return view('inventarios.datatables_actions', [
                     'id' => $row->EmpleadoID,
                     'activo' => $row->Estado == 1 || $row->Estado === true,
+                    
                 ])->render();
             })
             ->editColumn('Estado', function ($row) {
+                
                 if ($row->Estado == 1 || $row->Estado === true) {
                     return '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Activo</span>';
-                } else {
+                }
+    
+                else {
                     return '<span class="badge badge-danger" style="background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;">Inactivo</span>';
                 }
+
             })
             ->rawColumns(['action', 'Estado'])
             ->make(true);

@@ -151,7 +151,7 @@
                         <select class="form-control" id="filtro-estatus">
                             <option value="1" selected>Activo</option>
                             <option value="0">Inactivo</option>
-                            <option value="">Todos</option>
+                            <option value="2">Todos</option>
                         </select>
 
                     </div>
