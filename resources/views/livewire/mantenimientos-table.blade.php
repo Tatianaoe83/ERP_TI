@@ -40,7 +40,6 @@
                 class="form-control"
             >
                 <option value="pendiente">Pendientes</option>
-                <option value="requiere_asignacion">Requiere asignación</option>
                 <option value="realizado">Completados</option>
                 <option value="todos">Todos</option>
             </select>
@@ -91,8 +90,7 @@
                     @foreach($mantenimientos as $item)
                         @php
                             $estatusVisual = $item->EstatusMantenimiento;
-                            $estatusClase = $estatusVisual === 'Realizado' ? 'mant-status-success' : (in_array($estatusVisual, ['Baja', 'Sin persona física']) ? 'mant-status-warning' : 'mant-status-danger');
-                            $empleadoActualId = optional($item->inventarioEquipo)->EmpleadoID ?: $item->EmpleadoID;
+                            $estatusClase = $estatusVisual === 'Realizado' ? 'mant-status-success' : ($estatusVisual === 'Baja' ? 'mant-status-warning' : 'mant-status-danger');
                         @endphp
                         <tr wire:key="mant-{{ $item->id }}">
                             <td>
@@ -117,23 +115,7 @@
                                     </button>
 
                                     @can('editar-mantenimientos')
-                                        @if($item->RequierePersonaFisica && $item->Estatus !== 'Realizado')
-                                            @can('transferir-inventario')
-                                                @if($empleadoActualId)
-                                                    <a
-                                                        href="{{ route('inventarios.transferir', $empleadoActualId) }}"
-                                                        class="btn btn-link p-0 text-warning text-decoration-none mant-action-link"
-                                                        title="Asignar el equipo a una persona tipo FISICA conservando la fecha programada"
-                                                    >
-                                                        <i class="fas fa-exchange-alt mr-1"></i> Asignar a persona FISICA
-                                                    </a>
-                                                @else
-                                                    <span class="text-warning font-weight-bold mant-action-link">Asignar a persona FISICA</span>
-                                                @endif
-                                            @else
-                                                <span class="text-warning font-weight-bold mant-action-link">Requiere persona FISICA</span>
-                                            @endcan
-                                        @elseif($item->Estatus !== 'Realizado')
+                                        @if($item->Estatus !== 'Realizado')
                                             <button
                                                 type="button"
                                                 wire:click="abrirReprogramar({{ $item->id }})"

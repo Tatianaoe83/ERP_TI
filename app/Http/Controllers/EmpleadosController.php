@@ -192,26 +192,31 @@ class EmpleadosController extends AppBaseController
 
     public function destroy($id)
     {
-        // Cambiar estado a 0 (inactivo) en lugar de soft delete
         $empleados = $this->empleadosRepository->find($id);
-
-        //Revisar inventario
-        $inventario = $empleados->inventarioequipo->count();
-        $inventarioinsumo = $empleados->inventarioinsumo->count();
-        $inventariolineas = $empleados->inventariolineas->count();
-        
-        if ($inventario > 0 || $inventarioinsumo > 0 || $inventariolineas > 0) {
-            $tiposInventario = [];
-            if ($inventario > 0) $tiposInventario[] = "equipos ($inventario)";
-            if ($inventarioinsumo > 0) $tiposInventario[] = "insumos ($inventarioinsumo)";
-            if ($inventariolineas > 0) $tiposInventario[] = "líneas telefónicas ($inventariolineas)";
-            
-            $mensaje = 'El empleado ' . $empleados->NombreEmpleado . ' tiene inventario asociado y no puede ser dado de baja.';
-            return redirect(route('empleados.index'))->with('sweetalert_error', $mensaje);
-        }
 
         if (empty($empleados)) {
             return redirect(route('empleados.index'))->with('sweetalert_error', 'Empleado no encontrado.');
+        }
+
+        if (!$empleados->Estado) {
+            [$puedeActivar, $mensaje] = Empleados::puedeActivarse($empleados);
+
+            if (!$puedeActivar) {
+                return redirect(route('empleados.index'))->with('sweetalert_error', $mensaje);
+            }
+
+            $empleados->update(['Estado' => 1]);
+
+            return redirect(route('empleados.index'))->with('sweetalert_success', 'Empleado activado exitosamente.');
+        }
+
+        $inventario = $empleados->inventarioequipo->count();
+        $inventarioinsumo = $empleados->inventarioinsumo->count();
+        $inventariolineas = $empleados->inventariolineas->count();
+
+        if ($inventario > 0 || $inventarioinsumo > 0 || $inventariolineas > 0) {
+            $mensaje = 'El empleado ' . $empleados->NombreEmpleado . ' tiene inventario asociado y no puede ser dado de baja.';
+            return redirect(route('empleados.index'))->with('sweetalert_error', $mensaje);
         }
 
         $empleados->update(['Estado' => 0]);

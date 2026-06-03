@@ -116,7 +116,7 @@ class MantenimientosTable extends Component
             'Empleado' => $mantenimiento->NombreEmpleado,
             'Gerencia' => $mantenimiento->NombreGerencia ?: '-',
             'Estatus' => $mantenimiento->EstatusMantenimiento,
-            'Asignación' => $mantenimiento->RequierePersonaFisica ? $mantenimiento->MotivoAsignacionPersonaFisica . '. Debe asignarse a una persona tipo FISICA.' : 'Asignado a persona física',
+            'Asignación' => $mantenimiento->NombreEmpleado ? 'Persona física activa' : '-',
             'Tipo' => $mantenimiento->TipoMantenimiento,
             'Folio equipo' => $mantenimiento->Folio ?: '-',
             'Fecha compra' => $mantenimiento->FechaDeCompra ? Carbon::parse($mantenimiento->FechaDeCompra)->format('d/m/Y') : '-',
@@ -158,16 +158,11 @@ class MantenimientosTable extends Component
         }
 
         if ($this->estatus === 'pendiente') {
-            $query->where('mantenimientos.Estatus', 'Pendiente');
+            $query->where('mantenimientos.Estatus', 'Pendiente')
+                ->where('e.Estado', true)
+                ->whereRaw("UPPER(COALESCE(e.tipo_persona, '')) = 'FISICA'");
         } elseif ($this->estatus === 'realizado') {
             $query->where('mantenimientos.Estatus', 'Realizado');
-        } elseif ($this->estatus === 'requiere_asignacion') {
-            $query->where('mantenimientos.Estatus', '!=', 'Realizado')
-                ->where(function ($estadoQuery) {
-                    $estadoQuery->where('e.Estado', false)
-                        ->orWhereNull('e.EmpleadoID')
-                        ->orWhereRaw("UPPER(COALESCE(e.tipo_persona, '')) <> 'FISICA'");
-                });
         }
 
         $search = trim($this->search);
@@ -179,14 +174,6 @@ class MantenimientosTable extends Component
                     ->orWhere('mantenimientos.TipoMantenimiento', 'like', "%{$search}%")
                     ->orWhere('mantenimientos.Estatus', 'like', "%{$search}%")
                     ->orWhere('mantenimientos.Comentario', 'like', "%{$search}%");
-
-                if (stripos('Baja', $search) !== false || stripos('persona fisica', $search) !== false || stripos('persona física', $search) !== false) {
-                    $subquery->orWhere(function ($estadoQuery) {
-                        $estadoQuery->where('e.Estado', false)
-                            ->orWhereNull('e.EmpleadoID')
-                            ->orWhereRaw("UPPER(COALESCE(e.tipo_persona, '')) <> 'FISICA'");
-                    });
-                }
             });
         }
 

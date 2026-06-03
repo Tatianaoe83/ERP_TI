@@ -1,4 +1,4 @@
-{!! Form::open(['route' => ['empleados.destroy', $id], 'method' => 'delete']) !!}
+{!! Form::open(['route' => ['empleados.destroy', $id], 'method' => 'delete', 'class' => 'form-estado-empleado']) !!}
 <div class='btn-group'>
    @can('ver-empleados')
     <a href="{{ route('empleados.show', $id) }}" class='btn btn-outline-primary btn-xs'>
@@ -13,43 +13,25 @@
     @endcan
 
     @can('borrar-empleados')
-    <button type="submit" class="btn btn-xs btn-outline-warning btn-flat show_confirm" title="Dar de baja"><i class="fa fa-user-times"></i></button>
+    @if($activo)
+    <button
+        type="button"
+        class="btn btn-xs btn-outline-warning btn-flat btn-cambiar-estado-empleado"
+        data-accion="baja"
+        title="Dar de baja"
+    >
+        <i class="fa fa-user-times"></i>
+    </button>
+    @else
+    <button
+        type="button"
+        class="btn btn-xs btn-outline-success btn-flat btn-cambiar-estado-empleado"
+        data-accion="activar"
+        title="Activar empleado"
+    >
+        <i class="fa fa-user-check"></i>
+    </button>
+    @endif
     @endcan
 </div>
 {!! Form::close() !!}
-
-
-
-
-<script type="text/javascript">
- 
-  $('.show_confirm').click(function(event) {
-       var form =  $(this).closest("form");
-       event.preventDefault();
-       swal.fire({
-           title: `¿Está seguro de que desea dar de baja este empleado? `,
-           icon: "warning",
-           //buttons: true,
-           showDenyButton: true,
-           confirmButtonText: 'Confirmar',
-           denyButtonText: `Cerrar`,
-           dangerMode: true,
-       }).then(function(willDelete) {
-         if (willDelete.isConfirmed) {
-          swal.fire({
-              title: 'Verificando...',
-              text: 'Espere un momento mientras verificamos si el empleado tiene inventario asociado.',
-              icon: 'info',
-              
-            }).then(function(){
-              form.submit();
-            });
-          }else if (willDelete.isDenied){
-            swal.fire("Cambios no generados");
-          }
-       });
-   });
-
- 
-
-</script>

@@ -91,7 +91,7 @@
             @endcan
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
             <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg">
                 <div class="flex items-center">
                     <div class="bg-red-500 text-white h-10 w-10 rounded-lg flex items-center justify-center mr-3">
@@ -100,16 +100,6 @@
                     <span class="text-[#101D49] dark:text-gray-300 font-medium">Pendientes</span>
                 </div>
                 <span class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $stats['mantenimientos']['pendientes'] }}</span>
-            </div>
-
-            <div class="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 rounded-lg">
-                <div class="flex items-center">
-                    <div class="bg-orange-500 text-white h-10 w-10 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <span class="text-[#101D49] dark:text-gray-300 font-medium">Requiere asignación</span>
-                </div>
-                <span class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $stats['mantenimientos']['requiere_asignacion'] }}</span>
             </div>
 
             <div class="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-lg">

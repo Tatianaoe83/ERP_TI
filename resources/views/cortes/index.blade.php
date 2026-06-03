@@ -180,6 +180,419 @@
     .dark #tabla_wrapper table.dataTable tbody td:first-child {
         background-color: #0f172a;
     }
+
+    /* Budget Card Styles */
+    .budget-card {
+        background: #f9fafb;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+    .dark .budget-card {
+        background: #0f172a;
+        border-color: #334155;
+    }
+
+    .budget-card__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #ffffff;
+    }
+    .dark .budget-card__header {
+        background: #1e293b;
+        border-bottom-color: #334155;
+    }
+
+    .budget-card__title-section h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        line-height: 1.3;
+    }
+    .dark .budget-card__title-section h3 {
+        color: #f1f5f9;
+    }
+
+    .budget-card__title-section p {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin: 0.25rem 0 0;
+    }
+    .dark .budget-card__title-section p {
+        color: #94a3b8;
+    }
+
+    .budget-card__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .budget-search {
+        width: 280px;
+        height: 2.5rem;
+        padding: 0 1rem;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 0.625rem;
+        font-size: 0.875rem;
+        color: #1e293b;
+        background: #f8fafc;
+        transition: all 0.2s;
+        outline: none;
+    }
+    .budget-search:focus {
+        border-color: #6366f1;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    .budget-search::placeholder {
+        color: #94a3b8;
+    }
+    .budget-search:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .dark .budget-search {
+        background: #0f172a;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+    .dark .budget-search:focus {
+        background: #1e293b;
+        border-color: #6366f1;
+    }
+
+    .budget-counter {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.75rem;
+        background: #f1f5f9;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #475569;
+    }
+    .dark .budget-counter {
+        background: #334155;
+        color: #cbd5e1;
+    }
+
+    .budget-card__body {
+        position: relative;
+        min-height: 300px;
+    }
+
+    .budget-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+
+    .budget-empty-state__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        background: #f1f5f9;
+        margin-bottom: 1rem;
+    }
+    .dark .budget-empty-state__icon {
+        background: #1e293b;
+    }
+
+    .budget-empty-state__icon i {
+        font-size: 1.75rem;
+        color: #cbd5e1;
+    }
+    .dark .budget-empty-state__icon i {
+        color: #475569;
+    }
+
+    .budget-empty-state h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #334155;
+        margin: 0 0 0.5rem;
+    }
+    .dark .budget-empty-state h4 {
+        color: #e2e8f0;
+    }
+
+    .budget-empty-state p {
+        font-size: 0.875rem;
+        color: #64748b;
+        max-width: 32rem;
+        margin: 0;
+        line-height: 1.5;
+    }
+    .dark .budget-empty-state p {
+        color: #94a3b8;
+    }
+
+    .budget-table-wrapper {
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    .budget-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        min-width: 1200px;
+    }
+
+    .budget-table thead th {
+        padding: 0.875rem 1rem;
+        text-align: right;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        background: #f8fafc;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    .dark .budget-table thead th {
+        background: #0f172a;
+        color: #94a3b8;
+        border-bottom-color: #334155;
+    }
+
+    .budget-table thead th.text-left {
+        text-align: left;
+    }
+
+    .budget-table thead th.sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
+    }
+
+    .budget-table thead th.total-col {
+        font-size: 0.8125rem;
+        font-weight: 800;
+        color: #4f46e5;
+        background: #eef2ff;
+    }
+    .dark .budget-table thead th.total-col {
+        background: #1e1b4b;
+        color: #a5b4fc;
+    }
+
+    .budget-table tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background-color 0.15s;
+    }
+    .dark .budget-table tbody tr {
+        border-bottom-color: #1e293b;
+    }
+
+    .budget-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    .dark .budget-table tbody tr:hover {
+        background: #1e293b;
+    }
+
+    .budget-table tbody td {
+        padding: 0.875rem 1rem;
+        text-align: right;
+        color: #475569;
+        white-space: nowrap;
+    }
+    .dark .budget-table tbody td {
+        color: #cbd5e1;
+    }
+
+    .budget-table tbody td.text-left {
+        text-align: left;
+    }
+
+    .budget-table tbody td.sticky-col {
+        position: sticky;
+        left: 0;
+        background: #ffffff;
+        z-index: 1;
+        box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.08);
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .dark .budget-table tbody td.sticky-col {
+        background: #0f172a;
+        color: #f1f5f9;
+    }
+
+    .budget-table tbody tr:hover td.sticky-col {
+        background: #f8fafc;
+    }
+    .dark .budget-table tbody tr:hover td.sticky-col {
+        background: #1e293b;
+    }
+
+    .budget-table tbody td.total-col {
+        font-weight: 700;
+        font-size: 0.9375rem;
+        color: #4f46e5;
+        background: #f8fafc;
+    }
+    .dark .budget-table tbody td.total-col {
+        background: #1e293b;
+        color: #a5b4fc;
+    }
+
+    .budget-amount {
+        font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'Courier New', monospace;
+    }
+
+    .budget-amount-empty {
+        color: #cbd5e1;
+        opacity: 0.5;
+    }
+    .dark .budget-amount-empty {
+        color: #475569;
+    }
+
+    .budget-card__footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
+    }
+    .dark .budget-card__footer {
+        background: #1e293b;
+        border-top-color: #334155;
+    }
+
+    .budget-card__footer-note {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin: 0;
+    }
+    .dark .budget-card__footer-note {
+        color: #94a3b8;
+    }
+
+    .btn-save-budget {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.5rem;
+        border: none;
+        border-radius: 0.625rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: #ffffff;
+        background: #10b981;
+        box-shadow: 0 2px 8px 0 rgba(16, 185, 129, 0.2);
+        cursor: pointer;
+        transition: all 0.2s;
+        outline: none;
+    }
+    .btn-save-budget:hover:not(:disabled) {
+        background: #059669;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px 0 rgba(16, 185, 129, 0.3);
+    }
+    .btn-save-budget:active:not(:disabled) {
+        transform: translateY(0);
+    }
+    .btn-save-budget:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .budget-no-results {
+        padding: 3rem 1.5rem;
+        text-align: center;
+        font-size: 0.875rem;
+        color: #94a3b8;
+        font-style: italic;
+    }
+    .dark .budget-no-results {
+        color: #64748b;
+    }
+
+    .budget-info-banner {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.875rem 1.25rem;
+        margin-bottom: 1.25rem;
+        border-radius: 0.75rem;
+        border-left: 4px solid #6366f1;
+        background: #eef2ff;
+        font-size: 0.85rem;
+        color: #4338ca;
+    }
+    .dark .budget-info-banner {
+        background: #1e1b4b;
+        border-left-color: #818cf8;
+        color: #a5b4fc;
+    }
+
+    .budget-info-banner__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        background: rgba(99, 102, 241, 0.15);
+        flex-shrink: 0;
+    }
+    .dark .budget-info-banner__icon {
+        background: rgba(129, 140, 248, 0.2);
+    }
+
+    .budget-info-banner__icon i {
+        font-size: 0.875rem;
+        color: #6366f1;
+    }
+    .dark .budget-info-banner__icon i {
+        color: #818cf8;
+    }
+
+    .budget-info-banner__content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+    }
+
+    .budget-info-banner__title {
+        font-weight: 700;
+        font-size: 0.8125rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin: 0;
+    }
+
+    .budget-info-banner__text {
+        font-size: 0.8125rem;
+        margin: 0;
+        opacity: 0.9;
+        line-height: 1.4;
+    }
 </style>
 
 <div id="ui-toast-wrapper"></div>
@@ -255,30 +668,7 @@
                 </button>
                 @endcan
             </div>
-            
         </div>
-        <div class="w-full mt-4">
-                <p class="text-lg text-slate-500 dark:text-slate-400 "> </p>
-            </div>
-
-    <div class="flex items-start gap-3 p-4 mb-6 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-lg">
-                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-lg mt-0.5"></i>
-                    <div>
-                        <p class="text-base text-blue-800 dark:text-blue-200 font-medium mb-1 pb-2">
-                            Tipos de persona incluidos en este reporte:
-                        </p>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100">
-                                <i class="fas fa-user mr-1.5"></i>
-                                FÍSICA
-                            </span>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-100">
-                                <i class="fas fa-user-plus mr-1.5"></i>
-                                EXTRAORDINARIO
-                            </span>
-                        </div>
-                    </div>
-                </div>
     </div>
 
     <div class="px-6 md:px-8 py-5 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950/50">
@@ -332,33 +722,94 @@
     </div>
 
     <div class="px-6 md:px-8 py-5">
-        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Datos del Presupuesto</p>
-    </div>
-    <div class="relative w-full custom-scroll overflow-x-auto bg-gray-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
-        <table id="tabla" class="w-full text-left border-collapse min-w-[780px]">
-            <thead class="bg-gray-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800"></thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-gray-50 dark:bg-slate-900"></tbody>
-        </table>
-
-        <div id="tabla-placeholder" class="py-24 text-center bg-gray-50 dark:bg-slate-900 transition-colors">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-50 dark:bg-slate-800 mb-4">
-                <i class="fas fa-search-dollar text-3xl text-slate-300 dark:text-slate-600"></i>
+        <div class="budget-info-banner">
+            <div class="budget-info-banner__content">
+                <p class="budget-info-banner__title">Tipos de empleados incluidos</p>
+                <p class="budget-info-banner__text">Este presupuesto solo toma en cuenta empleados tipo <strong>FÍSICA</strong> y <strong>EXTRAORDINARIO</strong>.</p>
             </div>
-            <h3 class="text-base font-semibold text-slate-700 dark:text-slate-200">Esperando datos</h3>
-            <p class="text-sm text-slate-400 dark:text-slate-500 mt-2">Selecciona una gerencia y pulsa <strong class="text-slate-600 dark:text-slate-300">Generar presupuesto</strong> para ver el desglose por mes (igual que «Ver presupuesto guardado»).</p>
         </div>
 
-        <div id="guardar-en-footer" class="hidden">
-            <button type="button" id="guardar"
-                class="h-10 px-5 flex items-center justify-center gap-2 rounded-xl text-sm font-bold text-white shadow-lg shadow-emerald-500/20 dark:shadow-emerald-900/40 transition-all duration-200
-                       bg-emerald-600 hover:bg-emerald-500 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md">
-                <i class="fas fa-save"></i> <span>Guardar</span>
-            </button>
+        <div class="budget-card">
+            <div class="budget-card__header">
+                <div class="budget-card__title-section">
+                    <h3>Datos del presupuesto</h3>
+                    <p>Desglose mensual por insumo</p>
+                </div>
+
+                <div class="budget-card__actions">
+                    <input
+                        type="text"
+                        id="budget-search"
+                        class="budget-search"
+                        placeholder="Buscar insumo..."
+                        autocomplete="off"
+                        disabled
+                    >
+                    <span class="budget-counter">
+                        <i class="fas fa-list-ul"></i>
+                        <span id="budget-counter-text">0 insumos</span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="budget-card__body">
+                <div id="tabla-placeholder" class="budget-empty-state">
+                    <div class="budget-empty-state__icon">
+                        <i class="fas fa-table"></i>
+                    </div>
+                    <h4>Sin presupuesto generado</h4>
+                    <p>Selecciona una gerencia y pulsa <strong>Generar presupuesto</strong> para ver el desglose mensual y poder guardarlo.</p>
+                </div>
+
+                <div id="tabla-container" class="budget-table-wrapper" style="display: none;">
+                    <table id="tabla" class="budget-table">
+                        <thead>
+                            <tr>
+                                <th class="text-left sticky-col">Insumo</th>
+                                <th>Enero</th>
+                                <th>Febrero</th>
+                                <th>Marzo</th>
+                                <th>Abril</th>
+                                <th>Mayo</th>
+                                <th>Junio</th>
+                                <th>Julio</th>
+                                <th>Agosto</th>
+                                <th>Septiembre</th>
+                                <th>Octubre</th>
+                                <th>Noviembre</th>
+                                <th>Diciembre</th>
+                                <th class="total-col">Total año</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-body">
+                        </tbody>
+                    </table>
+
+                    <div id="tabla-no-results" class="budget-no-results" style="display: none;">
+                        <i class="fas fa-search text-lg mb-2"></i>
+                        <p>No se encontraron insumos que coincidan con tu búsqueda.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="budget-card__footer">
+                <p class="budget-card__footer-note">
+                    <i class="fas fa-info-circle"></i>
+                    Costo total (año) = suma anual de todos los meses.
+                </p>
+
+                <button
+                    type="button"
+                    id="guardar"
+                    class="btn-save-budget"
+                    disabled
+                >
+                    <i class="fas fa-save"></i>
+                    <span>Guardar presupuesto</span>
+                </button>
+            </div>
         </div>
     </div>
-    <p class="px-6 md:px-8 py-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900">
-        Costo total (año) = suma anual de todos los meses.
-    </p>
 
     <div id="bloque-corte-guardado" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog" aria-labelledby="modal-corte-guardado-title">
         <div class="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm transition-opacity" id="modal-corte-guardado-backdrop"></div>
@@ -578,7 +1029,7 @@ $(function () {
         return hit && !Number.isNaN(Number(hit.Costo)) ? Number(hit.Costo) : 0;
     }
 
-    const thCorte = 'py-2 px-4 sm:px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider';
+    const thCorte = 'py-2 px-2 sm:px-3 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider';
 
     const columnasMeses = MESES.map((nombreMes, i) => ({
         data      : null,
@@ -593,86 +1044,88 @@ $(function () {
         }
     }));
 
-    const table = $('#tabla').DataTable({
-        destroy     : true,
-        responsive  : false,
-        searching   : false,
-        processing  : true,
-        serverSide  : true,
-        paging      : false,
-        lengthChange: false,
-        info        : false,
-        fixedHeader: true,
-        scrollX     : true,
-        dom         : 'rt<"dt-corte-footer flex flex-col sm:flex-row justify-end items-center gap-3 p-5 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-950">',
-        language: {
-            zeroRecords: "<div class='py-8 text-center text-slate-400 dark:text-slate-500 italic'>Sin resultados</div>",
-            processing : '<span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando…</span>'
-        },
-        ajax: {
-            url : '{{ route("cortes.ver") }}',
-            type: 'GET',
-            data: function (d) { d.gerenciaID = $('#gerenciaID').val(); },
-            dataSrc: function (json) {
-                if ($('#gerenciaID').val()) {
-                    $('#tabla-placeholder').hide();
-                } else {
-                    $('#tabla-placeholder').show();
-                }
-                if (!json || !Array.isArray(json.data)) return [];
-                return json.data.map(r => ({
-                    NombreInsumo : r.NombreInsumo,
-                    MontosPorMes : r.MontosPorMes || [],
-                    Distintos    : r.Distintos || [],
-                }));
-            },
-            error: function (xhr) {
-                console.error('Error AJAX:', xhr);
-                uiToast('error', 'Error al cargar datos de la tabla');
-            }
-        },
-        columns: [
-            {
-                data      : 'NombreInsumo',
-                title     : 'Insumo',
-                className : `${thCorte} text-left border-b border-slate-100 dark:border-slate-800 align-middle`,
-                render    : d => `<span class="text-sm font-semibold text-slate-800 dark:text-white">${escapeHtml(decodeHtmlFully(d || ''))}</span>`
-            },
-            ...columnasMeses,
-            {
-                data      : null,
-                title     : 'Total año',
-                orderable : false,
-                className : `${thCorte} text-right border-b border-slate-100 dark:border-slate-800 align-middle whitespace-nowrap`,
-                render    : function (row) {
-                    const total = (row.MontosPorMes || []).reduce((acc, mp) => acc + (Number(mp.Costo) || 0), 0);
-                    return total > 0
-                        ? `<span class="font-mono text-sm font-bold text-slate-800 dark:text-white">${currencyFmt.format(total)}</span>`
-                        : '<span class="text-slate-300 dark:text-slate-600">-</span>';
-                }
-            }
-        ],
-        createdRow: function (row) {
-            $(row).addClass('border-t border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50');
-        },
-        drawCallback: function () {
-            const base     = 'px-3 py-1.5 ml-1.5 rounded-lg border text-xs font-semibold transition-all duration-200 cursor-pointer shadow-sm ';
-            const normal   = 'bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400';
-            const active   = '!bg-indigo-600 !border-indigo-600 !text-white shadow-indigo-500/30 hover:!bg-indigo-700';
-            const disabled = 'opacity-40 cursor-not-allowed shadow-none';
-            const $pag = $('.dataTables_paginate .paginate_button');
-            if ($pag.length) {
-                $pag.addClass(base + normal);
-                $('.dataTables_paginate .paginate_button.current').removeClass(normal).addClass(active);
-                $('.dataTables_paginate .paginate_button.disabled').addClass(disabled);
-            }
-        },
-        initComplete: function () {
-            const $footer = $('.dt-corte-footer');
-            if ($footer.length && $('#guardar').length) {
-                $('#guardar').appendTo($footer).removeClass('hidden').show();
-            }
+    let budgetData = [];
+    let filteredData = [];
+
+    function renderBudgetTable(data) {
+        budgetData = data || [];
+        filteredData = [...budgetData];
+
+        const tbody = $('#tabla-body');
+        tbody.empty();
+
+        if (!budgetData.length) {
+            $('#tabla-placeholder').show();
+            $('#tabla-container').hide();
+            $('#guardar').prop('disabled', true);
+            $('#budget-search').prop('disabled', true).val('');
+            updateCounter(0);
+            return;
         }
+
+        $('#tabla-placeholder').hide();
+        $('#tabla-container').show();
+        $('#guardar').prop('disabled', false);
+        $('#budget-search').prop('disabled', false);
+
+        applySearchFilter();
+    }
+
+    function applySearchFilter() {
+        const searchTerm = $('#budget-search').val().toLowerCase().trim();
+        const tbody = $('#tabla-body');
+        tbody.empty();
+
+        filteredData = budgetData.filter(row => {
+            const nombre = decodeHtmlFully(String(row.NombreInsumo || '')).toLowerCase();
+            return nombre.includes(searchTerm);
+        });
+
+        if (!filteredData.length) {
+            $('#tabla-no-results').show();
+            tbody.parent().css('min-height', '0');
+        } else {
+            $('#tabla-no-results').hide();
+            filteredData.forEach(row => {
+                const nombreInsumo = escapeHtml(decodeHtmlFully(row.NombreInsumo || ''));
+                let tr = '<tr>';
+                
+                // Columna Insumo (sticky)
+                tr += `<td class="text-left sticky-col">${nombreInsumo}</td>`;
+
+                // Columnas de meses
+                MESES.forEach((mes, i) => {
+                    const v = costoPorMesNum(row.MontosPorMes, i + 1);
+                    if (v > 0) {
+                        tr += `<td><span class="budget-amount">${currencyFmt.format(v)}</span></td>`;
+                    } else {
+                        tr += `<td><span class="budget-amount-empty">-</span></td>`;
+                    }
+                });
+
+                // Columna Total año
+                const total = (row.MontosPorMes || []).reduce((acc, mp) => acc + (Number(mp.Costo) || 0), 0);
+                if (total > 0) {
+                    tr += `<td class="total-col"><span class="budget-amount">${currencyFmt.format(total)}</span></td>`;
+                } else {
+                    tr += `<td class="total-col"><span class="budget-amount-empty">-</span></td>`;
+                }
+
+                tr += '</tr>';
+                tbody.append(tr);
+            });
+        }
+
+        updateCounter(filteredData.length);
+    }
+
+    function updateCounter(count) {
+        const text = count === 1 ? '1 insumo' : `${count} insumos`;
+        $('#budget-counter-text').text(text);
+    }
+
+    $('#budget-search').on('input', function() {
+        applySearchFilter();
     });
 
     $('#enviar').on('click', async function () {
@@ -724,7 +1177,33 @@ $(function () {
         }
 
         uiToast('info', `Generando presupuesto de ${escapeHtml(nombre)}...`);
-        table.ajax.reload(null, false);
+        
+        // Cargar datos
+        try {
+            const res = await fetch(
+                '{{ route("cortes.ver") }}?gerenciaID=' + encodeURIComponent(gid),
+                { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }
+            );
+            const json = await res.json();
+            
+            if (!json || !Array.isArray(json.data)) {
+                renderBudgetTable([]);
+                return;
+            }
+
+            const data = json.data.map(r => ({
+                NombreInsumo : r.NombreInsumo,
+                MontosPorMes : r.MontosPorMes || [],
+                Distintos    : r.Distintos || [],
+            }));
+
+            renderBudgetTable(data);
+            $('#budget-search').val('');
+        } catch (e) {
+            console.error('Error al cargar datos:', e);
+            uiToast('error', 'Error al cargar datos de la tabla');
+            renderBudgetTable([]);
+        }
     });
 
     $('#generarTodos').on('click', async function () {
@@ -911,7 +1390,6 @@ $(function () {
         await abrirCorteGuardado(gid, anio, nombre);
     });
 
-    //contenido
     function renderTablaGuardados(data) {
         const thead = $('#tabla-guardados-head');
         const tbody = $('#tabla-guardados-body');
@@ -1019,8 +1497,7 @@ $(function () {
         }
 
         const payload = [];
-        $('#tabla tbody tr').each(function () {
-            const row = table.row(this).data();
+        budgetData.forEach(row => {
             if (!row) return;
             if (decodeHtmlFully(String(row.NombreInsumo || '')).trim().toLowerCase() === 'costo base') return;
             for (const mp of (row.MontosPorMes || [])) {

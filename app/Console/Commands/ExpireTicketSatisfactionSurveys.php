@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Calificacion;
 use Illuminate\Console\Command;
+use App\Services\TicketSatisfactionSurveyService;
 
 class ExpireTicketSatisfactionSurveys extends Command
 {
@@ -11,20 +12,9 @@ class ExpireTicketSatisfactionSurveys extends Command
 
     protected $description = 'Marca como not_answered las encuestas de satisfacción pendientes que han vencido.';
 
-    public function handle(): int
+    public function handle(TicketSatisfactionSurveyService $surveys): int
     {
-        $updated = Calificacion::query()
-            ->where('status', Calificacion::STATUS_PENDING)
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<', now())
-            ->whereNull('fastness')
-            ->whereNull('resolution')
-            ->whereNull('attention')
-            ->update([
-                'status' => Calificacion::STATUS_NOT_ANSWERED,
-                'updated_at' => now(),
-            ]);
-
+        $updated = $surveys->expirePendingSurveys();
         $this->info("Encuestas vencidas marcadas como not_answered: {$updated}");
 
         return self::SUCCESS;

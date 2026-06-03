@@ -24,6 +24,28 @@ class CreateEmpleadosRequest extends FormRequest
      */
     public function rules()
     {
-        return Empleados::$rules;
+        return Empleados::rulesFor(
+            $this->input('tipo_persona'),
+            null,
+            $this->input('Estado')
+        );
+    }
+
+    protected function prepareForValidation()
+    {
+        $estado = $this->input('Estado');
+
+        if ($estado === null || $estado === '') {
+            $estado = 1;
+        }
+
+        $this->merge(['Estado' => (int) $estado]);
+    }
+
+    public function messages()
+    {
+        return [
+            'Correo.unique' => 'El correo ya está registrado en otro empleado activo.',
+        ];
     }
 }

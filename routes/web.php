@@ -133,6 +133,7 @@ Route::group(['middleware' => ['auth']], function () {
     // Tickets
     Route::get('/tickets', [TicketsController::class, 'index'])->name('tickets.index');
     Route::get('/tickets/productividad-ajax', [TicketsController::class, 'obtenerProductividadAjax'])->name('tickets.productividad-ajax');
+    Route::get('/tickets/detalle-grafica', [TicketsController::class, 'getTicketsDetalleGrafica'])->name('tickets.detalle-grafica');
     Route::get('/tickets/chat-messages', [TicketsController::class, 'getChatMessages']);
     Route::get('/tickets/verificar-mensajes-nuevos', [TicketsController::class, 'verificarMensajesNuevos']);
     Route::get('/tickets/estadisticas-correos', [TicketsController::class, 'obtenerEstadisticasCorreos']);
@@ -196,6 +197,10 @@ Route::get(
     '/tickets/calificacion/{survey}/{field}/{rating}',
     [TicketSatisfactionAnswerController::class, 'store']
 )->name('tickets.satisfaction.answer');
+Route::post(
+    '/tickets/encuesta/{survey}/comentario',
+    [TicketSatisfactionAnswerController::class, 'storeComment']
+)->name('tickets.satisfaction.comment');
 Route::get('/autocompleteEmpleado', [SoporteTIController::class, 'autocompleteEmpleado']);
 Route::get('/getEmpleadoInfo', [SoporteTIController::class, 'getEmpleadoInfo']);
 Route::get('/buscarEmpleadoPorCorreo', [SoporteTIController::class, 'buscarEmpleadoPorCorreo']);
@@ -238,4 +243,4 @@ Route::post('/tickets/{id}/mark-notifications-read', function ($id) {
 
     return response()->json(['success' => true]);
 })->middleware(['web']);
-
+

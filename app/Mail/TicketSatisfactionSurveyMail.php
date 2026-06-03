@@ -27,7 +27,7 @@ class TicketSatisfactionSurveyMail extends Mailable
     public function build(): self
     {
         return $this
-            ->subject('Cuéntanos cómo fue tu experiencia - Ticket #' . $this->ticket->Numero)
+            ->subject('Cuéntanos cómo fue tu experiencia - Ticket #' . $this->ticket->TicketID)
             ->view('emails.ticket_satisfaction_survey')
             ->with([
                 'ticket'     => $this->ticket,

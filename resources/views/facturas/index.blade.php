@@ -48,7 +48,7 @@
     </div>
 
     @php
-        $mesActualFiltro = (int) date('n');
+        $mesActualFiltro = null; // Por defecto: Todos los meses
         $anioActualFiltro = (int) date('Y');
     @endphp
     <div class="mb-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-sm overflow-hidden">
@@ -60,7 +60,7 @@
         <div class="p-4 md:p-5">
             <form id="formFilter"
                 class="flex flex-col lg:flex-row items-end gap-4"
-                data-mes-default="{{ $mesActualFiltro }}"
+                data-mes-default=""
                 data-anio-default="{{ $anioActualFiltro }}">
                 <div class="w-full lg:w-1/3">
                     <label class="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Gerencia</label>
@@ -78,7 +78,7 @@
                         <select id="mesFilter" class="w-full h-11 pl-4 pr-10 appearance-none rounded-xl bg-gray-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all">
                             <option value="">Todos los meses</option>
                             @foreach($meses as $num => $nombre)
-                            <option value="{{ $num }}" {{ (int) $num === $mesActualFiltro ? 'selected' : '' }}>{{ $nombre }}</option>
+                            <option value="{{ $num }}">{{ $nombre }}</option>
                             @endforeach
                         </select>
                         <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400"><i class="fas fa-calendar-alt text-xs"></i></div>
