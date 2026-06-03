@@ -1292,10 +1292,16 @@ class SimpleWebklexImapService
     foreach ($adjuntos as $adjunto) {
         if (is_array($adjunto)) {
 
+            // IMPLEMENTACIÓN: Si no hay URL o es relativa, la forzamos completa usando el storage_path
+            $urlDetectada = isset($adjunto['url']) ? $adjunto['url'] : null;
+            if (empty($urlDetectada) && isset($adjunto['storage_path'])) {
+                $urlDetectada = asset('storage/' . $adjunto['storage_path']);
+            }
+
             $adjuntoValido = [
-                'nombre' => isset($adjunto['nombre']) ? substr(trim($adjunto['nombre']), 0, 255) : 'archivo',
+                'name' => isset($adjunto['name']) ? substr(trim($adjunto['name']), 0, 255) : 'archivo',
                 'tipo' => isset($adjunto['tipo']) ? substr(trim($adjunto['tipo']), 0, 100) : 'application/octet-stream',
-                'tamaño' => isset($adjunto['tamaño']) ? (int) $adjunto['tamaño'] : 0,
+                'size' => isset($adjunto['size']) ? (int) $adjunto['size'] : 0,
                 'id' => isset($adjunto['id']) ? substr(trim($adjunto['id']), 0, 255) : null,
 
                 // NUEVOS CAMPOS
@@ -1303,9 +1309,8 @@ class SimpleWebklexImapService
                     ? substr(trim($adjunto['storage_path']), 0, 500)
                     : null,
 
-                'url' => isset($adjunto['url'])
-                    ? substr(trim($adjunto['url']), 0, 1000)
-                    : null,
+                // Usamos la URL validada y formateada con el dominio completo
+                'url' => $urlDetectada ? substr(trim($urlDetectada), 0, 1000) : null,
 
                 'mime_type' => isset($adjunto['mime_type'])
                     ? substr(trim($adjunto['mime_type']), 0, 100)
