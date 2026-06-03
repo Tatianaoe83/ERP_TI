@@ -63,10 +63,9 @@ class SmtpEmailReceiver
 
             // Incrementar notificaciones pendientes directamente en el modelo
             try {
-                $chat->notificaciones_pendientes = ($chat->notificaciones_pendientes ?? 0) + 1;
-                $chat->save();
+                $chat->increment('notificaciones_pendientes', 1);
             } catch (\Exception $e) {
-                \Log::debug('No se pudo actualizar ticket_chats.notificaciones_pendientes (modelo): ' . $e->getMessage());
+                \Log::debug('No se pudo incrementar ticket_chats.notificaciones_pendientes (increment): ' . $e->getMessage());
             }
 
             Log::info("Respuesta manual agregada al ticket #{$ticketId}");

@@ -6,6 +6,7 @@ use App\Models\Tickets;
 use App\Models\Empleados;
 use App\Models\TicketChat;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class ImapEmailReceiver
@@ -23,6 +24,36 @@ class ImapEmailReceiver
         $this->imapUsername = config('mail.mailers.smtp.username');
         $this->imapPassword = config('mail.mailers.smtp.password');
         $this->imapEncryption = config('mail.imap.encryption', 'ssl');
+    }
+
+    /**
+     * Validar estructura de adjuntos (similar a SimpleWebklexImapService)
+     */
+    private function validarAdjuntos($adjuntos)
+    {
+        if (!is_array($adjuntos)) {
+            return [];
+        }
+
+        $adjuntosValidados = [];
+
+        foreach ($adjuntos as $adjunto) {
+            if (is_array($adjunto)) {
+                $adjuntoValido = [
+                    'nombre' => isset($adjunto['nombre']) ? substr(trim($adjunto['nombre']), 0, 255) : 'archivo',
+                    'tipo' => isset($adjunto['tipo']) ? substr(trim($adjunto['tipo']), 0, 100) : 'application/octet-stream',
+                    'tamaño' => isset($adjunto['tamaño']) ? (int) $adjunto['tamaño'] : 0,
+                    'id' => isset($adjunto['id']) ? substr(trim($adjunto['id']), 0, 255) : null,
+                    'storage_path' => isset($adjunto['storage_path']) ? substr(trim($adjunto['storage_path']), 0, 500) : null,
+                    'url' => isset($adjunto['url']) ? substr(trim($adjunto['url']), 0, 1000) : null,
+                    'mime_type' => isset($adjunto['mime_type']) ? substr(trim($adjunto['mime_type']), 0, 100) : null,
+                ];
+
+                $adjuntosValidados[] = $adjuntoValido;
+            }
+        }
+
+        return $adjuntosValidados;
     }
 
     /**
@@ -126,7 +157,9 @@ class ImapEmailReceiver
     {
         try {
             $header = imap_headerinfo($connection, $emailId);
-            $body = $this->obtenerCuerpoCorreo($connection, $emailId);
+            $cuerpo = $this->obtenerCuerpoCorreo($connection, $emailId);
+            $body = is_array($cuerpo) ? ($cuerpo['body'] ?? '') : (string) $cuerpo;
+            $adjuntos = is_array($cuerpo) ? ($cuerpo['attachments'] ?? []) : [];
             
             if (!$header || !$body) {
                 Log::warning("No se pudo procesar correo ID: {$emailId}");
@@ -164,7 +197,7 @@ class ImapEmailReceiver
             
             if ($ticketId) {
                 // Es una respuesta a un ticket existente
-                $resultado = $this->procesarRespuestaTicket($ticketId, $empleado->EmpleadoID, $body, $fromName, $messageId, $threadId);
+                $resultado = $this->procesarRespuestaTicket($ticketId, $empleado->EmpleadoID, $body, $fromName, $messageId, $threadId, $adjuntos);
                 
                 // Si el ticket no existe, no crear uno nuevo
                 if (!$resultado) {
@@ -182,7 +215,7 @@ class ImapEmailReceiver
                 }
                 
                 // Es un nuevo ticket (no es respuesta)
-                $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId);
+                $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId, $adjuntos);
             }
 
             // Marcar como leído
@@ -204,18 +237,67 @@ class ImapEmailReceiver
         try {
             $structure = imap_fetchstructure($connection, $emailId);
             $body = '';
+            $attachments = [];
 
-            if (isset($structure->parts)) {
+            if (isset($structure->parts) && count($structure->parts) > 0) {
                 // Correo multiparte
                 foreach ($structure->parts as $partNum => $part) {
-                    if ($part->subtype === 'PLAIN' || $part->subtype === 'HTML') {
-                        $partBody = imap_fetchbody($connection, $emailId, $partNum + 1);
-                        if ($part->encoding == 3) { // BASE64
-                            $partBody = base64_decode($partBody);
-                        } elseif ($part->encoding == 4) { // QUOTED-PRINTABLE
-                            $partBody = quoted_printable_decode($partBody);
+                    $partIndex = $partNum + 1;
+
+                    // Detectar adjuntos por parámetros
+                    $isAttachment = false;
+                    $filename = null;
+
+                    if (!empty($part->ifdparameters)) {
+                        foreach ($part->dparameters as $object) {
+                            if (strtolower($object->attribute) === 'filename') {
+                                $isAttachment = true;
+                                $filename = $object->value;
+                            }
                         }
-                        $body .= $partBody;
+                    }
+
+                    if (!$filename && !empty($part->ifparameters)) {
+                        foreach ($part->parameters as $object) {
+                            if (strtolower($object->attribute) === 'name') {
+                                $isAttachment = true;
+                                $filename = $object->value;
+                            }
+                        }
+                    }
+
+                    // Obtener contenido del part
+                    $partBody = imap_fetchbody($connection, $emailId, $partIndex);
+                    if ($part->encoding == 3) { // BASE64
+                        $partBody = base64_decode($partBody);
+                    } elseif ($part->encoding == 4) { // QUOTED-PRINTABLE
+                        $partBody = quoted_printable_decode($partBody);
+                    }
+
+                    if ($isAttachment) {
+                        try {
+                            $nombreOriginal = $filename ?: 'archivo';
+                            $nombreArchivo = uniqid() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $nombreOriginal);
+                            $storagePath = 'tickets/adjuntos/' . $nombreArchivo;
+
+                            Storage::disk('public')->put($storagePath, $partBody);
+
+                            $attachments[] = [
+                                'nombre' => $nombreOriginal,
+                                'storage_path' => $storagePath,
+                                'url' => Storage::url($storagePath),
+                                'mime_type' => isset($part->subtype) ? strtolower($part->subtype) : null,
+                                'tamaño' => strlen($partBody),
+                                'tipo' => (stripos($part->subtype ?? '', 'image') !== false) ? 'imagen' : 'archivo'
+                            ];
+                        } catch (\Exception $e) {
+                            Log::warning('Error guardando adjunto IMAP: ' . $e->getMessage());
+                        }
+                    } else {
+                        // Parte de texto
+                        if (isset($part->subtype) && in_array(strtoupper($part->subtype), ['PLAIN', 'HTML'])) {
+                            $body .= $partBody;
+                        }
                     }
                 }
             } else {
@@ -231,12 +313,12 @@ class ImapEmailReceiver
             // Limpiar HTML si es necesario
             $body = strip_tags($body);
             $body = trim($body);
-            
-            return $body;
+
+            return ['body' => $body, 'attachments' => $attachments];
 
         } catch (\Exception $e) {
             Log::error("Error obteniendo cuerpo del correo ID {$emailId}: " . $e->getMessage());
-            return '';
+            return ['body' => '', 'attachments' => []];
         }
     }
 
@@ -297,7 +379,7 @@ class ImapEmailReceiver
     /**
      * Procesar respuesta a ticket existente
      */
-    private function procesarRespuestaTicket($ticketId, $empleadoId, $mensaje, $nombreEmisor, $messageId = null, $threadId = null)
+    private function procesarRespuestaTicket($ticketId, $empleadoId, $mensaje, $nombreEmisor, $messageId = null, $threadId = null, $adjuntos = [])
     {
         try {
             $ticket = Tickets::find($ticketId);
@@ -321,6 +403,7 @@ class ImapEmailReceiver
                 'remitente' => 'usuario',
                 'nombre_remitente' => $nombreEmisor,
                 'correo_remitente' => $empleado->Correo,
+                'adjuntos' => !empty($adjuntos) ? $this->validarAdjuntos($adjuntos) : [],
                 'message_id' => $messageId,
                 'thread_id' => $threadId,
                 'es_correo' => true,
@@ -330,10 +413,9 @@ class ImapEmailReceiver
 
             // Incrementar notificaciones pendientes directamente en el modelo
             try {
-                $chat->notificaciones_pendientes = ($chat->notificaciones_pendientes ?? 0) + 1;
-                $chat->save();
+                $chat->increment('notificaciones_pendientes', 1);
             } catch (\Exception $e) {
-                \Log::debug('No se pudo actualizar ticket_chats.notificaciones_pendientes (modelo): ' . $e->getMessage());
+                \Log::debug('No se pudo incrementar ticket_chats.notificaciones_pendientes (increment): ' . $e->getMessage());
             }
 
             Log::info("Respuesta por correo agregada al ticket #{$ticketId} desde {$empleado->Correo}");
@@ -348,7 +430,7 @@ class ImapEmailReceiver
     /**
      * Crear nuevo ticket desde correo
      */
-    private function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null)
+    private function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null, $adjuntos = [])
     {
         try {
             // Limpiar asunto: remover prefijos y formato "Ticket #ID" si existe
@@ -382,6 +464,7 @@ class ImapEmailReceiver
                 'remitente' => 'usuario',
                 'nombre_remitente' => $empleado->NombreEmpleado,
                 'correo_remitente' => $empleado->Correo,
+                'adjuntos' => !empty($adjuntos) ? $this->validarAdjuntos($adjuntos) : [],
                 'message_id' => $messageId,
                 'thread_id' => $threadId,
                 'es_correo' => true,

@@ -662,10 +662,9 @@ class SimpleWebklexImapService
 
                 // Incrementar el contador en el modelo directamente (más fiable)
                 try {
-                    $ticketChat->notificaciones_pendientes = ($ticketChat->notificaciones_pendientes ?? 0) + 1;
-                    $ticketChat->save();
+                    $ticketChat->increment('notificaciones_pendientes', 1);
                 } catch (\Exception $e) {
-                    \Log::debug('No se pudo actualizar ticket_chats.notificaciones_pendientes (modelo): ' . $e->getMessage());
+                    \Log::debug('No se pudo incrementar ticket_chats.notificaciones_pendientes (increment): ' . $e->getMessage());
                 }
 
                 return $ticketChat;
