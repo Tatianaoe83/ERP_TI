@@ -15,8 +15,103 @@
 .dark .insight-bar.alert  { background:#1c0008; border-color:#9f1239; color:#fda4af; }
 .dark .insight-bar.saving { background:#042f2e; border-color:#0f766e; color:#5eead4; }
 
+/* ── Sticky primera columna ── */
+#cmpTableHead th:first-child,
+#cmpTableBody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    box-shadow: 3px 0 6px -3px rgba(0, 0, 0, 0.15);
+}
+#cmpTableHead th:first-child {
+    z-index: 30;
+    background-color: #f8fafc;
+}
+.dark #cmpTableHead th:first-child {
+    background-color: #020617;
+}
+#cmpTableBody td:first-child {
+    background-color: #f9fafb;
+}
+.dark #cmpTableBody td:first-child {
+    background-color: #0f172a;
+}
+
+
+/* ── Ocultar thead en móvil ── */
 #cmpTableHead { display: table-header-group; }
 @media (max-width: 767px) { #cmpTableHead { display: none; } }
+
+
+/* ── Tabla responsiva con anchos controlados ── */
+.table-fix-autowrap {
+    table-layout: fixed;   
+    width: 100%;
+}
+
+/* Anchos de columna por posición */
+.table-fix-autowrap thead th:nth-child(1),
+.table-fix-autowrap tbody td:nth-child(1) 
+{  width: 220px;  min-width: 160px; }
+
+.table-fix-autowrap thead th:nth-child(2),
+.table-fix-autowrap tbody td:nth-child(2) 
+{ width: 160px; min-width: 120px; text-align: center; }
+
+.table-fix-autowrap thead th:nth-child(3),
+.table-fix-autowrap tbody td:nth-child(3) { 
+    width: 140px; min-width: 120px; 
+    text-align: right;       
+    padding-right: 28px;        
+    font-variant-numeric: tabular-nums;
+}
+
+.table-fix-autowrap thead th:nth-child(4),
+.table-fix-autowrap tbody td:nth-child(4) { 
+    width: 160px; min-width: 130px; 
+text-align: right;        
+    padding-right: 45px;       
+    font-variant-numeric: tabular-nums;
+}
+
+.table-fix-autowrap thead th:nth-child(5),
+.table-fix-autowrap tbody td:nth-child(5) { width: 150px; min-width: 130px; text-align: center; }
+
+/* ── Móvil: stack de columnas con etiqueta data-label ── */
+@media (max-width: 767px) {
+    .table-fix-autowrap,
+    .table-fix-autowrap thead,
+    .table-fix-autowrap tbody,
+    .table-fix-autowrap tr,
+    .table-fix-autowrap td {
+        display: block;
+        width: 100% !important;
+    }
+    .table-fix-autowrap tr {
+        border-bottom: 2px solid #e2e8f0;
+        padding: 15px 0;
+    }
+    .table-fix-autowrap td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 16px;
+        text-align: right !important;
+        position: static !important;
+        box-shadow: none !important;
+    }
+    .table-fix-autowrap td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: #94a3b8;
+        margin-right: 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+}
 </style>
 
 <div id="comparativaRoot" class="space-y-5">
@@ -132,15 +227,15 @@
                 </div>
                 <span id="cmpTotalRows" class="text-[11px] font-semibold text-slate-400"></span>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
+            <div id="ResponsiveTable" class="overflow-x-auto gap-3 px-2">
+<table class="w-full min-w-[900px] text-left text-sm table-fix-autowrap">
                     <thead id="cmpTableHead" class="bg-slate-50 dark:bg-slate-950 sticky top-0 z-10">
                         <tr>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Insumo</th>
                             <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Gerencia</th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-indigo-400 uppercase tracking-wider text-right">Presupuesto</th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-emerald-500 uppercase tracking-wider text-right">Facturado</th>
-                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider text-center">Ahorro / Desviación</th>
+                            <th class="px-4 py-3 text-[11px] font-extrabold text-indigo-400 uppercase tracking-wider ">Presupuesto</th>
+                            <th class="px-4 py-3 text-[11px] font-extrabold text-emerald-500 uppercase tracking-wider ">Facturado</th>
+                            <th class="px-4 py-3 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider ">Ahorro / Desviación</th>
                         </tr>
                     </thead>
                     <tbody id="cmpTableBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
@@ -412,8 +507,8 @@
                 style: { fontFamily: 'inherit' },
                 height: cats.length > 8 ? 420 : 400,
                 marginTop: 8,
-                marginBottom: 72,
-                spacing: [12, 12, 8, 12],
+                marginBottom: null,
+                spacing: [12, 12, 12, 12],
                 animation: { duration: 700 },
                 zooming: { type: 'x', mouseWheel: { enabled: true } },
                 scrollablePlotArea: { minWidth: plotMinW, opacity: 1, applyAnimation: true },
@@ -437,6 +532,7 @@
                 enabled: true,
                 align: 'center',
                 verticalAlign: 'bottom',
+                layout: 'horizontal',
                 itemMarginTop: 6,
                 itemStyle: { color: lblClr, fontWeight: '600', fontSize: '11px' },
                 symbolRadius: 3
