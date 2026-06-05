@@ -148,7 +148,8 @@ class InventarioController extends AppBaseController
             'Caracteristicas',
             'Modelo',
             'NumSerie',
-            'Folio as FechaAsignacion',
+            'FechaAsignacion',
+            'Folio',
             DB::raw('"EQUIPO" as tipo')
         )
             ->where('EmpleadoID', $empleadoid)
@@ -162,6 +163,7 @@ class InventarioController extends AppBaseController
             DB::raw('NULL as Modelo'),
             'NumSerie',
             DB::raw('NULL as FechaAsignacion'),
+            DB::raw('NULL as Folio'),
             DB::raw('"INSUMO" as tipo')
         )
             ->where('EmpleadoID', $empleadoid)
@@ -175,6 +177,7 @@ class InventarioController extends AppBaseController
             DB::raw('NULL as Modelo'),
             DB::raw('NULL as NumSerie'),
             'NumTelefonico as FechaAsignacion',
+            DB::raw('NULL as Folio'),
             DB::raw('"TELEFONO" as tipo')
         )
             ->where('EmpleadoID', $empleadoid)
@@ -312,6 +315,21 @@ class InventarioController extends AppBaseController
             return $respuesta;
         }
 
+        // Validar unicidad del Folio (excluyendo el registro actual)
+        $folio = trim($request->Folio);
+        if ($folio) {
+            $folioExistente = InventarioEquipo::where('Folio', $folio)
+                ->where('InventarioID', '!=', $id)
+                ->exists();
+
+            if ($folioExistente) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => ['Folio' => ['El folio "' . $folio . '" ya está registrado en otro equipo. Debe ser único e irrepetible.']]
+                ], 422);
+            }
+        }
+
         $data = $request->all();
 
         $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
@@ -332,6 +350,18 @@ class InventarioController extends AppBaseController
             return $respuesta;
         }
 
+        // Validar unicidad del Folio
+        $folio = trim($request->Folio);
+        if ($folio) {
+            $folioExistente = InventarioEquipo::where('Folio', $folio)->exists();
+            if ($folioExistente) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => ['Folio' => ['El folio "' . $folio . '" ya está registrado en otro equipo. Debe ser único e irrepetible.']]
+                ], 422);
+            }
+        }
+
         $data = $request->all();
         $data['EmpleadoID'] = $id;
 
@@ -344,6 +374,45 @@ class InventarioController extends AppBaseController
         return response()->json([
             'equipo' => $inventarioEquipo,
             'success' => true
+        ]);
+    }
+
+    /**
+     * Verifica si un Folio ya existe en la base de datos.
+     * Usado por el frontend para validación en tiempo real.
+     */
+    public function verificarFolio(Request $request)
+    {
+        $folio = trim($request->folio);
+        $excluirId = $request->excluir_id; // InventarioID del registro que se está editando
+
+        // Obtener los últimos 3 folios registrados
+        $ultimosFolios = InventarioEquipo::whereNotNull('Folio')
+            ->where('Folio', '!=', '')
+            ->orderBy('InventarioID', 'desc')
+            ->limit(3)
+            ->pluck('Folio')
+            ->toArray();
+
+        if (!$folio) {
+            return response()->json([
+                'disponible' => true,
+                'ultimos_folios' => $ultimosFolios
+            ]);
+        }
+
+        $query = InventarioEquipo::where('Folio', $folio);
+
+        if ($excluirId) {
+            $query->where('InventarioID', '!=', $excluirId);
+        }
+
+        $existe = $query->exists();
+
+        return response()->json([
+            'disponible' => !$existe,
+            'mensaje' => $existe ? 'El folio "' . $folio . '" ya está registrado. Debe ser único e irrepetible.' : 'Folio disponible.',
+            'ultimos_folios' => $ultimosFolios
         ]);
     }
 

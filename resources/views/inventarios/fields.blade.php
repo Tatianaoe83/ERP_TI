@@ -660,6 +660,96 @@
         $('#editModal').modal('show');
     });
 
+    // Validación en tiempo real del Folio (al escribir o al salir del campo)
+    let folioTimer = null;
+    let folioValido = true; // Estado de validez del folio actual
+
+    // Función para cargar los últimos 3 folios
+    function cargarUltimosFolios() {
+        const excluirId = $('#editId').val();
+        $.ajax({
+            url: '/inventarios/verificar-folio',
+            method: 'GET',
+            data: { folio: '', excluir_id: excluirId },
+            success: function(response) {
+                if (response.ultimos_folios && response.ultimos_folios.length > 0) {
+                    $('#ultimos-folios-lista').html(
+                        '<ul class="mb-0 pl-3"><li>' +
+                        response.ultimos_folios.join('</li><li>') +
+                        '</li></ul>'
+                    );  
+                } else {
+                    $('#ultimos-folios-lista').text('Ninguno registrado aún');
+                }
+            }
+        });
+    }
+
+    // Mostrar últimos 3 folios registrados cuando el usuario hace focus al input
+    $(document).on('focus', '#editFolio', function() {
+        cargarUltimosFolios();
+        $('#folio-Info').fadeIn(200);
+    });
+
+    // Ocultar la advertencia al perder el foco
+    $(document).on('blur', '#editFolio', function() {
+        $('#folio-Info').fadeOut(200);
+    });
+
+    $(document).on('input', '#editFolio', function() {
+        clearTimeout(folioTimer);
+        const folioInput = $(this);
+        const folio = folioInput.val().trim();
+        const excluirId = $('#editId').val();
+        const feedbackEl = folioInput.siblings('.invalid-feedback');
+
+        // Limpiar estado previo
+        folioInput.removeClass('is-invalid is-valid');
+        folioValido = true;
+
+        if (!folio) return;
+
+        // Esperar 500ms después de que el usuario deje de escribir
+        folioTimer = setTimeout(function() {
+            $.ajax({
+                url: '/inventarios/verificar-folio',
+                method: 'GET',
+                data: { folio: folio, excluir_id: excluirId },
+                success: function(response) {
+                    if (response.disponible) {
+                        folioInput.removeClass('is-invalid').addClass('is-valid');
+                        feedbackEl.text('');
+                        folioValido = true;
+                    } else {
+                        folioInput.removeClass('is-valid').addClass('is-invalid');
+                        if (feedbackEl.length) {
+                            feedbackEl.text(response.mensaje);
+                        } else {
+                            folioInput.after('<div class="invalid-feedback" style="display:block">' + response.mensaje + '</div>');
+                        }
+                        folioValido = false;
+                    }
+                    
+                    // Actualizar también la lista si cambia
+                    if (response.ultimos_folios && response.ultimos_folios.length > 0) {
+                        $('#ultimos-folios-lista').html(
+                            '<ul class="mb-0 pl-3"><li>' +
+                            response.ultimos_folios.join('</li><li>') +
+                            '</li></ul>'
+                        );
+                    }
+                }
+            });
+        }, 500);
+    });
+
+    // Limpiar estado de validación del folio al abrir el modal
+    $('#editModal').on('show.bs.modal', function() {
+        folioValido = true;
+        $('#editFolio').removeClass('is-invalid is-valid');
+        $('#folio-Info').hide();
+    });
+
     // Enviar formulario de edición o creación con AJAX
     $(document).on('click', '.submit_equipo', function(event) {
         event.preventDefault();
@@ -695,89 +785,148 @@
             return;
         }
 
+        // Bloquear el envío si el folio ya fue detectado como duplicado
+        if (!folioValido) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Folio duplicado',
+                text: 'El folio ingresado ya está registrado. Por favor ingrese un folio único.',
+                customClass: {
+                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                }
+            });
+            $('#editFolio').addClass('is-invalid').focus();
+            return;
+        }
+
         let id = $('#editId').val();
         let id_E = $('#editEmp').val();
-        let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
-        let method = id ? 'PUT' : 'POST';
-
-        let formData = {
-            CategoriaEquipo: $('#editCategoria').val(),
-            GerenciaEquipoID: $('#editGerenciaEquipo').val(),
-            Marca: $('#editMarca').val(),
-            Caracteristicas: $('#editCaracteristicas').val(),
-            Modelo: $('#editModelo').val(),
-            Precio: $('#editPrecio').val(),
-            FechaAsignacion: $('#editFechaAsignacion').val(),
-            NumSerie: $('#editNumSerie').val(),
-            Folio: $('#editFolio').val(),
-            FechaDeCompra: $('#editFechaDeCompra').val(),
-            Comentarios: $('#editComentarios').val(),
-            FechaRenovacion: $('#editFechaDeRenovacion').val(),
-        };
-
+        let folio = $('#editFolio').val().trim();
+        let excluirId = id || null;
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // Enviar datos con AJAX
+        // Verificación final de unicidad del folio antes de enviar
         $.ajax({
-            url: url,
-            method: method,
-            data: formData,
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            },
-            success: function(response) {
-                if (response.errors) {
-                    // Mostrar errores de validación
-                    Object.keys(response.errors).forEach(field => {
-                        const input = $(`#edit${field}`);
-                        input.addClass('is-invalid');
-                        input.siblings('.invalid-feedback').text(response.errors[field][0]);
-                    });
-
+            url: '/inventarios/verificar-folio',
+            method: 'GET',
+            data: { folio: folio, excluir_id: excluirId },
+            success: function(verifyResponse) {
+                if (!verifyResponse.disponible) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error de validación',
-                        text: 'Por favor revise los campos marcados en rojo',
+                        title: 'Folio duplicado',
+                        text: verifyResponse.mensaje,
                         customClass: {
                             popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                         }
                     });
-                } else {
-                    // Si la solicitud fue exitosa, actualizar la fila correspondiente o agregar una nueva
-                    Swal.fire({
-                        position: "top-end",
-                        icon: "success",
-                        title: "Datos del equipo guardados correctamente",
-                        showConfirmButton: false,
-                        timer: 1500,
-                        customClass: {
-                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
-                        }
-                    });
-
-                    // Actualizar o agregar la fila en la tabla
-                    if (id) {
-                        updateTableRow(response.equipo);
-                    } else {
-                        addNewRow(response.equipo);
-                    }
-
-                    $('#editModal').modal('hide');
+                    $('#editFolio').addClass('is-invalid').focus();
+                    folioValido = false;
+                    return;
                 }
-            },
-            error: function(error) {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Ocurrió un error al guardar los datos',
-                    customClass: {
-                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+
+                // Folio único: proceder con el guardado
+                let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
+                let method = id ? 'PUT' : 'POST';
+
+                let formData = {
+                    CategoriaEquipo: $('#editCategoria').val(),
+                    GerenciaEquipoID: $('#editGerenciaEquipo').val(),
+                    Marca: $('#editMarca').val(),
+                    Caracteristicas: $('#editCaracteristicas').val(),
+                    Modelo: $('#editModelo').val(),
+                    Precio: $('#editPrecio').val(),
+                    FechaAsignacion: $('#editFechaAsignacion').val(),
+                    NumSerie: $('#editNumSerie').val(),
+                    Folio: folio,
+                    FechaDeCompra: $('#editFechaDeCompra').val(),
+                    Comentarios: $('#editComentarios').val(),
+                    FechaRenovacion: $('#editFechaDeRenovacion').val(),
+                };
+
+                $.ajax({
+                    url: url,
+                    method: method,
+                    data: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    success: function(response) {
+                        if (response.errors) {
+                            // Mostrar errores de validación
+                            Object.keys(response.errors).forEach(field => {
+                                const input = $(`#edit${field}`);
+                                input.addClass('is-invalid');
+                                input.siblings('.invalid-feedback').text(response.errors[field][0]);
+                            });
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de validación',
+                                text: 'Por favor revise los campos marcados en rojo',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
+                            });
+                        } else {
+                            // Si la solicitud fue exitosa, actualizar la fila correspondiente o agregar una nueva
+                            Swal.fire({
+                                position: "top-end",
+                                icon: "success",
+                                title: "Datos del equipo guardados correctamente",
+                                showConfirmButton: false,
+                                timer: 1500,
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
+                            });
+
+                            // Actualizar o agregar la fila en la tabla
+                            if (id) {
+                                updateTableRow(response.equipo);
+                            } else {
+                                addNewRow(response.equipo);
+                            }
+
+                            $('#editModal').modal('hide');
+                        }
+                    },
+                    error: function(xhr) {
+                        // Manejar error 422 del backend (folio duplicado)
+                        if (xhr.status === 422) {
+                            let resp = xhr.responseJSON;
+                            if (resp && resp.errors && resp.errors.Folio) {
+                                $('#editFolio').addClass('is-invalid').focus();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Folio duplicado',
+                                    text: resp.errors.Folio[0],
+                                    customClass: {
+                                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                    }
+                                });
+                            }
+                        } else {
+                            console.error('Error:', xhr);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Ocurrió un error al guardar los datos',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
+                            });
+                        }
                     }
                 });
+            },
+            error: function() {
+                // Si falla la verificación, dejar pasar y que el backend valide
+                console.warn('No se pudo verificar el folio en tiempo real.');
             }
         });
     });
+
 
     // Helper para formatear fechas a dd/mm/yyyy o 'Sin asignar'
     function formatFechaRenovacion(fecha) {

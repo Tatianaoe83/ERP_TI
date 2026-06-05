@@ -7,6 +7,7 @@
             <th>Modelo</th>
             <th>Serie</th>
             <th>Asignacion</th>
+            <th>Folio</th>
 
         </tr>
     </thead>
@@ -19,6 +20,7 @@
             <td>{{ $item->Modelo }}</td>
             <td>{{ $item->NumSerie }}</td>
             <td>{{ $item->FechaAsignacion }}</td>
+            <td>{{ empty($item->Folio) ? 'Sin Asignar' : $item->Folio }}</td>
         </tr>
         @endforeach
     </tbody>

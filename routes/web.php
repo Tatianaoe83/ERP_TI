@@ -55,6 +55,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::GET('inventarios/{id}/inventario', [InventarioController::class, 'inventario'])->name('inventarios.inventario');
     Route::PUT('inventarios/editar-equipo/{id}', [InventarioController::class, 'editarequipo'])->name('inventarios.editarequipo');
     Route::POST('inventarios/crear-equipo/{id}', [InventarioController::class, 'crearequipo'])->name('inventarios.crearequipo');
+    Route::GET('inventarios/verificar-folio', [InventarioController::class, 'verificarFolio'])->name('inventarios.verificarFolio');
     Route::DELETE('inventarios/deleteInsumo/{inventario}', [InventarioController::class, 'destroyInsumo'])->name('inventarios.destroyInsumo');
     Route::PUT('inventarios/editar-insumo/{id}', [InventarioController::class, 'editarinsumo'])->name('inventarios.editarinsumo');
     Route::POST('inventarios/crear-insumo/{id}', [InventarioController::class, 'crearinsumo'])->name('inventarios.crearinsumo');

@@ -111,6 +111,10 @@
                 <div class="dark:text-white">
                   <label>Folio</label>
                   <input type="text" class="form-control" id="editFolio" required="required">
+                  <div class="invalid-feedback rounded ">Este folio ya está registrado. Debe ser único e irrepetible.</div>
+                  <div id="folio-Info" class="mt-2 px-2 py-2 bg-gray-100 text-gray-900 dark:bg-[#101010] dark:text-white border-gray-300 dark:border-gray-700 rounded" style="display:none;">
+                    Últimos 3 folios registrados: <strong id="ultimos-folios-lista">Cargando...</strong>
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
