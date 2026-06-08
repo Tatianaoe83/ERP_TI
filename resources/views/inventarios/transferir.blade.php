@@ -219,90 +219,130 @@
         // Select All Checkbox functionality
         $('.selectAll').click(function() {
             var tableId = $(this).data('table');
-            $('#' + tableId + ' input[type="checkbox"]').prop('checked', $(this).prop('checked'));
+            var checked = $(this).prop('checked');
+            var dataTableInstance;
+            if (tableId === 'equiposAsignadosTable') {
+                dataTableInstance = table;
+            } else if (tableId === 'insumosAsignadosTable') {
+                dataTableInstance = table2;
+            } else if (tableId === 'lineasAsignadosTable') {
+                dataTableInstance = table3;
+            }
+            if (dataTableInstance) {
+                dataTableInstance.$('input.selectItem').prop('checked', checked);
+            }
         });
-    });
 
+        $('.show_confirm').click(function(event) {
+            var form = $(this).closest("form");
+            event.preventDefault();
 
+            // Verificar si hay al menos un elemento seleccionado para transferir
+            var totalSeleccionados = 0;
+            var tables = [table, table2, table3];
+            tables.forEach(function(t) {
+                totalSeleccionados += t.$('input.selectItem:checked').length;
+            });
 
-    $('.show_confirm').click(function(event) {
-        var form = $(this).closest("form");
-        event.preventDefault();
-
-        var empleadosOptions = '';
-        @foreach($Empleados as $empleado)
-        empleadosOptions += `<option value="{{$empleado->EmpleadoID}}">{{$empleado->NombreEmpleado}}</option>`;
-        @endforeach
-
-        swal.fire({
-            title: `¿Está seguro de que desea realizar esta acción?`,
-            icon: "warning",
-            html: `
-            <label for="empleado" class="dark:text-white">Selecciona un empleado:</label>
-            <select id="empleado" class="dark:bg-[#101010] dark:text-white">
-                <option value="">--Seleccione un empleado--</option>
-                ${empleadosOptions}
-            </select>
-        `,
-            didOpen: () => {
-                $('#empleado').select2({
-                    dropdownParent: $('.swal2-popup'),
-                    width: '100%',
-
+            if (totalSeleccionados === 0) {
+                swal.fire({
+                    title: '¡No hay elementos seleccionados!',
+                    text: 'Debes seleccionar al menos un equipo, insumo o línea telefónica para realizar la transferencia.',
+                    icon: 'error',
+                    didOpen: () => {
+                        $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
+                        $('.swal2-title').addClass('dark:text-white');
+                    }
                 });
+                return;
+            }
 
-                $('.swal2-popup').addClass('dark:bg-[#101010]');
-                
-                // Aplicar estilos para modo oscuro en select2
-                setTimeout(() => {
-                    $('.select2-search__field').addClass('dark:bg-[#101010] dark:text-white dark:placeholder-gray-400');
-                    $('.select2-results__option').addClass('dark:bg-[#101010] dark:text-white');
-                    $('.select2-dropdown').addClass('dark:bg-[#101010]');
-                }, 100);
-            },
-            showDenyButton: true,
-            confirmButtonText: 'Confirmar',
-            denyButtonText: 'Cerrar',
-            dangerMode: true,
-        }).then(function(result) {
-            var selectedEmpleado = $('#empleado').val();
-            if (result.isConfirmed) {
-                if (!selectedEmpleado) {
-                    swal.fire({
-                        title: '¡Debes seleccionar un empleado!',
-                        icon: 'error',
-                        didOpen: () => {
-                            $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
-                            $('.swal2-title').addClass('dark:text-white');
-                        }
+            var empleadosOptions = '';
+            @foreach($Empleados as $empleado)
+            empleadosOptions += `<option value="{{$empleado->EmpleadoID}}">{{$empleado->NombreEmpleado}}</option>`;
+            @endforeach
+
+            swal.fire({
+                title: `¿Está seguro de que desea realizar esta acción?`,
+                icon: "warning",
+                html: `
+                <label for="empleado" class="dark:text-white">Selecciona un empleado:</label>
+                <select id="empleado" class="dark:bg-[#101010] dark:text-white">
+                    <option value="">--Seleccione un empleado--</option>
+                    ${empleadosOptions}
+                </select>
+            `,
+                didOpen: () => {
+                    $('#empleado').select2({
+                        dropdownParent: $('.swal2-popup'),
+                        width: '100%',
+
                     });
-                } else {
+
+                    $('.swal2-popup').addClass('dark:bg-[#101010]');
+                    
+                    // Aplicar estilos para modo oscuro en select2
+                    setTimeout(() => {
+                        $('.select2-search__field').addClass('dark:bg-[#101010] dark:text-white dark:placeholder-gray-400');
+                        $('.select2-results__option').addClass('dark:bg-[#101010] dark:text-white');
+                        $('.select2-dropdown').addClass('dark:bg-[#101010]');
+                    }, 100);
+                },
+                showDenyButton: true,
+                confirmButtonText: 'Confirmar',
+                denyButtonText: 'Cerrar',
+                dangerMode: true,
+            }).then(function(result) {
+                var selectedEmpleado = $('#empleado').val();
+                if (result.isConfirmed) {
+                    if (!selectedEmpleado) {
+                        swal.fire({
+                            title: '¡Debes seleccionar un empleado!',
+                            icon: 'error',
+                            didOpen: () => {
+                                $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
+                                $('.swal2-title').addClass('dark:text-white');
+                            }
+                        });
+                    } else {
+                        swal.fire({
+                            title: 'Acción completada exitosamente',
+                            icon: 'success',
+                            showConfirmButton: false,
+                            timer: 2000,
+                            didOpen: () => {
+                                $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
+                                $('.swal2-title').addClass('dark:text-white');
+                            }
+                        }).then(function() {
+                            // Agregar los checkboxes seleccionados de todas las páginas de DataTables
+                            var tables = [table, table2, table3];
+                            tables.forEach(function(t) {
+                                t.$('input.selectItem:checked').each(function() {
+                                    var name = $(this).attr('name');
+                                    form.append('<input type="hidden" name="' + name + '" value="' + this.value + '">');
+                                });
+                            });
+                            // Deshabilitar los originales en el DOM para evitar que se envíen por duplicado
+                            $('input.selectItem').prop('disabled', true);
+
+                            form.append('<input type="hidden" name="empleado_id" value="' + selectedEmpleado + '">');
+                            form.submit();
+                        });
+                    }
+                } else if (result.isDenied) {
                     swal.fire({
-                        title: 'Acción completada exitosamente',
-                        icon: 'success',
+                        title: 'Cambios no realizados',
+                        icon: 'error',
                         showConfirmButton: false,
                         timer: 2000,
                         didOpen: () => {
                             $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
                             $('.swal2-title').addClass('dark:text-white');
                         }
-                    }).then(function() {
-                        form.append('<input type="hidden" name="empleado_id" value="' + selectedEmpleado + '">');
-                        form.submit();
                     });
                 }
-            } else if (result.isDenied) {
-                swal.fire({
-                    title: 'Cambios no realizados',
-                    icon: 'error',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    didOpen: () => {
-                        $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
-                        $('.swal2-title').addClass('dark:text-white');
-                    }
-                });
-            }
+            });
         });
     });
 </script>

@@ -757,14 +757,15 @@ class InventarioController extends AppBaseController
 
         $empleadoSeleccionado = (int) $request->input('empleado_id');
 
-
+        $hoy = Carbon::now()->toDateString();
 
         if (!empty($equiposSeleccionados)) {
             $equipos = InventarioEquipo::whereIn('InventarioID', $equiposSeleccionados)
-                ->select('InventarioID')
+                ->select('InventarioID', 'FechaAsignacion')
                 ->get();
             foreach ($equipos as $equipo) {
                 $equipo->EmpleadoID = $empleadoSeleccionado;
+                $equipo->FechaAsignacion = $hoy;
                 $equipo->save();
             }
 
@@ -777,11 +778,12 @@ class InventarioController extends AppBaseController
         if (!empty($insumosSeleccionados)) {
 
             $insumos = InventarioInsumo::whereIn('InventarioID', $insumosSeleccionados)
-                ->select('InventarioID')
+                ->select('InventarioID', 'FechaAsignacion')
                 ->get();
 
             foreach ($insumos as $insumo) {
                 $insumo->EmpleadoID = $empleadoSeleccionado;
+                $insumo->FechaAsignacion = $hoy;
                 $insumo->save();
             }
         } else {
@@ -790,19 +792,17 @@ class InventarioController extends AppBaseController
         if (!empty($lineasSeleccionadas)) {
 
             $lineas = InventarioLineas::whereIn('InventarioID', $lineasSeleccionadas)
-                ->select('InventarioID')
+                ->select('InventarioID', 'FechaAsignacion')
                 ->get();
 
             foreach ($lineas as $linea) {
                 $linea->EmpleadoID = $empleadoSeleccionado;
+                $linea->FechaAsignacion = $hoy;
                 $linea->save();
             }
         } else {
             Flash::error('Inventario no encontrado');
         }
-
-
-
 
         return back();
     }
