@@ -301,3 +301,72 @@
         @endif
     </li>
 </ul>
+<div class="relative inline-block">
+
+    <div id="btnNotif"
+         class="flex items-center gap-3 mt-6 px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 cursor-pointer">
+
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="w-5 h-5 text-black-500 flex-shrink-0"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+        </svg>
+
+        <span class="sidebar-text text-sm font-medium">
+            Notificaciones
+        </span>
+    </div>
+
+    <!-- Tooltip -->
+ <div id="tooltipNotif"
+     class="hidden absolute top-full mt-2 left-1/2 -translate-x-1/2 w-96
+            bg-gray-100 dark:bg-gray-800
+            border border-gray-300 dark:border-gray-700
+            rounded-lg shadow-lg z-50">
+
+    <div class="font-semibold p-3 border-b bg-gray-100 dark:border-gray-700 bold">
+        NOTIFICACIONES
+    </div>
+
+    <div class="p-3 space-y-3">
+
+        <div class="text-sm">
+            Se ha creado un ticket nuevo
+        </div>
+
+        <div class="text-sm">
+            Ha recibido un nuevo mensaje, revise el chat de tickets
+        </div>
+
+        <div class="text-sm">
+            Ha recibido una solicitud nueva, revise la sección para más información
+        </div>
+
+    </div>
+
+</div>
+    <!-- Tooltip -->
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const boton = document.getElementById('btnNotif');
+    const tooltip = document.getElementById('tooltipNotif');
+
+    boton.addEventListener('mouseenter', function () {
+        tooltip.classList.remove('hidden');
+    });
+
+    boton.addEventListener('mouseleave', function () {
+        tooltip.classList.add('hidden');
+    });
+
+});
+</script>
