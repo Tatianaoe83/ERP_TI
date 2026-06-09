@@ -127,37 +127,48 @@
 
                         @click="abrirModalDesdeElemento($el)">
                         {{-- ID --}}
-                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
-                            <span class="flex items-center gap-1.5">
-                                <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
-                                        notifications
-                                    </span>
 
+                       <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
 
-                                    @php
-                                    // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
-                                    $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
-                                    ->latest('id')
-                                    ->first();
+    @if($estadoActual == 'En progreso')
 
-                                    $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
-                                    @endphp
+    <span class="flex items-center gap-1.5">
+        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
+            <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
+                notifications
+            </span>
 
-                                    {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
-                                    @if($notificaciones > 0)
-                                    <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
-                                    bg-red-500 text-white
-                                    text-[10px] leading-none font-medium
-                                    rounded-full w-4 h-4
-                                    flex items-center justify-center">
-                                        1
-                                    </span>
-                                    @endif
-                                </div>
+            @php
+            // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
+            $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
+            ->latest('id')
+            ->first();
 
-                        </td>
+            $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
+            @endphp
 
+            {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
+            @if($notificaciones > 0)
+            <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
+            bg-red-500 text-white
+            text-[10px] leading-none font-medium
+            rounded-full w-4 h-4
+            flex items-center justify-center">
+                1
+            </span>
+            @endif
+
+        </div>
+    </span>
+
+    @else
+
+    {{-- Espacio vacío del mismo tamaño que la campana --}}
+    <div class="w-6 h-6"></div>
+
+    @endif
+
+</td>
                         {{-- ID --}}
                         <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
                             #{{ $ticket->TicketID }}

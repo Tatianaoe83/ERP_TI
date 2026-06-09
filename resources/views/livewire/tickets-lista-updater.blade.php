@@ -99,10 +99,14 @@
                                     <span>{{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i') }}</span>
 
                                 </span>
+
+                                @if($key === 'proceso')
                                 <span>
                                     <span class="flex items-center gap-1.5">
+                                        
                                         <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
-                                            <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
+                                            
+                                        <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
                                                 notifications
                                             </span>
 
@@ -127,6 +131,7 @@
                                             @endif
                                         </div>
                                     </span>
+                                    @endif
                                 </span>
 
 

@@ -155,6 +155,71 @@ Route::group(['middleware' => ['auth']], function () {
             ->pluck('total', 'ticket_id');
         return response()->json(['pendientes' => $pendientes]);
     });
+
+    // Endpoint para el panel de notificaciones del sidebar
+Route::get('/notificaciones-panel', function () {
+    // 1. Tickets nuevos (Pendiente) creados en las últimas 24 horas
+    $ticketsNuevos = \App\Models\Tickets::where('Estatus', 'Pendiente')
+        ->where('created_at', '>=', now()->subHours(24))
+        ->with('empleado')
+        ->orderBy('created_at', 'desc')
+        ->limit(10)
+        ->get()
+        ->map(fn($t) => [
+            'TicketID' => $t->TicketID,
+            'empleado' => $t->empleado ? $t->empleado->NombreEmpleado : 'Sin asignar',
+            'created_at' => $t->created_at->diffForHumans(),
+            'timestamp' => $t->created_at->timestamp,
+        ]);
+
+    // 2. Solicitudes pendientes (no canceladas, no cerradas, no aprobadas) creadas en las últimas 24 horas
+    $solicitudesPendientes = \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada'])
+        ->where('created_at', '>=', now()->subHours(24))
+        ->with('empleadoid')
+        ->orderBy('created_at', 'desc')
+        ->limit(10)
+        ->get()
+        ->map(fn($s) => [
+            'SolicitudID' => $s->SolicitudID,
+            'Motivo' => $s->Motivo,
+            'Estatus' => $s->Estatus ?: 'Pendiente',
+            'empleado' => $s->empleadoid ? $s->empleadoid->NombreEmpleado : 'Sin asignar',
+            'created_at' => $s->created_at ? $s->created_at->diffForHumans() : '',
+            'timestamp' => $s->created_at ? $s->created_at->timestamp : 0,
+        ]);
+
+    // 3. CORRECCIÓN AQUÍ: Aseguramos la captura del alias en la agregación
+    $mensajesNuevos = \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
+        ->selectRaw('ticket_id, SUM(notificaciones_pendientes) as total, MAX(created_at) as last_created_at')
+        ->groupBy('ticket_id')
+        ->orderByRaw('MAX(created_at) DESC')
+        ->limit(10)
+        ->get()
+        ->map(function($c) {
+            // Accedemos de forma segura al atributo crudo de la query
+            $lastCreated = $c->getAttribute('last_created_at'); 
+            $carbonDate = $lastCreated ? \Carbon\Carbon::parse($lastCreated) : null;
+
+            return [
+                'ticket_id' => $c->ticket_id,
+                'total' => (int) $c->getAttribute('total'),
+                'created_at' => $carbonDate ? $carbonDate->diffForHumans() : 'Hace un momento',
+                'timestamp' => $carbonDate ? $carbonDate->timestamp : time(), // Si falla, le ponemos el tiempo actual para que no sea 0
+            ];
+        });
+
+    return response()->json([
+        'tickets_nuevos' => $ticketsNuevos,
+        'tickets_nuevos_count' => \App\Models\Tickets::where('Estatus', 'Pendiente')
+            ->where('created_at', '>=', now()->subHours(24))->count(),
+        'solicitudes_pendientes' => $solicitudesPendientes,
+        'solicitudes_pendientes_count' => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada'])
+            ->where('created_at', '>=', now()->subHours(24))->count(),
+        'mensajes_nuevos' => $mensajesNuevos,
+        'mensajes_nuevos_count' => (int) \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)->sum('notificaciones_pendientes'), 
+        // Cambié el count de arriba por el SUM total para que refleje cuántos mensajes reales hay sin leer en el sistema global.
+    ]);
+});
     Route::post('/tickets/update', [TicketsController::class, 'update']);
     Route::post('/tickets/enviar-respuesta', [TicketsController::class, 'enviarRespuesta']);
     Route::post('/tickets/mensaje-interno', [TicketsController::class, 'agregarMensajeInterno']);

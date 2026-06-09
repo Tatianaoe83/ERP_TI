@@ -85,7 +85,7 @@
                         <p class="text-sm font-medium text-gray-800 dark:text-gray-200 line-clamp-3 mb-3 leading-relaxed">
                             {{ \Illuminate\Support\Str::limit($ticket['descripcion'], 100) }}
                         </p>
-
+                        @if($key === 'proceso')
                         <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
                             <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
                                 notifications
@@ -111,6 +111,7 @@
                             </span>
                             @endif
                         </div>
+                        @endif
                     </div>
                     {{-- Footer --}}
                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-2">
