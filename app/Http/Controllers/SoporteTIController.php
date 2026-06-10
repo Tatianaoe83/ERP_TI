@@ -31,6 +31,7 @@ class SoporteTIController extends Controller
         $resultados = DB::table('empleados')
             ->select('EmpleadoID', 'NombreEmpleado')
             ->where('NombreEmpleado', 'like', '%' . $query . '%')
+            ->where('Estado', '1')
             ->groupBy('EmpleadoID', 'NombreEmpleado')
             ->limit(5)
             ->get();
@@ -47,7 +48,7 @@ class SoporteTIController extends Controller
             return response()->json(['error' => 'Correo requerido'], 400);
         }
 
-        $empleado = Empleados::where('Correo', $correo)->first();
+        $empleado = Empleados::where('Correo', $correo)->where('Estado', '1')->first();
 
         if (!$empleado) {
             return response()->json(['error' => 'No se encontró correo, contacta a soporte'], 404);
