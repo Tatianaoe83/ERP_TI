@@ -216,8 +216,11 @@ Route::get('/notificaciones-panel', function () {
         'solicitudes_pendientes_count' => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada'])
             ->where('created_at', '>=', now()->subHours(24))->count(),
         'mensajes_nuevos' => $mensajesNuevos,
-        'mensajes_nuevos_count' => (int) \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)->sum('notificaciones_pendientes'), 
-        // Cambié el count de arriba por el SUM total para que refleje cuántos mensajes reales hay sin leer en el sistema global.
+'mensajes_nuevos_count' =>
+\App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
+    ->get()
+    ->groupBy('ticket_id')
+    ->count(),        // Cambié el count de arriba por el SUM total para que refleje cuántos mensajes reales hay sin leer en el sistema global.
     ]);
 });
     Route::post('/tickets/update', [TicketsController::class, 'update']);

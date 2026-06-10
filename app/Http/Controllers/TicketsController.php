@@ -952,19 +952,42 @@ class TicketsController extends Controller
 
     // Marca como leídos todos los mensajes no leídos de un ticket
     public function marcarMensajesComoLeidos(Request $request)
-    {
-        try {
-            $ticketId = $request->input('ticket_id');
+{
+    try {
 
-            TicketChat::where('ticket_id', $ticketId)->where('leido', false)->update(['leido' => true]);
+        $ticketId = $request->input('ticket_id');
 
-            return response()->json(['success' => true, 'message' => 'Mensajes marcados como leídos']);
-        } catch (\Exception $e) {
-            Log::error("Error marcando mensajes como leídos: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Error marcando mensajes: ' . $e->getMessage()], 500);
-        }
+        TicketChat::where('ticket_id', $ticketId)
+            ->where('leido', false)
+            ->update([
+                'leido' => true
+            ]);
+
+        TicketChat::where('ticket_id', $ticketId)
+            ->where('notificaciones_pendientes', '>', 0)
+            ->update([
+                'notificaciones_pendientes' => 0
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mensajes marcados como leídos'
+        ]);
+
+    } catch (\Exception $e) {
+
+        Log::error(
+            "Error marcando mensajes como leídos: "
+            . $e->getMessage()
+        );
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Error marcando mensajes: '
+                . $e->getMessage()
+        ], 500);
     }
-
+}
     // Retorna todos los tipos de ticket ordenados por nombre
     public function getTipos()
     {
