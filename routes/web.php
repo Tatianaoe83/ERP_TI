@@ -158,6 +158,78 @@ Route::group(['middleware' => ['auth']], function () {
 
     // Endpoint para el panel de notificaciones del sidebar
 Route::get('/notificaciones-panel', function () {
+    $contarFacturasSolicitud = function ($solicitud) {
+        if (!$solicitud->cotizaciones || $solicitud->cotizaciones->isEmpty()) {
+            return [0, 0];
+        }
+        $sel = $solicitud->cotizaciones->where('Estatus', 'Seleccionada');
+        if ($sel->isEmpty()) {
+            return [0, 0];
+        }
+        $totalNecesarias = $sel->pluck('Proveedor')->filter()->unique()->count();
+        if ($totalNecesarias === 0) {
+            return [0, 0];
+        }
+        $cotIds = $sel->pluck('CotizacionID')->filter()->unique()->toArray();
+        if (empty($cotIds)) {
+            return [0, $totalNecesarias];
+        }
+        $activos = \App\Models\SolicitudActivo::query()
+            ->whereIn('CotizacionID', $cotIds)
+            ->whereNotNull('FacturaPath')
+            ->where('FacturaPath', '!=', '')
+            ->select('CotizacionID')
+            ->distinct()
+            ->get();
+        if ($activos->isEmpty()) {
+            return [0, $totalNecesarias];
+        }
+        $cotsConFactura = $activos->pluck('CotizacionID')->toArray();
+        $provsConFactura = $sel->whereIn('CotizacionID', $cotsConFactura)
+            ->pluck('Proveedor')->filter()->unique()->count();
+        return [$provsConFactura, $totalNecesarias];
+    };
+
+    $mapSolicitudFacturaPendiente = function ($solicitud) use ($contarFacturasSolicitud) {
+        [$facturasSubidas, $totalNecesarias] = $contarFacturasSolicitud($solicitud);
+        return [
+            'SolicitudID' => $solicitud->SolicitudID,
+            'Motivo' => $solicitud->Motivo,
+            'empleado' => $solicitud->empleadoid ? $solicitud->empleadoid->NombreEmpleado : 'Sin asignar',
+            'facturas_subidas' => $facturasSubidas,
+            'facturas_necesarias' => $totalNecesarias,
+            'created_at' => $solicitud->updated_at ? $solicitud->updated_at->diffForHumans() : '',
+            'timestamp' => $solicitud->updated_at ? $solicitud->updated_at->timestamp : 0,
+        ];
+    };
+
+    $querySolicitudesAprobadas = fn () => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada'])
+        ->whereHas('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
+        ->whereHas('pasoGerencia', fn($q) => $q->where('status', 'approved'))
+        ->whereHas('pasoAdministracion', fn($q) => $q->where('status', 'approved'))
+        ->whereHas('cotizaciones', fn($q) => $q->where('Estatus', 'Seleccionada'))
+        ->with(['empleadoid', 'cotizaciones']);
+
+    $necesitaCotizacionTI = function ($solicitud) {
+        if (in_array($solicitud->Estatus, ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'], true)) {
+            return false;
+        }
+
+        $ps = $solicitud->pasoSupervisor;
+        $pg = $solicitud->pasoGerencia;
+        $pa = $solicitud->pasoAdministracion;
+
+        if (($ps && $ps->status === 'rejected') || ($pg && $pg->status === 'rejected') || ($pa && $pa->status === 'rejected')) {
+            return false;
+        }
+
+        if (!$ps || $ps->status !== 'approved') {
+            return false;
+        }
+
+        return !$solicitud->todosProductosTienenGanador();
+    };
+
     // 1. Tickets nuevos (Pendiente) creados en las últimas 24 horas
     $ticketsNuevos = \App\Models\Tickets::where('Estatus', 'Pendiente')
         ->where('created_at', '>=', now()->subHours(24))
@@ -172,9 +244,10 @@ Route::get('/notificaciones-panel', function () {
             'timestamp' => $t->created_at->timestamp,
         ]);
 
-    // 2. Solicitudes pendientes (no canceladas, no cerradas, no aprobadas) creadas en las últimas 24 horas
-    $solicitudesPendientes = \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada'])
+    // 2. Solicitudes nuevas (sin Vo.bo. de supervisor aún) creadas en las últimas 24 horas
+    $solicitudesPendientes = \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
         ->where('created_at', '>=', now()->subHours(24))
+        ->whereDoesntHave('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
         ->with('empleadoid')
         ->orderBy('created_at', 'desc')
         ->limit(10)
@@ -188,7 +261,66 @@ Route::get('/notificaciones-panel', function () {
             'timestamp' => $s->created_at ? $s->created_at->timestamp : 0,
         ]);
 
-    // 3. CORRECCIÓN AQUÍ: Aseguramos la captura del alias en la agregación
+    // 3. Solicitudes con Vo.bo. de supervisor que requieren cotización de TI
+    $solicitudesCotizacionTIFiltradas = \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
+        ->with(['empleadoid', 'pasoSupervisor', 'pasoGerencia', 'pasoAdministracion', 'cotizaciones'])
+        ->whereHas('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
+        ->orderBy('updated_at', 'desc')
+        ->get()
+        ->filter($necesitaCotizacionTI);
+
+    $solicitudesCotizacionTI = $solicitudesCotizacionTIFiltradas
+        ->take(10)
+        ->map(function ($s) {
+            $fechaSupervisor = ($s->pasoSupervisor && $s->pasoSupervisor->decided_at)
+                ? \Carbon\Carbon::parse($s->pasoSupervisor->decided_at)
+                : ($s->updated_at ? \Carbon\Carbon::parse($s->updated_at) : null);
+
+            return [
+                'SolicitudID' => $s->SolicitudID,
+                'Motivo' => $s->Motivo,
+                'empleado' => $s->empleadoid ? $s->empleadoid->NombreEmpleado : 'Sin asignar',
+                'cotizaciones_count' => $s->cotizaciones ? $s->cotizaciones->count() : 0,
+                'created_at' => $fechaSupervisor ? $fechaSupervisor->diffForHumans() : '',
+                'timestamp' => $fechaSupervisor ? $fechaSupervisor->timestamp : 0,
+            ];
+        })
+        ->values();
+
+    $solicitudesCotizacionTICount = $solicitudesCotizacionTIFiltradas->count();
+
+    // 4. Solicitudes que requieren seguimiento de TI (cotizaciones enviadas o re-cotización)
+    $solicitudesSeguimientoTI = \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])
+        ->with('empleadoid')
+        ->orderBy('updated_at', 'desc')
+        ->limit(10)
+        ->get()
+        ->map(fn($s) => [
+            'SolicitudID' => $s->SolicitudID,
+            'Motivo' => $s->Motivo,
+            'Estatus' => $s->Estatus,
+            'empleado' => $s->empleadoid ? $s->empleadoid->NombreEmpleado : 'Sin asignar',
+            'created_at' => $s->updated_at ? $s->updated_at->diffForHumans() : '',
+            'timestamp' => $s->updated_at ? $s->updated_at->timestamp : 0,
+        ]);
+
+    // 5. Solicitudes aprobadas con facturas pendientes de subir
+    $solicitudesFacturaPendienteFiltradas = $querySolicitudesAprobadas()
+        ->orderBy('updated_at', 'desc')
+        ->get()
+        ->filter(function ($s) use ($contarFacturasSolicitud) {
+            [$subidas, $necesarias] = $contarFacturasSolicitud($s);
+            return $necesarias > 0 && $subidas < $necesarias;
+        });
+
+    $solicitudesFacturaPendiente = $solicitudesFacturaPendienteFiltradas
+        ->take(10)
+        ->map($mapSolicitudFacturaPendiente)
+        ->values();
+
+    $solicitudesFacturaPendienteCount = $solicitudesFacturaPendienteFiltradas->count();
+
+    // 6. CORRECCIÓN AQUÍ: Aseguramos la captura del alias en la agregación
     $mensajesNuevos = \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
         ->selectRaw('ticket_id, SUM(notificaciones_pendientes) as total, MAX(created_at) as last_created_at')
         ->groupBy('ticket_id')
@@ -213,8 +345,16 @@ Route::get('/notificaciones-panel', function () {
         'tickets_nuevos_count' => \App\Models\Tickets::where('Estatus', 'Pendiente')
             ->where('created_at', '>=', now()->subHours(24))->count(),
         'solicitudes_pendientes' => $solicitudesPendientes,
-        'solicitudes_pendientes_count' => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada'])
-            ->where('created_at', '>=', now()->subHours(24))->count(),
+        'solicitudes_pendientes_count' => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
+            ->where('created_at', '>=', now()->subHours(24))
+            ->whereDoesntHave('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
+            ->count(),
+        'solicitudes_cotizacion_ti' => $solicitudesCotizacionTI,
+        'solicitudes_cotizacion_ti_count' => $solicitudesCotizacionTICount,
+        'solicitudes_seguimiento_ti' => $solicitudesSeguimientoTI,
+        'solicitudes_seguimiento_ti_count' => \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])->count(),
+        'solicitudes_factura_pendiente' => $solicitudesFacturaPendiente,
+        'solicitudes_factura_pendiente_count' => $solicitudesFacturaPendienteCount,
         'mensajes_nuevos' => $mensajesNuevos,
 'mensajes_nuevos_count' =>
 \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)

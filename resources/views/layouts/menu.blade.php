@@ -323,11 +323,11 @@ $user->can('ver-mantenimientos')
     </svg>
         </span>
 
-        <span id="badgeNotif" class="absolute bottom-2 left-4
+        <span id="badgeNotif" class="absolute -top-1 left-7
                     bg-red-500 text-white
-                    text-[10px] font-bold
-                    rounded-full w-4 h-4
-                    flex items-center justify-center"
+                    text-[10px] font-bold leading-none
+                    rounded-full min-w-[18px] h-[18px] px-1
+                    flex items-center justify-center shadow-sm"
             style="display: none;">
         </span>
 

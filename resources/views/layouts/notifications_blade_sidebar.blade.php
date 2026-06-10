@@ -1,71 +1,333 @@
 
-{{-- Tooltip de notificaciones --}}
+{{-- Panel de notificaciones --}}
+<style>
+    #tooltipNotif {
+        font-family: inherit;
+        background: #ffffff;
+        border: 1px solid #e8ecf1;
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
+    .dark #tooltipNotif {
+        background: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .notif-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid #eef2f6;
+        background: #ffffff;
+    }
+
+    .dark .notif-header {
+        background: #1e293b;
+        border-bottom-color: #334155;
+    }
+
+    .notif-header-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+
+    .notif-header-badge {
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .notif-list {
+        max-height: 420px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+
+    .notif-list::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .notif-list::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 999px;
+    }
+
+    .notif-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: background-color 0.15s ease;
+    }
+
+    .dark .notif-item {
+        border-bottom-color: #334155;
+    }
+
+    .notif-item:last-child {
+        border-bottom: none;
+    }
+
+    .notif-item:hover {
+        background: #f8fafc;
+    }
+
+    .dark .notif-item:hover {
+        background: #273449;
+    }
+
+    .notif-item--unread {
+        background: #eff6ff;
+    }
+
+    .dark .notif-item--unread {
+        background: rgba(59, 130, 246, 0.12);
+    }
+
+    .notif-item--unread:hover {
+        background: #dbeafe;
+    }
+
+    .dark .notif-item--unread:hover {
+        background: rgba(59, 130, 246, 0.18);
+    }
+
+    .notif-icon {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+
+    .notif-icon--blue   { background: #dbeafe; color: #2563eb; }
+    .notif-icon--violet { background: #ede9fe; color: #7c3aed; }
+    .notif-icon--indigo { background: #e0e7ff; color: #4f46e5; }
+    .notif-icon--rose   { background: #ffe4e6; color: #e11d48; }
+    .notif-icon--amber  { background: #fef3c7; color: #d97706; }
+    .notif-icon--teal   { background: #ccfbf1; color: #0d9488; }
+
+    .notif-content {
+        flex: 1;
+        min-width: 0;
+        padding-top: 1px;
+    }
+
+    .notif-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e293b;
+        line-height: 1.35;
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dark .notif-title {
+        color: #f1f5f9;
+    }
+
+    .notif-meta {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        line-height: 1.3;
+    }
+
+    .notif-cat {
+        font-weight: 600;
+    }
+
+    .notif-cat--blue   { color: #2563eb; }
+    .notif-cat--violet { color: #7c3aed; }
+    .notif-cat--indigo { color: #4f46e5; }
+    .notif-cat--rose   { color: #e11d48; }
+    .notif-cat--amber  { color: #d97706; }
+    .notif-cat--teal   { color: #0d9488; }
+
+    .notif-dot,
+    .notif-time {
+        color: #94a3b8;
+        font-weight: 400;
+    }
+
+    .notif-empty {
+        padding: 32px 20px;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 13px;
+    }
+
+    .notif-empty i {
+        display: block;
+        font-size: 28px;
+        margin-bottom: 10px;
+        opacity: 0.45;
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
 
         const boton = document.getElementById('btnNotif');
 
-        // ── Crear el tooltip y montarlo en <body> ──
         const tooltip = document.createElement('div');
         tooltip.id = 'tooltipNotif';
-        tooltip.style.cssText = 'display:none; position:fixed; z-index:99999; width:24rem; max-height:80vh; overflow-y:auto;';
-        tooltip.className = 'bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg';
-
+        tooltip.style.cssText = 'display:none; position:fixed; z-index:99999; width:22rem; max-height:80vh;';
         tooltip.innerHTML = `
-        <div class="font-semibold p-3 border-b bg-gray-100 dark:bg-gray-800 dark:border-gray-700" style="font-weight:600;">
-            NOTIFICACIONES
-        </div>
-        <div class="p-3 space-y-3">
-            <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Cargando notificaciones...</div>
-        </div>
-    `;
-
+            <div class="notif-header">
+                <span class="notif-header-title">Notificaciones</span>
+                <span id="notifHeaderBadge" class="notif-header-badge"></span>
+            </div>
+            <div id="notifList" class="notif-list">
+                <div class="notif-empty"><i class="fas fa-bell-slash"></i>Cargando notificaciones...</div>
+            </div>
+        `;
         document.body.appendChild(tooltip);
 
-        // ── Helpers de LocalStorage para ocultación instantánea (Optimistic UI) ──
-        window.marcarTicketComoLeido = function(ticketId) {
-            if (!ticketId) return;
-            let readTickets = JSON.parse(localStorage.getItem('readTickets') || '[]');
-            if (!readTickets.includes(ticketId.toString())) {
-                readTickets.push(ticketId.toString());
-                localStorage.setItem('readTickets', JSON.stringify(readTickets));
+        const REMINDER_MS = 24 * 60 * 60 * 1000;
+        window._lastNotifData = null;
+
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function normalizarDismissals(raw) {
+            if (!Array.isArray(raw)) return [];
+            return raw.filter(item => item && typeof item === 'object' && item.id);
+        }
+
+        function obtenerDismissals(storageKey) {
+            try {
+                return normalizarDismissals(JSON.parse(localStorage.getItem(storageKey) || '[]'));
+            } catch (e) {
+                return [];
             }
+        }
+
+        function marcarVistoParaBadge(storageKey, id, estado) {
+            if (!id) return;
+            const idStr = id.toString();
+            const dismissals = obtenerDismissals(storageKey).filter(d => d.id !== idStr);
+            dismissals.push({
+                id: idStr,
+                estado: String(estado ?? ''),
+                leidoAt: Date.now()
+            });
+            localStorage.setItem(storageKey, JSON.stringify(dismissals));
             actualizarNotificaciones();
+        }
+
+        function suprimeConteoBadge(storageKey, id, estadoActual) {
+            const dismissals = obtenerDismissals(storageKey);
+            const registro = dismissals.find(d => d.id === id.toString());
+            if (!registro) return false;
+            if (registro.estado !== String(estadoActual ?? '')) return false;
+            return (Date.now() - registro.leidoAt) < REMINDER_MS;
+        }
+
+        function crearItemNotificacion({ unread, theme, icon, titulo, categoria, tiempo, onclick }) {
+            const unreadClass = unread ? ' notif-item--unread' : '';
+            return `<div class="notif-item${unreadClass}" onclick="${onclick}">
+                <div class="notif-icon notif-icon--${theme}">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="notif-content">
+                    <div class="notif-title">${escapeHtml(titulo)}</div>
+                    <div class="notif-meta">
+                        <span class="notif-cat notif-cat--${theme}">${escapeHtml(categoria)}</span>
+                        <span class="notif-dot">·</span>
+                        <span class="notif-time">${escapeHtml(tiempo)}</span>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        window.marcarTicketComoLeido = function(ticketId) {
+            marcarVistoParaBadge('dismissTickets', ticketId, 'Pendiente');
         };
 
         window.marcarSolicitudComoLeida = function(solicitudId) {
-            if (!solicitudId) return;
-            let readSolicitudes = JSON.parse(localStorage.getItem('readSolicitudes') || '[]');
-            if (!readSolicitudes.includes(solicitudId.toString())) {
-                readSolicitudes.push(solicitudId.toString());
-                localStorage.setItem('readSolicitudes', JSON.stringify(readSolicitudes));
-            }
-            actualizarNotificaciones();
+            marcarVistoParaBadge('dismissSolicitudes', solicitudId, 'nueva');
         };
 
-        window.marcarChatComoLeido = function(ticketId) {
-            if (!ticketId) return;
-            let readChats = JSON.parse(localStorage.getItem('readChats') || '[]');
-            if (!readChats.includes(ticketId.toString())) {
-                readChats.push(ticketId.toString());
-                localStorage.setItem('readChats', JSON.stringify(readChats));
-            }
-            actualizarNotificaciones();
+        window.marcarChatComoLeido = function(ticketId, estado) {
+            marcarVistoParaBadge('dismissChats', ticketId, estado);
         };
 
-        // ── Acción para abrir la notificación de un ticket ──
+        window.marcarSeguimientoTIComoLeido = function(solicitudId, estatus) {
+            marcarVistoParaBadge('dismissSeguimientoTI', solicitudId, estatus);
+        };
+
+        window.marcarFacturaPendienteComoLeida = function(solicitudId, estadoFacturas) {
+            marcarVistoParaBadge('dismissFacturas', solicitudId, estadoFacturas);
+        };
+
+        window.marcarCotizacionTIComoLeida = function(solicitudId, estado) {
+            marcarVistoParaBadge('dismissCotizacionTI', solicitudId, estado);
+        };
+
+        function marcarSolicitudVistaDesdeApp(solicitudId) {
+            const id = solicitudId.toString();
+            const data = window._lastNotifData;
+            if (!data) return;
+
+            if (data.solicitudes_pendientes?.some(s => String(s.SolicitudID) === id)) {
+                marcarVistoParaBadge('dismissSolicitudes', id, 'nueva');
+            }
+
+            const seguimiento = data.solicitudes_seguimiento_ti?.find(s => String(s.SolicitudID) === id);
+            if (seguimiento) {
+                marcarVistoParaBadge('dismissSeguimientoTI', id, seguimiento.Estatus);
+            }
+
+            const factura = data.solicitudes_factura_pendiente?.find(s => String(s.SolicitudID) === id);
+            if (factura) {
+                marcarVistoParaBadge('dismissFacturas', id, `${factura.facturas_subidas}/${factura.facturas_necesarias}`);
+            }
+
+            const cotizacion = data.solicitudes_cotizacion_ti?.find(s => String(s.SolicitudID) === id);
+            if (cotizacion) {
+                marcarVistoParaBadge('dismissCotizacionTI', id, `cotizar-${cotizacion.cotizaciones_count || 0}`);
+            }
+        }
+
+        window.abrirNotificacionCotizacion = function(solicitudId) {
+            window.location.href = `/solicitudes/${solicitudId}/cotizar`;
+        };
+
         window.abrirNotificacionTicket = function(ticketId) {
-            window.marcarTicketComoLeido(ticketId);
-
             fetch('/tickets/marcar-leidos', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify({
-                    ticket_id: ticketId
-                })
+                body: JSON.stringify({ ticket_id: ticketId })
             }).catch(err => console.error("Error al marcar leídos en DB:", err));
 
             if (window.location.pathname.endsWith('/tickets')) {
@@ -76,19 +338,14 @@
             }
         };
 
-        // ── Acción para abrir la notificación de un chat ──
         window.abrirNotificacionChat = function(ticketId) {
-            window.marcarChatComoLeido(ticketId);
-
             fetch('/tickets/marcar-leidos', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify({
-                    ticket_id: ticketId
-                })
+                body: JSON.stringify({ ticket_id: ticketId })
             }).catch(err => console.error("Error al marcar chat leído en DB:", err));
 
             if (window.location.pathname.endsWith('/tickets')) {
@@ -99,10 +356,7 @@
             }
         };
 
-        // ── Acción para abrir la notificación de una solicitud ──
         window.abrirNotificacionSolicitud = function(solicitudId) {
-            window.marcarSolicitudComoLeida(solicitudId);
-
             if (window.location.pathname.endsWith('/tickets')) {
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
@@ -117,7 +371,6 @@
             }
         };
 
-        // ── Auto-abrir desde URL si se redirecciona ──
         if (window.location.pathname.endsWith('/tickets')) {
             const urlParams = new URLSearchParams(window.location.search);
             const ticketId = urlParams.get('ticket_id');
@@ -142,12 +395,17 @@
             }
         }
 
-        // Interceptar clics globales en la app (Tarjetas del Kanban)
         document.addEventListener('click', function(e) {
             const card = e.target.closest('[data-ticket-id]');
             if (card) {
                 const ticketId = card.getAttribute('data-ticket-id');
-                if (ticketId) window.marcarTicketComoLeido(ticketId);
+                if (ticketId) {
+                    marcarVistoParaBadge('dismissTickets', ticketId, 'Pendiente');
+                    const chat = window._lastNotifData?.mensajes_nuevos?.find(m => String(m.ticket_id) === ticketId);
+                    if (chat) {
+                        marcarVistoParaBadge('dismissChats', ticketId, `${chat.total || 1}-${chat.timestamp || 0}`);
+                    }
+                }
             }
 
             const btn = e.target.closest('button');
@@ -155,108 +413,210 @@
                 const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
                 if (clickAttr && clickAttr.includes('abrirModal')) {
                     const match = clickAttr.match(/abrirModal\(\s*(\d+)\s*\)/);
-                    if (match) window.marcarSolicitudComoLeida(match[1]);
+                    if (match) marcarSolicitudVistaDesdeApp(match[1]);
+                }
+            }
+
+            const cotizarLink = e.target.closest('a[href*="/cotizar"]');
+            if (cotizarLink) {
+                const match = cotizarLink.getAttribute('href')?.match(/solicitudes\/(\d+)\/cotizar/);
+                if (match) {
+                    const cotizacion = window._lastNotifData?.solicitudes_cotizacion_ti?.find(
+                        s => String(s.SolicitudID) === match[1]
+                    );
+                    marcarVistoParaBadge(
+                        'dismissCotizacionTI',
+                        match[1],
+                        `cotizar-${cotizacion?.cotizaciones_count || 0}`
+                    );
                 }
             }
         });
 
-        // ── Función para actualizar las notificaciones mediante Polling AJAX ──
         function actualizarNotificaciones() {
-            const tooltip = document.getElementById('tooltipNotif');
-
             fetch('/notificaciones-panel')
                 .then(res => res.json())
                 .then(data => {
-                    const readTickets = JSON.parse(localStorage.getItem('readTickets') || '[]');
-                    const readSolicitudes = JSON.parse(localStorage.getItem('readSolicitudes') || '[]');
-                    const readChats = JSON.parse(localStorage.getItem('readChats') || '[]');
+                    window._lastNotifData = data;
 
                     let conteoNoLeidos = 0;
                     let listaNotificaciones = [];
 
-                    // 1. TICKETS NUEVOS
                     if (data.tickets_nuevos) {
                         data.tickets_nuevos.forEach(t => {
                             if (!t || !t.TicketID) return;
-                            if (readTickets.includes(t.TicketID.toString())) return; // ← filtro
-                            conteoNoLeidos++;
+                            const estadoTicket = 'Pendiente';
+                            const unread = !suprimeConteoBadge('dismissTickets', t.TicketID, estadoTicket);
+                            if (unread) conteoNoLeidos++;
                             listaNotificaciones.push({
                                 timestamp: t.timestamp || 0,
-                                html: `<div class="text-sm font-medium text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2  p-1.5 rounded transition" 
-                               // ">
-                            Se ha creado el ticket <strong>#${t.TicketID}</strong> por <strong>${t.empleado}</strong> (${t.created_at}).
-                        </div>`
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'blue',
+                                    icon: 'fa-ticket-alt',
+                                    titulo: `Ticket #${t.TicketID} · ${t.empleado}`,
+                                    categoria: 'Ticket nuevo',
+                                    tiempo: t.created_at,
+                                    onclick: `marcarTicketComoLeido(${t.TicketID}); abrirNotificacionTicket(${t.TicketID})`
+                                })
                             });
                         });
                     }
 
-                    // 2. SOLICITUDES PENDIENTES
                     if (data.solicitudes_pendientes) {
                         data.solicitudes_pendientes.forEach(s => {
                             if (!s || !s.SolicitudID) return;
-                            if (readSolicitudes.includes(s.SolicitudID.toString())) return; // ← filtro
-                            conteoNoLeidos++;
+                            const unread = !suprimeConteoBadge('dismissSolicitudes', s.SolicitudID, 'nueva');
+                            if (unread) conteoNoLeidos++;
                             listaNotificaciones.push({
                                 timestamp: s.timestamp || 0,
-                                html: `<div class="text-sm font-medium text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 p-1.5 rounded transition"> 
-                            Se ha creado la solicitud <strong>#${s.SolicitudID}</strong> por <strong>${s.empleado}</strong> (${s.created_at}).
-                        </div>`
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'violet',
+                                    icon: 'fa-file-alt',
+                                    titulo: `Solicitud #${s.SolicitudID} · ${s.empleado}`,
+                                    categoria: 'Solicitud nueva',
+                                    tiempo: s.created_at,
+                                    onclick: `marcarSolicitudComoLeida(${s.SolicitudID}); abrirNotificacionSolicitud(${s.SolicitudID})`
+                                })
                             });
                         });
                     }
 
-                    // 3. MENSAJES DE CHAT
+                    if (data.solicitudes_cotizacion_ti) {
+                        data.solicitudes_cotizacion_ti.forEach(s => {
+                            if (!s || !s.SolicitudID) return;
+                            const cotCount = parseInt(s.cotizaciones_count || 0, 10);
+                            const estadoCotizacion = `cotizar-${cotCount}`;
+                            const unread = !suprimeConteoBadge('dismissCotizacionTI', s.SolicitudID, estadoCotizacion);
+                            if (unread) conteoNoLeidos++;
+                            const estadoCotizacionJs = JSON.stringify(estadoCotizacion);
+                            const categoria = cotCount > 0
+                                ? `Cotización TI · ${cotCount} borrador(es)`
+                                : 'Cotización TI pendiente';
+                            listaNotificaciones.push({
+                                timestamp: s.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'violet',
+                                    icon: 'fa-file-invoice-dollar',
+                                    titulo: `Solicitud #${s.SolicitudID} · ${s.empleado}`,
+                                    categoria,
+                                    tiempo: s.created_at,
+                                    onclick: `marcarCotizacionTIComoLeida(${s.SolicitudID}, ${estadoCotizacionJs}); abrirNotificacionCotizacion(${s.SolicitudID})`
+                                })
+                            });
+                        });
+                    }
+
+                    if (data.solicitudes_seguimiento_ti) {
+                        data.solicitudes_seguimiento_ti.forEach(s => {
+                            if (!s || !s.SolicitudID) return;
+                            const unread = !suprimeConteoBadge('dismissSeguimientoTI', s.SolicitudID, s.Estatus);
+                            if (unread) conteoNoLeidos++;
+                            const esRecotizar = s.Estatus === 'Re-cotizar';
+                            const estatusJs = JSON.stringify(s.Estatus || '');
+                            listaNotificaciones.push({
+                                timestamp: s.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: esRecotizar ? 'amber' : 'indigo',
+                                    icon: esRecotizar ? 'fa-redo' : 'fa-paper-plane',
+                                    titulo: `Solicitud #${s.SolicitudID} · ${s.empleado}`,
+                                    categoria: esRecotizar ? 'Re-cotización TI' : 'Cotizaciones enviadas',
+                                    tiempo: s.created_at,
+                                    onclick: `marcarSeguimientoTIComoLeido(${s.SolicitudID}, ${estatusJs}); abrirNotificacionSolicitud(${s.SolicitudID})`
+                                })
+                            });
+                        });
+                    }
+
+                    if (data.solicitudes_factura_pendiente) {
+                        data.solicitudes_factura_pendiente.forEach(s => {
+                            if (!s || !s.SolicitudID) return;
+                            const subidas = parseInt(s.facturas_subidas || 0, 10);
+                            const necesarias = parseInt(s.facturas_necesarias || 0, 10);
+                            const estadoFacturas = `${subidas}/${necesarias}`;
+                            const unread = !suprimeConteoBadge('dismissFacturas', s.SolicitudID, estadoFacturas);
+                            if (unread) conteoNoLeidos++;
+                            const estadoFacturasJs = JSON.stringify(estadoFacturas);
+                            const parcial = subidas > 0;
+                            listaNotificaciones.push({
+                                timestamp: s.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: parcial ? 'amber' : 'rose',
+                                    icon: 'fa-file-invoice',
+                                    titulo: `Solicitud #${s.SolicitudID} · ${s.empleado}`,
+                                    categoria: parcial ? `Factura parcial ${estadoFacturas}` : `Factura pendiente ${estadoFacturas}`,
+                                    tiempo: s.created_at,
+                                    onclick: `marcarFacturaPendienteComoLeida(${s.SolicitudID}, ${estadoFacturasJs}); abrirNotificacionSolicitud(${s.SolicitudID})`
+                                })
+                            });
+                        });
+                    }
+
                     if (data.mensajes_nuevos) {
                         data.mensajes_nuevos.forEach(m => {
                             if (!m || m.ticket_id === undefined || m.ticket_id === null) return;
                             const chatTicketIdStr = String(m.ticket_id);
-                            // if (readChats.includes(chatTicketIdStr)) return; // ← filtro
-                            conteoNoLeidos += parseInt(m.total || 1, 10);
+                            const estadoChat = `${m.total || 1}-${m.timestamp || 0}`;
+                            const unread = !suprimeConteoBadge('dismissChats', chatTicketIdStr, estadoChat);
+                            if (unread) conteoNoLeidos += parseInt(m.total || 1, 10);
+                            const estadoChatJs = JSON.stringify(estadoChat);
+                            const total = parseInt(m.total || 1, 10);
                             listaNotificaciones.push({
                                 timestamp: m.timestamp || 0,
-                                html: `<div class="text-sm font-medium text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2 p-1.5 rounded transition" 
-                            Tienes <strong>${m.total}</strong> mensaje(s) nuevo(s) en el chat del ticket <strong>#${chatTicketIdStr}</strong> (${m.created_at}).
-                        </div>`
+                                html: crearItemNotificacion({
+                                    unread,
+                                    theme: 'teal',
+                                    icon: 'fa-comment-dots',
+                                    titulo: `Ticket #${chatTicketIdStr}`,
+                                    categoria: total === 1 ? '1 mensaje nuevo' : `${total} mensajes nuevos`,
+                                    tiempo: m.created_at,
+                                    onclick: `marcarChatComoLeido(${chatTicketIdStr}, ${estadoChatJs}); abrirNotificacionChat(${chatTicketIdStr})`
+                                })
                             });
                         });
                     }
 
-                    // --- RENDERIZADO DEL BADGE ---
                     const badge = document.getElementById('badgeNotif');
                     if (badge) {
                         if (conteoNoLeidos > 0) {
-                            badge.textContent = conteoNoLeidos;
+                            badge.textContent = conteoNoLeidos > 99 ? '99+' : conteoNoLeidos;
                             badge.style.display = 'flex';
                         } else {
                             badge.style.display = 'none';
                         }
                     }
 
-                    // Ordenar por fecha desc
+                    const headerBadge = document.getElementById('notifHeaderBadge');
+                    if (headerBadge) {
+                        if (conteoNoLeidos > 0) {
+                            headerBadge.textContent = conteoNoLeidos > 99 ? '99+' : conteoNoLeidos;
+                            headerBadge.style.display = 'flex';
+                        } else {
+                            headerBadge.style.display = 'none';
+                        }
+                    }
+
                     listaNotificaciones.sort((a, b) => b.timestamp - a.timestamp);
 
-                    // Inyectar en el Tooltip
-                    if (tooltip) {
-                        const tooltipContenedor = tooltip.querySelector('.space-y-3');
-                        if (tooltipContenedor) {
-
-                            let html = '';
-                            listaNotificaciones.forEach(item => html += item.html);
-                            if (html === '') {
-                                html = `<div class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No hay notificaciones nuevas</div>`;
-                            }
-                            tooltipContenedor.innerHTML = html;
+                    const notifList = document.getElementById('notifList');
+                    if (notifList) {
+                        if (listaNotificaciones.length === 0) {
+                            notifList.innerHTML = `<div class="notif-empty"><i class="fas fa-bell-slash"></i>No hay notificaciones pendientes</div>`;
+                        } else {
+                            notifList.innerHTML = listaNotificaciones.map(item => item.html).join('');
                         }
                     }
                 })
                 .catch(err => console.error("Error al procesar notificaciones:", err));
         }
 
-        // Inicializar polling
         actualizarNotificaciones();
         setInterval(actualizarNotificaciones, 5000);
 
-        // ── Posicionar el tooltip respecto al botón ──
         function posicionarTooltip() {
             if (tooltip.style.display === 'none') return;
 
@@ -267,10 +627,9 @@
             const viewH = window.innerHeight;
 
             let top, left;
-
-            left = rect.right + 8;
+            left = rect.right + 10;
             if (left + tooltipW > viewW - 8) {
-                left = rect.left - tooltipW - 8;
+                left = rect.left - tooltipW - 10;
             }
             if (left < 8) left = 8;
 
@@ -282,17 +641,13 @@
             tooltip.style.left = left + 'px';
         }
 
-        // Toggle del tooltip (Sin alterar el badge)
         boton.addEventListener('click', function(e) {
             e.stopPropagation();
             const isHidden = tooltip.style.display === 'none';
             tooltip.style.display = isHidden ? 'block' : 'none';
-            if (isHidden) {
-                posicionarTooltip();
-            }
+            if (isHidden) posicionarTooltip();
         });
 
-        // Cerrar al hacer clic fuera
         document.addEventListener('click', function(e) {
             if (!tooltip.contains(e.target) && !boton.contains(e.target)) {
                 tooltip.style.display = 'none';
