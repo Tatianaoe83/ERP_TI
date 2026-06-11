@@ -158,23 +158,9 @@
 <div
     x-data="ticketsModal()"
     x-init="
-        init(); 
         const vistaGuardada = localStorage.getItem('ticketsVista') || 'kanban';
         vista = vistaGuardada;
-        // Si la vista inicial es tabla, asegurar que se preparen los datos después de que el DOM esté listo
-        if (vistaGuardada === 'tabla') {
-            setTimeout(() => {
-                if (typeof this.prepararDatosTabla === 'function') {
-                    this.prepararDatosTabla();
-                }
-            }, 800);
-        } else if (vistaGuardada === 'lista') {
-            setTimeout(() => {
-                if (typeof this.prepararDatosLista === 'function') {
-                    this.prepararDatosLista();
-                }
-            }, 800);
-        }
+        init();
     "
     class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden min-h-screen p-6">
 
@@ -1371,7 +1357,6 @@
     });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js" defer></script>
 <script>
     function ticketsModal() {
         return {
@@ -1451,13 +1436,12 @@
             intervaloVerificacionExcedidos: null,
             // Variables para verificación automática de mensajes nuevos
             intervaloVerificacionMensajes: null,
-            intervaloRefrescoLivewireTickets: null,
             ultimoMensajeId: 0,
 
             init() {
                 // Los datos de ticketsLista ya están inicializados desde el servidor
-                // Preparar datos para tabla solo si la función existe
-                if (typeof this.prepararDatosTabla === 'function') {
+                // Preparar datos de tabla solo cuando la vista inicial realmente lo necesita.
+                if (this.vista === 'tabla' && typeof this.prepararDatosTabla === 'function') {
                     this.prepararDatosTabla();
                 }
              
@@ -1475,7 +1459,6 @@
                 });
                 
                 Livewire.on('tickets-actualizados-lista', (datos) => {
-                    console.log('Evento recibido: tickets-actualizados-lista', datos);
                     this.procesarActualizacionTickets(datos, 'lista');
                 });
                 
@@ -1507,11 +1490,6 @@
                         
                         // Aplicar a la vista cuando: primera vez (sync inicial con el wire) o cuando el hash cambió
                         if (hashCambio) {
-                            if (!this.ultimoHashTickets[hashKey]) {
-                            } else {
-                                console.log('¡CAMBIO DETECTADO! Vista:', hashKey, 'Hash anterior:', this.ultimoHashTickets[hashKey], 'Hash nuevo:', datos.hash);
-                            }
-                            
                             this.ultimoHashTickets[hashKey] = datos.hash;
                             
                             // Actualizar solo estado externo. Livewire repinta las columnas; no mutar su DOM manualmente.
@@ -1528,33 +1506,7 @@
                             this.actualizarContadoresTickets(nuevosCount, procesoCount, resueltosCount);
                             
                         }
-                    } else {
-                        console.warn('Datos incompletos recibidos:', datos);
                     }
-                };
-                
-                // Función para detectar cambios reales en los tickets
-                this.detectarCambiosEnTickets = (ticketsStatus) => {
-                    if (!ticketsStatus) return false;
-                    
-                    // Comparar conteos primero
-                    const nuevosCount = ticketsStatus.nuevos ? ticketsStatus.nuevos.length : 0;
-                    const procesoCount = ticketsStatus.proceso ? ticketsStatus.proceso.length : 0;
-                    const resueltosCount = ticketsStatus.resueltos ? ticketsStatus.resueltos.length : 0;
-                    
-                    const totalActual = nuevosCount + procesoCount + resueltosCount;
-                    const totalAnterior = (this.ticketsLista?.nuevos || 0) + 
-                                        (this.ticketsLista?.proceso || 0) + 
-                                        (this.ticketsLista?.resueltos || 0);
-                    
-                    // Si cambió el total, definitivamente hay cambios
-                    if (totalActual !== totalAnterior) {
-                        return true;
-                    }
-                    
-                    // Si los conteos son iguales pero el hash cambió, puede haber cambios en los datos
-                    // En este caso, siempre actualizar para estar seguros
-                    return true; // Actualizar siempre que el hash cambie
                 };
                 
                 // Función para actualizar los contadores de tickets en los headers
@@ -1582,7 +1534,6 @@
                                     contador.style.transform = 'scale(1)';
                                 }, 300);
                                 
-                                console.log(`Contador ${categoria} actualizado: ${valorAnterior} → ${valorNuevo}`);
                             }
                         });
                     });
@@ -1889,10 +1840,8 @@
                             if (seccionNueva && seccionActual) {
                                 // Actualizar solo el contenido de la sección
                                 seccionActual.innerHTML = seccionNueva.innerHTML;
-                                console.log(`Sección ${categoria} actualizada sin recargar página completa`);
                             } else {
                                 // Si no se puede actualizar parcialmente, recargar solo la página
-                                console.log('No se pudo actualizar parcialmente, recargando página...');
                                 window.location.reload();
                             }
                         } else {
@@ -1900,7 +1849,6 @@
                             window.location.reload();
                         }
                     } catch (error) {
-                        console.error('Error recargando sección:', error);
                         // Si falla, recargar la página completa
                         window.location.reload();
                     }
@@ -1955,7 +1903,6 @@
                             }
                         }
                     }
-                    console.warn(`No se encontró contenedor para categoría: ${categoria} en vista: ${v}`);
                     return null;
                 };
                 
@@ -2411,28 +2358,11 @@
                 // Iniciar actualización en tiempo real de indicadores de tiempo para todas las vistas
                 this.iniciarActualizacionTiempoReal();
                 
-                // Watcher para forzar actualización cuando cambie paginaTabla o elementosPorPagina
-                this.$watch('paginaTabla', () => {
-                    this.$nextTick(() => {
-                        // Forzar actualización de la vista
-                    });
-                });
-                
-                this.$watch('elementosPorPagina', () => {
-                    this.$nextTick(() => {
-                        // Forzar actualización de la vista
-                    });
-                });
                 this.mostrarCc = false;
                 this.mostrarBcc = false;
                 this.prioridadCorreo = 'normal';
                 this.correoCc = '';
                 this.correoBcc = '';
-                
-                // Inicializar TinyMCE Editor
-                this.$nextTick(() => {
-                    this.inicializarTinyMCE();
-                });
                 
                 // Verificar tickets excedidos al cargar
                 this.verificarTicketsExcedidos();
@@ -2456,20 +2386,8 @@
             },
 
             iniciarActualizacionTiempoReal() {
-                if (!this.intervaloRefrescoLivewireTickets) {
-                    this.intervaloRefrescoLivewireTickets = setInterval(() => {
-                        if (document.hidden) {
-                            return;
-                        }
-                        if (typeof Livewire !== 'undefined' && typeof Livewire.emit === 'function') {
-                            Livewire.emit('ticket-estatus-actualizado');
-                        }
-                        this.actualizarIndicadoresTiempo();
-                        this.verificarTicketsExcedidos(false);
-                    }, 5000);
-                }
-                
-                // Actualizar indicadores de tiempo inmediatamente
+                // El refresco de tarjetas lo maneja Livewire con wire:poll.
+                // Aquí solo hacemos una sincronización puntual de indicadores.
                 this.actualizarIndicadoresTiempo();
             },
 
@@ -2592,14 +2510,41 @@
                 }
             },
 
-            inicializarTinyMCE() {
+            cargarTinyMCE() {
+                if (window.tinymce) {
+                    return Promise.resolve();
+                }
+
+                if (window.__tinyMCELoadPromise) {
+                    return window.__tinyMCELoadPromise;
+                }
+
+                window.__tinyMCELoadPromise = new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js';
+                    script.defer = true;
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+
+                return window.__tinyMCELoadPromise;
+            },
+
+            async inicializarTinyMCE() {
                 const editorElement = document.getElementById('editor-mensaje');
                 
                 if (!editorElement || this.tinyMCEInstance) return;
 
-                // Esperar a que TinyMCE esté disponible
                 if (typeof tinymce === 'undefined') {
-                    setTimeout(() => this.inicializarTinyMCE(), 100);
+                    try {
+                        await this.cargarTinyMCE();
+                    } catch (error) {
+                        return;
+                    }
+                }
+
+                if (typeof tinymce === 'undefined') {
                     return;
                 }
 
@@ -2663,7 +2608,6 @@
                     .then(response => response.json().then(data => ({ status: response.status, data })))
                     .then(({ status, data }) => {
                         if (status === 200 && data.location) {
-                            console.log('TinyMCE imagen subida OK:', data.location);
                             resolve(data.location);
                         } else {
                             // Error del servidor: guardar como base64 para que la imagen NO desaparezca
@@ -2749,48 +2693,44 @@
                 // Usar getAttribute en lugar de dataset para asegurar que funcione incluso con elementos ocultos
                 const preparar = () => {
                     const todosTickets = [];
-                    let totalElementosEncontrados = 0;
-                    
-                    ['nuevos', 'proceso', 'resueltos'].forEach(categoria => {
-                        // Buscar todos los elementos con data-categoria, incluso si están ocultos
-                        // Usar querySelectorAll que encuentra elementos incluso si están dentro de x-show="false"
-                        const elementos = document.querySelectorAll(`[data-categoria="${categoria}"]`);
-                        totalElementosEncontrados += elementos.length;
+                    const elementos = document.querySelectorAll('[data-categoria]');
+
+                    elementos.forEach(el => {
+                        const categoria = el.getAttribute('data-categoria');
+                        if (!['nuevos', 'proceso', 'resueltos'].includes(categoria)) return;
+
+                        // Usar getAttribute para obtener los valores incluso si el elemento está oculto
+                        const ticketId = el.getAttribute('data-ticket-id') || el.dataset.ticketId;
+                        const ticketAsunto = el.getAttribute('data-ticket-asunto') || el.dataset.ticketAsunto;
+                        const ticketDescripcion = el.getAttribute('data-ticket-descripcion') || el.dataset.ticketDescripcion;
+                        const ticketPrioridad = el.getAttribute('data-ticket-prioridad') || el.dataset.ticketPrioridad;
+                        const ticketEmpleado = el.getAttribute('data-ticket-empleado') || el.dataset.ticketEmpleado;
+                        const ticketAnydesk = el.getAttribute('data-ticket-anydesk') || el.dataset.ticketAnydesk || '';
+                        const ticketNumero = el.getAttribute('data-ticket-numero') || el.dataset.ticketNumero || '';
+                        const ticketCorreo = el.getAttribute('data-ticket-correo') || el.dataset.ticketCorreo;
+                        const ticketFecha = el.getAttribute('data-ticket-fecha') || el.dataset.ticketFecha;
+                        const ticketPuesto = el.getAttribute('data-ticket-puesto') || el.dataset.ticketPuesto;
+                        const ticketGerencia = el.getAttribute('data-ticket-gerencia') || el.dataset.ticketGerencia;
+                        const ticketDepartamento = el.getAttribute('data-ticket-departamento') || el.dataset.ticketDepartamento;
+                        const ticketResponsable = el.getAttribute('data-ticket-responsable') || '';
+                        const ticketTiempoTranscurrido = el.getAttribute('data-ticket-tiempo-transcurrido') || '';
+                        const ticketTiempoEstimado = el.getAttribute('data-ticket-tiempo-estimado') || '';
+                        const ticketTiempoEstado = el.getAttribute('data-ticket-tiempo-estado') || '';
                         
-                        elementos.forEach(el => {
-                            // Usar getAttribute para obtener los valores incluso si el elemento está oculto
-                            const ticketId = el.getAttribute('data-ticket-id') || el.dataset.ticketId;
-                            const ticketAsunto = el.getAttribute('data-ticket-asunto') || el.dataset.ticketAsunto;
-                            const ticketDescripcion = el.getAttribute('data-ticket-descripcion') || el.dataset.ticketDescripcion;
-                            const ticketPrioridad = el.getAttribute('data-ticket-prioridad') || el.dataset.ticketPrioridad;
-                            const ticketEmpleado = el.getAttribute('data-ticket-empleado') || el.dataset.ticketEmpleado;
-                            const ticketAnydesk = el.getAttribute('data-ticket-anydesk') || el.dataset.ticketAnydesk || '';
-                            const ticketNumero = el.getAttribute('data-ticket-numero') || el.dataset.ticketNumero || '';
-                            const ticketCorreo = el.getAttribute('data-ticket-correo') || el.dataset.ticketCorreo;
-                            const ticketFecha = el.getAttribute('data-ticket-fecha') || el.dataset.ticketFecha;
-                            const ticketPuesto = el.getAttribute('data-ticket-puesto') || el.dataset.ticketPuesto;
-                            const ticketGerencia = el.getAttribute('data-ticket-gerencia') || el.dataset.ticketGerencia;
-                            const ticketDepartamento = el.getAttribute('data-ticket-departamento') || el.dataset.ticketDepartamento;
-                            // Leer responsable y tiempo - usar getAttribute con el nombre completo del atributo
-                            const ticketResponsable = el.getAttribute('data-ticket-responsable') || '';
-                            const ticketTiempoTranscurrido = el.getAttribute('data-ticket-tiempo-transcurrido') || '';
-                            const ticketTiempoEstimado = el.getAttribute('data-ticket-tiempo-estimado') || '';
-                            const ticketTiempoEstado = el.getAttribute('data-ticket-tiempo-estado') || '';
-                            
-                            if (ticketId) {
+                        if (ticketId) {
                             todosTickets.push({
-                                    id: ticketId,
-                                    asunto: ticketAsunto || `Ticket #${ticketId}`,
-                                    descripcion: ticketDescripcion || '',
-                                    prioridad: ticketPrioridad || 'Media',
-                                    empleado: ticketEmpleado || '',
-                                    anydesk: ticketAnydesk,
-                                    numero: ticketNumero,
-                                    correo: ticketCorreo || '',
-                                    puesto: ticketPuesto || '',
-                                    gerencia: ticketGerencia || '',
-                                    departamento: ticketDepartamento || '',
-                                    fecha: ticketFecha || '',
+                                id: ticketId,
+                                asunto: ticketAsunto || `Ticket #${ticketId}`,
+                                descripcion: ticketDescripcion || '',
+                                prioridad: ticketPrioridad || 'Media',
+                                empleado: ticketEmpleado || '',
+                                anydesk: ticketAnydesk,
+                                numero: ticketNumero,
+                                correo: ticketCorreo || '',
+                                puesto: ticketPuesto || '',
+                                gerencia: ticketGerencia || '',
+                                departamento: ticketDepartamento || '',
+                                fecha: ticketFecha || '',
                                 estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
                                 responsable: ticketResponsable ? ticketResponsable.trim() : '',
                                 tiempoTranscurrido: ticketTiempoTranscurrido ? ticketTiempoTranscurrido.trim() : '',
@@ -2798,12 +2738,11 @@
                                 tiempoEstado: ticketTiempoEstado ? ticketTiempoEstado.trim() : '',
                                 elemento: el
                             });
-                            }
-                        });
+                        }
                     });
                     
                     // Si no se encontraron elementos, intentar nuevamente después de un breve delay
-                    if (totalElementosEncontrados === 0 && this.vista === 'tabla') {
+                    if (elementos.length === 0 && this.vista === 'tabla') {
                         setTimeout(() => {
                             this.prepararDatosTabla();
                         }, 500);
@@ -2815,7 +2754,6 @@
                     const idsVistos = new Set();
                     
                     todosTickets.forEach(ticket => {
-                        const idUnico = ticket.id ? `ticket-${ticket.id}` : `ticket-${Date.now()}-${Math.random()}`;
                         if (!idsVistos.has(ticket.id)) {
                             idsVistos.add(ticket.id);
                             ticketsUnicos.push(ticket);
@@ -2826,16 +2764,6 @@
                     // Crear un nuevo array para asegurar que Alpine.js detecte el cambio
                     this.ticketsTabla = [...ticketsUnicos];
                     this.ordenarTabla();
-                    
-                    // Forzar actualización de Alpine.js
-                    this.$nextTick(() => {
-                        // Asegurar que Alpine detecte el cambio
-                        if (this.ticketsTabla.length > 0) {
-                            // Forzar actualización reactiva
-                            this.ticketsTabla = [...this.ticketsTabla];
-                        } else {
-                        }
-                    });
                 };
                 
                 // Ejecutar después de que Alpine.js haya procesado el DOM
@@ -2961,38 +2889,18 @@
             abrirModal(datos) {
                 this.selected = datos;
                 this.mostrar = true;
-                // Resetear notificaciones pendientes en el servidor al abrir el modal
-                try {
-                    fetch(`/tickets/${datos.id}/mark-notifications-read`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({})
-                    }).catch(err => console.warn('No se pudo resetear notificaciones:', err));
-                } catch (e) {
-                    console.warn('Error iniciando petición para resetear notificaciones:', e);
-                }
+                document.querySelectorAll(`[data-ticket-id="${datos.id}"]`).forEach(card => {
+                    card.querySelectorAll('.bg-red-500.rounded-full.w-4.h-4').forEach(badge => badge.remove());
+                });
 
-             document.querySelectorAll(`[data-ticket-id="${datos.id}"]`).forEach(card => {
-    const badges = card.querySelectorAll('.bg-red-500.rounded-full.w-4.h-4');
-    badges.forEach(badge => badge.remove());
-});
-
-// === AGREGA ESTO JUSTO AQUÍ ABAJO ===
-// Petición al servidor para poner las notificaciones en 0 en la BD
-fetch(`/tickets/${datos.id}/mark-notifications-read`, {
-    method: 'POST',
-    headers: {
-        // Esto es vital para que Laravel acepte la petición POST
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-        'Content-Type': 'application/json'
-    }
-})
-.then(response => response.json())
-.then(data => console.log('Notificaciones puestas a cero:', data))
-.catch(error => console.error('Error al limpiar notificaciones:', error));
+                fetch(`/tickets/${datos.id}/mark-notifications-read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                }).catch(() => {});
                 this.asuntoCorreo = `Re: Ticket #${datos.id}`;
                 this.mostrarCc = false;
                 this.mostrarBcc = false;
@@ -3019,80 +2927,6 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
                         this.actualizarEstadoEditor();
                     }
                 });
-            },
-
-            async cargarDatosTicket(ticketId) {
-                try {
-                    const response = await fetch(`/tickets/${ticketId}`, {
-                        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        
-                        if (data.success && data.ticket) {
-                            // ... tus otras asignaciones ...
-                            this.ticketPrioridad = data.ticket.Prioridad || '';
-                            this.ticketEstatus = data.ticket.Estatus || '';
-                            this.ticketClasificacion = data.ticket.Clasificacion || '';
-                            this.ticketResponsableTI = data.ticket.ResponsableTI ? String(data.ticket.ResponsableTI) : '';
-                            this.ticketTipoID = data.ticket.TipoID ? String(data.ticket.TipoID) : '';
-                            this.ticketSubtipoID = data.ticket.SubtipoID ? String(data.ticket.SubtipoID) : '';
-                            this.ticketTertipoID = data.ticket.TertipoID ? String(data.ticket.TertipoID) : '';
-                            
-                            // Actualizar selected
-                            if (this.selected) {
-                                this.selected.numero = data.ticket.numero || ''; 
-                                this.selected.anydesk = data.ticket.anydesk || '';
-                                this.selected.estatus = data.ticket.Estatus || '';
-                                this.selected.imagen = data.ticket.imagen || '';
-                                this.selected.puesto = data.ticket.puesto || '';
-                                this.selected.gerencia = data.ticket.gerencia || '';
-                                this.selected.departamento = data.ticket.departamento || '';
-
-                                // 3. CORRECCIÓN: Leer la resolución del servidor
-                                this.selected.resolucion = data.ticket.Resolucion || data.ticket.resolucion || '';
-                            }
-                            
-                            // ... resto de tu lógica de selects y nextTick ...
-                            this.$nextTick(() => { this.actualizarEstadoEditor(); });
-                            // ... (copia el resto de la lógica de los selects anidados aquí si la borraste) ...
-                            this.$nextTick(() => {
-                                setTimeout(() => {
-                                    const tipoSelect = document.getElementById('tipo-select');
-                                    if (tipoSelect && this.ticketTipoID) {
-                                        tipoSelect.value = this.ticketTipoID;
-                                        tipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                                        
-                                        setTimeout(() => {
-                                            const subtipoSelect = document.getElementById('subtipo-select');
-                                            if (subtipoSelect && this.ticketSubtipoID) {
-                                                if(subtipoSelect.options.length <= 1 && typeof loadSubtipos === 'function') loadSubtipos(this.ticketTipoID);
-                                                
-                                                setTimeout(() => {
-                                                    if(subtipoSelect.options.length > 1) {
-                                                        subtipoSelect.value = this.ticketSubtipoID;
-                                                        subtipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                                                        
-                                                        setTimeout(() => {
-                                                            const tertipoSelect = document.getElementById('tertipo-select');
-                                                            if (tertipoSelect && this.ticketTertipoID) {
-                                                                if(tertipoSelect.options.length <= 1 && typeof loadTertipos === 'function') loadTertipos(this.ticketSubtipoID);
-                                                                setTimeout(() => { if(tertipoSelect.options.length > 1) tertipoSelect.value = this.ticketTertipoID; }, 300);
-                                                            }
-                                                        }, 500);
-                                                    }
-                                                }, 500);
-                                            }
-                                        }, 300);
-                                    }
-                                }, 200);
-                            });
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error cargando datos:', error);
-                }
             },
 
             async cargarDatosTicket(ticketId) {
@@ -3686,9 +3520,6 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
                 }
                 
                 // Forzar actualización de Alpine.js
-                this.$nextTick(() => {
-                    console.log('Archivos adjuntos actualizados:', this.archivosAdjuntos.length);
-                });
             },
             
             handleDragOver(event) {
@@ -4886,7 +4717,7 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
 
     // =====================================================================
     // POLLING EN TIEMPO REAL DE NOTIFICACIONES PENDIENTES
-    // Intervalo de 3 segundos — más rápido que el wire:poll.5s de Livewire.
+    // Intervalo ligero para mantener badges sin recargar la página.
     // Actualiza los badges rojos en kanban, lista y tabla sin recargar la página.
     // =====================================================================
     (function iniciarPollingNotificaciones() {
@@ -4959,7 +4790,20 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
             });
         }
 
+        function hayCambiosPendientes(actual, anterior) {
+            const llavesActuales = Object.keys(actual);
+            const llavesAnteriores = Object.keys(anterior);
+
+            if (llavesActuales.length !== llavesAnteriores.length) {
+                return true;
+            }
+
+            return llavesActuales.some(ticketId => actual[ticketId] !== anterior[ticketId]);
+        }
+
         async function pollNotificaciones() {
+            if (document.hidden) return;
+
             try {
                 const response = await fetch('/tickets/notificaciones-pendientes', {
                     method: 'GET',
@@ -4975,11 +4819,7 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
                 const data = await response.json();
                 const pendientes = data.pendientes || {};
 
-                // Solo actualizar el DOM si hubo cambios reales
-                const estadoActualStr = JSON.stringify(pendientes);
-                const estadoAnteriorStr = JSON.stringify(estadoAnterior);
-
-                if (estadoActualStr !== estadoAnteriorStr) {
+                if (hayCambiosPendientes(pendientes, estadoAnterior)) {
                     estadoAnterior = pendientes;
                     aplicarBadgesEnDOM(pendientes);
                 }
@@ -4988,9 +4828,9 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
             }
         }
 
-        // Arrancar inmediatamente y luego cada 3 segundos
+        // Arrancar inmediatamente y luego cada 5 segundos
         pollNotificaciones();
-        setInterval(pollNotificaciones, 3000);
+        setInterval(pollNotificaciones, 5000);
     })();
 </script>
 </div>
