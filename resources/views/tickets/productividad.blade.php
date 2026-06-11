@@ -1308,13 +1308,13 @@
             this.totalDetalle = 0;
         },
         renderEstrellas(rating) {
-            if (rating === null || rating === undefined) return '<span class=\'text-slate-500 text-sm\'>Sin calificar</span>';
+            if (rating === null || rating === undefined) return '<span class=\'text-slate-500 dark:text-slate-400 text-sm\'>Sin calificar</span>';
             let stars = '';
             for (let i = 1; i <= 5; i++) {
                 if (i <= rating) {
                     stars += '<i class=\'fas fa-star text-yellow-400\'></i>';
                 } else {
-                    stars += '<i class=\'far fa-star text-slate-600\'></i>';
+                    stars += '<i class=\'far fa-star text-slate-300 dark:text-slate-600\'></i>';
                 }
             }
             return stars;
@@ -1334,7 +1334,7 @@
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click.self="cerrarModalDetalle()">
 
-        <div class="relative w-full max-w-7xl mx-4 bg-slate-800 rounded-xl shadow-2xl border border-slate-600/60 flex flex-col overflow-hidden"
+        <div class="relative w-full max-w-7xl mx-4 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-600/60 flex flex-col overflow-hidden"
             style="max-height: 85vh;" x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 scale-95 translate-y-2"
             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -1344,10 +1344,10 @@
 
             {{-- Header del Modal --}}
             <div
-                class="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-slate-900 rounded-t-xl">
+                class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-t-xl">
                 <div>
-                    <h3 class="text-lg font-bold text-white" x-text="tituloDetalle || 'Detalle de Tickets'"></h3>
-                    <p class="text-xs text-slate-400 mt-0.5">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="tituloDetalle || 'Detalle de Tickets'"></h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         <span x-show="!cargandoDetalle && totalDetalle > 0">
                             <span x-text="totalDetalle"></span> registro<span x-show="totalDetalle !== 1">s</span>
                             encontrado<span x-show="totalDetalle !== 1">s</span>
@@ -1356,114 +1356,114 @@
                     </p>
                 </div>
                 <button @click="cerrarModalDetalle()"
-                    class="w-9 h-9 rounded-lg bg-slate-700 hover:bg-red-600/80 border border-slate-600 text-slate-300 hover:text-white transition-all duration-150 flex items-center justify-center text-sm font-bold">
+                    class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-red-50 dark:bg-slate-700 dark:hover:bg-red-600/80 border border-gray-200 dark:border-slate-600 text-slate-500 hover:text-red-600 dark:text-slate-300 dark:hover:text-white transition-all duration-150 flex items-center justify-center text-sm font-bold">
                     ✕
                 </button>
             </div>
 
             {{-- Contenido del Modal --}}
-            <div class="flex-1 overflow-y-auto p-4 bg-slate-900">
+            <div class="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900">
 
                 {{-- Loader --}}
                 <div x-show="cargandoDetalle" class="flex flex-col items-center justify-center py-16">
-                    <div class="w-16 h-16 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
-                    <p class="text-slate-300 text-base font-medium mt-4">Cargando tickets...</p>
+                    <div class="w-16 h-16 border-4 border-gray-200 dark:border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
+                    <p class="text-slate-600 dark:text-slate-300 text-base font-medium mt-4">Cargando tickets...</p>
                 </div>
 
                 {{-- Error --}}
                 <div x-show="!cargandoDetalle && errorDetalle"
                     class="flex flex-col items-center justify-center py-16 px-4">
                     <div
-                        class="w-16 h-16 bg-red-900/60 rounded-full flex items-center justify-center mb-3 border border-red-700/60 text-red-400 text-3xl font-bold">
+                        class="w-16 h-16 bg-red-50 dark:bg-red-900/60 rounded-full flex items-center justify-center mb-3 border border-red-200 dark:border-red-700/60 text-red-500 dark:text-red-400 text-3xl font-bold">
                         ⚠
                     </div>
-                    <p class="text-slate-200 text-base font-semibold mb-1">Error al cargar los datos</p>
-                    <p class="text-slate-400 text-sm text-center" x-text="errorDetalle"></p>
+                    <p class="text-slate-800 dark:text-slate-200 text-base font-semibold mb-1">Error al cargar los datos</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm text-center" x-text="errorDetalle"></p>
                 </div>
 
                 {{-- Estado vacío --}}
                 <div x-show="!cargandoDetalle && !errorDetalle && ticketsDetalle.length === 0"
                     class="flex flex-col items-center justify-center py-16 px-4">
                     <div
-                        class="w-16 h-16 bg-slate-700/60 rounded-full flex items-center justify-center mb-3 border border-slate-600 text-slate-400 text-3xl">
+                        class="w-16 h-16 bg-gray-100 dark:bg-slate-700/60 rounded-full flex items-center justify-center mb-3 border border-gray-200 dark:border-slate-600 text-slate-400 text-3xl">
                         📭
                     </div>
-                    <p class="text-slate-200 text-base font-semibold mb-1">Sin resultados</p>
-                    <p class="text-slate-400 text-sm text-center">No hay tickets para este filtro</p>
+                    <p class="text-slate-800 dark:text-slate-200 text-base font-semibold mb-1">Sin resultados</p>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm text-center">No hay tickets para este filtro</p>
                 </div>
 
                 {{-- Tabla de Tickets --}}
                 <div x-show="!cargandoDetalle && !errorDetalle && ticketsDetalle.length > 0"
-                    class="overflow-x-auto rounded-lg border border-slate-600/60">
+                    class="overflow-x-auto rounded-lg border border-gray-200 dark:border-slate-600/60">
                     <table class="w-full">
-                        <thead class="bg-slate-800 sticky top-0 z-10">
-                            <tr class="border-b border-slate-700">
+                        <thead class="bg-gray-100 dark:bg-slate-800 sticky top-0 z-10">
+                            <tr class="border-b border-gray-200 dark:border-slate-700">
                                 <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     ID</th>
                                 <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide">
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
                                     Descripción</th>
                                 <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Solicitante</th>
                                 <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Gerencia</th>
                                 <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Prioridad</th>
                                 <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Estado</th>
                                 <th
-                                    class="px-4 py-3 text-left text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-left text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Responsable TI</th>
                                 <th
-                                    class="px-4 py-3 text-center text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Rapidez</th>
                                 <th
-                                    class="px-4 py-3 text-center text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Resolución</th>
                                 <th
-                                    class="px-4 py-3 text-center text-xs font-bold text-slate-300 uppercase tracking-wide whitespace-nowrap">
+                                    class="px-4 py-3 text-center text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wide whitespace-nowrap">
                                     Atención</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-700/60 bg-slate-800">
+                        <tbody class="divide-y divide-gray-200 dark:divide-slate-700/60 bg-white dark:bg-slate-800">
                             <template x-for="ticket in ticketsDetalle" :key="ticket.TicketID">
-                                <tr class="hover:bg-slate-700/50 transition-colors duration-100">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors duration-100">
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
-                                        <span class="font-mono font-bold text-blue-400"
+                                        <span class="font-mono font-bold text-blue-600 dark:text-blue-400"
                                             x-text="'#' + ticket.TicketID"></span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 max-w-md">
+                                    <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 max-w-md">
                                         <div class="line-clamp-2 leading-relaxed" :title="ticket.Descripcion"
                                             x-text="ticket.Descripcion"></div>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 whitespace-nowrap"
+                                    <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap"
                                         x-text="ticket.Solicitante"></td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 whitespace-nowrap"
+                                    <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap"
                                         x-text="ticket.Gerencia"></td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
                                             :class="{
-                                            'bg-red-600/20 text-red-400 ring-1 ring-red-600/40':         ticket.Prioridad === 'Alta',
-                                            'bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/40': ticket.Prioridad === 'Media',
-                                            'bg-green-600/20 text-green-400 ring-1 ring-green-600/40':   ticket.Prioridad === 'Baja'
+                                            'bg-red-100 text-red-700 ring-1 ring-red-200 dark:bg-red-600/20 dark:text-red-400 dark:ring-red-600/40':         ticket.Prioridad === 'Alta',
+                                            'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-400 dark:ring-yellow-500/40': ticket.Prioridad === 'Media',
+                                            'bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-600/20 dark:text-green-400 dark:ring-green-600/40':   ticket.Prioridad === 'Baja'
                                         }" x-text="ticket.Prioridad">
                                         </span>
                                     </td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
                                         <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold"
                                             :class="{
-                                            'bg-slate-600/40 text-slate-300 ring-1 ring-slate-500/40':  ticket.Estatus === 'Pendiente',
-                                            'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/40':     ticket.Estatus === 'En progreso',
-                                            'bg-green-600/20 text-green-400 ring-1 ring-green-500/40':  ticket.Estatus === 'Cerrado'
+                                            'bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-slate-600/40 dark:text-slate-300 dark:ring-slate-500/40':  ticket.Estatus === 'Pendiente',
+                                            'bg-blue-100 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-600/20 dark:text-blue-400 dark:ring-blue-500/40':     ticket.Estatus === 'En progreso',
+                                            'bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-600/20 dark:text-green-400 dark:ring-green-500/40':  ticket.Estatus === 'Cerrado'
                                         }" x-text="ticket.Estatus">
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-slate-300 whitespace-nowrap"
+                                    <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap"
                                         x-text="ticket.ResponsableTI"></td>
                                     <td class="px-4 py-3 text-sm text-center whitespace-nowrap">
                                         <div class="inline-flex items-center gap-0.5"
@@ -1487,14 +1487,14 @@
 
             {{-- Footer del Modal --}}
             <div
-                class="flex items-center justify-between px-6 py-3 border-t border-slate-700 bg-slate-900/80 rounded-b-xl">
-                <div class="text-xs text-slate-500">
+                class="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 rounded-b-xl">
+                <div class="text-xs text-slate-500 dark:text-slate-500">
                     Presiona <kbd
-                        class="px-1.5 py-0.5 bg-slate-700 border border-slate-600 rounded text-slate-300 font-mono text-xs">ESC</kbd>
+                        class="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded text-slate-600 dark:text-slate-300 font-mono text-xs">ESC</kbd>
                     para cerrar
                 </div>
                 <button @click="cerrarModalDetalle()"
-                    class="px-5 py-2 rounded-lg font-semibold text-sm transition-all bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600/80 hover:border-slate-500">
+                    class="px-5 py-2 rounded-lg font-semibold text-sm transition-all bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-100 border border-gray-200 hover:border-gray-300 dark:border-slate-600/80 dark:hover:border-slate-500">
                     Cerrar
                 </button>
             </div>
