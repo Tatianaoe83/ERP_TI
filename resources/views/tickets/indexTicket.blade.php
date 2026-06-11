@@ -1451,6 +1451,7 @@
             intervaloVerificacionExcedidos: null,
             // Variables para verificación automática de mensajes nuevos
             intervaloVerificacionMensajes: null,
+            intervaloRefrescoLivewireTickets: null,
             ultimoMensajeId: 0,
 
             init() {
@@ -1498,18 +1499,22 @@
                     // Verificar si hay cambios en los tickets usando el hash
                     if (datos && datos.ticketsStatus && datos.hash) {
                         
-                        const hashCambio = !this.ultimoHashTickets || this.ultimoHashTickets !== datos.hash;
+                        const hashKey = vistaOrigen || this.vista || 'kanban';
+                        if (!this.ultimoHashTickets || typeof this.ultimoHashTickets !== 'object') {
+                            this.ultimoHashTickets = {};
+                        }
+                        const hashCambio = !this.ultimoHashTickets[hashKey] || this.ultimoHashTickets[hashKey] !== datos.hash;
                         
                         // Aplicar a la vista cuando: primera vez (sync inicial con el wire) o cuando el hash cambió
                         if (hashCambio) {
-                            if (!this.ultimoHashTickets) {
+                            if (!this.ultimoHashTickets[hashKey]) {
                             } else {
-                                console.log('¡CAMBIO DETECTADO! Hash anterior:', this.ultimoHashTickets, 'Hash nuevo:', datos.hash);
+                                console.log('¡CAMBIO DETECTADO! Vista:', hashKey, 'Hash anterior:', this.ultimoHashTickets[hashKey], 'Hash nuevo:', datos.hash);
                             }
                             
-                            this.ultimoHashTickets = datos.hash;
+                            this.ultimoHashTickets[hashKey] = datos.hash;
                             
-                            // Actualizar conteos y DOM para que la vista refleje lo que trae el wire
+                            // Actualizar solo estado externo. Livewire repinta las columnas; no mutar su DOM manualmente.
                             const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
                             const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
                             const resueltosCount = datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0;
@@ -1521,16 +1526,6 @@
                             };
                             
                             this.actualizarContadoresTickets(nuevosCount, procesoCount, resueltosCount);
-                            // Ejecutar actualización del DOM (incl. mover tarjetas) en el siguiente frame.
-                            // Pasamos vistaOrigen para mover siempre en kanban/lista que tocó el evento,
-                            // aunque el usuario haya cambiado de vista antes del rAF.
-                            const self = this;
-                            const vistaParaDOM = vistaOrigen || this.vista;
-                            requestAnimationFrame(() => {
-                                requestAnimationFrame(() => {
-                                    self.actualizarTicketsEnDOM(datos.ticketsStatus, vistaParaDOM);
-                                });
-                            });
                             
                         }
                     } else {
@@ -2389,7 +2384,7 @@
                 
                 
                 // Variable para rastrear el último hash de tickets
-                this.ultimoHashTickets = null;
+                this.ultimoHashTickets = {};
                 
                 // Watcher para ejecutar prepararDatosTabla cuando se cambie a vista tabla
                 this.$watch('vista', (newValue) => {
@@ -2461,8 +2456,18 @@
             },
 
             iniciarActualizacionTiempoReal() {
-                // La actualización de tiempo real ahora se maneja con wire:poll
-                // Se elimina el setInterval ya que wire:poll actualiza automáticamente cada 30 segundos
+                if (!this.intervaloRefrescoLivewireTickets) {
+                    this.intervaloRefrescoLivewireTickets = setInterval(() => {
+                        if (document.hidden) {
+                            return;
+                        }
+                        if (typeof Livewire !== 'undefined' && typeof Livewire.emit === 'function') {
+                            Livewire.emit('ticket-estatus-actualizado');
+                        }
+                        this.actualizarIndicadoresTiempo();
+                        this.verificarTicketsExcedidos(false);
+                    }, 5000);
+                }
                 
                 // Actualizar indicadores de tiempo inmediatamente
                 this.actualizarIndicadoresTiempo();
@@ -4077,7 +4082,7 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
                 return new Date(fecha).toLocaleString('es-ES');
             },
 
-            async verificarTicketsExcedidos() {
+            async verificarTicketsExcedidos(mostrarPopup = true) {
                 try {
                     this.cargandoExcedidos = true;
                     const response = await fetch('{{ route("tickets.excedidos") }}', {
@@ -4095,7 +4100,7 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
                         
                         // Mostrar popup si hay tickets excedidos
                         // Solo iniciar timer cuando se abre por primera vez, no al actualizar
-                        if (this.ticketsExcedidos.length > 0) {
+                        if (mostrarPopup && this.ticketsExcedidos.length > 0) {
                             const yaEstabaAbierto = this.mostrarPopupExcedidos;
                             this.mostrarPopupExcedidos = true;
                             if (!yaEstabaAbierto) {

@@ -1134,7 +1134,9 @@ class TicketsController extends Controller
                 $tiempoInfo = null;
                 if ($ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
                     $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                    $tiempoTranscurrido  = $ticket->tiempo_respuesta ?? 0;
+                    $tiempoTranscurrido  = $ticket->FechaInicioProgreso
+                        ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
+                        : 0;
                     $porcentajeUsado     = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
 
                     $tiempoInfo = [
@@ -1819,12 +1821,12 @@ class TicketsController extends Controller
             foreach ($tickets as $ticket) {
                 if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) continue;
 
-                $tiempoRespuesta = $ticket->tiempo_respuesta;
-                if ($tiempoRespuesta === null) continue;
-
                 $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+                $tiempoEnProgreso = $ticket->FechaInicioProgreso
+                    ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
+                    : null;
 
-                if ($tiempoRespuesta > $tiempoEstimadoHoras) {
+                if ($tiempoEnProgreso !== null && $tiempoEnProgreso > $tiempoEstimadoHoras) {
                     $ticketsExcedidos[] = [
                         'id'                => $ticket->TicketID,
                         'descripcion'       => \Illuminate\Support\Str::limit($ticket->Descripcion, 80),
@@ -1832,9 +1834,9 @@ class TicketsController extends Controller
                         'empleado'          => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin empleado',
                         'prioridad'         => $ticket->Prioridad,
                         'tiempo_estimado'   => round($tiempoEstimadoHoras, 2),
-                        'tiempo_respuesta'  => round($tiempoRespuesta, 2),
-                        'tiempo_excedido'   => round($tiempoRespuesta - $tiempoEstimadoHoras, 2),
-                        'porcentaje_excedido' => round(($tiempoRespuesta / $tiempoEstimadoHoras) * 100, 1),
+                        'tiempo_respuesta'  => round($tiempoEnProgreso, 2),
+                        'tiempo_excedido'   => round($tiempoEnProgreso - $tiempoEstimadoHoras, 2),
+                        'porcentaje_excedido' => round(($tiempoEnProgreso / $tiempoEstimadoHoras) * 100, 1),
                         'categoria'         => $ticket->tipoticket->NombreTipo,
                     ];
                 }

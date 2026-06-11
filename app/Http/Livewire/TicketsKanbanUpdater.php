@@ -8,7 +8,12 @@ use Illuminate\Support\Str;
 
 class TicketsKanbanUpdater extends Component
 {
-    protected $listeners = ['ticket-estatus-actualizado' => '$refresh'];
+    protected $listeners = ['ticket-estatus-actualizado' => 'actualizarDatos'];
+
+    public function actualizarDatos()
+    {
+        $this->emit('tickets-actualizados-kanban', $this->obtenerPayloadActualizacion());
+    }
 
     private function fetchTickets()
     {
@@ -119,7 +124,7 @@ class TicketsKanbanUpdater extends Component
         ];
     }
 
-    public function render()
+    private function obtenerPayloadActualizacion()
     {
         $tickets = $this->fetchTickets();
 
@@ -137,10 +142,26 @@ class TicketsKanbanUpdater extends Component
 
         $tiempos = $this->procesarTiempos($tickets);
 
-        return view('livewire.tickets-kanban-updater', [
-            'ticketsStatus'    => $ticketsStatus,
+        return [
+            'ticketsStatus' => $ticketsStatus,
             'ticketsExcedidos' => $tiempos['ticketsExcedidos'],
-            'tiemposProgreso'  => $tiempos['tiemposProgreso'],
+            'tiemposProgreso' => $tiempos['tiemposProgreso'],
+            'hash' => md5(json_encode($tickets->map(fn ($ticket) => [
+                $ticket->TicketID,
+                $ticket->Estatus,
+                optional($ticket->updated_at)->timestamp,
+            ])->values()->all())),
+        ];
+    }
+
+    public function render()
+    {
+        $payload = $this->obtenerPayloadActualizacion();
+
+        return view('livewire.tickets-kanban-updater', [
+            'ticketsStatus'    => $payload['ticketsStatus'],
+            'ticketsExcedidos' => $payload['ticketsExcedidos'],
+            'tiemposProgreso'  => $payload['tiemposProgreso'],
         ]);
     }
 }

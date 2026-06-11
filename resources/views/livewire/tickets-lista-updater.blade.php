@@ -1,4 +1,4 @@
-<div wire:poll.5s wire:poll.keep-alive>
+<div wire:poll.5s.keep-alive="actualizarDatos">
 
     <div
         x-show="vista === 'lista'"
@@ -23,7 +23,8 @@
                 <h3 class="font-bold text-sm text-gray-800 dark:text-gray-100 uppercase tracking-wide">
                     {{ $titulo }}
                 </h3>
-                <span class="text-xs font-semibold px-2 py-1 rounded bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                <span data-categoria-header="{{ $key }}"
+                    class="text-xs font-semibold px-2 py-1 rounded bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                     {{ $grupo->count() }}
                 </span>
             </div>
@@ -54,6 +55,7 @@
                     class="p-4 cursor-pointer transition-all duration-200 bg-gray-50 dark:bg-[#1C1F26] hover:bg-gray-100 dark:hover:bg-[#242933] border-l-4 border-l-transparent hover:border-l-blue-500"
 
                     data-ticket-id="{{ $ticket->TicketID }}"
+                    data-categoria="{{ $key }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion ?? '', ENT_QUOTES, 'UTF-8') }}"
                     data-ticket-prioridad="{{ $ticket->Prioridad ?? '' }}"
@@ -153,7 +155,7 @@
                 </div>
 
                 @empty
-                <div class="p-12 text-center text-gray-500">
+                <div data-empty-placeholder class="p-12 text-center text-gray-500">
                     <p class="text-sm font-medium">No hay tickets en esta categoría.</p>
                 </div>
                 @endforelse

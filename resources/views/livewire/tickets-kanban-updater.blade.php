@@ -1,7 +1,7 @@
 {{-- resources/views/livewire/tickets-kanban-updater.blade.php --}}
-<link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
-<div wire:poll.5s wire:poll.keep-alive>
+<div wire:poll.5s.keep-alive="actualizarDatos">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
@@ -20,7 +20,8 @@
                     </h3>
                 </div>
 
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                <span data-categoria-header="{{ $key }}"
+                    class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                     {{ count($ticketsStatus[$key]) }}
                 </span>
             </div>
@@ -53,6 +54,7 @@
                     class="group cursor-pointer p-4 rounded-lg shadow-sm transition-all duration-200 bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] hover:shadow-md hover:translate-y-[-2px] border-l-[4px]"
                     style="border-left-color: {{ $ticket['prioridad'] == 'Baja' ? '#22c55e' : ($ticket['prioridad'] == 'Media' ? '#eab308' : '#ef4444') }};"
                     data-ticket-id="{{ $ticket['id'] }}"
+                    data-categoria="{{ $key }}"
                     data-ticket-asunto="Ticket #{{ $ticket['id'] }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket['descripcion'] ?? '', ENT_QUOTES, 'UTF-8') }}"
                     data-ticket-prioridad="{{ $ticket['prioridad'] }}"
@@ -154,7 +156,7 @@
                 </div>
 
                 @empty
-                <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 opacity-60">
+                <div data-empty-placeholder class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 opacity-60">
                     <i class="fas fa-clipboard-list text-4xl mb-2"></i>
                     <p class="text-sm">Sin tickets</p>
                 </div>
