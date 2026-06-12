@@ -128,7 +128,7 @@ class TicketsKanbanUpdater extends Component
         ];
     }
 
-    public function render()
+    private function obtenerPayloadActualizacion()
     {
         $tickets = $this->fetchTickets();
 
@@ -153,17 +153,26 @@ class TicketsKanbanUpdater extends Component
         ];
         $tiempos = $this->procesarTiempos($tickets);
 
-        $this->emit('tickets-actualizados-kanban', [
-            'ticketsStatus'    => $ticketsStatus,
+        return [
+            'ticketsStatus' => $ticketsStatus,
             'ticketsExcedidos' => $tiempos['ticketsExcedidos'],
-            'tiemposProgreso'  => $tiempos['tiemposProgreso'],
-            'hash'             => md5(json_encode($ticketsStatus)),
-        ]);
+            'tiemposProgreso' => $tiempos['tiemposProgreso'],
+            'hash' => md5(json_encode($tickets->map(fn ($ticket) => [
+                $ticket->TicketID,
+                $ticket->Estatus,
+                optional($ticket->updated_at)->timestamp,
+            ])->values()->all())),
+        ];
+    }
+
+    public function render()
+    {
+        $payload = $this->obtenerPayloadActualizacion();
 
         return view('livewire.tickets-kanban-updater', [
-            'ticketsStatus'    => $ticketsStatus,
-            'ticketsExcedidos' => $tiempos['ticketsExcedidos'],
-            'tiemposProgreso'  => $tiempos['tiemposProgreso'],
+            'ticketsStatus'    => $payload['ticketsStatus'],
+            'ticketsExcedidos' => $payload['ticketsExcedidos'],
+            'tiemposProgreso'  => $payload['tiemposProgreso'],
         ]);
     }
 }

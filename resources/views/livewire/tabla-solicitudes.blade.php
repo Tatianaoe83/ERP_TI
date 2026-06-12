@@ -410,24 +410,27 @@
                                                 'fa-clock': paso.status === 'pending'
                                             }"></i>
                                     </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5" x-text="paso.stageLabel"></p>
-                                        <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-                                            <span x-show="paso.approverNombre">
-                                                <span class="font-medium text-slate-600 dark:text-slate-300">Aprobador:</span>
-                                                <span x-text="' ' + paso.approverNombre"></span>
-                                            </span>
-                                            <span x-show="paso.decidedByNombre">
-                                                <span class="font-medium text-slate-600 dark:text-slate-300">Decidido por:</span>
-                                                <span x-text="' ' + paso.decidedByNombre"></span>
-                                            </span>
-                                            <span x-show="paso.decidedAt">
-                                                <span class="font-medium text-slate-600 dark:text-slate-300">Fecha:</span>
-                                                <span x-text="' ' + paso.decidedAt"></span>
-                                            </span>
+                                    <div class="flex-1 min-w-0 space-y-2">
+                                        <p class="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 leading-snug" x-text="paso.stageLabel"></p>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                                            <div x-show="paso.approverNombre" class="min-w-0">
+                                                <span class="block font-medium text-slate-500 dark:text-slate-400">Aprobador</span>
+                                                <span class="block truncate text-slate-700 dark:text-slate-200" :title="paso.approverNombre" x-text="paso.approverNombre"></span>
+                                            </div>
+                                            <div x-show="paso.decidedByNombre" class="min-w-0">
+                                                <span class="block font-medium text-slate-500 dark:text-slate-400">Decidido por</span>
+                                                <span class="block truncate text-slate-700 dark:text-slate-200" :title="paso.decidedByNombre" x-text="paso.decidedByNombre"></span>
+                                            </div>
+                                            <div x-show="paso.decidedAt" class="min-w-0">
+                                                <span class="block font-medium text-slate-500 dark:text-slate-400">Fecha</span>
+                                                <span class="block text-slate-700 dark:text-slate-200" x-text="paso.decidedAt"></span>
+                                            </div>
                                         </div>
                                         <p x-show="paso.comment"
-                                            class="mt-1.5 text-xs italic text-slate-500 dark:text-slate-400 border-l-2 border-slate-300 dark:border-slate-600 pl-2"
+                                            class="inline-flex items-center gap-1.5 max-w-full rounded-md px-2.5 py-1 text-xs font-medium"
+                                            :class="(paso.comment || '').toLowerCase().includes('ganador')
+                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                                : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'"
                                             x-text="paso.comment"></p>
                                     </div>
                                 </div>
@@ -456,21 +459,52 @@
                         getIdx(p) { return this.selectedIndexes[p] || 0; }
                     }">
                         <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">Cotizaciones</h4>
+                        <div x-show="getCotizacionesGanadoras().length > 0"
+                            class="mb-4 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-900/10 p-4">
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
+                                        <i class="fas fa-trophy text-xs"></i>
+                                    </span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Ganadores elegidos</p>
+                                        <p class="text-xs text-emerald-700/70 dark:text-emerald-300/70">Resumen rápido para no buscarlos entre todas las cotizaciones.</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">
+                                    <span x-text="getCotizacionesGanadoras().length"></span> ganador(es)
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <template x-for="cot in getCotizacionesGanadoras()" :key="'winner-'+cot.CotizacionID">
+                                    <div class="rounded-md bg-white/80 dark:bg-slate-800/80 border border-emerald-100 dark:border-emerald-800/70 px-3 py-2">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <p class="text-[11px] font-bold uppercase text-violet-700 dark:text-violet-300">Producto <span x-text="cot.NumeroPropuesta || '-'"></span></p>
+                                                <p class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate" :title="cot.Proveedor || 'Proveedor'" x-text="cot.Proveedor || 'Proveedor'"></p>
+                                                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate" :title="cot.Descripcion || cot.NombreEquipo || ''" x-text="cot.Descripcion || cot.NombreEquipo || ''"></p>
+                                            </div>
+                                            <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300 shrink-0" x-text="formatMoney((parseFloat(cot.Precio || 0) + parseFloat(cot.CostoEnvio || 0)))"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
                         <div class="space-y-4">
                             <template x-for="(grupo, gi) in getCotizacionesAgrupadas()" :key="'g'+grupo.numeroPropuesta">
                                 <div class="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                    <div class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                                        <div class="flex items-center gap-2">
+                                    <div class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2 min-w-0">
                                             <span class="text-xs font-bold text-violet-700 dark:text-violet-300 uppercase">Producto <span x-text="grupo.numeroPropuesta"></span></span>
-                                            <span class="text-sm font-medium text-slate-800 dark:text-slate-100" x-text="grupo.nombreEquipo"></span>
+                                            <span class="text-sm font-medium text-slate-800 dark:text-slate-100 truncate" x-text="grupo.nombreEquipo"></span>
                                         </div>
-                                        <span class="text-xs text-slate-500"><span x-text="grupo.cotizaciones.length"></span> cotización(es)</span>
+                                        <span class="text-xs text-slate-500 shrink-0"><span x-text="grupo.cotizaciones.length"></span> cotización(es)</span>
                                     </div>
                                     <template x-if="grupo.cotizaciones.length > 1">
-                                        <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex gap-2">
+                                        <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-2">
                                             <template x-for="(cot, idx) in grupo.cotizaciones" :key="cot.CotizacionID">
                                                 <button type="button" @click="selectedIndexes[grupo.numeroPropuesta] = idx"
-                                                    class="px-3 py-1.5 rounded text-xs font-semibold transition"
+                                                    class="shrink-0 px-3 py-1.5 rounded text-xs font-semibold transition"
                                                     :class="getIdx(grupo.numeroPropuesta) === idx
                                                         ? (cot.esGanador ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white')
                                                         : (cot.esGanador ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-300')">
@@ -1396,6 +1430,19 @@
             cerrarModal() {
                 this.modalAbierto = false;
                 this.solicitudSeleccionada = null;
+            },
+            getCotizacionesGanadoras() {
+                const cotizaciones = this.solicitudSeleccionada?.cotizaciones || [];
+                return cotizaciones
+                    .filter(cot => cot && cot.Estatus === 'Seleccionada')
+                    .sort((a, b) => (a.NumeroPropuesta || 0) - (b.NumeroPropuesta || 0));
+            },
+            formatMoney(value) {
+                const amount = Number(value || 0);
+                return '$' + amount.toLocaleString('es-MX', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
             }
         }
     }

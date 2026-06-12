@@ -156,7 +156,7 @@
                                         </h4>
                                     </div>
                                 </div>
-                                <div class="grid gap-3 md:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <div class="grid gap-3 md:gap-4 lg:grid-cols-2">
                             @foreach($prod['cotizaciones'] as $cotizacion)
 
                             @php
@@ -172,14 +172,28 @@
                                 data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
                                 
                                 <div class="bg-slate-700 dark:bg-slate-700 px-4 py-3">
-                                    <div class="flex items-center gap-2">
-                                        <i class="fas fa-building text-slate-300 text-sm"></i>
-                                        <span class="text-sm font-bold text-white truncate">{{ $cotizacion->Proveedor }}</span>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <i class="fas fa-building text-slate-300 text-sm shrink-0"></i>
+                                            <span class="text-sm font-bold text-white truncate" title="{{ $cotizacion->Proveedor }}">{{ $cotizacion->Proveedor }}</span>
+                                        </div>
+                                        @if(!empty($cotizacion->NumeroParte))
+                                        <span class="hidden sm:inline-flex max-w-[45%] truncate rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-mono text-slate-200" title="{{ $cotizacion->NumeroParte }}">
+                                            {{ $cotizacion->NumeroParte }}
+                                        </span>
+                                        @endif
                                     </div>
                                 </div>
 
                                 <!-- Contenido -->
                                 <div class="p-4 space-y-3">
+                                    <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3">
+                                        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Descripción cotizada</p>
+                                        <p class="text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-normal break-words">
+                                            {{ $cotizacion->Descripcion ?: ($prod['descripcion'] ?? 'Sin descripción') }}
+                                        </p>
+                                    </div>
+
                                     <div class="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700 space-y-2">
                                         <div class="flex items-center justify-between">
                                             <span class="text-xs text-slate-600 dark:text-slate-400">Precio Unitario</span>
@@ -211,24 +225,18 @@
                                     </div>
 
                                     <!-- Detalles Adicionales -->
-                                    @if(!empty($cotizacion->NumeroParte) || !empty($cotizacion->Descripcion) || !empty($cotizacion->TiempoEntrega))
+                                    @if(!empty($cotizacion->NumeroParte) || !empty($cotizacion->TiempoEntrega))
                                     <div class="space-y-2">
                                         @if(!empty($cotizacion->NumeroParte))
                                         <div class="flex items-start gap-2">
                                             <i class="fas fa-hashtag text-slate-400 text-xs mt-0.5 flex-shrink-0"></i>
-                                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{{ $cotizacion->NumeroParte }}</p>
+                                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed break-all">{{ $cotizacion->NumeroParte }}</p>
                                         </div>
                                         @endif
                                         @if(!empty($cotizacion->TiempoEntrega))
                                         <div class="flex items-start gap-2">
                                             <i class="fas fa-clock text-slate-400 text-xs mt-0.5 flex-shrink-0"></i>
                                             <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Entrega: {{ $cotizacion->TiempoEntrega }} días</p>
-                                        </div>
-                                        @endif
-                                        @if(!empty($cotizacion->Descripcion))
-                                        <div class="flex items-start gap-2">
-                                            <i class="fas fa-align-left text-slate-400 text-xs mt-0.5 flex-shrink-0"></i>
-                                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">{{ $cotizacion->Descripcion }}</p>
                                         </div>
                                         @endif
                                     </div>

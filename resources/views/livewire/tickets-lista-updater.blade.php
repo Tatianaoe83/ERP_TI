@@ -1,4 +1,4 @@
-<div wire:poll.5s wire:poll.keep-alive>
+<div wire:poll.5s.keep-alive="actualizarDatos">
 
     <div
         x-show="vista === 'lista'"
@@ -154,7 +154,7 @@
                 </div>
 
                 @empty
-                <div class="p-12 text-center text-gray-500">
+                <div data-empty-placeholder class="p-12 text-center text-gray-500">
                     <p class="text-sm font-medium">No hay tickets en esta categoría.</p>
                 </div>
                 @endforelse

@@ -145,7 +145,7 @@
                 </div>
 
                 @empty
-                <div class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 opacity-60">
+                <div data-empty-placeholder class="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-500 opacity-60">
                     <i class="fas fa-clipboard-list text-4xl mb-2"></i>
                     <p class="text-sm">Sin tickets</p>
                 </div>
