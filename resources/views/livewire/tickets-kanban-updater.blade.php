@@ -1,18 +1,15 @@
 {{-- resources/views/livewire/tickets-kanban-updater.blade.php --}}
-<link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 <div wire:poll.5s wire:poll.keep-alive>
-
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
 
         @foreach (['nuevos' => 'Nuevos', 'proceso' => 'En Progreso', 'resueltos' => 'Resueltos'] as $key => $titulo)
 
-        <div class="flex flex-col h-full max-h-[80vh] rounded-xl overflow-hidden bg-gray-200/70 dark:bg-[#161920] border border-gray-300 dark:border-[#2A2F3A]">
+        <div wire:key="grupo-kanban-{{ $key }}" class="flex flex-col h-full max-h-[80vh] rounded-xl overflow-hidden bg-gray-200/70 dark:bg-[#161920] border border-gray-300 dark:border-[#2A2F3A]">
 
             {{-- Header --}}
             <div class="px-4 py-3 flex justify-between items-center bg-gray-300/50 dark:bg-[#1C1F26] border-b border-gray-300 dark:border-[#2A2F3A]">
-
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 rounded-full {{ $key === 'nuevos' ? 'bg-yellow-500' : ($key === 'proceso' ? 'bg-blue-500' : 'bg-green-500') }}"></div>
                     <h3 class="font-bold text-sm text-gray-700 dark:text-gray-100 uppercase tracking-wide">
@@ -20,13 +17,13 @@
                     </h3>
                 </div>
 
-                <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                <span data-categoria-header="{{ $key }}" class="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                     {{ count($ticketsStatus[$key]) }}
                 </span>
             </div>
 
             {{-- Contenedor --}}
-            <div class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+            <div data-categoria-contenedor="{{ $key }}" class="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
 
                 @forelse ($ticketsStatus[$key] as $ticket)
 
@@ -49,10 +46,11 @@
                 @endphp
 
                 {{-- Card --}}
-                <div wire:key="ticket-{{ $ticket['id'] }}"
-                    class="group cursor-pointer p-4 rounded-lg shadow-sm transition-all duration-200 bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] hover:shadow-md hover:translate-y-[-2px] border-l-[4px]"
+                <div wire:key="ticket-{{ $ticket['id'] }}-{{ $ticket['estatus'] }}"
+                    class="group cursor-pointer p-4 rounded-lg shadow-sm transition-all duration-300 bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] hover:shadow-md hover:translate-y-[-2px] border-l-[4px]"
                     style="border-left-color: {{ $ticket['prioridad'] == 'Baja' ? '#22c55e' : ($ticket['prioridad'] == 'Media' ? '#eab308' : '#ef4444') }};"
                     data-ticket-id="{{ $ticket['id'] }}"
+                    data-categoria="{{ $key }}"
                     data-ticket-asunto="Ticket #{{ $ticket['id'] }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket['descripcion'] ?? '', ENT_QUOTES, 'UTF-8') }}"
                     data-ticket-prioridad="{{ $ticket['prioridad'] }}"
@@ -92,7 +90,6 @@
                             </span>
 
                             @php
-                            // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
                             $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
                             ->latest('id')
                             ->first();
@@ -100,22 +97,17 @@
                             $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
                             @endphp
 
-                            {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
                             @if($notificaciones > 0)
-                            <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
-                            bg-red-500 text-white
-                            text-[10px] font-bold
-                            rounded-full w-4 h-4
-                            flex items-center justify-center">
-                                1
+                            <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                {{ $notificaciones }}
                             </span>
                             @endif
                         </div>
                         @endif
                     </div>
+
                     {{-- Footer --}}
                     <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-2">
-
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                                 <i class="fas fa-user opacity-70"></i>
@@ -149,7 +141,6 @@
                             </div>
                         </div>
                         @endif
-
                     </div>
                 </div>
 
@@ -165,8 +156,4 @@
         @endforeach
 
     </div>
-
-
-
-    
 </div>

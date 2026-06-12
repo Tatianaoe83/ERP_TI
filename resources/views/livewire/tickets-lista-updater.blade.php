@@ -16,19 +16,23 @@
         $grupo = $grupoData['data'];
         @endphp
 
-        <div class="rounded-lg overflow-hidden shadow-sm bg-gray-50 dark:bg-[#1C1F26] border border-gray-300 dark:border-[#2A2F3A]">
+        <div wire:key="grupo-lista-{{ $key }}" class="rounded-lg overflow-hidden shadow-sm bg-gray-50 dark:bg-[#1C1F26] border border-gray-300 dark:border-[#2A2F3A]">
 
             {{-- Header --}}
             <div class="px-4 py-3 flex justify-between items-center bg-gray-200 dark:bg-[#242933] border-b border-gray-300 dark:border-[#2A2F3A]">
                 <h3 class="font-bold text-sm text-gray-800 dark:text-gray-100 uppercase tracking-wide">
                     {{ $titulo }}
                 </h3>
-                <span class="text-xs font-semibold px-2 py-1 rounded bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                <span 
+                    data-categoria-header="{{ $key }}"
+                    class="text-xs font-semibold px-2 py-1 rounded bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                     {{ $grupo->count() }}
                 </span>
             </div>
 
-            <div class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
+            <div 
+                data-categoria-contenedor="{{ $key }}"
+                class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
                 @forelse ($grupo as $ticket)
 
                 @php
@@ -50,10 +54,11 @@
                 @endphp
 
                 <div
-                    wire:key="ticket-lista-{{ $ticket->TicketID }}"
+                    wire:key="ticket-lista-{{ $ticket->TicketID }}-{{ $ticket->Estatus }}"
                     class="p-4 cursor-pointer transition-all duration-200 bg-gray-50 dark:bg-[#1C1F26] hover:bg-gray-100 dark:hover:bg-[#242933] border-l-4 border-l-transparent hover:border-l-blue-500"
 
                     data-ticket-id="{{ $ticket->TicketID }}"
+                    data-categoria="{{ $key }}"
                     data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                     data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion ?? '', ENT_QUOTES, 'UTF-8') }}"
                     data-ticket-prioridad="{{ $ticket->Prioridad ?? '' }}"
@@ -101,38 +106,34 @@
                                 </span>
 
                                 @if($key === 'proceso')
-                                <span>
-                                    <span class="flex items-center gap-1.5">
-                                        
-                                        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
-                                            
+                                <span class="flex items-center gap-1.5">
+                                    <span class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
                                         <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
-                                                notifications
-                                            </span>
+                                            notifications
+                                        </span>
 
-                                            @php
-                                            // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
-                                            $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
-                                            ->latest('id')
-                                            ->first();
+                                        @php
+                                        // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
+                                        $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
+                                        ->latest('id')
+                                        ->first();
 
-                                            $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
-                                            @endphp
+                                        $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
+                                        @endphp
 
-                                            {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
-                                            @if($notificaciones > 0)
-                                            <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
-                                            bg-red-500 text-white
-                                            text-[10px] leading-none font-medium
-                                            rounded-full w-4 h-4
-                                            flex items-center justify-center">
-                                                1
-                                            </span>
-                                            @endif
-                                        </div>
+                                        {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
+                                        @if($notificaciones > 0)
+                                        <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
+                                        bg-red-500 text-white
+                                        text-[10px] leading-none font-medium
+                                        rounded-full w-4 h-4
+                                        flex items-center justify-center">
+                                            1
+                                        </span>
+                                        @endif
                                     </span>
-                                    @endif
                                 </span>
+                                @endif
 
 
                                 @if($key === 'proceso' && $nombreResponsable)

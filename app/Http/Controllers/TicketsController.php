@@ -18,6 +18,8 @@ use App\Http\Controllers\Traits\MetricasSolicitudesTrait;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Events\TicketUpdatedEvent;
+
 
 class TicketsController extends Controller
 {
@@ -728,6 +730,7 @@ class TicketsController extends Controller
             }
 
             $ticket->save();
+            event(new TicketUpdatedEvent());
 
             // Enviar encuesta de satisfacción cuando el ticket pasa a Cerrado por primera vez
             if ($estatusAnterior !== 'Cerrado' && $ticket->Estatus === 'Cerrado') {
@@ -1014,6 +1017,7 @@ class TicketsController extends Controller
             // Reset contador
             $ticket->notificaciones_pendientes = 0;
             $ticket->save();
+            event(new TicketUpdatedEvent());
 
             TicketChat::where('ticket_id', $id)
             ->where('notificaciones_pendientes', 1)

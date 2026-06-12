@@ -8,7 +8,16 @@ use Illuminate\Support\Str;
 
 class TicketsKanbanUpdater extends Component
 {
-    protected $listeners = ['ticket-estatus-actualizado' => '$refresh'];
+   protected function getListeners()
+    {
+        return [
+            // Escucha local (la que ya usabas desde Alpine u otros componentes)
+            'ticket-estatus-actualizado' => '$refresh',
+            
+            // Escucha en tiempo real vía WebSockets usando Laravel Echo
+            "echo:tickets-channel,TicketUpdatedEvent" => '$refresh',
+        ];
+    }
 
     private function fetchTickets()
     {
@@ -125,17 +134,31 @@ class TicketsKanbanUpdater extends Component
 
         $ticketsStatus = [
             'nuevos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Pendiente')->values()
+                $tickets->filter(function ($ticket) {
+                    return strtolower(trim($ticket->Estatus)) === 'pendiente';
+                })->values()
             ),
             'proceso' => $this->formatearTickets(
-                $tickets->where('Estatus', 'En progreso')->values()
+                $tickets->filter(function ($ticket) {
+                    $estatus = strtolower(trim($ticket->Estatus));
+                    return $estatus === 'en progreso' || $estatus === 'en proceso';
+                })->values()
             ),
             'resueltos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Cerrado')->values()
+                $tickets->filter(function ($ticket) {
+                    $estatus = strtolower(trim($ticket->Estatus));
+                    return $estatus === 'cerrado' || $estatus === 'resuelto';
+                })->values()
             ),
         ];
-
         $tiempos = $this->procesarTiempos($tickets);
+
+        $this->emit('tickets-actualizados-kanban', [
+            'ticketsStatus'    => $ticketsStatus,
+            'ticketsExcedidos' => $tiempos['ticketsExcedidos'],
+            'tiemposProgreso'  => $tiempos['tiemposProgreso'],
+            'hash'             => md5(json_encode($ticketsStatus)),
+        ]);
 
         return view('livewire.tickets-kanban-updater', [
             'ticketsStatus'    => $ticketsStatus,

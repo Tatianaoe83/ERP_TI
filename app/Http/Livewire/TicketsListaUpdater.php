@@ -9,7 +9,15 @@ use Illuminate\Support\Str;
 class TicketsListaUpdater extends Component
 {
     // Solo necesitamos escuchar el evento para forzar recargas si es necesario
-    protected $listeners = ['ticket-estatus-actualizado' => '$refresh'];
+    protected function getListeners()
+    {
+        return [
+            'ticket-estatus-actualizado' => '$refresh',
+
+            // Escucha en tiempo real vía WebSockets usando Laravel Echo
+            "echo:tickets-channel,TicketUpdatedEvent" => '$refresh',
+        ];
+    }
 
     public function render()
     {
@@ -22,8 +30,8 @@ class TicketsListaUpdater extends Component
                 $query->latest()->limit(1);
             }
         ])
-        ->orderBy('created_at', 'desc')
-        ->get();
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // 2. Filtramos los datos
         $ticketsNuevos = $tickets->where('Estatus', 'Pendiente')->values();
@@ -33,7 +41,21 @@ class TicketsListaUpdater extends Component
         // 3. Procesamos los tiempos
         $tiemposProcesados = $this->procesarTiempos($tickets);
 
-        // 4. Se los pasamos a la vista
+        // 4. Formateamos para Alpine.js y emitimos el evento
+        $ticketsStatus = [
+            'nuevos' => $this->formatearTickets($ticketsNuevos),
+            'proceso' => $this->formatearTickets($ticketsProceso),
+            'resueltos' => $this->formatearTickets($ticketsResueltos),
+        ];
+
+        $this->emit('tickets-actualizados-lista', [
+            'ticketsStatus' => $ticketsStatus,
+            'ticketsExcedidos' => $tiemposProcesados['ticketsExcedidos'],
+            'tiemposProgreso' => $tiemposProcesados['tiemposProgreso'],
+            'hash' => md5(json_encode($ticketsStatus)),
+        ]);
+
+        // 5. Se los pasamos a la vista
         return view('livewire.tickets-lista-updater', [
             'ticketsNuevos' => $ticketsNuevos,
             'ticketsProceso' => $ticketsProceso,
@@ -41,6 +63,30 @@ class TicketsListaUpdater extends Component
             'tiemposProgreso' => $tiemposProcesados['tiemposProgreso'],
             'ticketsExcedidos' => $tiemposProcesados['ticketsExcedidos'],
         ]);
+    }
+
+    private function formatearTickets($tickets)
+    {
+        return $tickets->map(function ($ticket) {
+            return [
+                'id' => $ticket->TicketID,
+                'descripcion' => $ticket->Descripcion,
+                'code_anydesk' => $ticket->CodeAnyDesk ?? '',
+                'numero' => $ticket->Numero ?? '',
+                'prioridad' => $ticket->Prioridad,
+                'estatus' => $ticket->Estatus,
+                'empleado' => $ticket->empleado ? [
+                    'nombre' => $ticket->empleado->NombreEmpleado,
+                    'correo' => $ticket->empleado->Correo ?? '',
+                ] : null,
+                'responsable' => $ticket->responsableTI ? [
+                    'nombre' => $ticket->responsableTI->NombreEmpleado,
+                ] : null,
+                'created_at' => optional($ticket->created_at)->toIso8601String(),
+                'fecha_inicio_progreso' => optional($ticket->FechaInicioProgreso)->toIso8601String(),
+                'updated_at' => optional($ticket->updated_at)->toIso8601String(),
+            ];
+        })->toArray();
     }
 
     private function procesarTiempos($tickets)

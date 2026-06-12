@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Events\TicketUpdatedEvent;
 
 class TablaSolicitudes extends Component
 {
@@ -1904,6 +1905,7 @@ class TablaSolicitudes extends Component
             'Estatus'       => 'Pendiente',
             'Prioridad'     => 'Media',
         ]);
+        event(new TicketUpdatedEvent());
     }
 
     private function buscarResponsableTicket(string $term): void

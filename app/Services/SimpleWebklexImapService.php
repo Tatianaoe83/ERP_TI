@@ -9,6 +9,7 @@ use App\Models\TicketChat;
 use App\Models\Empleados;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Events\TicketUpdatedEvent;
 class SimpleWebklexImapService
 {
     protected $client;
@@ -667,6 +668,7 @@ class SimpleWebklexImapService
                     \Log::debug('No se pudo incrementar ticket_chats.notificaciones_pendientes (increment): ' . $e->getMessage());
                 }
 
+                event(new TicketUpdatedEvent());
                 return $ticketChat;
             } catch (\Exception $e) {
                 throw $e;
@@ -782,6 +784,7 @@ class SimpleWebklexImapService
                 throw $e;
             }
 
+            event(new TicketUpdatedEvent());
             return $ticket;
 
         } catch (\Exception $e) {

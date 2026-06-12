@@ -1497,17 +1497,20 @@
                     }
                     // Verificar si hay cambios en los tickets usando el hash
                     if (datos && datos.ticketsStatus && datos.hash) {
+                        // Determinar la propiedad de hash correspondiente
+                        const hashKey = vistaOrigen === 'kanban' ? 'ultimoHashKanban' : 
+                                        (vistaOrigen === 'lista' ? 'ultimoHashLista' : 'ultimoHashTabla');
                         
-                        const hashCambio = !this.ultimoHashTickets || this.ultimoHashTickets !== datos.hash;
+                        const hashCambio = !this[hashKey] || this[hashKey] !== datos.hash;
                         
                         // Aplicar a la vista cuando: primera vez (sync inicial con el wire) o cuando el hash cambió
                         if (hashCambio) {
-                            if (!this.ultimoHashTickets) {
+                            if (!this[hashKey]) {
                             } else {
-                                console.log('¡CAMBIO DETECTADO! Hash anterior:', this.ultimoHashTickets, 'Hash nuevo:', datos.hash);
+                                console.log('¡CAMBIO DETECTADO! Vista:', vistaOrigen, 'Hash anterior:', this[hashKey], 'Hash nuevo:', datos.hash);
                             }
                             
-                            this.ultimoHashTickets = datos.hash;
+                            this[hashKey] = datos.hash;
                             
                             // Actualizar conteos y DOM para que la vista refleje lo que trae el wire
                             const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
@@ -1688,7 +1691,9 @@
                                     // Actualizar wire:key con el nuevo estatus para que Livewire lo rastree correctamente
                                     const nuevoEstatus = categoriaNueva === 'nuevos' ? 'Pendiente' : 
                                                          (categoriaNueva === 'proceso' ? 'En progreso' : 'Cerrado');
-                                    elemento.setAttribute('wire:key', `ticket-${ticket.id}-${nuevoEstatus}`);
+                                    const isLista = elemento.closest('[x-show*="lista"]') || elemento.closest('.divide-y');
+                                    const prefix = isLista ? 'ticket-lista-' : 'ticket-';
+                                    elemento.setAttribute('wire:key', `${prefix}${ticket.id}-${nuevoEstatus}`);
                                     
                                     this.actualizarAtributosTicket(elemento, ticket);
                                     this.actualizarContenidoTicket(elemento, ticket);
@@ -1738,11 +1743,11 @@
                                     if (placeholder) placeholder.remove();
                                     
                                     // Remover el elemento del contenedor anterior
-                                    elemento.remove();
+                              elemento.remove();
                                     
                                     // Agregar al nuevo contenedor
-                                    dest.appendChild(elemento);
-                                    
+                              dest.appendChild(elemento);
+                              
                                     // Pequeña animación de entrada
                                     elemento.style.transition = 'all 0.25s ease';
                                     elemento.style.opacity = '0.85';
@@ -2002,7 +2007,9 @@
                     // Sincronizar wire:key con el estatus real (evita que quede "En progreso" cuando ya es "Cerrado")
                     if (ticket.id !== undefined && (ticket.estatus !== undefined || ticket.estado !== undefined)) {
                         const estatusKey = (ticket.estatus || ticket.estado || '').toString();
-                        elemento.setAttribute('wire:key', 'ticket-' + ticket.id + '-' + estatusKey);
+                        const isLista = elemento.closest('[x-show*="lista"]') || elemento.closest('.divide-y');
+                        const prefix = isLista ? 'ticket-lista-' : 'ticket-';
+                        elemento.setAttribute('wire:key', prefix + ticket.id + '-' + estatusKey);
                     }
                 };
                 
@@ -2388,8 +2395,10 @@
                 };
                 
                 
-                // Variable para rastrear el último hash de tickets
-                this.ultimoHashTickets = null;
+                // Variables para rastrear el último hash de tickets por vista
+                this.ultimoHashKanban = null;
+                this.ultimoHashLista = null;
+                this.ultimoHashTabla = null;
                 
                 // Watcher para ejecutar prepararDatosTabla cuando se cambie a vista tabla
                 this.$watch('vista', (newValue) => {
@@ -3368,7 +3377,9 @@ fetch(`/tickets/${datos.id}/mark-notifications-read`, {
                                         ticketElement.setAttribute('data-categoria', nuevaCategoria);
                                         
                                         // Actualizar wire:key con el nuevo estatus para que Livewire lo rastree correctamente
-                                        ticketElement.setAttribute('wire:key', `ticket-${this.selected.id}-${nuevoEstatusTexto}`);
+                                        const isLista = ticketElement.closest('[x-show*="lista"]') || ticketElement.closest('.divide-y');
+                                        const prefix = isLista ? 'ticket-lista-' : 'ticket-';
+                                        ticketElement.setAttribute('wire:key', `${prefix}${this.selected.id}-${nuevoEstatusTexto}`);
                                         
                                         // Agregar el elemento al nuevo contenedor
                                         contenedorNuevaSeccion.appendChild(ticketElement);
