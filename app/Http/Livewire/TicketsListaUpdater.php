@@ -128,30 +128,7 @@ class TicketsListaUpdater extends Component
         ]);
     }
 
-    private function formatearTickets($tickets)
-    {
-        return $tickets->map(function ($ticket) {
-            return [
-                'id' => $ticket->TicketID,
-                'descripcion' => $ticket->Descripcion,
-                'code_anydesk' => $ticket->CodeAnyDesk ?? '',
-                'numero' => $ticket->Numero ?? '',
-                'prioridad' => $ticket->Prioridad,
-                'estatus' => $ticket->Estatus,
-                'empleado' => $ticket->empleado ? [
-                    'nombre' => $ticket->empleado->NombreEmpleado,
-                    'correo' => $ticket->empleado->Correo ?? '',
-                ] : null,
-                'responsable' => $ticket->responsableTI ? [
-                    'nombre' => $ticket->responsableTI->NombreEmpleado,
-                ] : null,
-                'created_at' => optional($ticket->created_at)->toIso8601String(),
-                'fecha_inicio_progreso' => optional($ticket->FechaInicioProgreso)->toIso8601String(),
-                'updated_at' => optional($ticket->updated_at)->toIso8601String(),
-            ];
-        })->toArray();
-    }
-
+    
     private function procesarTiempos($tickets)
     {
         $ticketsExcedidos = [];
