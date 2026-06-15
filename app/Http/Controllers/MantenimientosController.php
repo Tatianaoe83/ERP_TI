@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\MantenimientosExport;
 use App\Models\Mantenimiento;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Maatwebsite\Excel\Facades\Excel;
 
 class MantenimientosController extends Controller
 {
@@ -19,6 +21,11 @@ class MantenimientosController extends Controller
 
     public function index()
     {
+        $aniosDisponibles = Mantenimiento::whereNotNull('AnioProgramacion')
+            ->distinct()
+            ->orderByDesc('AnioProgramacion')
+            ->pluck('AnioProgramacion');
+
         $gerencias = DB::table('empleados as e')
             ->join('puestos as p', 'p.PuestoID', '=', 'e.PuestoID')
             ->join('departamentos as d', 'd.DepartamentoID', '=', 'p.DepartamentoID')
@@ -39,7 +46,21 @@ class MantenimientosController extends Controller
             ->orderBy('g.NombreGerencia')
             ->get();
 
-        return view('mantenimientos.index', compact('gerencias'));
+        return view('mantenimientos.index', compact('gerencias', 'aniosDisponibles'));
+    }
+
+    public function exportarExcel(Request $request)
+    {
+        $anio = $request->input('anio', 'todos');
+
+        if ($anio !== 'todos' && !is_numeric($anio)) {
+            $anio = 'todos';
+        }
+
+        $sufijo   = $anio !== 'todos' ? "_{$anio}" : '_todos';
+        $archivo  = "mantenimientos{$sufijo}_" . date('d-m-Y') . '.xlsx';
+
+        return Excel::download(new MantenimientosExport($anio), $archivo);
     }
 
     public function generar(Request $request)

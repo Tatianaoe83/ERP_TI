@@ -343,11 +343,41 @@
         });
 
         return false;
-
+    }
 
     function GenerarExcelMantenimientos() {
-       
+        const anios = @json($aniosDisponibles ?? []);
 
+        let options = '<option value="todos">Todos los años</option>';
+        anios.forEach(anio => {
+            options += `<option value="${anio}">${anio}</option>`;
+        });
+
+        if (typeof Swal === 'undefined') {
+            const anio = prompt('Ingresa el año (o deja vacío para todos):') || 'todos';
+            window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + anio;
+            return;
+        }
+
+        Swal.fire({
+            title: 'Reporte Excel de Mantenimientos',
+            html: `<div style="text-align:left;margin-top:8px;">
+                       <label style="font-weight:600;margin-bottom:4px;display:block;">Selecciona el año:</label>
+                       <select id="swal-anio-excel" class="swal2-input" style="margin:0;width:100%;">
+                           ${options}
+                       </select>
+                   </div>`,
+            confirmButtonText: '<i class="fas fa-file-excel"></i> Descargar',
+            cancelButtonText: 'Cancelar',
+            showCancelButton: true,
+            confirmButtonColor: '#65c05b',
+            cancelButtonColor: '#6c757d',
+            preConfirm: () => document.getElementById('swal-anio-excel').value,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + result.value;
+            }
+        });
     }
 
     document.addEventListener('DOMContentLoaded', () => {

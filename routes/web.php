@@ -120,6 +120,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:crear-facturas');
     Route::resource('facturas', FacturasController::class);
     Route::get('mantenimientos', [MantenimientosController::class, 'index'])->name('mantenimientos.index');
+    Route::get('mantenimientos/exportar-excel', [MantenimientosController::class, 'exportarExcel'])->name('mantenimientos.exportar-excel');
     Route::post('mantenimientos/generar', [MantenimientosController::class, 'generar'])->name('mantenimientos.generar');
     Route::patch('mantenimientos/{mantenimiento}/realizado', [MantenimientosController::class, 'marcarRealizado'])->name('mantenimientos.realizado');
 
