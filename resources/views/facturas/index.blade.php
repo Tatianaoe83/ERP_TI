@@ -25,6 +25,42 @@
 
     /* SweetAlert2 por defecto queda por debajo del modal (z-9999); debe verse encima */
     .swal2-container.swal2-on-modal { z-index: 100000 !important; }
+
+    #facturasTable_wrapper .dataTables_paginate {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+        margin-top: 0;
+    }
+
+    #facturasTable_wrapper .dataTables_paginate > span {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.375rem;
+    }
+
+    #facturasTable_wrapper .dataTables_paginate .paginate_button {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        height: 2rem;
+        margin: 0 !important;
+        line-height: 1;
+        text-decoration: none !important;
+        box-sizing: border-box;
+    }
+
+    #facturasTable_wrapper .dataTables_paginate .ellipsis {
+        display: inline-flex;
+        align-items: center;
+        height: 2rem;
+        padding: 0 0.25rem;
+        color: #94a3b8;
+    }
 </style>
 
 <div class="w-full mx-auto max-w-7xl">
