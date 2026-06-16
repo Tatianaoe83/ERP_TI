@@ -358,6 +358,12 @@
 
         window.abrirNotificacionSolicitud = function(solicitudId) {
             if (window.location.pathname.endsWith('/tickets')) {
+                const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
+                if (botonSolicitud) {
+                    botonSolicitud.click();
+                    return;
+                }
+
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
@@ -383,6 +389,12 @@
             const solicitudId = urlParams.get('solicitud_id');
             if (solicitudId) {
                 setTimeout(() => {
+                    const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
+                    if (botonSolicitud) {
+                        botonSolicitud.click();
+                        return;
+                    }
+
                     const buttons = document.querySelectorAll('button');
                     for (let btn of buttons) {
                         const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');

@@ -477,20 +477,19 @@ class FacturasController extends AppBaseController
                     return;
                 }
 
-                $baseDir = $factura->SolicitudID ? "solicitudes/{$factura->SolicitudID}/facturas" : "facturas/extras";
                 $parsedData = null;
                 $rutaXml = $factura->ArchivoRuta;
                 $rutaPdf = $factura->PdfRuta;
 
                 if ($request->hasFile('archivo_xml')) {
                     if ($rutaXml && Storage::disk('public')->exists($rutaXml)) Storage::disk('public')->delete($rutaXml);
-                    $rutaXml = $request->file('archivo_xml')->store($baseDir . '/xml', 'public');
+                    $rutaXml = $request->file('archivo_xml')->store('facturas/xml', 'public');
                     $parsedData = $this->parsearCfdi($request->file('archivo_xml')->getRealPath());
                 }
 
                 if ($request->hasFile('archivo_pdf')) {
                     if ($rutaPdf && Storage::disk('public')->exists($rutaPdf)) Storage::disk('public')->delete($rutaPdf);
-                    $rutaPdf = $request->file('archivo_pdf')->store($baseDir . '/pdf', 'public');
+                    $rutaPdf = $request->file('archivo_pdf')->store('facturas/pdf', 'public');
                     if (!$parsedData) {
                         $parsedPdf = $this->parsearPdfBasico($request->file('archivo_pdf')->getRealPath(), $factura->Emisor ?? 'Extranjero');
                         if (!$parsedPdf['error']) $parsedData = $parsedPdf;
@@ -739,8 +738,7 @@ class FacturasController extends AppBaseController
                     if ($rutaXml && Storage::disk('public')->exists($rutaXml)) {
                         Storage::disk('public')->delete($rutaXml);
                     }
-                    $baseDir = $factura->SolicitudID ? "solicitudes/{$factura->SolicitudID}/facturas" : "facturas/extras";
-                    $rutaXml = $request->file('archivo_xml')->store($baseDir . '/xml', 'public');
+                    $rutaXml = $request->file('archivo_xml')->store('facturas/xml', 'public');
                 }
 
                 if ($request->hasFile('archivo_pdf') && $request->file('archivo_pdf')->isValid()) {
@@ -748,8 +746,7 @@ class FacturasController extends AppBaseController
                     if ($rutaPdf && Storage::disk('public')->exists($rutaPdf)) {
                         Storage::disk('public')->delete($rutaPdf);
                     }
-                    $baseDir = $factura->SolicitudID ? "solicitudes/{$factura->SolicitudID}/facturas" : "facturas/extras";
-                    $rutaPdf = $request->file('archivo_pdf')->store($baseDir . '/pdf', 'public');
+                    $rutaPdf = $request->file('archivo_pdf')->store('facturas/pdf', 'public');
                 }
 
                 // Actualizar datos de la factura

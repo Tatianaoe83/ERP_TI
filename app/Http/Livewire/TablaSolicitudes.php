@@ -121,10 +121,7 @@ class TablaSolicitudes extends Component
         // 🔥 Guardar archivo al storage
         if ($this->asignacionSolicitudId) {
             try {
-                $solicitudId = $this->asignacionSolicitudId;
-                $dir = "solicitudes/{$solicitudId}/temp";
-                $filename = "factura_{$pIndex}_{$uIndex}.xml";
-                $ruta = $file->storeAs($dir, $filename, 'public');
+                $ruta = $file->store('facturas/xml', 'public');
                 
                 // Actualizar ruta en propuestasAsignacion para todas las unidades del proveedor
                 $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
@@ -168,10 +165,7 @@ class TablaSolicitudes extends Component
         // 🔥 Guardar archivo PDF al storage
         if ($this->asignacionSolicitudId) {
             try {
-                $solicitudId = $this->asignacionSolicitudId;
-                $dir = "solicitudes/{$solicitudId}/temp";
-                $filename = "factura_{$pIndexOrigen}_{$uIndexOrigen}.pdf";
-                $ruta = $facturaSubida->storeAs($dir, $filename, 'public');
+                $ruta = $facturaSubida->store('facturas/pdf', 'public');
                 
                 // Actualizar ruta en propuestasAsignacion para todas las unidades del proveedor
                 $proveedor = $this->propuestasAsignacion[$pIndexOrigen]['proveedor'] ?? null;
@@ -255,11 +249,16 @@ class TablaSolicitudes extends Component
             $procesadas = $procesadas->filter(fn($s) => $s->estatusDisplay === $this->filtroEstatus)->values();
         }
 
-        $page      = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');
+        $total     = $procesadas->count();
+        $lastPage  = max(1, (int)ceil($total / max(1, $this->perPage)));
+        $page      = max(1, min((int)($this->page ?: 1), $lastPage));
         $items     = $procesadas->slice(($page - 1) * $this->perPage, $this->perPage)->values();
         $paginador = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items, $procesadas->count(), $this->perPage, $page,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            $items, $total, $this->perPage, $page,
+            [
+                'path'     => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+                'pageName' => 'page',
+            ]
         );
 
         return view('livewire.tabla-solicitudes', ['todasSolicitudes' => $paginador]);
@@ -1096,30 +1095,6 @@ class TablaSolicitudes extends Component
                     $rutaXmlFactura = '';
                     $rutaPdfFactura = '';
 
-                    $xmlFile = $xmlPorProveedor[$proveedor] ?? null;
-                    if ($xmlFile) {
-                        $ext  = strtolower((string)$xmlFile->getClientOriginalExtension());
-                        $mime = strtolower((string)$xmlFile->getMimeType());
-                        if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true)) {
-                            throw new \Exception('El archivo XML de factura no es válido.');
-                        }
-
-                        $rutaXmlFactura = $xmlFile->storeAs(
-                            "solicitudes/{$this->asignacionSolicitudId}/facturas/xml",
-                            "factura_{$cotizacionId}.xml",
-                            'public'
-                        );
-                    }
-
-                    $pdfFile = $facturaPorProveedor[$proveedor] ?? null;
-                    if ($pdfFile) {
-                        $rutaPdfFactura = $pdfFile->storeAs(
-                            "solicitudes/{$this->asignacionSolicitudId}/facturas/pdf",
-                            "factura_{$cotizacionId}.pdf",
-                            'public'
-                        );
-                    }
-
                     foreach ($this->propuestasAsignacion as $pi => $propuesta) {
                         if (($propuesta['proveedor'] ?? '') !== $proveedor) continue;
                         foreach (($propuesta['unidades'] ?? []) as $ui => $unidad) {
@@ -1133,6 +1108,22 @@ class TablaSolicitudes extends Component
                                 break 2;
                             }
                         }
+                    }
+
+                    $xmlFile = $xmlPorProveedor[$proveedor] ?? null;
+                    if ($xmlFile && empty($rutaXmlFactura)) {
+                        $ext  = strtolower((string)$xmlFile->getClientOriginalExtension());
+                        $mime = strtolower((string)$xmlFile->getMimeType());
+                        if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true)) {
+                            throw new \Exception('El archivo XML de factura no es válido.');
+                        }
+
+                        $rutaXmlFactura = $xmlFile->store('facturas/xml', 'public');
+                    }
+
+                    $pdfFile = $facturaPorProveedor[$proveedor] ?? null;
+                    if ($pdfFile && empty($rutaPdfFactura)) {
+                        $rutaPdfFactura = $pdfFile->store('facturas/pdf', 'public');
                     }
 
                     if ($rutaXmlFactura || $rutaPdfFactura) {
