@@ -1482,18 +1482,14 @@
                     // Verificar si hay cambios en los tickets usando el hash
                     if (datos && datos.ticketsStatus && datos.hash) {
                         // Determinar la propiedad de hash correspondiente
-                        const hashKey = vistaOrigen === 'kanban' ? 'ultimoHashKanban' : 
+                        const hashKey = vistaOrigen === 'kanban' ? 'ultimoHashKanban' :
                                         (vistaOrigen === 'lista' ? 'ultimoHashLista' : 'ultimoHashTabla');
-                        
-                        const hashKey = vistaOrigen || this.vista || 'kanban';
-                        if (!this.ultimoHashTickets || typeof this.ultimoHashTickets !== 'object') {
-                            this.ultimoHashTickets = {};
-                        }
-                        const hashCambio = !this.ultimoHashTickets[hashKey] || this.ultimoHashTickets[hashKey] !== datos.hash;
+
+                        const hashCambio = !this[hashKey] || this[hashKey] !== datos.hash;
                         
                         // Aplicar a la vista cuando: primera vez (sync inicial con el wire) o cuando el hash cambió
                         if (hashCambio) {
-                            this.ultimoHashTickets[hashKey] = datos.hash;
+                            this[hashKey] = datos.hash;
                             
                             // Actualizar solo estado externo. Livewire repinta las columnas; no mutar su DOM manualmente.
                             const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
