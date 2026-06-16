@@ -123,6 +123,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('mantenimientos', [MantenimientosController::class, 'index'])->name('mantenimientos.index');
     Route::post('mantenimientos/generar', [MantenimientosController::class, 'generar'])->name('mantenimientos.generar');
     Route::patch('mantenimientos/{mantenimiento}/realizado', [MantenimientosController::class, 'marcarRealizado'])->name('mantenimientos.realizado');
+    Route::get('mantenimientos/exportar-excel', [MantenimientosController::class, 'exportarExcel'])->name('mantenimientos.exportar-excel');
 
     Route::post('cortes/store-all', [CortesController::class, 'storeAll'])->name('cortes.storeAll');
     Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
