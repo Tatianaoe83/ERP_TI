@@ -70,15 +70,15 @@ trait MetricasSolicitudesTrait
             ->get()
             ->groupBy('SolicitudID');
 
-        // 3. Traer activos con facturas subidas
-        $activosConFactura = SolicitudActivo::whereIn('SolicitudID', $solicitudIds)
-            ->whereNotNull('CotizacionID')
-            ->whereNotNull('FacturaPath')
-            ->where('FacturaPath', '!=', '')
-            ->select('SolicitudID', 'CotizacionID')
-            ->distinct()
-            ->get()
-            ->groupBy('SolicitudID');
+        // 3. Traer facturas subidas desde la tabla oficial de facturas
+        $facturasTieneCotizacion = \Illuminate\Support\Facades\Schema::hasColumn('facturas', 'CotizacionID');
+        $activosConFacturaQuery = \App\Models\Facturas::whereIn('SolicitudID', $solicitudIds)
+            ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
+                ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''));
+
+        $activosConFactura = $facturasTieneCotizacion
+            ? $activosConFacturaQuery->whereNotNull('CotizacionID')->select('SolicitudID', 'CotizacionID')->distinct()->get()->groupBy('SolicitudID')
+            : $activosConFacturaQuery->select('SolicitudID', 'FacturasID')->get()->groupBy('SolicitudID');
 
         $desglose = [];
         $totalCotizacionHoras = $totalConfiguracionHoras = 0;
@@ -124,10 +124,13 @@ trait MetricasSolicitudesTrait
             $totalNecesarias  = $cotSeleccionadas->pluck('Proveedor')->filter()->unique()->count();
             $facturasSubidas  = 0;
             if ($totalNecesarias > 0 && isset($activosConFactura[$sol->SolicitudID])) {
-                $cotIds         = $cotSeleccionadas->pluck('CotizacionID')->filter()->unique()->toArray();
-                $cotsConFactura = $activosConFactura[$sol->SolicitudID]->pluck('CotizacionID')->toArray();
-                $facturasSubidas = $cotSeleccionadas->whereIn('CotizacionID', $cotsConFactura)
-                    ->pluck('Proveedor')->filter()->unique()->count();
+                if ($facturasTieneCotizacion) {
+                    $cotsConFactura = $activosConFactura[$sol->SolicitudID]->pluck('CotizacionID')->toArray();
+                    $facturasSubidas = $cotSeleccionadas->whereIn('CotizacionID', $cotsConFactura)
+                        ->pluck('Proveedor')->filter()->unique()->count();
+                } else {
+                    $facturasSubidas = min($activosConFactura[$sol->SolicitudID]->count(), $totalNecesarias);
+                }
             }
 
             // --- E) Usuario Final y Gerencia ---

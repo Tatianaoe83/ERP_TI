@@ -13,9 +13,11 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use Response;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\JsonResponse;
+use App\Exports\ComparativaFacturasExport;
 
 class FacturasController extends AppBaseController
 {
@@ -52,7 +54,7 @@ class FacturasController extends AppBaseController
             'update',
             'destroy',
         ]]);
-        $this->middleware('permission:ver-comparativa', ['only' => ['comparativa']]);
+        $this->middleware('permission:ver-comparativa', ['only' => ['comparativa', 'exportarComparativa']]);
     }
 
     public function index()
@@ -598,13 +600,6 @@ class FacturasController extends AppBaseController
                     DB::table('facturas')->where('FacturasID', $id)->update($updateData);
                 }
 
-                if ($factura->SolicitudID && ($rutaXml || $rutaPdf)) {
-                    DB::table('solicitud_activos')
-                        ->where('SolicitudID', $factura->SolicitudID)
-                        ->where(fn($q) => $q->where('FacturaPath', $factura->ArchivoRuta ?? '')
-                            ->orWhere('FacturaPath', $factura->PdfRuta ?? ''))
-                        ->update(['FacturaPath' => $rutaXml ?? $rutaPdf, 'updated_at' => now()]);
-                }
             });
 
             return response()->json(['success' => true, 'message' => 'Archivo actualizado correctamente.']);
@@ -864,119 +859,241 @@ class FacturasController extends AppBaseController
 
     public function comparativa(Request $request): JsonResponse
     {
+        return response()->json($this->comparativaPayload($request));
+    }
+
+    public function exportarComparativa(Request $request)
+    {
+        $payload = $this->comparativaPayload($request);
+        $filename = 'comparativa_facturas_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new ComparativaFacturasExport($payload), $filename);
+    }
+
+    private function comparativaPayload(Request $request): array
+    {
         $gerenciaId = $request->input('gerencia_id');
         $mes        = $request->input('mes');
         $anio       = $request->input('anio');
-        $insumo     = $request->input('insumo');
+        $insumo     = trim((string)$request->input('insumo', ''));
 
-        $mesIntCortes = null;
-        $mesNombreCortes = null;
-        if ($mes !== null && $mes !== '') {
-            if (is_numeric((string) $mes)) {
-                $mesIntCortes = (int) $mes;
-                if ($mesIntCortes >= 1 && $mesIntCortes <= 12) {
-                    $mesNombreCortes = self::CORTES_MES_NUM_TO_NAME[$mesIntCortes] ?? null;
-                }
-            } else {
-                $mesNombreCortes = (string) $mes;
-            }
-        }
+        [$mesIntCortes, $mesNombreCortes] = $this->resolveMesCortes($mes);
+        $gerenciaMap = DB::table('gerencia')->select('GerenciaID', 'NombreGerencia')->get()->keyBy('GerenciaID');
 
-        $base = DB::table('facturas as f')
+        $facturas = DB::table('facturas as f')
             ->leftJoin('solicitudes as s', 'f.SolicitudID', '=', 's.SolicitudID')
             ->whereNull('f.deleted_at')
             ->where(fn($q) => $q->whereNull('s.deleted_at')->orWhereNull('f.SolicitudID'))
-            ->whereNotNull('f.InsumoNombre')->where('f.InsumoNombre', '<>', '');
-
-        if ($gerenciaId) {
-            $gerenciaId = (int)$gerenciaId;
-            $base->where('f.GerenciaID', '=', $gerenciaId)->whereNotNull('f.GerenciaID');
-        } else {
-            // Si no hay filtro, excluir registros sin gerencia
-            $base->whereNotNull('f.GerenciaID');
-        }
-        if ($mes)    $base->where('f.Mes', (int)$mes);
-        if ($anio)   $base->where('f.Anio', (int)$anio);
-        if ($insumo) $base->where('f.InsumoNombre', 'like', "%{$insumo}%");
-
-        $insumos = (clone $base)->distinct()->pluck('f.InsumoNombre');
-        if ($insumos->isEmpty()) return response()->json(['insumos' => [], 'meta' => ['total' => 0]]);
-
-        $gerenciaMap = DB::table('gerencia')->select('GerenciaID', 'NombreGerencia')->get()->keyBy('GerenciaID');
-
-        $todasFacturas = (clone $base)
+            ->whereNotNull('f.InsumoNombre')->where('f.InsumoNombre', '<>', '')
+            ->whereNotNull('f.GerenciaID')
+            ->when($gerenciaId, fn($q) => $q->where('f.GerenciaID', (int)$gerenciaId))
+            ->when($mes, fn($q) => $q->where('f.Mes', (int)$mes))
+            ->when($anio, fn($q) => $q->where('f.Anio', (int)$anio))
+            ->when($insumo !== '', fn($q) => $q->where('f.InsumoNombre', 'like', "%{$insumo}%"))
             ->select([
                 'f.InsumoNombre',
                 'f.GerenciaID',
-                DB::raw('SUM(f.Costo) as CostoTotalFacturado')
+                'f.Mes',
+                DB::raw('SUM(COALESCE(f.Costo, f.Importe, 0)) as TotalFacturado'),
             ])
-            ->groupBy('f.InsumoNombre', 'f.GerenciaID')
+            ->groupBy('f.InsumoNombre', 'f.GerenciaID', 'f.Mes')
             ->get();
 
         $presupuestos = DB::table('cortes')
             ->whereNull('deleted_at')
-            ->whereIn('NombreInsumo', $insumos)
+            ->whereNotNull('NombreInsumo')->where('NombreInsumo', '<>', '')
+            ->whereNotNull('GerenciaID')
+            ->when($gerenciaId, fn($q) => $q->where('GerenciaID', (int)$gerenciaId))
             ->when($mesNombreCortes !== null, function ($q) use ($mesNombreCortes, $mesIntCortes) {
                 $q->where(function ($w) use ($mesNombreCortes, $mesIntCortes) {
                     $w->where('Mes', $mesNombreCortes);
-                    if ($mesIntCortes !== null) {
-                        $w->orWhere('Mes', (string) $mesIntCortes);
-                    }
+                    if ($mesIntCortes !== null) $w->orWhere('Mes', (string)$mesIntCortes);
                 });
             })
-            ->when($anio,       fn($q) => $q->where('Anio', $anio))
-            ->when($gerenciaId, fn($q) => $q->where('GerenciaID', $gerenciaId))
+            ->when($anio, fn($q) => $q->where('Anio', (int)$anio))
+            ->when($insumo !== '', fn($q) => $q->where('NombreInsumo', 'like', "%{$insumo}%"))
             ->select([
                 'NombreInsumo',
                 'GerenciaID',
-                DB::raw('SUM(COALESCE(CostoTotal, Costo, 0)) as TotalPresupuesto')
+                'Mes',
+                DB::raw('SUM(COALESCE(CostoTotal, Costo, 0)) as TotalPresupuesto'),
             ])
-            ->groupBy('NombreInsumo', 'GerenciaID')
+            ->groupBy('NombreInsumo', 'GerenciaID', 'Mes')
             ->get();
 
-        $resultado = $insumos->map(function ($nombre) use ($todasFacturas, $presupuestos, $gerenciaMap) {
-            // Filtrar facturas de este insumo
-            $facturasPorInsumo = $todasFacturas->filter(fn($f) => $f->InsumoNombre === $nombre);
+        $items = [];
+        foreach ($presupuestos as $row) {
+            $mesInt = $this->mesToInt($row->Mes);
+            if (!$mesInt) continue;
+            $key = $this->comparativaKey((int)$row->GerenciaID, (string)$row->NombreInsumo, $mesInt);
+            $items[$key] = $items[$key] ?? [
+                'gerencia_id' => (int)$row->GerenciaID,
+                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Gerencia #' . $row->GerenciaID,
+                'insumo' => (string)$row->NombreInsumo,
+                'mes' => $mesInt,
+                'mes_nombre' => self::CORTES_MES_NUM_TO_NAME[$mesInt] ?? (string)$row->Mes,
+                'presupuesto' => 0.0,
+                'facturado' => 0.0,
+            ];
+            $items[$key]['presupuesto'] += (float)$row->TotalPresupuesto;
+        }
 
-            if ($facturasPorInsumo->isEmpty()) return null;
+        foreach ($facturas as $row) {
+            $mesInt = $this->mesToInt($row->Mes);
+            if (!$mesInt) continue;
+            $key = $this->comparativaKey((int)$row->GerenciaID, (string)$row->InsumoNombre, $mesInt);
+            $items[$key] = $items[$key] ?? [
+                'gerencia_id' => (int)$row->GerenciaID,
+                'gerencia' => optional($gerenciaMap->get((int)$row->GerenciaID))->NombreGerencia ?? 'Gerencia #' . $row->GerenciaID,
+                'insumo' => (string)$row->InsumoNombre,
+                'mes' => $mesInt,
+                'mes_nombre' => self::CORTES_MES_NUM_TO_NAME[$mesInt] ?? (string)$row->Mes,
+                'presupuesto' => 0.0,
+                'facturado' => 0.0,
+            ];
+            $items[$key]['facturado'] += (float)$row->TotalFacturado;
+        }
 
-            // Tomar el primer registro (todos los del mismo insumo tendrán la misma gerencia en un filtro específico)
-            $firstFact = $facturasPorInsumo->first();
-            $gId = $firstFact->GerenciaID ? (int)$firstFact->GerenciaID : null;
+        $items = collect(array_values($items))->map(function ($item) {
+            $presupuesto = round((float)$item['presupuesto'], 2);
+            $facturado = round((float)$item['facturado'], 2);
+            $saldo = round($presupuesto - $facturado, 2);
+            $concepto = 'CONSUMIDO';
+            $ahorro = 0.0;
+            $noConsumido = 0.0;
+            $desviacion = 0.0;
 
-            // Obtener nombre de gerencia
-            $gNombre = null;
-            if ($gId) {
-                $gerenciaObj = $gerenciaMap->get($gId);
-                $gNombre = $gerenciaObj ? $gerenciaObj->NombreGerencia : null;
+            if ($presupuesto > 0 && $facturado <= 0) {
+                $concepto = 'NO SE CONSUMIO EL INSUMO';
+                $noConsumido = $presupuesto;
+            } elseif ($facturado > $presupuesto) {
+                $concepto = 'DESVIACION';
+                $desviacion = round($facturado - $presupuesto, 2);
+            } elseif ($presupuesto > $facturado) {
+                $concepto = 'AHORRO';
+                $ahorro = round($presupuesto - $facturado, 2);
             }
 
-            // Sumar todos los costos de este insumo
-            $totalFact = (float)$facturasPorInsumo->sum('CostoTotalFacturado');
-
-            // Buscar presupuesto para este insumo + gerencia
-            $presuData = $presupuestos->first(fn($p) => $p->NombreInsumo === $nombre && $p->GerenciaID == $gId);
-            $totalPresu = $presuData ? (float)$presuData->TotalPresupuesto : 0;
-
-            $desvMonto = ($totalPresu > 0 && $totalFact > 0) ? round($totalFact - $totalPresu, 2) : null;
-            $desvPct   = ($totalPresu > 0 && $totalFact > 0) ? round((($totalFact - $totalPresu) / $totalPresu) * 100, 2) : null;
-
-            return [
-                'nombre'      => $nombre,
-                'gerencia_id' => $gId,
-                'gerencia'    => $gNombre,
-                'metricas'    => [
-                    'total_facturado'       => $totalFact,
-                    'presupuesto_generales' => $totalPresu > 0 ? $totalPresu : null,
-                    'desviacion_monto'      => $desvMonto,
-                    'desviacion_pct'        => $desvPct,
-                ],
+            return $item + [
+                'presupuesto' => $presupuesto,
+                'facturado' => $facturado,
+                'saldo' => $saldo,
+                'concepto' => $concepto,
+                'ahorro' => $ahorro,
+                'no_consumido' => $noConsumido,
+                'desviacion' => $desviacion,
             ];
-        })
-            ->filter(fn($i) => $i && ($i['metricas']['total_facturado'] > 0 || ($i['metricas']['presupuesto_generales'] ?? 0) > 0))
-            ->values();
+        })->sortBy([['gerencia', 'asc'], ['mes', 'asc'], ['insumo', 'asc']])->values();
 
-        return response()->json(['insumos' => $resultado, 'meta' => ['total' => $resultado->count()]]);
+        $insumos = $items
+            ->groupBy(fn($i) => $i['gerencia_id'] . '|' . mb_strtolower($i['insumo']))
+            ->map(function ($rows) {
+                $first = $rows->first();
+                $presupuesto = round($rows->sum('presupuesto'), 2);
+                $facturado = round($rows->sum('facturado'), 2);
+                return [
+                    'nombre' => $first['insumo'],
+                    'gerencia_id' => $first['gerencia_id'],
+                    'gerencia' => $first['gerencia'],
+                    'metricas' => [
+                        'total_facturado' => $facturado,
+                        'presupuesto_generales' => $presupuesto > 0 ? $presupuesto : null,
+                        'desviacion_monto' => $presupuesto > 0 ? round($facturado - $presupuesto, 2) : ($facturado > 0 ? $facturado : null),
+                        'desviacion_pct' => $presupuesto > 0 ? round((($facturado - $presupuesto) / $presupuesto) * 100, 2) : null,
+                    ],
+                ];
+            })->values();
+
+        $concentrado = $items
+            ->groupBy('gerencia_id')
+            ->map(function ($rows) {
+                $first = $rows->first();
+                $ahorro = round($rows->sum('ahorro'), 2);
+                $noConsumido = round($rows->sum('no_consumido'), 2);
+                $desviacion = round($rows->sum('desviacion'), 2);
+                return [
+                    'gerencia_id' => $first['gerencia_id'],
+                    'gerencia' => $first['gerencia'],
+                    'ahorro' => $ahorro,
+                    'no_consumido' => $noConsumido,
+                    'desviacion' => $desviacion,
+                    'presupuesto' => round($rows->sum('presupuesto'), 2),
+                    'facturado' => round($rows->sum('facturado'), 2),
+                    'total' => round($ahorro + $noConsumido - $desviacion, 2),
+                ];
+            })->sortBy('gerencia')->values();
+
+        $gerenciasDetalle = $items
+            ->groupBy('gerencia_id')
+            ->map(function ($rows) {
+                $first = $rows->first();
+                $meses = $rows->groupBy('mes')->map(function ($itemsMes, $mes) {
+                    $ahorro = round($itemsMes->sum('ahorro'), 2);
+                    $noConsumido = round($itemsMes->sum('no_consumido'), 2);
+                    $desviacion = round($itemsMes->sum('desviacion'), 2);
+                    return [
+                        'mes' => (int)$mes,
+                        'mes_nombre' => self::CORTES_MES_NUM_TO_NAME[(int)$mes] ?? (string)$mes,
+                        'presupuesto' => round($itemsMes->sum('presupuesto'), 2),
+                        'facturado' => round($itemsMes->sum('facturado'), 2),
+                        'ahorro' => $ahorro,
+                        'no_consumido' => $noConsumido,
+                        'desviacion' => $desviacion,
+                        'total' => round($ahorro + $noConsumido - $desviacion, 2),
+                        'items' => $itemsMes->values()->all(),
+                    ];
+                })->sortBy('mes')->values();
+
+                return [
+                    'gerencia_id' => $first['gerencia_id'],
+                    'gerencia' => $first['gerencia'],
+                    'meses' => $meses,
+                ];
+            })->sortBy('gerencia')->values();
+
+        return [
+            'insumos' => $insumos,
+            'concentrado_gerencias' => $concentrado,
+            'gerencias_detalle' => $gerenciasDetalle,
+            'meta' => [
+                'total' => $insumos->count(),
+                'filtros' => [
+                    'gerencia_id' => $gerenciaId ? (int)$gerenciaId : null,
+                    'mes' => $mes ? (int)$mes : null,
+                    'anio' => $anio ? (int)$anio : null,
+                    'insumo' => $insumo,
+                ],
+            ],
+        ];
+    }
+
+    private function resolveMesCortes($mes): array
+    {
+        if ($mes === null || $mes === '') return [null, null];
+        if (is_numeric((string)$mes)) {
+            $mesInt = (int)$mes;
+            return [$mesInt, self::CORTES_MES_NUM_TO_NAME[$mesInt] ?? null];
+        }
+        return [$this->mesToInt($mes), (string)$mes];
+    }
+
+    private function mesToInt($mes): ?int
+    {
+        if ($mes === null || $mes === '') return null;
+        if (is_numeric((string)$mes)) {
+            $num = (int)$mes;
+            return $num >= 1 && $num <= 12 ? $num : null;
+        }
+        $normalizado = mb_strtolower(trim((string)$mes));
+        foreach (self::CORTES_MES_NUM_TO_NAME as $num => $nombre) {
+            if (mb_strtolower($nombre) === $normalizado) return $num;
+        }
+        return null;
+    }
+
+    private function comparativaKey(int $gerenciaId, string $insumo, int $mes): string
+    {
+        return $gerenciaId . '|' . mb_strtolower(trim($insumo)) . '|' . $mes;
     }
 
     public function create()

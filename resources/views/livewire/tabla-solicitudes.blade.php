@@ -1,4 +1,50 @@
-<div x-data="solicitudesData()">
+<script>
+    window.solicitudesData = window.solicitudesData || function() {
+        return {
+            modalAbierto: false,
+            cargando: false,
+            solicitudSeleccionada: null,
+            abrirModal(id) {
+                this.modalAbierto = true;
+                this.cargando = true;
+                this.solicitudSeleccionada = null;
+                fetch(`/solicitudes/${id}/datos`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        this.solicitudSeleccionada = data;
+                        this.cargando = false;
+                    })
+                    .catch(() => {
+                        this.cargando = false;
+                    });
+            },
+            cerrarModal() {
+                this.modalAbierto = false;
+                this.solicitudSeleccionada = null;
+            },
+            getCotizacionesGanadoras() {
+                const cotizaciones = this.solicitudSeleccionada?.cotizaciones || [];
+                return cotizaciones
+                    .filter(cot => cot && cot.Estatus === 'Seleccionada')
+                    .sort((a, b) => (a.NumeroPropuesta || 0) - (b.NumeroPropuesta || 0));
+            },
+            formatMoney(value) {
+                const amount = Number(value || 0);
+                return '$' + amount.toLocaleString('es-MX', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+            }
+        };
+    };
+</script>
+
+<div x-data="window.solicitudesData()">
 
     <div class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
 
@@ -242,8 +288,7 @@
         </div>
     </div>
 
-    <template x-teleport="body">
-        <div x-show="modalAbierto"
+    <div x-show="modalAbierto"
             x-transition:enter="ease-out duration-200"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"
@@ -551,8 +596,7 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </template>
+    </div>
 
     @if($modalAsignacionAbierto)
     @php $modalYaTieneFacturas = $modalEsSoloLectura; @endphp
@@ -1403,7 +1447,7 @@
         };
     })();
 
-    function solicitudesData() {
+    window.solicitudesData = function() {
         return {
             modalAbierto: false,
             cargando: false,
@@ -1444,8 +1488,8 @@
                     maximumFractionDigits: 2
                 });
             }
-        }
-    }
+        };
+    };
 
     document.addEventListener('livewire:load', function() {
         const _swalBase = {

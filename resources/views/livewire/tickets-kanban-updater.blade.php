@@ -1,5 +1,5 @@
 {{-- resources/views/livewire/tickets-kanban-updater.blade.php --}}
-<div wire:poll.5s.keep-alive="actualizarDatos">
+<div wire:poll.5s.visible="actualizarDatos">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 
