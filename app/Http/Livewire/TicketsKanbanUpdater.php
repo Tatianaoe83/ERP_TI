@@ -8,15 +8,11 @@ use Illuminate\Support\Str;
 
 class TicketsKanbanUpdater extends Component
 {
-   protected function getListeners()
+    protected $listeners = ['ticket-estatus-actualizado' => 'actualizarDatos'];
+
+    public function actualizarDatos()
     {
-        return [
-            // Escucha local (la que ya usabas desde Alpine u otros componentes)
-            'ticket-estatus-actualizado' => '$refresh',
-            
-            // Escucha en tiempo real vía WebSockets usando Laravel Echo
-            "echo:tickets-channel,TicketUpdatedEvent" => '$refresh',
-        ];
+        $this->emit('tickets-actualizados-kanban', $this->obtenerPayloadActualizacion());
     }
 
     private function fetchTickets()
@@ -134,21 +130,13 @@ class TicketsKanbanUpdater extends Component
 
         $ticketsStatus = [
             'nuevos' => $this->formatearTickets(
-                $tickets->filter(function ($ticket) {
-                    return strtolower(trim($ticket->Estatus)) === 'pendiente';
-                })->values()
+                $tickets->where('Estatus', 'Pendiente')->values()
             ),
             'proceso' => $this->formatearTickets(
-                $tickets->filter(function ($ticket) {
-                    $estatus = strtolower(trim($ticket->Estatus));
-                    return $estatus === 'en progreso' || $estatus === 'en proceso';
-                })->values()
+                $tickets->where('Estatus', 'En progreso')->values()
             ),
             'resueltos' => $this->formatearTickets(
-                $tickets->filter(function ($ticket) {
-                    $estatus = strtolower(trim($ticket->Estatus));
-                    return $estatus === 'cerrado' || $estatus === 'resuelto';
-                })->values()
+                $tickets->where('Estatus', 'Cerrado')->values()
             ),
         ];
         $tiempos = $this->procesarTiempos($tickets);

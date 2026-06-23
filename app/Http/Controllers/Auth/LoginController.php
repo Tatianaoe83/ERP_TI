@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
+use romanzipp\Turnstile\Rules\TurnstileCaptcha;
 
 class LoginController extends Controller
 {
@@ -42,5 +44,16 @@ class LoginController extends Controller
     {
         return 'username';
     }
-    
+
+    protected function validateLogin(Request $request)
+    {
+        $request->validate([
+            $this->username()      => 'required|string',
+            'password'             => 'required|string',
+            'cf-turnstile-response' => ['required', new TurnstileCaptcha()],
+        ], [
+            'cf-turnstile-response.required' => 'Completa la verificación de seguridad.',
+            'cf-turnstile-response.*'        => 'Verificación fallida. Intenta de nuevo.',
+        ]);
+    }
 }

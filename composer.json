@@ -24,6 +24,7 @@
         "owen-it/laravel-auditing": "^13.7",
         "phpmailer/phpmailer": "^7.0",
         "rappasoft/laravel-livewire-tables": "^2.15",
+        "romanzipp/laravel-turnstile": "^1.4",
         "setasign/fpdi": "^2.6",
         "smalot/pdfparser": "^2.12",
         "spatie/laravel-permission": "^4.3",
