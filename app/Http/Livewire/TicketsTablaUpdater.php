@@ -48,13 +48,39 @@ class TicketsTablaUpdater extends Component
         ]);
 
         // 🔎 BUSCADOR
-        if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('Descripcion', 'like', '%' . $this->search . '%')
-                  ->orWhere('TicketID', 'like', '%' . $this->search . '%')
-                  ->orWhereHas('empleado', function ($sub) {
-                      $sub->where('NombreEmpleado', 'like', '%' . $this->search . '%');
-                  });
+        $search = trim((string)$this->search);
+        if ($search !== '') {
+            $tokens = collect(preg_split('/\s+/', $search) ?: [])
+                ->map(fn($token) => trim((string)$token))
+                ->filter(fn($token) => $token !== '')
+                ->values();
+
+            $query->where(function ($q) use ($tokens, $search) {
+                foreach ($tokens as $token) {
+                    $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $token) . '%';
+
+                    $q->where(function ($subQuery) use ($like) {
+                        $subQuery->where('Descripcion', 'like', $like)
+                            ->orWhere('TicketID', 'like', $like)
+                            ->orWhere('Estatus', 'like', $like)
+                            ->orWhere('Prioridad', 'like', $like)
+                            ->orWhereHas('empleado', function ($empleado) use ($like) {
+                                $empleado->where('NombreEmpleado', 'like', $like)
+                                    ->orWhere('Correo', 'like', $like);
+                            })
+                            ->orWhereHas('responsableTI', function ($responsable) use ($like) {
+                                $responsable->where('NombreEmpleado', 'like', $like)
+                                    ->orWhere('Correo', 'like', $like);
+                            })
+                            ->orWhereHas('tipoticket', function ($tipo) use ($like) {
+                                $tipo->where('NombreTipo', 'like', $like);
+                            });
+                    });
+                }
+
+                if (ctype_digit($search)) {
+                    $q->orWhere('TicketID', (int)$search);
+                }
             });
         }
 

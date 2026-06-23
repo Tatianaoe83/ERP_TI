@@ -358,6 +358,12 @@
 
         window.abrirNotificacionSolicitud = function(solicitudId) {
             if (window.location.pathname.endsWith('/tickets')) {
+                const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
+                if (botonSolicitud) {
+                    botonSolicitud.click();
+                    return;
+                }
+
                 const buttons = document.querySelectorAll('button');
                 for (let btn of buttons) {
                     const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
@@ -383,6 +389,12 @@
             const solicitudId = urlParams.get('solicitud_id');
             if (solicitudId) {
                 setTimeout(() => {
+                    const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
+                    if (botonSolicitud) {
+                        botonSolicitud.click();
+                        return;
+                    }
+
                     const buttons = document.querySelectorAll('button');
                     for (let btn of buttons) {
                         const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
@@ -433,10 +445,30 @@
             }
         });
 
+        let actualizandoNotificaciones = false;
+
         function actualizarNotificaciones() {
-            fetch('/notificaciones-panel')
-                .then(res => res.json())
+            if (document.hidden || actualizandoNotificaciones) return;
+
+            actualizandoNotificaciones = true;
+            fetch('/notificaciones-panel', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(res => {
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!res.ok || !contentType.includes('application/json')) {
+                        return null;
+                    }
+
+                    return res.json();
+                })
                 .then(data => {
+                    if (!data) return;
+
                     window._lastNotifData = data;
 
                     let conteoNoLeidos = 0;
@@ -611,11 +643,14 @@
                         }
                     }
                 })
-                .catch(err => console.error("Error al procesar notificaciones:", err));
+                .catch(() => {})
+                .finally(() => {
+                    actualizandoNotificaciones = false;
+                });
         }
 
         actualizarNotificaciones();
-        setInterval(actualizarNotificaciones, 5000);
+        setInterval(actualizarNotificaciones, 15000);
 
         function posicionarTooltip() {
             if (tooltip.style.display === 'none') return;

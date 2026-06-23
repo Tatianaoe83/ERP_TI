@@ -1,6 +1,8 @@
 {{-- resources/views/livewire/tickets-kanban-updater.blade.php --}}
-<div wire:poll.5s wire:poll.keep-alive>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+<div wire:poll.5s.visible="actualizarDatos">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start h-full">
 

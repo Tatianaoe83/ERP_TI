@@ -108,6 +108,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/facturas/{id}/reemplazar-archivo', [App\Http\Controllers\FacturasController::class, 'reemplazarArchivo'])
         ->name('facturas.reemplazar');
     Route::get('facturas/comparativa', [FacturasController::class, 'comparativa'])->name('facturas.comparativa');
+    Route::get('facturas/comparativa/exportar', [FacturasController::class, 'exportarComparativa'])->name('facturas.comparativa.exportar');
     Route::get('facturas/historial', [FacturasController::class, 'historial'])->name('facturas.historial');
     Route::get('verFacturas', [FacturasController::class, 'indexVista'])->name('facturas.ver');
     Route::get('facturas/insumos-por-gerencia', [FacturasController::class, 'getInsumosPorGerencia'])->name('facturas.getInsumosPorGerencia');
@@ -123,6 +124,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('mantenimientos/exportar-excel', [MantenimientosController::class, 'exportarExcel'])->name('mantenimientos.exportar-excel');
     Route::post('mantenimientos/generar', [MantenimientosController::class, 'generar'])->name('mantenimientos.generar');
     Route::patch('mantenimientos/{mantenimiento}/realizado', [MantenimientosController::class, 'marcarRealizado'])->name('mantenimientos.realizado');
+    Route::get('mantenimientos/exportar-excel', [MantenimientosController::class, 'exportarExcel'])->name('mantenimientos.exportar-excel');
 
     Route::post('cortes/store-all', [CortesController::class, 'storeAll'])->name('cortes.storeAll');
     Route::get('/cortes/guardados', [CortesController::class, 'obtenerCorteGuardado'])->name('cortes.guardados');
@@ -175,17 +177,27 @@ Route::get('/notificaciones-panel', function () {
         if (empty($cotIds)) {
             return [0, $totalNecesarias];
         }
-        $activos = \App\Models\SolicitudActivo::query()
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('facturas', 'CotizacionID')) {
+            $facturasSubidas = \App\Models\Facturas::query()
+                ->where('SolicitudID', (int)$solicitud->SolicitudID)
+                ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
+                    ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
+                ->count();
+
+            return [min($facturasSubidas, $totalNecesarias), $totalNecesarias];
+        }
+        $facturas = \App\Models\Facturas::query()
+            ->where('SolicitudID', (int)$solicitud->SolicitudID)
             ->whereIn('CotizacionID', $cotIds)
-            ->whereNotNull('FacturaPath')
-            ->where('FacturaPath', '!=', '')
+            ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
+                ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
             ->select('CotizacionID')
             ->distinct()
             ->get();
-        if ($activos->isEmpty()) {
+        if ($facturas->isEmpty()) {
             return [0, $totalNecesarias];
         }
-        $cotsConFactura = $activos->pluck('CotizacionID')->toArray();
+        $cotsConFactura = $facturas->pluck('CotizacionID')->toArray();
         $provsConFactura = $sel->whereIn('CotizacionID', $cotsConFactura)
             ->pluck('Proveedor')->filter()->unique()->count();
         return [$provsConFactura, $totalNecesarias];

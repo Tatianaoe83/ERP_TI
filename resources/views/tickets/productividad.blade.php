@@ -1116,20 +1116,20 @@
                             class="uppercase tracking-wider border-b-2 border-gray-200 dark:border-[#2A2F3A] bg-gray-100 dark:bg-[#1F2937]/30 text-gray-500 dark:text-[#9CA3AF]">
                             <tr>
                                 <th scope="col" class="px-6 py-4 font-semibold">ID Sol.</th>
-                                <th scope="col" class="px-6 py-4 font-semibold">Creación</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-center">T. Cotización</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">Vo.Bo Supervisor</th>
+                                <th scope="col" class="px-6 py-4 font-semibold text-center">T. Cotización TI</th>
                                 <th scope="col" class="px-6 py-4 font-semibold text-center">T. Config.</th>
-                                <th scope="col" class="px-6 py-4 font-semibold text-right">Tiempo Total</th>
+                                <th scope="col" class="px-6 py-4 font-semibold text-right">Tiempo Total Avance</th>
                                 <th scope="col" class="px-6 py-4 font-semibold text-center">Facturas</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A] bg-gray-50 dark:bg-transparent">
                             @forelse($metricasSolicitudes['desglose'] ?? [] as $sol)
-                                <tr @click="infoModal = { id: '{{ $sol['id'] }}', empleado: '{{ addslashes($sol['empleado'] ?? '') }}', proyecto: '{{ addslashes($sol['proyecto'] ?? '') }}', motivo: '{{ addslashes($sol['motivo'] ?? '') }}', descripcion: '{{ addslashes($sol['descripcion_motivo'] ?? '') }}', estatus: '{{ $sol['estatus'] ?? '' }}', creacion: '{{ $sol['fecha_creacion'] }}', actualizacion: '{{ $sol['fecha_actualizacion'] ?? '' }}' }; modalAbierto = true;"
+                                <tr @click="infoModal = { id: '{{ $sol['id'] }}', empleado: '{{ addslashes($sol['empleado'] ?? '') }}', proyecto: '{{ addslashes($sol['proyecto'] ?? '') }}', motivo: '{{ addslashes($sol['motivo'] ?? '') }}', descripcion: '{{ addslashes($sol['descripcion_motivo'] ?? '') }}', estatus: '{{ $sol['estatus'] ?? '' }}', creacion: '{{ $sol['fecha_creacion'] }}', actualizacion: '{{ $sol['fecha_actualizacion'] ?? '' }}', cierre: '{{ $sol['fecha_cierre'] ?? '' }}', voboSupervisor: '{{ $sol['fecha_vobo_supervisor'] ?? '' }}', cotizacionTi: '{{ $sol['fecha_cotizacion_ti'] ?? '' }}', ultimoHito: '{{ $sol['fecha_ultimo_hito'] ?? '' }}', estadoConfig: '{{ $sol['estado_configuracion'] ?? '' }}' }; modalAbierto = true;"
                                     class="hover:bg-gray-100 dark:hover:bg-[#1F2937]/50 transition-colors cursor-pointer">
 
                                     <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">#{{ $sol['id'] }}</td>
-                                    <td class="px-6 py-4 text-gray-500 dark:text-[#9CA3AF]">{{ $sol['fecha_creacion'] }}
+                                    <td class="px-6 py-4 text-gray-500 dark:text-[#9CA3AF]">{{ $sol['fecha_vobo_supervisor'] ?: 'Pendiente' }}
                                     </td>
 
                                     <td class="px-6 py-4 text-center">
@@ -1148,6 +1148,10 @@
                                             <span
                                                 class="inline-flex px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium text-xs">
                                                 {{ $sol['tiempo_configuracion_dias'] }} h
+                                            </span>
+                                        @elseif(($sol['estado_configuracion'] ?? '') === 'Sin configuración')
+                                            <span class="inline-flex px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 font-medium text-xs">
+                                                Sin configuración
                                             </span>
                                         @else
                                             <span class="text-gray-400 dark:text-gray-500 text-xs italic">Pendiente</span>
@@ -1172,12 +1176,12 @@
                                             @elseif($fSub > 0)
                                                 <span
                                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">
-                                                    <i class="fas fa-exclamation-triangle"></i> {{ $fSub }}/{{ $fNec }} Parcial
+                                                    <i class="fas fa-exclamation-triangle"></i> Faltan {{ max(0, $fNec - $fSub) }} ({{ $fSub }}/{{ $fNec }})
                                                 </span>
                                             @else
                                                 <span
                                                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800">
-                                                    <i class="fas fa-times-circle"></i> Faltan (0/{{ $fNec }})
+                                                    <i class="fas fa-times-circle"></i> Faltan {{ $fNec }} (0/{{ $fNec }})
                                                 </span>
                                             @endif
                                         @else
@@ -1269,11 +1273,46 @@
                                 x-text="infoModal.creacion"></p>
                         </div>
                         <div
+                            class="border border-blue-100 dark:border-blue-800 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                            <label class="text-xs font-bold text-blue-500 dark:text-blue-300 block"><i
+                                    class="fas fa-check-circle mr-1"></i> Vo.Bo supervisor</label>
+                            <p class="text-sm font-semibold text-blue-700 dark:text-blue-200 mt-1"
+                                x-text="infoModal.voboSupervisor || 'Pendiente'"></p>
+                        </div>
+                        <div
+                            class="border border-violet-100 dark:border-violet-800 p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20">
+                            <label class="text-xs font-bold text-violet-500 dark:text-violet-300 block"><i
+                                    class="fas fa-file-invoice-dollar mr-1"></i> Cotización TI</label>
+                            <p class="text-sm font-semibold text-violet-700 dark:text-violet-200 mt-1"
+                                x-text="infoModal.cotizacionTi || 'Pendiente'"></p>
+                        </div>
+                        <div
+                            class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                            <label class="text-xs font-bold text-slate-400 block"><i
+                                    class="fas fa-cogs mr-1"></i> Configuración</label>
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1"
+                                x-text="infoModal.estadoConfig || 'Sin configuración'"></p>
+                        </div>
+                        <div
                             class="border border-slate-100 dark:border-slate-700 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                             <label class="text-xs font-bold text-slate-400 block"><i class="fas fa-clock mr-1"></i>
                                 Última act.</label>
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mt-1"
                                 x-text="infoModal.actualizacion || 'N/A'"></p>
+                        </div>
+                        <div x-show="infoModal.ultimoHito"
+                            class="border border-emerald-100 dark:border-emerald-800 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 col-span-2">
+                            <label class="text-xs font-bold text-emerald-500 dark:text-emerald-300 block"><i class="fas fa-flag-checkered mr-1"></i>
+                                Último hito usado para tiempo total</label>
+                            <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-200 mt-1"
+                                x-text="infoModal.ultimoHito"></p>
+                        </div>
+                        <div x-show="infoModal.cierre"
+                            class="border border-rose-100 dark:border-rose-800 p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 col-span-2">
+                            <label class="text-xs font-bold text-rose-500 dark:text-rose-300 block"><i class="fas fa-ban mr-1"></i>
+                                Cerrada/Cancelada el</label>
+                            <p class="text-sm font-semibold text-rose-700 dark:text-rose-200 mt-1"
+                                x-text="infoModal.cierre"></p>
                         </div>
                     </div>
 

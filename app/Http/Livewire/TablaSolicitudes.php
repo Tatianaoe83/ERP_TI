@@ -122,10 +122,7 @@ class TablaSolicitudes extends Component
         // 🔥 Guardar archivo al storage
         if ($this->asignacionSolicitudId) {
             try {
-                $solicitudId = $this->asignacionSolicitudId;
-                $dir = "solicitudes/{$solicitudId}/temp";
-                $filename = "factura_{$pIndex}_{$uIndex}.xml";
-                $ruta = $file->storeAs($dir, $filename, 'public');
+                $ruta = $file->store('facturas/xml', 'public');
                 
                 // Actualizar ruta en propuestasAsignacion para todas las unidades del proveedor
                 $proveedor = $this->propuestasAsignacion[$pIndex]['proveedor'] ?? null;
@@ -169,10 +166,7 @@ class TablaSolicitudes extends Component
         // 🔥 Guardar archivo PDF al storage
         if ($this->asignacionSolicitudId) {
             try {
-                $solicitudId = $this->asignacionSolicitudId;
-                $dir = "solicitudes/{$solicitudId}/temp";
-                $filename = "factura_{$pIndexOrigen}_{$uIndexOrigen}.pdf";
-                $ruta = $facturaSubida->storeAs($dir, $filename, 'public');
+                $ruta = $facturaSubida->store('facturas/pdf', 'public');
                 
                 // Actualizar ruta en propuestasAsignacion para todas las unidades del proveedor
                 $proveedor = $this->propuestasAsignacion[$pIndexOrigen]['proveedor'] ?? null;
@@ -256,11 +250,16 @@ class TablaSolicitudes extends Component
             $procesadas = $procesadas->filter(fn($s) => $s->estatusDisplay === $this->filtroEstatus)->values();
         }
 
-        $page      = \Illuminate\Pagination\Paginator::resolveCurrentPage('page');
+        $total     = $procesadas->count();
+        $lastPage  = max(1, (int)ceil($total / max(1, $this->perPage)));
+        $page      = max(1, min((int)($this->page ?: 1), $lastPage));
         $items     = $procesadas->slice(($page - 1) * $this->perPage, $this->perPage)->values();
         $paginador = new \Illuminate\Pagination\LengthAwarePaginator(
-            $items, $procesadas->count(), $this->perPage, $page,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            $items, $total, $this->perPage, $page,
+            [
+                'path'     => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+                'pageName' => 'page',
+            ]
         );
 
         return view('livewire.tabla-solicitudes', ['todasSolicitudes' => $paginador]);
@@ -424,14 +423,28 @@ class TablaSolicitudes extends Component
         $cotIds = $sel->pluck('CotizacionID')->filter()->unique()->toArray();
         if (empty($cotIds)) return [0, $totalNecesarias];
 
-        $activos = SolicitudActivo::query()
+        if (!Schema::hasColumn('facturas', 'CotizacionID')) {
+            $facturasSubidas = Facturas::query()
+                ->where('SolicitudID', (int)$solicitud->SolicitudID)
+                ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
+                    ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
+                ->count();
+
+            return [min($facturasSubidas, $totalNecesarias), $totalNecesarias];
+        }
+
+        $facturas = Facturas::query()
+            ->where('SolicitudID', (int)$solicitud->SolicitudID)
             ->whereIn('CotizacionID', $cotIds)
-            ->whereNotNull('FacturaPath')->where('FacturaPath', '!=', '')
-            ->select('CotizacionID')->distinct()->get();
+            ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
+                ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
+            ->select('CotizacionID')
+            ->distinct()
+            ->get();
 
-        if ($activos->isEmpty()) return [0, $totalNecesarias];
+        if ($facturas->isEmpty()) return [0, $totalNecesarias];
 
-        $cotsConFactura  = $activos->pluck('CotizacionID')->toArray();
+        $cotsConFactura  = $facturas->pluck('CotizacionID')->toArray();
         $provsConFactura = $sel->whereIn('CotizacionID', $cotsConFactura)->pluck('Proveedor')->filter()->unique()->count();
 
         return [$provsConFactura, $totalNecesarias];
@@ -722,7 +735,12 @@ class TablaSolicitudes extends Component
             $facturasDelSolicitud = Facturas::query()->where('SolicitudID', $solicitudId)
                 ->where(fn($q) => $q->whereNotNull('ArchivoRuta')->where('ArchivoRuta', '!=', '')
                     ->orWhereNotNull('PdfRuta')->where('PdfRuta', '!=', ''))
-                ->get()->unique('UUID')->keyBy('UUID');
+                ->get();
+
+            $facturasTieneCotizacion = Schema::hasColumn('facturas', 'CotizacionID');
+            $facturasPorCotizacion = $facturasTieneCotizacion
+                ? $facturasDelSolicitud->whereNotNull('CotizacionID')->unique('CotizacionID')->keyBy('CotizacionID')
+                : collect();
 
             $rutasPorProveedor = [];
             foreach ($seleccionadas as $cot) {
@@ -735,20 +753,10 @@ class TablaSolicitudes extends Component
                 $proveedor = (string)($cot->Proveedor ?? '');
                 if (!$proveedor || !empty($rutasPorProveedor[$proveedor]['xml'])) continue;
 
-                $qty = max(1, (int)($cot->Cantidad ?? 1));
-                for ($i = 1; $i <= $qty; $i++) {
-                    $activo = $activosPorKey->get((int)$cot->CotizacionID . ':' . $i);
-                    if (!$activo) continue;
-
-                    $dir = "solicitudes/{$solicitudId}/activos/{$activo->SolicitudActivoID}";
-                    if (empty($rutasPorProveedor[$proveedor]['xml']) && Storage::disk('public')->exists("{$dir}/factura.xml"))
-                        $rutasPorProveedor[$proveedor]['xml'] = "{$dir}/factura.xml";
-
-                    if (empty($rutasPorProveedor[$proveedor]['xml'])) {
-                        $fp = (string)($activo->FacturaPath ?? '');
-                        if ($fp && Storage::disk('public')->exists($fp) && strtolower(pathinfo($fp, PATHINFO_EXTENSION)) === 'xml')
-                            $rutasPorProveedor[$proveedor]['xml'] = $fp;
-                    }
+                $matchCotizacion = $facturasPorCotizacion->get((int)$cot->CotizacionID);
+                if ($matchCotizacion && !empty($matchCotizacion->ArchivoRuta)) {
+                    $rutasPorProveedor[$proveedor]['xml'] = (string)$matchCotizacion->ArchivoRuta;
+                    continue;
                 }
 
                 if (empty($rutasPorProveedor[$proveedor]['xml'])) {
@@ -782,11 +790,6 @@ class TablaSolicitudes extends Component
 
                     $xmlSavedPath = $rutasPorProveedor[$proveedor]['xml'] ?? '';
 
-                    if (empty($xmlSavedPath) && $activo) {
-                        $dir = "solicitudes/{$solicitudId}/activos/{$activo->SolicitudActivoID}";
-                        if (Storage::disk('public')->exists("{$dir}/factura.xml")) $xmlSavedPath = "{$dir}/factura.xml";
-                    }
-
                     $serialVal = ($activo && $this->serialColumn) ? (string)($activo->{$this->serialColumn} ?? '') : '';
 
                     $unidades[] = [
@@ -794,7 +797,7 @@ class TablaSolicitudes extends Component
                         'activoId'                => $activo ? (int)$activo->SolicitudActivoID : null,
                         'serial'                  => $serialVal,
                         'factura_xml_path'        => $xmlSavedPath,
-                        'factura_path'            => $activo ? (string)($activo->FacturaPath ?? '') : '',
+                        'factura_path'            => '',
                         'fecha_entrega'           => $activo && $activo->FechaEntrega ? $activo->FechaEntrega->format('Y-m-d') : null,
                         'empleado_id'             => $empleadoId ?: null,
                         'empleado_nombre'         => $empleadoRow['nombre'] ?? null,
@@ -877,13 +880,27 @@ class TablaSolicitudes extends Component
         // Requerir al menos 2 caracteres para buscar
         if (strlen($term) < 2) return;
 
+        $tokens = collect(preg_split('/\s+/', $term) ?: [])
+            ->map(fn($token) => trim((string)$token))
+            ->filter(fn($token) => $token !== '')
+            ->values();
+
         $this->usuarioOptions[$pIndex][$uIndex] = Empleados::query()
             ->select('EmpleadoID', 'NombreEmpleado', 'Correo')
             ->where('Estado', true)
-            ->where(fn($q) => $q
-                ->where('NombreEmpleado', 'like', "{$term}%")
-                ->orWhere('Correo', 'like', "{$term}%")
-                ->when(ctype_digit($term), fn($q) => $q->orWhere('EmpleadoID', (int)$term)))
+            ->where(function ($query) use ($tokens, $term) {
+                foreach ($tokens as $token) {
+                    $query->where(function ($q) use ($token) {
+                        $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $token) . '%';
+                        $q->where('NombreEmpleado', 'like', $like)
+                            ->orWhere('Correo', 'like', $like);
+                    });
+                }
+
+                if (ctype_digit($term)) {
+                    $query->orWhere('EmpleadoID', (int)$term);
+                }
+            })
             ->orderBy('NombreEmpleado')
             ->limit(10)
             ->get()
@@ -986,6 +1003,8 @@ class TablaSolicitudes extends Component
             }
 
             DB::transaction(function () {
+                $facturasTieneCotizacion = Schema::hasColumn('facturas', 'CotizacionID');
+
                 // ===================================================================
                 // FASE 1: Recolectar XMLs únicos por proveedor
                 // ===================================================================
@@ -1005,8 +1024,6 @@ class TablaSolicitudes extends Component
                 // ===================================================================
                 // FASE 2: Insertar FACTURAS ÚNICAS (1 por cotización ganadora)
                 // ===================================================================
-                $facturasInsertadas = []; // control de cotizaciones ya procesadas
-
                 // Agrupar por cotización para insertar UNA factura por cotización
                 $cotizacionesUnicas = [];
                 foreach ($this->propuestasAsignacion as $pIndex => $p) {
@@ -1078,6 +1095,7 @@ class TablaSolicitudes extends Component
                     // Buscar las rutas XML y PDF de este proveedor
                     $rutaXmlFactura = '';
                     $rutaPdfFactura = '';
+
                     foreach ($this->propuestasAsignacion as $pi => $propuesta) {
                         if (($propuesta['proveedor'] ?? '') !== $proveedor) continue;
                         foreach (($propuesta['unidades'] ?? []) as $ui => $unidad) {
@@ -1093,10 +1111,39 @@ class TablaSolicitudes extends Component
                         }
                     }
 
+                    $xmlFile = $xmlPorProveedor[$proveedor] ?? null;
+                    if ($xmlFile && empty($rutaXmlFactura)) {
+                        $ext  = strtolower((string)$xmlFile->getClientOriginalExtension());
+                        $mime = strtolower((string)$xmlFile->getMimeType());
+                        if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true)) {
+                            throw new \Exception('El archivo XML de factura no es válido.');
+                        }
+
+                        $rutaXmlFactura = $xmlFile->store('facturas/xml', 'public');
+                    }
+
+                    $pdfFile = $facturaPorProveedor[$proveedor] ?? null;
+                    if ($pdfFile && empty($rutaPdfFactura)) {
+                        $rutaPdfFactura = $pdfFile->store('facturas/pdf', 'public');
+                    }
+
+                    if ($rutaXmlFactura || $rutaPdfFactura) {
+                        foreach ($this->propuestasAsignacion as $pi => $propuesta) {
+                            if (($propuesta['proveedor'] ?? '') !== $proveedor) continue;
+                            foreach (array_keys($propuesta['unidades'] ?? []) as $ui) {
+                                if ($rutaXmlFactura) {
+                                    $this->propuestasAsignacion[$pi]['unidades'][$ui]['factura_xml_path'] = $rutaXmlFactura;
+                                }
+                                if ($rutaPdfFactura) {
+                                    $this->propuestasAsignacion[$pi]['unidades'][$ui]['factura_pdf_path'] = $rutaPdfFactura;
+                                }
+                            }
+                        }
+                    }
+
                     try {
-                        Facturas::create([
+                        $facturaData = [
                             'SolicitudID'  => (int)$this->asignacionSolicitudId,
-                            'CotizacionID' => $cotizacionId,
                             'GerenciaID'   => $gerenciaID,
                             'UUID'         => $uuid,
                             'Nombre'       => $descripcion,
@@ -1109,16 +1156,13 @@ class TablaSolicitudes extends Component
                             'Emisor'       => $parsed['emisor'] ?? '',
                             'ArchivoRuta'  => $rutaXmlFactura,
                             'PdfRuta'      => $rutaPdfFactura,
-                        ]);
+                        ];
 
-                        $facturasInsertadas[$cotizacionId] = true;
+                        if ($facturasTieneCotizacion) {
+                            $facturaData['CotizacionID'] = $cotizacionId;
+                        }
 
-                        \Log::info('[Asignacion] Factura insertada por cotización', [
-                            'solicitudId'  => $this->asignacionSolicitudId,
-                            'cotizacionId' => $cotizacionId,
-                            'uuid'         => $uuid,
-                            'proveedor'    => $proveedor,
-                        ]);
+                        Facturas::create($facturaData);
 
                     } catch (\Throwable $fe) {
                         \Log::error('[Asignacion] ERROR factura XML', [
@@ -1199,51 +1243,6 @@ class TablaSolicitudes extends Component
                             ],
                             $dataUpdate
                         );
-
-                        $proveedor = $p['proveedor'] ?? null;
-                        $baseDir   = "solicitudes/{$this->asignacionSolicitudId}/activos/{$activo->SolicitudActivoID}";
-                        $rutaXml   = null;
-
-                        $xmlFile = ($proveedor && isset($xmlPorProveedor[$proveedor]))
-                            ? $xmlPorProveedor[$proveedor]
-                            : ($this->facturaXml[$pIndex][$uIndex] ?? null);
-
-                        if ($xmlFile) {
-                            $ext  = strtolower((string)$xmlFile->getClientOriginalExtension());
-                            $mime = strtolower((string)$xmlFile->getMimeType());
-                            if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true))
-                                throw new \Exception('El archivo XML de factura no es válido.');
-                            $rutaXml = $xmlFile->storeAs($baseDir, 'factura.xml', 'public');
-                        }
-
-                        if (!$rutaXml && !empty($u['factura_xml_path'])) $rutaXml = $u['factura_xml_path'];
-
-                        if (!$rutaXml) {
-                            $legacy = ($proveedor && isset($facturaPorProveedor[$proveedor]))
-                                ? $facturaPorProveedor[$proveedor]
-                                : ($this->facturas[$pIndex][$uIndex] ?? null);
-                            if ($legacy) {
-                                $ext  = strtolower((string)$legacy->getClientOriginalExtension());
-                                $mime = strtolower((string)$legacy->getMimeType());
-                                if (!in_array($ext, ['xml'], true) || !in_array($mime, ['text/xml','application/xml','text/plain'], true))
-                                    throw new \Exception('La factura debe ser XML.');
-                                $rutaXml = $legacy->storeAs($baseDir, 'factura.xml', 'public');
-                            }
-                        }
-
-                        if ($rutaXml) {
-                            $activo->update(['FacturaPath' => $rutaXml]);
-                            $this->propuestasAsignacion[$pIndex]['unidades'][$uIndex]['factura_xml_path'] = $rutaXml;
-                            if ($proveedor) {
-                                foreach ($this->propuestasAsignacion as $pi => $prop) {
-                                    if (($prop['proveedor'] ?? '') !== $proveedor) continue;
-                                    foreach (array_keys($prop['unidades'] ?? []) as $ui) {
-                                        if ($pi === $pIndex && $ui === $uIndex) continue;
-                                        $this->propuestasAsignacion[$pi]['unidades'][$ui]['factura_xml_path'] = $rutaXml;
-                                    }
-                                }
-                            }
-                        }
 
                         // Guardar o limpiar checklist según cumplimiento de condiciones COMPLETAS
                         if ($cumpleCondicionesCompletas && !empty($u['checklist'])) {

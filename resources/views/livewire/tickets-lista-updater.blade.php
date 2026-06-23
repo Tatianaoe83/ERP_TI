@@ -1,4 +1,4 @@
-<div wire:poll.5s.keep-alive="actualizarDatos">
+<div wire:poll.5s.visible="actualizarDatos">
 
     <div
         x-show="vista === 'lista'"

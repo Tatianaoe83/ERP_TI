@@ -1,4 +1,59 @@
-<div x-data="solicitudesData()">
+<div x-data="{
+    modalAbierto: false,
+    cargando: false,
+    solicitudSeleccionada: null,
+    abrirModalDesdeClick(event) {
+        const boton = event.target.closest('[data-ver-solicitud]');
+        if (!boton) return;
+
+        event.preventDefault();
+        this.abrirModal(boton.dataset.verSolicitud);
+    },
+    abrirModal(id) {
+        this.modalAbierto = true;
+        this.cargando = true;
+        this.solicitudSeleccionada = null;
+        fetch('/solicitudes/' + id + '/datos', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(r => {
+                const contentType = r.headers.get('content-type') || '';
+                if (!r.ok || !contentType.includes('application/json')) {
+                    throw new Error('No se pudo cargar la solicitud.');
+                }
+
+                return r.json();
+            })
+            .then(data => {
+                this.solicitudSeleccionada = data;
+                this.cargando = false;
+            })
+            .catch(() => {
+                this.cargando = false;
+                this.modalAbierto = false;
+            });
+    },
+    cerrarModal() {
+        this.modalAbierto = false;
+        this.solicitudSeleccionada = null;
+    },
+    getCotizacionesGanadoras() {
+        const cotizaciones = this.solicitudSeleccionada?.cotizaciones || [];
+        return cotizaciones
+            .filter(cot => cot && cot.Estatus === 'Seleccionada')
+            .sort((a, b) => (a.NumeroPropuesta || 0) - (b.NumeroPropuesta || 0));
+    },
+    formatMoney(value) {
+        const amount = Number(value || 0);
+        return '$' + amount.toLocaleString('es-MX', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+}" @click="abrirModalDesdeClick($event)">
 
     <div class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
 
@@ -65,9 +120,11 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-gray-50 dark:bg-slate-900">
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-gray-50 dark:bg-slate-900"
+                        wire:key="solicitudes-body-page-{{ $todasSolicitudes->currentPage() }}">
                         @forelse ($todasSolicitudes as $solicitud)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <tr wire:key="solicitud-row-{{ $todasSolicitudes->currentPage() }}-{{ $solicitud->SolicitudID }}"
+                            class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">#{{ $solicitud->SolicitudID }}</span>
                             </td>
@@ -147,7 +204,9 @@
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="flex items-center gap-3 flex-wrap">
-                                    <button @click="abrirModal({{ $solicitud->SolicitudID }})"
+                                    <button type="button"
+                                        data-ver-solicitud="{{ $solicitud->SolicitudID }}"
+                                        @click.prevent.stop="abrirModal({{ $solicitud->SolicitudID }})"
                                         class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium transition-colors">
                                         <i class="fas fa-eye mr-1"></i> Ver
                                     </button>
@@ -205,7 +264,7 @@
                             <i class="fas fa-chevron-left"></i>
                         </span>
                         @else
-                        <button wire:click="previousPage" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs">
+                        <button type="button" wire:click="previousPage" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs">
                             <i class="fas fa-chevron-left"></i>
                         </button>
                         @endif
@@ -219,15 +278,15 @@
                         @if($page == $todasSolicitudes->currentPage())
                         <span class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-blue-600 text-white text-sm font-semibold">{{ $page }}</span>
                         @else
-                        <button wire:click="gotoPage({{ $page }})" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">{{ $page }}</button>
+                        <button type="button" wire:click="gotoPage({{ $page }})" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">{{ $page }}</button>
                         @endif
                         @endforeach
                         @if($todasSolicitudes->currentPage() < $todasSolicitudes->lastPage() - 2)
                             <span class="px-1 text-slate-400">...</span>
-                            <button wire:click="gotoPage({{ $todasSolicitudes->lastPage() }})" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">{{ $todasSolicitudes->lastPage() }}</button>
+                            <button type="button" wire:click="gotoPage({{ $todasSolicitudes->lastPage() }})" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm">{{ $todasSolicitudes->lastPage() }}</button>
                             @endif
                             @if($todasSolicitudes->hasMorePages())
-                            <button wire:click="nextPage" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs">
+                            <button type="button" wire:click="nextPage" class="inline-flex items-center justify-center w-9 h-9 rounded-md border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-xs">
                                 <i class="fas fa-chevron-right"></i>
                             </button>
                             @else
@@ -242,8 +301,7 @@
         </div>
     </div>
 
-    <template x-teleport="body">
-        <div x-show="modalAbierto"
+    <div x-show="modalAbierto"
             x-transition:enter="ease-out duration-200"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"
@@ -551,8 +609,7 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </template>
+    </div>
 
     @if($modalAsignacionAbierto)
     @php $modalYaTieneFacturas = $modalEsSoloLectura; @endphp
@@ -1402,50 +1459,6 @@
             select: select
         };
     })();
-
-    function solicitudesData() {
-        return {
-            modalAbierto: false,
-            cargando: false,
-            solicitudSeleccionada: null,
-            abrirModal(id) {
-                this.modalAbierto = true;
-                this.cargando = true;
-                this.solicitudSeleccionada = null;
-                fetch(`/solicitudes/${id}/datos`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        this.solicitudSeleccionada = data;
-                        this.cargando = false;
-                    })
-                    .catch(() => {
-                        this.cargando = false;
-                    });
-            },
-            cerrarModal() {
-                this.modalAbierto = false;
-                this.solicitudSeleccionada = null;
-            },
-            getCotizacionesGanadoras() {
-                const cotizaciones = this.solicitudSeleccionada?.cotizaciones || [];
-                return cotizaciones
-                    .filter(cot => cot && cot.Estatus === 'Seleccionada')
-                    .sort((a, b) => (a.NumeroPropuesta || 0) - (b.NumeroPropuesta || 0));
-            },
-            formatMoney(value) {
-                const amount = Number(value || 0);
-                return '$' + amount.toLocaleString('es-MX', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
-            }
-        }
-    }
 
     document.addEventListener('livewire:load', function() {
         const _swalBase = {

@@ -19,7 +19,6 @@ use Eloquent as Model;
  * @property integer $CotizacionID
  * @property integer $NumeroPropuesta
  * @property integer $UnidadIndex
- * @property string $FacturaPath    
  * @property string $FechaEntrega
  * @property integer $EmpleadoID
  * @property integer $DepartamentoID
@@ -37,7 +36,6 @@ class SolicitudActivo extends Model
         'CotizacionID',
         'NumeroPropuesta',
         'UnidadIndex',
-        'FacturaPath',
         'FechaEntrega',
         'EmpleadoID',
         'DepartamentoID',
@@ -56,7 +54,6 @@ class SolicitudActivo extends Model
         'CotizacionID' => 'integer',
         'NumeroPropuesta' => 'integer',
         'UnidadIndex' => 'integer',
-        'FacturaPath' => 'string',
         'FechaEntrega' => 'date',
         'EmpleadoID' => 'integer',
         'DepartamentoID' => 'integer',
@@ -74,7 +71,6 @@ class SolicitudActivo extends Model
         'CotizacionID' => 'required',
         'NumeroPropuesta' => 'required|integer',
         'UnidadIndex' => 'required|integer',
-        'FacturaPath' => 'nullable|string|max:255',
         'FechaEntrega' => 'nullable',
         'EmpleadoID' => 'nullable|integer',
         'DepartamentoID' => 'nullable|integer',

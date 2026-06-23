@@ -26,6 +26,7 @@ class Facturas extends Model
     public $fillable = [
         'Nombre',
         'SolicitudID',
+        'CotizacionID',
         'GerenciaID',
         'Importe',
         'Costo',
@@ -62,6 +63,7 @@ class Facturas extends Model
     public static $rules = [
         'Nombre'       => 'nullable|string|max:300',
         'SolicitudID'  => 'nullable|integer',
+        'CotizacionID' => 'nullable|integer',
         'Importe'      => 'nullable|numeric',
         'Costo'        => 'nullable|numeric',
         'Mes'          => 'nullable|integer|min:1|max:12',

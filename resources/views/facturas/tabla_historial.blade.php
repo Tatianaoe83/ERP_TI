@@ -152,6 +152,10 @@ text-align: right;
                     class="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center">
                     <i class="fas fa-undo text-xs"></i>
                 </button>
+                <a id="cmpBtnExportarExcel" href="{{ route('facturas.comparativa.exportar') }}" target="_blank" rel="noopener"
+                    class="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5">
+                    <i class="fas fa-file-excel text-xs"></i> Excel
+                </a>
             </div>
         </div>
     </div>
@@ -192,6 +196,18 @@ text-align: right;
                 <i class="fas fa-tachometer-alt mr-1"></i>Resumen
             </p>
             <div id="cmpKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        </div>
+
+        {{-- Concentrado y calendario por gerencia --}}
+        <div id="cmpGerenciasCard" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900 shadow-xl overflow-hidden">
+            <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">Concentrado por gerencias</h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Totales del corte contra facturas, y calendario mensual por gerencia.</p>
+                </div>
+                <div id="cmpGerenciasTabs" class="flex gap-2 overflow-x-auto pb-1 md:pb-0"></div>
+            </div>
+            <div id="cmpGerenciasContent" class="p-4"></div>
         </div>
 
         {{-- Gráfica: presupuesto vs facturado --}}
@@ -638,6 +654,183 @@ text-align: right;
             </div>`).join('');
     }
 
+    function esc(v) {
+        return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+    }
+
+    function saldoClass(value) {
+        if (value < 0) return 'text-rose-600 dark:text-rose-400';
+        if (value > 0) return 'text-emerald-700 dark:text-emerald-300';
+        return 'text-slate-500 dark:text-slate-400';
+    }
+
+    function conceptoBadge(concepto) {
+        const c = String(concepto || '').toUpperCase();
+        if (c === 'DESVIACION') return '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">Desviación</span>';
+        if (c === 'AHORRO') return '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Ahorro</span>';
+        if (c === 'NO SE CONSUMIO EL INSUMO') return '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">No se consumió</span>';
+        return '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">Consumido</span>';
+    }
+
+    function renderConcentradoGerencias(rows) {
+        if (!rows.length) {
+            return `<div class="py-10 text-center text-sm text-slate-400">No hay datos de gerencias para los filtros seleccionados.</div>`;
+        }
+
+        const totales = rows.reduce((acc, row) => {
+            ['ahorro', 'no_consumido', 'desviacion', 'presupuesto', 'facturado', 'total'].forEach(k => acc[k] += Number(row[k] || 0));
+            return acc;
+        }, { ahorro: 0, no_consumido: 0, desviacion: 0, presupuesto: 0, facturado: 0, total: 0 });
+
+        const body = rows.map(row => `
+            <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <td class="px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200">${esc(row.gerencia)}</td>
+                <td class="px-3 py-2 text-right font-mono text-xs text-emerald-700 dark:text-emerald-300">${f(row.ahorro)}</td>
+                <td class="px-3 py-2 text-right font-mono text-xs text-teal-700 dark:text-teal-300">${f(row.no_consumido)}</td>
+                <td class="px-3 py-2 text-right font-mono text-xs text-rose-600 dark:text-rose-400">${row.desviacion > 0 ? '-' : ''}${f(row.desviacion)}</td>
+                <td class="px-3 py-2 text-right font-mono text-xs text-indigo-600 dark:text-indigo-300">${f(row.presupuesto)}</td>
+                <td class="px-3 py-2 text-right font-mono text-xs text-slate-700 dark:text-slate-200">${f(row.facturado)}</td>
+                <td class="px-3 py-2 text-right font-mono text-xs font-extrabold ${saldoClass(row.total)}">${f(row.total)}</td>
+            </tr>`).join('');
+
+        const resumenCards = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+                <div class="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-950/30 p-3">
+                    <div class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-500">Presupuesto autorizado</div>
+                    <div class="mt-1 font-mono text-lg font-extrabold text-indigo-700 dark:text-indigo-300">${f(totales.presupuesto)}</div>
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Total disponible en cortes</div>
+                </div>
+                <div class="rounded-xl border border-sky-200 dark:border-sky-800/50 bg-sky-50 dark:bg-sky-950/30 p-3">
+                    <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-500">Usado / facturado</div>
+                    <div class="mt-1 font-mono text-lg font-extrabold text-sky-700 dark:text-sky-300">${f(totales.facturado)}</div>
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Facturas registradas</div>
+                </div>
+                <div class="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/30 p-3">
+                    <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600">Saldo a favor</div>
+                    <div class="mt-1 font-mono text-lg font-extrabold text-emerald-700 dark:text-emerald-300">${f(totales.ahorro + totales.no_consumido)}</div>
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Ahorro + no consumido</div>
+                </div>
+                <div class="rounded-xl border border-rose-200 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-950/30 p-3">
+                    <div class="text-[10px] font-extrabold uppercase tracking-wider text-rose-500">Desviación</div>
+                    <div class="mt-1 font-mono text-lg font-extrabold text-rose-700 dark:text-rose-300">${f(totales.desviacion)}</div>
+                    <div class="text-[10px] text-slate-500 dark:text-slate-400">Gasto por encima del presupuesto</div>
+                </div>
+            </div>`;
+
+        return `${resumenCards}<div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+            <table class="w-full min-w-[980px] text-left">
+                <thead class="bg-slate-50 dark:bg-slate-950">
+                    <tr>
+                        <th class="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-400 font-extrabold">Gerencia</th>
+                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-emerald-500 font-extrabold">Ahorro</th>
+                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-teal-500 font-extrabold">No se consumió</th>
+                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-rose-500 font-extrabold">Desviación</th>
+                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-indigo-500 font-extrabold">Presupuesto</th>
+                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-slate-400 font-extrabold">Facturado</th>
+                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-slate-500 font-extrabold">Total</th>
+                    </tr>
+                </thead>
+                <tbody>${body}</tbody>
+                <tfoot class="bg-slate-100 dark:bg-slate-950 border-t-2 border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <td class="px-3 py-2 text-xs font-extrabold uppercase text-slate-600 dark:text-slate-300">Total</td>
+                        <td class="px-3 py-2 text-right font-mono text-xs font-extrabold text-emerald-700 dark:text-emerald-300">${f(totales.ahorro)}</td>
+                        <td class="px-3 py-2 text-right font-mono text-xs font-extrabold text-teal-700 dark:text-teal-300">${f(totales.no_consumido)}</td>
+                        <td class="px-3 py-2 text-right font-mono text-xs font-extrabold text-rose-600 dark:text-rose-400">${totales.desviacion > 0 ? '-' : ''}${f(totales.desviacion)}</td>
+                        <td class="px-3 py-2 text-right font-mono text-xs font-extrabold text-indigo-600 dark:text-indigo-300">${f(totales.presupuesto)}</td>
+                        <td class="px-3 py-2 text-right font-mono text-xs font-extrabold text-slate-700 dark:text-slate-200">${f(totales.facturado)}</td>
+                        <td class="px-3 py-2 text-right font-mono text-xs font-extrabold ${saldoClass(totales.total)}">${f(totales.total)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>`;
+    }
+
+    function renderGerenciaDetalle(gerencia) {
+        const meses = gerencia.meses || [];
+        if (!meses.length) return `<div class="py-10 text-center text-sm text-slate-400">Sin calendario para ${esc(gerencia.gerencia)}.</div>`;
+
+        return `<div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-extrabold text-slate-800 dark:text-white">${esc(gerencia.gerencia)}</h3>
+                    <p class="text-[11px] text-slate-400">Presupuesto autorizado, facturado y saldos por mes.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                ${meses.map(mes => `
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950/40">
+                        <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-300">${esc(mes.mes_nombre)}</span>
+                            <span class="text-[11px] font-mono font-bold ${saldoClass(mes.total)}">Saldo ${f(mes.total)}</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 px-4 py-3 text-[11px]">
+                            <div><div class="text-slate-400 font-bold uppercase">Presupuesto</div><div class="font-mono font-extrabold text-indigo-600 dark:text-indigo-300">${f(mes.presupuesto)}</div></div>
+                            <div><div class="text-slate-400 font-bold uppercase">Usado</div><div class="font-mono font-extrabold text-slate-700 dark:text-slate-200">${f(mes.facturado)}</div></div>
+                            <div><div class="text-slate-400 font-bold uppercase">Ahorro</div><div class="font-mono font-extrabold text-emerald-700 dark:text-emerald-300">${f(mes.ahorro)}</div></div>
+                            <div><div class="text-slate-400 font-bold uppercase">No consumido</div><div class="font-mono font-extrabold text-teal-700 dark:text-teal-300">${f(mes.no_consumido)}</div></div>
+                            <div><div class="text-slate-400 font-bold uppercase">Desviación</div><div class="font-mono font-extrabold text-rose-600 dark:text-rose-400">${mes.desviacion > 0 ? '-' : ''}${f(mes.desviacion)}</div></div>
+                        </div>
+                        <div class="overflow-x-auto border-t border-slate-100 dark:border-slate-800">
+                            <table class="w-full min-w-[680px]">
+                                <thead class="bg-slate-50/70 dark:bg-slate-900/60">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-[10px] uppercase tracking-wider text-slate-400">Insumo</th>
+                                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-indigo-400">Presupuesto</th>
+                                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-slate-400">Usado</th>
+                                        <th class="px-3 py-2 text-right text-[10px] uppercase tracking-wider text-slate-400">Saldo</th>
+                                        <th class="px-3 py-2 text-center text-[10px] uppercase tracking-wider text-slate-400">Concepto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${(mes.items || []).map(item => `
+                                        <tr class="border-t border-slate-100 dark:border-slate-800">
+                                            <td class="px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">${esc(item.insumo)}</td>
+                                            <td class="px-3 py-2 text-right font-mono text-xs text-indigo-600 dark:text-indigo-300">${f(item.presupuesto)}</td>
+                                            <td class="px-3 py-2 text-right font-mono text-xs text-slate-700 dark:text-slate-200">${f(item.facturado)}</td>
+                                            <td class="px-3 py-2 text-right font-mono text-xs font-bold ${saldoClass(item.saldo)}">${f(item.saldo)}</td>
+                                            <td class="px-3 py-2 text-center">${conceptoBadge(item.concepto)}</td>
+                                        </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    function renderGerenciasTabs(concentrado, detalle) {
+        const tabs = document.getElementById('cmpGerenciasTabs');
+        const content = document.getElementById('cmpGerenciasContent');
+        const detalleRows = detalle || [];
+        const allTabs = [{ key: 'concentrado', label: 'Concentrado', icon: 'fa-layer-group' }]
+            .concat(detalleRows.map((g, idx) => ({ key: `g-${idx}`, label: g.gerencia, icon: 'fa-building', data: g })));
+
+        let active = allTabs[0]?.key || 'concentrado';
+        const buttonBase = 'cmp-ger-tab shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all inline-flex items-center gap-1.5 ';
+
+        function draw() {
+            tabs.innerHTML = allTabs.map(tab => `
+                <button type="button" data-key="${tab.key}" class="${buttonBase}${tab.key === active ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}">
+                    <i class="fas ${tab.icon} text-[10px]"></i>${esc(tab.label)}
+                </button>`).join('');
+
+            const selected = allTabs.find(t => t.key === active);
+            content.innerHTML = selected?.key === 'concentrado'
+                ? renderConcentradoGerencias(concentrado || [])
+                : renderGerenciaDetalle(selected.data);
+
+            tabs.querySelectorAll('.cmp-ger-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    active = btn.dataset.key;
+                    draw();
+                });
+            });
+        }
+
+        draw();
+    }
+
     /* ══ TABLA: insumo, gerencia, presupuesto, facturado, ahorro/desviación ══ */
     function renderTable(insumos) {
         const isMobile = () => window.innerWidth < 768;
@@ -767,16 +960,7 @@ text-align: right;
     }
 
     /* ══ CARGA AJAX ══ */
-    async function cargarComparativa() {
-        const results = document.getElementById('cmpResults');
-        const empty   = document.getElementById('cmpEmpty');
-        const loading = document.getElementById('cmpLoading');
-
-        results.classList.add('hidden');
-        empty.classList.add('hidden');
-        loading.classList.remove('hidden');
-        updateFiltrosActivos();
-
+    function buildComparativaParams() {
         const params = new URLSearchParams();
         const gEl = document.getElementById('gerenci_id');
         const mEl = document.getElementById('mesFilter');
@@ -791,16 +975,42 @@ text-align: right;
         if (a) params.append('anio', a);
         if (i) params.append('insumo', i);
 
+        return params;
+    }
+
+    function updateComparativaExportHref() {
+        const btn = document.getElementById('cmpBtnExportarExcel');
+        if (!btn) return;
+        const params = buildComparativaParams();
+        const query = params.toString();
+        btn.href = `{{ route('facturas.comparativa.exportar') }}${query ? '?' + query : ''}`;
+    }
+
+    async function cargarComparativa() {
+        const results = document.getElementById('cmpResults');
+        const empty   = document.getElementById('cmpEmpty');
+        const loading = document.getElementById('cmpLoading');
+
+        results.classList.add('hidden');
+        empty.classList.add('hidden');
+        loading.classList.remove('hidden');
+        updateFiltrosActivos();
+        updateComparativaExportHref();
+
+        const params = buildComparativaParams();
+
         try {
             const res  = await fetch(`{{ route('facturas.comparativa') }}?${params}`, {
                 headers: { 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest' }
             });
             const json = await res.json();
             const data = json.insumos || [];
+            const concentrado = json.concentrado_gerencias || [];
+            const detalleGerencias = json.gerencias_detalle || [];
 
             loading.classList.add('hidden');
 
-            if (!data.length) {
+            if (!data.length && !concentrado.length && !detalleGerencias.length) {
                 empty.classList.remove('hidden');
                 return;
             }
@@ -811,6 +1021,7 @@ text-align: right;
             requestAnimationFrame(() => {
                 renderInsights(data);
                 renderKpis(data);
+                renderGerenciasTabs(concentrado, detalleGerencias);
                 renderChart(data);
                 renderTable(data);
             });
@@ -838,6 +1049,14 @@ text-align: right;
     const cmpBtnFiltrarInsumo = document.getElementById('cmpBtnFiltrarInsumo');
     if (cmpBtnFiltrarInsumo) {
         cmpBtnFiltrarInsumo.addEventListener('click', () => cargarComparativa());
+    }
+
+    const cmpBtnExportarExcel = document.getElementById('cmpBtnExportarExcel');
+    if (cmpBtnExportarExcel) {
+        updateComparativaExportHref();
+        cmpBtnExportarExcel.addEventListener('click', () => {
+            updateComparativaExportHref();
+        });
     }
 
     const cmpBtnReset = document.getElementById('cmpBtnReset');

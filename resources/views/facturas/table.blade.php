@@ -360,14 +360,15 @@
                 }
             ],
             drawCallback: function() {
-                const btnClass = 'px-3 py-1.5 ml-1.5 rounded-lg border text-xs font-bold transition-all duration-200 cursor-pointer shadow-sm ';
+                const btnClass = 'inline-flex items-center justify-center px-3 py-1.5 rounded-lg border text-xs font-bold leading-none no-underline transition-all duration-200 cursor-pointer shadow-sm ';
                 const normal = 'bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700';
                 const active = '!bg-indigo-600 !border-indigo-600 !text-white hover:!bg-indigo-700';
                 const disabled = 'opacity-40 cursor-not-allowed shadow-none';
 
-                $('.dataTables_paginate .paginate_button').addClass(btnClass + normal);
-                $('.dataTables_paginate .paginate_button.current').removeClass(normal).addClass(active);
-                $('.dataTables_paginate .paginate_button.disabled').addClass(disabled);
+                const $paginate = $('#facturasTable_wrapper .dataTables_paginate');
+                $paginate.find('.paginate_button').addClass(btnClass + normal);
+                $paginate.find('.paginate_button.current').removeClass(normal).addClass(active);
+                $paginate.find('.paginate_button.disabled').addClass(disabled);
 
                 $('#facturasTable .mes-select').each(function () {
                     $(this).data('facturasMesPrev', $(this).val());

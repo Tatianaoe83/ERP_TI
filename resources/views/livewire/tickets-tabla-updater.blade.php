@@ -1,5 +1,5 @@
 {{-- CONTENEDOR RAIZ DE LIVEWIRE PARA EL POLLING --}}
-<div wire:poll.5s.keep-alive="actualizarDatos" wire:init="actualizarDatos">
+<div wire:poll.5s.visible="actualizarDatos" wire:init="actualizarDatos">
 
     <div class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
 
