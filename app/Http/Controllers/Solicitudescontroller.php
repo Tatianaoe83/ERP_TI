@@ -642,14 +642,20 @@ class SolicitudesController extends Controller
                         'success'         => false,
                         'message'         => 'Los ganadores se confirmaron, pero no se pudo enviar el correo a Administración.',
                         'todos_completos' => $todosGanadores,
+                        'redirect'        => '/revision-solicitud/' . $emailAdminData['token'],
                     ], 500);
                 }
             }
+
+            $redirect = $emailAdminData
+                ? '/revision-solicitud/' . $emailAdminData['token']
+                : '/solicitudes/ganadores-confirmados';
 
             return response()->json([
                 'success'         => true,
                 'message'         => 'Ganadores confirmados. Se ha enviado la solicitud a Administración para su aprobación.',
                 'todos_completos' => $todosGanadores,
+                'redirect'        => $redirect,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -1074,8 +1080,6 @@ class SolicitudesController extends Controller
     {
         try {
             $tokenRow = \App\Models\SolicitudTokens::where('token', $token)
-                ->whereNull('used_at')->whereNull('revoked_at')
-                ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
                 ->with(['approvalStep.solicitud.cotizaciones'])
                 ->first();
 
@@ -1086,6 +1090,21 @@ class SolicitudesController extends Controller
 
             $solicitud = $paso->solicitud;
             if (!$solicitud) abort(404, 'Solicitud no encontrada');
+
+            // Token usado/revocado: si ya hay ganadores, redirigir a admin
+            if ($tokenRow->used_at || $tokenRow->revoked_at) {
+                $pasoAdmin = \App\Models\SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+                    ->where('stage', 'administracion')
+                    ->first();
+                if ($pasoAdmin) {
+                    $adminToken = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdmin->id)
+                        ->latest()->first();
+                    if ($adminToken) {
+                        return redirect('/revision-solicitud/' . $adminToken->token);
+                    }
+                }
+                abort(404, 'Token no encontrado o inválido');
+            }
 
             $solicitud->load([
                 'empleadoid',
@@ -1112,6 +1131,20 @@ class SolicitudesController extends Controller
             $ganadores       = $solicitud->cotizaciones ? $solicitud->cotizaciones->where('Estatus', 'Seleccionada') : collect();
 
             if ($solicitud->Estatus === 'Aprobado' || $todosConGanador) {
+                $pasoAdmin = \App\Models\SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
+                    ->where('stage', 'administracion')
+                    ->first();
+
+                if ($pasoAdmin) {
+                    $adminToken = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdmin->id)
+                        ->latest()
+                        ->first();
+
+                    if ($adminToken) {
+                        return redirect('/revision-solicitud/' . $adminToken->token);
+                    }
+                }
+
                 $tokenInfo = [
                     'razon' => 'Ya se han seleccionado los ganadores de todos los productos de esta solicitud.',
                 ];
@@ -1139,6 +1172,8 @@ class SolicitudesController extends Controller
                 'productos' => $productos,
                 'token'     => $token,
             ]);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error("Error mostrando elegir ganador con token {$token}: " . $e->getMessage());
             abort(500, 'Error al cargar la página de elección de ganador');

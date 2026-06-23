@@ -520,9 +520,12 @@
                         Swal.close();
                         if (!ok) {
                             Swal.fire({
-                                title: 'Error',
+                                title: 'Aviso',
                                 text: (data && data.message) || 'Error al confirmar.',
-                                icon: 'error'
+                                icon: 'warning',
+                                confirmButtonColor: '#0F766E'
+                            }).then(function() {
+                                if (data && data.redirect) window.location.href = data.redirect;
                             });
                             return;
                         }

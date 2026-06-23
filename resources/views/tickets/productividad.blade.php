@@ -1526,7 +1526,7 @@
 
             {{-- Footer del Modal --}}
             <div
-                class="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 rounded-b-xl">
+                class="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-slate-700 dark:bg-slate-900/80 rounded-b-xl">
                 <div class="text-xs text-slate-500 dark:text-slate-500">
                     Presiona <kbd
                         class="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded text-slate-600 dark:text-slate-300 font-mono text-xs">ESC</kbd>
