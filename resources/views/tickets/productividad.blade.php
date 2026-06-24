@@ -1373,7 +1373,7 @@
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click.self="cerrarModalDetalle()">
 
-        <div class="relative w-full max-w-7xl mx-4 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-600/60 flex flex-col overflow-hidden"
+        <div class="relative w-full max-w-7xl mx-4 bg-[#ffffff] dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-600/60 flex flex-col overflow-hidden"
             style="max-height: 85vh;" x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 scale-95 translate-y-2"
             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -1383,7 +1383,7 @@
 
             {{-- Header del Modal --}}
             <div
-                class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-t-xl">
+                class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700 bg-[#ffffff] dark:bg-slate-900 rounded-t-xl">
                 <div>
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white" x-text="tituloDetalle || 'Detalle de Tickets'"></h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1469,7 +1469,7 @@
                                     Atención</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 dark:divide-slate-700/60 bg-white dark:bg-slate-800">
+                        <tbody class="divide-y divide-gray-200 dark:divide-slate-700/60 bg-[#ffffff] dark:bg-slate-800">
                             <template x-for="ticket in ticketsDetalle" :key="ticket.TicketID">
                                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors duration-100">
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">

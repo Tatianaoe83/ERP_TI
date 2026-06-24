@@ -13,6 +13,7 @@
         this.modalAbierto = true;
         this.cargando = true;
         this.solicitudSeleccionada = null;
+        window.dispatchEvent(new CustomEvent('abrir-modal-overlay'));
         fetch('/solicitudes/' + id + '/datos', {
                 headers: {
                     'Accept': 'application/json',
@@ -39,6 +40,7 @@
     cerrarModal() {
         this.modalAbierto = false;
         this.solicitudSeleccionada = null;
+        window.dispatchEvent(new CustomEvent('cerrar-modal-overlay'));
     },
     getCotizacionesGanadoras() {
         const cotizaciones = this.solicitudSeleccionada?.cotizaciones || [];
@@ -219,6 +221,7 @@
                                     @if($solicitud->puedeSubirFactura)
                                     @php $yaSubio = $solicitud->facturasSubidas >= $solicitud->totalFacturasNecesarias && $solicitud->totalFacturasNecesarias > 0; @endphp
                                     <button type="button" wire:click="abrirModalAsignacion({{ $solicitud->SolicitudID }})"
+                                        data-asignacion-solicitud="{{ $solicitud->SolicitudID }}"
                                         class="{{ $yaSubio ? 'text-sky-600 dark:text-sky-400 hover:text-sky-800' : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-800' }} text-sm font-medium transition-colors">
                                         <i class="fas {{ $yaSubio ? 'fa-eye' : 'fa-file-invoice' }} mr-1"></i>
                                         {{ $yaSubio ? 'Ver Asignación' : 'Asignación' }}
@@ -301,7 +304,8 @@
         </div>
     </div>
 
-    <div x-show="modalAbierto"
+    <div id="modal-solicitud-panel"
+            x-show="modalAbierto"
             x-transition:enter="ease-out duration-200"
             x-transition:enter-start="opacity-0"
             x-transition:enter-end="opacity-100"

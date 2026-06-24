@@ -8,10 +8,14 @@
 @endphp
 <div x-data="{
     tab: 1,
+    modalActivo: false,
     cambiarTab(numeroTab) {
         this.tab = numeroTab;
     }
-}" class="px-2 w-full max-w-full overflow-x-hidden">
+}"
+    @abrir-modal-overlay.window="modalActivo = true"
+    @cerrar-modal-overlay.window="modalActivo = false"
+    class="px-2 w-full max-w-full overflow-x-hidden">
 
     <div class="w-full mb-2">
         <div
@@ -47,7 +51,7 @@
 
     <div class="mt-2 w-full max-w-full overflow-x-hidden">
         <div
-            x-show="tab === 1"
+            x-show="tab === 1 || modalActivo"
             x-transition.opacity
             x-cloak
             class="w-full max-w-full overflow-x-hidden">
@@ -65,7 +69,7 @@
         </div>
         @endcan
         <div
-            x-show="tab === {{ $tabSolicitudes }}"
+            x-show="tab === {{ $tabSolicitudes }} || modalActivo"
             x-transition.opacity
             x-cloak
             class="w-full max-w-full overflow-x-hidden">

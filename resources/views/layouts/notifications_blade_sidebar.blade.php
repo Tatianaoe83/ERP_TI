@@ -252,7 +252,8 @@
 
         function crearItemNotificacion({ unread, theme, icon, titulo, categoria, tiempo, onclick }) {
             const unreadClass = unread ? ' notif-item--unread' : '';
-            return `<div class="notif-item${unreadClass}" onclick="${onclick}">
+            const onclickAttr = String(onclick).replace(/"/g, '&quot;');
+            return `<div class="notif-item${unreadClass}" onclick="${onclickAttr}">
                 <div class="notif-icon notif-icon--${theme}">
                     <i class="fas ${icon}"></i>
                 </div>
@@ -377,6 +378,21 @@
             }
         };
 
+        window.abrirNotificacionFactura = function(solicitudId) {
+            if (window.location.pathname.endsWith('/tickets')) {
+                const btn = document.querySelector(`[data-asignacion-solicitud="${solicitudId}"]`);
+                if (btn) {
+                    btn.click();
+                    return;
+                }
+                if (window.Livewire) {
+                    window.Livewire.emit('abrirAsignacionNotif', parseInt(solicitudId));
+                }
+            } else {
+                window.location.href = `/tickets?asignacion_id=${solicitudId}`;
+            }
+        };
+
         if (window.location.pathname.endsWith('/tickets')) {
             const urlParams = new URLSearchParams(window.location.search);
             const ticketId = urlParams.get('ticket_id');
@@ -404,6 +420,15 @@
                         }
                     }
                 }, 1000);
+            }
+
+            const asignacionId = urlParams.get('asignacion_id');
+            if (asignacionId) {
+                setTimeout(() => {
+                    if (window.Livewire) {
+                        window.Livewire.emit('abrirAsignacionNotif', parseInt(asignacionId));
+                    }
+                }, 1500);
             }
         }
 
@@ -582,7 +607,7 @@
                                     titulo: `Solicitud #${s.SolicitudID} · ${s.empleado}`,
                                     categoria: parcial ? `Factura parcial ${estadoFacturas}` : `Factura pendiente ${estadoFacturas}`,
                                     tiempo: s.created_at,
-                                    onclick: `marcarFacturaPendienteComoLeida(${s.SolicitudID}, ${estadoFacturasJs}); abrirNotificacionSolicitud(${s.SolicitudID})`
+                                    onclick: `marcarFacturaPendienteComoLeida(${s.SolicitudID}, ${estadoFacturasJs}); abrirNotificacionFactura(${s.SolicitudID})`
                                 })
                             });
                         });

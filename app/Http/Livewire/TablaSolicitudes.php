@@ -73,6 +73,7 @@ class TablaSolicitudes extends Component
         'aprobarSolicitudConfirmed'  => 'aprobar',
         'rechazarSolicitudConfirmed' => 'rechazar',
         'forzarCloseAsignacion'      => 'forzarCloseAsignacion',
+        'abrirAsignacionNotif'       => 'abrirModalAsignacion',
     ];
 
     private const VALID_STAGES = ['supervisor', 'gerencia', 'administracion'];
@@ -838,6 +839,7 @@ class TablaSolicitudes extends Component
 
             $this->modalEsSoloLectura     = false;
             $this->modalAsignacionAbierto = true;
+            $this->dispatchBrowserEvent('abrir-modal-overlay');
         } catch (\Throwable $e) {
             $this->resetAsignacionState();
             $this->dispatchBrowserEvent('swal:error', ['message' => 'Error abriendo asignación: ' . $e->getMessage()]);
@@ -1522,6 +1524,7 @@ class TablaSolicitudes extends Component
         $this->insumoSearchQuery           = '';
         $this->insumoSearchResults         = [];
         $this->unidadesGuardadas           = []; // Limpiar rastro de guardadas
+        $this->dispatchBrowserEvent('cerrar-modal-overlay');
     }
 
     private function detectSerialColumn(): ?string
