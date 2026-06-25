@@ -2,6 +2,9 @@
     modalAbierto: false,
     cargando: false,
     solicitudSeleccionada: null,
+    init() {
+        window.__abrirModalSolicitud = (id) => this.abrirModal(id);
+    },
     abrirModalDesdeClick(event) {
         const boton = event.target.closest('[data-ver-solicitud]');
         if (!boton) return;
@@ -55,7 +58,8 @@
             maximumFractionDigits: 2
         });
     }
-}" @click="abrirModalDesdeClick($event)">
+}"
+    @click="abrirModalDesdeClick($event)">
 
     <div class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
 

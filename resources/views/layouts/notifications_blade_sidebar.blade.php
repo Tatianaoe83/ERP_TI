@@ -321,7 +321,43 @@
             window.location.href = `/solicitudes/${solicitudId}/cotizar`;
         };
 
-        window.abrirNotificacionTicket = function(ticketId) {
+        function abrirTicketPorId(ticketId) {
+            if (typeof window.__abrirModalTicket !== 'function') return false;
+            fetch(`/tickets/${ticketId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => {
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!res.ok || !contentType.includes('application/json')) return null;
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data || !data.success || !data.ticket) return;
+                    const t = data.ticket;
+                    window.__abrirModalTicket({
+                        id: t.TicketID,
+                        asunto: t.asunto || `Ticket #${t.TicketID}`,
+                        descripcion: t.descripcion || '',
+                        prioridad: t.Prioridad || 'Media',
+                        empleado: t.empleado || '',
+                        anydesk: t.anydesk || '',
+                        numero: t.numero || '',
+                        correo: t.correo || '',
+                        puesto: t.puesto || '',
+                        gerencia: t.gerencia || '',
+                        departamento: t.departamento || '',
+                        fecha: t.fecha || '',
+                        imagen: t.imagen || ''
+                    });
+                })
+                .catch(() => {});
+            return true;
+        }
+
+        function marcarTicketLeidoEnDB(ticketId) {
             fetch('/tickets/marcar-leidos', {
                 method: 'POST',
                 headers: {
@@ -330,35 +366,48 @@
                 },
                 body: JSON.stringify({ ticket_id: ticketId })
             }).catch(err => console.error("Error al marcar leídos en DB:", err));
+        }
+
+        window.abrirNotificacionTicket = function(ticketId) {
+            tooltip.style.display = 'none';
+            marcarTicketLeidoEnDB(ticketId);
 
             if (window.location.pathname.endsWith('/tickets')) {
                 const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                if (card) card.click();
+                if (card) {
+                    card.click();
+                    return;
+                }
+                abrirTicketPorId(ticketId);
             } else {
                 window.location.href = `/tickets?ticket_id=${ticketId}`;
             }
         };
 
         window.abrirNotificacionChat = function(ticketId) {
-            fetch('/tickets/marcar-leidos', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ ticket_id: ticketId })
-            }).catch(err => console.error("Error al marcar chat leído en DB:", err));
+            tooltip.style.display = 'none';
+            marcarTicketLeidoEnDB(ticketId);
 
             if (window.location.pathname.endsWith('/tickets')) {
                 const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                if (card) card.click();
+                if (card) {
+                    card.click();
+                    return;
+                }
+                abrirTicketPorId(ticketId);
             } else {
                 window.location.href = `/tickets?ticket_id=${ticketId}`;
             }
         };
 
         window.abrirNotificacionSolicitud = function(solicitudId) {
+            tooltip.style.display = 'none';
             if (window.location.pathname.endsWith('/tickets')) {
+                if (typeof window.__abrirModalSolicitud === 'function') {
+                    window.__abrirModalSolicitud(solicitudId);
+                    return;
+                }
+
                 const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
                 if (botonSolicitud) {
                     botonSolicitud.click();
@@ -379,6 +428,7 @@
         };
 
         window.abrirNotificacionFactura = function(solicitudId) {
+            tooltip.style.display = 'none';
             if (window.location.pathname.endsWith('/tickets')) {
                 const btn = document.querySelector(`[data-asignacion-solicitud="${solicitudId}"]`);
                 if (btn) {
@@ -393,42 +443,53 @@
             }
         };
 
+        const navEntries = performance.getEntriesByType('navigation');
+        const esRecarga = navEntries.length > 0 && navEntries[0].type === 'reload';
+
         if (window.location.pathname.endsWith('/tickets')) {
             const urlParams = new URLSearchParams(window.location.search);
             const ticketId = urlParams.get('ticket_id');
-            if (ticketId) {
-                setTimeout(() => {
-                    const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                    if (card) card.click();
-                }, 1000);
-            }
             const solicitudId = urlParams.get('solicitud_id');
-            if (solicitudId) {
-                setTimeout(() => {
-                    const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
-                    if (botonSolicitud) {
-                        botonSolicitud.click();
-                        return;
-                    }
+            const asignacionId = urlParams.get('asignacion_id');
 
-                    const buttons = document.querySelectorAll('button');
-                    for (let btn of buttons) {
-                        const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
-                        if (clickAttr && clickAttr.includes(`abrirModal(${solicitudId})`)) {
-                            btn.click();
-                            break;
+            // Solo auto-abrir si se llegó por navegación (notif/link), no en recargas (F5)
+            if (!esRecarga) {
+                if (ticketId) {
+                    setTimeout(() => {
+                        const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+                        if (card) card.click();
+                    }, 1000);
+                }
+                if (solicitudId) {
+                    setTimeout(() => {
+                        const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
+                        if (botonSolicitud) {
+                            botonSolicitud.click();
+                            return;
                         }
-                    }
-                }, 1000);
+
+                        const buttons = document.querySelectorAll('button');
+                        for (let btn of buttons) {
+                            const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
+                            if (clickAttr && clickAttr.includes(`abrirModal(${solicitudId})`)) {
+                                btn.click();
+                                break;
+                            }
+                        }
+                    }, 1000);
+                }
+                if (asignacionId) {
+                    setTimeout(() => {
+                        if (window.Livewire) {
+                            window.Livewire.emit('abrirAsignacionNotif', parseInt(asignacionId));
+                        }
+                    }, 1500);
+                }
             }
 
-            const asignacionId = urlParams.get('asignacion_id');
-            if (asignacionId) {
-                setTimeout(() => {
-                    if (window.Livewire) {
-                        window.Livewire.emit('abrirAsignacionNotif', parseInt(asignacionId));
-                    }
-                }, 1500);
+            // Limpiar los params de la URL para que al recargar no se reabra el modal
+            if (ticketId || solicitudId || asignacionId) {
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
 
@@ -503,7 +564,7 @@
                         data.tickets_nuevos.forEach(t => {
                             if (!t || !t.TicketID) return;
                             const estadoTicket = 'Pendiente';
-                            const unread = !suprimeConteoBadge('dismissTickets', t.TicketID, estadoTicket);
+                            const unread = !t.vencidos && !suprimeConteoBadge('dismissTickets', t.TicketID, estadoTicket);
                             if (unread) conteoNoLeidos++;
                             listaNotificaciones.push({
                                 timestamp: t.timestamp || 0,
@@ -523,7 +584,7 @@
                     if (data.solicitudes_pendientes) {
                         data.solicitudes_pendientes.forEach(s => {
                             if (!s || !s.SolicitudID) return;
-                            const unread = !suprimeConteoBadge('dismissSolicitudes', s.SolicitudID, 'nueva');
+                            const unread = !s.vencidos && !suprimeConteoBadge('dismissSolicitudes', s.SolicitudID, 'nueva');
                             if (unread) conteoNoLeidos++;
                             listaNotificaciones.push({
                                 timestamp: s.timestamp || 0,

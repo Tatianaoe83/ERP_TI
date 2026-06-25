@@ -610,6 +610,9 @@ class TicketsController extends Controller
                 'success' => true,
                 'ticket'  => [
                     'TicketID'       => $ticket->TicketID,
+                    'asunto'         => 'Ticket #' . $ticket->TicketID,
+                    'descripcion'    => $ticket->Descripcion,
+                    'fecha'          => $ticket->created_at ? $ticket->created_at->format('d/m/Y H:i:s') : '',
                     'Prioridad'      => $ticket->Prioridad,
                     'Estatus'        => $ticket->Estatus,
                     'Clasificacion'  => $ticket->Clasificacion,

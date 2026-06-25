@@ -161,6 +161,7 @@
         const vistaGuardada = localStorage.getItem('ticketsVista') || 'kanban';
         vista = vistaGuardada;
         init();
+        window.__abrirModalTicket = (datos) => abrirModal(datos);
         $watch('mostrar', value => {
             window.dispatchEvent(new CustomEvent(value ? 'abrir-modal-overlay' : 'cerrar-modal-overlay'));
         });
