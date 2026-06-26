@@ -103,6 +103,7 @@ class SeederTablaPermisos extends Seeder
 
             // Módulo soporte
             'ver-soporte',
+            'tickets.notificaciones',
 
             // Permisos de administración: presupuestos oficiales
             'ver-presupuestos',
