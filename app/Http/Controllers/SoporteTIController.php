@@ -10,6 +10,7 @@ use App\Models\Solicitud;
 use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Models\Tickets;
+use App\Models\TicketMantenimiento;
 use App\Services\SolicitudAprobacionEmailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,10 +64,14 @@ class SoporteTIController extends Controller
             'ObraID' => $empleado->ObraID,
         ];
 
-        // Si el tipo es Solicitud, incluir información completa de Gerencia, Puesto y Obra
-        if ($type === 'Solicitud') {
+        // Si el tipo es Solicitud o Mantenimiento, incluir departamento
+        if (in_array($type, ['Solicitud', 'Mantenimiento'], true)) {
             $empleado->load(['puestos.departamentos.gerencia', 'obras']);
 
+            $response['NombreDepartamento'] = $empleado->puestos->departamentos->NombreDepartamento ?? null;
+        }
+
+        if ($type === 'Solicitud') {
             $response['GerenciaID'] = $empleado->puestos->departamentos->gerencia->GerenciaID ?? null;
             $response['NombreGerencia'] = $empleado->puestos->departamentos->gerencia->NombreGerencia ?? null;
             $response['PuestoID'] = $empleado->puestos->PuestoID ?? null;
@@ -150,7 +155,7 @@ public function crearTickets(Request $request)
     {
         $type = $request->input('type');
 
-        if (!in_array($type, ['Ticket', 'Solicitud'])) {
+        if (!in_array($type, ['Ticket', 'Solicitud', 'Mantenimiento'])) {
             \Log::warning('Tipo no válido: ' . $type);
             return redirect()->back()->with(['error' => 'Tipo no válido'], 400);
         }
@@ -198,6 +203,54 @@ public function crearTickets(Request $request)
              } catch (\Exception $e) {
                  return redirect()->back()->with('error', 'Error al guardar ticket: ' . $e->getMessage());
              }
+        }
+
+        // ==========================================
+        // LÓGICA PARA MANTENIMIENTOS DE COMPRAS
+        // ==========================================
+        if ($type === 'Mantenimiento') {
+            $data = $request->validate([
+                'NombreSolicitante' => 'required|string|max:255',
+                'Correo'            => 'required|email|max:255',
+                'AreaDepartamento'  => 'nullable|string|max:255',
+                'Descripcion'       => 'required|string',
+            ]);
+
+            $empleado = Empleados::where('Correo', $data['Correo'])->where('Estado', '1')->first();
+            if (!$empleado) {
+                return redirect()->back()->with('error', 'No se encontró el empleado con ese correo');
+            }
+
+            $files = $request->file('imagen');
+            $names = [];
+            if ($files && is_array($files)) {
+                foreach ($files as $file) {
+                    if ($file && $file->isValid()) {
+                        $fileName = uniqid() . '_' . $file->getClientOriginalName();
+                        $path = $file->storeAs('tickets-mantenimiento', $fileName, 'public');
+                        $names[] = $path;
+                    }
+                }
+            }
+
+            try {
+                TicketMantenimiento::create([
+                    'EmpleadoID'         => $empleado->EmpleadoID,
+                    'NombreSolicitante'  => $data['NombreSolicitante'],
+                    'Correo'             => $data['Correo'],
+                    'AreaDepartamento'   => $data['AreaDepartamento'] ?? null,
+                    'Asunto'             => \Illuminate\Support\Str::limit($data['Descripcion'], 80),
+                    'Descripcion'        => $data['Descripcion'],
+                    'Categoria'          => null,
+                    'Prioridad'          => 'Baja',
+                    'Estatus'            => 'Pendiente',
+                    'imagen'             => !empty($names) ? $names : null,
+                ]);
+
+                return redirect()->back()->with(['success' => 'Solicitud de mantenimiento guardada correctamente', 'tipo' => 'Mantenimiento']);
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', 'Error al guardar solicitud: ' . $e->getMessage());
+            }
         }
 
         // ==========================================

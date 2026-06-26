@@ -44,6 +44,13 @@ $user->can('ver-mantenimientos')
             <span class="font-medium sidebar-text">Soporte</span>
         </a>
     </li>
+    <li>
+        <a href="/tickets-mantenimiento"
+            class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">
+            <i class="fas fa-wrench text-center w-5 md:w-auto text-base"></i>
+            <span class="font-medium sidebar-text">Mantenimientos de compras</span>
+        </a>
+    </li>
     @endif
 
     @if(auth()->check() && auth()->user()->can('ver-mantenimientos'))

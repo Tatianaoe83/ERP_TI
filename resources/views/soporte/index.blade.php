@@ -122,7 +122,8 @@
 
         /* Animación sutil para formularios */
         #ticket-form,
-        #solicitud-form {
+        #solicitud-form,
+        #mantenimiento-form {
             animation: slideIn 0.4s ease-out;
         }
 
@@ -272,6 +273,7 @@
                             <option value="" selected disabled>Selecciona una opción</option>
                             <option value="Ticket">Ticket para soporte</option>
                             <option value="Solicitud">Compras de recursos tecnológicos</option>
+                            <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option>
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">
@@ -410,6 +412,52 @@
                         </div>
                     </div>
 
+                    <!-- Formulario Mantenimiento -->
+                    <div id="mantenimiento-form" class="hidden bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100 space-y-3">
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <div class="bg-orange-500 rounded-xl w-10 h-10 flex items-center justify-center text-white flex-shrink-0">
+                                <i class="fas fa-tools"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800">Solicitud de Mantenimiento Corporativo</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-black">
+                            <div>
+                                <label for="correoMantenimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Correo *</label>
+                                <input type="email" id="correoMantenimiento" placeholder="tucorreo@ejemplo.com" name="Correo" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all text-sm md:text-base" disabled />
+                                <div id="correo-mantenimiento-error" class="text-red-500 text-xs mt-1 hidden"></div>
+                            </div>
+                            <div>
+                                <label for="nombreSolicitante" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Nombre del Solicitante</label>
+                                <input type="text" id="nombreSolicitante" name="NombreSolicitante" placeholder="Se completará automáticamente" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="areaDepartamento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Área / Departamento</label>
+                                <input type="text" id="areaDepartamento" name="AreaDepartamento" placeholder="Se completará automáticamente" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm md:text-base" disabled />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="descripcionMantenimiento" class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Descripción breve *</label>
+                                <textarea id="descripcionMantenimiento" name="Descripcion" placeholder="Describe el problema o solicitud con el mayor detalle posible..." rows="4" class="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all bg-gray-50 text-sm md:text-base resize-none" disabled></textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Archivos adjuntos (opcional)</label>
+                                <div id="dropzoneMantenimiento" class="w-full border-2 border-dashed border-gray-300 rounded-xl p-4 md:p-6 text-center transition bg-gray-50 opacity-50 hover:border-orange-400 hover:bg-orange-50">
+                                    <input type="file" id="fileInputMantenimiento" name="imagen[]" class="hidden" multiple disabled />
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-xs md:text-sm text-gray-600">
+                                        Arrastra archivos aquí o <span class="text-orange-600 font-medium cursor-pointer">haz clic para subir</span>
+                                    </p>
+                                    <p id="counterMantenimiento" class="text-xs text-gray-500 mt-1">0 / 4 archivos</p>
+                                    <div id="previewGridMantenimiento" class="grid grid-cols-2 gap-2 mt-3"></div>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <button type="submit" id="btnEnviarMantenimiento" class="w-full md:w-auto px-8 py-3 bg-gray-400 text-white rounded-xl font-medium transition-all duration-300 cursor-not-allowed" disabled>
+                                    <i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Información de Contacto -->
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100">
                         <div class="flex items-center gap-2 mb-2">
@@ -457,6 +505,7 @@
         window.datosUbicacion = [];
         window.correoSolicitudValido = false; // Para el formulario Solicitud
         window.correoTicketValido = false; // Para el formulario Ticket
+        window.correoMantenimientoValido = false; // Para el formulario Mantenimiento
         window.telefonoReal = ''; // Valor real de 10 dígitos para validación y envío
 
         $(document).ready(function() {
@@ -488,6 +537,8 @@
                     $text.html('<strong class="uppercase">Reporta incidencias técnicas, solicita asistencia remota o consulta al equipo de soporte TI.</strong>');
                 } else if (seleccion === 'Solicitud') {
                     $text.html('<strong class="uppercase">Solicita recursos tecnológicos que requieran un proceso de compra.</strong>');
+                } else if (seleccion === 'Mantenimiento') {
+                    $text.html('<strong class="uppercase">Reporta solicitudes de mantenimiento corporativo: plomería, electricidad, limpieza, instalaciones y más.</strong>');
                 } else {
                     $text.text('');
                 }
@@ -501,24 +552,26 @@
 
                 $('#ticket-form').addClass('hidden');
                 $('#solicitud-form').addClass('hidden');
+                $('#mantenimiento-form').addClass('hidden');
                 actualizarInfoTipo(seleccion);
 
                 if (seleccion === 'Ticket') {
                     $('#ticket-form').removeClass('hidden');
-                    // Agregar clases para altura completa y scroll
                     $mainContainer.addClass('h-full max-h-[95vh]');
                     $formContainer.addClass('flex-1');
                     $scrollContent.addClass('h-full');
                 } else if (seleccion === 'Solicitud') {
                     $('#solicitud-form').removeClass('hidden');
-                    // Agregar clases para altura completa y scroll
                     $mainContainer.addClass('h-full max-h-[95vh]');
                     $formContainer.addClass('flex-1');
                     $scrollContent.addClass('h-full');
-                    // ARREGLO VISUAL: Reiniciar Select2 al mostrar el formulario
-                    setTimeout(function() {
-                        revivirSelect2();
-                    }, 50);
+                    setTimeout(function() { revivirSelect2(); }, 50);
+                } else if (seleccion === 'Mantenimiento') {
+                    $('#mantenimiento-form').removeClass('hidden');
+                    habilitarCamposMantenimiento();
+                    $mainContainer.addClass('h-full max-h-[95vh]');
+                    $formContainer.addClass('flex-1');
+                    $scrollContent.addClass('h-full');
                 } else {
                     // Remover clases para permitir altura automática
                     $mainContainer.removeClass('h-full max-h-[95vh]');
@@ -699,6 +752,7 @@ function renderTelefono() {
                 var errores = [];
                 var esSolicitud = $('#solicitud-form').is(':visible');
                 var esTicket = $('#ticket-form').is(':visible');
+                var esMantenimiento = $('#mantenimiento-form').is(':visible');
 
                 // --- VALIDACIÓN SOLICITUD ---
                 if (esSolicitud) {
@@ -724,6 +778,14 @@ function renderTelefono() {
 
                     if (tel.length !== 10) errores.push('El teléfono debe tener 10 dígitos.');
                     if (!desc) errores.push('La descripción es requerida.');
+                }
+
+                // --- VALIDACIÓN MANTENIMIENTO ---
+                else if (esMantenimiento) {
+                    var correoM = $('#correoMantenimiento').val().trim();
+                    if (!correoM) errores.push('El correo es requerido.');
+                    else if (!window.correoMantenimientoValido) errores.push('Debes validar el correo del empleado primero.');
+                    if (!$('#descripcionMantenimiento').val().trim()) errores.push('La descripción es requerida.');
                 }
 
                 // --- MANEJO DE ERRORES ---
@@ -919,21 +981,84 @@ function renderTelefono() {
                     $('#autoEmpleadosTicket').val(data.NombreEmpleado).removeClass('border-red-500 border-blue-500 border-gray-300').addClass('border-green-500');
                     $('#EmpleadoID').val(data.EmpleadoID);
                     $('#numeroTelefono').val(enmascararNumero(data.NumTelefono)).removeClass('border-red-500').addClass('border-green-500');
-                    // Habilitar campos
                     $('#numeroTelefono, #codeAnyDesk, #descripcionTicket, #fileInput').prop('disabled', false).removeClass('bg-gray-100');
                     $('#btnEnviar').prop('disabled', false).removeClass('cursor-not-allowed');
                 }
             });
         }
+
+        function deshabilitarCamposMantenimiento() {
+            window.correoMantenimientoValido = false;
+            $('#nombreSolicitante, #areaDepartamento').val('').prop('disabled', true);
+            $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-50');
+            $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed bg-gray-400').removeClass('bg-orange-500 hover:bg-orange-600');
+            $('#dropzoneMantenimiento').addClass('opacity-50');
+            $('#correo-mantenimiento-error').addClass('hidden');
+        }
+
+        function habilitarCamposMantenimiento() {
+            deshabilitarCamposMantenimiento();
+            $('#correoMantenimiento').prop('disabled', false).val('');
+        }
+
+        function buscarEmpleadoMantenimiento(correo) {
+            $.ajax({
+                url: '/buscarEmpleadoPorCorreo',
+                method: 'GET',
+                data: { correo: correo, type: 'Mantenimiento' },
+                success: function(data) {
+                    window.correoMantenimientoValido = true;
+                    $('#correo-mantenimiento-error').addClass('hidden');
+                    $('#correoMantenimiento').removeClass('border-red-500').addClass('border-green-500');
+                    $('#nombreSolicitante').val(data.NombreEmpleado || '').prop('disabled', true);
+                    $('#areaDepartamento').val(data.NombreDepartamento || 'Sin departamento').prop('disabled', true);
+                    $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', false).removeClass('bg-gray-50');
+                    $('#btnEnviarMantenimiento').prop('disabled', false).removeClass('cursor-not-allowed bg-gray-400').addClass('bg-orange-500 hover:bg-orange-600');
+                    $('#dropzoneMantenimiento').removeClass('opacity-50');
+                },
+                error: function() {
+                    window.correoMantenimientoValido = false;
+                    $('#nombreSolicitante, #areaDepartamento').val('');
+                    $('#correoMantenimiento').removeClass('border-green-500').addClass('border-red-500');
+                    $('#correo-mantenimiento-error').removeClass('hidden').text('No se encontró correo, contacta a soporte');
+                    $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-50');
+                    $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed bg-gray-400').removeClass('bg-orange-500 hover:bg-orange-600');
+                    $('#dropzoneMantenimiento').addClass('opacity-50');
+                }
+            });
+        }
+
+        $('#correoMantenimiento').on('change blur', function() {
+            var correo = $(this).val().trim();
+            if (!correo) {
+                deshabilitarCamposMantenimiento();
+                $('#correoMantenimiento').prop('disabled', false);
+                return;
+            }
+            if (!esCorreoValido(correo)) {
+                window.correoMantenimientoValido = false;
+                $('#correo-mantenimiento-error').removeClass('hidden').text('Correo inválido');
+                deshabilitarCamposMantenimiento();
+                $('#correoMantenimiento').prop('disabled', false).val(correo);
+                return;
+            }
+            buscarEmpleadoMantenimiento(correo);
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @if (session('success'))
     @php
-    $tipo = session('tipo', 'Ticket'); // Por defecto es Ticket si no se especifica
-    $titulo = $tipo === 'Solicitud' ? '¡Solicitud Enviada Exitosamente! 🎉' : '¡Ticket Enviado Exitosamente! 🎉';
-    $mensaje = $tipo === 'Solicitud'
-    ? 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.'
-    : 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.';
+    $tipo = session('tipo', 'Ticket');
+    $titulo = match($tipo) {
+        'Solicitud' => '¡Solicitud Enviada Exitosamente! 🎉',
+        'Mantenimiento' => '¡Solicitud de Mantenimiento Enviada! 🎉',
+        default => '¡Ticket Enviado Exitosamente! 🎉',
+    };
+    $mensaje = match($tipo) {
+        'Solicitud' => 'Hemos recibido tu solicitud y nuestro equipo la revisará pronto para procesarla.',
+        'Mantenimiento' => 'Hemos recibido tu solicitud de mantenimiento y el equipo de compras la atenderá pronto.',
+        default => 'Hemos recibido tu ticket y nuestro equipo de soporte técnico la revisará pronto.',
+    };
     @endphp
     <script>
         Swal.fire({
@@ -1051,9 +1176,10 @@ function renderTelefono() {
             const select = document.getElementById("type");
             const ticket = document.getElementById("ticket-form");
             const solicitud = document.getElementById("solicitud-form");
+            const mantenimiento = document.getElementById("mantenimiento-form");
 
-            // Función para manejar atributos required según visibilidad
             const manejarRequired = (form, visible) => {
+                if (!form) return;
                 const requiredFields = form.querySelectorAll('[required]');
                 requiredFields.forEach(field => {
                     if (visible) {
@@ -1064,68 +1190,75 @@ function renderTelefono() {
                 });
             };
 
-            // Remover required inicialmente ya que ambos formularios están ocultos
             manejarRequired(ticket, false);
             manejarRequired(solicitud, false);
+            manejarRequired(mantenimiento, false);
 
             const resetForm = (form) => {
+                if (!form) return;
                 const inputs = form.querySelectorAll("input, textarea, select");
                 inputs.forEach(input => {
                     input.value = "";
                 });
-                window.telefonoReal = ''; // Limpiar el estado global al resetear
-                $('#numeroTelefonoReal').val(''); // Limpiar el campo oculto
+                window.telefonoReal = '';
+                $('#numeroTelefonoReal').val('');
             }
+
+            const aplicarLayoutContenedor = (activo) => {
+                const mainContainer = document.getElementById('main-container');
+                const formContainer = document.getElementById('form-container');
+                const scrollContent = document.getElementById('scroll-content');
+
+                if (activo) {
+                    mainContainer.classList.add('h-full', 'max-h-[95vh]');
+                    formContainer.classList.add('flex-1');
+                    scrollContent.classList.add('h-full');
+                } else {
+                    mainContainer.classList.remove('h-full', 'max-h-[95vh]');
+                    formContainer.classList.remove('flex-1');
+                    scrollContent.classList.remove('h-full');
+                }
+            };
 
             const title = document.getElementById("title");
 
             select.addEventListener("change", function() {
                 const value = this.value;
-                const mainContainer = document.getElementById('main-container');
-                const formContainer = document.getElementById('form-container');
-                const scrollContent = document.getElementById('scroll-content');
 
-                // Remover required de ambos formularios antes de ocultarlos
                 manejarRequired(ticket, false);
                 manejarRequired(solicitud, false);
+                manejarRequired(mantenimiento, false);
 
                 ticket.classList.add("hidden");
                 solicitud.classList.add("hidden");
+                mantenimiento.classList.add("hidden");
 
                 resetForm(ticket);
                 resetForm(solicitud);
+                resetForm(mantenimiento);
 
                 if (value === "Ticket") {
                     ticket.classList.remove("hidden");
-                    manejarRequired(ticket, true); // Agregar required cuando se muestra
+                    manejarRequired(ticket, true);
                     title.textContent = "Ticket de Soporte";
-                    // Agregar clases para altura completa y scroll
-                    mainContainer.classList.add('h-full', 'max-h-[95vh]');
-                    formContainer.classList.add('flex-1');
-                    scrollContent.classList.add('h-full');
+                    aplicarLayoutContenedor(true);
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
-                    // Deshabilitar campos del formulario de Ticket
-                    if (typeof deshabilitarCampos === 'function') {
-                        deshabilitarCampos();
-                    }
+                    if (typeof deshabilitarCampos === 'function') deshabilitarCampos();
                 } else if (value === "Solicitud") {
                     solicitud.classList.remove("hidden");
-                    manejarRequired(solicitud, true); // Agregar required cuando se muestra
+                    manejarRequired(solicitud, true);
                     title.textContent = "Compra de Recursos Tecnológicos";
-                    // Agregar clases para altura completa y scroll
-                    mainContainer.classList.add('h-full', 'max-h-[95vh]');
-                    formContainer.classList.add('flex-1');
-                    scrollContent.classList.add('h-full');
+                    aplicarLayoutContenedor(true);
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
-                    // Deshabilitar campos del formulario de Solicitud
-                    if (typeof deshabilitarCamposSolicitud === 'function') {
-                        deshabilitarCamposSolicitud();
-                    }
+                    if (typeof deshabilitarCamposSolicitud === 'function') deshabilitarCamposSolicitud();
+                } else if (value === "Mantenimiento") {
+                    mantenimiento.classList.remove("hidden");
+                    title.textContent = "Mantenimiento Corporativo";
+                    aplicarLayoutContenedor(true);
+                    if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
+                    if (typeof habilitarCamposMantenimiento === 'function') habilitarCamposMantenimiento();
                 } else {
-                    // Remover clases para permitir altura automática
-                    mainContainer.classList.remove('h-full', 'max-h-[95vh]');
-                    formContainer.classList.remove('flex-1');
-                    scrollContent.classList.remove('h-full');
+                    aplicarLayoutContenedor(false);
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                 }
 
@@ -1832,9 +1965,9 @@ function renderTelefono() {
         $('#type').on('change', function() {
             var seleccion = $(this).val();
 
-            // Ocultar todo primero
             $('#ticket-form').addClass('hidden');
             $('#solicitud-form').addClass('hidden');
+            $('#mantenimiento-form').addClass('hidden');
             if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(seleccion);
 
             if (seleccion === 'Ticket') {
@@ -1842,24 +1975,19 @@ function renderTelefono() {
             } else if (seleccion === 'Solicitud') {
                 $('#solicitud-form').removeClass('hidden');
 
-                // REINICIAR SELECT2 AL MOSTRAR EL FORMULARIO
                 setTimeout(function() {
                     var $proyecto = $('#Proyecto');
 
-                    // Si existe una instancia previa rota, la destruimos
                     if ($proyecto.hasClass("select2-hidden-accessible")) {
                         $proyecto.select2('destroy');
                     }
 
-                    // Aseguramos que el HTML esté desbloqueado
                     $proyecto.prop('disabled', false).removeAttr('disabled');
 
-                    // Creamos la instancia nueva y limpia
                     $proyecto.select2({
                         placeholder: "Busca y selecciona una ubicación...",
                         allowClear: true,
                         width: '100%',
-                        // Tus templates visuales (si los usas) van aquí
                         templateResult: function(data) {
                             return data.id ? $('<span>' + data.text + '</span>') : data.text;
                         },
@@ -1867,7 +1995,10 @@ function renderTelefono() {
                             return data.text;
                         }
                     });
-                }, 100); // Pequeño retraso para asegurar que el div ya es visible
+                }, 100);
+            } else if (seleccion === 'Mantenimiento') {
+                $('#mantenimiento-form').removeClass('hidden');
+                if (typeof habilitarCamposMantenimiento === 'function') habilitarCamposMantenimiento();
             }
         });
     </script>

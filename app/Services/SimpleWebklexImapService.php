@@ -6,6 +6,8 @@ use Webklex\PHPIMAP\Client;
 use Webklex\PHPIMAP\ClientManager;
 use App\Models\Tickets;
 use App\Models\TicketChat;
+use App\Models\TicketMantenimiento;
+use App\Models\MantenimientoChat;
 use App\Models\Empleados;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -286,6 +288,14 @@ class SimpleWebklexImapService
                 try { Log::info('IMAP: descartado por dominio no permitido', ['from' => $fromEmail, 'domain' => $dominio]); } catch (\Exception $e) {}
                 return false;
             }
+
+            // Procesar correos de mantenimiento (asunto "Mantenimiento #ID")
+            if ($this->esAsuntoMantenimiento($subject) || $this->esThreadMantenimiento($threadId)) {
+                return $this->procesarMensajeMantenimiento(
+                    $subject, $fromEmail, $fromName, $bodyTexto, $bodyHtml,
+                    $adjuntos, $fechaCorreo, $messageId, $threadId, $from
+                );
+            }
             
             // PRIMERO: Buscar ticket existente (antes de verificar si es correo del sistema)
             // Esto permite procesar respuestas de correos del sistema si son respuestas a tickets
@@ -493,6 +503,11 @@ class SimpleWebklexImapService
     private function buscarPorNumeroTicket($subject)
     {
         if (empty($subject)) {
+            return null;
+        }
+
+        // No confundir mantenimientos con tickets de soporte
+        if ($this->esAsuntoMantenimiento($subject)) {
             return null;
         }
         
@@ -1390,5 +1405,207 @@ class SimpleWebklexImapService
         }
         
         return $datosChat;
+    }
+
+    private function esAsuntoMantenimiento($subject): bool
+    {
+        if (empty($subject)) {
+            return false;
+        }
+
+        return (bool) preg_match('/Mantenimiento\s*#\s*\d+/i', $subject);
+    }
+
+    private function esThreadMantenimiento($threadId): bool
+    {
+        if (empty($threadId)) {
+            return false;
+        }
+
+        return str_contains(strtolower($threadId), 'thread-mantenimiento-');
+    }
+
+    protected function procesarMensajeMantenimiento($subject, $fromEmail, $fromName, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $from)
+    {
+        $mantenimiento = $this->buscarMantenimientoPorMensaje($subject, $messageId, $threadId, $fromEmail);
+
+        if (!$mantenimiento) {
+            try { Log::info('IMAP: mantenimiento no encontrado', ['subject' => $subject, 'from' => $fromEmail]); } catch (\Exception $e) {}
+            return false;
+        }
+
+        if ($mantenimiento->Estatus !== 'En proceso') {
+            try { Log::info('IMAP: descartado por estatus de mantenimiento', ['id' => $mantenimiento->MantenimientoID, 'estatus' => $mantenimiento->Estatus]); } catch (\Exception $e) {}
+            return false;
+        }
+
+        if ($messageId && $this->correoYaProcesadoMantenimiento($mantenimiento->MantenimientoID, $fromEmail, $messageId, $threadId)) {
+            return false;
+        }
+
+        $resultado = $this->crearRespuestaUsuarioMantenimiento(
+            $mantenimiento, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $from, $messageId, $threadId
+        );
+
+        return (bool) $resultado;
+    }
+
+    protected function buscarMantenimientoPorMensaje($subject, $messageId = null, $threadId = null, $fromEmail = null)
+    {
+        $mantenimiento = $this->buscarPorNumeroMantenimiento($subject);
+        if ($mantenimiento) {
+            return $mantenimiento;
+        }
+
+        if ($threadId) {
+            $mantenimiento = $this->buscarMantenimientoPorThreadId($threadId);
+            if ($mantenimiento) {
+                return $mantenimiento;
+            }
+        }
+
+        if ($messageId) {
+            $mantenimiento = $this->buscarMantenimientoPorMessageId($messageId);
+            if ($mantenimiento) {
+                return $mantenimiento;
+            }
+        }
+
+        return null;
+    }
+
+    private function buscarPorNumeroMantenimiento($subject)
+    {
+        if (empty($subject)) {
+            return null;
+        }
+
+        $patrones = [
+            '/Re:\s*Mantenimiento\s*#\s*(\d+)\s*-/i',
+            '/Re:\s*Mantenimiento\s*#\s*(\d+)/i',
+            '/Mantenimiento\s*#\s*(\d+)\s*-/i',
+            '/Mantenimiento\s*#\s*(\d+)/i',
+            '/\[Mantenimiento\s*#(\d+)\]/i',
+        ];
+
+        foreach ($patrones as $patron) {
+            if (preg_match($patron, $subject, $matches)) {
+                return TicketMantenimiento::find((int) $matches[1]);
+            }
+        }
+
+        return null;
+    }
+
+    private function buscarMantenimientoPorThreadId($threadId)
+    {
+        $chat = MantenimientoChat::where('thread_id', $threadId)
+            ->orWhere('message_id', $threadId)
+            ->first();
+
+        return $chat ? TicketMantenimiento::find($chat->mantenimiento_id) : null;
+    }
+
+    private function buscarMantenimientoPorMessageId($messageId)
+    {
+        $chat = MantenimientoChat::where('message_id', $messageId)->first();
+        return $chat ? TicketMantenimiento::find($chat->mantenimiento_id) : null;
+    }
+
+    protected function correoYaProcesadoMantenimiento($mantenimientoId, $fromEmail, $messageId = null, $threadId = null): bool
+    {
+        if ($messageId) {
+            $normalizedMessageId = $this->normalizarMessageId($messageId);
+            if (MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->where('message_id', $normalizedMessageId)->exists()) {
+                return true;
+            }
+        }
+
+        if ($threadId) {
+            $normalizedThreadId = $this->normalizarThreadId($threadId);
+            if (MantenimientoChat::where('mantenimiento_id', $mantenimientoId)
+                ->where('thread_id', $normalizedThreadId)
+                ->whereRaw('LOWER(correo_remitente) = ?', [strtolower($fromEmail)])
+                ->where('es_correo', true)
+                ->where('created_at', '>=', now()->subDays(30))
+                ->exists()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function crearRespuestaUsuarioMantenimiento($mantenimiento, $bodyTexto, $bodyHtml = null, $adjuntos = [], $fechaCorreo = null, $from = null, $messageId = null, $threadId = null)
+    {
+        try {
+            if (!$mantenimiento || !isset($mantenimiento->MantenimientoID)) {
+                return null;
+            }
+
+            $mantenimientoId = (int) $mantenimiento->MantenimientoID;
+            $fromEmail = $from ? $from->first()->mail : $mantenimiento->Correo;
+            $fromName = $from ? $from->first()->personal : $mantenimiento->NombreSolicitante;
+
+            $fromEmail = $this->limpiarEmail($fromEmail);
+            $fromName = $this->limpiarNombre($fromName);
+
+            $finalThreadId = $threadId ?: $this->obtenerThreadIdDelMantenimiento($mantenimientoId);
+            $finalMessageId = $messageId ?: $this->generarMessageId();
+
+            $mensajeLimpio = $this->limpiarContenidoMensaje($bodyTexto, $bodyHtml);
+            $contenidoHtmlLimpio = $this->limpiarContenidoHtml($bodyHtml);
+
+            $datosChat = [
+                'mantenimiento_id' => $mantenimientoId,
+                'mensaje' => $mensajeLimpio,
+                'remitente' => 'usuario',
+                'nombre_remitente' => $fromName,
+                'correo_remitente' => $fromEmail,
+                'message_id' => $this->normalizarMessageId($finalMessageId),
+                'thread_id' => $this->normalizarThreadId($finalThreadId),
+                'es_correo' => true,
+                'leido' => false,
+                'notificaciones_pendientes' => 1,
+            ];
+
+            if (!empty($contenidoHtmlLimpio)) {
+                $datosChat['contenido_correo'] = $contenidoHtmlLimpio;
+            }
+
+            if (!empty($adjuntos) && is_array($adjuntos)) {
+                $adjuntosValidados = $this->validarAdjuntos($adjuntos);
+                $datosChat['adjuntos'] = !empty($adjuntosValidados) ? $adjuntosValidados : [];
+            } else {
+                $datosChat['adjuntos'] = [];
+            }
+
+            if ($fechaCorreo) {
+                try {
+                    $fechaCarbon = \Carbon\Carbon::parse($fechaCorreo)->setTimezone(config('app.timezone'));
+                    $datosChat['created_at'] = $fechaCarbon;
+                    $datosChat['updated_at'] = $fechaCarbon;
+                } catch (\Exception $e) {
+                }
+            }
+
+            return MantenimientoChat::create($datosChat);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function obtenerThreadIdDelMantenimiento($mantenimientoId)
+    {
+        $existingChat = MantenimientoChat::where('mantenimiento_id', $mantenimientoId)
+            ->whereNotNull('thread_id')
+            ->first();
+
+        if ($existingChat) {
+            return $existingChat->thread_id;
+        }
+
+        $domain = 'proser.com.mx';
+        return "<thread-mantenimiento-{$mantenimientoId}-" . time() . "@{$domain}>";
     }
 }

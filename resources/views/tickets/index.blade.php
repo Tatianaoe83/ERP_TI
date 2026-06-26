@@ -5,11 +5,32 @@
     $tienePermisoProductividad = auth()->user()->can('tickets.ver-productividad');
     $totalTabs = $tienePermisoProductividad ? 3 : 2;
     $tabSolicitudes = $tienePermisoProductividad ? 3 : 2;
+    $tabInicial = 1;
+    if (request('tab') === 'solicitudes') {
+        $tabInicial = $tabSolicitudes;
+    } elseif (request('tab') === 'productividad' && $tienePermisoProductividad) {
+        $tabInicial = 2;
+    }
 @endphp
 <div x-data="{
-    tab: 1,
+    tab: {{ $tabInicial }},
     cambiarTab(numeroTab) {
         this.tab = numeroTab;
+    },
+    init() {
+        window.addEventListener('notif-abrir-solicitudes-tab', () => {
+            this.cambiarTab({{ $tabSolicitudes }});
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const solicitudId = urlParams.get('solicitud_id');
+        const accionSolicitud = urlParams.get('accion') || 'ver';
+        if (solicitudId && typeof window.ejecutarAccionSolicitudNotif === 'function') {
+            this.cambiarTab({{ $tabSolicitudes }});
+            setTimeout(() => {
+                window.ejecutarAccionSolicitudNotif(solicitudId, accionSolicitud);
+            }, 1500);
+        }
     }
 }" class="px-2 w-full max-w-full overflow-x-hidden">
 
