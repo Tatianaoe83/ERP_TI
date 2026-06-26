@@ -106,6 +106,141 @@
         </div>
     </div>
 
+    @php $sla = $metricasProductividad['metricas_sla'] ?? []; $slaResumen = $sla['resumen'] ?? []; @endphp
+
+    <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white to-blue-50/30 dark:from-[#111827]/40 dark:to-[#0B0F14]/70">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+            <div>
+                <h3 class="text-lg font-semibold dark:text-white flex items-center gap-2">
+                    <i class="fas fa-stopwatch text-blue-500"></i>
+                    Métricas SLA por Prioridad
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Metas de atención en días laborales ({{ $sla['horario'] ?? 'Lunes a Viernes, 9:00 - 18:00' }}, {{ $sla['horas_por_dia'] ?? 9 }} h/día).
+                </p>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-sm px-3 py-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 font-semibold">
+                    Cumplimiento: {{ $sla['pct_cumplimiento'] ?? 0 }}%
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ ($slaResumen['cumplidos'] ?? 0) + ($slaResumen['incumplidos'] ?? 0) }} atendidos evaluados
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            @foreach($sla['por_prioridad'] ?? [] as $row)
+            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-white/80 dark:bg-[#1C1F26]/80" style="border-top: 4px solid {{ $row['color'] }}">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $row['prioridad'] }}</p>
+                        <p class="text-sm font-semibold dark:text-white mt-0.5">Meta: {{ $row['meta'] }}</p>
+                        <p class="text-xs text-gray-400">{{ $row['meta_horas'] }}</p>
+                    </div>
+                    <span class="text-lg font-bold" style="color: {{ $row['color'] }}">{{ $row['pct_cumplimiento'] }}%</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="rounded-md px-2 py-1.5 bg-gray-50 dark:bg-[#242933]">
+                        <span class="text-gray-500 dark:text-gray-400">Total</span>
+                        <p class="font-bold dark:text-gray-100">{{ $row['total'] }}</p>
+                    </div>
+                    <div class="rounded-md px-2 py-1.5 bg-green-50 dark:bg-green-900/20">
+                        <span class="text-green-700 dark:text-green-400">Cumplidos</span>
+                        <p class="font-bold text-green-700 dark:text-green-300">{{ $row['cumplidos'] }}</p>
+                    </div>
+                    <div class="rounded-md px-2 py-1.5 bg-red-50 dark:bg-red-900/20">
+                        <span class="text-red-700 dark:text-red-400">Incumplidos</span>
+                        <p class="font-bold text-red-700 dark:text-red-300">{{ $row['incumplidos'] }}</p>
+                    </div>
+                    <div class="rounded-md px-2 py-1.5 bg-yellow-50 dark:bg-yellow-900/20">
+                        <span class="text-yellow-700 dark:text-yellow-400">En riesgo</span>
+                        <p class="font-bold text-yellow-700 dark:text-yellow-300">{{ $row['en_riesgo'] }}</p>
+                    </div>
+                    <div class="rounded-md px-2 py-1.5 bg-orange-50 dark:bg-orange-900/20">
+                        <span class="text-orange-700 dark:text-orange-400">Vencidos</span>
+                        <p class="font-bold text-orange-700 dark:text-orange-300">{{ $row['vencidos'] }}</p>
+                    </div>
+                    <div class="rounded-md px-2 py-1.5 bg-blue-50 dark:bg-blue-900/20">
+                        <span class="text-blue-700 dark:text-blue-400">En tiempo</span>
+                        <p class="font-bold text-blue-700 dark:text-blue-300">{{ $row['en_tiempo'] }}</p>
+                    </div>
+                </div>
+                @if($row['tiempo_promedio_dias'] > 0)
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                    Promedio atendidos: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ $row['tiempo_promedio_dias'] }} días laborales</span>
+                </p>
+                @endif
+            </div>
+            @endforeach
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-white/60 dark:bg-[#1C1F26]/60">
+                <h4 class="text-sm font-semibold dark:text-white mb-3">Cumplimiento SLA (atendidos)</h4>
+                <div class="h-[260px]"><canvas id="chartMantSlaCumplimiento"></canvas></div>
+            </div>
+            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-white/60 dark:bg-[#1C1F26]/60">
+                <h4 class="text-sm font-semibold dark:text-white mb-3">Estado actual por prioridad (abiertos)</h4>
+                <div class="h-[260px]"><canvas id="chartMantSlaAbiertos"></canvas></div>
+            </div>
+        </div>
+
+        @if(!empty($sla['tickets_criticos']))
+        <div class="mt-6 rounded-lg border border-orange-200 dark:border-orange-900/40 overflow-hidden">
+            <div class="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-900/40">
+                <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Solicitudes en riesgo o vencidas ({{ count($sla['tickets_criticos']) }})
+                </h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#242933] text-left text-gray-500 dark:text-gray-400">
+                        <tr>
+                            <th class="py-2 px-4">ID</th>
+                            <th class="py-2 px-4">Asunto</th>
+                            <th class="py-2 px-4">Prioridad</th>
+                            <th class="py-2 px-4">Estado</th>
+                            <th class="py-2 px-4">SLA</th>
+                            <th class="py-2 px-4">Transcurrido</th>
+                            <th class="py-2 px-4">Uso meta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($sla['tickets_criticos'] as $critico)
+                        <tr class="border-t border-gray-100 dark:border-gray-800">
+                            <td class="py-2 px-4 font-mono font-semibold dark:text-gray-200">#{{ $critico['id'] }}</td>
+                            <td class="py-2 px-4 max-w-xs truncate dark:text-gray-300">{{ $critico['asunto'] }}</td>
+                            <td class="py-2 px-4 dark:text-gray-300">{{ $critico['prioridad'] }}</td>
+                            <td class="py-2 px-4 dark:text-gray-300">{{ $critico['estatus'] }}</td>
+                            <td class="py-2 px-4">
+                                @if($critico['estado_sla'] === 'vencido')
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">Vencido</span>
+                                @else
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">En riesgo</span>
+                                @endif
+                            </td>
+                            <td class="py-2 px-4 text-gray-600 dark:text-gray-400">{{ $critico['meta_texto'] }}</td>
+                            <td class="py-2 px-4 dark:text-gray-300">{{ $critico['dias_laborales_transcurridos'] }} días</td>
+                            <td class="py-2 px-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-16 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                        <div class="h-full rounded-full {{ $critico['porcentaje_uso'] >= 100 ? 'bg-red-500' : 'bg-yellow-500' }}"
+                                            style="width: {{ min(100, $critico['porcentaje_uso']) }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-semibold dark:text-gray-300">{{ $critico['porcentaje_uso'] }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
             <h3 class="text-lg font-semibold dark:text-white mb-3">Distribución por Estado</h3>
@@ -158,7 +293,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
-let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia;
+let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos;
 
 function obtenerDatosMantenimiento() {
     const el = document.getElementById('productividad-mantenimiento-json');
@@ -171,10 +306,10 @@ function isDarkMant() {
 }
 
 function destruirGraficasMantenimiento() {
-    [chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia].forEach(ch => {
+    [chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos].forEach(ch => {
         if (ch && typeof ch.destroy === 'function') ch.destroy();
     });
-    chartMantEstado = chartMantPrioridad = chartMantCategoria = chartMantTendencia = null;
+    chartMantEstado = chartMantPrioridad = chartMantCategoria = chartMantTendencia = chartMantSlaCumplimiento = chartMantSlaAbiertos = null;
 }
 
 function inicializarGraficasMantenimiento() {
@@ -240,6 +375,46 @@ function inicializarGraficasMantenimiento() {
         },
         options: opts
     });
+
+    const slaData = data.metricas_sla || {};
+    const slaPrioridades = slaData.por_prioridad || [];
+
+    if (document.getElementById('chartMantSlaCumplimiento') && slaPrioridades.length) {
+        chartMantSlaCumplimiento = new Chart(document.getElementById('chartMantSlaCumplimiento'), {
+            type: 'bar',
+            data: {
+                labels: slaPrioridades.map(r => r.prioridad),
+                datasets: [
+                    {
+                        label: 'Cumplidos',
+                        data: slaPrioridades.map(r => r.cumplidos),
+                        backgroundColor: '#22C55E',
+                    },
+                    {
+                        label: 'Incumplidos',
+                        data: slaPrioridades.map(r => r.incumplidos),
+                        backgroundColor: '#EF4444',
+                    },
+                ],
+            },
+            options: { ...opts, scales: { ...opts.scales, x: { ...opts.scales.x, stacked: true }, y: { ...opts.scales.y, stacked: true } } },
+        });
+    }
+
+    if (document.getElementById('chartMantSlaAbiertos') && slaPrioridades.length) {
+        chartMantSlaAbiertos = new Chart(document.getElementById('chartMantSlaAbiertos'), {
+            type: 'bar',
+            data: {
+                labels: slaPrioridades.map(r => r.prioridad),
+                datasets: [
+                    { label: 'En tiempo', data: slaPrioridades.map(r => r.en_tiempo), backgroundColor: '#3B82F6' },
+                    { label: 'En riesgo', data: slaPrioridades.map(r => r.en_riesgo), backgroundColor: '#EAB308' },
+                    { label: 'Vencidos', data: slaPrioridades.map(r => r.vencidos), backgroundColor: '#EF4444' },
+                ],
+            },
+            options: { ...opts, scales: { ...opts.scales, x: { ...opts.scales.x, stacked: true }, y: { ...opts.scales.y, stacked: true } } },
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

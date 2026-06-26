@@ -172,6 +172,7 @@ class TicketsMantenimientoController extends Controller
             'creados_por_dia'            => $creadosPorDia,
             'fecha_inicio_periodo'       => $fechaInicioMes->format('Y-m-d'),
             'fecha_fin_periodo'          => $fechaFinMes->format('Y-m-d'),
+            'metricas_sla'               => TicketMantenimiento::calcularMetricasSla($delPeriodo),
         ];
     }
 
@@ -208,7 +209,7 @@ class TicketsMantenimientoController extends Controller
             }
 
             if ($request->has('prioridad')) {
-                $ticket->Prioridad = $request->input('prioridad');
+                $ticket->Prioridad = $request->input('prioridad') ?: null;
             }
 
             if ($request->has('categoria')) {
@@ -222,11 +223,21 @@ class TicketsMantenimientoController extends Controller
             if ($request->has('estatus')) {
                 $nuevoEstatus = $request->input('estatus');
                 $actualEstatus = $ticket->Estatus;
+                $prioridadAsignada = $request->has('prioridad')
+                    ? ($request->input('prioridad') ?: null)
+                    : $ticket->Prioridad;
 
                 if ($nuevoEstatus !== $actualEstatus && !TicketMantenimiento::puedeTransicionar($actualEstatus, $nuevoEstatus)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'La transición de "' . $actualEstatus . '" a "' . $nuevoEstatus . '" no está permitida',
+                    ], 400);
+                }
+
+                if ($nuevoEstatus === 'En proceso' && empty($prioridadAsignada)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Para cambiar a "En proceso" es necesario asignar una Prioridad',
                     ], 400);
                 }
 

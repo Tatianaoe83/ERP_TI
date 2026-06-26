@@ -31,12 +31,14 @@
                     data-ticket-area="{{ htmlspecialchars($ticket['area'] ?? '', ENT_QUOTES, 'UTF-8') }}"
                     data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i:s') }}"
                     data-ticket-imagen="{{ htmlspecialchars(is_array($ticket['imagen'] ?? null) ? json_encode($ticket['imagen']) : ($ticket['imagen'] ?? ''), ENT_QUOTES, 'UTF-8') }}"
+                    @if(!empty($ticket['sla'])) data-ticket-sla="{{ htmlspecialchars(json_encode($ticket['sla']), ENT_QUOTES, 'UTF-8') }}" @endif
                     @click="abrirModalDesdeElemento($el)">
 
                     <div class="flex flex-col sm:flex-row justify-between gap-4">
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-3 mb-2">
+                            <div class="flex items-center gap-3 mb-2 flex-wrap">
                                 <h4 class="font-bold text-base text-gray-900 dark:text-white">#{{ $ticket['id'] }} — {{ $ticket['asunto'] }}</h4>
+                                @if(!empty($ticket['prioridad']))
                                 <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border
                                     @if($ticket['prioridad'] == 'Baja') bg-green-100 text-green-800 border-green-200
                                     @elseif($ticket['prioridad'] == 'Media') bg-yellow-100 text-yellow-800 border-yellow-200
@@ -45,11 +47,22 @@
                                     @endif">
                                     {{ $ticket['prioridad'] }}
                                 </span>
+                                @else
+                                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded border bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
+                                    Sin prioridad
+                                </span>
+                                @endif
                             </div>
 
                             <p class="text-sm mb-3 text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
                                 {{ \Illuminate\Support\Str::limit($ticket['descripcion'], 160) }}
                             </p>
+
+                            @if(!empty($ticket['sla']))
+                            <div class="mb-3 max-w-md">
+                                @include('tickets-mantenimiento.partials.sla-tarjeta', ['sla' => $ticket['sla']])
+                            </div>
+                            @endif
 
                             <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600 dark:text-gray-400">
                                 <span class="flex items-center gap-1.5"><i class="fas fa-user"></i>{{ $ticket['solicitante'] }}</span>

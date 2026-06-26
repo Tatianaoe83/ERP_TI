@@ -21,22 +21,9 @@ class MantenimientoTicketsListaUpdater extends Component
 
     private function formatearTickets($tickets)
     {
-        return $tickets->map(function ($ticket) {
-            return [
-                'id'          => $ticket->MantenimientoID,
-                'asunto'      => $ticket->Asunto,
-                'descripcion' => $ticket->Descripcion,
-                'prioridad'   => $ticket->Prioridad,
-                'estatus'     => $ticket->Estatus,
-                'categoria'   => $ticket->Categoria,
-                'responsable' => $ticket->Responsable,
-                'solicitante' => $ticket->NombreSolicitante,
-                'correo'      => $ticket->Correo,
-                'area'        => $ticket->AreaDepartamento,
-                'imagen'      => $ticket->imagen,
-                'created_at'  => optional($ticket->created_at)->toIso8601String(),
-            ];
-        })->toArray();
+        return $tickets->map(
+            fn ($ticket) => TicketMantenimiento::formatearTicketParaVista($ticket)
+        )->toArray();
     }
 
     private function obtenerPayloadActualizacion()

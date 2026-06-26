@@ -137,12 +137,31 @@
                         <div class="rounded-lg p-4 flex flex-col gap-3 border border-gray-200 dark:border-gray-700 dark:bg-gray-800">
                             <h3 class="text-xs font-semibold uppercase mb-2 text-gray-500 dark:text-gray-400">Detalles del Mantenimiento</h3>
 
+                            <div x-show="ticketSla" class="rounded-lg p-3 border text-xs"
+                                :class="{
+                                    'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300': ticketSla?.estado_sla === 'en_tiempo',
+                                    'bg-yellow-50 border-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-300': ticketSla?.estado_sla === 'en_riesgo',
+                                    'bg-red-50 border-red-100 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300': ['vencido','incumplido'].includes(ticketSla?.estado_sla),
+                                    'bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300': ticketSla?.estado_sla === 'cumplido',
+                                }">
+                                <p class="font-semibold uppercase tracking-wide mb-1"><i class="fas fa-stopwatch mr-1"></i> SLA por prioridad</p>
+                                <p x-text="ticketSla?.texto_transcurrido"></p>
+                                <p class="font-semibold mt-1" x-text="ticketSla?.texto_restante"></p>
+                                <div class="mt-2 h-1.5 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+                                    <div class="h-full rounded-full bg-current opacity-70" :style="'width:' + Math.min(100, ticketSla?.porcentaje_uso || 0) + '%'"></div>
+                                </div>
+                            </div>
+
                             <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Prioridad</label>
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Prioridad <span class="text-red-500" x-show="ticketEstatus === 'En proceso' || estatusOriginal === 'En proceso'">*</span></label>
                                 <select x-model="ticketPrioridad" :disabled="esFinalizado"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-50 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50">
+                                    <option value="">Sin prioridad</option>
                                     @foreach(\App\Models\TicketMantenimiento::PRIORIDADES as $p)<option value="{{ $p }}">{{ $p }}</option>@endforeach
                                 </select>
+                                <p x-show="estaPendiente && !ticketPrioridad" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Asigne prioridad al cambiar el estado a "En proceso" para iniciar el SLA.
+                                </p>
                             </div>
                             <div>
                                 <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</label>
@@ -369,12 +388,13 @@ function mantenimientoModal() {
         ultimoMensajeId: 0,
         verificacionInterval: null,
         tinyMCEInstance: null,
-        ticketPrioridad: 'Baja',
+        ticketPrioridad: '',
         ticketEstatus: 'Pendiente',
         estatusOriginal: 'Pendiente',
         transicionesEstatus: @json(\App\Models\TicketMantenimiento::TRANSICIONES),
         ticketResponsable: '',
         ticketCategoria: '',
+        ticketSla: null,
 
         get esFinalizado() {
             return ['Atendido', 'Cancelado'].includes(this.estatusOriginal);
@@ -426,11 +446,16 @@ function mantenimientoModal() {
                 estatus: el.dataset.ticketEstatus || 'Pendiente',
                 imagen: el.dataset.ticketImagen || '',
             };
-            this.ticketPrioridad = el.dataset.ticketPrioridad || 'Baja';
+            this.ticketPrioridad = el.dataset.ticketPrioridad || '';
             this.ticketEstatus = el.dataset.ticketEstatus || 'Pendiente';
             this.estatusOriginal = el.dataset.ticketEstatus || 'Pendiente';
             this.ticketResponsable = this.normalizarResponsable(el.dataset.ticketResponsable || '');
             this.ticketCategoria = el.dataset.ticketCategoria || '';
+            try {
+                this.ticketSla = el.dataset.ticketSla ? JSON.parse(el.dataset.ticketSla) : null;
+            } catch (e) {
+                this.ticketSla = null;
+            }
             this.asuntoCorreo = `Re: Mantenimiento #${id}`;
             this.nuevoMensaje = '';
             this.archivosAdjuntos = [];
@@ -454,6 +479,7 @@ function mantenimientoModal() {
             }
             this.mostrar = false;
             this.selected = {};
+            this.ticketSla = null;
             this.mensajes = [];
             this.asuntoCorreo = '';
             this.nuevoMensaje = '';

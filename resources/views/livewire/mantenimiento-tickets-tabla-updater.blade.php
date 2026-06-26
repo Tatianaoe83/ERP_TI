@@ -17,6 +17,7 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Categoría</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Prioridad</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Estado</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase min-w-[180px]">SLA</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Responsable</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Fecha</th>
                     </tr>
@@ -43,12 +44,16 @@
                         <td class="px-4 py-3 text-gray-900 dark:text-gray-200">{{ $ticket['solicitante'] }}</td>
                         <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ $ticket['categoria'] ?? '-' }}</td>
                         <td class="px-4 py-3">
+                            @if(!empty($ticket['prioridad']))
                             <span class="text-xs font-semibold px-2 py-1 rounded-full
                                 @if($ticket['prioridad'] == 'Baja') text-green-700 bg-green-100
                                 @elseif($ticket['prioridad'] == 'Media') text-yellow-700 bg-yellow-100
                                 @elseif($ticket['prioridad'] == 'Alta') text-red-700 bg-red-100
                                 @else text-red-800 bg-red-200
                                 @endif">{{ $ticket['prioridad'] }}</span>
+                            @else
+                            <span class="text-xs text-gray-400">Sin prioridad</span>
+                            @endif
                         </td>
                         <td class="px-4 py-3">
                             <span class="text-xs font-semibold px-2 py-1 rounded-full
@@ -60,12 +65,19 @@
                                 @else text-gray-700 bg-gray-100
                                 @endif">{{ $ticket['estatus'] }}</span>
                         </td>
+                        <td class="px-4 py-3 min-w-[180px]">
+                            @if(!empty($ticket['sla']))
+                                @include('tickets-mantenimiento.partials.sla-tarjeta', ['sla' => $ticket['sla']])
+                            @else
+                                <span class="text-xs text-gray-400">—</span>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $ticket['responsable'] ? \App\Models\TicketMantenimiento::formatearNombreResponsable(\App\Models\TicketMantenimiento::normalizarResponsable($ticket['responsable']) ?? '') : '-' }}</td>
                         <td class="px-4 py-3 text-sm text-gray-500">{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i') }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">No hay solicitudes disponibles.</td>
+                        <td colspan="9" class="px-6 py-12 text-center text-sm text-gray-500">No hay solicitudes disponibles.</td>
                     </tr>
                     @endforelse
                 </tbody>

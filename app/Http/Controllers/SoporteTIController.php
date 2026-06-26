@@ -242,7 +242,7 @@ public function crearTickets(Request $request)
                     'Asunto'             => \Illuminate\Support\Str::limit($data['Descripcion'], 80),
                     'Descripcion'        => $data['Descripcion'],
                     'Categoria'          => null,
-                    'Prioridad'          => 'Baja',
+                    'Prioridad'          => null,
                     'Estatus'            => 'Pendiente',
                     'imagen'             => !empty($names) ? $names : null,
                 ]);

@@ -45,10 +45,12 @@
                     data-ticket-area="{{ htmlspecialchars($ticket['area'] ?? '', ENT_QUOTES, 'UTF-8') }}"
                     data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i:s') }}"
                     data-ticket-imagen="{{ htmlspecialchars(is_array($ticket['imagen'] ?? null) ? json_encode($ticket['imagen']) : ($ticket['imagen'] ?? ''), ENT_QUOTES, 'UTF-8') }}"
+                    @if(!empty($ticket['sla'])) data-ticket-sla="{{ htmlspecialchars(json_encode($ticket['sla']), ENT_QUOTES, 'UTF-8') }}" @endif
                     @click="abrirModalDesdeElemento($el)">
 
                     <div class="flex justify-between items-start gap-2 mb-2">
                         <span class="text-xs font-mono font-bold text-gray-500 dark:text-gray-400">#{{ $ticket['id'] }}</span>
+                        @if(!empty($ticket['prioridad']))
                         <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded
                             @if($ticket['prioridad']=='Baja') bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400
                             @elseif($ticket['prioridad']=='Media') bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400
@@ -57,6 +59,11 @@
                             @endif">
                             {{ $ticket['prioridad'] }}
                         </span>
+                        @else
+                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                            Sin prioridad
+                        </span>
+                        @endif
                     </div>
 
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 line-clamp-1 mb-1">
@@ -78,6 +85,10 @@
                                 <span>{{ \Carbon\Carbon::parse($ticket['created_at'])->diffForHumans() }}</span>
                             </div>
                         </div>
+
+                        @if(!empty($ticket['sla']))
+                        @include('tickets-mantenimiento.partials.sla-tarjeta', ['sla' => $ticket['sla']])
+                        @endif
 
                         @if($ticket['categoria'])
                         <div class="text-[10px] text-gray-500 dark:text-gray-400">
