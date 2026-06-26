@@ -1543,9 +1543,10 @@ class SimpleWebklexImapService
                 return null;
             }
 
+            $mantenimiento->loadMissing('empleado');
             $mantenimientoId = (int) $mantenimiento->MantenimientoID;
-            $fromEmail = $from ? $from->first()->mail : $mantenimiento->Correo;
-            $fromName = $from ? $from->first()->personal : $mantenimiento->NombreSolicitante;
+            $fromEmail = $from ? $from->first()->mail : $mantenimiento->correo;
+            $fromName = $from ? $from->first()->personal : $mantenimiento->nombre_solicitante;
 
             $fromEmail = $this->limpiarEmail($fromEmail);
             $fromName = $this->limpiarNombre($fromName);

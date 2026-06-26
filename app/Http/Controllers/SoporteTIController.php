@@ -235,16 +235,12 @@ public function crearTickets(Request $request)
 
             try {
                 TicketMantenimiento::create([
-                    'EmpleadoID'         => $empleado->EmpleadoID,
-                    'NombreSolicitante'  => $data['NombreSolicitante'],
-                    'Correo'             => $data['Correo'],
-                    'AreaDepartamento'   => $data['AreaDepartamento'] ?? null,
-                    'Asunto'             => \Illuminate\Support\Str::limit($data['Descripcion'], 80),
-                    'Descripcion'        => $data['Descripcion'],
-                    'Categoria'          => null,
-                    'Prioridad'          => null,
-                    'Estatus'            => 'Pendiente',
-                    'imagen'             => !empty($names) ? $names : null,
+                    'EmpleadoID'  => $empleado->EmpleadoID,
+                    'Descripcion' => $data['Descripcion'],
+                    'Categoria'   => null,
+                    'Prioridad'   => null,
+                    'Estatus'     => 'Pendiente',
+                    'imagen'      => !empty($names) ? $names : null,
                 ]);
 
                 return redirect()->back()->with(['success' => 'Solicitud de mantenimiento guardada correctamente', 'tipo' => 'Mantenimiento']);

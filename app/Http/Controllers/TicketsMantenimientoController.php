@@ -26,7 +26,7 @@ class TicketsMantenimientoController extends Controller
         $anioFin    = $request->has('anio_fin') ? (int) $request->input('anio_fin') : null;
         $modoRango  = $mesInicio && $anioInicio && $mesFin && $anioFin;
 
-        $tickets = TicketMantenimiento::orderBy('created_at', 'desc')->get();
+        $tickets = TicketMantenimiento::queryConRelaciones()->orderBy('created_at', 'desc')->get();
 
         $ticketsStatus = TicketMantenimiento::agruparPorColumnas($tickets);
 
@@ -63,7 +63,7 @@ class TicketsMantenimientoController extends Controller
         $mesFin     = $esRango ? (int) $request->input('mes_fin') : null;
         $anioFin    = $esRango ? (int) $request->input('anio_fin') : null;
 
-        $tickets = TicketMantenimiento::orderBy('created_at', 'desc')->get();
+        $tickets = TicketMantenimiento::queryConRelaciones()->orderBy('created_at', 'desc')->get();
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
 
         $html = view('tickets-mantenimiento.productividad', [
@@ -126,10 +126,14 @@ class TicketsMantenimientoController extends Controller
         $porCategoria = $delPeriodo->filter(fn ($t) => $t->Categoria)
             ->groupBy('Categoria')->map->count()->sortDesc();
 
-        $porResponsable = $delPeriodo->filter(fn ($t) => $t->Responsable)
-            ->groupBy('Responsable')->map(function ($grupo) {
+        $porResponsable = $delPeriodo->filter(fn ($t) => $t->ResponsableID)
+            ->groupBy('ResponsableID')->map(function ($grupo) {
+                $responsable = $grupo->first()->responsable;
+
                 return [
-                    'nombre'      => $grupo->first()->Responsable,
+                    'nombre'      => $responsable
+                        ? TicketMantenimiento::formatearNombreEmpleado($responsable->NombreEmpleado, 'Compras')
+                        : 'Sin responsable',
                     'total'       => $grupo->count(),
                     'atendidos'   => $grupo->whereIn('Estatus', ['Atendido', 'Cancelado'])->count(),
                     'en_proceso'  => $grupo->whereIn('Estatus', ['En proceso', 'Pausado'])->count(),
@@ -138,8 +142,8 @@ class TicketsMantenimientoController extends Controller
             })->sortByDesc('total')->values();
 
         $porPrioridad = $delPeriodo->groupBy('Prioridad')->map->count();
-        $porArea = $delPeriodo->filter(fn ($t) => $t->AreaDepartamento)
-            ->groupBy('AreaDepartamento')->map->count()->sortDesc()->take(10);
+        $porArea = $delPeriodo->filter(fn ($t) => $t->area_departamento)
+            ->groupBy(fn ($t) => $t->area_departamento)->map->count()->sortDesc()->take(10);
 
         $resueltosPorDia = [];
         $creadosPorDia   = [];
@@ -217,7 +221,7 @@ class TicketsMantenimientoController extends Controller
             }
 
             if ($request->has('responsable')) {
-                $ticket->Responsable = $request->input('responsable') ?: null;
+                $ticket->ResponsableID = $request->input('responsable') ?: null;
             }
 
             if ($request->has('estatus')) {
@@ -226,6 +230,9 @@ class TicketsMantenimientoController extends Controller
                 $prioridadAsignada = $request->has('prioridad')
                     ? ($request->input('prioridad') ?: null)
                     : $ticket->Prioridad;
+                $responsableAsignado = $request->has('responsable')
+                    ? ($request->input('responsable') ?: null)
+                    : $ticket->ResponsableID;
 
                 if ($nuevoEstatus !== $actualEstatus && !TicketMantenimiento::puedeTransicionar($actualEstatus, $nuevoEstatus)) {
                     return response()->json([
@@ -241,7 +248,7 @@ class TicketsMantenimientoController extends Controller
                     ], 400);
                 }
 
-                if ($nuevoEstatus === 'En proceso' && (empty($ticket->Responsable) && empty($request->input('responsable')))) {
+                if ($nuevoEstatus === 'En proceso' && empty($responsableAsignado)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Para cambiar a "En proceso" es necesario asignar un Responsable',
@@ -446,17 +453,23 @@ class TicketsMantenimientoController extends Controller
 
     private function formatearTicket(TicketMantenimiento $ticket): array
     {
+        $ticket->loadMissing(['empleado.obras', 'empleado.puestos.departamentos', 'responsable']);
+
         return [
             'MantenimientoID'   => $ticket->MantenimientoID,
-            'NombreSolicitante' => $ticket->NombreSolicitante,
-            'Correo'            => $ticket->Correo,
-            'AreaDepartamento'  => $ticket->AreaDepartamento,
-            'Asunto'            => $ticket->Asunto,
+            'EmpleadoID'        => $ticket->EmpleadoID,
+            'NombreSolicitante' => $ticket->nombre_solicitante,
+            'Correo'            => $ticket->correo,
+            'AreaDepartamento'  => $ticket->area_departamento,
+            'Asunto'            => $ticket->asunto,
             'Descripcion'       => $ticket->Descripcion,
             'Categoria'         => $ticket->Categoria,
             'Prioridad'         => $ticket->Prioridad,
             'Estatus'           => $ticket->Estatus,
-            'Responsable'       => $ticket->Responsable,
+            'ResponsableID'     => $ticket->ResponsableID,
+            'Responsable'       => $ticket->responsable
+                ? TicketMantenimiento::formatearNombreEmpleado($ticket->responsable->NombreEmpleado, 'Compras')
+                : null,
             'imagen'            => $ticket->imagen,
             'created_at'        => optional($ticket->created_at)->format('d/m/Y H:i:s'),
         ];

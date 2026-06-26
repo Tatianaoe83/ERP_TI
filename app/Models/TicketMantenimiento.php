@@ -19,15 +19,11 @@ class TicketMantenimiento extends Model
 
     protected $fillable = [
         'EmpleadoID',
-        'NombreSolicitante',
-        'Correo',
-        'AreaDepartamento',
-        'Asunto',
+        'ResponsableID',
         'Descripcion',
         'Categoria',
         'Prioridad',
         'Estatus',
-        'Responsable',
         'imagen',
         'FechaInicioProgreso',
         'FechaFinProgreso',
@@ -36,6 +32,7 @@ class TicketMantenimiento extends Model
     protected $casts = [
         'MantenimientoID' => 'integer',
         'EmpleadoID' => 'integer',
+        'ResponsableID' => 'integer',
         'imagen' => 'array',
         'FechaInicioProgreso' => 'datetime',
         'FechaFinProgreso' => 'datetime',
@@ -123,25 +120,20 @@ class TicketMantenimiento extends Model
 
     public static function obtenerResponsables(): array
     {
-        $empleado = Empleados::query()
+        return Empleados::query()
             ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->where('obras.NombreObra', 'like', '%Compras%')
             ->where('empleados.Estado', 1)
-            ->where('empleados.NombreEmpleado', 'like', '%ORDOÑEZ%')
-            ->where('empleados.NombreEmpleado', 'like', '%LUIS%')
-            ->select('empleados.NombreEmpleado')
-            ->first();
-
-        if (!$empleado) {
-            return ['LOA' => 'Luis Ordoñez (Compras)'];
-        }
-
-        return [
-            $empleado->NombreEmpleado => self::formatearNombreResponsable($empleado->NombreEmpleado),
-        ];
+            ->select('empleados.EmpleadoID', 'empleados.NombreEmpleado')
+            ->orderBy('empleados.NombreEmpleado')
+            ->get()
+            ->mapWithKeys(fn ($empleado) => [
+                $empleado->EmpleadoID => self::formatearNombreEmpleado($empleado->NombreEmpleado, 'Compras'),
+            ])
+            ->toArray();
     }
 
-    public static function formatearNombreResponsable(?string $nombreCompleto): string
+    public static function formatearNombreEmpleado(?string $nombreCompleto, ?string $area = null): string
     {
         if (!$nombreCompleto) {
             return '';
@@ -152,22 +144,43 @@ class TicketMantenimiento extends Model
         if (count($partes) >= 3) {
             $apellido = mb_convert_case($partes[0], MB_CASE_TITLE, 'UTF-8');
             $nombre = mb_convert_case($partes[2], MB_CASE_TITLE, 'UTF-8');
+            $etiqueta = "{$nombre} {$apellido}";
 
-            return "{$nombre} {$apellido} (Compras)";
+            return $area ? "{$etiqueta} ({$area})" : $etiqueta;
         }
 
-        return $nombreCompleto;
+        return $area ? "{$nombreCompleto} ({$area})" : $nombreCompleto;
     }
 
-    public static function normalizarResponsable(?string $responsable): ?string
+    /** @deprecated Use formatearNombreEmpleado */
+    public static function formatearNombreResponsable(?string $nombreCompleto): string
     {
-        if ($responsable === 'LOA') {
-            $responsables = self::obtenerResponsables();
+        return self::formatearNombreEmpleado($nombreCompleto, 'Compras');
+    }
 
-            return array_key_first($responsables) ?: 'LOA';
+    public function getAsuntoAttribute(): string
+    {
+        return \Illuminate\Support\Str::limit($this->Descripcion ?? '', 80);
+    }
+
+    public function getNombreSolicitanteAttribute(): ?string
+    {
+        return $this->empleado?->NombreEmpleado;
+    }
+
+    public function getCorreoAttribute(): ?string
+    {
+        return $this->empleado?->Correo;
+    }
+
+    public function getAreaDepartamentoAttribute(): ?string
+    {
+        if (!$this->relationLoaded('empleado')) {
+            $this->load('empleado.obras', 'empleado.puestos.departamentos');
         }
 
-        return $responsable;
+        return $this->empleado?->obras?->NombreObra
+            ?? $this->empleado?->puestos?->departamentos?->NombreDepartamento;
     }
 
     public function getIdAttribute(): int
@@ -183,6 +196,16 @@ class TicketMantenimiento extends Model
     public function empleado()
     {
         return $this->belongsTo(Empleados::class, 'EmpleadoID', 'EmpleadoID');
+    }
+
+    public function responsable()
+    {
+        return $this->belongsTo(Empleados::class, 'ResponsableID', 'EmpleadoID');
+    }
+
+    public static function queryConRelaciones()
+    {
+        return static::with(['empleado.obras', 'empleado.puestos.departamentos', 'responsable']);
     }
 
     public function chat()
@@ -389,22 +412,63 @@ class TicketMantenimiento extends Model
         return $horas . ($horas === 1 ? ' hora' : ' horas');
     }
 
+    public static function colorPrioridad(?string $prioridad): string
+    {
+        return match ($prioridad) {
+            'Baja'    => '#22c55e',
+            'Media'   => '#eab308',
+            'Alta'    => '#f97316',
+            'Urgente' => '#ef4444',
+            default   => '#94a3b8',
+        };
+    }
+
+    public static function descripcionParaTarjeta(?string $descripcion, ?string $asunto): ?string
+    {
+        $descripcion = trim((string) $descripcion);
+        $asunto = trim((string) $asunto);
+
+        if ($descripcion === '') {
+            return null;
+        }
+
+        if ($descripcion === $asunto) {
+            return null;
+        }
+
+        if ($asunto !== '' && str_starts_with($descripcion, $asunto) && mb_strlen($descripcion) - mb_strlen($asunto) < 15) {
+            return null;
+        }
+
+        return \Illuminate\Support\Str::limit($descripcion, 120);
+    }
+
     public static function formatearTicketParaVista(TicketMantenimiento $ticket): array
     {
+        $ticket->loadMissing(['empleado.obras', 'empleado.puestos.departamentos', 'responsable']);
+
         return [
-            'id'          => $ticket->MantenimientoID,
-            'asunto'      => $ticket->Asunto,
-            'descripcion' => $ticket->Descripcion,
-            'prioridad'   => $ticket->Prioridad,
-            'estatus'     => $ticket->Estatus,
-            'categoria'   => $ticket->Categoria,
-            'responsable' => $ticket->Responsable,
-            'solicitante' => $ticket->NombreSolicitante,
-            'correo'      => $ticket->Correo,
-            'area'        => $ticket->AreaDepartamento,
-            'imagen'      => $ticket->imagen,
-            'created_at'  => optional($ticket->created_at)->toIso8601String(),
-            'sla'         => $ticket->resumenSlaTarjeta(),
+            'id'                 => $ticket->MantenimientoID,
+            'asunto'             => $ticket->asunto,
+            'descripcion'        => $ticket->Descripcion,
+            'descripcion_tarjeta'=> self::descripcionParaTarjeta($ticket->Descripcion, $ticket->asunto),
+            'prioridad'          => $ticket->Prioridad,
+            'color_prioridad'    => self::colorPrioridad($ticket->Prioridad),
+            'estatus'            => $ticket->Estatus,
+            'categoria'          => $ticket->Categoria,
+            'responsable_id'     => $ticket->ResponsableID,
+            'responsable_nombre' => $ticket->responsable
+                ? self::formatearNombreEmpleado($ticket->responsable->NombreEmpleado, 'Compras')
+                : '',
+            'solicitante'        => $ticket->nombre_solicitante ?? '',
+            'solicitante_corto'  => $ticket->empleado
+                ? self::formatearNombreEmpleado($ticket->empleado->NombreEmpleado)
+                : ($ticket->nombre_solicitante ?? ''),
+            'correo'             => $ticket->correo ?? '',
+            'area'               => $ticket->area_departamento ?? '',
+            'imagen'             => $ticket->imagen,
+            'created_at'         => optional($ticket->created_at)->toIso8601String(),
+            'sla'                => $ticket->resumenSlaTarjeta(),
         ];
     }
 
@@ -531,7 +595,7 @@ class TicketMantenimiento extends Model
     {
         return [
             'id'                           => $ticket->MantenimientoID,
-            'asunto'                       => $ticket->Asunto,
+            'asunto'                       => $ticket->asunto,
             'prioridad'                    => $ticket->Prioridad,
             'estatus'                      => $ticket->Estatus,
             'estado_sla'                   => $sla['estado_sla'],

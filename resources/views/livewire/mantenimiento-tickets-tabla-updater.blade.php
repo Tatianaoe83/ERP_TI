@@ -32,7 +32,7 @@
                         data-ticket-prioridad="{{ $ticket['prioridad'] }}"
                         data-ticket-estatus="{{ $ticket['estatus'] }}"
                         data-ticket-categoria="{{ $ticket['categoria'] ?? '' }}"
-                        data-ticket-responsable="{{ \App\Models\TicketMantenimiento::normalizarResponsable($ticket['responsable'] ?? '') }}"
+                        data-ticket-responsable="{{ $ticket['responsable_id'] ?? '' }}"
                         data-ticket-solicitante="{{ htmlspecialchars($ticket['solicitante'] ?? '', ENT_QUOTES, 'UTF-8') }}"
                         data-ticket-correo="{{ $ticket['correo'] ?? '' }}"
                         data-ticket-area="{{ htmlspecialchars($ticket['area'] ?? '', ENT_QUOTES, 'UTF-8') }}"
@@ -41,7 +41,7 @@
                         @click="abrirModalDesdeElemento($el)">
                         <td class="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">#{{ $ticket['id'] }}</td>
                         <td class="px-4 py-3 max-w-xs truncate text-gray-600 dark:text-gray-300">{{ $ticket['asunto'] }}</td>
-                        <td class="px-4 py-3 text-gray-900 dark:text-gray-200">{{ $ticket['solicitante'] }}</td>
+                        <td class="px-4 py-3 text-gray-900 dark:text-gray-200" title="{{ $ticket['solicitante'] ?? '' }}">{{ $ticket['solicitante_corto'] ?: '-' }}</td>
                         <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ $ticket['categoria'] ?? '-' }}</td>
                         <td class="px-4 py-3">
                             @if(!empty($ticket['prioridad']))
@@ -72,7 +72,7 @@
                                 <span class="text-xs text-gray-400">—</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $ticket['responsable'] ? \App\Models\TicketMantenimiento::formatearNombreResponsable(\App\Models\TicketMantenimiento::normalizarResponsable($ticket['responsable']) ?? '') : '-' }}</td>
+                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $ticket['responsable_nombre'] ?: '-' }}</td>
                         <td class="px-4 py-3 text-sm text-gray-500">{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i') }}</td>
                     </tr>
                     @empty

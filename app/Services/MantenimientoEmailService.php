@@ -28,16 +28,20 @@ class MantenimientoEmailService
     public function enviarRespuestaConInstrucciones($mantenimientoId, $mensaje, $adjuntos = [], $mensajeParaCorreo = null)
     {
         try {
-            $ticket = TicketMantenimiento::find($mantenimientoId);
+            $ticket = TicketMantenimiento::with('empleado')->find($mantenimientoId);
             if (!$ticket) {
                 throw new \Exception('Solicitud de mantenimiento no encontrada');
+            }
+
+            if (!$ticket->empleado?->Correo) {
+                throw new \Exception('El solicitante no tiene correo registrado');
             }
 
             $correoSoporte = config('mail.from.address');
             $nombreSoporte = config('mail.from.name');
             $messageId = $this->generarMessageId();
             $threadId = $this->obtenerThreadIdDelMantenimiento($mantenimientoId);
-            $asunto = "Mantenimiento #{$ticket->MantenimientoID} - {$ticket->Asunto}";
+            $asunto = "Mantenimiento #{$ticket->MantenimientoID} - {$ticket->asunto}";
 
             $mensajeEmail = $mensajeParaCorreo ?? $mensaje;
             $contenido = $this->construirContenidoConInstrucciones($ticket, $mensajeEmail, $threadId);
@@ -58,7 +62,7 @@ class MantenimientoEmailService
 
             $fromAddress = config('email_tickets.smtp.from_address');
             $mail->setFrom($fromAddress, $nombreSoporte);
-            $mail->addAddress($ticket->Correo, $ticket->NombreSolicitante);
+            $mail->addAddress($ticket->empleado->Correo, $ticket->empleado->NombreEmpleado);
 
             $mail->isHTML(true);
             $mail->Subject = $asunto;
@@ -117,7 +121,7 @@ class MantenimientoEmailService
         </head>
         <body>
             <div class='content'>
-                <p>Hola <strong>{$ticket->NombreSolicitante}</strong>,</p>
+                <p>Hola <strong>{$ticket->empleado->NombreEmpleado}</strong>,</p>
                 <p>Hemos recibido tu solicitud de mantenimiento y te proporcionamos la siguiente respuesta:</p>
                 <div class='response'>
                     <h3>Respuesta del equipo de compras:</h3>
@@ -184,7 +188,7 @@ class MantenimientoEmailService
 
     private function guardarCorreoEnviado($mantenimientoId, $mensaje, $messageId, $threadId, $adjuntos = []): void
     {
-        $ticket = TicketMantenimiento::find($mantenimientoId);
+        $ticket = TicketMantenimiento::with('empleado')->find($mantenimientoId);
         $contenidoCompleto = $this->construirContenidoConInstrucciones($ticket, $mensaje, $threadId);
 
         $adjuntosProcesados = [];

@@ -16,7 +16,7 @@ class MantenimientoTicketsKanbanUpdater extends Component
 
     private function fetchTickets()
     {
-        return TicketMantenimiento::orderBy('created_at', 'desc')->get();
+        return TicketMantenimiento::queryConRelaciones()->orderBy('created_at', 'desc')->get();
     }
 
     private function formatearTickets($tickets)
@@ -41,7 +41,7 @@ class MantenimientoTicketsKanbanUpdater extends Component
                 $ticket->MantenimientoID,
                 $ticket->Estatus,
                 $ticket->Prioridad,
-                $ticket->Responsable,
+                $ticket->ResponsableID,
                 $ticket->Categoria,
                 $ticket->updated_at,
             ]))),

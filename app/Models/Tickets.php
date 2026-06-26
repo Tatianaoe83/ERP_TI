@@ -442,4 +442,196 @@ class Tickets extends Model
 
         return implode(', ', $partes) ?: '0 horas';
     }
+
+    public const COLUMNAS_VISTA = [
+        'nuevos'    => 'Nuevos',
+        'proceso'   => 'En Progreso',
+        'resueltos' => 'Resueltos',
+    ];
+
+    public const COLORES_COLUMNA = [
+        'nuevos'    => 'bg-yellow-500',
+        'proceso'   => 'bg-blue-500',
+        'resueltos' => 'bg-green-500',
+    ];
+
+    public static function colorPrioridad(?string $prioridad): string
+    {
+        return match ($prioridad) {
+            'Baja'  => '#22c55e',
+            'Media' => '#eab308',
+            'Alta'  => '#ef4444',
+            default => '#94a3b8',
+        };
+    }
+
+    public static function formatearNombreEmpleado(?string $nombreCompleto, ?string $area = null): string
+    {
+        return TicketMantenimiento::formatearNombreEmpleado($nombreCompleto, $area);
+    }
+
+    public static function formatearTiempoTarjeta(?array $tiempoInfo): ?array
+    {
+        if (!$tiempoInfo) {
+            return null;
+        }
+
+        $estilos = [
+            'normal'     => [
+                'bg'     => 'bg-green-50 dark:bg-green-900/20',
+                'text'   => 'text-green-700 dark:text-green-300',
+                'border' => 'border-green-100 dark:border-green-800',
+                'bar'    => 'bg-green-500',
+            ],
+            'por_vencer' => [
+                'bg'     => 'bg-yellow-50 dark:bg-yellow-900/20',
+                'text'   => 'text-yellow-700 dark:text-yellow-300',
+                'border' => 'border-yellow-100 dark:border-yellow-800',
+                'bar'    => 'bg-yellow-500',
+            ],
+            'agotado'    => [
+                'bg'     => 'bg-red-50 dark:bg-red-900/20',
+                'text'   => 'text-red-700 dark:text-red-300',
+                'border' => 'border-red-100 dark:border-red-800',
+                'bar'    => 'bg-red-500',
+            ],
+        ];
+
+        $estado = $tiempoInfo['estado'] ?? 'normal';
+
+        return [
+            'transcurrido' => $tiempoInfo['transcurrido'],
+            'estimado'     => $tiempoInfo['estimado'],
+            'porcentaje'   => min(100, (float) ($tiempoInfo['porcentaje'] ?? 0)),
+            'estado'       => $estado,
+            'texto'        => "{$tiempoInfo['transcurrido']}h / {$tiempoInfo['estimado']}h",
+            'estilo'       => $estilos[$estado] ?? $estilos['normal'],
+        ];
+    }
+
+    public static function procesarTiemposProgreso($tickets): array
+    {
+        $ticketsExcedidos = [];
+        $tiemposProgreso = [];
+
+        $ticketsEnProgreso = collect($tickets)
+            ->where('Estatus', 'En progreso')
+            ->whereNotNull('FechaInicioProgreso');
+
+        foreach ($ticketsEnProgreso as $ticket) {
+            if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) {
+                $tiemposProgreso[$ticket->TicketID] = null;
+                continue;
+            }
+
+            $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
+            $tiempoTranscurrido = $ticket->FechaInicioProgreso
+                ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
+                : 0;
+
+            $porcentajeUsado = $tiempoEstimadoHoras > 0
+                ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100
+                : 0;
+
+            $tiemposProgreso[$ticket->TicketID] = [
+                'transcurrido' => round($tiempoTranscurrido, 1),
+                'estimado'     => round($tiempoEstimadoHoras, 1),
+                'porcentaje'   => round($porcentajeUsado, 1),
+                'estado'       => $porcentajeUsado >= 100
+                    ? 'agotado'
+                    : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal'),
+            ];
+
+            if ($tiempoTranscurrido > $tiempoEstimadoHoras) {
+                $tiempoExcedido = round($tiempoTranscurrido - $tiempoEstimadoHoras, 2);
+                $porcentajeExcedido = round(($tiempoTranscurrido / $tiempoEstimadoHoras) * 100, 1);
+
+                $ticketsExcedidos[] = [
+                    'id'                  => $ticket->TicketID,
+                    'descripcion'         => \Illuminate\Support\Str::limit($ticket->Descripcion, 80),
+                    'responsable'         => $ticket->responsableTI
+                        ? $ticket->responsableTI->NombreEmpleado
+                        : 'Sin asignar',
+                    'empleado'            => $ticket->empleado
+                        ? $ticket->empleado->NombreEmpleado
+                        : 'Sin empleado',
+                    'prioridad'           => $ticket->Prioridad,
+                    'tiempo_estimado'     => round($tiempoEstimadoHoras, 2),
+                    'tiempo_respuesta'    => round($tiempoTranscurrido, 2),
+                    'tiempo_excedido'     => $tiempoExcedido,
+                    'porcentaje_excedido' => $porcentajeExcedido,
+                    'categoria'           => $ticket->tipoticket
+                        ? $ticket->tipoticket->NombreTipo
+                        : 'Sin categoría',
+                ];
+            }
+        }
+
+        usort($ticketsExcedidos, fn ($a, $b) => $b['tiempo_excedido'] <=> $a['tiempo_excedido']);
+
+        return [
+            'tiemposProgreso'  => $tiemposProgreso,
+            'ticketsExcedidos' => $ticketsExcedidos,
+        ];
+    }
+
+    public static function mapaNotificacionesPendientes($ticketIds): array
+    {
+        $ids = collect($ticketIds)->filter()->unique()->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return TicketChat::query()
+            ->whereIn('ticket_id', $ids)
+            ->where('notificaciones_pendientes', '>', 0)
+            ->selectRaw('ticket_id, SUM(notificaciones_pendientes) as total')
+            ->groupBy('ticket_id')
+            ->pluck('total', 'ticket_id')
+            ->map(fn ($total) => (int) $total)
+            ->all();
+    }
+
+    public static function formatearTicketParaVista(self $ticket, ?array $tiempoInfo = null, int $notificaciones = 0): array
+    {
+        $ticket->loadMissing(['empleado', 'responsableTI', 'tipoticket']);
+
+        $empleadoCorto = $ticket->empleado
+            ? self::formatearNombreEmpleado($ticket->empleado->NombreEmpleado)
+            : '';
+
+        $responsableCorto = $ticket->responsableTI
+            ? self::formatearNombreEmpleado($ticket->responsableTI->NombreEmpleado)
+            : '';
+
+        return [
+            'id'                    => $ticket->TicketID,
+            'TicketID'              => $ticket->TicketID,
+            'descripcion'           => $ticket->Descripcion,
+            'descripcion_tarjeta'   => \Illuminate\Support\Str::limit($ticket->Descripcion ?? '', 120),
+            'prioridad'             => $ticket->Prioridad,
+            'color_prioridad'       => self::colorPrioridad($ticket->Prioridad),
+            'estatus'               => $ticket->Estatus,
+            'categoria'             => $ticket->tipoticket?->NombreTipo ?? '',
+            'numero'                => $ticket->Numero ?? '',
+            'code_anydesk'          => $ticket->CodeAnyDesk ?? '',
+            'empleado'              => $ticket->empleado ? [
+                'nombre' => $ticket->empleado->NombreEmpleado,
+                'correo' => $ticket->empleado->Correo ?? '',
+            ] : null,
+            'empleado_corto'        => $empleadoCorto,
+            'correo'                => $ticket->empleado?->Correo ?? '',
+            'responsable'           => $ticket->responsableTI ? [
+                'nombre' => $ticket->responsableTI->NombreEmpleado,
+            ] : null,
+            'responsable_nombre'    => $responsableCorto,
+            'created_at'            => optional($ticket->created_at)->toIso8601String(),
+            'fecha_inicio_progreso' => optional($ticket->FechaInicioProgreso)->toIso8601String(),
+            'updated_at'            => optional($ticket->updated_at)->toIso8601String(),
+            'tiempo'                => self::formatearTiempoTarjeta($tiempoInfo),
+            'tiempo_estado'         => $tiempoInfo['estado'] ?? '',
+            'notificaciones'        => $notificaciones,
+        ];
+    }
 }

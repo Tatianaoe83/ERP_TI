@@ -1,11 +1,9 @@
-{{-- CONTENEDOR RAIZ DE LIVEWIRE PARA EL POLLING --}}
 <div wire:poll.5s.visible="actualizarDatos" wire:init="actualizarDatos">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 
-    <div class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
+    <div class="rounded-xl overflow-hidden w-full max-w-full bg-white dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
 
-        {{-- HEADER SUPERIOR --}}
         <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
-
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 @if($ticketsTabla->count())
                 Mostrando {{ $ticketsTabla->firstItem() }} - {{ $ticketsTabla->lastItem() }}
@@ -14,253 +12,165 @@
                 Sin registros
                 @endif
             </div>
-
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 Total: {{ $ticketsTabla->total() }}
             </div>
         </div>
 
-        {{-- FILTROS --}}
         <div class="px-4 py-3 bg-gray-50 dark:bg-[#1C1F26] border-b border-gray-200 dark:border-[#2A2F3A] grid grid-cols-1 md:grid-cols-4 gap-3">
-
-            {{-- BUSCADOR --}}
             <input type="text"
                 wire:model.debounce.500ms="search"
                 placeholder="Buscar ticket..."
-                class="px-3 py-2 rounded-lg border text-sm
-                        bg-gray-50 dark:bg-[#242933]
-                        border-gray-300 dark:border-[#2A2F3A]
-                        focus:ring focus:ring-blue-200">
+                class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A] focus:ring focus:ring-blue-200">
 
-            {{-- PRIORIDAD --}}
             <select wire:model.live="filtroPrioridad"
-                class="px-3 py-2 rounded-lg border text-sm
-                        bg-gray-50 dark:bg-[#242933]
-                        border-gray-300 dark:border-[#2A2F3A]">
+                class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
                 <option value="">Todas las prioridades</option>
                 <option value="Baja">Baja</option>
                 <option value="Media">Media</option>
                 <option value="Alta">Alta</option>
             </select>
 
-            {{-- ESTADO --}}
             <select wire:model.live="filtroEstado"
-                class="px-3 py-2 rounded-lg border text-sm
-                        bg-gray-50 dark:bg-[#242933]
-                        border-gray-300 dark:border-[#2A2F3A]">
+                class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
                 <option value="">Todos los estados</option>
                 <option value="Pendiente">Pendiente</option>
                 <option value="En progreso">En progreso</option>
                 <option value="Cerrado">Cerrado</option>
             </select>
 
-            {{-- LIMPIAR --}}
             <button wire:click="limpiarFiltros"
                 type="button"
                 class="px-3 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition">
                 Limpiar filtros
             </button>
-
         </div>
 
         <div class="overflow-x-auto">
             <table class="min-w-full border-collapse">
-
-                {{-- HEADER --}}
                 <thead class="bg-gray-100 dark:bg-[#242933]">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase"></th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Descripción</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Empleado</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Prioridad</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Estado</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Fecha</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Responsable</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Tiempo</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Acciones</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase w-10"></th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Descripción</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Empleado</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Categoría</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Prioridad</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Estado</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase min-w-[160px]">Tiempo</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Responsable</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Fecha</th>
                     </tr>
                 </thead>
-
-                {{-- BODY --}}
                 <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A]">
-
                     @forelse($ticketsTabla as $ticket)
 
                     @php
-                    $nombreEmpleado = optional($ticket->empleado)->NombreEmpleado ?? '';
-                    $correoEmpleado = optional($ticket->empleado)->Correo ?? optional($ticket->empleado)->correo ?? '';
-
-                    $partes = preg_split('/\s+/', trim($nombreEmpleado));
-                    if (count($partes) >= 3) array_splice($partes, 1, 1);
-                    $nombreFormateado = \Illuminate\Support\Str::of(implode(' ', $partes))->title();
-
-                    $nombreResponsable = null;
-                    if (!empty($ticket->responsableTI)) {
-                    $resp = $ticket->responsableTI->NombreEmpleado ?? '';
-                    $p = preg_split('/\s+/', trim($resp));
-                    if (count($p) >= 3) array_splice($p, 1, 1);
-                    $nombreResponsable = \Illuminate\Support\Str::of(implode(' ', $p))->title();
-                    }
-
                     $tiempoInfo = $tiemposProgreso[$ticket->TicketID] ?? null;
-
-                    // Atrapamos el estado correctamente
-                    $estadoActual = $ticket->Estatus ?? $ticket->Estado ?? $ticket->estatus ?? '-';
+                    $tiempoTarjeta = \App\Models\Tickets::formatearTiempoTarjeta($tiempoInfo);
+                    $empleadoCorto = $ticket->empleado
+                        ? \App\Models\Tickets::formatearNombreEmpleado($ticket->empleado->NombreEmpleado)
+                        : '-';
+                    $responsableCorto = $ticket->responsableTI
+                        ? \App\Models\Tickets::formatearNombreEmpleado($ticket->responsableTI->NombreEmpleado)
+                        : '-';
+                    $estadoActual = $ticket->Estatus ?? '-';
+                    $categoria = $ticket->tipoticket?->NombreTipo ?? '-';
+                    $notificaciones = (int) ($notificacionesMap[$ticket->TicketID] ?? 0);
                     @endphp
 
                     <tr wire:key="ticket-tabla-{{ $ticket->TicketID }}"
-                        class="transition cursor-pointer hover:bg-gray-100 dark:hover:bg-[#273244]"
-
+                        class="transition cursor-pointer hover:bg-gray-50 dark:hover:bg-[#273244] border-l-[3px]"
+                        style="border-left-color: {{ \App\Models\Tickets::colorPrioridad($ticket->Prioridad) }};"
                         data-ticket-id="{{ $ticket->TicketID }}"
                         data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
                         data-ticket-descripcion="{{ htmlspecialchars($ticket->Descripcion ?? '', ENT_QUOTES, 'UTF-8') }}"
                         data-ticket-prioridad="{{ $ticket->Prioridad ?? '' }}"
-                        data-ticket-empleado="{{ $nombreFormateado }}"
-                        data-ticket-responsable="{{ $nombreResponsable ?? '' }}"
-                        data-ticket-correo="{{ $correoEmpleado }}"
+                        data-ticket-empleado="{{ $empleadoCorto }}"
+                        data-ticket-responsable="{{ $responsableCorto !== '-' ? $responsableCorto : '' }}"
+                        data-ticket-correo="{{ optional($ticket->empleado)->Correo ?? '' }}"
                         data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i:s') }}"
-                        data-ticket-numero="{{ $ticket->numero ?? $ticket->Numero ?? '' }}"
-                        data-ticket-anydesk="{{ $ticket->code_anydesk ?? $ticket->CodeAnydesk ?? '' }}"
+                        data-ticket-numero="{{ $ticket->Numero ?? '' }}"
+                        data-ticket-anydesk="{{ $ticket->CodeAnyDesk ?? '' }}"
                         data-ticket-tiempo-estado="{{ $tiempoInfo['estado'] ?? '' }}"
-                        data-ticket-estado="{{ $estadoActual }}"
-
+                        data-ticket-estatus="{{ $estadoActual }}"
                         @click="abrirModalDesdeElemento($el)">
-                        {{-- ID --}}
 
-                       <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
-
-    @if($estadoActual == 'En progreso')
-
-    <span class="flex items-center gap-1.5">
-        <div class="relative flex-shrink-0 w-6 h-6 mt-0.5 flex items-center justify-center">
-            <span class="material-symbols-outlined text-blue-500 leading-none" style="font-size: 24px;">
-                notifications
-            </span>
-
-            @php
-            // Buscamos el último mensaje de este ticket directo en la base de datos desde la vista
-            $ultimoChat = \App\Models\TicketChat::where('ticket_id', $ticket['TicketID'] ?? $ticket['id'])
-            ->latest('id')
-            ->first();
-
-            $notificaciones = $ultimoChat ? $ultimoChat->notificaciones_pendientes : 0;
-            @endphp
-
-            {{-- Si el último registro tiene notificaciones mayores a 0, pintamos la burbuja --}}
-            @if($notificaciones > 0)
-            <span class="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2
-            bg-red-500 text-white
-            text-[10px] leading-none font-medium
-            rounded-full w-4 h-4
-            flex items-center justify-center">
-                1
-            </span>
-            @endif
-
-        </div>
-    </span>
-
-    @else
-
-    {{-- Espacio vacío del mismo tamaño que la campana --}}
-    <div class="w-6 h-6"></div>
-
-    @endif
-
-</td>
-                        {{-- ID --}}
-                        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
-                            #{{ $ticket->TicketID }}
+                        <td class="px-4 py-3">
+                            @if($estadoActual === 'En progreso')
+                                @include('tickets.partials.notificacion-badge', ['notificaciones' => $notificaciones])
+                            @else
+                                <div class="w-5 h-5"></div>
+                            @endif
                         </td>
 
-                        {{-- DESCRIPCIÓN --}}
-                        <td class="px-6 py-4 max-w-md truncate text-gray-600 dark:text-gray-300">
-                            {{ \Illuminate\Support\Str::limit($ticket->Descripcion, 80) }}
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center justify-center min-w-[2rem] h-6 px-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-[11px] font-bold text-gray-600 dark:text-gray-300">
+                                #{{ $ticket->TicketID }}
+                            </span>
                         </td>
 
-                        {{-- EMPLEADO --}}
-                        <td class="px-6 py-4 text-gray-900 dark:text-gray-200">
-                            {{ $nombreFormateado }}
+                        <td class="px-4 py-3 max-w-xs">
+                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{{ \Illuminate\Support\Str::limit($ticket->Descripcion, 80) }}</p>
                         </td>
 
-                        {{-- PRIORIDAD --}}
-                        <td class="px-6 py-4">
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full
-                                    @if($ticket->Prioridad == 'Baja')
-                                        text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/20
-                                    @elseif($ticket->Prioridad == 'Media')
-                                        text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/20
-                                    @else
-                                        text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-500/20
-                                    @endif">
+                        <td class="px-4 py-3 text-gray-900 dark:text-gray-200" title="{{ optional($ticket->empleado)->NombreEmpleado }}">
+                            {{ $empleadoCorto }}
+                        </td>
+
+                        <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ $categoria }}</td>
+
+                        <td class="px-4 py-3">
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full
+                                @if($ticket->Prioridad == 'Baja') bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-900/30 dark:text-green-300
+                                @elseif($ticket->Prioridad == 'Media') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300
+                                @else bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-300
+                                @endif">
                                 {{ $ticket->Prioridad ?? '-' }}
                             </span>
                         </td>
 
-                        {{-- ESTADO --}}
-                        <td class="px-6 py-4">
-                            <span class="text-xs font-semibold px-2 py-1 rounded-full
-                                    @if($estadoActual == 'Pendiente')
-                                        text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/20
-                                    @elseif($estadoActual == 'En progreso')
-                                        text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-500/20
-                                    @elseif($estadoActual == 'Cerrado')
-                                        text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/20
-                                    @else
-                                        text-gray-700 bg-gray-100 dark:text-gray-400 dark:bg-gray-500/20
-                                    @endif">
+                        <td class="px-4 py-3">
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full
+                                @if($estadoActual == 'Pendiente') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300
+                                @elseif($estadoActual == 'En progreso') bg-blue-100 text-blue-800 ring-1 ring-blue-200 dark:bg-blue-900/30 dark:text-blue-300
+                                @elseif($estadoActual == 'Cerrado') bg-green-100 text-green-800 ring-1 ring-green-200 dark:bg-green-900/30 dark:text-green-300
+                                @else bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300
+                                @endif">
                                 {{ $estadoActual }}
                             </span>
                         </td>
 
-                        {{-- FECHA --}}
-                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                            {{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i') }}
-                        </td>
-
-                        {{-- RESPONSABLE --}}
-                        <td class="px-6 py-4 text-gray-700 dark:text-gray-300">
-                            {{ $nombreResponsable ?? '-' }}
-                        </td>
-
-                        {{-- TIEMPO --}}
-                        <td class="px-6 py-4 text-xs">
-                            @if($tiempoInfo)
-                            {{ number_format($tiempoInfo['transcurrido'], 1) }}h /
-                            {{ number_format($tiempoInfo['estimado'], 1) }}h
+                        <td class="px-4 py-3 min-w-[160px]">
+                            @if($tiempoTarjeta)
+                                @include('tickets.partials.tiempo-tarjeta', ['tiempo' => $tiempoTarjeta])
                             @else
-                            -
+                                <span class="text-xs text-gray-400">—</span>
                             @endif
                         </td>
 
-                        {{-- ACCIONES --}}
-                        <td class="px-6 py-4">
-                            <i class="fas fa-eye text-blue-500"></i>
-                        </td>
+                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ $responsableCorto }}</td>
 
+                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                            {{ \Carbon\Carbon::parse($ticket->created_at)->format('d/m/Y H:i') }}
+                        </td>
                     </tr>
 
                     @empty
                     <tr>
-                        <td colspan="9"
-                            class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colspan="10" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                             No hay tickets disponibles.
                         </td>
                     </tr>
                     @endforelse
-
                 </tbody>
             </table>
         </div>
 
-        {{-- PAGINACIÓN --}}
         @if(method_exists($ticketsTabla, 'links'))
         <div class="px-4 py-3 border-t border-gray-200 dark:border-[#2A2F3A]">
             {{ $ticketsTabla->links() }}
         </div>
         @endif
-
     </div>
-
 </div>

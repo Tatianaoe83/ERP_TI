@@ -2890,7 +2890,7 @@
                 this.selected = datos;
                 this.mostrar = true;
                 document.querySelectorAll(`[data-ticket-id="${datos.id}"]`).forEach(card => {
-                    card.querySelectorAll('.bg-red-500.rounded-full.w-4.h-4').forEach(badge => badge.remove());
+                    card.querySelectorAll('.ticket-notificacion-badge').forEach(badge => badge.remove());
                 });
 
                 fetch(`/tickets/${datos.id}/mark-notifications-read`, {
@@ -4725,17 +4725,16 @@
         let estadoAnterior = {};
 
         /**
-         * Crea o devuelve el badge rojo ya existente dentro de un wrapper de icono.
-         * Busca por las clases que usan los 3 updaters (.bg-red-500.rounded-full.w-4.h-4).
+         * Crea o devuelve el badge rojo ya existente dentro del wrapper de icono.
          */
         function obtenerBadgeExistente(wrapperIcono) {
-            return wrapperIcono.querySelector('.bg-red-500.rounded-full.w-4.h-4');
+            return wrapperIcono.querySelector('.ticket-notificacion-badge');
         }
 
         function crearBadge(cantidad) {
             const span = document.createElement('span');
-            span.className = 'absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center';
-            span.textContent = cantidad;
+            span.className = 'ticket-notificacion-badge absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center';
+            span.textContent = Math.min(parseInt(cantidad) || 1, 9);
             return span;
         }
 
@@ -4744,28 +4743,24 @@
          * @param {Object} pendientes — mapa { ticket_id: total }
          */
         function aplicarBadgesEnDOM(pendientes) {
-            // Recorre TODOS los elementos con data-ticket-id del DOM
             document.querySelectorAll('[data-ticket-id]').forEach(function(card) {
                 const ticketId = String(card.getAttribute('data-ticket-id'));
                 const cantidad = pendientes[ticketId] ? parseInt(pendientes[ticketId]) : 0;
 
-                // Busca el wrapper del ícono de notificación dentro de la tarjeta/fila
-                const wrappers = card.querySelectorAll('.relative.flex-shrink-0.w-6.h-6');
+                const wrappers = card.querySelectorAll('.ticket-notificacion-wrap');
 
                 wrappers.forEach(function(wrapper) {
                     const badgeExistente = obtenerBadgeExistente(wrapper);
 
                     if (cantidad > 0) {
                         if (badgeExistente) {
-                            // Badge ya existe — no hace falta actualizarlo, siempre muestra 1
+                            badgeExistente.textContent = Math.min(cantidad, 9);
                         } else {
-                            // Insertar badge nuevo con animación de entrada (siempre muestra "1")
-                            const nuevoBadge = crearBadge(1);
+                            const nuevoBadge = crearBadge(cantidad);
                             nuevoBadge.style.opacity = '0';
                             nuevoBadge.style.transform = 'translate(50%, -50%) scale(0.5)';
                             nuevoBadge.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
                             wrapper.appendChild(nuevoBadge);
-                            // Forzar reflow para que la animación de entrada se dispare
                             requestAnimationFrame(function() {
                                 requestAnimationFrame(function() {
                                     nuevoBadge.style.opacity = '1';
@@ -4773,18 +4768,15 @@
                                 });
                             });
                         }
-                    } else {
-                        // Sin notificaciones: remover badge si existe
-                        if (badgeExistente) {
-                            badgeExistente.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
-                            badgeExistente.style.opacity = '0';
-                            badgeExistente.style.transform = 'translate(50%, -50%) scale(0.5)';
-                            setTimeout(function() {
-                                if (badgeExistente.parentNode) {
-                                    badgeExistente.parentNode.removeChild(badgeExistente);
-                                }
-                            }, 150);
-                        }
+                    } else if (badgeExistente) {
+                        badgeExistente.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+                        badgeExistente.style.opacity = '0';
+                        badgeExistente.style.transform = 'translate(50%, -50%) scale(0.5)';
+                        setTimeout(function() {
+                            if (badgeExistente.parentNode) {
+                                badgeExistente.parentNode.removeChild(badgeExistente);
+                            }
+                        }, 150);
                     }
                 });
             });

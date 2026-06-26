@@ -177,8 +177,8 @@
                                 <select x-model="ticketResponsable" :disabled="esFinalizado"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-50 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50">
                                     <option value="">Seleccione</option>
-                                    @foreach(\App\Models\TicketMantenimiento::obtenerResponsables() as $valor => $etiqueta)
-                                        <option value="{{ $valor }}">{{ $etiqueta }}</option>
+                                    @foreach(\App\Models\TicketMantenimiento::obtenerResponsables() as $empleadoId => $etiqueta)
+                                        <option value="{{ $empleadoId }}">{{ $etiqueta }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -449,7 +449,7 @@ function mantenimientoModal() {
             this.ticketPrioridad = el.dataset.ticketPrioridad || '';
             this.ticketEstatus = el.dataset.ticketEstatus || 'Pendiente';
             this.estatusOriginal = el.dataset.ticketEstatus || 'Pendiente';
-            this.ticketResponsable = this.normalizarResponsable(el.dataset.ticketResponsable || '');
+            this.ticketResponsable = el.dataset.ticketResponsable || '';
             this.ticketCategoria = el.dataset.ticketCategoria || '';
             try {
                 this.ticketSla = el.dataset.ticketSla ? JSON.parse(el.dataset.ticketSla) : null;
@@ -738,14 +738,6 @@ function mantenimientoModal() {
             } finally {
                 this.guardando = false;
             }
-        },
-
-        normalizarResponsable(valor) {
-            if (valor === 'LOA') {
-                @php $responsables = \App\Models\TicketMantenimiento::obtenerResponsables(); @endphp
-                return @json(array_key_first($responsables) ?: 'LOA');
-            }
-            return valor;
         },
 
         scrollToBottom() {
