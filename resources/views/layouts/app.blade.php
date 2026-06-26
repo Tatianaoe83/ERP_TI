@@ -34,6 +34,9 @@
     <!-- Alpine.js x-cloak styles -->
     <style>
         [x-cloak] { display: none !important; }
+
+        /* SweetAlert siempre por encima de los modales (z-[9999]) */
+        .swal2-container { z-index: 100000 !important; }
         
         /* Estilos para el modal de tickets */
         .ticket-description {
@@ -359,6 +362,16 @@
 
     @include('profile.change_password')
     @include('profile.edit_profile')
+    @include('partials.modal-detalle-solicitud')
+    @livewire('tabla-solicitudes', ['soloModal' => true], key('tabla-solicitudes-asignacion-global'))
+
+    {{-- Panel de ticket global: solo fuera de /tickets (ahí el tablero ya lo monta) --}}
+    @unless(request()->is('tickets'))
+        @include('partials.tickets-modal-engine')
+        <div x-data="ticketsModal(true)">
+            @include('partials.modal-ticket')
+        </div>
+    @endunless
 
 
 

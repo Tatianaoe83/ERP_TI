@@ -368,60 +368,32 @@
             }).catch(err => console.error("Error al marcar leídos en DB:", err));
         }
 
-        window.abrirNotificacionTicket = function(ticketId) {
+        function abrirTicketDesdeNotif(ticketId) {
             tooltip.style.display = 'none';
             marcarTicketLeidoEnDB(ticketId);
 
+            // En /tickets, si la tarjeta está visible, ábrela (mantiene el flujo del tablero)
             if (window.location.pathname.endsWith('/tickets')) {
                 const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
                 if (card) {
                     card.click();
                     return;
                 }
-                abrirTicketPorId(ticketId);
-            } else {
+            }
+            // Modal global del panel de ticket (cualquier vista). Si no existe, redirigir a soporte.
+            if (!abrirTicketPorId(ticketId)) {
                 window.location.href = `/tickets?ticket_id=${ticketId}`;
             }
-        };
+        }
 
-        window.abrirNotificacionChat = function(ticketId) {
-            tooltip.style.display = 'none';
-            marcarTicketLeidoEnDB(ticketId);
-
-            if (window.location.pathname.endsWith('/tickets')) {
-                const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                if (card) {
-                    card.click();
-                    return;
-                }
-                abrirTicketPorId(ticketId);
-            } else {
-                window.location.href = `/tickets?ticket_id=${ticketId}`;
-            }
-        };
+        window.abrirNotificacionTicket = function(ticketId) { abrirTicketDesdeNotif(ticketId); };
+        window.abrirNotificacionChat = function(ticketId) { abrirTicketDesdeNotif(ticketId); };
 
         window.abrirNotificacionSolicitud = function(solicitudId) {
             tooltip.style.display = 'none';
-            if (window.location.pathname.endsWith('/tickets')) {
-                if (typeof window.__abrirModalSolicitud === 'function') {
-                    window.__abrirModalSolicitud(solicitudId);
-                    return;
-                }
-
-                const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
-                if (botonSolicitud) {
-                    botonSolicitud.click();
-                    return;
-                }
-
-                const buttons = document.querySelectorAll('button');
-                for (let btn of buttons) {
-                    const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
-                    if (clickAttr && clickAttr.includes(`abrirModal(${solicitudId})`)) {
-                        btn.click();
-                        break;
-                    }
-                }
+            // Modal global de detalles (montado en el layout) → funciona en cualquier vista, sin redirigir
+            if (typeof window.__abrirModalSolicitud === 'function') {
+                window.__abrirModalSolicitud(solicitudId);
             } else {
                 window.location.href = `/tickets?solicitud_id=${solicitudId}`;
             }
@@ -429,15 +401,9 @@
 
         window.abrirNotificacionFactura = function(solicitudId) {
             tooltip.style.display = 'none';
-            if (window.location.pathname.endsWith('/tickets')) {
-                const btn = document.querySelector(`[data-asignacion-solicitud="${solicitudId}"]`);
-                if (btn) {
-                    btn.click();
-                    return;
-                }
-                if (window.Livewire) {
-                    window.Livewire.emit('abrirAsignacionNotif', parseInt(solicitudId));
-                }
+            // Modal de Asignación global (instancia Livewire en el layout) → abre en cualquier vista
+            if (window.Livewire) {
+                window.Livewire.emit('abrirAsignacionNotif', parseInt(solicitudId));
             } else {
                 window.location.href = `/tickets?asignacion_id=${solicitudId}`;
             }

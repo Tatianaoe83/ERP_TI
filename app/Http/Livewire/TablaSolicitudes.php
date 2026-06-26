@@ -33,6 +33,10 @@ class TablaSolicitudes extends Component
     public string $search        = '';
     public int    $perPage       = 10;
 
+    // Cuando true, esta instancia vive en el layout solo para mostrar el modal de Asignación
+    // de forma global (sin renderizar la tabla). No altera ninguna lógica de asignación.
+    public bool   $soloModal     = false;
+
     protected $paginationTheme = 'tailwind';
 
     public bool  $modalAsignacionAbierto = false;
@@ -69,12 +73,21 @@ class TablaSolicitudes extends Component
     public string $insumoSearchQuery   = '';
     public array  $insumoSearchResults = [];
 
-    protected $listeners = [
-        'aprobarSolicitudConfirmed'  => 'aprobar',
-        'rechazarSolicitudConfirmed' => 'rechazar',
-        'forzarCloseAsignacion'      => 'forzarCloseAsignacion',
-        'abrirAsignacionNotif'       => 'abrirModalAsignacion',
-    ];
+    protected function getListeners()
+    {
+        // La instancia global del layout (soloModal) solo escucha la notif de asignación,
+        // para no ejecutar por duplicado las acciones de la tabla (aprobar/rechazar/etc).
+        if ($this->soloModal) {
+            return ['abrirAsignacionNotif' => 'abrirAsignacionDesdeNotif'];
+        }
+
+        return [
+            'aprobarSolicitudConfirmed'  => 'aprobar',
+            'rechazarSolicitudConfirmed' => 'rechazar',
+            'forzarCloseAsignacion'      => 'forzarCloseAsignacion',
+            'abrirAsignacionNotif'       => 'abrirAsignacionDesdeNotif',
+        ];
+    }
 
     private const VALID_STAGES = ['supervisor', 'gerencia', 'administracion'];
 
@@ -93,8 +106,9 @@ class TablaSolicitudes extends Component
     private ?string $serialColumn            = null;
     private array   $checklistTemplatesCache = [];
 
-    public function mount(): void
+    public function mount(bool $soloModal = false): void
     {
+        $this->soloModal    = $soloModal;
         $this->serialColumn = $this->detectSerialColumn();
     }
 
@@ -229,6 +243,15 @@ class TablaSolicitudes extends Component
 
     public function render()
     {
+        // Instancia global (layout): solo renderiza el modal de Asignación, sin cargar la tabla.
+        if ($this->soloModal) {
+            $vacio = new \Illuminate\Pagination\LengthAwarePaginator(
+                [], 0, max(1, $this->perPage), 1,
+                ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'pageName' => 'page']
+            );
+            return view('livewire.tabla-solicitudes', ['todasSolicitudes' => $vacio]);
+        }
+
         $user             = auth()->user();
         $empleadoActual   = $user ? Empleados::query()->where('Correo', $user->email)->first() : null;
         $empleadoActualId = $empleadoActual ? (int)$empleadoActual->EmpleadoID : null;
@@ -704,6 +727,14 @@ class TablaSolicitudes extends Component
     // =========================================================================
 
     public function abrirModalAsignacion(int $solicitudId): void { $this->openAsignacion($solicitudId); }
+
+    // Solo la instancia global (soloModal) del layout responde a la notif, para no abrir
+    // dos modales en /tickets donde coexisten la tabla y la instancia global.
+    public function abrirAsignacionDesdeNotif(int $solicitudId): void
+    {
+        if (!$this->soloModal) return;
+        $this->openAsignacion($solicitudId);
+    }
 
     public function openAsignacion(int $solicitudId): void
     {
