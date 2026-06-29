@@ -50,19 +50,16 @@ class VerificarTicketsExcedidos extends Command
                     continue;
                 }
 
-                // Calcular tiempo de respuesta
-                $tiempoRespuesta = $ticket->tiempo_respuesta;
-                if ($tiempoRespuesta === null) {
+                $tiempoProgreso = $ticket->tiempo_progreso;
+                if ($tiempoProgreso === null) {
                     continue;
                 }
 
-                // Convertir tiempo estimado de minutos a horas
                 $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
 
-                // Verificar si excede
-                if ($tiempoRespuesta > $tiempoEstimadoHoras) {
+                if ($tiempoProgreso > $tiempoEstimadoHoras) {
                     $ticketsExcedidos++;
-                    $this->line("Ticket #{$ticket->TicketID} excede el tiempo: {$tiempoRespuesta}h > {$tiempoEstimadoHoras}h");
+                    $this->line("Ticket #{$ticket->TicketID} excede el tiempo: {$tiempoProgreso}h > {$tiempoEstimadoHoras}h");
                     
                     // Enviar notificación
                     if ($notificationService->verificarYNotificarExceso($ticket)) {

@@ -1134,9 +1134,7 @@ class TicketsController extends Controller
                 $tiempoInfo = null;
                 if ($ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
                     $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                    $tiempoTranscurrido  = $ticket->FechaInicioProgreso
-                        ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
-                        : 0;
+                    $tiempoTranscurrido  = $ticket->tiempo_progreso ?? 0;
                     $porcentajeUsado     = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
 
                     $tiempoInfo = [
@@ -1822,9 +1820,7 @@ class TicketsController extends Controller
                 if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) continue;
 
                 $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                $tiempoEnProgreso = $ticket->FechaInicioProgreso
-                    ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
-                    : null;
+                $tiempoEnProgreso = $ticket->tiempo_progreso;
 
                 if ($tiempoEnProgreso !== null && $tiempoEnProgreso > $tiempoEstimadoHoras) {
                     $ticketsExcedidos[] = [
