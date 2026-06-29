@@ -34,8 +34,6 @@
                             <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
                             <option value="Re-cotizar">Re-cotizar</option>
                             <option value="Aprobada">Aprobada</option>
-                            <option value="Listo">Listo</option>
-                            <option value="Rechazada">Rechazada</option>
                             <option value="Cancelada">Cancelada</option>
                         </select>
                     </div>
