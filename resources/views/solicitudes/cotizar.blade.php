@@ -3,7 +3,6 @@
 @section('content')
 <div
     x-data="cotizarPagina({{ $solicitud->SolicitudID }}, '{{ route('tickets.index') }}')"
-    x-init="init()"
     class="px-3 md:px-4 lg:px-6 w-full max-w-7xl mx-auto py-3 md:py-4 lg:py-6">
     <style>
         [x-cloak] {

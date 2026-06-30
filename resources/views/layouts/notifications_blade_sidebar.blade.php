@@ -268,8 +268,21 @@
             </div>`;
         }
 
-        window.marcarTicketComoLeido = function(ticketId) {
+        function _decrementarBadgeInmediato() {
+            ['badgeNotif', 'notifHeaderBadge'].forEach(function(id) {
+                const el = document.getElementById(id);
+                if (!el || el.style.display === 'none') return;
+                const n = Math.max(0, (parseInt(el.textContent) || 0) - 1);
+                if (n === 0) { el.style.display = 'none'; }
+                else { el.textContent = n > 99 ? '99+' : n; }
+            });
+        }
+
+        window.marcarTicketComoLeido = function(ticketId, el) {
             marcarVistoParaBadge('dismissTickets', ticketId, 'Pendiente');
+            // Feedback visual inmediato, sin esperar fetch
+            if (el) el.classList.remove('notif-item--unread');
+            _decrementarBadgeInmediato();
         };
 
         window.marcarSolicitudComoLeida = function(solicitudId) {
@@ -541,7 +554,7 @@
                                     titulo: `Ticket #${t.TicketID} · ${t.empleado}`,
                                     categoria: 'Ticket nuevo',
                                     tiempo: t.created_at,
-                                    onclick: `marcarTicketComoLeido(${t.TicketID}); abrirNotificacionTicket(${t.TicketID})`
+                                    onclick: `marcarTicketComoLeido(${t.TicketID}, this); abrirNotificacionTicket(${t.TicketID})`
                                 })
                             });
                         });
