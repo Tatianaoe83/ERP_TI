@@ -48,8 +48,8 @@ class TicketNotificationService
             // Convertir minutos a horas
             $tiempoEstimadoHoras = $tipoticket->TiempoEstimadoMinutos / 60;
             
-            // Calcular tiempo de respuesta actual (en horas laborales)
-            $tiempoRespuestaActual = $ticket->tiempo_respuesta;
+            // Calcular tiempo en progreso actual (en horas laborales)
+            $tiempoRespuestaActual = $ticket->tiempo_progreso;
             
             if ($tiempoRespuestaActual === null) {
                 return false;
@@ -319,7 +319,7 @@ class TicketNotificationService
 
             foreach ($tickets as $ticket) {
                 // Verificar que el ticket esté excediendo el tiempo estimado
-                $tiempoRespuestaActual = $ticket->tiempo_respuesta;
+                $tiempoRespuestaActual = $ticket->tiempo_progreso;
                 if ($tiempoRespuestaActual === null) {
                     continue;
                 }

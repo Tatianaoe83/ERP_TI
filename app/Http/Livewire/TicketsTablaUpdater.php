@@ -175,58 +175,7 @@ class TicketsTablaUpdater extends Component
 
     private function procesarTiemposParaPayload($tickets)
     {
-        $ticketsExcedidos = [];
-        $tiemposProgreso = [];
-
-        $ticketsEnProgreso = $tickets
-            ->where('Estatus', 'En progreso')
-            ->whereNotNull('FechaInicioProgreso');
-
-        foreach ($ticketsEnProgreso as $ticket) {
-            if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) {
-                $tiemposProgreso[$ticket->TicketID] = null;
-                continue;
-            }
-
-            $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-            $tiempoTranscurrido = $ticket->FechaInicioProgreso
-                ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
-                : 0;
-            $porcentajeUsado = $tiempoEstimadoHoras > 0
-                ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100
-                : 0;
-
-            $tiemposProgreso[$ticket->TicketID] = [
-                'transcurrido' => round($tiempoTranscurrido, 1),
-                'estimado' => round($tiempoEstimadoHoras, 1),
-                'porcentaje' => round($porcentajeUsado, 1),
-                'estado' => $porcentajeUsado >= 100 ? 'agotado' : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal'),
-            ];
-
-            if ($tiempoTranscurrido > $tiempoEstimadoHoras) {
-                $ticketsExcedidos[] = [
-                    'id' => $ticket->TicketID,
-                    'descripcion' => Str::limit($ticket->Descripcion, 80),
-                    'responsable' => $ticket->responsableTI ? $ticket->responsableTI->NombreEmpleado : 'Sin asignar',
-                    'empleado' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin empleado',
-                    'prioridad' => $ticket->Prioridad,
-                    'tiempo_estimado' => round($tiempoEstimadoHoras, 2),
-                    'tiempo_respuesta' => round($tiempoTranscurrido, 2),
-                    'tiempo_excedido' => round($tiempoTranscurrido - $tiempoEstimadoHoras, 2),
-                    'porcentaje_excedido' => round(($tiempoTranscurrido / $tiempoEstimadoHoras) * 100, 1),
-                    'categoria' => $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'Sin categoría',
-                ];
-            }
-        }
-
-        usort($ticketsExcedidos, function ($a, $b) {
-            return $b['tiempo_excedido'] <=> $a['tiempo_excedido'];
-        });
-
-        return [
-            'tiemposProgreso' => $tiemposProgreso,
-            'ticketsExcedidos' => $ticketsExcedidos,
-        ];
+        return Tickets::procesarTiemposProgreso($tickets);
     }
 
     public function limpiarFiltros()
@@ -244,49 +193,8 @@ class TicketsTablaUpdater extends Component
 
     private function procesarTiempos($tickets)
     {
-        $this->tiemposProgreso = [];
-        $this->ticketsExcedidos = [];
-
-        foreach ($tickets as $ticket) {
-
-            if (
-                !$ticket->tipoticket ||
-                !$ticket->tipoticket->TiempoEstimadoMinutos ||
-                !$ticket->FechaInicioProgreso
-            ) {
-                $this->tiemposProgreso[$ticket->TicketID] = null;
-                continue;
-            }
-
-            $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-
-            $tiempoTranscurrido = $ticket->FechaInicioProgreso
-                ->diffInMinutes(now()) / 60;
-
-            $porcentajeUsado = $tiempoEstimadoHoras > 0
-                ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100
-                : 0;
-
-            $this->tiemposProgreso[$ticket->TicketID] = [
-                'transcurrido' => round($tiempoTranscurrido, 1),
-                'estimado' => round($tiempoEstimadoHoras, 1),
-                'porcentaje' => round($porcentajeUsado, 1),
-                'estado' => $porcentajeUsado >= 100
-                    ? 'agotado'
-                    : ($porcentajeUsado >= 80 ? 'por_vencer' : 'normal')
-            ];
-
-            if ($tiempoTranscurrido > $tiempoEstimadoHoras) {
-                $this->ticketsExcedidos[] = [
-                    'id' => $ticket->TicketID,
-                    'descripcion' => Str::limit($ticket->Descripcion, 80),
-                    'tiempo_excedido' => round($tiempoTranscurrido - $tiempoEstimadoHoras, 2),
-                ];
-            }
-        }
-
-        usort($this->ticketsExcedidos, function ($a, $b) {
-            return $b['tiempo_excedido'] <=> $a['tiempo_excedido'];
-        });
+        $result = Tickets::procesarTiemposProgreso($tickets);
+        $this->tiemposProgreso = $result['tiemposProgreso'];
+        $this->ticketsExcedidos = $result['ticketsExcedidos'];
     }
 }
