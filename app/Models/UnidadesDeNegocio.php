@@ -63,9 +63,9 @@ class UnidadesDeNegocio extends Model
      */
     public static $rules = [
         'NombreEmpresa' => 'required|string|max:100',
-        'RFC' => 'required|string|max:100',
+        'RFC' => 'required|string|max:13|unique:unidadesdenegocio,RFC',
         'Direccion' => 'required|string|max:150',
-        'NumTelefono' => 'required|string|max:100',
+        'NumTelefono' => 'required|string|max:10|unique:unidadesdenegocio,NumTelefono',
         'estado' => 'boolean'
        
     ];

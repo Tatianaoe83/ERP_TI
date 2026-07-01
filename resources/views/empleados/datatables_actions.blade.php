@@ -18,6 +18,7 @@
         type="button"
         class="btn btn-xs btn-outline-warning btn-flat btn-cambiar-estado-empleado"
         data-accion="baja"
+        data-tipo-persona="{{ $tipo_persona }}"
         title="Dar de baja"
     >
         <i class="fa fa-user-times"></i>
@@ -27,6 +28,7 @@
         type="button"
         class="btn btn-xs btn-outline-success btn-flat btn-cambiar-estado-empleado"
         data-accion="activar"
+        data-tipo-persona="{{ $tipo_persona }}"
         title="Activar empleado"
     >
         <i class="fa fa-user-check"></i>

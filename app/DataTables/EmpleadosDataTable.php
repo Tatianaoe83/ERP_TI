@@ -25,6 +25,7 @@ class EmpleadosDataTable extends DataTable
                 return view('empleados.datatables_actions', [
                     'id' => $row->EmpleadoID,
                     'activo' => $row->Estado == 1 || $row->Estado === true,
+                    'tipo_persona' => $row->tipo_persona,
                 ])->render();
             })
             ->editColumn('Estado', function ($row) {

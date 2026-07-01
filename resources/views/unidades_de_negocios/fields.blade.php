@@ -5,9 +5,9 @@
 </div>
 
 <!-- Rfc Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white" >
     {!! Form::label('RFC', 'Rfc:') !!}
-    {!! Form::text('RFC', null, ['class' => 'form-control','maxlength' => 100,'maxlength' => 100]) !!}
+    {!! Form::text('RFC', null, ['class' => 'form-control','maxlength' => 13,'maxlength' => 13,'required' => 'required']) !!}
 </div>
 
 <!-- Direccion Field -->
@@ -17,9 +17,9 @@
 </div>
 
 <!-- Numtelefono Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
+<div class="col-sm-6 text-[#101D49] dark:text-white" >
     {!! Form::label('NumTelefono', 'Num. telefono:') !!}
-    {!! Form::text('NumTelefono', null, ['class' => 'form-control','maxlength' => 100,'maxlength' => 100]) !!}
+    {!! Form::text('NumTelefono', null, ['class' => 'form-control','maxlength' => 10,'maxlength' => 10,'required' => 'required']) !!}
 </div>
 
 <!-- Estado Field -->
@@ -27,3 +27,39 @@
     {!! Form::label('estado', 'Es unidad de negocio:') !!}
     {!! Form::select('estado', [1 => 'Si', 0 => 'No'], null, ['class' => 'form-control']) !!}
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('RFC').closest('form');
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      var rfc = document.getElementById("RFC").value;
+      var numero = document.getElementById("NumTelefono").value;
+
+      var rfcRegex = /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/i;
+      if (rfc.length != 13 || !rfcRegex.test(rfc)) {
+        Swal.fire({
+          title: "Error",
+          text: "El RFC debe tener 13 caracteres con formato válido (ej. XAXX010101000).",
+          icon: "error",
+          confirmButtonText: "Aceptar"
+        });
+        return;
+      }
+
+      var soloDigitos = /^\d{10}$/;
+      if (!soloDigitos.test(numero)) {
+        Swal.fire({
+          title: "Error",
+          text: "El número de teléfono debe tener exactamente 10 dígitos numéricos.",
+          icon: "error",
+          confirmButtonText: "Aceptar"
+        });
+        return;
+      }
+
+      form.submit();
+    });
+  });
+</script>

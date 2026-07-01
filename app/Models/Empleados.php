@@ -121,7 +121,7 @@ class Empleados extends Model implements Auditable
         }
 
         // Verificar si el correo ya existe en otro empleado activo
-        if ($empleado->Correo) {
+        if ($empleado->Correo && $empleado->tipo_persona == 'FISICA') {
             $correoExiste = self::where('Correo', $empleado->Correo)
                 ->where('Estado', 1)
                 ->where('EmpleadoID', '!=', $empleado->EmpleadoID)
