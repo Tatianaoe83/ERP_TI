@@ -38,10 +38,10 @@
       var numero = document.getElementById("NumTelefono").value;
 
       var rfcRegex = /^[A-ZÑ&]{3,4}\d{6}[A-Z\d]{3}$/i;
-      if (rfc.length != 13 || !rfcRegex.test(rfc)) {
+      if (!rfcRegex.test(rfc)) {
         Swal.fire({
           title: "Error",
-          text: "El RFC debe tener 13 caracteres con formato válido (ej. XAXX010101000).",
+          html: "RFC inválido.<br>Persona física: 13 caracteres (ej. XAXX010101NI4).<br>Persona moral: 12 caracteres (ej. EXT010101NI4).",
           icon: "error",
           confirmButtonText: "Aceptar"
         });
