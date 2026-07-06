@@ -61,7 +61,7 @@
                             Obra empleado:
                         </label>
 
-                        <select id="filtro-obra" class="jz1 form-control">
+                        <select id="filtro-obra" class="jz-inv form-control">
                             <option value="">Todas las obras</option>
                         </select>
 
@@ -81,7 +81,7 @@
                             Puesto empleado:
                         </label>
 
-                        <select id="filtro-puesto" class="jz1 form-control">
+                        <select id="filtro-puesto" class="jz-inv form-control">
                             <option value="">Todos los puestos</option>
                         </select>
 
@@ -115,7 +115,7 @@
                             Tipo de Persona:
                         </label>
 
-                        <select class="form-control jz1"
+                        <select class="form-control jz-inv"
                             id="filtro-persona">
 
                             <option value="" selected>
@@ -208,7 +208,7 @@
             // =========================
             // SELECT2
             // =========================
-            $('.jz1').select2({
+            $('.jz-inv').select2({
                 width: '100%',
                 placeholder: 'Seleccionar...',
                 allowClear: true
@@ -329,7 +329,7 @@
                     });
 
                     // Reinicializar Select2
-                    $('.jz1').select2({
+                    $('.jz-inv').select2({
                         width: '100%',
                         placeholder: 'Seleccionar...',
                         allowClear: true
