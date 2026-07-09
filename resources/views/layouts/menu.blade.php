@@ -44,6 +44,9 @@ $user->can('ver-mantenimientos')
             <span class="font-medium sidebar-text">Soporte</span>
         </a>
     </li>
+    @endif
+
+    @if($user && $user->can('ver-compras'))
     <li>
         <a href="/tickets-mantenimiento"
             class="flex items-center gap-2 md:gap-2 no-underline text-[#101D49] hover:text-white hover:bg-[#101D49] px-3 md:px-2 py-2 md:py-1 rounded-lg transition dark:text-white text-sm md:text-base">

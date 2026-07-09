@@ -13,7 +13,7 @@ class TicketsMantenimientoController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:ver-soporte');
+        $this->middleware('permission:ver-compras');
     }
 
     public function index(Request $request)

@@ -42,5 +42,15 @@ class LoginController extends Controller
     {
         return 'username';
     }
-    
+
+    protected function redirectTo()
+    {
+        $user = auth()->user();
+
+        if ($user && ($user->can('ver-dashboard') || $user->can('ver-compras'))) {
+            return '/home';
+        }
+
+        return RouteServiceProvider::HOME;
+    }
 }

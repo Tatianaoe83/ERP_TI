@@ -9,50 +9,96 @@ use App\Models\Insumos;
 use App\Models\LineasTelefonicas;
 use App\Models\InventarioEquipo;
 use App\Models\InventarioInsumo;
-use App\Models\InventarioLineas;
 use App\Models\Obras;
 use App\Models\Gerencia;
 use App\Models\UnidadesDeNegocio;
+use App\Models\TicketMantenimiento;
 use DB;
 use Illuminate\Support\Facades\Schema;
 
 class HomeController extends Controller
 {
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('auth');
+        $this->middleware('permission:ver-dashboard|ver-compras');
     }
 
-    /**
-     * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable|string
-     */
     public function index(Request $request)
     {
-        try {
-            // Estadísticas de empleados
-            $totalEmpleados = Empleados::count();
-            $empleadosActivos = Empleados::where('Estado', true)->where('tipo_persona', 'FISICA')->count();
+        $user = auth()->user();
+        $tipoDashboard = $this->resolverTipoDashboard($user);
 
-        // Estadísticas de inventario
+        try {
+            $stats = null;
+            $statsCompras = null;
+
+            if (in_array($tipoDashboard, ['informatica', 'completo'], true)) {
+                $stats = $this->buildInformaticaStats($request);
+            }
+
+            if (in_array($tipoDashboard, ['compras', 'completo'], true)) {
+                $statsCompras = $this->buildComprasStats();
+            }
+
+            if ($request->ajax()) {
+                return view('partials.insumos-licencia', compact('stats'))->render();
+            }
+
+            return view('home', compact('stats', 'statsCompras', 'tipoDashboard'));
+        } catch (\Exception $e) {
+            $stats = $this->statsInformaticaVacios();
+            $statsCompras = $this->statsComprasVacios();
+
+            return view('home', [
+                'stats' => $stats,
+                'statsCompras' => $statsCompras,
+                'tipoDashboard' => $tipoDashboard,
+            ]);
+        }
+    }
+
+    public function insumosLicenciaPagination(Request $request)
+    {
+        try {
+            $insumosPorLicencia = $this->getInsumosPorLicencia($request);
+            $stats = ['insumos_por_licencia' => $insumosPorLicencia];
+
+            return view('partials.insumos-licencia', compact('stats'))->render();
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al cargar los datos'], 500);
+        }
+    }
+
+    private function resolverTipoDashboard($user): string
+    {
+        $tieneInformatica = $user->can('ver-dashboard');
+        $tieneCompras = $user->can('ver-compras');
+
+        if ($tieneInformatica && $tieneCompras) {
+            return 'completo';
+        }
+
+        if ($tieneCompras) {
+            return 'compras';
+        }
+
+        return 'informatica';
+    }
+
+    private function buildInformaticaStats(Request $request): array
+    {
+        $totalEmpleados = Empleados::count();
+        $empleadosActivos = Empleados::where('Estado', true)->where('tipo_persona', 'FISICA')->count();
+
         $totalEquipos = Equipos::count();
         $equiposAsignados = InventarioEquipo::count();
-        
 
         $totalInsumos = Insumos::count();
         $insumosAsignados = InventarioInsumo::count();
-        
 
         $totalLineas = LineasTelefonicas::where('Activo', true)->count();
-        // Libres: líneas con Disponible=1
         $lineasLibres = LineasTelefonicas::where('Activo', true)->where('Disponible', 1)->count();
-        // Asignadas a empleado REFERENCIADO (cuentan como disponibles, pero se muestra que están asignadas)
         $lineasReferenciados = LineasTelefonicas::where('lineastelefonicas.Activo', true)
             ->where('lineastelefonicas.Disponible', 0)
             ->whereExists(function ($q) {
@@ -63,7 +109,6 @@ class HomeController extends Controller
                     ->where('e.tipo_persona', 'REFERENCIADO');
             })
             ->count();
-        // Asignadas solo a persona física (las que "realmente" ocupan una línea para un físico)
         $lineasAsignadasPersonaFisica = LineasTelefonicas::where('lineastelefonicas.Activo', true)
             ->where('lineastelefonicas.Disponible', 0)
             ->whereExists(function ($q) {
@@ -74,10 +119,8 @@ class HomeController extends Controller
                     ->where('e.tipo_persona', 'FISICA');
             })
             ->count();
-        // Disponibles = libres + referenciados (los referenciados se cuentan como disponibles)
         $lineasDisponibles = $lineasLibres + $lineasReferenciados;
 
-        // Estadísticas de obras y gerencias
         $totalObras = Obras::where('Estado', true)->count();
         $totalGerencias = Gerencia::where('Estado', true)->count();
         $totalUnidadesNegocio = UnidadesDeNegocio::where('Estado', true)->count();
@@ -102,13 +145,6 @@ class HomeController extends Controller
                 ->count();
         }
 
-        // Insumos por categoría 'licencia' agrupados por nombre con paginación
-        $insumosPorLicencia = $this->getInsumosPorLicencia($request);
-
-        // Equipos por categoría específica (LAPTOP, PC ESCRITORIO, IMPRESORA)
-        $equiposPorCategoria = $this->getEquiposPorCategoria();
-
-        // Estadísticas por gerencia (optimizada)
         $estadisticasPorGerencia = DB::table('gerencia')
             ->leftJoin('departamentos', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
             ->leftJoin('puestos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
@@ -125,16 +161,15 @@ class HomeController extends Controller
             ->limit(7)
             ->get();
 
-        $stats = [
+        return [
             'empleados' => [
                 'total' => $totalEmpleados,
                 'activos' => $empleadosActivos,
-               
             ],
             'inventario' => [
                 'equipos' => [
                     'total' => $totalEquipos,
-                    'asignados' => $equiposAsignados
+                    'asignados' => $equiposAsignados,
                 ],
                 'insumos' => [
                     'total' => $totalInsumos,
@@ -154,42 +189,94 @@ class HomeController extends Controller
                 'unidades_negocio' => $totalUnidadesNegocio,
             ],
             'mantenimientos' => $mantenimientosAnio,
-            'insumos_por_licencia' => $insumosPorLicencia,
-            'equipos_por_categoria' => $equiposPorCategoria,
+            'insumos_por_licencia' => $this->getInsumosPorLicencia($request),
+            'equipos_por_categoria' => $this->getEquiposPorCategoria(),
             'estadisticas_gerencia' => $estadisticasPorGerencia,
         ];
-
-            // Si es request AJAX, retornar solo la vista parcial
-            if ($request->ajax()) {
-                return view('partials.insumos-licencia', compact('stats'))->render();
-            }
-            
-            return view('home', compact('stats'));
-        } catch (\Exception $e) {
-            // En caso de error, devolver valores por defecto
-            $stats = [
-                'empleados' => ['total' => 0, 'activos' => 0],
-                'inventario' => [
-                    'equipos' => ['total' => 0, 'asignados' => 0],
-                    'insumos' => ['total' => 0, 'asignados' => 0],
-                    'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0],
-                ],
-                'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
-                'mantenimientos' => ['pendientes' => 0, 'realizados' => 0, 'anio' => now()->year],
-                'insumos_por_licencia' => collect(),
-                'equipos_por_categoria' => collect(),
-                'estadisticas_gerencia' => collect(),
-                'error' => true,
-                'error_message' => 'Error al cargar las estadísticas del dashboard.'
-            ];
-            
-            return view('home', compact('stats'));
-        }
     }
 
-    /**
-     * Obtener insumos por licencia con paginación
-     */
+    private function buildComprasStats(): array
+    {
+        $anio = now()->year;
+        $mes = now()->month;
+
+        $porEstatus = [];
+        foreach (TicketMantenimiento::ESTATUS as $estatus) {
+            $porEstatus[$estatus] = TicketMantenimiento::where('Estatus', $estatus)->count();
+        }
+
+        $activos = ($porEstatus['Pendiente'] ?? 0)
+            + ($porEstatus['En proceso'] ?? 0)
+            + ($porEstatus['Pausado'] ?? 0);
+
+        $porCategoria = TicketMantenimiento::query()
+            ->select('Categoria', DB::raw('count(*) as total'))
+            ->whereNotIn('Estatus', ['Atendido', 'Cancelado'])
+            ->groupBy('Categoria')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        $porPrioridad = TicketMantenimiento::query()
+            ->select('Prioridad', DB::raw('count(*) as total'))
+            ->whereNotIn('Estatus', ['Atendido', 'Cancelado'])
+            ->groupBy('Prioridad')
+            ->orderByDesc('total')
+            ->get();
+
+        return [
+            'anio' => $anio,
+            'mes' => $mes,
+            'total' => TicketMantenimiento::count(),
+            'activos' => $activos,
+            'por_estatus' => $porEstatus,
+            'creados_mes' => TicketMantenimiento::whereYear('created_at', $anio)->whereMonth('created_at', $mes)->count(),
+            'atendidos_mes' => TicketMantenimiento::where('Estatus', 'Atendido')
+                ->whereYear('FechaFinProgreso', $anio)
+                ->whereMonth('FechaFinProgreso', $mes)
+                ->count(),
+            'por_categoria' => $porCategoria,
+            'por_prioridad' => $porPrioridad,
+        ];
+    }
+
+    private function statsInformaticaVacios(): array
+    {
+        return [
+            'empleados' => ['total' => 0, 'activos' => 0],
+            'inventario' => [
+                'equipos' => ['total' => 0, 'asignados' => 0],
+                'insumos' => ['total' => 0, 'asignados' => 0],
+                'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0],
+            ],
+            'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
+            'mantenimientos' => ['pendientes' => 0, 'realizados' => 0, 'anio' => now()->year],
+            'insumos_por_licencia' => collect(),
+            'equipos_por_categoria' => collect(),
+            'estadisticas_gerencia' => collect(),
+        ];
+    }
+
+    private function statsComprasVacios(): array
+    {
+        $porEstatus = [];
+        foreach (TicketMantenimiento::ESTATUS as $estatus) {
+            $porEstatus[$estatus] = 0;
+        }
+
+        return [
+            'anio' => now()->year,
+            'mes' => now()->month,
+            'total' => 0,
+            'activos' => 0,
+            'por_estatus' => $porEstatus,
+            'creados_mes' => 0,
+            'atendidos_mes' => 0,
+            'por_categoria' => collect(),
+            'por_prioridad' => collect(),
+        ];
+    }
+
     private function getInsumosPorLicencia(Request $request)
     {
         return DB::table('inventarioinsumo')
@@ -201,24 +288,6 @@ class HomeController extends Controller
             ->paginate(7);
     }
 
-    /**
-     * Paginación AJAX para insumos por licencia
-     */
-    public function insumosLicenciaPagination(Request $request)
-    {
-        try {
-            $insumosPorLicencia = $this->getInsumosPorLicencia($request);
-            $stats = ['insumos_por_licencia' => $insumosPorLicencia];
-            
-            return view('partials.insumos-licencia', compact('stats'))->render();
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al cargar los datos'], 500);
-        }
-    }
-
-    /**
-     * Obtener equipos por categoría específica
-     */
     private function getEquiposPorCategoria()
     {
         return DB::table('inventarioequipo')

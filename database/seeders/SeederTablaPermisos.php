@@ -104,6 +104,12 @@ class SeederTablaPermisos extends Seeder
             // Módulo soporte
             'ver-soporte',
 
+            // Acceso al dashboard (Informática, Dirección, Super Admin)
+            'ver-dashboard',
+
+            // Mantenimientos de compras (Compras, Dirección)
+            'ver-compras',
+
             // Permisos de administración: presupuestos oficiales
             'ver-presupuestos',
             'generar-cortes',
