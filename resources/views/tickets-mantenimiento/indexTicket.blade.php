@@ -170,9 +170,9 @@
                             </div>
                             <div>
                                 <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</label>
-                                <select x-model="ticketEstatus" @change="actualizarEstadoEditor()" :disabled="esFinalizado"
+                                <select id="select-estatus" x-model="ticketEstatus" @change="actualizarEstadoEditor()" :disabled="esFinalizado"
                                     class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-50 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50">
-                                    <template x-for="est in estatusDisponibles" :key="est">
+                                    <template x-for="est in estatusDisponibles">
                                         <option :value="est" x-text="est"></option>
                                     </template>
                                 </select>
@@ -392,6 +392,7 @@ function mantenimientoModal() {
         ticketEstatus: 'Pendiente',
         estatusOriginal: 'Pendiente',
         transicionesEstatus: @json(\App\Models\TicketMantenimiento::TRANSICIONES),
+        selectedEl: null,
         responsableFijo: '{{ $responsableId }}',
         ticketResponsable: '{{ $responsableId }}',
         ticketCategoria: '',
@@ -434,8 +435,18 @@ function mantenimientoModal() {
             });
         },
 
+        /** Alinea el <select> con el estado real: x-for reconstruye las <option>
+         *  y el navegador deja seleccionada la primera sin disparar change. */
+        sincronizarSelectEstatus() {
+            this.$nextTick(() => {
+                const select = document.getElementById('select-estatus');
+                if (select) select.value = this.ticketEstatus;
+            });
+        },
+
         abrirModalDesdeElemento(el) {
             const id = el.dataset.ticketId;
+            this.selectedEl = el;
             this.selected = {
                 id,
                 asunto: `Mantenimiento #${id}`,
@@ -450,6 +461,7 @@ function mantenimientoModal() {
             this.ticketPrioridad = el.dataset.ticketPrioridad || '';
             this.ticketEstatus = el.dataset.ticketEstatus || 'Pendiente';
             this.estatusOriginal = el.dataset.ticketEstatus || 'Pendiente';
+            this.sincronizarSelectEstatus();
             this.ticketResponsable = this.responsableFijo;
             this.ticketCategoria = el.dataset.ticketCategoria || '';
             try {
@@ -714,6 +726,16 @@ function mantenimientoModal() {
             }
         },
 
+        /** Evita leer datos viejos si el modal se reabre antes del repintado de Livewire. */
+        refrescarDatasetCard() {
+            const el = this.selectedEl;
+            if (!el || !el.isConnected) return;
+            el.dataset.ticketEstatus = this.ticketEstatus;
+            el.dataset.ticketPrioridad = this.ticketPrioridad;
+            el.dataset.ticketCategoria = this.ticketCategoria;
+            el.dataset.ticketResponsable = this.ticketResponsable;
+        },
+
         async guardarTicket() {
             if (!this.selected.id) return;
             this.guardando = true;
@@ -727,11 +749,14 @@ function mantenimientoModal() {
                 if (data.success) {
                     this.selected.estatus = this.ticketEstatus;
                     this.estatusOriginal = this.ticketEstatus;
+                    this.sincronizarSelectEstatus();
+                    this.refrescarDatasetCard();
                     this.actualizarEstadoEditor();
                     Swal.fire({ icon: 'success', title: 'Guardado', text: data.message, timer: 2000, showConfirmButton: false });
                     Livewire.emit('mantenimiento-estatus-actualizado');
                 } else {
                     this.ticketEstatus = this.estatusOriginal;
+                    this.sincronizarSelectEstatus();
                     Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'No se pudo guardar' });
                 }
             } catch (e) {
