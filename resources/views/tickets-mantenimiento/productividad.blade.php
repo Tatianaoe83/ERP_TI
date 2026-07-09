@@ -321,14 +321,27 @@ function inicializarGraficasMantenimiento() {
     const texto = dark ? '#F3F4F6' : '#111827';
     const grid = dark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.07)';
 
-    const opts = {
+    // Chart.js escribe type/axis/position dentro del objeto de opciones que recibe,
+    // así que cada gráfica necesita el suyo: compartirlo contamina las escalas.
+    // Todas las series son conteos de solicitudes: el eje de valores no debe fraccionarse.
+    const ticksEnteros = { stepSize: 1, precision: 0 };
+
+    const opts = () => ({
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { labels: { color: texto } } },
         scales: {
-            x: { ticks: { color: texto, maxRotation: 45 }, grid: { color: grid } },
-            y: { ticks: { color: texto }, grid: { color: grid }, beginAtZero: true }
+            x: { ticks: { color: texto, maxRotation: 45, ...ticksEnteros }, grid: { color: grid }, beginAtZero: true },
+            y: { ticks: { color: texto, ...ticksEnteros }, grid: { color: grid }, beginAtZero: true }
         }
+    });
+
+    const optsApiladas = () => {
+        const base = opts();
+        base.scales.x.stacked = true;
+        base.scales.y.stacked = true;
+
+        return base;
     };
 
     const estado = data.distribucion_estado || {};
@@ -348,7 +361,7 @@ function inicializarGraficasMantenimiento() {
             labels: Object.keys(prioridad),
             datasets: [{ label: 'Solicitudes', data: Object.values(prioridad), backgroundColor: '#3B82F6' }]
         },
-        options: opts
+        options: opts()
     });
 
     const categoria = data.tickets_por_categoria || {};
@@ -358,7 +371,7 @@ function inicializarGraficasMantenimiento() {
             labels: Object.keys(categoria),
             datasets: [{ label: 'Solicitudes', data: Object.values(categoria), backgroundColor: '#8B5CF6' }]
         },
-        options: { ...opts, indexAxis: 'y' }
+        options: { ...opts(), indexAxis: 'y' }
     });
 
     const creados = data.creados_por_dia || {};
@@ -373,7 +386,7 @@ function inicializarGraficasMantenimiento() {
                 { label: 'Atendidas', data: labels.map(k => resueltos[k] || 0), borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,0.1)', fill: true, tension: 0.3 }
             ]
         },
-        options: opts
+        options: opts()
     });
 
     const slaData = data.metricas_sla || {};
@@ -397,22 +410,25 @@ function inicializarGraficasMantenimiento() {
                     },
                 ],
             },
-            options: { ...opts, scales: { ...opts.scales, x: { ...opts.scales.x, stacked: true }, y: { ...opts.scales.y, stacked: true } } },
+            options: optsApiladas(),
         });
     }
 
     if (document.getElementById('chartMantSlaAbiertos') && slaPrioridades.length) {
+        const opcionesAbiertos = opts();
+        opcionesAbiertos.plugins.legend.display = false;
+
         chartMantSlaAbiertos = new Chart(document.getElementById('chartMantSlaAbiertos'), {
             type: 'bar',
             data: {
                 labels: slaPrioridades.map(r => r.prioridad),
-                datasets: [
-                    { label: 'En tiempo', data: slaPrioridades.map(r => r.en_tiempo), backgroundColor: '#3B82F6' },
-                    { label: 'En riesgo', data: slaPrioridades.map(r => r.en_riesgo), backgroundColor: '#EAB308' },
-                    { label: 'Vencidos', data: slaPrioridades.map(r => r.vencidos), backgroundColor: '#EF4444' },
-                ],
+                datasets: [{
+                    label: 'Abiertos',
+                    data: slaPrioridades.map(r => r.abiertos),
+                    backgroundColor: slaPrioridades.map(r => r.color),
+                }],
             },
-            options: { ...opts, scales: { ...opts.scales, x: { ...opts.scales.x, stacked: true }, y: { ...opts.scales.y, stacked: true } } },
+            options: opcionesAbiertos,
         });
     }
 }
