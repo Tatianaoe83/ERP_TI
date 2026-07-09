@@ -17,7 +17,7 @@
                 @forelse ($ticketsStatus[$key] as $ticket)
 
                 <div wire:key="mantenimiento-lista-{{ $ticket['id'] }}"
-                    class="group p-4 cursor-pointer transition-colors duration-150 bg-white dark:bg-[#1C1F26] hover:bg-blue-50/40 dark:hover:bg-[#242933] border-l-[3px]"
+                    class="group p-4 cursor-pointer transition-colors duration-150 dark:bg-[#1C1F26] hover:bg-blue-50/40 dark:hover:bg-[#242933] border-l-[3px]"
                     style="border-left-color: {{ $ticket['color_prioridad'] ?? '#94a3b8' }};"
                     @include('tickets-mantenimiento.partials.ticket-card-data', ['ticket' => $ticket, 'columna' => $key])
                     @click="abrirModalDesdeElemento($el)">
@@ -33,7 +33,7 @@
                 </div>
 
                 @empty
-                <div data-empty-placeholder class="p-10 text-center text-gray-400">
+                <div data-empty-placeholder class="p-10 text-center text-gray-400 dark:bg-[#1C1F26] dark:text-gray-500">
                     <i class="fas fa-inbox text-2xl mb-2 opacity-40"></i>
                     <p class="text-sm">No hay solicitudes en esta categoría.</p>
                 </div>

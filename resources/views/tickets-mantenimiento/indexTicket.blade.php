@@ -26,7 +26,7 @@
         </h2>
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <span class="text-xs sm:text-sm text-gray-500 font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-white border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-1">
+            <div class="flex items-center gap-1 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-1">
                 <button @click="vista = 'kanban'; localStorage.setItem('mantenimientoVista', 'kanban')"
                     :class="vista === 'kanban' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2">

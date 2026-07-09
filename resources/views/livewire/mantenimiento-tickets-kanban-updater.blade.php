@@ -30,7 +30,7 @@
                 @forelse ($ticketsStatus[$key] as $ticket)
 
                 <div wire:key="mantenimiento-{{ $ticket['id'] }}"
-                    class="group flex flex-col cursor-pointer p-3 rounded-xl transition-all duration-200 bg-white dark:bg-[#1C1F26] border border-gray-200/80 dark:border-[#2A2F3A] hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/50 hover:-translate-y-0.5 border-l-[3px]"
+                    class="group flex flex-col cursor-pointer p-3 rounded-xl transition-all duration-200  dark:bg-[#1C1F26] border border-gray-200/80 dark:border-[#2A2F3A] hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800/50 hover:-translate-y-0.5 border-l-[3px]"
                     style="border-left-color: {{ $ticket['color_prioridad'] ?? '#94a3b8' }};"
                     @include('tickets-mantenimiento.partials.ticket-card-data', ['ticket' => $ticket, 'columna' => $key])
                     @click="abrirModalDesdeElemento($el)">
