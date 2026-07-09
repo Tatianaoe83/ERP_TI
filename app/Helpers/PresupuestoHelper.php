@@ -56,36 +56,31 @@ class PresupuestoHelper
     // Método para obtener el reporte de hardware por gerencia mensual o anual
     public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
-        $campoCosto = $tipo === 'mens' ? 'CostoMensual' : 'CostoAnual';
         $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
-        
+
         return Empleados::query()
             ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
-            // Solo empleados con insumos de hardware
-            ->whereHas('inventarioinsumo', function($query) {
-                $query->whereIn('CateogoriaInsumo', ['LAPTOP', 'MONITOR', 'NO BREAK', 'STARLINK', 'TABLET', 'IMPRESORA']);
-            })
+            ->whereHas('inventarioequipo')
             ->with([
                 'puestos:PuestoID,NombrePuesto',
-                'inventarioinsumo' => function($query) {
-                    $query->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CateogoriaInsumo', 'CostoMensual', 'CostoAnual')
-                          ->whereIn('CateogoriaInsumo', ['LAPTOP', 'MONITOR', 'NO BREAK', 'STARLINK', 'TABLET', 'IMPRESORA']);
+                'inventarioequipo' => function($query) {
+                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio');
                 }
             ])
-            ->orderByDesc('NombreEmpleado') // DESC como en el stored procedure
+            ->orderByDesc('NombreEmpleado')
             ->get()
-            ->flatMap(function($empleado) use ($campoCosto) {
-                return $empleado->inventarioinsumo->map(function($insumo) use ($empleado, $campoCosto) {
+            ->flatMap(function($empleado) {
+                return $empleado->inventarioequipo->map(function($equipo) use ($empleado) {
                     return (object)[
                         'EmpleadoID' => $empleado->EmpleadoID,
                         'NombreEmpleado' => $empleado->NombreEmpleado,
                         'NombrePuesto' => $empleado->puestos->NombrePuesto ?? null,
-                        'NombreInsumo' => $insumo->NombreInsumo,
-                        'CateogoriaInsumo' => $insumo->CateogoriaInsumo,
-                        'CostoTotal' => (int) round($insumo->$campoCosto ?? 0),
+                        'NombreInsumo' => $equipo->CategoriaEquipo,
+                        'CateogoriaInsumo' => $equipo->CategoriaEquipo,
+                        'CostoTotal' => (int) round($equipo->Precio ?? 0),
                     ];
                 });
             })
