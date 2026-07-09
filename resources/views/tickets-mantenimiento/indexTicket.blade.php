@@ -18,6 +18,13 @@
     .dark .mantenimiento-container ::-webkit-scrollbar-thumb { background: #2A2F3A; }
     .dark select { background-color: #374151 !important; color: #ffffff !important; border-color: #4b5563 !important; }
     .swal2-container { z-index: 20000 !important; }
+
+    /* Las tablas pegadas desde Excel traen el color de texto en línea (casi siempre negro)
+       pero no el fondo, así que en modo oscuro quedaban negro sobre negro.
+       Se le da fondo claro a la tabla; las celdas que sí traen su propio color lo conservan. */
+    .mensaje-html { overflow-x: auto; }
+    .mensaje-html table { background-color: #ffffff; color: #111827; }
+    .mensaje-html table a { color: #1d4ed8; }
 </style>
 
 <div
@@ -263,7 +270,7 @@
                                                 <span class="font-semibold text-gray-700 dark:text-gray-300">Desde:</span> <span x-text="mensaje.correo_remitente"></span>
                                             </div>
                                         </div>
-                                        <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-200" x-html="formatearMensaje(mensaje.mensaje)"></div>
+                                        <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 mensaje-html" x-html="formatearMensaje(mensaje.mensaje)"></div>
                                         <div x-show="mensaje.adjuntos && mensaje.adjuntos.length > 0" class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
                                             <div class="text-xs mb-2 font-semibold text-gray-500 dark:text-gray-400">Adjuntos:</div>
                                             <div class="flex flex-wrap gap-2">

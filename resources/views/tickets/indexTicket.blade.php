@@ -1,4 +1,11 @@
 <style>
+    /* Las tablas pegadas desde Excel traen el color de texto en línea (casi siempre negro)
+       pero no el fondo, así que en modo oscuro quedaban negro sobre negro.
+       Se le da fondo claro a la tabla; las celdas que sí traen su propio color lo conservan. */
+    .mensaje-html { overflow-x: auto; }
+    .mensaje-html table { background-color: #ffffff; color: #111827; }
+    .mensaje-html table a { color: #1d4ed8; }
+
     /* =========================================
        1. ESTILOS BASE (Modo Claro / Estructura)
        ========================================= */
@@ -793,7 +800,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-200"
+                                        <div class="prose prose-sm max-w-none text-gray-800 dark:text-gray-200 mensaje-html"
                                             x-html="formatearMensaje(mensaje.mensaje)">
                                         </div>
 
