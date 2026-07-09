@@ -415,20 +415,17 @@ function inicializarGraficasMantenimiento() {
     }
 
     if (document.getElementById('chartMantSlaAbiertos') && slaPrioridades.length) {
-        const opcionesAbiertos = opts();
-        opcionesAbiertos.plugins.legend.display = false;
-
         chartMantSlaAbiertos = new Chart(document.getElementById('chartMantSlaAbiertos'), {
             type: 'bar',
             data: {
                 labels: slaPrioridades.map(r => r.prioridad),
-                datasets: [{
-                    label: 'Abiertos',
-                    data: slaPrioridades.map(r => r.abiertos),
-                    backgroundColor: slaPrioridades.map(r => r.color),
-                }],
+                datasets: [
+                    { label: 'En tiempo', data: slaPrioridades.map(r => r.en_tiempo), backgroundColor: '#3B82F6' },
+                    { label: 'En riesgo', data: slaPrioridades.map(r => r.en_riesgo), backgroundColor: '#EAB308' },
+                    { label: 'Vencidos', data: slaPrioridades.map(r => r.vencidos), backgroundColor: '#EF4444' },
+                ],
             },
-            options: opcionesAbiertos,
+            options: optsApiladas(),
         });
     }
 }
