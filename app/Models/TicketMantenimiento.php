@@ -118,17 +118,19 @@ class TicketMantenimiento extends Model
         'Aire acondicionado',
     ];
 
+    /** Empleados habilitados como responsable de mantenimiento. */
+    public const RESPONSABLE = [98];
+
     public static function obtenerResponsables(): array
     {
         return Empleados::query()
-            ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-            ->where('obras.NombreObra', 'like', '%Compras%')
-            ->where('empleados.Estado', 1)
-            ->select('empleados.EmpleadoID', 'empleados.NombreEmpleado')
-            ->orderBy('empleados.NombreEmpleado')
+            ->whereIn('EmpleadoID', self::RESPONSABLE)
+            ->where('Estado', 1)
+            ->select('EmpleadoID', 'NombreEmpleado')
+            ->orderBy('NombreEmpleado')
             ->get()
             ->mapWithKeys(fn ($empleado) => [
-                $empleado->EmpleadoID => self::formatearNombreEmpleado($empleado->NombreEmpleado, 'Compras'),
+                $empleado->EmpleadoID => self::formatearNombreEmpleado($empleado->NombreEmpleado),
             ])
             ->toArray();
     }
@@ -155,7 +157,7 @@ class TicketMantenimiento extends Model
     /** @deprecated Use formatearNombreEmpleado */
     public static function formatearNombreResponsable(?string $nombreCompleto): string
     {
-        return self::formatearNombreEmpleado($nombreCompleto, 'Compras');
+        return self::formatearNombreEmpleado($nombreCompleto);
     }
 
     public function getAsuntoAttribute(): string
@@ -458,7 +460,7 @@ class TicketMantenimiento extends Model
             'categoria'          => $ticket->Categoria,
             'responsable_id'     => $ticket->ResponsableID,
             'responsable_nombre' => $ticket->responsable
-                ? self::formatearNombreEmpleado($ticket->responsable->NombreEmpleado, 'Compras')
+                ? self::formatearNombreEmpleado($ticket->responsable->NombreEmpleado)
                 : '',
             'solicitante'        => $ticket->nombre_solicitante ?? '',
             'solicitante_corto'  => $ticket->empleado

@@ -235,12 +235,13 @@ public function crearTickets(Request $request)
 
             try {
                 TicketMantenimiento::create([
-                    'EmpleadoID'  => $empleado->EmpleadoID,
-                    'Descripcion' => $data['Descripcion'],
-                    'Categoria'   => null,
-                    'Prioridad'   => null,
-                    'Estatus'     => 'Pendiente',
-                    'imagen'      => !empty($names) ? $names : null,
+                    'EmpleadoID'    => $empleado->EmpleadoID,
+                    'ResponsableID' => TicketMantenimiento::RESPONSABLE[0] ?? null,
+                    'Descripcion'   => $data['Descripcion'],
+                    'Categoria'     => null,
+                    'Prioridad'     => null,
+                    'Estatus'       => 'Pendiente',
+                    'imagen'        => !empty($names) ? $names : null,
                 ]);
 
                 return redirect()->back()->with(['success' => 'Solicitud de mantenimiento guardada correctamente', 'tipo' => 'Mantenimiento']);

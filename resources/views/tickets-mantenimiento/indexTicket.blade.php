@@ -1,3 +1,8 @@
+@php
+    $responsables = \App\Models\TicketMantenimiento::obtenerResponsables();
+    $responsableId = array_key_first($responsables) ?? '';
+    $responsableNombre = $responsables[$responsableId] ?? 'Sin responsable';
+@endphp
 <style>
     .tox-tinymce { border-radius: 0.5rem !important; border: 1px solid #e5e7eb !important; background-color: #ffffff !important; }
     #editor-mensaje { min-height: 300px; }
@@ -173,14 +178,9 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Responsable <span class="text-red-500">*</span></label>
-                                <select x-model="ticketResponsable" :disabled="esFinalizado"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-50 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 disabled:opacity-50">
-                                    <option value="">Seleccione</option>
-                                    @foreach(\App\Models\TicketMantenimiento::obtenerResponsables() as $empleadoId => $etiqueta)
-                                        <option value="{{ $empleadoId }}">{{ $etiqueta }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Responsable</label>
+                                <input type="text" readonly value="{{ $responsableNombre }}"
+                                    class="w-full mt-1 rounded-md text-sm border shadow-sm border-gray-300 bg-gray-100 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 cursor-not-allowed">
                             </div>
                             <div>
                                 <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Categoría <span class="text-red-500">*</span></label>
@@ -392,7 +392,8 @@ function mantenimientoModal() {
         ticketEstatus: 'Pendiente',
         estatusOriginal: 'Pendiente',
         transicionesEstatus: @json(\App\Models\TicketMantenimiento::TRANSICIONES),
-        ticketResponsable: '',
+        responsableFijo: '{{ $responsableId }}',
+        ticketResponsable: '{{ $responsableId }}',
         ticketCategoria: '',
         ticketSla: null,
 
@@ -449,7 +450,7 @@ function mantenimientoModal() {
             this.ticketPrioridad = el.dataset.ticketPrioridad || '';
             this.ticketEstatus = el.dataset.ticketEstatus || 'Pendiente';
             this.estatusOriginal = el.dataset.ticketEstatus || 'Pendiente';
-            this.ticketResponsable = el.dataset.ticketResponsable || '';
+            this.ticketResponsable = this.responsableFijo;
             this.ticketCategoria = el.dataset.ticketCategoria || '';
             try {
                 this.ticketSla = el.dataset.ticketSla ? JSON.parse(el.dataset.ticketSla) : null;

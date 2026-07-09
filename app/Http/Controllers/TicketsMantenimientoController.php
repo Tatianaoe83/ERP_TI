@@ -132,7 +132,7 @@ class TicketsMantenimientoController extends Controller
 
                 return [
                     'nombre'      => $responsable
-                        ? TicketMantenimiento::formatearNombreEmpleado($responsable->NombreEmpleado, 'Compras')
+                        ? TicketMantenimiento::formatearNombreEmpleado($responsable->NombreEmpleado)
                         : 'Sin responsable',
                     'total'       => $grupo->count(),
                     'atendidos'   => $grupo->whereIn('Estatus', ['Atendido', 'Cancelado'])->count(),
@@ -468,7 +468,7 @@ class TicketsMantenimientoController extends Controller
             'Estatus'           => $ticket->Estatus,
             'ResponsableID'     => $ticket->ResponsableID,
             'Responsable'       => $ticket->responsable
-                ? TicketMantenimiento::formatearNombreEmpleado($ticket->responsable->NombreEmpleado, 'Compras')
+                ? TicketMantenimiento::formatearNombreEmpleado($ticket->responsable->NombreEmpleado)
                 : null,
             'imagen'            => $ticket->imagen,
             'created_at'        => optional($ticket->created_at)->format('d/m/Y H:i:s'),
