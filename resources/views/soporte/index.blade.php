@@ -554,6 +554,7 @@
                 $('#solicitud-form').addClass('hidden');
                 $('#mantenimiento-form').addClass('hidden');
                 actualizarInfoTipo(seleccion);
+                aislarPanelActivo(seleccion);
 
                 if (seleccion === 'Ticket') {
                     $('#ticket-form').removeClass('hidden');
@@ -587,6 +588,7 @@
 
             // Deshabilitar campos de solicitud al inicio
             deshabilitarCamposSolicitud();
+            aislarPanelActivo(null);
 
             // Detección de correo (Solicitud)
             $inputCorreoSol.on('change blur', function() {
@@ -815,6 +817,39 @@ function renderTelefono() {
         // =========================================================
         // FUNCIONES AUXILIARES
         // =========================================================
+
+        /**
+         * Los tres paneles viven dentro de un solo <form> y repiten los names
+         * (Correo, Descripcion, EmpleadoID, imagen[]). PHP se queda con la última
+         * ocurrencia, así que hay que deshabilitar los campos de los paneles
+         * inactivos: un input disabled ni se envía ni dispara validación HTML5.
+         */
+        function aislarPanelActivo(tipo) {
+            var paneles = {
+                Ticket: '#ticket-form',
+                Solicitud: '#solicitud-form',
+                Mantenimiento: '#mantenimiento-form'
+            };
+
+            $.each(paneles, function(nombre, selector) {
+                if (nombre !== tipo) {
+                    $(selector).find('input, select, textarea').prop('disabled', true);
+                }
+            });
+
+            $('#correoHidden').remove();
+
+            if (tipo === 'Ticket') $('#correoEmpleado').prop('disabled', false);
+            if (tipo === 'Solicitud') $('#correoEmpleadoSolicitud').prop('disabled', false);
+        }
+
+        function panelDelTipo(tipo) {
+            if (tipo === 'Ticket') return '#ticket-form';
+            if (tipo === 'Solicitud') return '#solicitud-form';
+            if (tipo === 'Mantenimiento') return '#mantenimiento-form';
+
+            return null;
+        }
 
         function esCorreoValido(correo) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
@@ -1128,6 +1163,16 @@ function renderTelefono() {
             hideClass: {
                 popup: 'animate__animated animate__fadeOutUp'
             }
+        });
+    </script>
+    @elseif ($errors->any())
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Faltan datos',
+            html: '• ' + @json($errors->all()).join('<br>• '),
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#ef4444',
         });
     </script>
     @endif
@@ -2458,10 +2503,11 @@ function renderTelefono() {
 
         $(document).ready(function () {
 
-            const textoTicket    = '<i class="fas fa-paper-plane mr-2"></i>Enviar Ticket';
-            const textoSolicitud = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
+            const textoTicket        = '<i class="fas fa-paper-plane mr-2"></i>Enviar Ticket';
+            const textoSolicitud     = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
+            const textoMantenimiento = '<i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud';
 
-            $(document).on('click', '#btnEnviar, #btnEnviarSolicitud', function (e) {
+            $(document).on('click', '#btnEnviar, #btnEnviarSolicitud, #btnEnviarMantenimiento', function (e) {
                 if (_enviando || formEstaLocked()) {
                     e.preventDefault();
                     e.stopImmediatePropagation();
@@ -2477,10 +2523,11 @@ function renderTelefono() {
                     return false;
                 }
 
-                const errores     = [];
-                const esSolicitud = $('#solicitud-form').is(':visible');
-                const esTicket    = $('#ticket-form').is(':visible');
-                const emailRegex  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                const errores        = [];
+                const esSolicitud    = $('#solicitud-form').is(':visible');
+                const esTicket       = $('#ticket-form').is(':visible');
+                const esMantenimiento = $('#mantenimiento-form').is(':visible');
+                const emailRegex     = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
                 if (esTicket) {
                     const correo     = $('#correoEmpleado').val().trim();
@@ -2501,12 +2548,21 @@ function renderTelefono() {
                     if (numero.length !== 10) errores.push('El teléfono debe tener exactamente 10 dígitos.');
                     if (!desc)                errores.push('La descripción es requerida.');
 
-                    if (correo && !$('#correoHidden').length) {
-                        $('<input>').attr({ type: 'hidden', id: 'correoHidden', name: 'Correo', value: correo }).appendTo('form');
-                    } else if (correo) {
-                        $('#correoHidden').val(correo);
-                    }
                     $('#correoEmpleado').prop('disabled', false);
+                }
+
+                if (esMantenimiento) {
+                    const correo = $('#correoMantenimiento').val().trim();
+
+                    if (!correo)
+                        errores.push('El correo electrónico es requerido.');
+                    else if (!emailRegex.test(correo))
+                        errores.push('El formato del correo no es válido.');
+                    else if (!window.correoMantenimientoValido)
+                        errores.push('Debes esperar a que el correo sea validado antes de enviar.');
+
+                    if (!$('#descripcionMantenimiento').val().trim())
+                        errores.push('La descripción es requerida.');
                 }
 
                 if (esSolicitud) {
@@ -2544,14 +2600,22 @@ function renderTelefono() {
                     return false;
                 }
 
-                lockForm();                                       
+                lockForm();
                 // $('#numeroTelefono').val(window.telefonoReal); // Comentado por seguridad visual
-                $('input:disabled, select:disabled, textarea:disabled').prop('disabled', false);
+
+                // Sólo el panel visible aporta datos: habilitarlos todos colisionaría
+                // los names repetidos entre paneles.
+                const panelActivo = panelDelTipo($('#type').val());
+                if (panelActivo) {
+                    $(panelActivo).find('input:disabled, select:disabled, textarea:disabled').prop('disabled', false);
+                }
 
                 if (esTicket) {
                     bloquearBoton($('#btnEnviar'), textoTicket);
                 } else if (esSolicitud) {
                     bloquearBoton($('#btnEnviarSolicitud'), textoSolicitud);
+                } else if (esMantenimiento) {
+                    bloquearBoton($('#btnEnviarMantenimiento'), textoMantenimiento);
                 }
 
             });
