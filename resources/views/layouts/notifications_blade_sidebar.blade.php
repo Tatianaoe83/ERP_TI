@@ -279,10 +279,10 @@
         }
 
         window.marcarTicketComoLeido = function(ticketId, el) {
+            const wasUnread = el && el.classList.contains('notif-item--unread');
             marcarVistoParaBadge('dismissTickets', ticketId, 'Pendiente');
-            // Feedback visual inmediato, sin esperar fetch
             if (el) el.classList.remove('notif-item--unread');
-            _decrementarBadgeInmediato();
+            if (wasUnread) _decrementarBadgeInmediato();
         };
 
         window.marcarSolicitudComoLeida = function(solicitudId) {
@@ -511,9 +511,14 @@
         });
 
         let actualizandoNotificaciones = false;
+        let refrescoNotifPendiente = false;
 
         function actualizarNotificaciones() {
-            if (document.hidden || actualizandoNotificaciones) return;
+            if (document.hidden) return;
+            if (actualizandoNotificaciones) {
+                refrescoNotifPendiente = true;
+                return;
+            }
 
             actualizandoNotificaciones = true;
             fetch('/notificaciones-panel', {
@@ -543,8 +548,9 @@
                         data.tickets_nuevos.forEach(t => {
                             if (!t || !t.TicketID) return;
                             const estadoTicket = 'Pendiente';
-                            const unread = !t.vencidos && !suprimeConteoBadge('dismissTickets', t.TicketID, estadoTicket);
-                            if (unread) conteoNoLeidos++;
+                            if (suprimeConteoBadge('dismissTickets', t.TicketID, estadoTicket)) return;
+                            const unread = true;
+                            conteoNoLeidos++;
                             listaNotificaciones.push({
                                 timestamp: t.timestamp || 0,
                                 html: crearItemNotificacion({
@@ -711,6 +717,10 @@
                 .catch(() => {})
                 .finally(() => {
                     actualizandoNotificaciones = false;
+                    if (refrescoNotifPendiente) {
+                        refrescoNotifPendiente = false;
+                        actualizarNotificaciones();
+                    }
                 });
         }
 
