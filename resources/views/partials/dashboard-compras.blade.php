@@ -44,27 +44,27 @@
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
+        <div class="p-4 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
             <i class="fas fa-clock text-yellow-500 mb-2"></i>
             <p class="text-xs text-gray-500 dark:text-gray-400">Pendiente</p>
             <p class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $statsCompras['por_estatus']['Pendiente'] ?? 0 }}</p>
         </div>
-        <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
+        <div class="p-4 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
             <i class="fas fa-spinner text-blue-500 mb-2"></i>
             <p class="text-xs text-gray-500 dark:text-gray-400">En proceso</p>
             <p class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $statsCompras['por_estatus']['En proceso'] ?? 0 }}</p>
         </div>
-        <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
+        <div class="p-4 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
             <i class="fas fa-pause text-orange-500 mb-2"></i>
             <p class="text-xs text-gray-500 dark:text-gray-400">Pausado</p>
             <p class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $statsCompras['por_estatus']['Pausado'] ?? 0 }}</p>
         </div>
-        <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
+        <div class="p-4 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
             <i class="fas fa-check-circle text-green-500 mb-2"></i>
             <p class="text-xs text-gray-500 dark:text-gray-400">Atendido</p>
             <p class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $statsCompras['por_estatus']['Atendido'] ?? 0 }}</p>
         </div>
-        <div class="p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
+        <div class="p-4 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-center">
             <i class="fas fa-times-circle text-red-500 mb-2"></i>
             <p class="text-xs text-gray-500 dark:text-gray-400">Cancelado</p>
             <p class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $statsCompras['por_estatus']['Cancelado'] ?? 0 }}</p>
@@ -80,7 +80,7 @@
         </h3>
         <div class="space-y-2">
             @forelse($statsCompras['por_categoria'] as $categoria)
-            <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+            <div class="flex items-center justify-between p-3 dark:bg-gray-800 rounded-lg">
                 <span class="text-sm font-medium text-[#101D49] dark:text-white">{{ $categoria->Categoria ?: 'Sin categoría' }}</span>
                 <span class="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs font-bold px-2.5 py-1 rounded-full">
                     {{ $categoria->total }}
@@ -99,7 +99,7 @@
         </h3>
         <div class="space-y-2">
             @forelse($statsCompras['por_prioridad'] as $prioridad)
-            <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
+            <div class="flex items-center justify-between p-3 dark:bg-gray-800 rounded-lg">
                 <span class="text-sm font-medium text-[#101D49] dark:text-white">{{ $prioridad->Prioridad ?: 'Sin prioridad' }}</span>
                 <span class="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs font-bold px-2.5 py-1 rounded-full">
                     {{ $prioridad->total }}
