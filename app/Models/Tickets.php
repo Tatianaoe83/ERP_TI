@@ -607,6 +607,19 @@ class Tickets extends Model
             ->all();
     }
 
+    public static function formatearColeccionParaVista($tickets, array $tiemposProgreso = [], array $notificacionesMap = []): array
+    {
+        return collect($tickets)->map(function ($ticket) use ($tiemposProgreso, $notificacionesMap) {
+            $id = $ticket->TicketID;
+
+            return self::formatearTicketParaVista(
+                $ticket,
+                $tiemposProgreso[$id] ?? null,
+                (int) ($notificacionesMap[$id] ?? 0)
+            );
+        })->values()->all();
+    }
+
     public static function formatearTicketParaVista(self $ticket, ?array $tiempoInfo = null, int $notificaciones = 0): array
     {
         $ticket->loadMissing(['empleado', 'responsableTI', 'tipoticket']);

@@ -1,6 +1,8 @@
 @php
     $prioridad = $ticket['prioridad'] ?? null;
     $columna = $columna ?? '';
+    $descripcionTarjeta = $ticket['descripcion_tarjeta']
+        ?? \Illuminate\Support\Str::limit($ticket['descripcion'] ?? '', 120);
 @endphp
 
 <div class="flex items-start justify-between gap-2 mb-2.5">
@@ -27,7 +29,7 @@
 
 <div class="flex items-start justify-between gap-2 mb-1">
     <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug flex-1 min-w-0">
-        {{ $ticket['descripcion_tarjeta'] }}
+        {{ $descripcionTarjeta }}
     </p>
     @if($columna === 'proceso')
         @include('tickets.partials.notificacion-badge', ['notificaciones' => $ticket['notificaciones'] ?? 0])

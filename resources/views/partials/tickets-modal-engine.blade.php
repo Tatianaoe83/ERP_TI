@@ -1,7 +1,16 @@
 @php
     // Default para vistas que no pasan $ticketsStatus (el modal global del layout).
     // En /tickets llega con datos reales; en otras vistas, contadores en cero.
-    $ticketsStatus = $ticketsStatus ?? ['nuevos' => [], 'proceso' => [], 'resueltos' => []];
+    // Mantenimiento usa otro esquema (pendiente, en_proceso, …): no reutilizar esa variable.
+    $defaultTicketsStatus = ['nuevos' => [], 'proceso' => [], 'resueltos' => []];
+    $esTicketsSoporte = isset($ticketsStatus)
+        && is_array($ticketsStatus)
+        && array_key_exists('nuevos', $ticketsStatus)
+        && array_key_exists('proceso', $ticketsStatus)
+        && array_key_exists('resueltos', $ticketsStatus);
+    $ticketsStatus = $esTicketsSoporte
+        ? $ticketsStatus
+        : $defaultTicketsStatus;
 @endphp
 <script>
     function ticketsModal(soloPanel = false) {

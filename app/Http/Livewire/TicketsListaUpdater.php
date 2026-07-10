@@ -38,47 +38,34 @@ class TicketsListaUpdater extends Component
         ->get();
     }
 
-    private function formatearTickets($tickets)
+    private function formatearTickets($tickets, array $tiemposProgreso = [], array $notificacionesMap = [])
     {
-        return $tickets->map(function ($ticket) {
-            return [
-                'id' => $ticket->TicketID,
-                'descripcion' => $ticket->Descripcion,
-                'code_anydesk' => $ticket->CodeAnyDesk ?? '',
-                'numero' => $ticket->Numero ?? '',
-                'prioridad' => $ticket->Prioridad,
-                'estatus' => $ticket->Estatus,
-                'empleado' => $ticket->empleado ? [
-                    'nombre' => $ticket->empleado->NombreEmpleado,
-                    'correo' => $ticket->empleado->Correo ?? '',
-                ] : null,
-                'responsable' => $ticket->responsableTI ? [
-                    'nombre' => $ticket->responsableTI->NombreEmpleado,
-                ] : null,
-                'created_at' => optional($ticket->created_at)->toIso8601String(),
-                'fecha_inicio_progreso' => optional($ticket->FechaInicioProgreso)->toIso8601String(),
-                'updated_at' => optional($ticket->updated_at)->toIso8601String(),
-            ];
-        })->toArray();
+        return Tickets::formatearColeccionParaVista($tickets, $tiemposProgreso, $notificacionesMap);
     }
 
     private function obtenerPayloadActualizacion()
     {
         $tickets = $this->fetchTickets();
+        $tiempos = $this->procesarTiempos($tickets);
+        $notificacionesMap = Tickets::mapaNotificacionesPendientes($tickets->pluck('TicketID'));
 
         $ticketsStatus = [
             'nuevos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Pendiente')->values()
+                $tickets->where('Estatus', 'Pendiente')->values(),
+                $tiempos['tiemposProgreso'],
+                $notificacionesMap
             ),
             'proceso' => $this->formatearTickets(
-                $tickets->where('Estatus', 'En progreso')->values()
+                $tickets->where('Estatus', 'En progreso')->values(),
+                $tiempos['tiemposProgreso'],
+                $notificacionesMap
             ),
             'resueltos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Cerrado')->values()
+                $tickets->where('Estatus', 'Cerrado')->values(),
+                $tiempos['tiemposProgreso'],
+                $notificacionesMap
             ),
         ];
-
-        $tiempos = $this->procesarTiempos($tickets);
 
         return [
             'ticketsStatus' => $ticketsStatus,
@@ -103,12 +90,12 @@ class TicketsListaUpdater extends Component
 
         // 3. Procesamos los tiempos
         $tiemposProcesados = $this->procesarTiempos($tickets);
+        $notificacionesMap = Tickets::mapaNotificacionesPendientes($tickets->pluck('TicketID'));
 
-        // 4. Formateamos para Alpine.js y emitimos el evento
         $ticketsStatus = [
-            'nuevos' => $this->formatearTickets($ticketsNuevos),
-            'proceso' => $this->formatearTickets($ticketsProceso),
-            'resueltos' => $this->formatearTickets($ticketsResueltos),
+            'nuevos' => $this->formatearTickets($ticketsNuevos, $tiemposProcesados['tiemposProgreso'], $notificacionesMap),
+            'proceso' => $this->formatearTickets($ticketsProceso, $tiemposProcesados['tiemposProgreso'], $notificacionesMap),
+            'resueltos' => $this->formatearTickets($ticketsResueltos, $tiemposProcesados['tiemposProgreso'], $notificacionesMap),
         ];
 
         $this->emit('tickets-actualizados-lista', [
@@ -118,11 +105,8 @@ class TicketsListaUpdater extends Component
             'hash' => md5(json_encode($ticketsStatus)),
         ]);
 
-        // 5. Se los pasamos a la vista
         return view('livewire.tickets-lista-updater', [
-            'ticketsNuevos' => $ticketsNuevos,
-            'ticketsProceso' => $ticketsProceso,
-            'ticketsResueltos' => $ticketsResueltos,
+            'ticketsStatus' => $ticketsStatus,
             'tiemposProgreso' => $tiemposProcesados['tiemposProgreso'],
             'ticketsExcedidos' => $tiemposProcesados['ticketsExcedidos'],
         ]);
