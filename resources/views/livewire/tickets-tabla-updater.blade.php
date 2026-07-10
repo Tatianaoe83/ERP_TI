@@ -3,7 +3,7 @@
 
     <div class="rounded-xl overflow-hidden w-full max-w-full bg-white dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
 
-        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
+        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A] dark:bg-[#1C1F26]">
             <div class="text-sm text-gray-600 dark:text-gray-400">
                 @if($ticketsTabla->count())
                 Mostrando {{ $ticketsTabla->firstItem() }} - {{ $ticketsTabla->lastItem() }}
@@ -21,7 +21,7 @@
             <input type="text"
                 wire:model.debounce.500ms="search"
                 placeholder="Buscar ticket..."
-                class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A] focus:ring focus:ring-blue-200">
+                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A] focus:ring focus:ring-blue-200">
 
             <select wire:model.live="filtroPrioridad"
                 class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
@@ -80,7 +80,7 @@
                     @endphp
 
                     <tr wire:key="ticket-tabla-{{ $ticket->TicketID }}"
-                        class="transition cursor-pointer hover:bg-gray-50 dark:hover:bg-[#273244] border-l-[3px]"
+                        class="transition cursor-pointer hover:bg-gray-50 dark:hover:bg-[#273244] border-l-[3px] dark:bg-[#1C1F26]"
                         style="border-left-color: {{ \App\Models\Tickets::colorPrioridad($ticket->Prioridad) }};"
                         data-ticket-id="{{ $ticket->TicketID }}"
                         data-ticket-asunto="Ticket #{{ $ticket->TicketID }}"
@@ -168,7 +168,7 @@
         </div>
 
         @if(method_exists($ticketsTabla, 'links'))
-        <div class="px-4 py-3 border-t border-gray-200 dark:border-[#2A2F3A]">
+        <div class="px-4 py-3 border-t border-gray-200 dark:border-[#2A2F3A] dark:bg-[#1C1F26]">
             {{ $ticketsTabla->links() }}
         </div>
         @endif
