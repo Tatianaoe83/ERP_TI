@@ -77,7 +77,11 @@ class InventarioController extends AppBaseController
                 'empleados.Estado'
             ])
             ->orderBy('empleados.EmpleadoID', 'desc')
-            ->when($request->nombre, fn($q) => $q->where('empleados.NombreEmpleado', 'like', '%' . $request->nombre . '%'))
+            ->when($request->nombre, fn($q) => $q->where(function ($sub) use ($request) {
+                $sub->where('empleados.NombreEmpleado', 'like', '%' . $request->nombre . '%')
+                    ->orWhere('empleados.NumTelefono', 'like', '%' . $request->nombre . '%')
+                    ->orWhere('empleados.Correo', 'like', '%' . $request->nombre . '%');
+            }))
             ->when($request->obra, fn($q) => $q->where('obras.NombreObra', 'like', '%' . $request->obra . '%'))
             ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', 'like', '%' . $request->puesto . '%'))
             ->when($request->has('estatus'), function ($q) use ($request) {

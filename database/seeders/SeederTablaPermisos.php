@@ -103,6 +103,7 @@ class SeederTablaPermisos extends Seeder
 
             // Módulo soporte
             'ver-soporte',
+            'tickets.notificaciones',
 
             // Acceso al dashboard (Informática, Dirección, Super Admin)
             'ver-dashboard',

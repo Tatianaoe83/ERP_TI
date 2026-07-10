@@ -3,7 +3,6 @@
 @section('content')
 <div
     x-data="cotizarPagina({{ $solicitud->SolicitudID }}, '{{ route('tickets.index') }}')"
-    x-init="init()"
     class="px-3 md:px-4 lg:px-6 w-full max-w-7xl mx-auto py-3 md:py-4 lg:py-6">
     <style>
         [x-cloak] {
@@ -43,15 +42,6 @@
                             <i class="fas fa-layer-group text-xs"></i>
                             <span class="font-semibold" x-text="propuestas.length"></span> propuestas
                         </span>
-                    </div>
-
-                    <div class="bg-slate-700/30 backdrop-blur-sm rounded-xl px-4 py-3 border border-slate-600/50 mt-4">
-                        <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
-                            Total Estimado
-                        </div>
-                        <div class="text-lg md:text-xl font-bold text-white">
-                            <span x-text="'$' + totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -162,18 +152,14 @@
                             </div>
 
                             <!-- Stats -->
-                            <div class="hidden sm:flex items-center gap-5 bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-5 py-2.5 backdrop-blur-sm border border-slate-600/30">
+                            <div class="hidden sm:flex items-center bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-5 py-2.5 backdrop-blur-sm border border-slate-600/30">
                                 <div class="text-center">
                                     <p class="text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-0.5">Productos</p>
                                     <p class="text-lg font-bold text-slate-50" x-text="propuesta.productos.length"></p>
                                 </div>
                                 
                                 <div class="w-px h-8 bg-slate-600/50"></div>
-                                
-                                <div class="text-right">
-                                    <p class="text-[10px] uppercase tracking-wider text-slate-400 font-medium mb-0.5">Total</p>
-                                    <p class="text-lg font-bold text-emerald-400" x-text="'$' + totalPropuesta(propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></p>
-                                </div>
+                            
                             </div>
 
                             <div class="flex sm:hidden flex-col items-end gap-1 bg-slate-800/40 dark:bg-slate-900/40 rounded-xl px-4 py-2 backdrop-blur-sm border border-slate-600/30 min-w-[100px]">
@@ -210,7 +196,6 @@
                                 <div class="flex items-center gap-2 md:gap-4 flex-shrink-0">
                                     <span class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
                                         <span x-text="cotizacionesConPrecio(producto).length"></span> cot. •
-                                        <span class="font-semibold" x-text="'$' + totalProducto(producto, propuesta).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })"></span>
                                     </span>
                                     <button
                                         @click.stop="eliminarProducto(propuesta, prodIndex)"
@@ -367,6 +352,7 @@
             nextId: 1,
             tieneCotizacionesGuardadas: false,
             tieneCotizacionesEnviadas: false,
+            
 
             async init() {
                 await this.cargar();
@@ -414,10 +400,12 @@
             },
 
             nuevaCotizacion(producto) {
+                const ultima = producto.cotizaciones?.at(0);
+                
                 return {
                     proveedor: '',
-                    numeroParte: '',
-                    descripcion: producto.nombre || '',
+                    numeroParte: ultima ? ultima.numeroParte : '',
+                    descripcion: ultima ? ultima.descripcion : '',
                     precioUnitario: '',
                     costoEnvio: 0,
                     total: '0.00'

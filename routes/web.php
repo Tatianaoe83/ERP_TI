@@ -122,6 +122,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('facturas/directa', [FacturasController::class, 'storeDirecta'])->name('facturas.storeDirecta')->middleware('permission:crear-facturas');
     Route::resource('facturas', FacturasController::class);
     Route::get('mantenimientos', [MantenimientosController::class, 'index'])->name('mantenimientos.index');
+    Route::get('mantenimientos/exportar-excel', [MantenimientosController::class, 'exportarExcel'])->name('mantenimientos.exportar-excel');
     Route::post('mantenimientos/generar', [MantenimientosController::class, 'generar'])->name('mantenimientos.generar');
     Route::patch('mantenimientos/{mantenimiento}/realizado', [MantenimientosController::class, 'marcarRealizado'])->name('mantenimientos.realizado');
     Route::get('mantenimientos/exportar-excel', [MantenimientosController::class, 'exportarExcel'])->name('mantenimientos.exportar-excel');
@@ -243,9 +244,11 @@ Route::get('/notificaciones-panel', function () {
         return !$solicitud->todosProductosTienenGanador();
     };
 
-    // 1. Tickets nuevos (Pendiente) creados en las últimas 24 horas
+    // Corte de 24h: clasifica nuevos (recientes) vs vencidos (no resueltos de cortes anteriores)
+    $corte = now()->subHours(24);
+
+    // 1. Tickets (Pendiente): trae todos los no resueltos; 'vencidos' marca los de +24h arrastrados
     $ticketsNuevos = \App\Models\Tickets::where('Estatus', 'Pendiente')
-        ->where('created_at', '>=', now()->subHours(24))
         ->with('empleado')
         ->orderBy('created_at', 'desc')
         ->limit(10)
@@ -253,13 +256,13 @@ Route::get('/notificaciones-panel', function () {
         ->map(fn($t) => [
             'TicketID' => $t->TicketID,
             'empleado' => $t->empleado ? $t->empleado->NombreEmpleado : 'Sin asignar',
+            'vencidos' => $t->created_at < $corte,
             'created_at' => $t->created_at->diffForHumans(),
             'timestamp' => $t->created_at->timestamp,
         ]);
 
-    // 2. Solicitudes nuevas (sin Vo.bo. de supervisor aún) creadas en las últimas 24 horas
+    // 2. Solicitudes (sin Vo.bo. de supervisor): trae todas las no resueltas; 'vencidos' marca las de +24h
     $solicitudesPendientes = \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
-        ->where('created_at', '>=', now()->subHours(24))
         ->whereDoesntHave('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
         ->with('empleadoid')
         ->orderBy('created_at', 'desc')
@@ -270,6 +273,7 @@ Route::get('/notificaciones-panel', function () {
             'Motivo' => $s->Motivo,
             'Estatus' => $s->Estatus ?: 'Pendiente',
             'empleado' => $s->empleadoid ? $s->empleadoid->NombreEmpleado : 'Sin asignar',
+            'vencidos' => $s->created_at ? $s->created_at < $corte : false,
             'created_at' => $s->created_at ? $s->created_at->diffForHumans() : '',
             'timestamp' => $s->created_at ? $s->created_at->timestamp : 0,
         ]);
@@ -356,10 +360,10 @@ Route::get('/notificaciones-panel', function () {
     return response()->json([
         'tickets_nuevos' => $ticketsNuevos,
         'tickets_nuevos_count' => \App\Models\Tickets::where('Estatus', 'Pendiente')
-            ->where('created_at', '>=', now()->subHours(24))->count(),
+            ->where('created_at', '>=', $corte)->count(),
         'solicitudes_pendientes' => $solicitudesPendientes,
         'solicitudes_pendientes_count' => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
-            ->where('created_at', '>=', now()->subHours(24))
+            ->where('created_at', '>=', $corte)
             ->whereDoesntHave('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
             ->count(),
         'solicitudes_cotizacion_ti' => $solicitudesCotizacionTI,

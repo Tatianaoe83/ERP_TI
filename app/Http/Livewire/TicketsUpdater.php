@@ -45,16 +45,16 @@ class TicketsUpdater extends Component
                 continue;
             }
 
-            $tiempoRespuesta = $ticket->tiempo_respuesta;
-            if ($tiempoRespuesta === null) {
+            $tiempoProgreso = $ticket->tiempo_progreso;
+            if ($tiempoProgreso === null) {
                 continue;
             }
 
             $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
 
-            if ($tiempoRespuesta > $tiempoEstimadoHoras) {
-                $tiempoExcedido = round($tiempoRespuesta - $tiempoEstimadoHoras, 2);
-                $porcentajeExcedido = round(($tiempoRespuesta / $tiempoEstimadoHoras) * 100, 1);
+            if ($tiempoProgreso > $tiempoEstimadoHoras) {
+                $tiempoExcedido = round($tiempoProgreso - $tiempoEstimadoHoras, 2);
+                $porcentajeExcedido = round(($tiempoProgreso / $tiempoEstimadoHoras) * 100, 1);
                 
                 $this->ticketsExcedidos[] = [
                     'id' => $ticket->TicketID,
@@ -63,7 +63,7 @@ class TicketsUpdater extends Component
                     'empleado' => $ticket->empleado ? $ticket->empleado->NombreEmpleado : 'Sin empleado',
                     'prioridad' => $ticket->Prioridad,
                     'tiempo_estimado' => round($tiempoEstimadoHoras, 2),
-                    'tiempo_respuesta' => round($tiempoRespuesta, 2),
+                    'tiempo_respuesta' => round($tiempoProgreso, 2),
                     'tiempo_excedido' => $tiempoExcedido,
                     'porcentaje_excedido' => $porcentajeExcedido,
                     'categoria' => $ticket->tipoticket ? $ticket->tipoticket->NombreTipo : 'Sin categoría'
@@ -90,7 +90,7 @@ class TicketsUpdater extends Component
             
             if ($ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
                 $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                $tiempoTranscurrido = $ticket->tiempo_respuesta ?? 0;
+                $tiempoTranscurrido = $ticket->tiempo_progreso ?? 0;
                 $porcentajeUsado = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
                 
                 $tiempoInfo = [

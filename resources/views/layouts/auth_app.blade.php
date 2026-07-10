@@ -7,9 +7,12 @@
     <title>ERP TI Proser</title>
     <link rel="icon" href="{!! asset('img/mantenimiento.ico') !!}" />
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <x-turnstile.scripts />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js">
+        
+    </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+Antique&display=swap');
 
@@ -81,6 +84,25 @@
                                 <label for="remember" class="ml-2 text-xs sm:text-sm text-gray-600 cursor-pointer">Recuérdame</label>
                             </div>
 
+                            {{-- CLOUDFLARE TURNSTILE --}}
+                            <div class="form-group fade-in-up" style="animation-delay: 0.75s;">
+                                <div class="w-full" style="display: grid; place-items: center;">
+                                    <x-turnstile
+                                        data-theme="light"
+                                        data-size="flexible"
+                                        data-callback="onTurnstileSuccess"
+                                        data-expired-callback="onTurnstileExpired"
+                                        data-timeout-callback="onTurnstileExpired"
+                                        data-error-callback="onTurnstileError"
+                                        data-refresh-expired="auto"
+                                        style="width: 100% !important;" />
+                                </div>
+                                <p id="turnstile-hint" class="mt-2 text-xs text-gray-500 text-center">Completa la verificación de seguridad para continuar.</p>
+                                @error('cf-turnstile-response')
+                                <p class="mt-1 text-sm text-red-600 text-center">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             <button type="submit"
                                 class="w-full bg-black text-white font-medium py-2.5 sm:py-3 px-4 rounded-lg transition hover:scale-105 text-sm sm:text-base">
                                 Ingresar
@@ -140,4 +162,5 @@
         });
     </script>
 </body>
+
 </html>

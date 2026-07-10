@@ -8,6 +8,7 @@ use App\Models\TicketChat;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Events\TicketUpdatedEvent;
 
 class ImapEmailReceiver
 {
@@ -216,6 +217,8 @@ class ImapEmailReceiver
                 
                 // Es un nuevo ticket (no es respuesta)
                 $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId, $adjuntos);
+
+                event(new \App\Events\TicketUpdatedEvent());
             }
 
             // Marcar como leído
@@ -419,6 +422,7 @@ class ImapEmailReceiver
             }
 
             Log::info("Respuesta por correo agregada al ticket #{$ticketId} desde {$empleado->Correo}");
+            event(new TicketUpdatedEvent());
             return true;
 
         } catch (\Exception $e) {
@@ -473,6 +477,7 @@ class ImapEmailReceiver
             ]);
 
             Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo} | Asunto: {$descripcionConFormato}");
+            event(new TicketUpdatedEvent());
             
             // Enviar notificación de confirmación (opcional) - DESACTIVADO
             // $this->enviarConfirmacionTicket($ticket, $empleado);

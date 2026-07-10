@@ -7,7 +7,7 @@
 
     @include('adminlte-templates::common.errors')
 
-    {!! Form::open(['route' => 'unidadesDeNegocios.store']) !!}
+    {!! Form::open(['route' => 'unidadesDeNegocios.store', 'id' => 'formCrear']) !!}
 
     <div class="flex flex-col gap-2">
         <div class="row">
@@ -23,4 +23,5 @@
     {!! Form::close() !!}
 
 </div>
+
 @endsection

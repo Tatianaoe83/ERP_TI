@@ -252,7 +252,8 @@
 
         function crearItemNotificacion({ unread, theme, icon, titulo, categoria, tiempo, onclick }) {
             const unreadClass = unread ? ' notif-item--unread' : '';
-            return `<div class="notif-item${unreadClass}" onclick="${onclick}">
+            const onclickAttr = String(onclick).replace(/"/g, '&quot;');
+            return `<div class="notif-item${unreadClass}" onclick="${onclickAttr}">
                 <div class="notif-icon notif-icon--${theme}">
                     <i class="fas ${icon}"></i>
                 </div>
@@ -267,8 +268,21 @@
             </div>`;
         }
 
-        window.marcarTicketComoLeido = function(ticketId) {
+        function _decrementarBadgeInmediato() {
+            ['badgeNotif', 'notifHeaderBadge'].forEach(function(id) {
+                const el = document.getElementById(id);
+                if (!el || el.style.display === 'none') return;
+                const n = Math.max(0, (parseInt(el.textContent) || 0) - 1);
+                if (n === 0) { el.style.display = 'none'; }
+                else { el.textContent = n > 99 ? '99+' : n; }
+            });
+        }
+
+        window.marcarTicketComoLeido = function(ticketId, el) {
+            const wasUnread = el && el.classList.contains('notif-item--unread');
             marcarVistoParaBadge('dismissTickets', ticketId, 'Pendiente');
+            if (el) el.classList.remove('notif-item--unread');
+            if (wasUnread) _decrementarBadgeInmediato();
         };
 
         window.marcarSolicitudComoLeida = function(solicitudId) {
@@ -320,7 +334,43 @@
             window.location.href = `/solicitudes/${solicitudId}/cotizar`;
         };
 
-        window.abrirNotificacionTicket = function(ticketId) {
+        function abrirTicketPorId(ticketId) {
+            if (typeof window.__abrirModalTicket !== 'function') return false;
+            fetch(`/tickets/${ticketId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => {
+                    const contentType = res.headers.get('content-type') || '';
+                    if (!res.ok || !contentType.includes('application/json')) return null;
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data || !data.success || !data.ticket) return;
+                    const t = data.ticket;
+                    window.__abrirModalTicket({
+                        id: t.TicketID,
+                        asunto: t.asunto || `Ticket #${t.TicketID}`,
+                        descripcion: t.descripcion || '',
+                        prioridad: t.Prioridad || 'Media',
+                        empleado: t.empleado || '',
+                        anydesk: t.anydesk || '',
+                        numero: t.numero || '',
+                        correo: t.correo || '',
+                        puesto: t.puesto || '',
+                        gerencia: t.gerencia || '',
+                        departamento: t.departamento || '',
+                        fecha: t.fecha || '',
+                        imagen: t.imagen || ''
+                    });
+                })
+                .catch(() => {});
+            return true;
+        }
+
+        function marcarTicketLeidoEnDB(ticketId) {
             fetch('/tickets/marcar-leidos', {
                 method: 'POST',
                 headers: {
@@ -329,81 +379,96 @@
                 },
                 body: JSON.stringify({ ticket_id: ticketId })
             }).catch(err => console.error("Error al marcar leídos en DB:", err));
+        }
 
+        function abrirTicketDesdeNotif(ticketId) {
+            tooltip.style.display = 'none';
+            marcarTicketLeidoEnDB(ticketId);
+
+            // En /tickets, si la tarjeta está visible, ábrela (mantiene el flujo del tablero)
             if (window.location.pathname.endsWith('/tickets')) {
                 const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                if (card) card.click();
-            } else {
-                window.location.href = `/tickets?ticket_id=${ticketId}`;
-            }
-        };
-
-        window.abrirNotificacionChat = function(ticketId) {
-            fetch('/tickets/marcar-leidos', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({ ticket_id: ticketId })
-            }).catch(err => console.error("Error al marcar chat leído en DB:", err));
-
-            if (window.location.pathname.endsWith('/tickets')) {
-                const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                if (card) card.click();
-            } else {
-                window.location.href = `/tickets?ticket_id=${ticketId}`;
-            }
-        };
-
-        window.abrirNotificacionSolicitud = function(solicitudId) {
-            if (window.location.pathname.endsWith('/tickets')) {
-                const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
-                if (botonSolicitud) {
-                    botonSolicitud.click();
+                if (card) {
+                    card.click();
                     return;
                 }
+            }
+            // Modal global del panel de ticket (cualquier vista). Si no existe, redirigir a soporte.
+            if (!abrirTicketPorId(ticketId)) {
+                window.location.href = `/tickets?ticket_id=${ticketId}`;
+            }
+        }
 
-                const buttons = document.querySelectorAll('button');
-                for (let btn of buttons) {
-                    const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
-                    if (clickAttr && clickAttr.includes(`abrirModal(${solicitudId})`)) {
-                        btn.click();
-                        break;
-                    }
-                }
+        window.abrirNotificacionTicket = function(ticketId) { abrirTicketDesdeNotif(ticketId); };
+        window.abrirNotificacionChat = function(ticketId) { abrirTicketDesdeNotif(ticketId); };
+
+        window.abrirNotificacionSolicitud = function(solicitudId) {
+            tooltip.style.display = 'none';
+            // Modal global de detalles (montado en el layout) → funciona en cualquier vista, sin redirigir
+            if (typeof window.__abrirModalSolicitud === 'function') {
+                window.__abrirModalSolicitud(solicitudId);
             } else {
                 window.location.href = `/tickets?solicitud_id=${solicitudId}`;
             }
         };
 
+        window.abrirNotificacionFactura = function(solicitudId) {
+            tooltip.style.display = 'none';
+            // Modal de Asignación global (instancia Livewire en el layout) → abre en cualquier vista
+            if (window.Livewire) {
+                window.Livewire.emit('abrirAsignacionNotif', parseInt(solicitudId));
+            } else {
+                window.location.href = `/tickets?asignacion_id=${solicitudId}`;
+            }
+        };
+
+        const navEntries = performance.getEntriesByType('navigation');
+        const esRecarga = navEntries.length > 0 && navEntries[0].type === 'reload';
+
         if (window.location.pathname.endsWith('/tickets')) {
             const urlParams = new URLSearchParams(window.location.search);
             const ticketId = urlParams.get('ticket_id');
-            if (ticketId) {
-                setTimeout(() => {
-                    const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                    if (card) card.click();
-                }, 1000);
-            }
             const solicitudId = urlParams.get('solicitud_id');
-            if (solicitudId) {
-                setTimeout(() => {
-                    const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
-                    if (botonSolicitud) {
-                        botonSolicitud.click();
-                        return;
-                    }
+            const asignacionId = urlParams.get('asignacion_id');
 
-                    const buttons = document.querySelectorAll('button');
-                    for (let btn of buttons) {
-                        const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
-                        if (clickAttr && clickAttr.includes(`abrirModal(${solicitudId})`)) {
-                            btn.click();
-                            break;
+            // Solo auto-abrir si se llegó por navegación (notif/link), no en recargas (F5)
+            if (!esRecarga) {
+                if (ticketId) {
+                    setTimeout(() => {
+                        const card = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+                        if (card) card.click();
+                    }, 1000);
+                }
+                if (solicitudId) {
+                    setTimeout(() => {
+                        const botonSolicitud = document.querySelector(`[data-ver-solicitud="${solicitudId}"]`);
+                        if (botonSolicitud) {
+                            botonSolicitud.click();
+                            return;
                         }
-                    }
-                }, 1000);
+
+                        const buttons = document.querySelectorAll('button');
+                        for (let btn of buttons) {
+                            const clickAttr = btn.getAttribute('@click') || btn.getAttribute('x-on:click');
+                            if (clickAttr && clickAttr.includes(`abrirModal(${solicitudId})`)) {
+                                btn.click();
+                                break;
+                            }
+                        }
+                    }, 1000);
+                }
+                if (asignacionId) {
+                    setTimeout(() => {
+                        if (window.Livewire) {
+                            window.Livewire.emit('abrirAsignacionNotif', parseInt(asignacionId));
+                        }
+                    }, 1500);
+                }
+            }
+
+            // Limpiar los params de la URL para que al recargar no se reabra el modal
+            if (ticketId || solicitudId || asignacionId) {
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         }
 
@@ -446,9 +511,14 @@
         });
 
         let actualizandoNotificaciones = false;
+        let refrescoNotifPendiente = false;
 
         function actualizarNotificaciones() {
-            if (document.hidden || actualizandoNotificaciones) return;
+            if (document.hidden) return;
+            if (actualizandoNotificaciones) {
+                refrescoNotifPendiente = true;
+                return;
+            }
 
             actualizandoNotificaciones = true;
             fetch('/notificaciones-panel', {
@@ -478,8 +548,9 @@
                         data.tickets_nuevos.forEach(t => {
                             if (!t || !t.TicketID) return;
                             const estadoTicket = 'Pendiente';
-                            const unread = !suprimeConteoBadge('dismissTickets', t.TicketID, estadoTicket);
-                            if (unread) conteoNoLeidos++;
+                            if (suprimeConteoBadge('dismissTickets', t.TicketID, estadoTicket)) return;
+                            const unread = true;
+                            conteoNoLeidos++;
                             listaNotificaciones.push({
                                 timestamp: t.timestamp || 0,
                                 html: crearItemNotificacion({
@@ -489,7 +560,7 @@
                                     titulo: `Ticket #${t.TicketID} · ${t.empleado}`,
                                     categoria: 'Ticket nuevo',
                                     tiempo: t.created_at,
-                                    onclick: `marcarTicketComoLeido(${t.TicketID}); abrirNotificacionTicket(${t.TicketID})`
+                                    onclick: `marcarTicketComoLeido(${t.TicketID}, this); abrirNotificacionTicket(${t.TicketID})`
                                 })
                             });
                         });
@@ -498,7 +569,7 @@
                     if (data.solicitudes_pendientes) {
                         data.solicitudes_pendientes.forEach(s => {
                             if (!s || !s.SolicitudID) return;
-                            const unread = !suprimeConteoBadge('dismissSolicitudes', s.SolicitudID, 'nueva');
+                            const unread = !s.vencidos && !suprimeConteoBadge('dismissSolicitudes', s.SolicitudID, 'nueva');
                             if (unread) conteoNoLeidos++;
                             listaNotificaciones.push({
                                 timestamp: s.timestamp || 0,
@@ -582,7 +653,7 @@
                                     titulo: `Solicitud #${s.SolicitudID} · ${s.empleado}`,
                                     categoria: parcial ? `Factura parcial ${estadoFacturas}` : `Factura pendiente ${estadoFacturas}`,
                                     tiempo: s.created_at,
-                                    onclick: `marcarFacturaPendienteComoLeida(${s.SolicitudID}, ${estadoFacturasJs}); abrirNotificacionSolicitud(${s.SolicitudID})`
+                                    onclick: `marcarFacturaPendienteComoLeida(${s.SolicitudID}, ${estadoFacturasJs}); abrirNotificacionFactura(${s.SolicitudID})`
                                 })
                             });
                         });
@@ -646,6 +717,10 @@
                 .catch(() => {})
                 .finally(() => {
                     actualizandoNotificaciones = false;
+                    if (refrescoNotifPendiente) {
+                        refrescoNotifPendiente = false;
+                        actualizarNotificaciones();
+                    }
                 });
         }
 

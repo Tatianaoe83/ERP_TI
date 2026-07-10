@@ -11,6 +11,7 @@ use App\Models\Subtipos;
 use App\Models\Tipoticket;
 use App\Services\SimpleEmailService;
 use App\Services\TicketNotificationService;
+use App\Services\TicketInProgressNotificationService;
 use App\Services\TicketSatisfactionSurveyService;
 use Illuminate\Http\Request;
 use App\Models\SolicitudActivo;
@@ -18,6 +19,8 @@ use App\Http\Controllers\Traits\MetricasSolicitudesTrait;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Events\TicketUpdatedEvent;
+
 
 class TicketsController extends Controller
 {
@@ -608,6 +611,9 @@ class TicketsController extends Controller
                 'success' => true,
                 'ticket'  => [
                     'TicketID'       => $ticket->TicketID,
+                    'asunto'         => 'Ticket #' . $ticket->TicketID,
+                    'descripcion'    => $ticket->Descripcion,
+                    'fecha'          => $ticket->created_at ? $ticket->created_at->format('d/m/Y H:i:s') : '',
                     'Prioridad'      => $ticket->Prioridad,
                     'Estatus'        => $ticket->Estatus,
                     'Clasificacion'  => $ticket->Clasificacion,
@@ -728,10 +734,17 @@ class TicketsController extends Controller
             }
 
             $ticket->save();
+            event(new TicketUpdatedEvent());
 
             // Enviar encuesta de satisfacción cuando el ticket pasa a Cerrado por primera vez
             if ($estatusAnterior !== 'Cerrado' && $ticket->Estatus === 'Cerrado') {
                 app(TicketSatisfactionSurveyService::class)->sendSurveyForClosedTicket($ticket->fresh());
+            }
+            
+            // Correo de aviso al empleado cuando el ticket pasa a En progreso por primera vez
+            Log::info("[ProgresoMail] update() ticket #{$ticket->TicketID} | estatusAnterior='{$estatusAnterior}' nuevoEstatus='{$nuevoEstatus}'");
+            if ($estatusAnterior === 'Pendiente' && $nuevoEstatus === 'En progreso') {
+                app(TicketInProgressNotificationService::class)->sendNotificationForInProgressTicket($ticket->fresh());
             }
 
             if ($nuevoEstatus === 'En progreso') {
@@ -1014,6 +1027,7 @@ class TicketsController extends Controller
             // Reset contador
             $ticket->notificaciones_pendientes = 0;
             $ticket->save();
+            event(new TicketUpdatedEvent());
 
             TicketChat::where('ticket_id', $id)
             ->where('notificaciones_pendientes', 1)
@@ -1134,9 +1148,7 @@ class TicketsController extends Controller
                 $tiempoInfo = null;
                 if ($ticket->tipoticket && $ticket->tipoticket->TiempoEstimadoMinutos) {
                     $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                    $tiempoTranscurrido  = $ticket->FechaInicioProgreso
-                        ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
-                        : 0;
+                    $tiempoTranscurrido  = $ticket->tiempo_progreso ?? 0;
                     $porcentajeUsado     = $tiempoEstimadoHoras > 0 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100 : 0;
 
                     $tiempoInfo = [
@@ -1822,9 +1834,7 @@ class TicketsController extends Controller
                 if (!$ticket->tipoticket || !$ticket->tipoticket->TiempoEstimadoMinutos) continue;
 
                 $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-                $tiempoEnProgreso = $ticket->FechaInicioProgreso
-                    ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
-                    : null;
+                $tiempoEnProgreso = $ticket->tiempo_progreso;
 
                 if ($tiempoEnProgreso !== null && $tiempoEnProgreso > $tiempoEstimadoHoras) {
                     $ticketsExcedidos[] = [

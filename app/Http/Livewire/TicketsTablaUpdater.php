@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Models\Tickets;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Str;
 
 class TicketsTablaUpdater extends Component
 {
@@ -105,14 +106,10 @@ class TicketsTablaUpdater extends Component
             ->paginate(10);
 
         $this->procesarTiempos($tickets->getCollection());
-        $notificacionesMap = Tickets::mapaNotificacionesPendientes(
-            $tickets->getCollection()->pluck('TicketID')
-        );
 
         return view('livewire.tickets-tabla-updater', [
             'ticketsTabla' => $tickets,
-            'tiemposProgreso' => $this->tiemposProgreso,
-            'notificacionesMap' => $notificacionesMap,
+            'tiemposProgreso' => $this->tiemposProgreso
         ]);
     }
 
@@ -126,32 +123,59 @@ class TicketsTablaUpdater extends Component
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $tiempos = Tickets::procesarTiemposProgreso($tickets);
-
-        $formatear = function ($grupo) use ($tiempos) {
-            return $grupo->map(function ($ticket) use ($tiempos) {
-                $tiempoInfo = $tiempos['tiemposProgreso'][$ticket->TicketID] ?? null;
-
-                return Tickets::formatearTicketParaVista($ticket, $tiempoInfo);
-            })->toArray();
-        };
-
         $ticketsStatus = [
-            'nuevos'    => $formatear($tickets->where('Estatus', 'Pendiente')->values()),
-            'proceso'   => $formatear($tickets->where('Estatus', 'En progreso')->values()),
-            'resueltos' => $formatear($tickets->where('Estatus', 'Cerrado')->values()),
+            'nuevos' => $this->formatearTickets(
+                $tickets->where('Estatus', 'Pendiente')->values()
+            ),
+            'proceso' => $this->formatearTickets(
+                $tickets->where('Estatus', 'En progreso')->values()
+            ),
+            'resueltos' => $this->formatearTickets(
+                $tickets->where('Estatus', 'Cerrado')->values()
+            ),
         ];
 
+        $tiempos = $this->procesarTiemposParaPayload($tickets);
+
         return [
-            'ticketsStatus'    => $ticketsStatus,
+            'ticketsStatus' => $ticketsStatus,
             'ticketsExcedidos' => $tiempos['ticketsExcedidos'],
-            'tiemposProgreso'  => $tiempos['tiemposProgreso'],
-            'hash'             => md5(json_encode($tickets->map(fn ($ticket) => [
+            'tiemposProgreso' => $tiempos['tiemposProgreso'],
+            'hash' => md5(json_encode($tickets->map(fn ($ticket) => [
                 $ticket->TicketID,
                 $ticket->Estatus,
                 optional($ticket->updated_at)->timestamp,
             ])->values()->all())),
         ];
+    }
+
+    private function formatearTickets($tickets)
+    {
+        return $tickets->map(function ($ticket) {
+            return [
+                'id' => $ticket->TicketID,
+                'descripcion' => $ticket->Descripcion,
+                'code_anydesk' => $ticket->CodeAnyDesk ?? '',
+                'numero' => $ticket->Numero ?? '',
+                'prioridad' => $ticket->Prioridad,
+                'estatus' => $ticket->Estatus,
+                'empleado' => $ticket->empleado ? [
+                    'nombre' => $ticket->empleado->NombreEmpleado,
+                    'correo' => $ticket->empleado->Correo ?? '',
+                ] : null,
+                'responsable' => $ticket->responsableTI ? [
+                    'nombre' => $ticket->responsableTI->NombreEmpleado,
+                ] : null,
+                'created_at' => optional($ticket->created_at)->toIso8601String(),
+                'fecha_inicio_progreso' => optional($ticket->FechaInicioProgreso)->toIso8601String(),
+                'updated_at' => optional($ticket->updated_at)->toIso8601String(),
+            ];
+        })->toArray();
+    }
+
+    private function procesarTiemposParaPayload($tickets)
+    {
+        return Tickets::procesarTiemposProgreso($tickets);
     }
 
     public function limpiarFiltros()
@@ -169,8 +193,8 @@ class TicketsTablaUpdater extends Component
 
     private function procesarTiempos($tickets)
     {
-        $resultado = Tickets::procesarTiemposProgreso($tickets);
-        $this->tiemposProgreso = $resultado['tiemposProgreso'];
-        $this->ticketsExcedidos = $resultado['ticketsExcedidos'];
+        $result = Tickets::procesarTiemposProgreso($tickets);
+        $this->tiemposProgreso = $result['tiemposProgreso'];
+        $this->ticketsExcedidos = $result['ticketsExcedidos'];
     }
 }

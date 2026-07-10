@@ -312,6 +312,7 @@ $user->can('ver-mantenimientos')
     </li>
 </ul>
 {{-- Botón de notificaciones --}}
+@can('tickets.notificaciones')
 <div class="relative inline-block mt-6">
     <div id="btnNotif"
         class="select-none flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 cursor-pointer">
@@ -348,3 +349,4 @@ $user->can('ver-mantenimientos')
 </div>
 
 @include('layouts.notifications_blade_sidebar')
+@endcan

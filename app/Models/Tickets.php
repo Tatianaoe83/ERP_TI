@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \App\Models\Tertipos $tertipo
  * @property-read float|null $tiempo_respuesta
  * @property-read string|null $tiempo_respuesta_formateado
+ * @property-read float|null $tiempo_progreso
  * @property-read float|null $tiempo_resolucion
  * @property-read string|null $tiempo_resolucion_formateado
  * @property-read int $id
@@ -370,6 +371,21 @@ class Tickets extends Model
     }
 
     /**
+     * Obtener tiempo en progreso en horas laborales
+     * Diferencia entre FechaInicioProgreso y ahora (o FechaFinProgreso si ya cerró)
+     */
+    public function getTiempoProgresoAttribute()
+    {
+        if (!$this->FechaInicioProgreso) {
+            return null;
+        }
+
+        $fechaFin = $this->FechaFinProgreso ?? now();
+
+        return $this->calcularHorasLaborales($this->FechaInicioProgreso, $fechaFin);
+    }
+
+    /**
      * Calcular el tiempo de resolución en horas laborales (para tickets cerrados)
      * Diferencia entre FechaInicioProgreso y FechaFinProgreso
      */
@@ -525,9 +541,7 @@ class Tickets extends Model
             }
 
             $tiempoEstimadoHoras = $ticket->tipoticket->TiempoEstimadoMinutos / 60;
-            $tiempoTranscurrido = $ticket->FechaInicioProgreso
-                ? $ticket->FechaInicioProgreso->diffInMinutes(now()) / 60
-                : 0;
+            $tiempoTranscurrido = $ticket->tiempo_progreso ?? 0;
 
             $porcentajeUsado = $tiempoEstimadoHoras > 0
                 ? ($tiempoTranscurrido / $tiempoEstimadoHoras) * 100

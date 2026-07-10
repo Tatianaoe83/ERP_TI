@@ -24,8 +24,14 @@ class UpdateUnidadesDeNegocioRequest extends FormRequest
      */
     public function rules()
     {
-        $rules = UnidadesDeNegocio::$rules;
-        
-        return $rules;
+        $id = $this->route('unidadesDeNegocio');
+
+        return [
+            'NombreEmpresa' => 'required|string|max:100',
+            'RFC'           => 'required|string|max:13|unique:unidadesdenegocio,RFC,' . $id . ',UnidadNegocioID',
+            'Direccion'     => 'required|string|max:150',
+            'NumTelefono'   => 'required|string|max:10|unique:unidadesdenegocio,NumTelefono,' . $id . ',UnidadNegocioID',
+            'estado'        => 'boolean',
+        ];
     }
 }

@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Events\TicketUpdatedEvent;
 
 class SoporteTIController extends Controller
 {
@@ -198,6 +199,7 @@ public function crearTickets(Request $request)
                  if (!empty($names)) $ticketData['imagen'] = json_encode($names);
  
                  Tickets::create($ticketData);
+                 event(new TicketUpdatedEvent()); // Disparamos el evento para notificar a los componentes que se refresquen
                  
                  return redirect()->back()->with(['success' => 'Ticket guardado correctamente', 'tipo' => 'Ticket']);
              } catch (\Exception $e) {

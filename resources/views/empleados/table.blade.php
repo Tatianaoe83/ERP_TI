@@ -433,13 +433,17 @@
                 var form = $(this).closest('form');
                 var accion = $(this).data('accion');
                 var esActivacion = accion === 'activar';
+                var tipoPersona = $(this).data('tipo-persona');
+                var textoActivacion = tipoPersona === 'FISICA'
+                    ? 'Se validará que su correo no esté en uso por otro empleado activo.'
+                    : '';
 
                 Swal.fire({
                     title: esActivacion
                         ? '¿Desea activar este empleado?'
                         : '¿Está seguro de que desea dar de baja este empleado?',
                     text: esActivacion
-                        ? 'Se validará que su correo no esté en uso por otro empleado activo.'
+                        ? textoActivacion
                         : 'Se verificará que no tenga inventario asociado.',
                     icon: 'warning',
                     showDenyButton: true,
