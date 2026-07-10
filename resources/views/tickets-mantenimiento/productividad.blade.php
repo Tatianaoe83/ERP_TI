@@ -83,35 +83,35 @@
     <script id="productividad-mantenimiento-json" type="application/json">{!! json_encode($metricasProductividad) !!}</script>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <p class="text-sm font-medium dark:text-[#9CA3AF]">Total Solicitudes</p>
-            <p class="text-3xl font-bold mt-2 dark:text-white">{{ $metricasProductividad['total_tickets'] }}</p>
+        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Total Solicitudes</p>
+            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['total_tickets'] }}</p>
         </div>
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <p class="text-sm font-medium dark:text-[#9CA3AF]">Atendidas / Canceladas</p>
-            <p class="text-3xl font-bold mt-2 dark:text-white">{{ $metricasProductividad['tickets_cerrados'] }}</p>
-            <p class="text-xs text-gray-400 mt-1">
+        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Atendidas / Canceladas</p>
+            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['tickets_cerrados'] }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {{ $metricasProductividad['total_tickets'] > 0 ? round(($metricasProductividad['tickets_cerrados'] / $metricasProductividad['total_tickets']) * 100, 1) : 0 }}% del total
             </p>
         </div>
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <p class="text-sm font-medium dark:text-[#9CA3AF]">Tiempo Promedio Resolución</p>
-            <p class="text-3xl font-bold mt-2 dark:text-white">{{ $metricasProductividad['tiempo_promedio_resolucion'] ?: '0' }}</p>
-            <p class="text-xs text-gray-400 mt-1">horas laborales</p>
+        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Tiempo Promedio Resolución</p>
+            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['tiempo_promedio_resolucion'] ?: '0' }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">horas laborales</p>
         </div>
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <p class="text-sm font-medium dark:text-[#9CA3AF]">Tiempo Promedio Respuesta</p>
-            <p class="text-3xl font-bold mt-2 dark:text-white">{{ $metricasProductividad['tiempo_promedio_respuesta'] ?: '0' }}</p>
-            <p class="text-xs text-gray-400 mt-1">horas laborales</p>
+        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Tiempo Promedio Respuesta</p>
+            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['tiempo_promedio_respuesta'] ?: '0' }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">horas laborales</p>
         </div>
     </div>
 
     @php $sla = $metricasProductividad['metricas_sla'] ?? []; $slaResumen = $sla['resumen'] ?? []; @endphp
 
-    <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white to-blue-50/30 dark:from-[#111827]/40 dark:to-[#0B0F14]/70">
+    <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
             <div>
-                <h3 class="text-lg font-semibold dark:text-white flex items-center gap-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
                     <i class="fas fa-stopwatch text-blue-500"></i>
                     Métricas SLA por Prioridad
                 </h3>
@@ -120,7 +120,7 @@
                 </p>
             </div>
             <div class="flex items-center gap-3 flex-wrap">
-                <span class="text-sm px-3 py-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 font-semibold">
+                <span class="text-sm px-3 py-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 font-semibold">
                     Cumplimiento: {{ $sla['pct_cumplimiento'] ?? 0 }}%
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400">
@@ -131,39 +131,39 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             @foreach($sla['por_prioridad'] ?? [] as $row)
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-white/80 dark:bg-[#1C1F26]/80" style="border-top: 4px solid {{ $row['color'] }}">
+            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#242933]" style="border-top: 4px solid {{ $row['color'] }}">
                 <div class="flex justify-between items-start mb-3">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $row['prioridad'] }}</p>
-                        <p class="text-sm font-semibold dark:text-white mt-0.5">Meta: {{ $row['meta'] }}</p>
-                        <p class="text-xs text-gray-400">{{ $row['meta_horas'] }}</p>
+                        <p class="text-sm font-semibold text-gray-800 dark:text-white mt-0.5">Meta: {{ $row['meta'] }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $row['meta_horas'] }}</p>
                     </div>
                     <span class="text-lg font-bold" style="color: {{ $row['color'] }}">{{ $row['pct_cumplimiento'] }}%</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="rounded-md px-2 py-1.5 bg-gray-50 dark:bg-[#242933]">
-                        <span class="text-gray-500 dark:text-gray-400">Total</span>
-                        <p class="font-bold dark:text-gray-100">{{ $row['total'] }}</p>
+                    <div class="rounded-md px-2 py-1.5 bg-gray-100 border border-gray-200 dark:bg-[#1C1F26] dark:border-[#2A2F3A]">
+                        <span class="text-gray-600 dark:text-gray-400">Total</span>
+                        <p class="font-bold text-gray-900 dark:text-gray-100">{{ $row['total'] }}</p>
                     </div>
-                    <div class="rounded-md px-2 py-1.5 bg-green-50 dark:bg-green-900/20">
-                        <span class="text-green-700 dark:text-green-400">Cumplidos</span>
-                        <p class="font-bold text-green-700 dark:text-green-300">{{ $row['cumplidos'] }}</p>
+                    <div class="rounded-md px-2 py-1.5 bg-green-50 border border-green-200 dark:bg-green-900/40 dark:border-green-800">
+                        <span class="text-green-800 dark:text-green-300">Cumplidos</span>
+                        <p class="font-bold text-green-800 dark:text-green-200">{{ $row['cumplidos'] }}</p>
                     </div>
-                    <div class="rounded-md px-2 py-1.5 bg-red-50 dark:bg-red-900/20">
-                        <span class="text-red-700 dark:text-red-400">Incumplidos</span>
-                        <p class="font-bold text-red-700 dark:text-red-300">{{ $row['incumplidos'] }}</p>
+                    <div class="rounded-md px-2 py-1.5 bg-red-50 border border-red-200 dark:bg-red-900/40 dark:border-red-800">
+                        <span class="text-red-800 dark:text-red-300">Incumplidos</span>
+                        <p class="font-bold text-red-800 dark:text-red-200">{{ $row['incumplidos'] }}</p>
                     </div>
-                    <div class="rounded-md px-2 py-1.5 bg-yellow-50 dark:bg-yellow-900/20">
-                        <span class="text-yellow-700 dark:text-yellow-400">En riesgo</span>
-                        <p class="font-bold text-yellow-700 dark:text-yellow-300">{{ $row['en_riesgo'] }}</p>
+                    <div class="rounded-md px-2 py-1.5 bg-yellow-50 border border-yellow-200 dark:bg-yellow-900/30 dark:border-yellow-800">
+                        <span class="text-yellow-800 dark:text-yellow-300">En riesgo</span>
+                        <p class="font-bold text-yellow-800 dark:text-yellow-200">{{ $row['en_riesgo'] }}</p>
                     </div>
-                    <div class="rounded-md px-2 py-1.5 bg-orange-50 dark:bg-orange-900/20">
-                        <span class="text-orange-700 dark:text-orange-400">Vencidos</span>
-                        <p class="font-bold text-orange-700 dark:text-orange-300">{{ $row['vencidos'] }}</p>
+                    <div class="rounded-md px-2 py-1.5 bg-orange-50 border border-orange-200 dark:bg-orange-900/30 dark:border-orange-800">
+                        <span class="text-orange-800 dark:text-orange-300">Vencidos</span>
+                        <p class="font-bold text-orange-800 dark:text-orange-200">{{ $row['vencidos'] }}</p>
                     </div>
-                    <div class="rounded-md px-2 py-1.5 bg-blue-50 dark:bg-blue-900/20">
-                        <span class="text-blue-700 dark:text-blue-400">En tiempo</span>
-                        <p class="font-bold text-blue-700 dark:text-blue-300">{{ $row['en_tiempo'] }}</p>
+                    <div class="rounded-md px-2 py-1.5 bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800">
+                        <span class="text-blue-800 dark:text-blue-300">En tiempo</span>
+                        <p class="font-bold text-blue-800 dark:text-blue-200">{{ $row['en_tiempo'] }}</p>
                     </div>
                 </div>
                 @if($row['tiempo_promedio_dias'] > 0)
@@ -176,18 +176,18 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-white/60 dark:bg-[#1C1F26]/60">
-                <h4 class="text-sm font-semibold dark:text-white mb-3">Cumplimiento SLA (atendidos)</h4>
+            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#242933]">
+                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-3">Cumplimiento SLA (atendidos)</h4>
                 <div class="h-[260px]"><canvas id="chartMantSlaCumplimiento"></canvas></div>
             </div>
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-white/60 dark:bg-[#1C1F26]/60">
-                <h4 class="text-sm font-semibold dark:text-white mb-3">Estado actual por prioridad (abiertos)</h4>
+            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#242933]">
+                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-3">Estado actual por prioridad (abiertos)</h4>
                 <div class="h-[260px]"><canvas id="chartMantSlaAbiertos"></canvas></div>
             </div>
         </div>
 
         @if(!empty($sla['tickets_criticos']))
-        <div class="mt-6 rounded-lg border border-orange-200 dark:border-orange-900/40 overflow-hidden">
+        <div class="mt-6 rounded-lg border border-orange-200 dark:border-orange-900/40 overflow-hidden bg-gray-50 dark:bg-[#1C1F26]">
             <div class="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-900/40">
                 <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-300">
                     <i class="fas fa-exclamation-triangle mr-1"></i>
@@ -209,7 +209,7 @@
                     </thead>
                     <tbody>
                         @foreach($sla['tickets_criticos'] as $critico)
-                        <tr class="border-t border-gray-100 dark:border-gray-800">
+                        <tr class="border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#1C1F26]">
                             <td class="py-2 px-4 font-mono font-semibold dark:text-gray-200">#{{ $critico['id'] }}</td>
                             <td class="py-2 px-4 max-w-xs truncate dark:text-gray-300">{{ $critico['asunto'] }}</td>
                             <td class="py-2 px-4 dark:text-gray-300">{{ $critico['prioridad'] }}</td>
@@ -242,27 +242,27 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <h3 class="text-lg font-semibold dark:text-white mb-3">Distribución por Estado</h3>
+        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Distribución por Estado</h3>
             <div class="h-[300px]"><canvas id="chartMantEstado"></canvas></div>
         </div>
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <h3 class="text-lg font-semibold dark:text-white mb-3">Por Prioridad</h3>
+        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Por Prioridad</h3>
             <div class="h-[300px]"><canvas id="chartMantPrioridad"></canvas></div>
         </div>
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <h3 class="text-lg font-semibold dark:text-white mb-3">Por Categoría</h3>
+        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Por Categoría</h3>
             <div class="h-[300px]"><canvas id="chartMantCategoria"></canvas></div>
         </div>
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
-            <h3 class="text-lg font-semibold dark:text-white mb-3">Tendencia del Periodo</h3>
+        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Tendencia del Periodo</h3>
             <div class="h-[300px]"><canvas id="chartMantTendencia"></canvas></div>
         </div>
     </div>
 
     @if(!empty($metricasProductividad['tickets_por_responsable']) && count($metricasProductividad['tickets_por_responsable']))
-    <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A]">
-        <h3 class="text-lg font-semibold dark:text-white mb-4">Por Responsable</h3>
+    <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Por Responsable</h3>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
@@ -279,9 +279,9 @@
                     <tr class="border-b border-gray-100 dark:border-gray-800">
                         <td class="py-2 pr-4 font-medium dark:text-gray-200">{{ $row['nombre'] }}</td>
                         <td class="py-2 px-4 dark:text-gray-300">{{ $row['total'] }}</td>
-                        <td class="py-2 px-4 text-green-600">{{ $row['atendidos'] }}</td>
-                        <td class="py-2 px-4 text-blue-600">{{ $row['en_proceso'] }}</td>
-                        <td class="py-2 px-4 text-yellow-600">{{ $row['pendientes'] }}</td>
+                        <td class="py-2 px-4 text-green-600 dark:text-green-400">{{ $row['atendidos'] }}</td>
+                        <td class="py-2 px-4 text-blue-600 dark:text-blue-400">{{ $row['en_proceso'] }}</td>
+                        <td class="py-2 px-4 text-yellow-600 dark:text-yellow-400">{{ $row['pendientes'] }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -438,4 +438,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 300);
 });
+
+const observerDarkModeMant = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            setTimeout(() => {
+                const container = document.getElementById('productividad-mantenimiento-container');
+                if (container && typeof inicializarGraficasMantenimiento === 'function') {
+                    inicializarGraficasMantenimiento();
+                }
+            }, 50);
+        }
+    });
+});
+observerDarkModeMant.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 </script>
