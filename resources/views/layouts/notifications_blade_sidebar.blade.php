@@ -285,9 +285,9 @@
             if (wasUnread) _decrementarBadgeInmediato();
         };
 
-        window.marcarMantenimientoComoLeido = function(mantenimientoId, el) {
+        window.marcarMantenimientoComoLeido = function(mantenimientoId, el, estatus) {
             const wasUnread = el && el.classList.contains('notif-item--unread');
-            marcarVistoParaBadge('dismissMantenimientos', mantenimientoId, 'Pendiente');
+            marcarVistoParaBadge('dismissMantenimientos', mantenimientoId, estatus || 'Pendiente');
             if (el) el.classList.remove('notif-item--unread');
             if (wasUnread) _decrementarBadgeInmediato();
         };
@@ -412,14 +412,24 @@
         window.abrirNotificacionMantenimiento = function(mantenimientoId) {
             tooltip.style.display = 'none';
 
-            // El modal de mantenimiento vive dentro del tablero: si la tarjeta ya está en
-            // pantalla la abrimos ahí; si no, navegamos y el tablero la abre al cargar.
+            // En el tablero, abrir la tarjeta mantiene su flujo (dataset + refresco de Livewire)
             if (window.location.pathname.endsWith('/tickets-mantenimiento')) {
                 const card = document.querySelector(`[data-ticket-id="${mantenimientoId}"]`);
                 if (card) {
                     card.click();
                     return;
                 }
+            }
+
+            // Modal global del panel de mantenimiento (montado en el layout) → cualquier vista,
+            // sin redirigir. Si falla la carga, se cae al flujo anterior.
+            if (typeof window.__abrirModalMantenimiento === 'function') {
+                window.__abrirModalMantenimiento(mantenimientoId).then(abierto => {
+                    if (!abierto) {
+                        window.location.href = `/tickets-mantenimiento?mantenimiento_id=${mantenimientoId}`;
+                    }
+                });
+                return;
             }
 
             window.location.href = `/tickets-mantenimiento?mantenimiento_id=${mantenimientoId}`;
@@ -527,7 +537,8 @@
                 const esMantenimiento = window.location.pathname.endsWith('/tickets-mantenimiento');
 
                 if (cardId && esMantenimiento) {
-                    marcarVistoParaBadge('dismissMantenimientos', cardId, 'Pendiente');
+                    // La clave de descarte lleva el estatus: al moverse de columna vuelve a avisar.
+                    marcarVistoParaBadge('dismissMantenimientos', cardId, card.dataset.ticketEstatus || 'Pendiente');
                 } else if (cardId) {
                     marcarVistoParaBadge('dismissTickets', cardId, 'Pendiente');
                     const chat = window._lastNotifData?.mensajes_nuevos?.find(m => String(m.ticket_id) === cardId);
@@ -621,18 +632,22 @@
                     if (data.mantenimientos_nuevos) {
                         data.mantenimientos_nuevos.forEach(m => {
                             if (!m || !m.MantenimientoID) return;
-                            if (suprimeConteoBadge('dismissMantenimientos', m.MantenimientoID, 'Pendiente')) return;
-                            conteoNoLeidos++;
+                            // El mantenimiento sigue en la lista hasta que se resuelve; abrirlo solo
+                            // apaga el badge, y si cambia de estatus vuelve a marcarse como no leído.
+                            const estatus = m.estatus || 'Pendiente';
+                            const unread = !suprimeConteoBadge('dismissMantenimientos', m.MantenimientoID, estatus);
+                            if (unread) conteoNoLeidos++;
+                            const estatusJs = JSON.stringify(estatus);
                             listaNotificaciones.push({
                                 timestamp: m.timestamp || 0,
                                 html: crearItemNotificacion({
-                                    unread: true,
+                                    unread,
                                     theme: 'amber',
                                     icon: 'fa-tools',
                                     titulo: `Mantenimiento #${m.MantenimientoID} · ${m.empleado}`,
-                                    categoria: 'Mantenimiento nuevo',
+                                    categoria: estatus === 'Pendiente' ? 'Mantenimiento nuevo' : `Mantenimiento · ${estatus}`,
                                     tiempo: m.created_at,
-                                    onclick: `marcarMantenimientoComoLeido(${m.MantenimientoID}, this); abrirNotificacionMantenimiento(${m.MantenimientoID})`
+                                    onclick: `marcarMantenimientoComoLeido(${m.MantenimientoID}, this, ${estatusJs}); abrirNotificacionMantenimiento(${m.MantenimientoID})`
                                 })
                             });
                         });

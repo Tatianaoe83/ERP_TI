@@ -191,9 +191,11 @@ class TicketsMantenimientoController extends Controller
                 return response()->json(['success' => false, 'message' => 'Solicitud no encontrada'], 404);
             }
 
+            // Mismo formato que las tarjetas del tablero: el modal se puebla igual venga de
+            // una tarjeta o de una notificación (sin tablero en pantalla).
             return response()->json([
                 'success' => true,
-                'ticket'  => $this->formatearTicket($ticket),
+                'ticket'  => TicketMantenimiento::formatearTicketParaVista($ticket),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error al obtener la solicitud: ' . $e->getMessage()], 500);
@@ -463,30 +465,6 @@ class TicketsMantenimientoController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Error obteniendo estadísticas: ' . $e->getMessage()], 500);
         }
-    }
-
-    private function formatearTicket(TicketMantenimiento $ticket): array
-    {
-        $ticket->loadMissing(['empleado.obras', 'empleado.puestos.departamentos', 'responsable']);
-
-        return [
-            'MantenimientoID'   => $ticket->MantenimientoID,
-            'EmpleadoID'        => $ticket->EmpleadoID,
-            'NombreSolicitante' => $ticket->nombre_solicitante,
-            'Correo'            => $ticket->correo,
-            'AreaDepartamento'  => $ticket->area_departamento,
-            'Asunto'            => $ticket->asunto,
-            'Descripcion'       => $ticket->Descripcion,
-            'Categoria'         => $ticket->Categoria,
-            'Prioridad'         => $ticket->Prioridad,
-            'Estatus'           => $ticket->Estatus,
-            'ResponsableID'     => $ticket->ResponsableID,
-            'Responsable'       => $ticket->responsable
-                ? TicketMantenimiento::formatearNombreEmpleado($ticket->responsable->NombreEmpleado)
-                : null,
-            'imagen'            => $ticket->imagen,
-            'created_at'        => optional($ticket->created_at)->format('d/m/Y H:i:s'),
-        ];
     }
 
     private function formatearMensajeChat(MantenimientoChat $m): array

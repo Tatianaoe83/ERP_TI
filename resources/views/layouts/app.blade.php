@@ -373,6 +373,14 @@
         </div>
     @endunless
 
+    {{-- Panel de mantenimiento global: solo fuera de /tickets-mantenimiento (ahí el tablero ya lo monta) --}}
+    @unless(request()->is('tickets-mantenimiento'))
+        @include('partials.mantenimiento-modal-engine')
+        <div x-data="mantenimientoModal(true)">
+            @include('partials.modal-mantenimiento')
+        </div>
+    @endunless
+
 
 
 

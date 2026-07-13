@@ -357,8 +357,9 @@ Route::get('/notificaciones-panel', function () {
             ];
         });
 
-    // 7. Mantenimientos de compras (Pendiente): mismo criterio que tickets
-    $mantenimientosNuevos = \App\Models\TicketMantenimiento::where('Estatus', 'Pendiente')
+    // 7. Mantenimientos de compras: siguen notificando hasta resolverse (Atendido/Cancelado),
+    //    no solo mientras están en Pendiente.
+    $mantenimientosNuevos = \App\Models\TicketMantenimiento::whereNotIn('Estatus', ['Atendido', 'Cancelado'])
         ->with('empleado')
         ->orderBy('created_at', 'desc')
         ->limit(10)
@@ -366,6 +367,7 @@ Route::get('/notificaciones-panel', function () {
         ->map(fn($m) => [
             'MantenimientoID' => $m->MantenimientoID,
             'empleado' => $m->empleado ? $m->empleado->NombreEmpleado : 'Sin asignar',
+            'estatus' => $m->Estatus,
             'vencidos' => $m->created_at < $corte,
             'created_at' => $m->created_at->diffForHumans(),
             'timestamp' => $m->created_at->timestamp,

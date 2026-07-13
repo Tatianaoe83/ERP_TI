@@ -121,9 +121,12 @@ class TicketMantenimiento extends Model
     /** Empleados habilitados como responsable de mantenimiento. */
     public const RESPONSABLE = [98];
 
+    /** Memo por request: el modal de mantenimiento se monta en el layout de todas las vistas. */
+    private static ?array $responsablesMemo = null;
+
     public static function obtenerResponsables(): array
     {
-        return Empleados::query()
+        return self::$responsablesMemo ??= Empleados::query()
             ->whereIn('EmpleadoID', self::RESPONSABLE)
             ->where('Estado', 1)
             ->select('EmpleadoID', 'NombreEmpleado')
