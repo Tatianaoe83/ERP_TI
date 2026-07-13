@@ -174,31 +174,16 @@ class PresupuestoHelper
      */
     public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
-<<<<<<< Updated upstream
-        $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
-        $categoriasInversiones = ['LAPTOP', 'MONITOR', 'NO BREAK', 'STARLINK', 'TABLET', 'IMPRESORA'];
-=======
         $tiposPersona = self::tiposPersona($modo);
         // Nombres tal como existen en inventarioequipo: ahí es TABLETA (no TABLET) y UPS
         // (no NO BREAK). STARLINK no vive aquí: es un servicio recurrente, va como insumo.
         $categorias = ['LAPTOP', 'MONITOR', 'IMPRESORA', 'TABLETA', 'UPS'];
->>>>>>> Stashed changes
 
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
-<<<<<<< Updated upstream
-            ->whereHas('inventarioequipo', function($query) use ($categoriasInversiones) {
-                $query->whereIn(DB::raw('UPPER(TRIM(CategoriaEquipo))'), $categoriasInversiones);
-            })
-            ->with([
-                'puestos:PuestoID,NombrePuesto',
-                'inventarioequipo' => function($query) use ($categoriasInversiones) {
-                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio')
-                          ->whereIn(DB::raw('UPPER(TRIM(CategoriaEquipo))'), $categoriasInversiones);
-=======
             ->whereHas('inventarioequipo', function($query) use ($categorias, $modo) {
                 $query->whereIn('CategoriaEquipo', $categorias);
                 self::soloPresupuestados($query, $modo);
@@ -209,7 +194,6 @@ class PresupuestoHelper
                     $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio')
                           ->whereIn('CategoriaEquipo', $categorias);
                     self::soloPresupuestados($query, $modo);
->>>>>>> Stashed changes
                 }
             ])
             ->get()
