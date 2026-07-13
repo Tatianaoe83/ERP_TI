@@ -38,7 +38,13 @@ class InventarioEquipo extends Model implements Auditable
         'Folio',
         'GerenciaEquipo',
         'Comentarios',
-        'FechaDeCompra'
+        'FechaDeCompra',
+        'Presupuestado',
+        'MesDePago'
+    ];
+
+    protected $casts = [
+        'Presupuestado' => 'boolean',
     ];
 
     public function empleados()

@@ -121,6 +121,10 @@
                             <th>Folio</th>
                             <th>Gerencia Equipo</th>
                             <th>Comentarios</th>
+                            @if($permitePresupuestado)
+                            <th>Presupuestado</th>
+                            <th>Mes de pago</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -154,6 +158,10 @@
                             <td>{{ $equiposAsignado->Folio }}</td>
                             <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
                             <td>{{ $equiposAsignado->Comentarios }}</td>
+                            @if($permitePresupuestado)
+                            <td>{{ $equiposAsignado->Presupuestado ? 'Si' : 'No' }}</td>
+                            <td>{{ $equiposAsignado->MesDePago }}</td>
+                            @endif
                         </tr>
                         @endforeach
                     </tbody>
@@ -233,6 +241,9 @@
                             <th>Num. Serie</th>
                             <th>Comentarios</th>
                             <th>Mes de pago </th>
+                            @if($permitePresupuestado)
+                            <th>Presupuestado</th>
+                            @endif
 
                         </tr>
                     </thead>
@@ -270,6 +281,9 @@
 <td>{{ $insumosAsignado->FechaAsignacion ? \Carbon\Carbon::parse($insumosAsignado->FechaAsignacion)->format('d/m/Y') : 'Sin asignar' }}</td>                            <td>{{ $insumosAsignado->NumSerie }}</td>
                             <td>{{ $insumosAsignado->Comentarios }}</td>
                             <td>{{ $insumosAsignado->MesDePago }}</td>
+                            @if($permitePresupuestado)
+                            <td>{{ $insumosAsignado->Presupuestado ? 'Si' : 'No' }}</td>
+                            @endif
                         </tr>
                         @endforeach
 
@@ -360,6 +374,9 @@
                             <th>Comentario</th>
                             <th>Monto Renovación Fianza</th>
                             <th>Fecha Renovación</th>
+                            @if($permitePresupuestado)
+                            <th>Presupuestado</th>
+                            @endif
 
 
 
@@ -403,6 +420,9 @@
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
                             <td>{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
+                            @if($permitePresupuestado)
+                            <td>{{ $LineasAsignado->Presupuestado ? 'Si' : 'No' }}</td>
+                            @endif
 
                         </tr>
                         @endforeach
@@ -495,6 +515,24 @@
 
 <script>
     const empleadoInventarioActivo = @json($empleadoActivo);
+    const permitePresupuestado = @json($permitePresupuestado);
+
+    // El switch sólo existe en el DOM para FISICA/EXTRAORDINARIO; para el resto
+    // estas funciones son inocuas y el campo viaja siempre en 0.
+    function setPresupuestado(selector, texto) {
+        const marcado = String(texto ?? '').trim().toLowerCase() === 'si';
+        $(selector).prop('checked', marcado);
+        $(selector + 'Label').text(marcado ? 'Si' : 'No');
+    }
+
+    function getPresupuestado(selector) {
+        return permitePresupuestado && $(selector).is(':checked') ? 1 : 0;
+    }
+
+    // Mantener la etiqueta del switch en sync con su estado
+    $(document).on('change', '.form-check-input[role="switch"]', function() {
+        $('#' + this.id + 'Label').text(this.checked ? 'Si' : 'No');
+    });
 
     function bloquearAccionInventarioInactivo() {
         if (!empleadoInventarioActivo) {
@@ -626,6 +664,8 @@
         $('#editFolio').val(row.find("td:eq(9)").text());
         $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('id')).trigger('change');
         $('#editComentarios').val(row.find("td:eq(11)").text());
+        setPresupuestado('#editPresupuestadoEquipo', row.find("td:eq(12)").text());
+        $('#editMesDePagoEquipo').val(row.find("td:eq(13)").text().trim());
 
         $('#editModal').modal('show');
     });
@@ -656,6 +696,8 @@
         $('#editPrecio').val(precio);
         $('#editId').val('');
         $('#editEmp').val(id_E);
+        setPresupuestado('#editPresupuestadoEquipo', 'No');
+        $('#editMesDePagoEquipo').val('');
 
         $('#editModal').modal('show');
     });
@@ -842,6 +884,8 @@
                     FechaDeCompra: $('#editFechaDeCompra').val(),
                     Comentarios: $('#editComentarios').val(),
                     FechaRenovacion: $('#editFechaDeRenovacion').val(),
+                    Presupuestado: getPresupuestado('#editPresupuestadoEquipo'),
+                    MesDePago: $('#editMesDePagoEquipo').val(),
                 };
 
                 $.ajax({
@@ -968,6 +1012,10 @@
         row.find('td:eq(9)').text(equipo.Folio);
         row.find('td:eq(10)').text(equipo.GerenciaEquipo);
         row.find('td:eq(11)').text(equipo.Comentarios);
+        if (permitePresupuestado) {
+            row.find('td:eq(12)').text(equipo.Presupuestado ? 'Si' : 'No');
+            row.find('td:eq(13)').text(equipo.MesDePago ?? '');
+        }
         row.find('.edit-btn').data('id', equipo.InventarioID);
     }
 
@@ -996,6 +1044,7 @@
             <td>${equipo.Folio}</td>
             <td>${equipo.GerenciaEquipo}</td>
             <td>${equipo.Comentarios}</td>
+            ${permitePresupuestado ? `<td>${equipo.Presupuestado ? 'Si' : 'No'}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
         </tr>
     `;
         $('#equiposAsignadosTable tbody').append(newRow);
@@ -1110,6 +1159,7 @@
         $('#editNumSerieInsu').val(row.find("td:eq(9)").text());
         $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
         $('#editMesDePago').val(row.find("td:eq(11)").text());
+        setPresupuestado('#editPresupuestadoInsumo', row.find("td:eq(12)").text());
 
         $('#editModalInsumo').modal('show');
     });
@@ -1150,6 +1200,7 @@
         $('#editobserv').val(observaciones);
         $('#editId_insumo').val('');
         $('#editEmp_insumo').val(id_E);
+        setPresupuestado('#editPresupuestadoInsumo', 'No');
 
         $('#editModalInsumo').modal('show');
     });
@@ -1211,6 +1262,7 @@
             NumSerie: $('#editNumSerieInsu').val(),
             Comentarios: $('#editComentariosInsumo').val(),
             MesDePago: $('#editMesDePago').val(),
+            Presupuestado: getPresupuestado('#editPresupuestadoInsumo'),
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1290,6 +1342,9 @@
         row.find('td:eq(9)').text(insumo.NumSerie);
         row.find('td:eq(10)').text(insumo.Comentarios);
         row.find('td:eq(11)').text(insumo.MesDePago);
+        if (permitePresupuestado) {
+            row.find('td:eq(12)').text(insumo.Presupuestado ? 'Si' : 'No');
+        }
     }
 
 
@@ -1317,6 +1372,7 @@
             <td>${insumo.NumSerie}</td>
             <td>${insumo.Comentarios}</td>
             <td>${insumo.MesDePago}</td>
+            ${permitePresupuestado ? `<td>${insumo.Presupuestado ? 'Si' : 'No'}</td>` : ''}
         </tr>
     `;
         $('#insumosAsignadosTable tbody').append(newRow);
@@ -1424,6 +1480,7 @@
         $('#editMontoRenovacionFianza').val(row.find("td:eq(13)").text());
         // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el hidden input
         $('#editFechaRenovacion').val(fechaDisplayToInput(row.find("td:eq(14)").text()));
+        setPresupuestado('#editPresupuestadoLinea', row.find("td:eq(15)").text());
 
         $('#editModalLinea').modal('show');
     });
@@ -1460,6 +1517,7 @@
         $('#editEmp_linea').val(id_E);
         $('#editMontoRenovacionFianza').val(monto);
         $('#editFechaRenovacion').val(fecha);
+        setPresupuestado('#editPresupuestadoLinea', 'No');
 
         $('#editModalLinea').modal('show');
     });
@@ -1514,7 +1572,8 @@
             FechaAsignacion: $('#editfechalinea').val(),
             Comentarios: $('#editcomenl').val(),
             MontoRenovacionFianza: $('#editMontoRenovacionFianza').val(),
-            FechaRenovacion: fechaRenov
+            FechaRenovacion: fechaRenov,
+            Presupuestado: getPresupuestado('#editPresupuestadoLinea')
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1591,6 +1650,9 @@
         row.find('td:eq(12)').text(telefono.Comentarios);
         row.find('td:eq(13)').text(telefono.MontoRenovacionFianza);
         row.find('td:eq(14)').text(formatFechaRenovacion(telefono.FechaRenovacion));
+        if (permitePresupuestado) {
+            row.find('td:eq(15)').text(telefono.Presupuestado ? 'Si' : 'No');
+        }
     }
 
 
@@ -1621,6 +1683,12 @@
             telefono.MontoRenovacionFianza,
             formatFechaRenovacion(telefono.FechaRenovacion)
         ];
+
+        // La columna sólo existe para FISICA/EXTRAORDINARIO; DataTables exige que el
+        // array tenga exactamente tantos elementos como columnas tenga la tabla.
+        if (permitePresupuestado) {
+            newRow.push(telefono.Presupuestado ? 'Si' : 'No');
+        }
 
         table.row.add(newRow).draw(false);
     }

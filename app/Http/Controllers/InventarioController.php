@@ -288,6 +288,9 @@ class InventarioController extends AppBaseController
         return view('inventarios.edit')->with([
             'inventario' => $inventario,
             'empleadoActivo' => (bool) $inventario->Estado,
+            // El switch "Presupuestado" sólo aplica a los tipos de persona que alimentan
+            // los reportes de presupuesto.
+            'permitePresupuestado' => in_array($inventario->tipo_persona, ['FISICA', 'EXTRAORDINARIO']),
             'equiposAsignados' => $EquiposAsignados,
             'equipos' => $Equipos,
             'insumosAsignados' => $InsumosAsignados,
