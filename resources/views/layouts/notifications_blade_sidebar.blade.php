@@ -285,6 +285,13 @@
             if (wasUnread) _decrementarBadgeInmediato();
         };
 
+        window.marcarMantenimientoComoLeido = function(mantenimientoId, el) {
+            const wasUnread = el && el.classList.contains('notif-item--unread');
+            marcarVistoParaBadge('dismissMantenimientos', mantenimientoId, 'Pendiente');
+            if (el) el.classList.remove('notif-item--unread');
+            if (wasUnread) _decrementarBadgeInmediato();
+        };
+
         window.marcarSolicitudComoLeida = function(solicitudId) {
             marcarVistoParaBadge('dismissSolicitudes', solicitudId, 'nueva');
         };
@@ -402,6 +409,22 @@
         window.abrirNotificacionTicket = function(ticketId) { abrirTicketDesdeNotif(ticketId); };
         window.abrirNotificacionChat = function(ticketId) { abrirTicketDesdeNotif(ticketId); };
 
+        window.abrirNotificacionMantenimiento = function(mantenimientoId) {
+            tooltip.style.display = 'none';
+
+            // El modal de mantenimiento vive dentro del tablero: si la tarjeta ya está en
+            // pantalla la abrimos ahí; si no, navegamos y el tablero la abre al cargar.
+            if (window.location.pathname.endsWith('/tickets-mantenimiento')) {
+                const card = document.querySelector(`[data-ticket-id="${mantenimientoId}"]`);
+                if (card) {
+                    card.click();
+                    return;
+                }
+            }
+
+            window.location.href = `/tickets-mantenimiento?mantenimiento_id=${mantenimientoId}`;
+        };
+
         window.abrirNotificacionSolicitud = function(solicitudId) {
             tooltip.style.display = 'none';
             // Modal global de detalles (montado en el layout) → funciona en cualquier vista, sin redirigir
@@ -424,6 +447,29 @@
 
         const navEntries = performance.getEntriesByType('navigation');
         const esRecarga = navEntries.length > 0 && navEntries[0].type === 'reload';
+
+        if (window.location.pathname.endsWith('/tickets-mantenimiento')) {
+            const mantenimientoId = new URLSearchParams(window.location.search).get('mantenimiento_id');
+
+            if (mantenimientoId) {
+                // Las tarjetas las pinta Livewire: esperamos a que exista antes de abrirla.
+                if (!esRecarga) {
+                    const limite = Date.now() + 8000;
+                    const buscarTarjeta = () => {
+                        const card = document.querySelector(`[data-ticket-id="${mantenimientoId}"]`);
+                        if (card) {
+                            card.click();
+                            return;
+                        }
+                        if (Date.now() < limite) setTimeout(buscarTarjeta, 250);
+                    };
+                    setTimeout(buscarTarjeta, 500);
+                }
+
+                // Limpiar el param para que un F5 no reabra el modal
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
 
         if (window.location.pathname.endsWith('/tickets')) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -475,12 +521,18 @@
         document.addEventListener('click', function(e) {
             const card = e.target.closest('[data-ticket-id]');
             if (card) {
-                const ticketId = card.getAttribute('data-ticket-id');
-                if (ticketId) {
-                    marcarVistoParaBadge('dismissTickets', ticketId, 'Pendiente');
-                    const chat = window._lastNotifData?.mensajes_nuevos?.find(m => String(m.ticket_id) === ticketId);
+                const cardId = card.getAttribute('data-ticket-id');
+                // El tablero de mantenimiento reutiliza data-ticket-id, pero sus IDs son de
+                // otra tabla: sin separarlos, abrir Mantenimiento #6 silencia al Ticket #6.
+                const esMantenimiento = window.location.pathname.endsWith('/tickets-mantenimiento');
+
+                if (cardId && esMantenimiento) {
+                    marcarVistoParaBadge('dismissMantenimientos', cardId, 'Pendiente');
+                } else if (cardId) {
+                    marcarVistoParaBadge('dismissTickets', cardId, 'Pendiente');
+                    const chat = window._lastNotifData?.mensajes_nuevos?.find(m => String(m.ticket_id) === cardId);
                     if (chat) {
-                        marcarVistoParaBadge('dismissChats', ticketId, `${chat.total || 1}-${chat.timestamp || 0}`);
+                        marcarVistoParaBadge('dismissChats', cardId, `${chat.total || 1}-${chat.timestamp || 0}`);
                     }
                 }
             }
@@ -561,6 +613,26 @@
                                     categoria: 'Ticket nuevo',
                                     tiempo: t.created_at,
                                     onclick: `marcarTicketComoLeido(${t.TicketID}, this); abrirNotificacionTicket(${t.TicketID})`
+                                })
+                            });
+                        });
+                    }
+
+                    if (data.mantenimientos_nuevos) {
+                        data.mantenimientos_nuevos.forEach(m => {
+                            if (!m || !m.MantenimientoID) return;
+                            if (suprimeConteoBadge('dismissMantenimientos', m.MantenimientoID, 'Pendiente')) return;
+                            conteoNoLeidos++;
+                            listaNotificaciones.push({
+                                timestamp: m.timestamp || 0,
+                                html: crearItemNotificacion({
+                                    unread: true,
+                                    theme: 'amber',
+                                    icon: 'fa-tools',
+                                    titulo: `Mantenimiento #${m.MantenimientoID} · ${m.empleado}`,
+                                    categoria: 'Mantenimiento nuevo',
+                                    tiempo: m.created_at,
+                                    onclick: `marcarMantenimientoComoLeido(${m.MantenimientoID}, this); abrirNotificacionMantenimiento(${m.MantenimientoID})`
                                 })
                             });
                         });

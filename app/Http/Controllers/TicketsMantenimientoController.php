@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\MantenimientoChat;
 use App\Models\TicketMantenimiento;
+use App\Services\MantenimientoAtendidoNotificationService;
 use App\Services\MantenimientoEmailService;
+use App\Services\MantenimientoInProgressNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -13,7 +15,7 @@ class TicketsMantenimientoController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:ver-compras');
+        $this->middleware('permission:ver-mantenimientos-compras');
     }
 
     public function index(Request $request)
@@ -212,6 +214,8 @@ class TicketsMantenimientoController extends Controller
                 return response()->json(['success' => false, 'message' => 'No se pueden realizar modificaciones en una solicitud finalizada'], 400);
             }
 
+            $estatusAnterior = $ticket->Estatus;
+
             if ($request->has('prioridad')) {
                 $ticket->Prioridad = $request->input('prioridad') ?: null;
             }
@@ -266,6 +270,16 @@ class TicketsMantenimientoController extends Controller
             }
 
             $ticket->save();
+
+            // Correo de aviso al empleado cuando el mantenimiento pasa a En proceso por primera vez
+            if ($estatusAnterior === 'Pendiente' && $ticket->Estatus === 'En proceso') {
+                app(MantenimientoInProgressNotificationService::class)->sendNotificationForInProgressTicket($ticket->fresh());
+            }
+
+            // Aviso informativo de cierre. Se llega a Atendido desde 'En proceso' o desde 'Pausado'.
+            if ($estatusAnterior !== 'Atendido' && $ticket->Estatus === 'Atendido') {
+                app(MantenimientoAtendidoNotificationService::class)->sendNotificationForAttendedTicket($ticket->fresh());
+            }
 
             return response()->json([
                 'success' => true,

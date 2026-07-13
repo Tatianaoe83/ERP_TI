@@ -357,9 +357,26 @@ Route::get('/notificaciones-panel', function () {
             ];
         });
 
+    // 7. Mantenimientos de compras (Pendiente): mismo criterio que tickets
+    $mantenimientosNuevos = \App\Models\TicketMantenimiento::where('Estatus', 'Pendiente')
+        ->with('empleado')
+        ->orderBy('created_at', 'desc')
+        ->limit(10)
+        ->get()
+        ->map(fn($m) => [
+            'MantenimientoID' => $m->MantenimientoID,
+            'empleado' => $m->empleado ? $m->empleado->NombreEmpleado : 'Sin asignar',
+            'vencidos' => $m->created_at < $corte,
+            'created_at' => $m->created_at->diffForHumans(),
+            'timestamp' => $m->created_at->timestamp,
+        ]);
+
     return response()->json([
         'tickets_nuevos' => $ticketsNuevos,
         'tickets_nuevos_count' => \App\Models\Tickets::where('Estatus', 'Pendiente')
+            ->where('created_at', '>=', $corte)->count(),
+        'mantenimientos_nuevos' => $mantenimientosNuevos,
+        'mantenimientos_nuevos_count' => \App\Models\TicketMantenimiento::where('Estatus', 'Pendiente')
             ->where('created_at', '>=', $corte)->count(),
         'solicitudes_pendientes' => $solicitudesPendientes,
         'solicitudes_pendientes_count' => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])

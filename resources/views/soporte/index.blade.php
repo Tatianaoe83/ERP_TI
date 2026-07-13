@@ -113,6 +113,17 @@
             box-shadow: 0 6px 12px -1px rgba(16, 185, 129, 0.4);
         }
 
+        #btnEnviarMantenimiento:not(:disabled) {
+            background: linear-gradient(135deg, #ffa500 0%, #cc8400 100%);
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(255, 165, 0, 0.3);
+        }
+
+        #btnEnviarMantenimiento:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow:0 6px 12px -1px rgba(255, 165, 0, 0.4);
+        }
+
         /* Inputs focus mejorados */
         input:focus,
         textarea:focus,
@@ -1025,8 +1036,8 @@ function renderTelefono() {
         function deshabilitarCamposMantenimiento() {
             window.correoMantenimientoValido = false;
             $('#nombreSolicitante, #areaDepartamento').val('').prop('disabled', true);
-            $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-50');
-            $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed bg-gray-400').removeClass('bg-orange-500 hover:bg-orange-600');
+            $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-100');
+            $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed');
             $('#dropzoneMantenimiento').addClass('opacity-50');
             $('#correo-mantenimiento-error').addClass('hidden');
         }
@@ -1048,7 +1059,7 @@ function renderTelefono() {
                     $('#nombreSolicitante').val(data.NombreEmpleado || '').prop('disabled', true);
                     $('#areaDepartamento').val(data.NombreDepartamento || 'Sin departamento').prop('disabled', true);
                     $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', false).removeClass('bg-gray-50');
-                    $('#btnEnviarMantenimiento').prop('disabled', false).removeClass('cursor-not-allowed bg-gray-400').addClass('bg-orange-500 hover:bg-orange-600');
+                    $('#btnEnviarMantenimiento').prop('disabled', false).removeClass('cursor-not-allowed');
                     $('#dropzoneMantenimiento').removeClass('opacity-50');
                 },
                 error: function() {
@@ -1057,7 +1068,7 @@ function renderTelefono() {
                     $('#correoMantenimiento').removeClass('border-green-500').addClass('border-red-500');
                     $('#correo-mantenimiento-error').removeClass('hidden').text('No se encontró correo, contacta a soporte');
                     $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-50');
-                    $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed bg-gray-400').removeClass('bg-orange-500 hover:bg-orange-600');
+                    $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed');
                     $('#dropzoneMantenimiento').addClass('opacity-50');
                 }
             });
