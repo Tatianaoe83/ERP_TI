@@ -11,6 +11,7 @@
         <table id="facturasTable" class="w-full text-left border-collapse">
             <thead class="bg-gray-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700">
                 <tr>
+                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">ID</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Insumo</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Emisor</th>
                     <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Solicitud</th>
@@ -200,6 +201,15 @@
                 }
             },
             columns: [{
+                    data: 'FacturasID',
+                    className: 'px-4 py-3 border-b dark:border-slate-800 whitespace-nowrap',
+                    render: function(data) {
+                        return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-extrabold border border-slate-200 dark:border-slate-700">
+                        <i class="fas fa-hashtag text-[10px]"></i>${data}
+                    </span>`;
+                    }
+                },
+                {
                     data: 'InsumoNombre',
                     className: 'px-4 py-3 border-b dark:border-slate-800',
                     orderable: false,
