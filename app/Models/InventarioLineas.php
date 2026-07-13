@@ -44,13 +44,15 @@ class InventarioLineas extends Model implements Auditable
         'Comentarios',
         'MontoRenovacionFianza',
         'FechaRenovacion',
-        'LineaID'
+        'LineaID',
+        'Presupuestado'
 
     ];
 
     protected $casts = [
        'FechaFianza' => 'date',
-        'FechaRenovacion' =>'date', 
+        'FechaRenovacion' =>'date',
+        'Presupuestado' => 'boolean',
     ];
 
     public function empleados()

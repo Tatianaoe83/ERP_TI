@@ -148,6 +148,40 @@
               </div>
 
             </div>
+
+            @if($permitePresupuestado)
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <div class="dark:text-white">
+                  <label>Presupuestado</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoEquipo">
+                    <label class="form-check-label" for="editPresupuestadoEquipo" id="editPresupuestadoEquipoLabel">No</label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="dark:text-white">
+                  <label>Mes de pago</label>
+                  <select class="form-select" id="editMesDePagoEquipo" name="MesDePago">
+                    <option value="">Seleccione mes</option>
+                    <option value="ENERO">enero</option>
+                    <option value="FEBRERO">febrero</option>
+                    <option value="MARZO">marzo</option>
+                    <option value="ABRIL">abril</option>
+                    <option value="MAYO">mayo</option>
+                    <option value="JUNIO">junio</option>
+                    <option value="JULIO">julio</option>
+                    <option value="AGOSTO">agosto</option>
+                    <option value="SEPTIEMBRE">septiembre</option>
+                    <option value="OCTUBRE">octubre</option>
+                    <option value="NOVIEMBRE">noviembre</option>
+                    <option value="DICIEMBRE">diciembre</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            @endif
           </div>
         </form>
         <div class="modal-footer">
@@ -279,6 +313,19 @@
               </div>
             </div>
 
+            @if($permitePresupuestado)
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <div class="dark:text-white">
+                  <label>Presupuestado</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoInsumo">
+                    <label class="form-check-label" for="editPresupuestadoInsumo" id="editPresupuestadoInsumoLabel">No</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            @endif
 
           </div>
         </form>
@@ -330,6 +377,20 @@
                 </div>
               </div>
             </div>
+
+            @if($permitePresupuestado)
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <div class="dark:text-white">
+                  <label>Presupuestado</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoLinea">
+                    <label class="form-check-label" for="editPresupuestadoLinea" id="editPresupuestadoLineaLabel">No</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            @endif
 
             <!-- Campos ocultos para capturar datos de abajo automáticamente -->
             <input type="hidden" id="editMontoRenovacionFianza" name="MontoRenovacionFianza">
