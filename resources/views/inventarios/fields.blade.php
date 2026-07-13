@@ -104,6 +104,12 @@
             <!-- equiposAsignados Seleccionados -->
             <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Equipos Asignados</span>
 
+            @include('inventarios.filtro_presupuestado', [
+                'tabla' => 'equiposAsignadosTable',
+                'tipo' => 'equipos',
+                'permitePresupuestado' => $permitePresupuestado,
+                'empleadoID' => $inventario->EmpleadoID,
+            ])
 
             <div class="table-responsive">
                 <table id="equiposAsignadosTable" class="table table-bordered table-striped">
@@ -224,6 +230,13 @@
 
             <!-- insumosasignados Seleccionados -->
             <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Insumos Asignados</span>
+
+            @include('inventarios.filtro_presupuestado', [
+                'tabla' => 'insumosAsignadosTable',
+                'tipo' => 'insumos',
+                'permitePresupuestado' => $permitePresupuestado,
+                'empleadoID' => $inventario->EmpleadoID,
+            ])
 
             <div class="table-responsive">
                 <table id="insumosAsignadosTable" class="table table-bordered table-striped">
@@ -354,6 +367,13 @@
 
             <!-- lineasasignados Seleccionados -->
             <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Lineas Asignados</span>
+
+            @include('inventarios.filtro_presupuestado', [
+                'tabla' => 'lineasAsignadosTable',
+                'tipo' => 'lineas',
+                'permitePresupuestado' => $permitePresupuestado,
+                'empleadoID' => $inventario->EmpleadoID,
+            ])
 
             <div class="table-responsive">
                 <table id="lineasAsignadosTable" class="table table-bordered table-striped">
@@ -506,6 +526,46 @@
 @push('third_party_stylesheets')
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
+
+<style>
+    .inventario-filtros .pill-group {
+        gap: 8px;
+    }
+
+    .inventario-filtros .pill-filtro {
+        border: none;
+        border-radius: 999px;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        background-color: #e2e8f0;
+        transition: background-color .15s ease, color .15s ease;
+    }
+
+    .inventario-filtros .pill-filtro:hover {
+        background-color: #cbd5e1;
+    }
+
+    .inventario-filtros .pill-filtro.activo {
+        background-color: #3b82f6;
+        color: #fff;
+    }
+
+    .dark .inventario-filtros .pill-filtro {
+        background-color: #1e293b;
+        color: #cbd5e1;
+    }
+
+    .dark .inventario-filtros .pill-filtro:hover {
+        background-color: #334155;
+    }
+
+    .dark .inventario-filtros .pill-filtro.activo {
+        background-color: #3b82f6;
+        color: #fff;
+    }
+</style>
 @endpush
 
 @push('third_party_scripts')
@@ -622,6 +682,95 @@
             "info": true,
 
         });
+
+        inicializarFiltrosPresupuestado();
+    });
+</script>
+
+<script>
+    // Índice de la columna "Presupuestado" en cada tabla de asignados.
+    // La columna sólo se pinta para FISICA/EXTRAORDINARIO.
+    const columnaPresupuestado = {
+        equiposAsignadosTable: 12,
+        insumosAsignadosTable: 12,
+        lineasAsignadosTable: 15,
+    };
+
+    // Filtro activo por tabla: todos | presupuestados | no_presupuestados
+    const filtroPresupuestado = {
+        equiposAsignadosTable: 'todos',
+        insumosAsignadosTable: 'todos',
+        lineasAsignadosTable: 'todos',
+    };
+
+    function esFilaPresupuestada(valorCelda) {
+        return String(valorCelda ?? '').trim().toLowerCase() === 'si';
+    }
+
+    // Filtro global de DataTables: las tablas sin entrada en el mapa no se ven afectadas.
+    $.fn.dataTable.ext.search.push(function(settings, data) {
+        const tablaId = settings.nTable.id;
+        const filtro = filtroPresupuestado[tablaId];
+
+        if (!permitePresupuestado || !filtro || filtro === 'todos') {
+            return true;
+        }
+
+        const presupuestada = esFilaPresupuestada(data[columnaPresupuestado[tablaId]]);
+
+        return filtro === 'presupuestados' ? presupuestada : !presupuestada;
+    });
+
+    function actualizarConteos(tablaId) {
+        if (!permitePresupuestado) {
+            return;
+        }
+
+        const dt = $('#' + tablaId).DataTable();
+        let si = 0;
+        let no = 0;
+
+        // {search:'none'} => cuenta sobre todas las filas, no sólo las visibles.
+        dt.column(columnaPresupuestado[tablaId], { search: 'none' }).data().each(function(valor) {
+            esFilaPresupuestada(valor) ? si++ : no++;
+        });
+
+        const barra = $('.inventario-filtros[data-tabla="' + tablaId + '"]');
+        barra.find('.conteo-todos').text(si + no);
+        barra.find('.conteo-si').text(si);
+        barra.find('.conteo-no').text(no);
+    }
+
+    function inicializarFiltrosPresupuestado() {
+        Object.keys(filtroPresupuestado).forEach(function(tablaId) {
+            actualizarConteos(tablaId);
+
+            // Recontar cada vez que se agrega, edita o elimina una fila.
+            $('#' + tablaId).DataTable().on('draw', function() {
+                actualizarConteos(tablaId);
+            });
+        });
+    }
+
+    $(document).on('click', '.pill-filtro', function() {
+        const barra = $(this).closest('.inventario-filtros');
+        const tablaId = barra.data('tabla');
+
+        filtroPresupuestado[tablaId] = $(this).data('filtro');
+
+        barra.find('.pill-filtro').removeClass('activo');
+        $(this).addClass('activo');
+
+        $('#' + tablaId).DataTable().draw();
+    });
+
+    // Descarga el Excel del tipo de la pestaña respetando el filtro seleccionado.
+    $(document).on('click', '.btn-excel-inventario', function() {
+        const barra = $(this).closest('.inventario-filtros');
+        const tablaId = barra.data('tabla');
+        const filtro = permitePresupuestado ? (filtroPresupuestado[tablaId] || 'todos') : 'todos';
+
+        window.location = $(this).data('url') + '?filtro=' + filtro;
     });
 </script>
 
@@ -1017,6 +1166,9 @@
             row.find('td:eq(13)').text(equipo.MesDePago ?? '');
         }
         row.find('.edit-btn').data('id', equipo.InventarioID);
+
+        // Refrescar la caché de DataTables para que el filtro y los conteos vean el cambio.
+        $('#equiposAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }
 
     // Agregar una nueva fila en la tabla (para equipo creado)
@@ -1047,7 +1199,7 @@
             ${permitePresupuestado ? `<td>${equipo.Presupuestado ? 'Si' : 'No'}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
         </tr>
     `;
-        $('#equiposAsignadosTable tbody').append(newRow);
+        $('#equiposAsignadosTable').DataTable().row.add($(newRow)).draw(false);
     }
 
     // Eliminar equipo con AJAX
@@ -1103,7 +1255,7 @@
                             });
 
                             // Eliminar la fila de la tabla
-                            $(`tr[data-id=${id}]`).remove();
+                            $('#equiposAsignadosTable').DataTable().row(`tr[data-id=${id}]`).remove().draw(false);
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -1345,6 +1497,8 @@
         if (permitePresupuestado) {
             row.find('td:eq(12)').text(insumo.Presupuestado ? 'Si' : 'No');
         }
+
+        $('#insumosAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }
 
 
@@ -1375,7 +1529,7 @@
             ${permitePresupuestado ? `<td>${insumo.Presupuestado ? 'Si' : 'No'}</td>` : ''}
         </tr>
     `;
-        $('#insumosAsignadosTable tbody').append(newRow);
+        $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);
     }
 
     $(document).on('click', '.delete-btn-insumo', function(event) {
@@ -1430,7 +1584,7 @@
                             });
 
                             // Eliminar la fila de la tabla
-                            $(`tr[data-id=${id}]`).remove();
+                            $('#insumosAsignadosTable').DataTable().row(`tr[data-id=${id}]`).remove().draw(false);
                         } else {
                             Swal.fire({
                                 icon: 'error',
@@ -1653,6 +1807,8 @@
         if (permitePresupuestado) {
             row.find('td:eq(15)').text(telefono.Presupuestado ? 'Si' : 'No');
         }
+
+        $('#lineasAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }
 
 
