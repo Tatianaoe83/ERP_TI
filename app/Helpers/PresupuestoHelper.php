@@ -57,17 +57,21 @@ class PresupuestoHelper
     public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : ['FISICA', 'REFERENCIADO'];
+        $categoriasInversiones = ['LAPTOP', 'MONITOR', 'NO BREAK', 'STARLINK', 'TABLET', 'IMPRESORA'];
 
         return Empleados::query()
             ->whereIn('tipo_persona', $tiposPersona)
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
-            ->whereHas('inventarioequipo')
+            ->whereHas('inventarioequipo', function($query) use ($categoriasInversiones) {
+                $query->whereIn(DB::raw('UPPER(TRIM(CategoriaEquipo))'), $categoriasInversiones);
+            })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
-                'inventarioequipo' => function($query) {
-                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio');
+                'inventarioequipo' => function($query) use ($categoriasInversiones) {
+                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio')
+                          ->whereIn(DB::raw('UPPER(TRIM(CategoriaEquipo))'), $categoriasInversiones);
                 }
             ])
             ->orderByDesc('NombreEmpleado')
