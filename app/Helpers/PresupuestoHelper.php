@@ -81,11 +81,16 @@ class PresupuestoHelper
      * Costo de todos los registros de un mismo insumo (mismo NombreInsumo, misma
      * FrecuenciaDePago, mismo empleado).
      *
-     * Los registros 'Pago único' son cargos sueltos, uno por MesDePago. En el reporte anual
-     * cuentan todos (302 x 6 = 1,812). En el mensual, que retrata un mes cualquiera, cuenta lo
-     * que se eroga en el mes más caro: los cargos de meses distintos NO se acumulan (Office 365
-     * a 302 de julio a diciembre son 302, no 1,812), pero los que caen en el MISMO mes sí se
-     * suman entre ellos (cuatro mantenimientos de 25 en septiembre son 100, no 25).
+     * Los 'Pago único' son cargos sueltos, uno por MesDePago:
+     *
+     * - En el reporte ANUAL cuentan todos (302 x 6 = 1,812).
+     * - En el MENSUAL, que retrata un mes cualquiera, cuenta lo que se eroga en el mes más caro.
+     *   Los cargos de meses distintos NO se acumulan (Office 365, a 302 de julio a diciembre,
+     *   cuesta 302 al mes), pero los que caen en el MISMO mes sí se suman entre ellos (cuatro
+     *   mantenimientos de 25 en septiembre son 100, no 25).
+     *
+     * Por eso el mensual no cuadra con el calendario de pagos, y está bien que no cuadre: el
+     * calendario reparte cada cargo en su mes, así que ahí sí aparecen todos.
      */
     private static function costoGrupoInsumo($grupo, string $tipo): float
     {
@@ -95,14 +100,17 @@ class PresupuestoHelper
             ? $recurrentes->sum(fn ($i) => (float) ($i->CostoMensual ?? 0))
             : $recurrentes->sum(fn ($i) => (float) ($i->CostoAnual ?? 0));
 
-        if ($unicos->isNotEmpty()) {
-            $costo += $tipo === 'mens'
-                ? (float) $unicos
-                    ->groupBy(fn ($i) => strtoupper(trim((string) ($i->MesDePago ?? ''))))
-                    ->map(fn ($mes) => $mes->sum(fn ($i) => (float) ($i->CostoMensual ?? 0)))
-                    ->max()
-                : $unicos->sum(fn ($i) => (float) ($i->CostoMensual ?? 0));
+        if ($unicos->isEmpty()) {
+            return $costo;
         }
+
+        $porMes = $unicos
+            ->groupBy(fn ($i) => strtoupper(trim((string) ($i->MesDePago ?? ''))))
+            ->map(fn ($mes) => $mes->sum(fn ($i) => (float) ($i->CostoMensual ?? 0)));
+
+        $costo += $tipo === 'mens'
+            ? (float) $porMes->max()
+            : (float) $porMes->sum();
 
         return $costo;
     }
