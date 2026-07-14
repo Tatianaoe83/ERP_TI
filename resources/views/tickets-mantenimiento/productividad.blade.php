@@ -91,7 +91,7 @@
             <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Atendidas / Canceladas</p>
             <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['tickets_cerrados'] }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {{ $metricasProductividad['total_tickets'] > 0 ? round(($metricasProductividad['tickets_cerrados'] / $metricasProductividad['total_tickets']) * 100, 1) : 0 }}% del total
+                {{ $metricasProductividad['total_tickets'] > 0 ? round(($metricasProductividad['recibidas_ya_cerradas'] / $metricasProductividad['total_tickets']) * 100, 1) : 0 }}% del total
             </p>
         </div>
         <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
@@ -124,7 +124,7 @@
                     Cumplimiento: {{ $sla['pct_cumplimiento'] ?? 0 }}%
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400">
-                    {{ ($slaResumen['cumplidos'] ?? 0) + ($slaResumen['incumplidos'] ?? 0) }} atendidos evaluados
+                    {{ ($slaResumen['cumplidos'] ?? 0) + ($slaResumen['incumplidos'] ?? 0) + ($slaResumen['cancelados'] ?? 0) }} atendidos evaluados
                 </span>
             </div>
         </div>

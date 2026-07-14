@@ -35,6 +35,10 @@
      por eso todos los IDs van prefijados con "mant-": sin el prefijo chocarían con los del
      modal global de tickets (editor-mensaje, adjuntos, chat-container...) y TinyMCE o los
      adjuntos terminarían operando sobre el modal equivocado. --}}
+{{-- Teleport al <body>: en /tickets-mantenimiento el modal se monta dentro del tab 1, y Alpine
+     le pone display:none al contenedor al cambiar a Productividad. Sacándolo del árbol del tab
+     (conservando el scope de mantenimientoModal) se puede abrir desde cualquier tab. --}}
+<template x-teleport="body">
 <div
     x-show="mostrar && selected.id"
     x-transition:enter="transition ease-out duration-300"
@@ -349,3 +353,4 @@
         </div>
     </div>
 </div>
+</template>

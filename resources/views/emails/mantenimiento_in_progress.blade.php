@@ -76,7 +76,9 @@
                             </table>
 
                             <h1 style="margin:0 0 8px; font-size:23px; font-weight:700; color:#0f172a;
-                                line-height:1.3; letter-spacing:-0.4px;">
+                                line-height:1.3; letter-spacing:-0.4px;
+                                margin-bottom:16px;
+                                margin: top 16px;;">
                                 Tu solicitud está en proceso
                             </h1>
                             <p style="margin:0 0 16px; font-size:15px; color:#64748b; line-height:1.6;">

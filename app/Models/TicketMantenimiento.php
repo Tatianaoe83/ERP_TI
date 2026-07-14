@@ -27,6 +27,8 @@ class TicketMantenimiento extends Model
         'imagen',
         'FechaInicioProgreso',
         'FechaFinProgreso',
+        'FechaInicioPausa',
+        'HorasPausadas',
     ];
 
     protected $casts = [
@@ -36,6 +38,8 @@ class TicketMantenimiento extends Model
         'imagen' => 'array',
         'FechaInicioProgreso' => 'datetime',
         'FechaFinProgreso' => 'datetime',
+        'FechaInicioPausa' => 'datetime',
+        'HorasPausadas' => 'float',
     ];
 
     public const PRIORIDADES = ['Baja', 'Media', 'Alta', 'Urgente'];
@@ -227,10 +231,25 @@ class TicketMantenimiento extends Model
                 return;
             }
 
-            $nuevoEstatus = $ticket->Estatus;
+            $nuevoEstatus     = $ticket->Estatus;
+            $estatusAnterior  = $ticket->getOriginal('Estatus');
 
             if ($nuevoEstatus === 'En proceso' && !$ticket->FechaInicioProgreso) {
                 $ticket->FechaInicioProgreso = now();
+            }
+
+            // Al pausar se abre el intervalo; al salir de la pausa se cierra y se acumula.
+            // Sin esto no habría de dónde restar el tiempo pausado al evaluar el SLA.
+            if ($nuevoEstatus === 'Pausado' && !$ticket->FechaInicioPausa) {
+                $ticket->FechaInicioPausa = now();
+            }
+
+            if ($estatusAnterior === 'Pausado' && $nuevoEstatus !== 'Pausado' && $ticket->FechaInicioPausa) {
+                $ticket->HorasPausadas = round(
+                    (float) $ticket->HorasPausadas + $ticket->calcularHorasLaborales($ticket->FechaInicioPausa, now()),
+                    2
+                );
+                $ticket->FechaInicioPausa = null;
             }
 
             if (in_array($nuevoEstatus, ['Atendido', 'Cancelado'], true) && $ticket->FechaInicioProgreso && !$ticket->FechaFinProgreso) {
@@ -254,7 +273,9 @@ class TicketMantenimiento extends Model
             return null;
         }
 
-        return $this->calcularHorasLaborales($this->FechaInicioProgreso, $this->FechaFinProgreso);
+        // Mismo criterio que el SLA: el tiempo pausado no cuenta como tiempo de trabajo.
+        return max(0, $this->calcularHorasLaborales($this->FechaInicioProgreso, $this->FechaFinProgreso)
+            - (float) ($this->HorasPausadas ?? 0));
     }
 
     public static function slaConfig(?string $prioridad): ?array
@@ -285,6 +306,19 @@ class TicketMantenimiento extends Model
         $fin = $hasta ?? now();
 
         return $this->calcularHorasLaborales($this->FechaInicioProgreso, $fin);
+    }
+
+    /** Horas laborales pausadas: las ya cerradas más la pausa en curso, si la hay. */
+    public function horasPausadasHasta(?\Carbon\Carbon $referencia = null): float
+    {
+        $referencia = $referencia ?? now();
+        $horas = (float) ($this->HorasPausadas ?? 0);
+
+        if ($this->Estatus === 'Pausado' && $this->FechaInicioPausa) {
+            $horas += $this->calcularHorasLaborales($this->FechaInicioPausa, $referencia);
+        }
+
+        return round($horas, 2);
     }
 
     public function evaluarSla(?\Carbon\Carbon $referencia = null): ?array
@@ -323,7 +357,11 @@ class TicketMantenimiento extends Model
             ? $this->FechaFinProgreso
             : $referencia;
 
-        $horas = $this->calcularHorasLaborales($this->FechaInicioProgreso, $fechaFin);
+        // El reloj no corre mientras está Pausado: se resta lo acumulado en pausas anteriores
+        // y, si sigue pausado, también la pausa en curso (lo que congela el contador).
+        $horas = max(0, $this->calcularHorasLaborales($this->FechaInicioProgreso, $fechaFin)
+            - $this->horasPausadasHasta($referencia));
+
         $diasLaborales = round($horas / self::HORAS_LABORALES_DIA, 1);
         $porcentajeUso = $maxHoras > 0 ? round(min(100, ($horas / $maxHoras) * 100), 1) : 0;
 
@@ -580,7 +618,16 @@ class TicketMantenimiento extends Model
         }
         unset($data);
 
-        usort($ticketsCriticos, fn ($a, $b) => $b['porcentaje_uso'] <=> $a['porcentaje_uso']);
+        // porcentaje_uso está topado en 100 (lo necesita la barra de progreso), así que ordenar por
+        // él empata a todos los vencidos y el corte de 20 termina dejando fuera al más atrasado.
+        // Se ordena por la razón real contra la meta, sin tope.
+        usort($ticketsCriticos, function ($a, $b) {
+            $razon = fn ($t) => ($t['max_horas'] ?? 0) > 0
+                ? ($t['horas_transcurridas'] ?? 0) / $t['max_horas']
+                : 0;
+
+            return $razon($b) <=> $razon($a);
+        });
 
         $cerradosGlobal = $resumen['cumplidos'] + $resumen['incumplidos'];
 
@@ -607,6 +654,10 @@ class TicketMantenimiento extends Model
             'meta_texto'                   => $sla['meta_texto'],
             'dias_laborales_transcurridos' => $sla['dias_laborales_transcurridos'],
             'porcentaje_uso'               => $sla['porcentaje_uso'],
+            // Sin tope: porcentaje_uso se corta en 100 y no distingue al que se pasó un día
+            // del que lleva meses vencido. Estos dos permiten ordenar por gravedad real.
+            'horas_transcurridas'          => $sla['horas_transcurridas'],
+            'max_horas'                    => $sla['max_horas'],
             'created_at'                   => optional($ticket->created_at)->format('d/m/Y H:i'),
         ];
     }

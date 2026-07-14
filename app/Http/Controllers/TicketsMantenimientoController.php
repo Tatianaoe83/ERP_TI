@@ -96,28 +96,44 @@ class TicketsMantenimientoController extends Controller
             $fechaFinMes    = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
         }
 
-        $delPeriodo = $tickets->filter(
+        // Tres cohortes distintas, porque responden preguntas distintas:
+        // - creados:   demanda del periodo (por created_at).
+        // - resueltos: throughput del periodo (por FechaFinProgreso). Un mantenimiento que entró
+        //              en junio y se cerró en julio cuenta como trabajo de julio, no de junio.
+        // - abiertos:  lo que sigue vivo HOY, sin filtro de mes. Las alertas no pueden depender
+        //              del periodo elegido: un vencido de mayo debe verse igual desde julio.
+        $creados = $tickets->filter(
             fn ($t) => \Carbon\Carbon::parse($t->created_at)->between($fechaInicioMes, $fechaFinMes)
         );
 
+        $resueltos = $tickets->filter(
+            fn ($t) => in_array($t->Estatus, ['Atendido', 'Cancelado'], true)
+                && $t->FechaFinProgreso
+                && \Carbon\Carbon::parse($t->FechaFinProgreso)->between($fechaInicioMes, $fechaFinMes)
+        );
+
+        $abiertos = $tickets->filter(
+            fn ($t) => !in_array($t->Estatus, ['Atendido', 'Cancelado'], true)
+        );
+
         $distribucionEstado = [
-            'Pendiente'   => $delPeriodo->where('Estatus', 'Pendiente')->count(),
-            'En proceso'  => $delPeriodo->where('Estatus', 'En proceso')->count(),
-            'Pausado'     => $delPeriodo->where('Estatus', 'Pausado')->count(),
-            'Atendido'    => $delPeriodo->where('Estatus', 'Atendido')->count(),
-            'Cancelado'   => $delPeriodo->where('Estatus', 'Cancelado')->count(),
+            'Pendiente'   => $creados->where('Estatus', 'Pendiente')->count(),
+            'En proceso'  => $creados->where('Estatus', 'En proceso')->count(),
+            'Pausado'     => $creados->where('Estatus', 'Pausado')->count(),
+            'Atendido'    => $creados->where('Estatus', 'Atendido')->count(),
+            'Cancelado'   => $creados->where('Estatus', 'Cancelado')->count(),
         ];
 
-        $atendidos = $delPeriodo->filter(
-            fn ($t) => in_array($t->Estatus, ['Atendido', 'Cancelado'], true) && $t->FechaInicioProgreso && $t->FechaFinProgreso
+        $conTiempoResolucion = $resueltos->filter(
+            fn ($t) => $t->FechaInicioProgreso && $t->FechaFinProgreso
         );
 
         $tiempoPromedioResolucion = 0;
-        if ($atendidos->count() > 0) {
-            $tiempoPromedioResolucion = round($atendidos->avg(fn ($t) => $t->tiempo_resolucion ?? 0), 1);
+        if ($conTiempoResolucion->count() > 0) {
+            $tiempoPromedioResolucion = round($conTiempoResolucion->avg(fn ($t) => $t->tiempo_resolucion ?? 0), 1);
         }
 
-        $conRespuesta = $delPeriodo->filter(
+        $conRespuesta = $creados->filter(
             fn ($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null
         );
 
@@ -125,10 +141,10 @@ class TicketsMantenimientoController extends Controller
             ? round($conRespuesta->avg(fn ($t) => $t->tiempo_respuesta ?? 0), 1)
             : 0;
 
-        $porCategoria = $delPeriodo->filter(fn ($t) => $t->Categoria)
+        $porCategoria = $creados->filter(fn ($t) => $t->Categoria)
             ->groupBy('Categoria')->map->count()->sortDesc();
 
-        $porResponsable = $delPeriodo->filter(fn ($t) => $t->ResponsableID)
+        $porResponsable = $creados->filter(fn ($t) => $t->ResponsableID)
             ->groupBy('ResponsableID')->map(function ($grupo) {
                 $responsable = $grupo->first()->responsable;
 
@@ -143,30 +159,41 @@ class TicketsMantenimientoController extends Controller
                 ];
             })->sortByDesc('total')->values();
 
-        $porPrioridad = $delPeriodo->groupBy('Prioridad')->map->count();
-        $porArea = $delPeriodo->filter(fn ($t) => $t->area_departamento)
+        // La prioridad se asigna al pasar a En proceso, así que los Pendientes la traen en null:
+        // sin etiqueta, la gráfica pintaba una barra sin nombre.
+        $porPrioridad = $creados->groupBy(fn ($t) => $t->Prioridad ?: 'Pendiente')->map->count();
+        $porArea = $creados->filter(fn ($t) => $t->area_departamento)
             ->groupBy(fn ($t) => $t->area_departamento)->map->count()->sortDesc()->take(10);
+
+        // Indexar por día evita recorrer la colección completa una vez por cada día del periodo.
+        $resueltosIndex = $resueltos->groupBy(
+            fn ($t) => \Carbon\Carbon::parse($t->FechaFinProgreso)->format('Y-m-d')
+        );
+        $creadosIndex = $creados->groupBy(
+            fn ($t) => \Carbon\Carbon::parse($t->created_at)->format('Y-m-d')
+        );
 
         $resueltosPorDia = [];
         $creadosPorDia   = [];
         $diaIter = $fechaInicioMes->copy();
         while ($diaIter->lte($fechaFinMes)) {
             $fecha = $diaIter->format('Y-m-d');
-            $resueltosPorDia[$fecha] = $delPeriodo->filter(
-                fn ($t) => in_array($t->Estatus, ['Atendido', 'Cancelado'], true)
-                    && $t->FechaFinProgreso
-                    && \Carbon\Carbon::parse($t->FechaFinProgreso)->format('Y-m-d') === $fecha
-            )->count();
-            $creadosPorDia[$fecha] = $delPeriodo->filter(
-                fn ($t) => \Carbon\Carbon::parse($t->created_at)->format('Y-m-d') === $fecha
-            )->count();
+            $resueltosPorDia[$fecha] = $resueltosIndex->get($fecha, collect())->count();
+            $creadosPorDia[$fecha]   = $creadosIndex->get($fecha, collect())->count();
             $diaIter->addDay();
         }
 
+        // El SLA mira dos cosas a la vez: cumplimiento de lo que se cerró en el periodo, y estado
+        // de riesgo de lo que sigue abierto hoy (sin importar cuándo entró).
+        $universoSla = $resueltos->merge($abiertos)->unique('MantenimientoID');
+
         return [
-            'total_tickets'              => $delPeriodo->count(),
-            'tickets_cerrados'           => $delPeriodo->whereIn('Estatus', ['Atendido', 'Cancelado'])->count(),
-            'tickets_en_progreso'        => $delPeriodo->whereIn('Estatus', ['En proceso', 'Pausado'])->count(),
+            'total_tickets'              => $creados->count(),
+            'tickets_cerrados'           => $resueltos->count(),
+            // De lo que ENTRÓ en el periodo, cuánto ya está cerrado. Es subconjunto de
+            // total_tickets, así que su porcentaje nunca puede pasar de 100%.
+            'recibidas_ya_cerradas'      => $creados->whereIn('Estatus', ['Atendido', 'Cancelado'])->count(),
+            'tickets_en_progreso'        => $abiertos->whereIn('Estatus', ['En proceso', 'Pausado'])->count(),
             'distribucion_estado'        => $distribucionEstado,
             'tiempo_promedio_resolucion' => $tiempoPromedioResolucion,
             'tiempo_promedio_respuesta'  => $tiempoPromedioRespuesta,
@@ -178,7 +205,7 @@ class TicketsMantenimientoController extends Controller
             'creados_por_dia'            => $creadosPorDia,
             'fecha_inicio_periodo'       => $fechaInicioMes->format('Y-m-d'),
             'fecha_fin_periodo'          => $fechaFinMes->format('Y-m-d'),
-            'metricas_sla'               => TicketMantenimiento::calcularMetricasSla($delPeriodo),
+            'metricas_sla'               => TicketMantenimiento::calcularMetricasSla($universoSla),
         ];
     }
 
