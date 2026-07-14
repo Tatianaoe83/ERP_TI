@@ -46,6 +46,7 @@ $user->can('ver-mantenimientos')
     </li>
     @endif
 
+    {{-- OCULTO TEMPORAL — MANTENIMIENTO CORPORATIVO (ruta comentada en routes/web.php)
     @if($user && $user->can('ver-compras'))
     <li>
         <a href="/tickets-mantenimiento"
@@ -55,6 +56,7 @@ $user->can('ver-mantenimientos')
         </a>
     </li>
     @endif
+    --}}
 
     @if(auth()->check() && auth()->user()->can('ver-mantenimientos'))
     <li>

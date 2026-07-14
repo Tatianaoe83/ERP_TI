@@ -273,7 +273,9 @@
                             <option value="" selected disabled>Selecciona una opción</option>
                             <option value="Ticket">Ticket para soporte</option>
                             <option value="Solicitud">Compras de recursos tecnológicos</option>
-                            <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option>
+                            {{-- OCULTO TEMPORAL — MANTENIMIENTO CORPORATIVO. El formulario #mantenimiento-form
+                                 y su JS siguen intactos más abajo; sin esta opción no hay forma de llegar a ellos. --}}
+                            {{-- <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option> --}}
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">

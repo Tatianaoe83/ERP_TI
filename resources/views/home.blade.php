@@ -19,7 +19,7 @@
                     <i class="fas fa-desktop text-xs"></i>
                     <span>Informática</span>
                 </button>
-                <button type="button"
+                <!-- <button type="button"
                     @click="tab = 2"
                     :class="tab === 2 ? 'text-indigo-600 border-b-2 border-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'"
                     class="flex-1 relative px-4 py-3 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent"
@@ -27,20 +27,20 @@
                     :aria-selected="tab === 2">
                     <i class="fas fa-wrench text-xs"></i>
                     <span>Compras</span>
-                </button>
+                </button> -->
             </nav>
 
             <div x-show="tab === 1" x-transition.opacity x-cloak role="tabpanel">
                 @include('partials.dashboard-informatica')
             </div>
 
-            <div x-show="tab === 2" x-transition.opacity x-cloak role="tabpanel">
+            <!-- <div x-show="tab === 2" x-transition.opacity x-cloak role="tabpanel">
                 @include('partials.dashboard-compras')
-            </div>
+            </div> -->
         </div>
-    @elseif($tipoDashboard === 'compras')
+   <!--  @elseif($tipoDashboard === 'compras')
         <h1 class="text-2xl font-bold text-[#101D49] dark:text-white mb-6">Dashboard Compras</h1>
-        @include('partials.dashboard-compras')
+        @include('partials.dashboard-compras') -->
     @else
         <h1 class="text-2xl font-bold text-[#101D49] dark:text-white mb-6">Dashboard Informática</h1>
         @include('partials.dashboard-informatica')

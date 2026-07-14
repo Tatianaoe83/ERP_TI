@@ -394,16 +394,16 @@ Route::get('/notificaciones-panel', function () {
     Route::post('/tickets/subir-imagen-tinymce', [TicketsController::class, 'subirImagenTinyMCE'])->name('tickets.subir-imagen-tinymce');
     Route::get('/tickets/{id}', [TicketsController::class, 'show']);
 
-    // Mantenimientos de compras
-    Route::get('/tickets-mantenimiento', [TicketsMantenimientoController::class, 'index'])->name('tickets-mantenimiento.index');
-    Route::get('/tickets-mantenimiento/productividad-ajax', [TicketsMantenimientoController::class, 'obtenerProductividadAjax'])->name('tickets-mantenimiento.productividad-ajax');
-    Route::get('/tickets-mantenimiento/chat-messages', [TicketsMantenimientoController::class, 'getChatMessages']);
-    Route::get('/tickets-mantenimiento/verificar-mensajes-nuevos', [TicketsMantenimientoController::class, 'verificarMensajesNuevos']);
-    Route::get('/tickets-mantenimiento/estadisticas-correos', [TicketsMantenimientoController::class, 'obtenerEstadisticasCorreos']);
-    Route::post('/tickets-mantenimiento/update', [TicketsMantenimientoController::class, 'update']);
-    Route::post('/tickets-mantenimiento/enviar-respuesta', [TicketsMantenimientoController::class, 'enviarRespuesta']);
-    Route::post('/tickets-mantenimiento/marcar-leidos', [TicketsMantenimientoController::class, 'marcarMensajesComoLeidos']);
-    Route::get('/tickets-mantenimiento/{id}', [TicketsMantenimientoController::class, 'show']);
+    // OCULTO TEMPORAL — MANTENIMIENTO CORPORATIVO
+    // Route::get('/tickets-mantenimiento', [TicketsMantenimientoController::class, 'index'])->name('tickets-mantenimiento.index');
+    // Route::get('/tickets-mantenimiento/productividad-ajax', [TicketsMantenimientoController::class, 'obtenerProductividadAjax'])->name('tickets-mantenimiento.productividad-ajax');
+    // Route::get('/tickets-mantenimiento/chat-messages', [TicketsMantenimientoController::class, 'getChatMessages']);
+    // Route::get('/tickets-mantenimiento/verificar-mensajes-nuevos', [TicketsMantenimientoController::class, 'verificarMensajesNuevos']);
+    // Route::get('/tickets-mantenimiento/estadisticas-correos', [TicketsMantenimientoController::class, 'obtenerEstadisticasCorreos']);
+    // Route::post('/tickets-mantenimiento/update', [TicketsMantenimientoController::class, 'update']);
+    // Route::post('/tickets-mantenimiento/enviar-respuesta', [TicketsMantenimientoController::class, 'enviarRespuesta']);
+    // Route::post('/tickets-mantenimiento/marcar-leidos', [TicketsMantenimientoController::class, 'marcarMensajesComoLeidos']);
+    // Route::get('/tickets-mantenimiento/{id}', [TicketsMantenimientoController::class, 'show']);
 
     // Solicitudes (requieren auth)
     Route::get('/solicitudes/{id}/cotizar', [SolicitudesController::class, 'mostrarPaginaCotizacion'])->name('solicitudes.cotizar');
