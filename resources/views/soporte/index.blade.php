@@ -1038,7 +1038,7 @@ function renderTelefono() {
             $('#nombreSolicitante, #areaDepartamento').val('').prop('disabled', true);
             $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-100');
             $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed');
-            $('#dropzoneMantenimiento').addClass('opacity-50');
+            $('#dropzoneMantenimiento').addClass('opacity-50 cursor-not-allowed').removeClass('hover:border-orange-400 hover:bg-orange-50');
             $('#correo-mantenimiento-error').addClass('hidden');
         }
 
@@ -1058,18 +1058,18 @@ function renderTelefono() {
                     $('#correoMantenimiento').removeClass('border-red-500').addClass('border-green-500');
                     $('#nombreSolicitante').val(data.NombreEmpleado || '').prop('disabled', true);
                     $('#areaDepartamento').val(data.NombreDepartamento || 'Sin departamento').prop('disabled', true);
-                    $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', false).removeClass('bg-gray-50');
+                    $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', false).removeClass('bg-gray-100');
                     $('#btnEnviarMantenimiento').prop('disabled', false).removeClass('cursor-not-allowed');
-                    $('#dropzoneMantenimiento').removeClass('opacity-50');
+                    $('#dropzoneMantenimiento').removeClass('opacity-50 cursor-not-allowed').addClass('hover:border-orange-400 hover:bg-orange-50');
                 },
                 error: function() {
                     window.correoMantenimientoValido = false;
                     $('#nombreSolicitante, #areaDepartamento').val('');
                     $('#correoMantenimiento').removeClass('border-green-500').addClass('border-red-500');
                     $('#correo-mantenimiento-error').removeClass('hidden').text('No se encontró correo, contacta a soporte');
-                    $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-50');
+                    $('#descripcionMantenimiento, #fileInputMantenimiento').prop('disabled', true).addClass('bg-gray-100');
                     $('#btnEnviarMantenimiento').prop('disabled', true).addClass('cursor-not-allowed');
-                    $('#dropzoneMantenimiento').addClass('opacity-50');
+                    $('#dropzoneMantenimiento').addClass('opacity-50 cursor-not-allowed').removeClass('hover:border-orange-400 hover:bg-orange-50');
                 }
             });
         }
@@ -1587,6 +1587,221 @@ function renderTelefono() {
                             toast: true,
                             position: 'top-end',
                             icon: 'success',
+                            title: `${files.length} imagen(es) pegada(s)`,
+                            showConfirmButton: false,
+                            timer: 2000,
+                            timerProgressBar: true
+                        });
+                    }
+                }
+            });
+
+            updateCounter();
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const dropzone = document.getElementById("dropzoneMantenimiento");
+            const fileInput = document.getElementById("fileInputMantenimiento");
+            const previewGrid = document.getElementById("previewGridMantenimiento");
+            const counter = document.getElementById("counterMantenimiento");
+
+            if (!dropzone || !fileInput || !previewGrid || !counter) return;
+
+            const MAX_FILES = 4;
+            const FILE_MAX_SIZE = 2 * 1024 * 1024;
+            const MAX_SIZE = 8 * 1024 * 1024;
+            const dt = new DataTransfer();
+
+            const updateCounter = () => {
+                counter.textContent = `${dt.files.length} / ${MAX_FILES} Archivos`;
+            };
+
+            const isDisabled = () => fileInput.disabled || dropzone.classList.contains("cursor-not-allowed");
+            const isImage = (file) => file && file.type.startsWith("image/");
+
+            const formatBytes = (bytes) => {
+                if (!bytes && bytes !== 0) return "";
+                const sizes = ["B", "KB", "MB", "GB"];
+                const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1);
+                const val = bytes / Math.pow(1024, i);
+                return `${val.toFixed(val >= 10 || i === 0 ? 0 : 1)} ${sizes[i]}`;
+            };
+
+            const getExt = (name) => {
+                const p = name.lastIndexOf(".");
+                return p >= 0 ? name.slice(p + 1).toLowerCase() : "";
+            };
+
+            const getFileVisual = (file) => {
+                const ext = getExt(file.name);
+                if (file.type === "application/pdf" || ext === "pdf") return { bgColor: "bg-red-50", color: "text-red-700", emoji: "PDF" };
+                if (/msword|vnd.openxmlformats-officedocument.wordprocessingml/.test(file.type) || ["doc", "docx"].includes(ext)) return { bgColor: "bg-blue-50", color: "text-blue-700", emoji: "DOC" };
+                if (/vnd.ms-excel|spreadsheetml|csv/.test(file.type) || ["xls", "xlsx", "csv"].includes(ext)) return { bgColor: "bg-green-50", color: "text-green-700", emoji: "XLS" };
+                if (/vnd.ms-powerpoint|presentationml/.test(file.type) || ["ppt", "pptx"].includes(ext)) return { bgColor: "bg-orange-50", color: "text-orange-700", emoji: "PPT" };
+                if (/zip|x-7z-compressed|x-rar-compressed|x-zip-compressed/.test(file.type) || ["zip", "rar", "7z"].includes(ext)) return { bgColor: "bg-yellow-50", color: "text-yellow-700", emoji: "ZIP" };
+                return { bgColor: "bg-gray-50", color: "text-gray-700", emoji: "FILE" };
+            };
+
+            const renderPreviews = () => {
+                previewGrid.innerHTML = "";
+                Array.from(dt.files).forEach((file, idx) => {
+                    const card = document.createElement("div");
+                    card.className = "relative rounded-md overflow-hidden border border-gray-200 shadow-sm flex flex-col";
+
+                    const visual = document.createElement("div");
+                    visual.className = "w-full h-20 flex items-center justify-center bg-gray-50";
+
+                    if (isImage(file)) {
+                        const url = URL.createObjectURL(file);
+                        const img = document.createElement("img");
+                        img.src = url;
+                        img.alt = file.name;
+                        img.className = "w-full h-20 object-cover";
+                        img.onload = () => URL.revokeObjectURL(url);
+                        visual.appendChild(img);
+                    } else {
+                        const fileInfo = getFileVisual(file);
+                        visual.className = `w-full h-20 flex flex-col items-center justify-center ${fileInfo.bgColor}`;
+
+                        const fileLabel = document.createElement("div");
+                        fileLabel.className = `text-xl font-bold ${fileInfo.color}`;
+                        fileLabel.textContent = fileInfo.emoji;
+                        visual.appendChild(fileLabel);
+
+                        const ext = getExt(file.name);
+                        if (ext) {
+                            const extText = document.createElement("span");
+                            extText.className = `text-xs font-bold uppercase ${fileInfo.color}`;
+                            extText.textContent = "." + ext;
+                            visual.appendChild(extText);
+                        }
+                    }
+
+                    const meta = document.createElement("div");
+                    meta.className = "px-2 py-1 bg-white text-xs text-gray-700";
+                    meta.innerHTML = `
+        <div class="truncate" title="${file.name}">${file.name}</div>
+        <div class="text-gray-500">${formatBytes(file.size)}</div>
+      `;
+
+                    const removeBtn = document.createElement("button");
+                    removeBtn.type = "button";
+                    removeBtn.className = "absolute top-1 right-1 bg-black/70 text-white rounded-full w-6 h-6 leading-6 text-center";
+                    removeBtn.textContent = "x";
+                    removeBtn.title = "Quitar";
+                    removeBtn.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const next = new DataTransfer();
+                        Array.from(dt.files).forEach((f, i) => {
+                            if (i !== idx) next.items.add(f);
+                        });
+                        while (dt.items.length) dt.items.remove(0);
+                        Array.from(next.files).forEach(f => dt.items.add(f));
+                        fileInput.files = dt.files;
+                        renderPreviews();
+                    });
+
+                    card.append(visual, removeBtn, meta);
+                    previewGrid.appendChild(card);
+                });
+                updateCounter();
+            };
+
+            const addFiles = (fileList) => {
+                if (isDisabled()) return;
+
+                const incoming = Array.from(fileList);
+                let currentTotal = Array.from(dt.files).reduce((acc, f) => acc + f.size, 0);
+
+                for (const file of incoming) {
+                    if (dt.files.length >= MAX_FILES) {
+                        Swal.fire("Límite alcanzado", "Solo puedes subir hasta 4 archivos", "warning");
+                        break;
+                    }
+
+                    if (file.size > FILE_MAX_SIZE) {
+                        Swal.fire("Archivo demasiado pesado", `${file.name} supera los 2MB`, "error");
+                        break;
+                    }
+
+                    if (currentTotal + file.size > MAX_SIZE) {
+                        Swal.fire("Límite total excedido", "El total no deberá pasar de 8MB", "error");
+                        break;
+                    }
+
+                    const duplicate = Array.from(dt.files).some(
+                        (f) => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+                    );
+                    if (duplicate) continue;
+
+                    dt.items.add(file);
+                    currentTotal += file.size;
+                }
+
+                fileInput.files = dt.files;
+                renderPreviews();
+            };
+
+            dropzone.addEventListener("click", (e) => {
+                if (isDisabled() || e.target.closest("button")) return;
+                fileInput.click();
+            });
+
+            dropzone.addEventListener("dragover", (e) => {
+                if (isDisabled()) return;
+                e.preventDefault();
+                dropzone.classList.add("bg-orange-50", "border-orange-500");
+            });
+
+            dropzone.addEventListener("dragleave", () => {
+                dropzone.classList.remove("bg-orange-50", "border-orange-500");
+            });
+
+            dropzone.addEventListener("drop", (e) => {
+                if (isDisabled()) return;
+                e.preventDefault();
+                dropzone.classList.remove("bg-orange-50", "border-orange-500");
+                addFiles(e.dataTransfer.files);
+            });
+
+            fileInput.addEventListener("change", () => {
+                addFiles(fileInput.files);
+            });
+
+            document.addEventListener("paste", (e) => {
+                if (!document.getElementById("mantenimiento-form")?.offsetParent || isDisabled()) return;
+
+                const items = e.clipboardData?.items;
+                if (!items) return;
+
+                const files = [];
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.startsWith("image/")) {
+                        const file = items[i].getAsFile();
+                        if (file) {
+                            const timestamp = new Date().getTime();
+                            const extension = file.type.split("/")[1] || "png";
+                            files.push(new File([file], `imagen-mantenimiento-${timestamp}.${extension}`, {
+                                type: file.type,
+                                lastModified: file.lastModified
+                            }));
+                        }
+                    }
+                }
+
+                if (files.length > 0) {
+                    e.preventDefault();
+                    addFiles(files);
+
+                    if (typeof Swal !== "undefined") {
+                        Swal.fire({
+                            toast: true,
+                            position: "top-end",
+                            icon: "success",
                             title: `${files.length} imagen(es) pegada(s)`,
                             showConfirmButton: false,
                             timer: 2000,
