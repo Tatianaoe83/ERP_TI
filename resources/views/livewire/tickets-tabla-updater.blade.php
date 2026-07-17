@@ -160,7 +160,7 @@
 
                     @empty
                     <tr>
-                        <td colspan="10" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                        <td colspan="10" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400 dark:bg-[#1C1F26]">
                             No hay tickets disponibles.
                         </td>
                     </tr>
