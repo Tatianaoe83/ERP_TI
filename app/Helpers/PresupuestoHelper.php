@@ -7,19 +7,13 @@ use App\Models\Empleados;
 
 class PresupuestoHelper
 {
+    // Un insumo es de 'Pago único' si su FrecuenciaDePago es exactamente esa cadena
     private static function esPagoUnico($insumo): bool
     {
         return strcasecmp($insumo->FrecuenciaDePago ?? '', 'Pago único') === 0;
     }
 
-    /**
-     * Costo anual de un insumo suelto.
-     *
-     * 'Pago único' = un solo cargo de CostoMensual hecho en su MesDePago. Así se capturan las
-     * licencias contratadas sólo unos meses del año: una fila por mes (Office 365 a 302, de
-     * Julio a Diciembre). La columna CostoAnual de esas filas trae 302 x 12 = 3,624, que no
-     * corresponde a lo que se eroga, y por eso se ignora.
-     */
+    // Un 'Pago único' se cobra una sola vez: su importe está en CostoMensual, no en CostoAnual
     private static function costoAnualInsumo($insumo): float
     {
         return self::esPagoUnico($insumo)
@@ -27,35 +21,19 @@ class PresupuestoHelper
             : (float) ($insumo->CostoAnual ?? 0);
     }
 
-    /**
-     * El switch "Presupuestado" parte el inventario en dos reportes que no se solapan:
-     * el de presupuesto lista las asignaciones marcadas y el de inventario las que no.
-     */
+    // Diferenciador de reporte de presupuesto e inventario 
     private static function soloPresupuestados($query, string $modo)
     {
         return $query->where('Presupuestado', $modo === 'presupuesto' ? 1 : 0);
     }
 
-    /**
-     * Tipos de persona que entran a cada reporte. null = todos.
-     *
-     * El presupuesto sólo contempla FISICA y EXTRAORDINARIO. El de inventario NO restringe:
-     * es el complemento exacto del presupuesto (todo lo que tiene Presupuestado = 0), y
-     * acotarlo por tipo de persona dejaría fuera de ambos reportes las asignaciones no
-     * presupuestadas de los tipos que sí pueden presupuestarse.
-     */
+    // Filtro de tipos de persona para tipo de reporte
     private static function tiposPersona(string $modo): ?array
     {
         return $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : null;
     }
 
-    /**
-     * Cuántas frecuencias de pago distintas tiene cada insumo de un empleado, por nombre.
-     *
-     * Un 'MANTENIMIENTO' mensual y un 'MANTENIMIENTO' de pago único son insumos distintos
-     * aunque se llamen igual, y no pueden compartir columna en el reporte: el que colisiona
-     * lleva su frecuencia en el nombre. Los que no colisionan conservan el nombre tal cual.
-     */
+    // Cuenta cuántas frecuencias distintas tiene cada insumo, para decidir si se añade la frecuencia al nombre
     private static function frecuenciasPorNombre($insumos, callable $nombreBase)
     {
         return $insumos
@@ -66,6 +44,7 @@ class PresupuestoHelper
                 ->count());
     }
 
+    // Añade la frecuencia al nombre sólo cuando el mismo insumo aparece con más de un registro
     private static function nombreConFrecuencia(string $nombre, $insumo, $frecuenciasPorNombre): string
     {
         if (($frecuenciasPorNombre[$nombre] ?? 1) <= 1) {
@@ -77,21 +56,8 @@ class PresupuestoHelper
         return $frecuencia === '' ? $nombre : $nombre . ' (' . $frecuencia . ')';
     }
 
-    /**
-     * Costo de todos los registros de un mismo insumo (mismo NombreInsumo, misma
-     * FrecuenciaDePago, mismo empleado).
-     *
-     * Los 'Pago único' son cargos sueltos, uno por MesDePago:
-     *
-     * - En el reporte ANUAL cuentan todos (302 x 6 = 1,812).
-     * - En el MENSUAL, que retrata un mes cualquiera, cuenta lo que se eroga en el mes más caro.
-     *   Los cargos de meses distintos NO se acumulan (Office 365, a 302 de julio a diciembre,
-     *   cuesta 302 al mes), pero los que caen en el MISMO mes sí se suman entre ellos (cuatro
-     *   mantenimientos de 25 en septiembre son 100, no 25).
-     *
-     * Por eso el mensual no cuadra con el calendario de pagos, y está bien que no cuadre: el
-     * calendario reparte cada cargo en su mes, así que ahí sí aparecen todos.
-     */
+    // Costo de un grupo de insumos. Los recurrentes se suman directo; los 'Pago único' se
+    // agrupan por MesDePago y en el reporte mensual sólo cuenta el mes más caro.
     private static function costoGrupoInsumo($grupo, string $tipo): float
     {
         [$unicos, $recurrentes] = $grupo->partition(fn ($i) => self::esPagoUnico($i));
@@ -115,7 +81,7 @@ class PresupuestoHelper
         return $costo;
     }
 
-    // Método para obtener el reporte de accesorios y mantenimientos por gerencia mensual o anual
+    // Reporte de accesorios y otros insumos
     public static function reporteAccesoriosYMantenimientos(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = self::tiposPersona($modo);
@@ -147,10 +113,8 @@ class PresupuestoHelper
                 $frecuencias = self::frecuenciasPorNombre($empleado->inventarioinsumo, $nombreBase);
 
                 return $empleado->inventarioinsumo
-                    // Mismo nombre con distinta frecuencia = insumos distintos (uno se paga cada
-                    // mes, el otro una sola vez), así que van en filas separadas. Dentro de cada
-                    // grupo, los 'Pago único' siguen siendo cargos sueltos, uno por MesDePago.
-                    ->groupBy(fn ($i) => $nombreBase($i) . '|' . strtoupper(trim((string) ($i->FrecuenciaDePago ?? ''))))
+                    // Distinta categoría o frecuencia = insumo distinto, va en fila aparte
+                    ->groupBy(fn ($i) => $i->CateogoriaInsumo . '|' . $nombreBase($i) . '|' . strtoupper(trim((string) ($i->FrecuenciaDePago ?? ''))))
                     ->map(function($grupo) use ($empleado, $tipo, $nombreBase, $frecuencias) {
                         $insumo = $grupo->first();
 
@@ -173,19 +137,11 @@ class PresupuestoHelper
             ->values();
     }
 
-    /**
-     * Reporte de hardware por gerencia.
-     *
-     * Lee inventarioequipo (los activos físicos), no inventarioinsumo. El único costo que
-     * existe ahí es Precio (precio de compra), así que $tipo no aplica: una laptop no se
-     * "paga mensual". El mismo monto sale en el reporte mensual y en el anual.
-     */
+    // Reporte de hardware: sale de inventarioequipo.
     public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = self::tiposPersona($modo);
-        // Nombres tal como existen en inventarioequipo: ahí es TABLETA (no TABLET) y UPS
-        // (no NO BREAK). STARLINK no vive aquí: es un servicio recurrente, va como insumo.
-        $categorias = ['LAPTOP', 'MONITOR', 'IMPRESORA', 'TABLETA', 'UPS'];
+        $categorias = ['LAPTOP', 'MONITOR', 'IMPRESORA', 'MODEM', 'TABLET', 'ANTENA'];
 
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
@@ -199,7 +155,7 @@ class PresupuestoHelper
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventarioequipo' => function($query) use ($categorias, $modo) {
-                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio')
+                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago')
                           ->whereIn('CategoriaEquipo', $categorias);
                     self::soloPresupuestados($query, $modo);
                 }
@@ -221,12 +177,10 @@ class PresupuestoHelper
             ->values();
     }
 
-
-    // Método para obtener el reporte de licencias por gerencia mensual o anual
+    // Reporte de licenciamiento.
     public static function reporteLicenciasPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
-        // Obtener costos de Windows PRO. Se redondean aquí, antes de multiplicar por el
-        // periodo, porque el SP los guarda en variables declaradas INT.
+        // Costos de Windows PRO, se rendondea porque el presupuesto no es exacto y se quiere evitar centavos
         $costoWin10Pro = (int) round(DB::table('inventarioinsumo')
             ->where('NombreInsumo', 'WINDOWS 10 PRO')
             ->max('CostoMensual') ?? 0);
@@ -236,9 +190,8 @@ class PresupuestoHelper
             ->max('CostoMensual') ?? 0);
 
 
-        $multiplicador = $tipo === 'mens' ? 1 : 12;
         $tiposPersona = self::tiposPersona($modo);
-        
+
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
@@ -260,40 +213,39 @@ class PresupuestoHelper
             ])
             ->orderBy('NombreEmpleado')
             ->get()
-            ->flatMap(function($empleado) use ($tipo, $costoWin10Pro, $costoWin11Pro, $multiplicador, $gerenciaId) {
+            ->flatMap(function($empleado) use ($tipo, $costoWin10Pro, $costoWin11Pro, $gerenciaId) {
                 $licencias = $empleado->inventarioinsumo
-                    ->reject(function($insumo) use ($empleado, $gerenciaId) {
-                        // Excluir WINDOWS para gerencias 17 y 18
-                        if (in_array($gerenciaId, [17, 18]) && stripos($insumo->NombreInsumo ?? '', 'WINDOWS') === 0) {
-                            return true;
+                    // Excluir WINDOWS para gerencias 17 y 18
+                    ->reject(fn ($insumo) => in_array($gerenciaId, [17, 18])
+                        && stripos($insumo->NombreInsumo ?? '', 'WINDOWS') === 0)
+                    // Una HOME se presupuesta al precio de su PRO.
+                    ->each(function ($insumo) use ($costoWin10Pro, $costoWin11Pro) {
+                        $precioPro = match (strtoupper($insumo->NombreInsumo ?? '')) {
+                            'WINDOWS 10 HOME' => $costoWin10Pro,
+                            'WINDOWS 11 HOME' => $costoWin11Pro,
+                            default => null,
+                        };
+
+                        if ($precioPro !== null) {
+                            $insumo->CostoMensual = $precioPro;
+                            $insumo->CostoAnual   = $precioPro * 12;
                         }
-                        return false;
                     });
 
                 $nombreBase = fn ($i) => (string) $i->NombreInsumo;
                 $frecuencias = self::frecuenciasPorNombre($licencias, $nombreBase);
 
                 return $licencias
-                    // Misma licencia con distinta frecuencia = insumos distintos (una se paga cada
-                    // mes, la otra una sola vez), así que van en filas separadas. Dentro de cada
-                    // grupo, los 'Pago único' siguen siendo cargos sueltos, uno por MesDePago.
                     ->groupBy(fn ($i) => $nombreBase($i) . '|' . strtoupper(trim((string) ($i->FrecuenciaDePago ?? ''))))
-                    ->map(function($grupo) use ($empleado, $tipo, $costoWin10Pro, $costoWin11Pro, $multiplicador, $nombreBase, $frecuencias) {
+                    ->map(function($grupo) use ($empleado, $tipo, $nombreBase, $frecuencias) {
                         $insumo = $grupo->first();
-
-                        // Calcular costo según el tipo de licencia
-                        $costo = match(strtoupper($insumo->NombreInsumo ?? '')) {
-                            'WINDOWS 10 HOME' => $costoWin10Pro * $multiplicador * $grupo->count(),
-                            'WINDOWS 11 HOME' => $costoWin11Pro * $multiplicador * $grupo->count(),
-                            default => self::costoGrupoInsumo($grupo, $tipo),
-                        };
 
                         return (object)[
                             'EmpleadoID' => $empleado->EmpleadoID,
                             'NombreEmpleado' => $empleado->NombreEmpleado,
                             'NombrePuesto' => $empleado->puestos->NombrePuesto ?? null,
                             'NombreInsumo' => self::nombreConFrecuencia($nombreBase($insumo), $insumo, $frecuencias),
-                            'CostoTotal' => (int) round($costo),
+                            'CostoTotal' => (int) round(self::costoGrupoInsumo($grupo, $tipo)),
                         ];
                     })
                     ->values();
@@ -301,7 +253,7 @@ class PresupuestoHelper
             ->values();
     }
     
-    // Método para obtener el reporte de líneas de datos por gerencia mensual o anual
+    // Reporte de líneas de datos.
     public static function reporteLineasDatosPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = self::tiposPersona($modo);
@@ -324,8 +276,6 @@ class PresupuestoHelper
                 }
             ])
             ->get()
-            // El SP agrupa por NombreEmpleado + NombrePuesto, no por EmpleadoID: dos homónimos
-            // en el mismo puesto se funden en una sola fila con los costos sumados.
             ->groupBy(fn($empleado) => $empleado->NombreEmpleado . '|' . ($empleado->puestos->NombrePuesto ?? ''))
             ->map(function($grupo) use ($tipo) {
                 $empleado = $grupo->first();
@@ -363,13 +313,12 @@ class PresupuestoHelper
                     'Orden' => 5,
                 ];
             })
-            // El HAVING del SP mira sólo la renta, no el total
             ->filter(fn($row) => ($tipo === 'mens' ? $row->Datos_Costo_Renta_Mensual : $row->Datos_Costo_Renta_Anual) > 0)
             ->sortBy('NombreEmpleado')
             ->values();
     }
-    
-    // Método para obtener el reporte de líneas GPS por gerencia mensual o anual
+
+    // Reporte de líneas GPS.
     public static function reporteLineasGPSPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = self::tiposPersona($modo);
@@ -392,8 +341,6 @@ class PresupuestoHelper
                 }
             ])
             ->get()
-            // El SP agrupa por NombreEmpleado + NombrePuesto, no por EmpleadoID: dos homónimos
-            // en el mismo puesto se funden en una sola fila con los costos sumados.
             ->groupBy(fn($empleado) => $empleado->NombreEmpleado . '|' . ($empleado->puestos->NombrePuesto ?? ''))
             ->map(function($grupo) use ($tipo) {
                 $empleado = $grupo->first();
@@ -431,13 +378,12 @@ class PresupuestoHelper
                     'Orden' => 5,
                 ];
             })
-            // El HAVING del SP mira sólo la renta, no el total
             ->filter(fn($row) => ($tipo === 'mens' ? $row->GPS_Costo_Renta_Mensual : $row->GPS_Costo_Renta_Anual) > 0)
             ->sortBy('NombreEmpleado')
             ->values();
     }
-    
-    // Método para obtener el reporte de líneas de voz por gerencia mensual o anual
+
+    // Reporte de líneas de voz.
     public static function reporteLineasVozPorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = self::tiposPersona($modo);
@@ -460,8 +406,6 @@ class PresupuestoHelper
                 }
             ])
             ->get()
-            // El SP agrupa por NombreEmpleado + NombrePuesto, no por EmpleadoID: dos homónimos
-            // en el mismo puesto se funden en una sola fila con los costos sumados.
             ->groupBy(fn($empleado) => $empleado->NombreEmpleado . '|' . ($empleado->puestos->NombrePuesto ?? ''))
             ->map(function($grupo) use ($tipo) {
                 $empleado = $grupo->first();
@@ -499,13 +443,12 @@ class PresupuestoHelper
                     'Orden' => 5,
                 ];
             })
-            // El HAVING del SP mira sólo la renta, no el total
             ->filter(fn($row) => ($tipo === 'mens' ? $row->Voz_Costo_Renta_Mensual : $row->Voz_Costo_Renta_Anual) > 0)
             ->sortBy('NombreEmpleado')
             ->values();
     }
 
-    // Método para obtener el reporte anual de insumos por gerencia (con orden específico)
+    // Desglose anual de insumos de una gerencia, agrupado en seis bloques que se muestran en un orden fijo
     public static function obtenerInsumosAnualesPorGerencia(int $gerenciaId): \Illuminate\Support\Collection
     {
         $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -514,12 +457,13 @@ class PresupuestoHelper
 
         $esExentaWindows = in_array($gerenciaId, [17, 18]);
 
-        // 1. Costos base de Windows (con 7% de incremento, redondeados)
+        // 1. Precio de referencia del PRO, con el que se cotizan las HOME. La inflación ya viene
+        //    aplicada en el costo capturado, así que aquí no se ajusta nada.
         $costoWin10Pro = $esExentaWindows ? 0 : (int) round(
-            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 10 PRO')->max('CostoMensual') ?? 0) * 1.07
+            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 10 PRO')->max('CostoMensual') ?? 0)
         );
         $costoWin11Pro = $esExentaWindows ? 0 : (int) round(
-            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 11 PRO')->max('CostoAnual') ?? 0) * 1.07
+            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 11 PRO')->max('CostoAnual') ?? 0)
         );
 
         // 2. Cargar empleados de la gerencia con sus insumos y líneas
@@ -538,6 +482,9 @@ class PresupuestoHelper
                     $q->select('InventarioID', 'EmpleadoID', 'Compania', 'TipoLinea',
                                'CostoRentaMensual', 'CostoFianza', 'FechaFianza', 'MontoRenovacionFianza');
                 },
+                'inventarioequipo' => function ($q) {
+                    $q->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago');
+                },
             ])
             ->get();
 
@@ -548,6 +495,7 @@ class PresupuestoHelper
 
         $todosInsumos = $empleados->flatMap(fn ($e) => $e->inventarioinsumo);
         $todasLineas  = $empleados->flatMap(fn ($e) => $e->inventariolineas);
+        $todosEquipos = $empleados->flatMap(fn ($e) => $e->inventarioequipo);
 
         $resultado = collect();
 
@@ -685,17 +633,16 @@ class PresupuestoHelper
                 }
             });
 
-        // --- ORDEN 6: Inversiones (hardware anual + renovación fianzas en Junio) ---
-        $insumosHardware = $todosInsumos->filter(fn ($i) =>
-            in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
-            in_array($i->CateogoriaInsumo, ['LAPTOP', 'MONITOR', 'NO BREAK', 'TABLET', 'IMPRESORA'])
+        // --- ORDEN 6: Inversiones (hardware + renovación fianzas en Junio) ---
+        $equiposHardware = $todosEquipos->filter(fn ($e) =>
+            in_array($e->CategoriaEquipo, ['LAPTOP', 'MONITOR', 'IMPRESORA', 'TABLET', 'NO BREAK', 'MODEM', 'ANTENA'])
         );
 
         // Calcular costos por mes
         $costosTotalesPorMes = [];
         foreach ($meses as $mes) {
-            $costo = $insumosHardware->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)
-                ->sum(fn ($i) => self::costoAnualInsumo($i));
+            $costo = $equiposHardware->filter(fn ($e) => strcasecmp($e->MesDePago ?? '', $mes) === 0)
+                ->sum(fn ($e) => (float) ($e->Precio ?? 0));
             if ($mes === 'Junio') {
                 $costo += $totalRenovacionFianzas;
             }
@@ -722,363 +669,207 @@ class PresupuestoHelper
             fn ($a, $b) => $mesIndice[$a->Mes] <=> $mesIndice[$b->Mes],
         ])->values();
     }
-
-    /**
-     * Calendario de pagos (12 meses) por gerencia.
-     *
-     * Lo consumen la vista de presupuesto y el Excel: ambos deben ver lo mismo.
-     */
+    
+    // Calendario de pagos (12 meses) por gerencia(SOLO PARA REPORTE DE PRESUPUESTOS).
     public static function calendarioPagosPorGerencia($gerenciaId, string $modo = 'presupuesto')
     {
-        $tiposPersona = self::tiposPersona($modo);
-        $tipoPersonaFilter = $tiposPersona
-            ? " AND e.tipo_persona IN ('" . implode("', '", $tiposPersona) . "') "
-            : "";
+        $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-        // El switch "Presupuestado" parte el inventario en dos reportes que no se solapan:
-        // presupuesto lista lo marcado, inventario lo que no. El alias de la tabla cambia
-        // entre consultas, por eso van tres variantes del mismo filtro.
-        $valorPresup    = $modo === 'presupuesto' ? 1 : 0;
-        $presupInsumo   = " AND i.Presupuestado = {$valorPresup} ";
-        $presupLinea    = " AND il.Presupuestado = {$valorPresup} ";
+        $tiposPersona    = self::tiposPersona($modo);
+        $esExentaWindows = in_array((int) $gerenciaId, [17, 18], true);
 
-        $bindings = ['gerenciaId' => $gerenciaId];
+        $norm = fn ($valor) => mb_strtoupper(trim((string) ($valor ?? '')), 'UTF-8');
 
-        // 1. Obtener costos de Windows 10 Pro
-        $sqlWin10 = "SELECT 
-            CASE 
-                WHEN :gerenciaId IN (17, 18) THEN 0.00 
-                 ELSE ROUND(IFNULL(MAX(CostoMensual * 1.07), 0)) 
-            END AS CostoWindows10Pro
-        FROM inventarioinsumo
-        WHERE NombreInsumo = 'WINDOWS 10 PRO'";
-        $costoWindows10ProObj = DB::selectOne($sqlWin10, ['gerenciaId' => $gerenciaId]);
-        $costoWindows10Pro = $costoWindows10ProObj ? $costoWindows10ProObj->CostoWindows10Pro : 0;
+        // Precio de referencia del PRO, con el que se cotizan las HOME.
+        $costoWin10Pro = $esExentaWindows ? 0 : (int) round(
+            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 10 PRO')->max('CostoMensual') ?? 0)
+        );
+        $costoWin11Pro = $esExentaWindows ? 0 : (int) round(
+            (float) (DB::table('inventarioinsumo')->where('NombreInsumo', 'WINDOWS 11 PRO')->max('CostoMensual') ?? 0)
+        );
 
-        // 2. Obtener costos de Windows 11 Pro
-        $sqlWin11 = "SELECT 
-            CASE 
-                WHEN :gerenciaId IN (17, 18) THEN 0.00 
-                 ELSE ROUND(IFNULL(MAX(CostoAnual * 1.07), 0)) 
-            END AS CostoWindows11Pro
-        FROM inventarioinsumo
-        WHERE NombreInsumo = 'WINDOWS 11 PRO'";
-        $costoWindows11ProObj = DB::selectOne($sqlWin11, ['gerenciaId' => $gerenciaId]);
-        $costoWindows11Pro = $costoWindows11ProObj ? $costoWindows11ProObj->CostoWindows11Pro : 0;
+        // Empleados de la gerencia con su inventario.
+        $empleados = Empleados::query()
+            ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
+            ->whereHas('puestos.departamentos.gerencia', fn ($q) => $q->where('gerencia.GerenciaID', $gerenciaId))
+            ->with([
+                'inventarioinsumo' => function ($q) use ($modo) {
+                    $q->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CateogoriaInsumo',
+                               'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'MesDePago');
+                    self::soloPresupuestados($q, $modo);
+                },
+                'inventariolineas' => function ($q) use ($modo) {
+                    $q->select('InventarioID', 'EmpleadoID', 'Compania', 'TipoLinea',
+                               'CostoRentaMensual', 'CostoFianza', 'FechaFianza', 'MontoRenovacionFianza');
+                    self::soloPresupuestados($q, $modo);
+                },
+                'inventarioequipo' => function ($q) use ($modo) {
+                    $q->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago', 'FechaDeCompra');
+                    self::soloPresupuestados($q, $modo);
+                },
+            ])
+            ->get();
 
-        // 3. Obtener la suma de la MontoRenovacionFianza
-        $sqlFianzas = "SELECT SUM(il.MontoRenovacionFianza) as TotalRenovacionFianzas
-        FROM inventariolineas il
-        INNER JOIN empleados e ON il.EmpleadoID = e.EmpleadoID
-        INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-        INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-        INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-        WHERE il.MontoRenovacionFianza IS NOT NULL
-        AND g.GerenciaID = :gerenciaId" . $tipoPersonaFilter . $presupLinea;
-        $totalFianzasObj = DB::selectOne($sqlFianzas, $bindings);
-        $totalRenovacionFianzas = $totalFianzasObj ? ($totalFianzasObj->TotalRenovacionFianzas ?? 0) : 0;
+        $todosInsumos = $empleados->flatMap(fn ($e) => $e->inventarioinsumo);
+        $todasLineas  = $empleados->flatMap(fn ($e) => $e->inventariolineas);
+        $todosEquipos = $empleados->flatMap(fn ($e) => $e->inventarioequipo);
 
-        $reporteTemp = [];
+        // Se suma a Junio dentro de INVERSIONES
+        $totalRenovacionFianzas = (float) $todasLineas
+            ->whereNotNull('MontoRenovacionFianza')
+            ->sum('MontoRenovacionFianza');
 
-        // Query 1: Lineas Renta (Orden 5)
-        $sqlLineasRenta = "SELECT 
-                CONCAT(il.Compania, ' ', il.TipoLinea) AS NombreInsumo,
-                SUM((il.CostoRentaMensual)) AS Enero,
-                SUM((il.CostoRentaMensual)) AS Febrero,
-                SUM((il.CostoRentaMensual)) AS Marzo,
-                SUM((il.CostoRentaMensual)) AS Abril,
-                SUM((il.CostoRentaMensual)) AS Mayo,
-                SUM((il.CostoRentaMensual)) AS Junio,
-                SUM((il.CostoRentaMensual)) AS Julio,
-                SUM((il.CostoRentaMensual)) AS Agosto,
-                SUM((il.CostoRentaMensual)) AS Septiembre,
-                SUM((il.CostoRentaMensual)) AS Octubre,
-                SUM((il.CostoRentaMensual)) AS Noviembre,
-                SUM((il.CostoRentaMensual)) AS Diciembre,
-                5 AS Orden  
-            FROM 
-                inventariolineas il
-            INNER JOIN 
-                empleados e ON il.EmpleadoID = e.EmpleadoID
-            INNER JOIN 
-                puestos p ON e.PuestoID = p.PuestoID
-            INNER JOIN 
-                departamentos d ON p.DepartamentoID = d.DepartamentoID
-            INNER JOIN 
-                gerencia g ON d.GerenciaID = g.GerenciaID
-            WHERE 
-                g.GerenciaID = :gerenciaId" . $tipoPersonaFilter . $presupLinea . "
-            GROUP BY il.Compania, il.TipoLinea
-            HAVING (SUM((il.CostoRentaMensual)) * 12) > 0";
-        $res1 = DB::select($sqlLineasRenta, $bindings);
-        $reporteTemp = array_merge($reporteTemp, $res1);
+        $filas = [];
 
-        // Query 2: Lineas Fianza (Orden 4)
-        $sqlLineasFianza = "SELECT 
-                CONCAT(il.Compania, ' FIANZA - ', il.TipoLinea) AS NombreInsumo,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 1 THEN (il.CostoFianza) ELSE 0 END) AS Enero,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 2 THEN (il.CostoFianza) ELSE 0 END) AS Febrero,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 3 THEN (il.CostoFianza) ELSE 0 END) AS Marzo,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 4 THEN (il.CostoFianza) ELSE 0 END) AS Abril,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 5 THEN (il.CostoFianza) ELSE 0 END) AS Mayo,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 6 THEN (il.CostoFianza) ELSE 0 END) AS Junio,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 7 THEN (il.CostoFianza) ELSE 0 END) AS Julio,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 8 THEN (il.CostoFianza) ELSE 0 END) AS Agosto,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 9 THEN (il.CostoFianza) ELSE 0 END) AS Septiembre,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 10 THEN (il.CostoFianza) ELSE 0 END) AS Octubre,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 11 THEN (il.CostoFianza) ELSE 0 END) AS Noviembre,
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 12 THEN (il.CostoFianza) ELSE 0 END) AS Diciembre,
-                 4 AS Orden  
-            FROM 
-                inventariolineas il
-            INNER JOIN 
-                empleados e ON il.EmpleadoID = e.EmpleadoID
-            INNER JOIN 
-                puestos p ON e.PuestoID = p.PuestoID
-            INNER JOIN 
-                departamentos d ON p.DepartamentoID = d.DepartamentoID
-            INNER JOIN 
-                gerencia g ON d.GerenciaID = g.GerenciaID
-            WHERE 
-                il.TipoLinea IN ('Voz', 'Datos', 'GPS')  
-                AND g.GerenciaID = :gerenciaId" . $tipoPersonaFilter . $presupLinea . "
-            GROUP BY il.Compania, il.TipoLinea
-            HAVING (
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 1 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 2 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 3 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 4 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 5 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 6 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 7 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 8 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 9 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 10 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 11 THEN (il.CostoFianza) ELSE 0 END) +
-                SUM(CASE WHEN MONTH(il.FechaFianza) = 12 THEN (il.CostoFianza) ELSE 0 END)
-            ) > 0";
-        $res2 = DB::select($sqlLineasFianza, $bindings);
-        $reporteTemp = array_merge($reporteTemp, $res2);
+        $agregar = function (string $nombre, int $orden, callable $porMes, ?float $totalParaFiltro = null) use ($meses, &$filas) {
+            $valores = [];
+            $total   = 0.0;
 
-        // Query 3: Inversiones (Orden 6)
-        // El hardware sale de inventarioequipo, igual que PresupuestoHelper::reporteHardwarePorGerencia.
-        // El mes lo elige el usuario en MesDePago (la comparación es case-insensitive por la
-        // collation de MySQL, así que 'AGOSTO' capturado en el modal casa con 'Agosto').
-        $presupEquipo = " AND q.Presupuestado = {$valorPresup} ";
+            foreach ($meses as $mes) {
+                $valores[$mes] = (float) $porMes($mes);
+                $total        += $valores[$mes];
+            }
 
-        $sqlInversiones = "SELECT
-            'INVERSIONES' AS NombreInsumo,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Enero'      THEN q.Precio ELSE 0 END), 0) AS Enero,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Febrero'    THEN q.Precio ELSE 0 END), 0) AS Febrero,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Marzo'      THEN q.Precio ELSE 0 END), 0) AS Marzo,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Abril'      THEN q.Precio ELSE 0 END), 0) AS Abril,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Mayo'       THEN q.Precio ELSE 0 END), 0) AS Mayo,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Junio'      THEN q.Precio ELSE 0 END), 0) + :totalRenovacionFianzas AS Junio,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Julio'      THEN q.Precio ELSE 0 END), 0) AS Julio,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Agosto'     THEN q.Precio ELSE 0 END), 0) AS Agosto,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Septiembre' THEN q.Precio ELSE 0 END), 0) AS Septiembre,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Octubre'    THEN q.Precio ELSE 0 END), 0) AS Octubre,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Noviembre'  THEN q.Precio ELSE 0 END), 0) AS Noviembre,
-            IFNULL(SUM(CASE WHEN q.MesDePago = 'Diciembre'  THEN q.Precio ELSE 0 END), 0) AS Diciembre,
-            6 as Orden
-        FROM
-            inventarioequipo q
-        INNER JOIN
-            empleados e ON q.EmpleadoID = e.EmpleadoID
-        INNER JOIN
-            puestos p ON e.PuestoID = p.PuestoID
-        INNER JOIN
-            departamentos d ON p.DepartamentoID = d.DepartamentoID
-        INNER JOIN
-            gerencia g ON d.GerenciaID = g.GerenciaID
-        WHERE
-            q.CategoriaEquipo IN ('LAPTOP', 'MONITOR', 'IMPRESORA', 'TABLETA', 'UPS')
-            AND g.GerenciaID = :gerenciaId" . $tipoPersonaFilter . $presupEquipo . "
-        HAVING (IFNULL(SUM(q.Precio), 0) + :totalRenovacionFianzas2) > 0";
+            if (($totalParaFiltro ?? $total) <= 0) {
+                return;
+            }
 
-        $invBindings = array_merge($bindings, [
-            'totalRenovacionFianzas' => $totalRenovacionFianzas,
-            'totalRenovacionFianzas2' => $totalRenovacionFianzas
-        ]);
+            $fila = (object) ['NombreInsumo' => $nombre];
+            foreach ($meses as $mes) {
+                $fila->{$mes} = round($valores[$mes], 0);
+            }
+            $fila->Orden = $orden;
 
-        $res3 = DB::select($sqlInversiones, $invBindings);
-        $reporteTemp = array_merge($reporteTemp, $res3);
+            $filas[] = $fila;
+        };
 
-        // Query 4: Licencias (Orden 2)
-        $sqlLicencias = "SELECT 
-        i.NombreInsumo,
-        SUM(CASE WHEN i.MesDePago = 'Enero' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro1 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro1 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Enero,
-        SUM(CASE WHEN i.MesDePago = 'Febrero' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro2 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro2 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Febrero,
-        SUM(CASE WHEN i.MesDePago = 'Marzo' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro3 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro3 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Marzo,
-        SUM(CASE WHEN i.MesDePago = 'Abril' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro4 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro4 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Abril,
-        SUM(CASE WHEN i.MesDePago = 'Mayo' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro5 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro5 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Mayo,
-        SUM(CASE WHEN i.MesDePago = 'Junio' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro6 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro6 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Junio,
-        SUM(CASE WHEN i.MesDePago = 'Julio' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro7 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro7 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Julio,
-        SUM(CASE WHEN i.MesDePago = 'Agosto' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro8 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro8 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Agosto,
-        SUM(CASE WHEN i.MesDePago = 'Septiembre' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro9 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro9 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Septiembre,
-        SUM(CASE WHEN i.MesDePago = 'Octubre' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro10 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro10 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Octubre,
-        SUM(CASE WHEN i.MesDePago = 'Noviembre' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro11 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro11 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Noviembre,
-        SUM(CASE WHEN i.MesDePago = 'Diciembre' AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro12 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro12 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END) AS Diciembre,
-        2 AS Orden
-    FROM 
-        inventarioinsumo i
-    INNER JOIN empleados e ON i.EmpleadoID = e.EmpleadoID
-    INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-    INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-    INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-    WHERE 
-        (i.FrecuenciaDePago = 'Anual' OR i.FrecuenciaDePago = 'Pago único')
-        AND i.CateogoriaInsumo = 'LICENCIA'
-        AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%')
-        AND g.GerenciaID = :gerenciaId" . $tipoPersonaFilter . $presupInsumo . "
-    GROUP BY 
-        i.NombreInsumo
-    HAVING (
-        SUM(CASE WHEN i.MesDePago IN ('Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre') AND NOT (g.GerenciaID IN (17, 18) AND i.NombreInsumo LIKE 'WINDOWS%') THEN CASE WHEN i.NombreInsumo = 'WINDOWS 10 HOME' THEN :costoWindows10Pro13 WHEN i.NombreInsumo = 'WINDOWS 11 HOME' THEN :costoWindows11Pro13 WHEN i.NombreInsumo IN ('WINDOWS 10 PRO', 'WINDOWS 11 PRO') THEN 0.00 ELSE (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) END ELSE 0 END)
-    ) > 0";
+        $mismoMes = fn ($valor, string $mes) => strcasecmp(trim((string) ($valor ?? '')), $mes) === 0;
 
-        $licBindings = array_merge($bindings, [
-            'costoWindows10Pro1' => $costoWindows10Pro,
-            'costoWindows11Pro1' => $costoWindows11Pro,
-            'costoWindows10Pro2' => $costoWindows10Pro,
-            'costoWindows11Pro2' => $costoWindows11Pro,
-            'costoWindows10Pro3' => $costoWindows10Pro,
-            'costoWindows11Pro3' => $costoWindows11Pro,
-            'costoWindows10Pro4' => $costoWindows10Pro,
-            'costoWindows11Pro4' => $costoWindows11Pro,
-            'costoWindows10Pro5' => $costoWindows10Pro,
-            'costoWindows11Pro5' => $costoWindows11Pro,
-            'costoWindows10Pro6' => $costoWindows10Pro,
-            'costoWindows11Pro6' => $costoWindows11Pro,
-            'costoWindows10Pro7' => $costoWindows10Pro,
-            'costoWindows11Pro7' => $costoWindows11Pro,
-            'costoWindows10Pro8' => $costoWindows10Pro,
-            'costoWindows11Pro8' => $costoWindows11Pro,
-            'costoWindows10Pro9' => $costoWindows10Pro,
-            'costoWindows11Pro9' => $costoWindows11Pro,
-            'costoWindows10Pro10' => $costoWindows10Pro,
-            'costoWindows11Pro10' => $costoWindows11Pro,
-            'costoWindows10Pro11' => $costoWindows10Pro,
-            'costoWindows11Pro11' => $costoWindows11Pro,
-            'costoWindows10Pro12' => $costoWindows10Pro,
-            'costoWindows11Pro12' => $costoWindows11Pro,
-            'costoWindows10Pro13' => $costoWindows10Pro,
-            'costoWindows11Pro13' => $costoWindows11Pro,
-        ]);
-        $res4 = DB::select($sqlLicencias, $licBindings);
-        $reporteTemp = array_merge($reporteTemp, $res4);
+        // --- ORDEN 1: insumos mensuales, se pagan los 12 meses ---
+        $todosInsumos
+            ->filter(fn ($i) =>
+                $norm($i->FrecuenciaDePago) === 'MENSUAL' &&
+                in_array($norm($i->CateogoriaInsumo), ['LICENCIA', 'HOSTING', 'STARLINK', 'INTERNET'], true)
+            )
+            ->groupBy(fn ($i) => $norm($i->NombreInsumo))
+            ->sortKeys()
+            ->each(function ($grupo) use ($agregar) {
+                $costo = (float) $grupo->sum('CostoMensual');
+                $agregar((string) $grupo->first()->NombreInsumo, 1, fn () => $costo);
+            });
 
-        // Query 5: Otros Insumos (Orden 3)
-        $sqlOtrosInsumos = "SELECT 
-            NombreInsumo,
-            SUM(Enero) AS Enero,
-            SUM(Febrero) AS Febrero,
-            SUM(Marzo) AS Marzo,
-            SUM(Abril) AS Abril,
-            SUM(Mayo) AS Mayo,
-            SUM(Junio) AS Junio,
-            SUM(Julio) AS Julio,
-            SUM(Agosto) AS Agosto,
-            SUM(Septiembre) AS Septiembre,
-            SUM(Octubre) AS Octubre,
-            SUM(Noviembre) AS Noviembre,
-            SUM(Diciembre) AS Diciembre,
-            3 AS Orden
-        FROM (
-            SELECT 
-                CASE 
-                    WHEN i.CateogoriaInsumo = 'REPARACIONES' THEN 'ACCESORIOS Y REFACCIONES'
-                    ELSE i.NombreInsumo 
-                END AS NombreInsumo,
-                CASE WHEN i.MesDePago = 'Enero' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Enero,
-                CASE WHEN i.MesDePago = 'Febrero' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Febrero,
-                CASE WHEN i.MesDePago = 'Marzo' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Marzo,
-                CASE WHEN i.MesDePago = 'Abril' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Abril,
-                CASE WHEN i.MesDePago = 'Mayo' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Mayo,
-                CASE WHEN i.MesDePago = 'Junio' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Junio,
-                CASE WHEN i.MesDePago = 'Julio' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Julio,
-                CASE WHEN i.MesDePago = 'Agosto' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Agosto,
-                CASE WHEN i.MesDePago = 'Septiembre' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Septiembre,
-                CASE WHEN i.MesDePago = 'Octubre' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Octubre,
-                CASE WHEN i.MesDePago = 'Noviembre' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Noviembre,
-                CASE WHEN i.MesDePago = 'Diciembre' THEN (CASE WHEN i.FrecuenciaDePago = 'Pago único' THEN i.CostoMensual ELSE i.CostoAnual END) ELSE 0 END AS Diciembre
-            FROM 
-                inventarioinsumo i
-            INNER JOIN empleados e ON i.EmpleadoID = e.EmpleadoID
-            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-            WHERE 
-                (i.FrecuenciaDePago = 'Anual' OR i.FrecuenciaDePago = 'Pago único')
-                AND i.CateogoriaInsumo NOT IN ('LAPTOP', 'MONITOR', 'NO BREAK', 'LICENCIA', 'ACCESORIOS', 'BATERIA UPS', 'IMPRESORA') 
-                AND g.GerenciaID = :gerenciaId" . $tipoPersonaFilter . $presupInsumo . "
-        ) as sub
-        GROUP BY NombreInsumo
-        HAVING (
-            SUM(Enero) + SUM(Febrero) + SUM(Marzo) + SUM(Abril) + SUM(Mayo) + SUM(Junio) +
-            SUM(Julio) + SUM(Agosto) + SUM(Septiembre) + SUM(Octubre) + SUM(Noviembre) + SUM(Diciembre)
-        ) > 0";
-        $res5 = DB::select($sqlOtrosInsumos, $bindings);
-        $reporteTemp = array_merge($reporteTemp, $res5);
+        // --- ORDEN 2: licencias anuales. Las HOME se cotizan al precio de su PRO.
+        $todosInsumos
+            ->filter(fn ($i) =>
+                in_array($norm($i->FrecuenciaDePago), ['ANUAL', 'PAGO ÚNICO'], true) &&
+                $norm($i->CateogoriaInsumo) === 'LICENCIA' &&
+                !($esExentaWindows && str_starts_with($norm($i->NombreInsumo), 'WINDOWS'))
+            )
+            ->groupBy(fn ($i) => $norm($i->NombreInsumo))
+            ->sortKeys()
+            ->each(function ($grupo) use ($agregar, $mismoMes, $norm, $costoWin10Pro, $costoWin11Pro) {
+                $importe = fn ($i) => match ($norm($i->NombreInsumo)) {
+                    'WINDOWS 10 HOME'                  => (float) $costoWin10Pro,
+                    'WINDOWS 11 HOME'                  => (float) $costoWin11Pro,
+                    'WINDOWS 10 PRO', 'WINDOWS 11 PRO' => 0.0,
+                    default                            => self::costoAnualInsumo($i),
+                };
 
-        // Query 6: Mensuales (Orden 1)
-        $sqlMensuales = "SELECT 
-        i.NombreInsumo,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Enero,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Febrero,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Marzo,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Abril,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Mayo,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Junio,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Julio,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Agosto,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Septiembre,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Octubre,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Noviembre,
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) AS Diciembre,
-        1 AS Orden
-    FROM 
-        inventarioinsumo i
-    INNER JOIN 
-        empleados e ON i.EmpleadoID = e.EmpleadoID
-    INNER JOIN 
-        puestos p ON e.PuestoID = p.PuestoID
-    INNER JOIN 
-        departamentos d ON p.DepartamentoID = d.DepartamentoID
-    INNER JOIN 
-        gerencia g ON d.GerenciaID = g.GerenciaID
-    WHERE 
-        i.FrecuenciaDePago = 'Mensual'
-        AND i.CateogoriaInsumo IN ('LICENCIA', 'HOSTING', 'STARLINK', 'INTERNET', 'TABLET')  
-        AND g.GerenciaID = :gerenciaId" . $tipoPersonaFilter . $presupInsumo . "
-    GROUP BY 
-        i.NombreInsumo
-    HAVING 
-        SUM(CASE WHEN i.CateogoriaInsumo IN ('INTERNET', 'STARLINK') THEN i.CostoMensual ELSE i.CostoMensual END) * 12 > 0";
-        $res6 = DB::select($sqlMensuales, $bindings);
-        $reporteTemp = array_merge($reporteTemp, $res6);
+                $agregar((string) $grupo->first()->NombreInsumo, 2, fn ($mes) => $grupo
+                    ->filter(fn ($i) => $mismoMes($i->MesDePago, $mes))
+                    ->sum($importe));
+            });
 
-        // Now format Enero to Diciembre as integers/floats without decimals or rounded as MySQL stored procedure does
-        foreach ($reporteTemp as $row) {
-            $row->Enero = round((float) $row->Enero, 0);
-            $row->Febrero = round((float) $row->Febrero, 0);
-            $row->Marzo = round((float) $row->Marzo, 0);
-            $row->Abril = round((float) $row->Abril, 0);
-            $row->Mayo = round((float) $row->Mayo, 0);
-            $row->Junio = round((float) $row->Junio, 0);
-            $row->Julio = round((float) $row->Julio, 0);
-            $row->Agosto = round((float) $row->Agosto, 0);
-            $row->Septiembre = round((float) $row->Septiembre, 0);
-            $row->Octubre = round((float) $row->Octubre, 0);
-            $row->Noviembre = round((float) $row->Noviembre, 0);
-            $row->Diciembre = round((float) $row->Diciembre, 0);
-        }
+        // --- ORDEN 3: resto de insumos anuales. Mantenimientos y refacciones.
+        $nombreOtroInsumo = fn ($i) => $norm($i->CateogoriaInsumo) === 'REPARACIONES'
+            ? 'ACCESORIOS Y REFACCIONES'
+            : (string) $i->NombreInsumo;
 
-        // Sort by Orden
-        usort($reporteTemp, function ($a, $b) {
-            return $a->Orden <=> $b->Orden;
-        });
+        $todosInsumos
+            ->filter(fn ($i) =>
+                in_array($norm($i->FrecuenciaDePago), ['ANUAL', 'PAGO ÚNICO'], true) &&
+                !in_array($norm($i->CateogoriaInsumo),
+                    ['LAPTOP', 'MONITOR', 'NO BREAK', 'LICENCIA', 'ACCESORIOS', 'BATERIA UPS', 'IMPRESORA'], true)
+            )
+            ->groupBy(fn ($i) => $norm($nombreOtroInsumo($i)))
+            ->sortKeys()
+            ->each(function ($grupo) use ($agregar, $mismoMes, $nombreOtroInsumo) {
+                $agregar($nombreOtroInsumo($grupo->first()), 3, fn ($mes) => $grupo
+                    ->filter(fn ($i) => $mismoMes($i->MesDePago, $mes))
+                    ->sum(fn ($i) => self::costoAnualInsumo($i)));
+            });
 
-        return $reporteTemp;
+        // --- ORDEN 4: fianzas de líneas, cada una en el mes de su FechaFianza ---
+        $mesDeFecha = function ($fecha): ?int {
+            if (empty($fecha)) {
+                return null;
+            }
+
+            return (int) ($fecha instanceof \DateTimeInterface
+                ? $fecha->format('n')
+                : date('n', strtotime((string) $fecha)));
+        };
+
+        $todasLineas
+            ->filter(fn ($l) => in_array($norm($l->TipoLinea), ['VOZ', 'DATOS', 'GPS'], true))
+            ->groupBy(fn ($l) => $norm($l->Compania . ' FIANZA - ' . $l->TipoLinea))
+            ->sortKeys()
+            ->each(function ($grupo) use ($agregar, $meses, $mesDeFecha) {
+                $primera = $grupo->first();
+                $nombre  = $primera->Compania . ' FIANZA - ' . $primera->TipoLinea;
+
+                $agregar($nombre, 4, function ($mes) use ($grupo, $meses, $mesDeFecha) {
+                    $numeroMes = array_search($mes, $meses, true) + 1;
+
+                    return $grupo
+                        ->filter(fn ($l) => $mesDeFecha($l->FechaFianza) === $numeroMes)
+                        ->sum(fn ($l) => (float) ($l->CostoFianza ?? 0));
+                });
+            });
+
+        // --- ORDEN 5: renta de líneas, se paga los 12 meses ---
+        $todasLineas
+            ->groupBy(fn ($l) => $norm($l->Compania . ' ' . $l->TipoLinea))
+            ->sortKeys()
+            ->each(function ($grupo) use ($agregar) {
+                $primera = $grupo->first();
+                $costo   = (float) $grupo->sum('CostoRentaMensual');
+
+                $agregar($primera->Compania . ' ' . $primera->TipoLinea, 5, fn () => $costo);
+            });
+
+        // --- ORDEN 6: hardware, cada compra en su MesDePago. La renovación de fianzas cae en Junio.
+        $equipos = $todosEquipos->filter(fn ($e) =>
+            in_array($norm($e->CategoriaEquipo), ['LAPTOP', 'MONITOR', 'IMPRESORA', 'TABLETA', 'NO BREAK', 'ANTENA', 'MODEM'], true)
+        );
+
+        // Casi ningún equipo trae MesDePago; sin mes no cabe en el calendario, así que se cae al
+        // mes de su FechaDeCompra. Sólo el mes: el año de compra no se toma en cuenta.
+        $mesDelEquipo = function ($e) use ($mesDeFecha, $meses) {
+            $mes = trim((string) ($e->MesDePago ?? ''));
+            if ($mes !== '') {
+                return $mes;
+            }
+
+            $numero = $mesDeFecha($e->FechaDeCompra);
+
+            return $numero ? $meses[$numero - 1] : '';
+        };
+
+        // El bloque se publica si hay hardware o fianzas, aunque el mes de compra falte
+        $totalInversiones = (float) $equipos->sum(fn ($e) => (float) ($e->Precio ?? 0)) + $totalRenovacionFianzas;
+
+        $agregar('INVERSIONES', 6, function ($mes) use ($equipos, $mismoMes, $mesDelEquipo, $totalRenovacionFianzas) {
+            $costo = $equipos
+                ->filter(fn ($e) => $mismoMes($mesDelEquipo($e), $mes))
+                ->sum(fn ($e) => (float) ($e->Precio ?? 0));
+
+            return $mes === 'Junio' ? $costo + $totalRenovacionFianzas : $costo;
+        }, $totalInversiones);
+
+        usort($filas, fn ($a, $b) => $a->Orden <=> $b->Orden);
+
+        return $filas;
     }
 }

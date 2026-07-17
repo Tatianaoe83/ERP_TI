@@ -1225,7 +1225,7 @@ class InventarioController extends AppBaseController
         $etiquetaFiltro = [
             'todos' => 'Todos',
             'presupuestados' => 'Presupuestados',
-            'no_presupuestados' => 'No presupuestados',
+            'no_presupuestados' => 'Asignados',
         ][$filtro] ?? 'Todos';
 
         $nombreEmpleado = preg_replace('/[^A-Za-z0-9_\- ]/', '', $empleado->NombreEmpleado);

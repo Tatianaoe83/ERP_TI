@@ -752,6 +752,20 @@
         });
     }
 
+    // La columna "Presupuestado" sólo aporta información en "Todos"; en las otras
+    // pestañas el valor ya está implícito en el filtro, igual que en el Excel.
+    function aplicarVisibilidadPresupuestado(tablaId) {
+        if (!permitePresupuestado) {
+            return;
+        }
+
+        const mostrar = (filtroPresupuestado[tablaId] || 'todos') === 'todos';
+
+        $('#' + tablaId).DataTable()
+            .column(columnaPresupuestado[tablaId])
+            .visible(mostrar, false);
+    }
+
     $(document).on('click', '.pill-filtro', function() {
         const barra = $(this).closest('.inventario-filtros');
         const tablaId = barra.data('tabla');
@@ -761,6 +775,7 @@
         barra.find('.pill-filtro').removeClass('activo');
         $(this).addClass('activo');
 
+        aplicarVisibilidadPresupuestado(tablaId);
         $('#' + tablaId).DataTable().draw();
     });
 
