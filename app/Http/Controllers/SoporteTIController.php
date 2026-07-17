@@ -191,7 +191,6 @@ public function crearTickets(Request $request)
                  $ticketData = [
                      'EmpleadoID' => $empleado->EmpleadoID,
                      'Descripcion' => $descripcion,
-                     'Prioridad' => 'Baja',
                      'Estatus' => 'Pendiente',
                  ];
                  if ($request->input('Numero')) $ticketData['Numero'] = $request->input('Numero');
