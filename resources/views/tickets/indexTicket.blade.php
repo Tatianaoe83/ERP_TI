@@ -2946,7 +2946,7 @@
                         const data = await response.json();
                         
                         if (data.success && data.ticket) {
-                            this.ticketPrioridad = data.ticket.Prioridad || '';
+                            this.ticketPrioridad = data.ticket.Prioridad || 'Baja';
                             this.ticketEstatus = data.ticket.Estatus || '';
                             this.ticketClasificacion = data.ticket.Clasificacion || '';
                             this.ticketResponsableTI = data.ticket.ResponsableTI ? String(data.ticket.ResponsableTI) : '';

@@ -26,6 +26,7 @@
             <select wire:model.live="filtroPrioridad"
                 class="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
                 <option value="">Todas las prioridades</option>
+                <option value="sin">Sin Prioridad</option>
                 <option value="Baja">Baja</option>
                 <option value="Media">Media</option>
                 <option value="Alta">Alta</option>
@@ -124,9 +125,10 @@
                             <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full
                                 @if($ticket->Prioridad == 'Baja') bg-green-100 text-green-700 ring-1 ring-green-200 dark:bg-green-900/30 dark:text-green-300
                                 @elseif($ticket->Prioridad == 'Media') bg-yellow-100 text-yellow-800 ring-1 ring-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300
+                                @elseif(empty($ticket->Prioridad)) bg-gray-100 text-gray-600 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300
                                 @else bg-red-100 text-red-800 ring-1 ring-red-200 dark:bg-red-900/30 dark:text-red-300
                                 @endif">
-                                {{ $ticket->Prioridad ?? '-' }}
+                                {{ $ticket->Prioridad ?? 'Sin Prioridad' }}
                             </span>
                         </td>
 
