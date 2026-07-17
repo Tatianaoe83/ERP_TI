@@ -889,26 +889,66 @@ class SimpleWebklexImapService
     {
         try {
             $headers = $message->getHeaders();
+            $candidatos = [];
             
             if (isset($headers->in_reply_to)) {
                 $inReplyTo = $headers->in_reply_to;
-                return is_array($inReplyTo) ? ($inReplyTo[0] ?? null) : $inReplyTo;
+                $candidatos = array_merge($candidatos, $this->extraerIdsDeHeader($inReplyTo));
             }
             
             if (isset($headers->references)) {
                 $references = $headers->references;
-                if (is_array($references)) {
-                    return end($references) ?: null;
-                } else {
-                    $refs = explode(' ', $references);
-                    return trim(end($refs)) ?: null;
+                $candidatos = array_merge($candidatos, $this->extraerIdsDeHeader($references));
+            }
+
+            foreach ($candidatos as $candidato) {
+                $lower = strtolower($candidato);
+                if (str_contains($lower, 'thread-mantenimiento-') || str_contains($lower, 'thread-ticket-')) {
+                    return $candidato;
                 }
+            }
+
+            if (!empty($candidatos)) {
+                return $candidatos[0];
             }
             
             return null;
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    private function extraerIdsDeHeader($header): array
+    {
+        if (empty($header)) {
+            return [];
+        }
+
+        $valores = is_array($header) ? $header : [$header];
+        $ids = [];
+
+        foreach ($valores as $valor) {
+            $texto = trim((string) $valor);
+            if ($texto === '') {
+                continue;
+            }
+
+            if (preg_match_all('/<[^>]+>/', $texto, $matches) && !empty($matches[0])) {
+                foreach ($matches[0] as $match) {
+                    $ids[] = trim($match);
+                }
+                continue;
+            }
+
+            foreach (preg_split('/\s+/', $texto) as $parte) {
+                $parte = trim($parte);
+                if ($parte !== '') {
+                    $ids[] = $parte;
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
     
     /**
@@ -1442,7 +1482,8 @@ class SimpleWebklexImapService
             return false;
         }
 
-        if ($messageId && $this->correoYaProcesadoMantenimiento($mantenimiento->MantenimientoID, $fromEmail, $messageId, $threadId)) {
+        if ($this->correoYaProcesadoMantenimiento($mantenimiento->MantenimientoID, $fromEmail, $messageId, $threadId)) {
+            try { Log::info('IMAP: correo de mantenimiento ya procesado', ['id' => $mantenimiento->MantenimientoID, 'message_id' => $messageId, 'thread_id' => $threadId]); } catch (\Exception $e) {}
             return false;
         }
 
@@ -1502,8 +1543,14 @@ class SimpleWebklexImapService
 
     private function buscarMantenimientoPorThreadId($threadId)
     {
-        $chat = MantenimientoChat::where('thread_id', $threadId)
-            ->orWhere('message_id', $threadId)
+        $threadIdNormalizado = $this->normalizarThreadId($threadId);
+
+        $chat = MantenimientoChat::where(function ($query) use ($threadId, $threadIdNormalizado) {
+                $query->where('thread_id', $threadId)
+                    ->orWhere('thread_id', $threadIdNormalizado)
+                    ->orWhere('message_id', $threadId)
+                    ->orWhere('message_id', $threadIdNormalizado);
+            })
             ->first();
 
         return $chat ? TicketMantenimiento::find($chat->mantenimiento_id) : null;
@@ -1511,7 +1558,16 @@ class SimpleWebklexImapService
 
     private function buscarMantenimientoPorMessageId($messageId)
     {
-        $chat = MantenimientoChat::where('message_id', $messageId)->first();
+        $messageIdNormalizado = $this->normalizarMessageId($messageId);
+
+        $chat = MantenimientoChat::where(function ($query) use ($messageId, $messageIdNormalizado) {
+                $query->where('message_id', $messageId)
+                    ->orWhere('message_id', $messageIdNormalizado)
+                    ->orWhere('thread_id', $messageId)
+                    ->orWhere('thread_id', $messageIdNormalizado);
+            })
+            ->first();
+
         return $chat ? TicketMantenimiento::find($chat->mantenimiento_id) : null;
     }
 
@@ -1519,9 +1575,16 @@ class SimpleWebklexImapService
     {
         if ($messageId) {
             $normalizedMessageId = $this->normalizarMessageId($messageId);
-            if (MantenimientoChat::where('mantenimiento_id', $mantenimientoId)->where('message_id', $normalizedMessageId)->exists()) {
+            if (MantenimientoChat::where('mantenimiento_id', $mantenimientoId)
+                ->where(function ($query) use ($messageId, $normalizedMessageId) {
+                    $query->where('message_id', $messageId)
+                        ->orWhere('message_id', $normalizedMessageId);
+                })
+                ->exists()) {
                 return true;
             }
+
+            return false;
         }
 
         if ($threadId) {

@@ -66,6 +66,7 @@ class MantenimientoEmailService
 
             $mail->isHTML(true);
             $mail->Subject = $asunto;
+            $mail->MessageID = $messageId;
             $mail->Body = $contenido;
 
             foreach ($adjuntos as $adjunto) {

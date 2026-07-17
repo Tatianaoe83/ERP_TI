@@ -82,7 +82,7 @@
                                 Tu solicitud está en proceso
                             </h1>
                             <p style="margin:0 0 16px; font-size:15px; color:#64748b; line-height:1.6;">
-                                El equipo de Soporte ya está trabajando en tu solicitud de mantenimiento.
+                                El equipo de compras ya está trabajando en tu solicitud de mantenimiento.
                             </p>
 
                             {{-- Badge del número de mantenimiento --}}
@@ -132,7 +132,7 @@
                                     </td>
                                     <td valign="middle" style="padding:16px 18px 16px 0;">
                                         <p style="margin:0 0 3px; font-size:14px; font-weight:600; color:#1e3a8a;">
-                                             Soporte  te contactará
+                                             Compras te contactará
                                         </p>
                                         <p style="margin:0; font-size:13px; color:#475569; line-height:1.6;">
                                             Mantente atento, te avisaremos de cualquier avance.

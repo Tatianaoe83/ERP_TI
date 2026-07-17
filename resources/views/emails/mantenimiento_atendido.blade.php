@@ -76,7 +76,7 @@
                                 Tu solicitud fue atendida
                             </h1>
                             <p style="margin:0 0 20px; font-size:15px; color:#64748b; line-height:1.6; max-width:360px;">
-                                El equipo de Soporte concluyó tu solicitud de mantenimiento.
+                                El equipo de compras concluyó tu solicitud de mantenimiento.
                             </p>
 
                             <table cellpadding="0" cellspacing="0" role="presentation" align="center">
