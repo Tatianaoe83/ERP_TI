@@ -113,13 +113,34 @@
         }
     });
 
-    function setTheme(mode) {
+    let _themeTransitionTimer = null;
+
+    function applyTheme(mode) {
+        const root = document.documentElement;
         if (mode === 'dark') {
-            document.documentElement.classList.add('dark');
+            root.classList.add('dark');
             localStorage.setItem('theme', 'dark');
         } else if (mode === 'light') {
-            document.documentElement.classList.remove('dark');
+            root.classList.remove('dark');
             localStorage.setItem('theme', 'light');
         }
+    }
+
+    function setTheme(mode) {
+        const root = document.documentElement;
+
+        // Crossfade GPU: un solo snapshot, fluido sin importar el tamaño del DOM
+        if (document.startViewTransition) {
+            document.startViewTransition(() => applyTheme(mode));
+            return;
+        }
+
+        // Fallback (navegadores sin View Transitions): transición de color CSS
+        root.classList.add('theme-transition');
+        applyTheme(mode);
+        clearTimeout(_themeTransitionTimer);
+        _themeTransitionTimer = setTimeout(() => {
+            root.classList.remove('theme-transition');
+        }, 320);
     }
 </script>
