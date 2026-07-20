@@ -1,2 +1,427 @@
-/*! For license information please see factura-pdf-ocr.js.LICENSE.txt */
-(()=>{var t,e,r,n={},o={};function a(t){var e=o[t];if(void 0!==e)return e.exports;var r=o[t]={exports:{}};return n[t].call(r.exports,r,r.exports,a),r.exports}function i(t){return i="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&"function"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?"symbol":typeof t},i(t)}function u(){"use strict";var t=d(),e=t.m(u),r=(Object.getPrototypeOf?Object.getPrototypeOf(e):e.__proto__).constructor;function n(t){var e="function"==typeof t&&t.constructor;return!!e&&(e===r||"GeneratorFunction"===(e.displayName||e.name))}var o={throw:1,return:2,break:3,continue:3};function a(t){var e,r;return function(n){e||(e={stop:function(){return r(n.a,2)},catch:function(){return n.v},abrupt:function(t,e){return r(n.a,o[t],e)},delegateYield:function(t,o,a){return e.resultName=o,r(n.d,c(t),a)},finish:function(t){return r(n.f,t)}},r=function(t,r,o){n.p=e.prev,n.n=e.next;try{return t(r,o)}finally{e.next=n.n}}),e.resultName&&(e[e.resultName]=n.v,e.resultName=void 0),e.sent=n.v,e.next=n.n;try{return t.call(this,e)}finally{n.p=e.prev,n.n=e.next}}}return(u=function(){return{wrap:function(e,r,n,o){return t.w(a(e),r,n,o&&o.reverse())},isGeneratorFunction:n,mark:t.m,awrap:function(t,e){return new y(t,e)},AsyncIterator:p,async:function(t,e,r,o,i){return(n(e)?l:s)(a(t),e,r,o,i)},keys:f,values:c}})()}function c(t){if(null!=t){var e=t["function"==typeof Symbol&&Symbol.iterator||"@@iterator"],r=0;if(e)return e.call(t);if("function"==typeof t.next)return t;if(!isNaN(t.length))return{next:function(){return t&&r>=t.length&&(t=void 0),{value:t&&t[r++],done:!t}}}}throw new TypeError(i(t)+" is not iterable")}function f(t){var e=Object(t),r=[];for(var n in e)r.unshift(n);return function t(){for(;r.length;)if((n=r.pop())in e)return t.value=n,t.done=!1,t;return t.done=!0,t}}function s(t,e,r,n,o){var a=l(t,e,r,n,o);return a.next().then((function(t){return t.done?t.value:a.next()}))}function l(t,e,r,n,o){return new p(d().w(t,e,r,n),o||Promise)}function p(t,e){function r(n,o,a,i){try{var u=t[n](o),c=u.value;return c instanceof y?e.resolve(c.v).then((function(t){r("next",t,a,i)}),(function(t){r("throw",t,a,i)})):e.resolve(c).then((function(t){u.value=t,a(u)}),(function(t){return r("throw",t,a,i)}))}catch(t){i(t)}}var n;this.next||(v(p.prototype),v(p.prototype,"function"==typeof Symbol&&Symbol.asyncIterator||"@asyncIterator",(function(){return this}))),v(this,"_invoke",(function(t,o,a){function i(){return new e((function(e,n){r(t,a,e,n)}))}return n=n?n.then(i,i):i()}),!0)}function d(){var t,e,r="function"==typeof Symbol?Symbol:{},n=r.iterator||"@@iterator",o=r.toStringTag||"@@toStringTag";function a(r,n,o,a){var c=n&&n.prototype instanceof u?n:u,f=Object.create(c.prototype);return v(f,"_invoke",function(r,n,o){var a,u,c,f=0,s=o||[],l=!1,p={p:0,n:0,v:t,a:d,f:d.bind(t,4),d:function(e,r){return a=e,u=0,c=t,p.n=r,i}};function d(r,n){for(u=r,c=n,e=0;!l&&f&&!o&&e<s.length;e++){var o,a=s[e],d=p.p,v=a[2];r>3?(o=v===n)&&(c=a[(u=a[4])?5:(u=3,3)],a[4]=a[5]=t):a[0]<=d&&((o=r<2&&d<a[1])?(u=0,p.v=n,p.n=a[1]):d<v&&(o=r<3||a[0]>n||n>v)&&(a[4]=r,a[5]=n,p.n=v,u=0))}if(o||r>1)return i;throw l=!0,n}return function(o,s,v){if(f>1)throw TypeError("Generator is already running");for(l&&1===s&&d(s,v),u=s,c=v;(e=u<2?t:c)||!l;){a||(u?u<3?(u>1&&(p.n=-1),d(u,c)):p.n=c:p.v=c);try{if(f=2,a){if(u||(o="next"),e=a[o]){if(!(e=e.call(a,c)))throw TypeError("iterator result is not an object");if(!e.done)return e;c=e.value,u<2&&(u=0)}else 1===u&&(e=a.return)&&e.call(a),u<2&&(c=TypeError("The iterator does not provide a '"+o+"' method"),u=1);a=t}else if((e=(l=p.n<0)?c:r.call(n,p))!==i)break}catch(e){a=t,u=1,c=e}finally{f=1}}return{value:e,done:l}}}(r,o,a),!0),f}var i={};function u(){}function c(){}function f(){}e=Object.getPrototypeOf;var s=[][n]?e(e([][n]())):(v(e={},n,(function(){return this})),e),l=f.prototype=u.prototype=Object.create(s);function p(t){return Object.setPrototypeOf?Object.setPrototypeOf(t,f):(t.__proto__=f,v(t,o,"GeneratorFunction")),t.prototype=Object.create(l),t}return c.prototype=f,v(l,"constructor",f),v(f,"constructor",c),c.displayName="GeneratorFunction",v(f,o,"GeneratorFunction"),v(l),v(l,o,"Generator"),v(l,n,(function(){return this})),v(l,"toString",(function(){return"[object Generator]"})),(d=function(){return{w:a,m:p}})()}function v(t,e,r,n){var o=Object.defineProperty;try{o({},"",{})}catch(t){o=0}v=function(t,e,r,n){if(e)o?o(t,e,{value:r,enumerable:!n,configurable:!n,writable:!n}):t[e]=r;else{var a=function(e,r){v(t,e,(function(t){return this._invoke(e,r,t)}))};a("next",0),a("throw",1),a("return",2)}},v(t,e,r,n)}function y(t,e){this.v=t,this.k=e}function h(t,e,r,n,o,a,i){try{var u=t[a](i),c=u.value}catch(t){return void r(t)}u.done?e(c):Promise.resolve(c).then(n,o)}function m(){var t;return t=u().mark((function t(e,r){var n,o,i,c,f,s,l,p,d,v,y,h,m,b,g,w,x,j;return u().wrap((function(t){for(;;)switch(t.prev=t.next){case 0:return n="undefined"!=typeof window&&window.__facturaOcrBase?String(window.__facturaOcrBase).replace(/\/$/,""):"",(o=function(t,e){"function"==typeof r&&r(t,e)})(.05,"Leyendo PDF…"),t.next=5,a.e(100).then(a.bind(a,100));case 5:return(i=t.sent).GlobalWorkerOptions.workerSrc="".concat(n,"/vendor/pdfjs/pdf.worker.min.mjs"),t.next=9,e.arrayBuffer();case 9:return c=t.sent,t.next=12,i.getDocument({data:c}).promise;case 12:return f=t.sent,t.next=15,f.getPage(1);case 15:return s=t.sent,t.next=18,s.getTextContent();case 18:if(l=t.sent,p=l.items.map((function(t){return t&&"string"==typeof t.str?t.str:""})).join(" "),!((d=p.replace(/\s+/g," ").trim()).length>=40)){t.next=24;break}return o(1,"Texto del PDF (capa de texto)"),t.abrupt("return",d);case 24:return o(.15,"Poca capa de texto; preparando imagen para OCR…"),v=s.getViewport({scale:2}),y=document.createElement("canvas"),h=y.getContext("2d"),y.width=v.width,y.height=v.height,t.next=33,s.render({canvasContext:h,viewport:v}).promise;case 33:return o(.25,"OCR (Tesseract.js en el navegador)…"),t.next=36,a.e(995).then(a.t.bind(a,995,23));case 36:return m=t.sent,b=m.createWorker,t.next=40,b(["spa","eng"],1,{workerPath:"".concat(n,"/vendor/tesseract-js/worker.min.js"),corePath:"".concat(n,"/vendor/tesseract-js-core/"),langPath:"".concat(n,"/vendor/tesseract-lang/"),logger:function(t){"recognizing text"===t.status&&"number"==typeof t.progress&&o(.25+.7*t.progress,"OCR…")}});case 40:return g=t.sent,t.prev=41,t.next=44,g.recognize(y);case 44:return w=t.sent,x=w.data.text,t.next=48,g.terminate();case 48:return j=(x||"").trim(),o(1,j?"OCR completado":"OCR sin texto"),t.abrupt("return",j||d);case 53:return t.prev=53,t.t0=t.catch(41),t.prev=55,t.next=58,g.terminate();case 58:t.next=62;break;case 60:t.prev=60,t.t1=t.catch(55);case 62:throw t.t0;case 63:case"end":return t.stop()}}),t,null,[[41,53],[55,60]])})),m=function(){var e=this,r=arguments;return new Promise((function(n,o){var a=t.apply(e,r);function i(t){h(a,n,o,i,u,"next",t)}function u(t){h(a,n,o,i,u,"throw",t)}i(void 0)}))},m.apply(this,arguments)}a.m=n,e=Object.getPrototypeOf?t=>Object.getPrototypeOf(t):t=>t.__proto__,a.t=function(r,n){if(1&n&&(r=this(r)),8&n)return r;if("object"==typeof r&&r){if(4&n&&r.__esModule)return r;if(16&n&&"function"==typeof r.then)return r}var o=Object.create(null);a.r(o);var i={};t=t||[null,e({}),e([]),e(e)];for(var u=2&n&&r;"object"==typeof u&&!~t.indexOf(u);u=e(u))Object.getOwnPropertyNames(u).forEach((t=>i[t]=()=>r[t]));return i.default=()=>r,a.d(o,i),o},a.d=(t,e)=>{for(var r in e)a.o(e,r)&&!a.o(t,r)&&Object.defineProperty(t,r,{enumerable:!0,get:e[r]})},a.f={},a.e=t=>Promise.all(Object.keys(a.f).reduce(((e,r)=>(a.f[r](t,e),e)),[])),a.u=t=>100===t?"js/100.js":995===t?"js/995.js":void 0,a.miniCssF=t=>{},a.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(t){if("object"==typeof window)return window}}(),a.o=(t,e)=>Object.prototype.hasOwnProperty.call(t,e),r={},a.l=(t,e,n,o)=>{if(r[t])r[t].push(e);else{var i,u;if(void 0!==n)for(var c=document.getElementsByTagName("script"),f=0;f<c.length;f++){var s=c[f];if(s.getAttribute("src")==t){i=s;break}}i||(u=!0,(i=document.createElement("script")).charset="utf-8",i.timeout=120,a.nc&&i.setAttribute("nonce",a.nc),i.src=t),r[t]=[e];var l=(e,n)=>{i.onerror=i.onload=null,clearTimeout(p);var o=r[t];if(delete r[t],i.parentNode&&i.parentNode.removeChild(i),o&&o.forEach((t=>t(n))),e)return e(n)},p=setTimeout(l.bind(null,void 0,{type:"timeout",target:i}),12e4);i.onerror=l.bind(null,i.onerror),i.onload=l.bind(null,i.onload),u&&document.head.appendChild(i)}},a.r=t=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(t,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(t,"__esModule",{value:!0})},a.p="/",(()=>{var t={428:0};a.f.j=(e,r)=>{var n=a.o(t,e)?t[e]:void 0;if(0!==n)if(n)r.push(n[2]);else{var o=new Promise(((r,o)=>n=t[e]=[r,o]));r.push(n[2]=o);var i=a.p+a.u(e),u=new Error;a.l(i,(r=>{if(a.o(t,e)&&(0!==(n=t[e])&&(t[e]=void 0),n)){var o=r&&("load"===r.type?"missing":r.type),i=r&&r.target&&r.target.src;u.message="Loading chunk "+e+" failed.\n("+o+": "+i+")",u.name="ChunkLoadError",u.type=o,u.request=i,n[1](u)}}),"chunk-"+e,e)}};var e=(e,r)=>{var n,o,[i,u,c]=r,f=0;if(i.some((e=>0!==t[e]))){for(n in u)a.o(u,n)&&(a.m[n]=u[n]);if(c)c(a)}for(e&&e(r);f<i.length;f++)o=i[f],a.o(t,o)&&t[o]&&t[o][0](),t[o]=0},r=self.webpackChunk=self.webpackChunk||[];r.forEach(e.bind(null,0)),r.push=e.bind(null,r.push.bind(r))})(),window.extraerTextoFacturaPdfParaServidor=function(t,e){return m.apply(this,arguments)}})();
+/******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/create fake namespace object */
+/******/ 	(() => {
+/******/ 		var getProto = Object.getPrototypeOf ? (obj) => (Object.getPrototypeOf(obj)) : (obj) => (obj.__proto__);
+/******/ 		var leafPrototypes;
+/******/ 		// create a fake namespace object
+/******/ 		// mode & 1: value is a module id, require it
+/******/ 		// mode & 2: merge all properties of value into the ns
+/******/ 		// mode & 4: return value when already ns object
+/******/ 		// mode & 16: return value when it's Promise-like
+/******/ 		// mode & 8|1: behave like require
+/******/ 		__webpack_require__.t = function(value, mode) {
+/******/ 			if(mode & 1) value = this(value);
+/******/ 			if(mode & 8) return value;
+/******/ 			if(typeof value === 'object' && value) {
+/******/ 				if((mode & 4) && value.__esModule) return value;
+/******/ 				if((mode & 16) && typeof value.then === 'function') return value;
+/******/ 			}
+/******/ 			var ns = Object.create(null);
+/******/ 			__webpack_require__.r(ns);
+/******/ 			var def = {};
+/******/ 			leafPrototypes = leafPrototypes || [null, getProto({}), getProto([]), getProto(getProto)];
+/******/ 			for(var current = mode & 2 && value; typeof current == 'object' && !~leafPrototypes.indexOf(current); current = getProto(current)) {
+/******/ 				Object.getOwnPropertyNames(current).forEach((key) => (def[key] = () => (value[key])));
+/******/ 			}
+/******/ 			def['default'] = () => (value);
+/******/ 			__webpack_require__.d(ns, def);
+/******/ 			return ns;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/ensure chunk */
+/******/ 	(() => {
+/******/ 		__webpack_require__.f = {};
+/******/ 		// This file contains only the entry chunk.
+/******/ 		// The chunk loading function for additional chunks
+/******/ 		__webpack_require__.e = (chunkId) => {
+/******/ 			return Promise.all(Object.keys(__webpack_require__.f).reduce((promises, key) => {
+/******/ 				__webpack_require__.f[key](chunkId, promises);
+/******/ 				return promises;
+/******/ 			}, []));
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get javascript chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__webpack_require__.u = (chunkId) => {
+/******/ 			// return url for filenames not based on template
+/******/ 			if ({"node_modules_pdfjs-dist_build_pdf_mjs":1,"node_modules_tesseract_js_src_index_js":1}[chunkId]) return "js/" + chunkId + ".js";
+/******/ 			// return url for filenames based on template
+/******/ 			return undefined;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get mini-css chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference all chunks
+/******/ 		__webpack_require__.miniCssF = (chunkId) => {
+/******/ 			// return url for filenames based on template
+/******/ 			return undefined;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	(() => {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/load script */
+/******/ 	(() => {
+/******/ 		var inProgress = {};
+/******/ 		// data-webpack is not used as build has no uniqueName
+/******/ 		// loadScript function to load a script via script tag
+/******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
+/******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
+/******/ 			var script, needAttach;
+/******/ 			if(key !== undefined) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				for(var i = 0; i < scripts.length; i++) {
+/******/ 					var s = scripts[i];
+/******/ 					if(s.getAttribute("src") == url) { script = s; break; }
+/******/ 				}
+/******/ 			}
+/******/ 			if(!script) {
+/******/ 				needAttach = true;
+/******/ 				script = document.createElement('script');
+/******/ 		
+/******/ 				script.charset = 'utf-8';
+/******/ 				script.timeout = 120;
+/******/ 				if (__webpack_require__.nc) {
+/******/ 					script.setAttribute("nonce", __webpack_require__.nc);
+/******/ 				}
+/******/ 		
+/******/ 		
+/******/ 				script.src = url;
+/******/ 			}
+/******/ 			inProgress[url] = [done];
+/******/ 			var onScriptComplete = (prev, event) => {
+/******/ 				// avoid mem leaks in IE.
+/******/ 				script.onerror = script.onload = null;
+/******/ 				clearTimeout(timeout);
+/******/ 				var doneFns = inProgress[url];
+/******/ 				delete inProgress[url];
+/******/ 				script.parentNode && script.parentNode.removeChild(script);
+/******/ 				doneFns && doneFns.forEach((fn) => (fn(event)));
+/******/ 				if(prev) return prev(event);
+/******/ 			}
+/******/ 			var timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), 120000);
+/******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
+/******/ 			script.onload = onScriptComplete.bind(null, script.onload);
+/******/ 			needAttach && document.head.appendChild(script);
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/publicPath */
+/******/ 	(() => {
+/******/ 		__webpack_require__.p = "/";
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"/js/factura-pdf-ocr": 0
+/******/ 		};
+/******/ 		
+/******/ 		__webpack_require__.f.j = (chunkId, promises) => {
+/******/ 				// JSONP chunk loading for javascript
+/******/ 				var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
+/******/ 				if(installedChunkData !== 0) { // 0 means "already installed".
+/******/ 		
+/******/ 					// a Promise means "currently loading".
+/******/ 					if(installedChunkData) {
+/******/ 						promises.push(installedChunkData[2]);
+/******/ 					} else {
+/******/ 						if(true) { // all chunks have JS
+/******/ 							// setup Promise in chunk cache
+/******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
+/******/ 							promises.push(installedChunkData[2] = promise);
+/******/ 		
+/******/ 							// start chunk loading
+/******/ 							var url = __webpack_require__.p + __webpack_require__.u(chunkId);
+/******/ 							// create error before stack unwound to get useful stacktrace later
+/******/ 							var error = new Error();
+/******/ 							var loadingEnded = (event) => {
+/******/ 								if(__webpack_require__.o(installedChunks, chunkId)) {
+/******/ 									installedChunkData = installedChunks[chunkId];
+/******/ 									if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
+/******/ 									if(installedChunkData) {
+/******/ 										var errorType = event && (event.type === 'load' ? 'missing' : event.type);
+/******/ 										var realSrc = event && event.target && event.target.src;
+/******/ 										error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
+/******/ 										error.name = 'ChunkLoadError';
+/******/ 										error.type = errorType;
+/******/ 										error.request = realSrc;
+/******/ 										installedChunkData[1](error);
+/******/ 									}
+/******/ 								}
+/******/ 							};
+/******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 		};
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		// no on chunks loaded
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 		
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = self["webpackChunk"] = self["webpackChunk"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+/*!*****************************************!*\
+  !*** ./resources/js/factura-pdf-ocr.js ***!
+  \*****************************************/
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorRuntime() { "use strict"; var r = _regenerator(), e = r.m(_regeneratorRuntime), t = (Object.getPrototypeOf ? Object.getPrototypeOf(e) : e.__proto__).constructor; function n(r) { var e = "function" == typeof r && r.constructor; return !!e && (e === t || "GeneratorFunction" === (e.displayName || e.name)); } var o = { "throw": 1, "return": 2, "break": 3, "continue": 3 }; function a(r) { var e, t; return function (n) { e || (e = { stop: function stop() { return t(n.a, 2); }, "catch": function _catch() { return n.v; }, abrupt: function abrupt(r, e) { return t(n.a, o[r], e); }, delegateYield: function delegateYield(r, o, a) { return e.resultName = o, t(n.d, _regeneratorValues(r), a); }, finish: function finish(r) { return t(n.f, r); } }, t = function t(r, _t, o) { n.p = e.prev, n.n = e.next; try { return r(_t, o); } finally { e.next = n.n; } }), e.resultName && (e[e.resultName] = n.v, e.resultName = void 0), e.sent = n.v, e.next = n.n; try { return r.call(this, e); } finally { n.p = e.prev, n.n = e.next; } }; } return (_regeneratorRuntime = function _regeneratorRuntime() { return { wrap: function wrap(e, t, n, o) { return r.w(a(e), t, n, o && o.reverse()); }, isGeneratorFunction: n, mark: r.m, awrap: function awrap(r, e) { return new _OverloadYield(r, e); }, AsyncIterator: _regeneratorAsyncIterator, async: function async(r, e, t, o, u) { return (n(e) ? _regeneratorAsyncGen : _regeneratorAsync)(a(r), e, t, o, u); }, keys: _regeneratorKeys, values: _regeneratorValues }; })(); }
+function _regeneratorValues(e) { if (null != e) { var t = e["function" == typeof Symbol && Symbol.iterator || "@@iterator"], r = 0; if (t) return t.call(e); if ("function" == typeof e.next) return e; if (!isNaN(e.length)) return { next: function next() { return e && r >= e.length && (e = void 0), { value: e && e[r++], done: !e }; } }; } throw new TypeError(_typeof(e) + " is not iterable"); }
+function _regeneratorKeys(e) { var n = Object(e), r = []; for (var t in n) r.unshift(t); return function e() { for (; r.length;) if ((t = r.pop()) in n) return e.value = t, e.done = !1, e; return e.done = !0, e; }; }
+function _regeneratorAsync(n, e, r, t, o) { var a = _regeneratorAsyncGen(n, e, r, t, o); return a.next().then(function (n) { return n.done ? n.value : a.next(); }); }
+function _regeneratorAsyncGen(r, e, t, o, n) { return new _regeneratorAsyncIterator(_regenerator().w(r, e, t, o), n || Promise); }
+function _regeneratorAsyncIterator(t, e) { function n(r, o, i, f) { try { var c = t[r](o), u = c.value; return u instanceof _OverloadYield ? e.resolve(u.v).then(function (t) { n("next", t, i, f); }, function (t) { n("throw", t, i, f); }) : e.resolve(u).then(function (t) { c.value = t, i(c); }, function (t) { return n("throw", t, i, f); }); } catch (t) { f(t); } } var r; this.next || (_regeneratorDefine2(_regeneratorAsyncIterator.prototype), _regeneratorDefine2(_regeneratorAsyncIterator.prototype, "function" == typeof Symbol && Symbol.asyncIterator || "@asyncIterator", function () { return this; })), _regeneratorDefine2(this, "_invoke", function (t, o, i) { function f() { return new e(function (e, r) { n(t, i, e, r); }); } return r = r ? r.then(f, f) : f(); }, !0); }
+function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
+function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { if (r) i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n;else { var o = function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); }; o("next", 0), o("throw", 1), o("return", 2); } }, _regeneratorDefine2(e, r, n, t); }
+function _OverloadYield(e, d) { this.v = e, this.k = d; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+/**
+ * Extracción de texto de facturas PDF en el navegador (pdf.js + tesseract.js).
+ * Los modelos y workers se sirven desde /public/vendor/* (sin Tesseract ni Imagick en el servidor — compatible con HostGator).
+ */
+function baseOcr() {
+  if (typeof window === 'undefined' || !window.__facturaOcrBase) {
+    return '';
+  }
+  return String(window.__facturaOcrBase).replace(/\/$/, '');
+}
+
+/**
+ * @param {File} file
+ * @param {(n: number, msg: string) => void} [onProgress]
+ * @returns {Promise<string>}
+ */
+function extraerTextoFacturaPdfParaServidor(_x, _x2) {
+  return _extraerTextoFacturaPdfParaServidor.apply(this, arguments);
+}
+function _extraerTextoFacturaPdfParaServidor() {
+  _extraerTextoFacturaPdfParaServidor = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(file, onProgress) {
+    var base, report, pdfjsLib, buf, pdf, page, textContent, textoCapa, textoCapaNorm, scale, viewport, canvas, ctx, _yield$import, createWorker, worker, _yield$worker$recogni, text, t;
+    return _regeneratorRuntime().wrap(function _callee$(_context) {
+      while (1) switch (_context.prev = _context.next) {
+        case 0:
+          base = baseOcr();
+          report = function report(n, msg) {
+            if (typeof onProgress === 'function') onProgress(n, msg);
+          };
+          report(0.05, 'Leyendo PDF…');
+          _context.next = 5;
+          return __webpack_require__.e(/*! import() */ "node_modules_pdfjs-dist_build_pdf_mjs").then(__webpack_require__.bind(__webpack_require__, /*! pdfjs-dist/build/pdf.mjs */ "./node_modules/pdfjs-dist/build/pdf.mjs"));
+        case 5:
+          pdfjsLib = _context.sent;
+          pdfjsLib.GlobalWorkerOptions.workerSrc = "".concat(base, "/vendor/pdfjs/pdf.worker.min.mjs");
+          _context.next = 9;
+          return file.arrayBuffer();
+        case 9:
+          buf = _context.sent;
+          _context.next = 12;
+          return pdfjsLib.getDocument({
+            data: buf
+          }).promise;
+        case 12:
+          pdf = _context.sent;
+          _context.next = 15;
+          return pdf.getPage(1);
+        case 15:
+          page = _context.sent;
+          _context.next = 18;
+          return page.getTextContent();
+        case 18:
+          textContent = _context.sent;
+          textoCapa = textContent.items.map(function (it) {
+            return it && typeof it.str === 'string' ? it.str : '';
+          }).join(' ');
+          textoCapaNorm = textoCapa.replace(/\s+/g, ' ').trim();
+          if (!(textoCapaNorm.length >= 40)) {
+            _context.next = 24;
+            break;
+          }
+          report(1, 'Texto del PDF (capa de texto)');
+          return _context.abrupt("return", textoCapaNorm);
+        case 24:
+          report(0.15, 'Poca capa de texto; preparando imagen para OCR…');
+          scale = 2;
+          viewport = page.getViewport({
+            scale: scale
+          });
+          canvas = document.createElement('canvas');
+          ctx = canvas.getContext('2d');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          _context.next = 33;
+          return page.render({
+            canvasContext: ctx,
+            viewport: viewport
+          }).promise;
+        case 33:
+          report(0.25, 'OCR (Tesseract.js en el navegador)…');
+          _context.next = 36;
+          return __webpack_require__.e(/*! import() */ "node_modules_tesseract_js_src_index_js").then(__webpack_require__.t.bind(__webpack_require__, /*! tesseract.js */ "./node_modules/tesseract.js/src/index.js", 23));
+        case 36:
+          _yield$import = _context.sent;
+          createWorker = _yield$import.createWorker;
+          _context.next = 40;
+          return createWorker(['spa', 'eng'], 1, {
+            workerPath: "".concat(base, "/vendor/tesseract-js/worker.min.js"),
+            corePath: "".concat(base, "/vendor/tesseract-js-core/"),
+            langPath: "".concat(base, "/vendor/tesseract-lang/"),
+            logger: function logger(m) {
+              if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+                report(0.25 + m.progress * 0.7, 'OCR…');
+              }
+            }
+          });
+        case 40:
+          worker = _context.sent;
+          _context.prev = 41;
+          _context.next = 44;
+          return worker.recognize(canvas);
+        case 44:
+          _yield$worker$recogni = _context.sent;
+          text = _yield$worker$recogni.data.text;
+          _context.next = 48;
+          return worker.terminate();
+        case 48:
+          t = (text || '').trim();
+          report(1, t ? 'OCR completado' : 'OCR sin texto');
+          return _context.abrupt("return", t || textoCapaNorm);
+        case 53:
+          _context.prev = 53;
+          _context.t0 = _context["catch"](41);
+          _context.prev = 55;
+          _context.next = 58;
+          return worker.terminate();
+        case 58:
+          _context.next = 62;
+          break;
+        case 60:
+          _context.prev = 60;
+          _context.t1 = _context["catch"](55);
+        case 62:
+          throw _context.t0;
+        case 63:
+        case "end":
+          return _context.stop();
+      }
+    }, _callee, null, [[41, 53], [55, 60]]);
+  }));
+  return _extraerTextoFacturaPdfParaServidor.apply(this, arguments);
+}
+window.extraerTextoFacturaPdfParaServidor = extraerTextoFacturaPdfParaServidor;
+/******/ })()
+;

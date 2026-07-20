@@ -107,7 +107,13 @@ class TicketsTablaUpdater extends Component
 
         // PRIORIDAD
         if ($this->filtroPrioridad) {
-            $query->where('Prioridad', $this->filtroPrioridad);
+            if ($this->filtroPrioridad === 'sin') {
+                $query->where(function ($q) {
+                    $q->whereNull('Prioridad')->orWhere('Prioridad', '');
+                });
+            } else {
+                $query->where('Prioridad', $this->filtroPrioridad);
+            }
         }
 
         // ESTADO

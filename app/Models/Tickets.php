@@ -129,7 +129,7 @@ class Tickets extends Model
         'Resolucion' => 'nullable|string', // <--- AGREGADO AQUÍ (Opcional)
         'imagen' => 'nullable|string',
         'Numero' => 'nullable',
-        'Prioridad' => 'required|string',
+        'Prioridad' => 'nullable|string',
         'Estatus' => 'nullable|string',
         'ResponsableTI' => 'nullable|integer',
         'EmpleadoID' => 'required|integer',
