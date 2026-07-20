@@ -12,7 +12,7 @@
             Presupuestados (<span class="conteo-si">0</span>)
         </button>
         <button type="button" class="pill-filtro" data-filtro="no_presupuestados">
-            No presupuestados (<span class="conteo-no">0</span>)
+            Asignados (<span class="conteo-no">0</span>)
         </button>
     </div>
     @endif

@@ -11,29 +11,42 @@ class TicketsTablaUpdater extends Component
 {
     use WithPagination;
 
-    protected $paginationTheme = 'bootstrap'; // cambia a 'tailwind' si usas tailwind pagination
+    protected $paginationTheme = 'bootstrap';
 
-    // 🔎 FILTROS
+    // FILTROS
     public $search = '';
     public $filtroPrioridad = '';
     public $filtroEstado = '';
     public $filtroResponsable = '';
 
-    // ⏱ TIEMPOS
+    //TIEMPOS
     public $tiemposProgreso = [];
     public $ticketsExcedidos = [];
 
+    private const VISTA = 'tabla';
+
+    // Lazy: no es la vista por defecto → no consulta hasta que se active su pestaña.
+    public bool $cargar = false;
+
     protected $listeners = [
-        'ticket-estatus-actualizado' => 'actualizarDatos'
+        'ticket-estatus-actualizado' => 'actualizarDatos',
+        'soporte-vista-activa'       => 'activarSiCorresponde',
     ];
 
-    // 🔄 Se ejecuta por el wire:poll
+    public function activarSiCorresponde($vista)
+    {
+        if ($vista === self::VISTA) {
+            $this->cargar = true;
+        }
+    }
+
+    // Se ejecuta por el wire:poll
     public function actualizarDatos()
     {
         $this->emit('tickets-actualizados-tabla', $this->obtenerPayloadActualizacion());
     }
 
-    // 🔁 Reset paginación cuando cambian filtros
+    // Reset paginación cuando cambian filtros
     public function updatingSearch() { $this->resetPage(); }
     public function updatingFiltroPrioridad() { $this->resetPage(); }
     public function updatingFiltroEstado() { $this->resetPage(); }
@@ -41,13 +54,21 @@ class TicketsTablaUpdater extends Component
 
     public function render()
     {
+        // Lazy: mientras no sea la vista activa, no se consulta nada.
+        if (! $this->cargar) {
+            return view('livewire.tickets-tabla-updater', [
+                'ticketsTabla'    => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10),
+                'tiemposProgreso' => [],
+            ]);
+        }
+
         $query = Tickets::with([
             'empleado',
             'responsableTI',
             'tipoticket'
         ]);
 
-        // 🔎 BUSCADOR
+        // BUSCADOR
         $search = trim((string)$this->search);
         if ($search !== '') {
             $tokens = collect(preg_split('/\s+/', $search) ?: [])
@@ -84,7 +105,7 @@ class TicketsTablaUpdater extends Component
             });
         }
 
-        // 🎯 PRIORIDAD
+        // PRIORIDAD
         if ($this->filtroPrioridad) {
             if ($this->filtroPrioridad === 'sin') {
                 $query->where(function ($q) {
@@ -95,12 +116,12 @@ class TicketsTablaUpdater extends Component
             }
         }
 
-        // 📌 ESTADO
+        // ESTADO
         if ($this->filtroEstado) {
             $query->where('Estatus', $this->filtroEstado);
         }
 
-        // 👨‍💻 RESPONSABLE
+        // RESPONSABLE
         if ($this->filtroResponsable) {
             $query->whereHas('responsableTI', function ($q) {
                 $q->where('NombreEmpleado', $this->filtroResponsable);

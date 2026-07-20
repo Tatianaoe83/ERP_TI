@@ -4,19 +4,33 @@ namespace App\Http\Livewire;
 
 use App\Models\Tickets;
 use Livewire\Component;
-use Illuminate\Support\Str;
+use Livewire\WithPagination;
 
 class TicketsListaUpdater extends Component
 {
-    // Solo necesitamos escuchar el evento para forzar recargas si es necesario
+    use WithPagination;
+
+    private const VISTA = 'lista';
+
+    protected string $pageNameCerrados = 'pageCerradosLista';
+
+    // Lazy: no es la vista por defecto → no consulta hasta que se active su pestaña.
+    public bool $cargar = false;
+
     protected function getListeners()
     {
         return [
-            'ticket-estatus-actualizado' => '$refresh',
-
-            // Escucha en tiempo real vía WebSockets usando Laravel Echo
-            "echo:tickets-channel,TicketUpdatedEvent" => '$refresh',
+            'ticket-estatus-actualizado'               => '$refresh',
+            'soporte-vista-activa'                     => 'activarSiCorresponde',
+            "echo:tickets-channel,TicketUpdatedEvent"  => '$refresh',
         ];
+    }
+
+    public function activarSiCorresponde($vista)
+    {
+        if ($vista === self::VISTA) {
+            $this->cargar = true;
+        }
     }
 
     public function actualizarDatos()
@@ -24,18 +38,20 @@ class TicketsListaUpdater extends Component
         $this->emit('tickets-actualizados-lista', $this->obtenerPayloadActualizacion());
     }
 
-    private function fetchTickets()
+    private function fetchActivos()
     {
-        return Tickets::with([
-            'empleado',
-            'responsableTI',
-            'tipoticket',
-            'chat' => function ($query) {
-                $query->latest()->limit(1);
-            }
-        ])
-        ->orderBy('created_at', 'desc')
-        ->get();
+        return Tickets::with(['empleado', 'responsableTI', 'tipoticket'])
+            ->whereIn('Estatus', ['Pendiente', 'En progreso'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    private function fetchCerrados()
+    {
+        return Tickets::with(['empleado', 'responsableTI', 'tipoticket'])
+            ->where('Estatus', 'Cerrado')
+            ->orderBy('created_at', 'desc')
+            ->paginate(50, ['*'], $this->pageNameCerrados);
     }
 
     private function formatearTickets($tickets, array $tiemposProgreso = [], array $notificacionesMap = [])
@@ -43,78 +59,89 @@ class TicketsListaUpdater extends Component
         return Tickets::formatearColeccionParaVista($tickets, $tiemposProgreso, $notificacionesMap);
     }
 
-    private function obtenerPayloadActualizacion()
+    private function estructuraVacia(): array
     {
-        $tickets = $this->fetchTickets();
-        $tiempos = $this->procesarTiempos($tickets);
-        $notificacionesMap = Tickets::mapaNotificacionesPendientes($tickets->pluck('TicketID'));
+        return [
+            'ticketsStatus'    => ['nuevos' => [], 'proceso' => [], 'resueltos' => []],
+            'cerrados'         => null,
+            'ticketsExcedidos' => [],
+            'tiemposProgreso'  => [],
+        ];
+    }
+
+    private function construirDatos(): array
+    {
+        if (! $this->cargar) {
+            return $this->estructuraVacia();
+        }
+
+        $activos  = $this->fetchActivos();
+        $cerrados = $this->fetchCerrados();
+        $cerradosItems = collect($cerrados->items());
+
+        $tiempos = Tickets::procesarTiemposProgreso($activos);
+
+        $idsVisibles = $activos->pluck('TicketID')->merge($cerradosItems->pluck('TicketID'));
+        $notificacionesMap = Tickets::mapaNotificacionesPendientes($idsVisibles);
 
         $ticketsStatus = [
             'nuevos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Pendiente')->values(),
+                $activos->where('Estatus', 'Pendiente')->values(),
                 $tiempos['tiemposProgreso'],
                 $notificacionesMap
             ),
             'proceso' => $this->formatearTickets(
-                $tickets->where('Estatus', 'En progreso')->values(),
+                $activos->where('Estatus', 'En progreso')->values(),
                 $tiempos['tiemposProgreso'],
                 $notificacionesMap
             ),
             'resueltos' => $this->formatearTickets(
-                $tickets->where('Estatus', 'Cerrado')->values(),
+                $cerradosItems->values(),
                 $tiempos['tiemposProgreso'],
                 $notificacionesMap
             ),
         ];
 
         return [
-            'ticketsStatus' => $ticketsStatus,
+            'ticketsStatus'    => $ticketsStatus,
+            'cerrados'         => $cerrados,
             'ticketsExcedidos' => $tiempos['ticketsExcedidos'],
-            'tiemposProgreso' => $tiempos['tiemposProgreso'],
-            'hash' => md5(json_encode($tickets->map(fn ($ticket) => [
-                $ticket->TicketID,
-                $ticket->Estatus,
-                optional($ticket->updated_at)->timestamp,
-            ])->values()->all())),
+            'tiemposProgreso'  => $tiempos['tiemposProgreso'],
+        ];
+    }
+
+    private function obtenerPayloadActualizacion()
+    {
+        $datos = $this->construirDatos();
+
+        return [
+            'ticketsStatus'    => $datos['ticketsStatus'],
+            'ticketsExcedidos' => $datos['ticketsExcedidos'],
+            'tiemposProgreso'  => $datos['tiemposProgreso'],
+            'totalCerrados'    => $datos['cerrados'] ? $datos['cerrados']->total() : 0,
+            'hash'             => md5(json_encode($datos['ticketsStatus'])),
         ];
     }
 
     public function render()
     {
-        $tickets = $this->fetchTickets();
+        $datos = $this->construirDatos();
 
-        // 2. Filtramos los datos
-        $ticketsNuevos = $tickets->where('Estatus', 'Pendiente')->values();
-        $ticketsProceso = $tickets->where('Estatus', 'En progreso')->values();
-        $ticketsResueltos = $tickets->where('Estatus', 'Cerrado')->values();
-
-        // 3. Procesamos los tiempos
-        $tiemposProcesados = $this->procesarTiempos($tickets);
-        $notificacionesMap = Tickets::mapaNotificacionesPendientes($tickets->pluck('TicketID'));
-
-        $ticketsStatus = [
-            'nuevos' => $this->formatearTickets($ticketsNuevos, $tiemposProcesados['tiemposProgreso'], $notificacionesMap),
-            'proceso' => $this->formatearTickets($ticketsProceso, $tiemposProcesados['tiemposProgreso'], $notificacionesMap),
-            'resueltos' => $this->formatearTickets($ticketsResueltos, $tiemposProcesados['tiemposProgreso'], $notificacionesMap),
-        ];
-
-        $this->emit('tickets-actualizados-lista', [
-            'ticketsStatus' => $ticketsStatus,
-            'ticketsExcedidos' => $tiemposProcesados['ticketsExcedidos'],
-            'tiemposProgreso' => $tiemposProcesados['tiemposProgreso'],
-            'hash' => md5(json_encode($ticketsStatus)),
-        ]);
+        if ($this->cargar) {
+            $this->emit('tickets-actualizados-lista', [
+                'ticketsStatus'    => $datos['ticketsStatus'],
+                'ticketsExcedidos' => $datos['ticketsExcedidos'],
+                'tiemposProgreso'  => $datos['tiemposProgreso'],
+                'totalCerrados'    => $datos['cerrados'] ? $datos['cerrados']->total() : 0,
+                'hash'             => md5(json_encode($datos['ticketsStatus'])),
+            ]);
+        }
 
         return view('livewire.tickets-lista-updater', [
-            'ticketsStatus' => $ticketsStatus,
-            'tiemposProgreso' => $tiemposProcesados['tiemposProgreso'],
-            'ticketsExcedidos' => $tiemposProcesados['ticketsExcedidos'],
+            'ticketsStatus'    => $datos['ticketsStatus'],
+            'cerrados'         => $datos['cerrados'],
+            'tiemposProgreso'  => $datos['tiemposProgreso'],
+            'ticketsExcedidos' => $datos['ticketsExcedidos'],
         ]);
-    }
-
-    
-    private function procesarTiempos($tickets)
-    {
-        return Tickets::procesarTiemposProgreso($tickets);
     }
 }

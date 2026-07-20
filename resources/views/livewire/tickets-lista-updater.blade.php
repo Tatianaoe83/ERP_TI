@@ -14,7 +14,7 @@
                 </div>
                 <span data-categoria-header="{{ $key }}"
                     class="text-[11px] font-bold min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                    {{ count($ticketsStatus[$key]) }}
+                    {{ $key === 'resueltos' && $cerrados ? $cerrados->total() : count($ticketsStatus[$key]) }}
                 </span>
             </div>
 
@@ -44,6 +44,12 @@
                 </div>
                 @endforelse
             </div>
+
+            @if ($key === 'resueltos' && $cerrados && $cerrados->hasPages())
+            <div class="px-2 py-2 border-t border-gray-200 dark:border-[#2A2F3A]">
+                {{ $cerrados->onEachSide(0)->links('livewire.paginacion-compacta') }}
+            </div>
+            @endif
         </div>
 
         @endforeach
