@@ -167,9 +167,11 @@
     x-init="
         const vistaGuardada = localStorage.getItem('ticketsVista') || 'kanban';
         vista = vistaGuardada;
+        // Kanban ya carga por defecto; solo avisamos si la vista guardada es otra.
+        if (vistaGuardada !== 'kanban' && window.Livewire) window.Livewire.emit('soporte-vista-activa', vistaGuardada);
         init();
     "
-    class="tickets-container space-y-4 w-full max-w-full overflow-x-hidden min-h-screen p-6">
+    class="tickets-container space-y-2 w-full max-w-full overflow-x-hidden px-6 pb-6 pt-1">
 
     <!-- Alert de Tickets Excedidos -->
     <div
@@ -234,7 +236,7 @@
     </div>
 
     <!-- Selector de Vista -->
-    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 mb-4 w-full">
+    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 mb-2 w-full">
         @can('tickets.ajustar-metricas')
         <button
             @click="mostrarModalMetricas = true; cargarMetricas()"
@@ -248,21 +250,21 @@
             <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
             <div class="flex items-center gap-1 bg-[#fffff] border border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
                 <button
-                    @click="vista = 'kanban'; localStorage.setItem('ticketsVista', 'kanban')"
+                    @click="activarVista('kanban')"
                     :class="vista === 'kanban' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-columns text-xs"></i>
                     <span class="hidden sm:inline">Kanban</span>
                 </button>
                 <button
-                    @click="vista = 'lista'; localStorage.setItem('ticketsVista', 'lista')"
+                    @click="activarVista('lista')"
                     :class="vista === 'lista' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-list text-xs"></i>
                     <span class="hidden sm:inline">Lista</span>
                 </button>
                 <button
-                    @click="vista = 'tabla'; localStorage.setItem('ticketsVista', 'tabla')"
+                    @click="activarVista('tabla')"
                     :class="vista === 'tabla' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
                     <i class="fas fa-table text-xs"></i>
@@ -286,7 +288,7 @@
 
     <!-- Vista Tabla Livewire -->
     <div x-show="vista === 'tabla'" x-transition class="w-full">
-    
+
     @livewire('tickets-tabla-updater')
 
     </div>
@@ -1368,6 +1370,13 @@
     function ticketsModal() {
         return {
             vista: 'kanban',
+            // Lazy por pestaña: cambia la vista y avisa al componente Livewire destino
+            // para que recién ahí ejecute su consulta (evita cargar las 3 al entrar).
+            activarVista(v) {
+                this.vista = v;
+                localStorage.setItem('ticketsVista', v);
+                if (window.Livewire) window.Livewire.emit('soporte-vista-activa', v);
+            },
             mostrar: false,
             selected: {},
             mensajes: [],
@@ -1464,11 +1473,11 @@
                 Livewire.on('tickets-actualizados-kanban', (datos) => {
                     this.procesarActualizacionTickets(datos, 'kanban');
                 });
-                
+
                 Livewire.on('tickets-actualizados-lista', (datos) => {
                     this.procesarActualizacionTickets(datos, 'lista');
                 });
-                
+
                 Livewire.on('tickets-actualizados-tabla', (datos) => {
                     this.procesarActualizacionTickets(datos, 'tabla');
                 });
@@ -1502,7 +1511,10 @@
                             // Actualizar solo estado externo. Livewire repinta las columnas; no mutar su DOM manualmente.
                             const nuevosCount = datos.ticketsStatus.nuevos ? datos.ticketsStatus.nuevos.length : 0;
                             const procesoCount = datos.ticketsStatus.proceso ? datos.ticketsStatus.proceso.length : 0;
-                            const resueltosCount = datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0;
+                            // Resueltos está paginado: el header muestra el total real, no el largo de la página.
+                            const resueltosCount = (datos.totalCerrados !== undefined && datos.totalCerrados !== null)
+                                ? datos.totalCerrados
+                                : (datos.ticketsStatus.resueltos ? datos.ticketsStatus.resueltos.length : 0);
                             
                             this.ticketsLista = {
                                 nuevos: nuevosCount,
