@@ -1631,45 +1631,30 @@
                             
                             this.$nextTick(() => { this.actualizarEstadoEditor(); });
                             
-                            // Lógica completa y limpia de los selects anidados
-                            this.$nextTick(() => {
-                                setTimeout(() => {
-                                    const tipoSelect = document.getElementById('tipo-select');
-                                    if (tipoSelect && this.ticketTipoID) {
-                                        tipoSelect.value = this.ticketTipoID;
-                                        tipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                                        
-                                        setTimeout(() => {
-                                            const subtipoSelect = document.getElementById('subtipo-select');
-                                            if (subtipoSelect && this.ticketSubtipoID) {
-                                                if (subtipoSelect.options.length <= 1 && typeof loadSubtipos === 'function') {
-                                                    loadSubtipos(this.ticketTipoID);
-                                                }
-                                                
-                                                setTimeout(() => {
-                                                    if (subtipoSelect.options.length > 1) {
-                                                        subtipoSelect.value = this.ticketSubtipoID;
-                                                        subtipoSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                                                        
-                                                        setTimeout(() => {
-                                                            const tertipoSelect = document.getElementById('tertipo-select');
-                                                            if (tertipoSelect && this.ticketTertipoID) {
-                                                                if (tertipoSelect.options.length <= 1 && typeof loadTertipos === 'function') {
-                                                                    loadTertipos(this.ticketSubtipoID);
-                                                                }
-                                                                setTimeout(() => { 
-                                                                    if (tertipoSelect.options.length > 1) {
-                                                                        tertipoSelect.value = this.ticketTertipoID; 
-                                                                    }
-                                                                }, 300);
-                                                            }
-                                                        }, 500);
-                                                    }
-                                                }, 500);
-                                            }
-                                        }, 300);
-                                    }
-                                }, 200);
+                            // Restaurar selects anidados de forma determinista (await, sin carreras de setTimeout)
+                            this.$nextTick(async () => {
+                                if (!this.ticketTipoID) return;
+
+                                const tipoSelect = document.getElementById('tipo-select');
+                                if (tipoSelect) tipoSelect.value = this.ticketTipoID;
+
+                                // Cargar grupos (subtipos) del tipo y restaurar selección
+                                if (typeof loadSubtipos === 'function') {
+                                    await loadSubtipos(this.ticketTipoID);
+                                }
+                                if (!this.ticketSubtipoID) return;
+
+                                const subtipoSelect = document.getElementById('subtipo-select');
+                                if (subtipoSelect) subtipoSelect.value = this.ticketSubtipoID;
+
+                                // Cargar subgrupos (tertipos) del grupo y restaurar selección
+                                if (typeof loadTertipos === 'function') {
+                                    await loadTertipos(this.ticketSubtipoID);
+                                }
+                                if (!this.ticketTertipoID) return;
+
+                                const tertipoSelect = document.getElementById('tertipo-select');
+                                if (tertipoSelect) tertipoSelect.value = this.ticketTertipoID;
                             });
                         }
                     }
