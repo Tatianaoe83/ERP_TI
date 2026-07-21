@@ -7,7 +7,8 @@
     <title>Crear Ticket - Sistema de Soporte</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/css/@fortawesome/fontawesome-free/css/all.css') }}" rel="stylesheet" type="text/css">
-    <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js"></script>
+    {{-- Bundle completo: el slim no incluye la forma "emoji" --}}
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
@@ -278,7 +279,7 @@
                             <option value="Solicitud">TI · Solicitar recurso tecnológico</option>
                             {{-- OCULTO TEMPORAL — MANTENIMIENTO CORPORATIVO. El formulario #mantenimiento-form
                                  y su JS siguen intactos más abajo; sin esta opción no hay forma de llegar a ellos. --}}
-                            {{-- <option value="Mantenimiento"> Compras · Solicitud de mantenimiento corporativo</option> --}}
+                             <option value="Mantenimiento"> Compras · Solicitud de mantenimiento corporativo</option> 
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">
@@ -1182,264 +1183,238 @@ function renderTelefono() {
     </script>
     @endif
     <script type="text/javascript">
-        // Fondo del home: hélices de ADN dibujadas a canvas.
-        // No usa tsParticles: una hélice necesita posición exacta por partícula
-        // (x = centro + amplitud * sin(fase)) y los movers solo controlan velocidad.
+        // Fondos de partículas. Carga diferida: cada contenedor se crea la primera vez
+        // que se elige su opción del select, no al abrir la página. Solo uno anima a la vez.
         (() => {
-            const host = document.getElementById("background");
-            if (!host) return;
+            const RUTA = "{{ asset('assets/images/particles') }}";
 
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-            canvas.style.cssText = "position:absolute;inset:0;width:100%;height:100%";
-            host.style.background = "#000";
-            host.appendChild(canvas);
-
-            let w, h;
-            const resize = () => {
-                const dpr = window.devicePixelRatio || 1;
-                w = host.clientWidth;
-                h = host.clientHeight;
-                canvas.width = w * dpr;
-                canvas.height = h * dpr;
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            };
-            resize();
-            window.addEventListener("resize", resize);
-
-            // x = posición horizontal (0-1), amp = ancho, wave = largo de onda
-            const helices = [
-                { x: 0.15, amp:  100, wave: 190, speed: 0.5, hue: 195 },
-                { x: 0.50, amp: 190, wave: 265, speed: 0.9, hue: 215 },
-                { x: 0.85, amp:  100, wave: 160, speed: 1.2, hue: 185 }
-            ];
-            const STEP = 14;
-            let t = 0;
-            let raf = null;
-
-            const draw = () => {
-                ctx.fillStyle = "#000";
-                ctx.fillRect(0, 0, w, h);
-
-                for (const g of helices) {
-                    const cx = g.x * w;
-                    for (let y = -STEP; y < h + STEP; y += STEP) {
-                        const fase = (y + t * g.speed) / g.wave * Math.PI * 2;
-                        const x1 = cx + Math.sin(fase) * g.amp;
-                        const x2 = cx + Math.sin(fase + Math.PI) * g.amp;
-                        const z = (Math.cos(fase) + 1) / 2; // 0 = atrás, 1 = adelante
-
-                        ctx.strokeStyle = `hsla(${g.hue},90%,65%,${0.05 + z * 0.18})`;
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(x1, y);
-                        ctx.lineTo(x2, y);
-                        ctx.stroke();
-
-                        ctx.fillStyle = `hsla(${g.hue},95%,72%,${0.2 + z * 0.6})`;
-                        ctx.beginPath();
-                        ctx.arc(x1, y, 1 + z * 2.2, 0, Math.PI * 2);
-                        ctx.fill();
-
-                        ctx.fillStyle = `hsla(${g.hue + 35},95%,72%,${0.2 + (1 - z) * 0.6})`;
-                        ctx.beginPath();
-                        ctx.arc(x2, y, 1 + (1 - z) * 2.2, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
+            // Los SVG ya vienen del color correcto (carpetas blue/green/orange). Teñir en
+            // runtime con replaceColor obliga a tsParticles a generar una copia del SVG
+            // por cada partícula; así solo rasteriza una imagen por icono.
+            const imagenes = (carpeta, nombres) => ({
+                type: "image",
+                options: {
+                    image: nombres.map(n => ({
+                        src: `${RUTA}/${carpeta}/${n}.svg`,
+                        width: 24,
+                        height: 24
+                    }))
                 }
+            });
 
-                t += 1;
-                raf = requestAnimationFrame(draw);
-            };
-
-            // Control externo para no gastar frames cuando el fondo está oculto.
-            window.fondoAdn = {
-                play: () => {
-                    if (raf === null) raf = requestAnimationFrame(draw);
+            const base = {
+                fpsLimit: 120,
+                detectRetina: false,
+                background: {
+                    color: "#000"
                 },
-                pause: () => {
-                    if (raf !== null) {
-                        cancelAnimationFrame(raf);
-                        raf = null;
+                interactivity: {
+                    events: {
+                        onHover: {
+                            enable: false
+                        },
+                        onClick: {
+                            enable: false
+                        }
                     }
                 }
             };
 
-            draw();
+            const configs = {
+                // Home: partículas enlazadas. Los links son O(n²) por frame, por eso van pocas.
+                background: {
+                    ...base,
+                    particles: {
+                        number: {
+                            value: 55,
+                            density: {
+                                enable: true,
+                                area: 800
+                            }
+                        },
+                        color: {
+                            value: "#ffffff"
+                        },
+                        shape: {
+                            type: "circle"
+                        },
+                        links: {
+                            enable: true,
+                            distance: 110,
+                            color: "#ffffff",
+                            opacity: 0.4,
+                            width: 1
+                        },
+                        move: {
+                            enable: true,
+                            speed: 2
+                        },
+                        opacity: {
+                            value: {
+                                min: 0.2,
+                                max: 1
+                            },
+                            animation: {
+                                enable: true,
+                                speed: 1,
+                                sync: false
+                            }
+                        },
+                        size: {
+                            value: {
+                                min: 1,
+                                max: 3
+                            }
+                        }
+                    }
+                },
+
+                // Ticket: falla o problema de TI.
+                tsparticles: {
+                    ...base,
+                    particles: {
+                        number: {
+                            value: 300
+                        },
+                        shape: imagenes("blue", ["ticket", "monitor", "gear", "bug", "cloud", "cpu"]),
+                        links: {
+                            enable: false
+                        },
+                        opacity: {
+                            value: {
+                                min: 0.2,
+                                max: 0.9
+                            },
+                            animation: {
+                                enable: true,
+                                speed: 1.2,
+                                sync: false
+                            }
+                        },
+                        size: {
+                            value: {
+                                min: 8,
+                                max: 16
+                            }
+                        },
+                        move: {
+                            enable: true,
+                            speed: 3,
+                            outModes: {
+                                default: "out"
+                            }
+                        }
+                    }
+                },
+
+                // Solicitud: recurso tecnológico.
+                tsparticles2: {
+                    ...base,
+                    particles: {
+                        number: {
+                            value: 300
+                        },
+                        shape: imagenes("green", ["monitor", "cpu", "cloud", "box", "tag"]),
+                        links: {
+                            enable: false
+                        },
+                        opacity: {
+                            value: {
+                                min: 0.2,
+                                max: 0.9
+                            },
+                            animation: {
+                                enable: true,
+                                speed: 1.2,
+                                sync: false
+                            }
+                        },
+                        size: {
+                            value: {
+                                min: 8,
+                                max: 16
+                            }
+                        },
+                        move: {
+                            enable: true,
+                            speed: 3,
+                            direction: "bottom",
+                            straight: false,
+                            outModes: {
+                                default: "out"
+                            }
+                        }
+                    }
+                },
+
+                // Compras: mantenimiento corporativo.
+                tsparticles3: {
+                    ...base,
+                    particles: {
+                        number: {
+                            value: 300
+                        },
+                        shape: imagenes("orange", ["cart", "box", "receipt", "card", "tag", "truck"]),
+                        links: {
+                            enable: false
+                        },
+                        opacity: {
+                            value: {
+                                min: 0.2,
+                                max: 0.9
+                            },
+                            animation: {
+                                enable: true,
+                                speed: 1.2,
+                                sync: false
+                            }
+                        },
+                        size: {
+                            value: {
+                                min: 8,
+                                max: 16
+                            }
+                        },
+                        move: {
+                            enable: true,
+                            speed: 3,
+                            direction: "top",
+                            straight: false,
+                            outModes: {
+                                default: "out"
+                            }
+                        }
+                    }
+                }
+            };
+
+            const cargados = new Map();
+            let deseado = null;
+
+            window.fondos = {
+                // Devuelve promesa por si algún día hace falta esperar la carga.
+                mostrar(id) {
+                    deseado = id;
+
+                    for (const [otro, container] of cargados) {
+                        if (otro !== id) container.pause();
+                    }
+
+                    const cargado = cargados.get(id);
+                    if (cargado) {
+                        cargado.play();
+                        return Promise.resolve(cargado);
+                    }
+
+                    return tsParticles.load(id, configs[id]).then(container => {
+                        cargados.set(id, container);
+                        // El usuario pudo cambiar de opción mientras cargaba.
+                        deseado === id ? container.play() : container.pause();
+                        return container;
+                    });
+                }
+            };
         })();
-    </script>
-    <script type="text/javascript">
-        tsParticles.load(
-            "tsparticles", {
-                background: {
-                    color: "#000"
-                },
-                particles: {
-                    links: {
-                        enable: true
-                    },
-                    move: {
-                        enable: true
-                    },
-                    opacity: {
-                        value: {
-                            min: 0.5,
-                            max: 1
-                        }
-                    },
-                    size: {
-                        value: {
-                            min: 1,
-                            max: 3
-                        }
-                    }
-                },
-                interactivity: {
-                    events: {
-                        onHover: {
-                            enable: false,
-                            mode: "repulse"
-                        },
-                        onclick: {
-                            enable: false
-                        }
-                    }
-                }
-            }
-        )
-    </script>
-     <script type="text/javascript">
-        tsParticles.load(
-            "tsparticles2", {
-                fpsLimit: 120,
-                background: {
-                    color: "#000"
-                },
-                particles: {
-                    number: {
-                        value: 200
-                    },
-                    color: {
-                        value: ["#a7e2a7",]
-                    },
-                    shape: {
-                        type: "square"
-                    },
-                    links: {
-                        enable: false
-                    },
-                    opacity: {
-                        value: {
-                            min: 0.3,
-                            max: 0.8
-                        }
-                    },
-                    size: {
-                        value: {
-                            min: 5,
-                            max: 9
-                        }
-                    },
-                    move: {
-                        enable: true,
-                        speed: 4,
-                        direction: "bottom",
-                        random: false,
-                        straight: false,
-                        outModes: {
-                            default: "out"
-                        }
-                    }
-                },
-                interactivity: {
-                    events: {
-                        onHover: {
-                            enable: false,
-                            mode: "repulse"
-                        },
-                        onclick: {
-                            enable: false
-                        }
-                    }
-                }
-            }
-        )
-    </script>
-     <script type="text/javascript">
-        tsParticles.load(
-            "tsparticles3", {
-                fpsLimit: 120,
-                background: {
-                    color: "#000"
-                },
-                particles: {
-                    number: {
-                        value: 120,
-                        density: {
-                            enable: true,
-                            area: 800
-                        }
-                    },
-                    color: {
-                        value: ["#fb923c", "#f97316", "#fbbf24"]
-                    },
-                    shape: {
-                        type: "circle"
-                    },
-                    links: {
-                        enable: false
-                    },
-                    life: {
-                        duration: {
-                            value: 5,
-                            sync: false
-                        },
-                        count: 0
-                    },
-                    opacity: {
-                        value: {
-                            min: 0.1,
-                            max: 0.9
-                        },
-                        animation: {
-                            enable: true,
-                            speed: 1.2,
-                            sync: false
-                        }
-                    },
-                    size: {
-                        value: {
-                            min: 1,
-                            max: 4
-                        }
-                    },
-                    move: {
-                        enable: true,
-                        speed: {
-                            min: 0.8,
-                            max: 3
-                        },
-                        direction: "top",
-                        random: false,
-                        straight: false,
-                        outModes: {
-                            default: "out"
-                        }
-                    }
-                },
-                interactivity: {
-                    events: {
-                        onHover: {
-                            enable: false,
-                            mode: "repulse"
-                        },
-                        onclick: {
-                            enable: false
-                        }
-                    }
-                }
-            }
-        )
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -1541,40 +1516,23 @@ function renderTelefono() {
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const select = document.getElementById("type");
-            const ticket = document.getElementById("ticket-form");
-            const solicitud = document.getElementById("solicitud-form");
-            const mantenimiento = document.getElementById("mantenimiento-form");
-            const fondoHome = document.getElementById("background");
-            const fondoTicket = document.getElementById("tsparticles");
-            const fondoSolicitud = document.getElementById("tsparticles2");
-            const fondoMantenimiento = document.getElementById("tsparticles3");
 
-            // opacity-0 oculta el canvas pero no detiene su animación:
-            // sin esto los 4 fondos siguen dibujando a la vez.
-            const motor = (id, activo) => {
-                const container = tsParticles.dom().find(c => c.id === id);
-                if (!container) return;
-                activo ? container.play() : container.pause();
+            // valor del select -> id del contenedor de partículas
+            const fondoDe = {
+                "Ticket": "tsparticles",
+                "Solicitud": "tsparticles2",
+                "Mantenimiento": "tsparticles3"
             };
+            const todos = ["background", "tsparticles", "tsparticles2", "tsparticles3"];
 
             const aplicarFondo = () => {
-                const esTicket = ticket && !ticket.classList.contains("hidden");
-                const esSolicitud = solicitud && !solicitud.classList.contains("hidden");
-                const esMantenimiento = mantenimiento && !mantenimiento.classList.contains("hidden");
-                const esHome = !esTicket && !esSolicitud && !esMantenimiento;
+                const activo = fondoDe[select.value] || "background";
 
-                fondoHome.classList.toggle("opacity-0", !esHome);
-                fondoTicket.classList.toggle("opacity-0", !esTicket);
-                fondoSolicitud.classList.toggle("opacity-0", !esSolicitud);
-                fondoMantenimiento.classList.toggle("opacity-0", !esMantenimiento);
+                todos.forEach(id => {
+                    document.getElementById(id).classList.toggle("opacity-0", id !== activo);
+                });
 
-                motor("tsparticles", esTicket);
-                motor("tsparticles2", esSolicitud);
-                motor("tsparticles3", esMantenimiento);
-
-                if (window.fondoAdn) {
-                    esHome ? window.fondoAdn.play() : window.fondoAdn.pause();
-                }
+                window.fondos.mostrar(activo);
             };
 
             select.addEventListener("change", aplicarFondo);
