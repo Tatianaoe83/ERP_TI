@@ -1388,26 +1388,65 @@ function renderTelefono() {
                 }
             };
 
+            // id -> Promise<Container>. Guardar la promesa (y no el container) evita
+            // que dos llamadas seguidas lancen dos tsParticles.load sobre el mismo div.
             const cargados = new Map();
+            const pendientesDeBorrar = new Map();
             let deseado = null;
+
+            // El fondo inactivo se destruye, no se pausa: así se liberan el canvas y los
+            // SVG rasterizados del set anterior. Se espera al fade-out (duration-500)
+            // para no cortar la transición a medias.
+            const ESPERA_FADE = 600;
+
+            // Traza opcional para verificar carga/destrucción: window.DEBUG_FONDOS = true
+            const traza = (accion, id) => {
+                if (!window.DEBUG_FONDOS) return;
+                const vivos = tsParticles.dom().map(c => c.canvas.element.parentElement.id);
+                console.log(`[fondos] ${accion} ${id} | vivos: ${vivos.length}`, vivos);
+            };
+
+            const programarDestruccion = (id) => {
+                if (pendientesDeBorrar.has(id)) return;
+
+                pendientesDeBorrar.set(id, setTimeout(() => {
+                    pendientesDeBorrar.delete(id);
+                    if (deseado === id) return;
+
+                    const promesa = cargados.get(id);
+                    cargados.delete(id);
+                    if (promesa) promesa.then(container => {
+                        container.destroy();
+                        traza('destruido', id);
+                    });
+                }, ESPERA_FADE));
+            };
+
+            const cancelarDestruccion = (id) => {
+                const timer = pendientesDeBorrar.get(id);
+                if (timer === undefined) return;
+                clearTimeout(timer);
+                pendientesDeBorrar.delete(id);
+            };
 
             window.fondos = {
                 // Devuelve promesa por si algún día hace falta esperar la carga.
                 mostrar(id) {
                     deseado = id;
+                    cancelarDestruccion(id);
 
-                    for (const [otro, container] of cargados) {
-                        if (otro !== id) container.pause();
+                    for (const otro of cargados.keys()) {
+                        if (otro !== id) programarDestruccion(otro);
                     }
 
-                    const cargado = cargados.get(id);
-                    if (cargado) {
-                        cargado.play();
-                        return Promise.resolve(cargado);
+                    let promesa = cargados.get(id);
+                    if (!promesa) {
+                        promesa = tsParticles.load(id, configs[id])
+                            .then(container => (traza('cargado', id), container));
+                        cargados.set(id, promesa);
                     }
 
-                    return tsParticles.load(id, configs[id]).then(container => {
-                        cargados.set(id, container);
+                    return promesa.then(container => {
                         // El usuario pudo cambiar de opción mientras cargaba.
                         deseado === id ? container.play() : container.pause();
                         return container;

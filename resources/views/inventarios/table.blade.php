@@ -219,8 +219,11 @@
             // =========================
             var table = $('#tabla-empleados').DataTable({
                 responsive: true,
+                processing: true,
+                serverSide: true,
                 searching: false,
                 pageLength: 7,
+                order: [],
 
                 ajax: {
                     url: '{{ route("inventarios.indexVista") }}',
@@ -240,6 +243,7 @@
                 columns: [{
                         className: 'dt-control dark:bg-[#101010] dark:text-white',
                         orderable: false,
+                        searchable: false,
                         data: null,
                         defaultContent: '',
                     },
@@ -284,55 +288,61 @@
 
                 initComplete: function() {
 
-                    var api = this.api();
+                    // Con serverSide la tabla solo tiene la pagina actual, asi
+                    // que las opciones se piden al servidor en lugar de sacarlas
+                    // de las filas cargadas. El endpoint aplica el mismo scope
+                    // por defecto de indexVista: Estado=1 y FISICA/REFERENCIADO.
+                    $.getJSON('{{ route("inventarios.filtros") }}', function(data) {
 
-                    // =========================
-                    // CARGAR OBRAS
-                    // =========================
-                    var obras = api.column(3).data().unique().sort();
+                        // =========================
+                        // CARGAR OBRAS
+                        // =========================
+                        var obras = data.obras || [];
 
-                    $('#filtro-obra')
-                        .empty()
-                        .append('<option value="">Todas las obras</option>');
+                        $('#filtro-obra')
+                            .empty()
+                            .append('<option value="">Todas las obras</option>');
 
-                    obras.each(function(d) {
+                        obras.forEach(function(d) {
 
-                        if (d && d.trim() !== '') {
+                            if (d && d.trim() !== '') {
 
-                            $('#filtro-obra').append(
-                                '<option value="' + d + '">' + d + '</option>'
-                            );
+                                $('#filtro-obra').append(
+                                    '<option value="' + d + '">' + d + '</option>'
+                                );
 
-                        }
+                            }
 
-                    });
+                        });
 
-                    // =========================
-                    // CARGAR PUESTOS
-                    // =========================
-                    var puestos = api.column(2).data().unique().sort();
+                        // =========================
+                        // CARGAR PUESTOS
+                        // =========================
+                        var puestos = data.puestos || [];
 
-                    $('#filtro-puesto')
-                        .empty()
-                        .append('<option value="">Todos los puestos</option>');
+                        $('#filtro-puesto')
+                            .empty()
+                            .append('<option value="">Todos los puestos</option>');
 
-                    puestos.each(function(d) {
+                        puestos.forEach(function(d) {
 
-                        if (d && d.trim() !== '') {
+                            if (d && d.trim() !== '') {
 
-                            $('#filtro-puesto').append(
-                                '<option value="' + d + '">' + d + '</option>'
-                            );
+                                $('#filtro-puesto').append(
+                                    '<option value="' + d + '">' + d + '</option>'
+                                );
 
-                        }
+                            }
 
-                    });
+                        });
 
-                    // Reinicializar Select2
-                    $('.jz-inv').select2({
-                        width: '100%',
-                        placeholder: 'Seleccionar...',
-                        allowClear: true
+                        // Reinicializar Select2
+                        $('.jz-inv').select2('destroy').select2({
+                            width: '100%',
+                            placeholder: 'Seleccionar...',
+                            allowClear: true
+                        });
+
                     });
 
                 }

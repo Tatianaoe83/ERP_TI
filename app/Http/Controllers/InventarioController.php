@@ -77,7 +77,10 @@ class InventarioController extends AppBaseController
                 'empleados.Correo',
                 'empleados.Estado'
             ])
-            ->orderBy('empleados.EmpleadoID', 'desc')
+            // Orden por defecto. Solo se aplica si el usuario no eligio uno
+            // desde los encabezados; de lo contrario este pisaria al suyo,
+            // porque Yajra agrega su orderBy despues de este.
+            ->when(!$request->filled('order'), fn($q) => $q->orderBy('empleados.EmpleadoID', 'desc'))
             ->when($request->nombre, fn($q) => $q->where(function ($sub) use ($request) {
                 $sub->where('empleados.NombreEmpleado', 'like', '%' . $request->nombre . '%')
                     ->orWhere('empleados.NumTelefono', 'like', '%' . $request->nombre . '%')
@@ -140,6 +143,41 @@ class InventarioController extends AppBaseController
             })
             ->rawColumns(['action', 'Estado'])
             ->make(true);
+    }
+
+    /**
+     * Opciones de los filtros Obra y Puesto.
+     *
+     * Replica el scope por defecto de indexVista (Estado activo y tipo de
+     * persona FISICA/REFERENCIADO) para que las opciones sean las mismas que
+     * antes salian de las filas ya cargadas en la tabla.
+     */
+    public function filtros()
+    {
+        $obras = DB::table('obras')
+            ->join('empleados', 'obras.ObraID', '=', 'empleados.ObraID')
+            ->where('empleados.Estado', 1)
+            ->whereIn('empleados.tipo_persona', ['FISICA', 'REFERENCIADO'])
+            ->select('obras.NombreObra')
+            ->distinct()
+            ->orderBy('obras.NombreObra')
+            ->pluck('obras.NombreObra')
+            ->toArray();
+
+        $puestos = DB::table('puestos')
+            ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+            ->where('empleados.Estado', 1)
+            ->whereIn('empleados.tipo_persona', ['FISICA', 'REFERENCIADO'])
+            ->select('puestos.NombrePuesto')
+            ->distinct()
+            ->orderBy('puestos.NombrePuesto')
+            ->pluck('puestos.NombrePuesto')
+            ->toArray();
+
+        return response()->json([
+            'obras' => $obras,
+            'puestos' => $puestos,
+        ]);
     }
 
     public function inventario($id)

@@ -53,6 +53,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('categorias', App\Http\Controllers\CategoriasController::class);
     Route::resource('planes', App\Http\Controllers\PlanesController::class);
     Route::GET('InventarioVista', [InventarioController::class, 'indexVista'])->name('inventarios.indexVista');
+    Route::GET('inventarios-filtros', [InventarioController::class, 'filtros'])->name('inventarios.filtros');
     Route::GET('inventarios/{id}/inventario', [InventarioController::class, 'inventario'])->name('inventarios.inventario');
     Route::PUT('inventarios/editar-equipo/{id}', [InventarioController::class, 'editarequipo'])->name('inventarios.editarequipo');
     Route::POST('inventarios/crear-equipo/{id}', [InventarioController::class, 'crearequipo'])->name('inventarios.crearequipo');
