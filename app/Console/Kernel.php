@@ -38,6 +38,12 @@ class Kernel extends ConsoleKernel
 
         // Marcar encuestas de satisfacción vencidas una vez al día
         $schedule->command('tickets:surveys-expire')->everyFourHours()->withoutOverlapping();
+
+        // Recordatorios de solicitudes pendientes: todos los días a las 10:00 am
+        $schedule->command('solicitudes:recordatorios')
+            ->dailyAt('10:00')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**

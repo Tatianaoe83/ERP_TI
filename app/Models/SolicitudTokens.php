@@ -34,7 +34,10 @@ class SolicitudTokens extends Model
         'token',
         'expires_at',
         'revoked_at',
-        'used_at'
+        'used_at',
+        'notified_at',
+        'last_reminder_at',
+        'reminders_sent'
     ];
 
     /**
@@ -48,7 +51,10 @@ class SolicitudTokens extends Model
         'token' => 'string',
         'expires_at' => 'datetime',
         'revoked_at' => 'datetime',
-        'used_at' => 'datetime'
+        'used_at' => 'datetime',
+        'notified_at' => 'datetime',
+        'last_reminder_at' => 'datetime',
+        'reminders_sent' => 'integer'
     ];
 
     /**
