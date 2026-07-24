@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Ticket - Sistema de Soporte</title>
+    <title>Centro de Solicitudes — TI y Compras</title>
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/css/@fortawesome/fontawesome-free/css/all.css') }}" rel="stylesheet" type="text/css">
     <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js"></script>
@@ -251,10 +251,204 @@
             margin-right: 8px;
             text-align: center;
         }
+
+        /* Selector Tipo de solicitud: minimalista TI / Compras */
+        #type + .select2-container {
+            width: 100% !important;
+        }
+
+        #type + .select2-container .select2-selection--single {
+            height: 48px !important;
+            border-radius: 0.75rem !important;
+            padding: 0.55rem 0.9rem !important;
+            border: 1.5px solid #e5e7eb !important;
+            background: #fff !important;
+            box-shadow: none !important;
+        }
+
+        #type + .select2-container .select2-selection--single .select2-selection__rendered {
+            line-height: 1.35 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.55rem;
+            color: #111827 !important;
+            padding-right: 1.5rem !important;
+        }
+
+        #type + .select2-container .select2-selection--single .select2-selection__arrow {
+            height: 44px !important;
+        }
+
+        #type + .select2-container.select-area-ti .select2-selection--single {
+            background: #f8fafc !important;
+            border-color: #93c5fd !important;
+        }
+
+        #type + .select2-container.select-area-compras .select2-selection--single {
+            background: #fff7ed !important;
+            border-color: #fdba74 !important;
+        }
+
+        #type + .select2-container.select-area-ti.select2-container--focus .select2-selection--single {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+        }
+
+        #type + .select2-container.select-area-compras.select2-container--focus .select2-selection--single {
+            border-color: #f97316 !important;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12) !important;
+        }
+
+        /* Dropdown limpio */
+        .select2-dropdown {
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            overflow: hidden;
+            box-shadow: 0 10px 24px -12px rgba(15, 23, 42, 0.25) !important;
+        }
+
+        .select2-results__option {
+            padding: 10px 14px !important;
+            font-size: 0.9rem !important;
+        }
+
+        /* Encabezados de grupo discretos */
+        .select2-results__group.group-area-ti,
+        .select2-results__group.group-area-compras {
+            background: #fff !important;
+            color: #9ca3af !important;
+            border-bottom: 1px solid #f3f4f6 !important;
+            font-size: 0.7rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.08em !important;
+            text-transform: uppercase !important;
+            padding: 10px 14px 6px !important;
+        }
+
+        .select2-results__group.group-area-ti {
+            color: #60a5fa !important;
+        }
+
+        .select2-results__group.group-area-compras {
+            color: #fb923c !important;
+        }
+
+        /* Opciones: fondo blanco + acento fino */
+        .select2-results__option.option-area-ti,
+        .select2-results__option.option-area-compras {
+            background: #fff !important;
+            color: #374151 !important;
+            border-left: 2px solid transparent;
+        }
+
+        .select2-results__option.option-area-ti {
+            border-left-color: #bfdbfe;
+        }
+
+        .select2-results__option.option-area-compras {
+            border-left-color: #fdba74;
+        }
+
+        .select2-results__option.option-area-ti.select2-results__option--highlighted,
+        .select2-results__option.option-area-ti[aria-selected=true] {
+            background: #eff6ff !important;
+            color: #1d4ed8 !important;
+            border-left-color: #3b82f6;
+        }
+
+        .select2-results__option.option-area-compras.select2-results__option--highlighted,
+        .select2-results__option.option-area-compras[aria-selected=true] {
+            background: #fff7ed !important;
+            color: #c2410c !important;
+            border-left-color: #f97316;
+        }
+
+        .tipo-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.62rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border-radius: 0.35rem;
+            padding: 0.1rem 0.4rem;
+            flex-shrink: 0;
+            border: 1px solid transparent;
+        }
+
+        .tipo-badge-ti {
+            background: transparent;
+            border-color: #bfdbfe;
+            color: #3b82f6;
+        }
+
+        .tipo-badge-compras {
+            background: transparent;
+            border-color: #fdba74;
+            color: #ea580c;
+        }
+
+        .select2-results__option--highlighted .tipo-badge-ti,
+        .select2-results__option[aria-selected=true] .tipo-badge-ti {
+            border-color: #93c5fd;
+            color: #2563eb;
+            background: #fff;
+        }
+
+        .select2-results__option--highlighted .tipo-badge-compras,
+        .select2-results__option[aria-selected=true] .tipo-badge-compras {
+            border-color: #fdba74;
+            color: #ea580c;
+            background: #fff;
+        }
+
+        .tipo-option-icon {
+            width: 1.1rem;
+            text-align: center;
+            opacity: 0.7;
+            font-size: 0.85rem;
+        }
+
+        #info-section.info-area-ti {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+
+        #info-section.info-area-ti .text-blue-500,
+        #info-section.info-area-ti i {
+            color: #3b82f6 !important;
+        }
+
+        #info-section.info-area-compras {
+            background: #fff7ed;
+            border-color: #ffedd5;
+        }
+
+        #info-section.info-area-compras .text-blue-500,
+        #info-section.info-area-compras i {
+            color: #ea580c !important;
+        }
+
+        /* Fondo / atmósfera por departamento */
+        #tsparticles {
+            transition: opacity 0.35s ease;
+        }
+
+        body.theme-general #header-subtitle {
+            color: #c7d2fe;
+        }
+
+        body.theme-ti #header-subtitle {
+            color: #bfdbfe;
+        }
+
+        body.theme-compras #header-subtitle {
+            color: #fdba74;
+        }
     </style>
 </head>
 
-<body class="h-screen flex items-center justify-center p-4 md:p-6">
+<body class="h-screen flex items-center justify-center p-4 md:p-6 theme-general">
     <div id="tsparticles" class="fixed inset-0 -z-10"></div>
 
     <div class="w-full max-w-4xl flex flex-col" id="main-container">
@@ -265,8 +459,8 @@
                     <img src="{{ asset('img/LogoAzul.png') }}" alt="Logo Proser" class="w-full h-full object-contain">
                 </div>
                 <div class="text-left">
-                    <h1 class="text-2xl md:text-3xl font-bold text-white" id="title">Soporte TI</h1>
-                    <p class="text-xs md:text-sm text-indigo-200">Sistema de tickets y solicitudes</p>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white" id="title">Centro de Solicitudes</h1>
+                    <p class="text-xs md:text-sm" id="header-subtitle">TI y Compras · seguimiento de tickets y solicitudes</p>
                 </div>
             </div>
         </div>
@@ -280,11 +474,15 @@
                     <!-- Selector de Tipo -->
                     <div class="bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de solicitud</label>
-                        <select name="type" id="type" class="cursor-pointer border-2 border-gray-200 rounded-xl text-base text-black w-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white">
-                            <option value="" selected disabled>Selecciona una opción</option>
-                            <option value="Ticket">Ticket para soporte</option>
-                            <option value="Solicitud">Compras de recursos tecnológicos</option>
-                            <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option>
+                        <select name="type" id="type" class="w-full">
+                            <option value=""></option>
+                            <optgroup label="Tecnologías de la Información" data-area="ti">
+                                <option value="Ticket" data-area="ti">Ticket para soporte</option>
+                                <option value="Solicitud" data-area="ti">Compras de recursos tecnológicos</option>
+                            </optgroup>
+                            <optgroup label="Compras" data-area="compras">
+                                <option value="Mantenimiento" data-area="compras">Solicitud de mantenimiento corporativo</option>
+                            </optgroup>
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">
@@ -536,20 +734,136 @@
             // =========================================================
             // 2. LÓGICA DE PESTAÑAS (TICKET vs SOLICITUD)
             // =========================================================
+            function areaDeTipo(seleccion) {
+                // TI: Ticket + Compras de recursos tecnológicos
+                // Compras: Mantenimiento corporativo
+                if (seleccion === 'Ticket' || seleccion === 'Solicitud') return 'ti';
+                if (seleccion === 'Mantenimiento') return 'compras';
+                return null;
+            }
+
+            function plantillaOpcionTipo(data) {
+                if (!data.id) return data.text;
+
+                var area = $(data.element).data('area') || areaDeTipo(data.id);
+                var badgeClass = area === 'compras' ? 'tipo-badge-compras' : 'tipo-badge-ti';
+                var badgeText = area === 'compras' ? 'Compras' : 'TI';
+                var icon = data.id === 'Ticket' ? 'fa-ticket-alt'
+                    : (data.id === 'Solicitud' ? 'fa-laptop' : 'fa-tools');
+
+                return $(
+                    '<span class="flex items-center gap-2 w-full min-w-0">' +
+                        '<i class="fas ' + icon + ' tipo-option-icon"></i>' +
+                        '<span class="flex-1 truncate">' + data.text + '</span>' +
+                        '<span class="tipo-badge ' + badgeClass + '">' + badgeText + '</span>' +
+                    '</span>'
+                );
+            }
+
+            function actualizarEncabezadoArea(seleccion) {
+                var area = areaDeTipo(seleccion);
+                var $title = $('#title');
+                var $subtitle = $('#header-subtitle');
+
+                if (area === 'ti') {
+                    if (seleccion === 'Ticket') {
+                        $title.text('Ticket de Soporte');
+                    } else {
+                        $title.text('Compras de Recursos Tecnológicos');
+                    }
+                    $subtitle.text('Tecnologías de la Información');
+                } else if (area === 'compras') {
+                    $title.text('Mantenimiento Corporativo');
+                    $subtitle.text('Área de Compras');
+                } else {
+                    $title.text('Centro de Solicitudes');
+                    $subtitle.text('TI y Compras · seguimiento de tickets y solicitudes');
+                }
+
+                $title.removeClass('fade-change');
+                void $title[0].offsetWidth;
+                $title.addClass('fade-change');
+            }
+
+            function aplicarEstiloAreaTipo(seleccion) {
+                var $container = $('#type').next('.select2-container');
+                var $info = $('#info-section');
+                var area = areaDeTipo(seleccion);
+
+                $container.removeClass('select-area-ti select-area-compras');
+                $info.removeClass('info-area-ti info-area-compras');
+                document.body.classList.remove('theme-general', 'theme-ti', 'theme-compras');
+
+                if (area === 'ti') {
+                    $container.addClass('select-area-ti');
+                    $info.addClass('info-area-ti');
+                    document.body.classList.add('theme-ti');
+                } else if (area === 'compras') {
+                    $container.addClass('select-area-compras');
+                    $info.addClass('info-area-compras');
+                    document.body.classList.add('theme-compras');
+                } else {
+                    document.body.classList.add('theme-general');
+                }
+
+                actualizarEncabezadoArea(seleccion);
+                if (typeof window.aplicarTemaParticulas === 'function') {
+                    window.aplicarTemaParticulas(area);
+                }
+            }
+
+            function colorearDropdownTipo() {
+                $('.select2-results__option[role="option"]').each(function() {
+                    var $li = $(this);
+                    var text = ($li.text() || '').toLowerCase();
+                    $li.removeClass('option-area-ti option-area-compras');
+                    if (text.indexOf('mantenimiento') !== -1) {
+                        $li.addClass('option-area-compras');
+                    } else if (text.indexOf('ticket') !== -1 || text.indexOf('recursos tecnológicos') !== -1) {
+                        $li.addClass('option-area-ti');
+                    }
+                });
+                $('.select2-results__group').each(function() {
+                    var $g = $(this);
+                    var txt = ($g.text() || '').toLowerCase().trim();
+                    $g.removeClass('group-area-ti group-area-compras');
+                    if (txt === 'compras') {
+                        $g.addClass('group-area-compras');
+                    } else {
+                        $g.addClass('group-area-ti');
+                    }
+                });
+            }
+
+            $('#type').select2({
+                placeholder: 'Selecciona una opción',
+                allowClear: false,
+                width: '100%',
+                minimumResultsForSearch: Infinity,
+                templateResult: function(data) {
+                    if (data.children) return data.text;
+                    return plantillaOpcionTipo(data);
+                },
+                templateSelection: plantillaOpcionTipo
+            }).on('select2:open', function() {
+                setTimeout(colorearDropdownTipo, 0);
+            });
+
             function actualizarInfoTipo(seleccion) {
                 var $info = $('#info-section');
                 var $text = $('#info-text');
+                aplicarEstiloAreaTipo(seleccion);
                 if (!seleccion) {
                     $info.addClass('hidden');
                     return;
                 }
                 $info.removeClass('hidden');
                 if (seleccion === 'Ticket') {
-                    $text.html('<strong class="uppercase">Reporta incidencias técnicas, solicita asistencia remota o consulta al equipo de soporte TI.</strong>');
+                    $text.html('<strong class="uppercase">TI — Reporta incidencias técnicas, solicita asistencia remota o consulta al equipo de soporte.</strong>');
                 } else if (seleccion === 'Solicitud') {
-                    $text.html('<strong class="uppercase">Solicita recursos tecnológicos que requieran un proceso de compra.</strong>');
+                    $text.html('<strong class="uppercase">TI — Solicita recursos tecnológicos que requieran un proceso de compra.</strong>');
                 } else if (seleccion === 'Mantenimiento') {
-                    $text.html('<strong class="uppercase">Reporta solicitudes de mantenimiento corporativo: plomería, electricidad, limpieza, instalaciones y más.</strong>');
+                    $text.html('<strong class="uppercase">Compras — Reporta solicitudes de mantenimiento corporativo: plomería, electricidad, limpieza, instalaciones y más.</strong>');
                 } else {
                     $text.text('');
                 }
@@ -1188,22 +1502,60 @@ function renderTelefono() {
     </script>
     @endif
     <script type="text/javascript">
-        tsParticles.load(
-            "tsparticles", {
+        window.aplicarTemaParticulas = function(area) {
+            var temas = {
+                general: {
+                    bg: '#0f172a',
+                    particle: '#94a3b8',
+                    link: '#64748b'
+                },
+                ti: {
+                    bg: '#020617',
+                    particle: '#60a5fa',
+                    link: '#3b82f6'
+                },
+                compras: {
+                    bg: '#431407',
+                    particle: '#fb923c',
+                    link: '#f97316'
+                }
+            };
+            var tema = temas[area] || temas.general;
+            var canvas = document.getElementById('tsparticles');
+            if (canvas) canvas.style.opacity = '0.35';
+
+            tsParticles.load('tsparticles', {
                 background: {
-                    color: "#000"
+                    color: tema.bg
+                },
+                fullScreen: {
+                    enable: false
                 },
                 particles: {
+                    color: {
+                        value: tema.particle
+                    },
                     links: {
-                        enable: true
+                        enable: true,
+                        color: tema.link,
+                        distance: 140,
+                        opacity: 0.45
                     },
                     move: {
-                        enable: true
+                        enable: true,
+                        speed: 1.2
+                    },
+                    number: {
+                        value: 55,
+                        density: {
+                            enable: true,
+                            area: 900
+                        }
                     },
                     opacity: {
                         value: {
-                            min: 0.5,
-                            max: 1
+                            min: 0.35,
+                            max: 0.9
                         }
                     },
                     size: {
@@ -1217,15 +1569,25 @@ function renderTelefono() {
                     events: {
                         onHover: {
                             enable: false,
-                            mode: "repulse"
+                            mode: 'repulse'
                         },
                         onclick: {
                             enable: false
                         }
                     }
                 }
-            }
-        )
+            }).then(function() {
+                if (canvas) {
+                    requestAnimationFrame(function() {
+                        canvas.style.opacity = '1';
+                    });
+                }
+            }).catch(function() {
+                if (canvas) canvas.style.opacity = '1';
+            });
+        };
+
+        window.aplicarTemaParticulas(null);
     </script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -1296,20 +1658,17 @@ function renderTelefono() {
                 if (value === "Ticket") {
                     ticket.classList.remove("hidden");
                     manejarRequired(ticket, true);
-                    title.textContent = "Ticket de Soporte";
                     aplicarLayoutContenedor(true);
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                     if (typeof deshabilitarCampos === 'function') deshabilitarCampos();
                 } else if (value === "Solicitud") {
                     solicitud.classList.remove("hidden");
                     manejarRequired(solicitud, true);
-                    title.textContent = "Compra de Recursos Tecnológicos";
                     aplicarLayoutContenedor(true);
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                     if (typeof deshabilitarCamposSolicitud === 'function') deshabilitarCamposSolicitud();
                 } else if (value === "Mantenimiento") {
                     mantenimiento.classList.remove("hidden");
-                    title.textContent = "Mantenimiento Corporativo";
                     aplicarLayoutContenedor(true);
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                     if (typeof habilitarCamposMantenimiento === 'function') habilitarCamposMantenimiento();
@@ -1317,10 +1676,6 @@ function renderTelefono() {
                     aplicarLayoutContenedor(false);
                     if (typeof actualizarInfoTipo === 'function') actualizarInfoTipo(value);
                 }
-
-                title.classList.remove("fade-change");
-                void title.offsetWidth;
-                title.classList.add("fade-change");
             });
         });
     </script>
