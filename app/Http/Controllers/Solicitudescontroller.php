@@ -642,20 +642,19 @@ class SolicitudesController extends Controller
                         'success'         => false,
                         'message'         => 'Los ganadores se confirmaron, pero no se pudo enviar el correo a Administración.',
                         'todos_completos' => $todosGanadores,
-                        'redirect'        => '/revision-solicitud/' . $emailAdminData['token'],
+                        'redirect'        => '/solicitudes/ganadores-confirmados',
                     ], 500);
                 }
             }
 
-            $redirect = $emailAdminData
-                ? '/revision-solicitud/' . $emailAdminData['token']
-                : '/solicitudes/ganadores-confirmados';
-
+            // El gerente SIEMPRE termina en la pantalla de confirmación, nunca en el
+            // enlace de administración: cada etapa solo ve su propia vista. Admin recibe
+            // su propio correo con su propio token.
             return response()->json([
                 'success'         => true,
                 'message'         => 'Ganadores confirmados. Se ha enviado la solicitud a Administración para su aprobación.',
                 'todos_completos' => $todosGanadores,
-                'redirect'        => $redirect,
+                'redirect'        => '/solicitudes/ganadores-confirmados',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -1034,14 +1033,41 @@ class SolicitudesController extends Controller
             }
 
             $pasoGerencia->load('approverEmpleado');
-            $token = \Illuminate\Support\Str::uuid()->toString();
 
             try {
-                \App\Models\SolicitudTokens::create([
-                    'approval_step_id' => $pasoGerencia->id,
-                    'token'            => $token,
-                    'expires_at'       => now()->addDays(7),
-                ]);
+                // Reutilizar el token activo del paso (el que decide() crea por adelantado,
+                // o el de un envío anterior) en vez de generar una fila nueva cada vez.
+                // Así solo existe un registro de token por paso de gerencia.
+                $tokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoGerencia->id)
+                    ->whereNull('used_at')
+                    ->whereNull('revoked_at')
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($tokenRow) {
+                    // Por si quedaron duplicados históricos, revocar los demás activos.
+                    \App\Models\SolicitudTokens::where('approval_step_id', $pasoGerencia->id)
+                        ->whereNull('used_at')
+                        ->whereNull('revoked_at')
+                        ->where('id', '!=', $tokenRow->id)
+                        ->update(['revoked_at' => now()]);
+
+                    // Refrescar vigencia y reiniciar el ciclo de recordatorios para este (re)envío.
+                    // notified_at se vuelve a sellar dentro de enviarCotizacionesListasParaElegir().
+                    $tokenRow->update([
+                        'expires_at'       => now()->addDays(7),
+                        'notified_at'      => null,
+                        'last_reminder_at' => null,
+                    ]);
+                } else {
+                    $tokenRow = \App\Models\SolicitudTokens::create([
+                        'approval_step_id' => $pasoGerencia->id,
+                        'token'            => \Illuminate\Support\Str::uuid()->toString(),
+                        'expires_at'       => now()->addDays(7),
+                    ]);
+                }
+
+                $token = $tokenRow->token;
             } catch (\Exception $e) {
                 Log::error("No se pudo crear token para elegir ganador: " . $e->getMessage());
                 return response()->json(['success' => false, 'message' => 'Error al crear el token de acceso: ' . $e->getMessage()], 500);
@@ -1091,19 +1117,10 @@ class SolicitudesController extends Controller
             $solicitud = $paso->solicitud;
             if (!$solicitud) abort(404, 'Solicitud no encontrada');
 
-            // Token usado/revocado: si ya hay ganadores, redirigir a admin
+            // Token usado/revocado: el gerente ya terminó su parte. Mostrar confirmación,
+            // NUNCA redirigir al enlace de administración (cada etapa ve solo su vista).
             if ($tokenRow->used_at || $tokenRow->revoked_at) {
-                $pasoAdmin = \App\Models\SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('stage', 'administracion')
-                    ->first();
-                if ($pasoAdmin) {
-                    $adminToken = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdmin->id)
-                        ->latest()->first();
-                    if ($adminToken) {
-                        return redirect('/revision-solicitud/' . $adminToken->token);
-                    }
-                }
-                abort(404, 'Token no encontrado o inválido');
+                return view('solicitudes.ganadores-confirmados');
             }
 
             $solicitud->load([
@@ -1131,31 +1148,9 @@ class SolicitudesController extends Controller
             $ganadores       = $solicitud->cotizaciones ? $solicitud->cotizaciones->where('Estatus', 'Seleccionada') : collect();
 
             if ($solicitud->Estatus === 'Aprobado' || $todosConGanador) {
-                $pasoAdmin = \App\Models\SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('stage', 'administracion')
-                    ->first();
-
-                if ($pasoAdmin) {
-                    $adminToken = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdmin->id)
-                        ->latest()
-                        ->first();
-
-                    if ($adminToken) {
-                        return redirect('/revision-solicitud/' . $adminToken->token);
-                    }
-                }
-
-                $tokenInfo = [
-                    'razon' => 'Ya se han seleccionado los ganadores de todos los productos de esta solicitud.',
-                ];
-                if ($ganadores->isNotEmpty()) {
-                    $lista = $ganadores->map(
-                        fn($g) => $g->Descripcion . ' – ' . $g->Proveedor . ' ($' . number_format($g->Precio, 2, '.', ',') . ')'
-                    )->implode('; ');
-                    $tokenInfo['proveedor_ganador']   = $lista;
-                    $tokenInfo['multiple_ganadores']  = $ganadores->count() > 1;
-                }
-                return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
+                // Ya hay ganador en todo: el gerente terminó. Mostrar confirmación,
+                // sin redirigir al enlace de administración.
+                return view('solicitudes.ganadores-confirmados');
             }
 
             if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {

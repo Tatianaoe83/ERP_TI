@@ -70,18 +70,13 @@ class EnviarRecordatoriosSolicitudes extends Command
             $solicitud = $step->solicitud;
             $aprobador = $step->approverEmpleado;
 
-            $diasRestantes = $tokenRow->expires_at
-                ? max(0, (int) ceil(now()->floatDiffInDays($tokenRow->expires_at, false)))
-                : 7;
-
             $ganadores = $step->stage === 'administracion'
                 ? ($solicitud->cotizaciones ? $solicitud->cotizaciones->where('Estatus', 'Seleccionada') : collect())
                 : null;
 
             if ($dryRun) {
                 $this->info(
-                    "  [dry-run] Solicitud #{$solicitud->SolicitudID} etapa {$step->stage} → " .
-                        "{$aprobador->Correo} ({$diasRestantes} día(s) restantes)"
+                    "  [dry-run] Solicitud #{$solicitud->SolicitudID} etapa {$step->stage} → {$aprobador->Correo}"
                 );
                 $enviados++;
                 continue;
@@ -92,7 +87,6 @@ class EnviarRecordatoriosSolicitudes extends Command
                 $solicitud,
                 $tokenRow->token,
                 $step->stage,
-                $diasRestantes,
                 $ganadores
             );
 

@@ -340,7 +340,6 @@ HTML;
         Solicitud $solicitud,
         string $token,
         string $stage,
-        int $diasRestantes,
         $ganadores = null
     ): bool {
         if (empty($aprobador->Correo)) {
@@ -367,7 +366,6 @@ HTML;
             $stage,
             $url,
             $aprobador->NombreEmpleado,
-            $diasRestantes,
             $ganadores
         );
 
@@ -388,7 +386,7 @@ HTML;
 
             Log::info(
                 "Recordatorio enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
-                    "(etapa: {$stage}, token: {$token}, días restantes: {$diasRestantes})"
+                    "(etapa: {$stage}, token: {$token})"
             );
 
             return true;
@@ -410,12 +408,9 @@ HTML;
         string $stage,
         string $url,
         string $nombreAprobador,
-        int $diasRestantes,
         $ganadores = null
     ): string {
         $empleado = $solicitud->empleadoid;
-        $nombreSolicitante = $empleado ? $empleado->NombreEmpleado : 'N/A';
-        $motivo = e($solicitud->Motivo ?? 'N/A');
 
         $titulos = [
             'supervisor' => 'Recordatorio: solicitud pendiente de tu Vo.bo.',
@@ -433,75 +428,19 @@ HTML;
             'administracion' => 'Ver ganadores y aprobar',
         ];
 
-        $titulo = $titulos[$stage] ?? 'Recordatorio: solicitud pendiente';
-        $intro = $intros[$stage] ?? 'La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> sigue pendiente de tu revisión.';
-        $boton = $botones[$stage] ?? 'Revisar solicitud';
-
-        // Detalle de la solicitud: sólo el supervisor necesita ver todo el detalle.
-        $desc = e($solicitud->DescripcionMotivo ?? '');
-        $req = e($solicitud->Requerimientos ?? '');
-        $bloqueDatos = $stage === 'supervisor'
-            ? "<div style='background:#f3f4f6;padding:16px;border-radius:8px;margin:16px 0;'>"
-                . "<p><strong>Solicitante:</strong> {$nombreSolicitante}</p>"
-                . "<p><strong>Motivo:</strong> {$motivo}</p>"
-                . "<p><strong>Descripción:</strong><br>{$desc}</p>"
-                . "<p><strong>Requerimientos:</strong><br>{$req}</p></div>"
-            : "<div style='background:#f3f4f6;padding:16px;border-radius:8px;margin:16px 0;'>"
-                . "<p><strong>Solicitante:</strong> {$nombreSolicitante}</p>"
-                . "<p><strong>Motivo:</strong> {$motivo}</p></div>";
-
-        // Administración: mostrar los productos ganadores.
-        $bloqueGanadores = '';
-        if ($stage === 'administracion' && $ganadores && $ganadores->isNotEmpty()) {
-            $filas = $ganadores->map(function ($c) {
-                $proveedor = e($c->Proveedor ?? 'N/A');
-                $descripcion = e($c->Descripcion ?? 'N/A');
-                $precio = number_format($c->Precio ?? 0, 2, '.', ',');
-                $numeroParte = e($c->NumeroParte ?? 'N/A');
-                $cant = (int) ($c->Cantidad ?? 1);
-                $cantidad = $cant > 1 ? " × {$cant}" : '';
-                return "<tr><td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;'>{$descripcion}{$cantidad}</td>"
-                    . "<td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;'>{$numeroParte}</td>"
-                    . "<td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;'>{$proveedor}</td>"
-                    . "<td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;'>\$ {$precio} MXN</td></tr>";
-            })->implode('');
-
-            $bloqueGanadores = "<div style='background:#ecfdf5;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #10b981;'>"
-                . "<h3 style='color:#059669;margin-top:0;'>Productos ganadores</h3>"
-                . "<table style='width:100%;border-collapse:collapse;'><thead><tr>"
-                . "<th style='text-align:left;padding:8px 12px;border-bottom:1px solid #10b981;'>Descripción</th>"
-                . "<th style='text-align:left;padding:8px 12px;border-bottom:1px solid #10b981;'>No. Parte</th>"
-                . "<th style='text-align:left;padding:8px 12px;border-bottom:1px solid #10b981;'>Proveedor</th>"
-                . "<th style='text-align:right;padding:8px 12px;border-bottom:1px solid #10b981;'>Precio</th>"
-                . "</tr></thead><tbody>{$filas}</tbody></table></div>";
-        }
-
-        $avisoVigencia = $diasRestantes <= 1
-            ? "<p style='background:#fef2f2;border-left:4px solid #ef4444;padding:12px;border-radius:6px;color:#991b1b;'><strong>El enlace expira hoy.</strong> Después de eso deberá generarse uno nuevo.</p>"
-            : "<p style='background:#fffbeb;border-left:4px solid #f59e0b;padding:12px;border-radius:6px;color:#92400e;'>Este enlace estará disponible <strong>{$diasRestantes} día(s) más</strong>.</p>";
-
-        return <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px;">
-    <div style="max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #0F766E;">{$titulo}</h2>
-        <p>Hola <strong>{$nombreAprobador}</strong>,</p>
-        <p>{$intro}</p>
-        {$bloqueDatos}
-        {$bloqueGanadores}
-        {$avisoVigencia}
-        <p style="margin: 24px 0;">
-            <a href="{$url}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">{$boton}</a>
-        </p>
-        <p style="font-size: 12px; color: #6b7280;">Si el enlace no funciona, copia y pega en tu navegador: {$url}</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-        <p style="font-size: 12px; color: #9ca3af;">Este correo fue enviado automáticamente por el Sistema de Solicitudes. Si ya atendiste la solicitud, ignora este mensaje.</p>
-    </div>
-</body>
-</html>
-HTML;
+        return view('emails.recordatorio_solicitud', [
+            'stage'             => $stage,
+            'url'               => $url,
+            'boton'             => $botones[$stage] ?? 'Revisar solicitud',
+            'titulo'            => $titulos[$stage] ?? 'Recordatorio: solicitud pendiente',
+            'intro'            => $intros[$stage] ?? ('La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> sigue pendiente de tu revisión.'),
+            'nombreAprobador'   => $nombreAprobador,
+            'nombreSolicitante' => $empleado ? $empleado->NombreEmpleado : 'N/A',
+            'motivo'            => $solicitud->Motivo ?? 'N/A',
+            'desc'              => $solicitud->DescripcionMotivo ?? '',
+            'req'               => $solicitud->Requerimientos ?? '',
+            'ganadores'         => $ganadores,
+        ])->render();
     }
 
     private function configurarMailer(PHPMailer $mail): void
