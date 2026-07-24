@@ -642,19 +642,19 @@ class SolicitudesController extends Controller
                         'success'         => false,
                         'message'         => 'Los ganadores se confirmaron, pero no se pudo enviar el correo a Administración.',
                         'todos_completos' => $todosGanadores,
-                        'redirect'        => '/solicitudes/ganadores-confirmados',
+                        'redirect'        => $this->redirectGerenciaGanadores($request),
                     ], 500);
                 }
             }
 
-            // El gerente SIEMPRE termina en la pantalla de confirmación, nunca en el
+            // El gerente SIEMPRE vuelve a su propio enlace (ahora en solo lectura), nunca al
             // enlace de administración: cada etapa solo ve su propia vista. Admin recibe
             // su propio correo con su propio token.
             return response()->json([
                 'success'         => true,
                 'message'         => 'Ganadores confirmados. Se ha enviado la solicitud a Administración para su aprobación.',
                 'todos_completos' => $todosGanadores,
-                'redirect'        => '/solicitudes/ganadores-confirmados',
+                'redirect'        => $this->redirectGerenciaGanadores($request),
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -1117,11 +1117,10 @@ class SolicitudesController extends Controller
             $solicitud = $paso->solicitud;
             if (!$solicitud) abort(404, 'Solicitud no encontrada');
 
-            // Token usado/revocado: el gerente ya terminó su parte. Mostrar confirmación,
-            // NUNCA redirigir al enlace de administración (cada etapa ve solo su vista).
-            if ($tokenRow->used_at || $tokenRow->revoked_at) {
-                return view('solicitudes.ganadores-confirmados');
-            }
+            // Token usado/revocado: el gerente ya terminó su parte. Se le muestra la misma
+            // vista con su elección marcada y todo deshabilitado (nunca se redirige al
+            // enlace de administración: cada etapa ve solo su vista).
+            $tokenConsumido = (bool)($tokenRow->used_at || $tokenRow->revoked_at);
 
             $solicitud->load([
                 'empleadoid',
@@ -1147,25 +1146,33 @@ class SolicitudesController extends Controller
             $todosConGanador = $solicitud->todosProductosTienenGanador();
             $ganadores       = $solicitud->cotizaciones ? $solicitud->cotizaciones->where('Estatus', 'Seleccionada') : collect();
 
-            if ($solicitud->Estatus === 'Aprobado' || $todosConGanador) {
-                // Ya hay ganador en todo: el gerente terminó. Mostrar confirmación,
-                // sin redirigir al enlace de administración.
-                return view('solicitudes.ganadores-confirmados');
+            // Solo lectura: el gerente ya eligió (token consumido, solicitud aprobada o
+            // todos los productos con ganador). Ve la misma vista con su elección marcada.
+            $soloLectura = $tokenConsumido || $solicitud->Estatus === 'Aprobado' || $todosConGanador;
+
+            // numeroPropuesta => CotizacionID ganadora
+            $seleccionadas = [];
+            foreach ($ganadores as $g) {
+                $seleccionadas[(int)($g->NumeroPropuesta ?? 1)] = (int)$g->CotizacionID;
             }
 
             if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
                 return view('solicitudes.elegir-ganador', [
-                    'solicitud' => $solicitud,
-                    'productos' => [],
-                    'token'     => $token,
-                    'error'     => 'No hay cotizaciones disponibles para esta solicitud',
+                    'solicitud'     => $solicitud,
+                    'productos'     => [],
+                    'token'         => $token,
+                    'soloLectura'   => $soloLectura,
+                    'seleccionadas' => $seleccionadas,
+                    'error'         => 'No hay cotizaciones disponibles para esta solicitud',
                 ]);
             }
 
             return view('solicitudes.elegir-ganador', [
-                'solicitud' => $solicitud,
-                'productos' => $productos,
-                'token'     => $token,
+                'solicitud'     => $solicitud,
+                'productos'     => $productos,
+                'token'         => $token,
+                'soloLectura'   => $soloLectura,
+                'seleccionadas' => $seleccionadas,
             ]);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
@@ -1173,5 +1180,18 @@ class SolicitudesController extends Controller
             Log::error("Error mostrando elegir ganador con token {$token}: " . $e->getMessage());
             abort(500, 'Error al cargar la página de elección de ganador');
         }
+    }
+
+    /**
+     * Destino del gerente tras confirmar ganadores: su mismo enlace, que ahora se
+     * muestra en solo lectura con su elección marcada.
+     */
+    private function redirectGerenciaGanadores(Request $request): string
+    {
+        $token = trim((string)$request->input('token'));
+
+        return $token !== ''
+            ? '/elegir-ganador/' . $token
+            : '/solicitudes/ganadores-confirmados';
     }
 }
