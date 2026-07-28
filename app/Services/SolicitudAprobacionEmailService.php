@@ -67,6 +67,8 @@ class SolicitudAprobacionEmailService
                     "(etapa: {$stageLabel}, token: {$token})"
             );
 
+            $this->marcarTokenNotificado($token);
+
             return true;
         } catch (Exception $e) {
             Log::error(
@@ -119,6 +121,11 @@ class SolicitudAprobacionEmailService
             $mail->send();
 
             Log::info("Email cotizaciones listas enviado exitosamente para solicitud #{$solicitud->SolicitudID} a {$gerente->Correo} - URL: {$urlElegir}");
+
+            if ($token) {
+                $this->marcarTokenNotificado($token);
+            }
+
             return true;
         } catch (Exception $e) {
             Log::error("Error enviando email cotizaciones listas solicitud #{$solicitud->SolicitudID} a {$gerente->Correo}: " . $e->getMessage());
@@ -303,6 +310,137 @@ HTML;
         $precio = number_format($cotizacion->Precio ?? 0, 2, '.', ',');
         $numeroParte = e($cotizacion->NumeroParte ?? 'N/A');
         return "<div style='background:#ecfdf5;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #10b981;'><h3 style='color:#059669;margin-top:0;'>Cotización Ganadora</h3><p><strong>Proveedor:</strong> {$proveedor}</p><p><strong>Número de Parte:</strong> {$numeroParte}</p><p><strong>Descripción:</strong> {$descripcion}</p><p><strong>Precio:</strong> \$ {$precio} MXN</p></div>";
+    }
+
+    /**
+     * Marcar el token como "ya notificado" para que entre al ciclo de recordatorios diarios.
+     */
+    private function marcarTokenNotificado(string $token): void
+    {
+        try {
+            \App\Models\SolicitudTokens::where('token', $token)
+                ->whereNull('notified_at')
+                ->update(['notified_at' => now()]);
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo marcar notified_at del token {$token}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Recordatorio diario mientras el enlace siga activo.
+     * El contenido depende de la etapa donde se quedó la solicitud:
+     * - supervisor: sólo ve los datos de la solicitud.
+     * - gerencia: elige un ganador de la cotización.
+     * - administracion: ve los productos ganadores.
+     *
+     * @param  \Illuminate\Support\Collection|null  $ganadores  Sólo para la etapa de administración.
+     */
+    public function enviarRecordatorio(
+        Empleados $aprobador,
+        Solicitud $solicitud,
+        string $token,
+        string $stage,
+        $ganadores = null
+    ): bool {
+        if (empty($aprobador->Correo)) {
+            Log::warning(
+                "SolicitudAprobacionEmailService: aprobador {$aprobador->EmpleadoID} sin correo, " .
+                    "no se envía recordatorio de la solicitud #{$solicitud->SolicitudID} (etapa {$stage})"
+            );
+            return false;
+        }
+
+        $url = $stage === 'gerencia'
+            ? url('/elegir-ganador/' . $token)
+            : url('/revision-solicitud/' . $token);
+
+        $asuntos = [
+            'supervisor' => "Recordatorio: solicitud #{$solicitud->SolicitudID} pendiente de tu Vo.bo.",
+            'gerencia' => "Recordatorio: elige el ganador de la solicitud #{$solicitud->SolicitudID}",
+            'administracion' => "Recordatorio: solicitud #{$solicitud->SolicitudID} pendiente de aprobación de Administración",
+        ];
+        $asunto = $asuntos[$stage] ?? "Recordatorio: solicitud #{$solicitud->SolicitudID} pendiente";
+
+        $contenido = $this->construirContenidoRecordatorio(
+            $solicitud,
+            $stage,
+            $url,
+            $aprobador->NombreEmpleado,
+            $ganadores
+        );
+
+        try {
+            $mail = new PHPMailer(true);
+            $this->configurarMailer($mail);
+
+            $fromAddress = config('email_tickets.smtp.from_address', config('mail.from.address'));
+            $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
+
+            $mail->setFrom($fromAddress, $nombreSoporte);
+            $mail->addAddress($aprobador->Correo, $aprobador->NombreEmpleado);
+            $mail->isHTML(true);
+            $mail->CharSet = 'UTF-8';
+            $mail->Subject = $asunto;
+            $mail->Body = $contenido;
+            $mail->send();
+
+            Log::info(
+                "Recordatorio enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
+                    "(etapa: {$stage}, token: {$token})"
+            );
+
+            return true;
+        } catch (Exception $e) {
+            Log::error(
+                "Error enviando recordatorio solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
+                    "(etapa: {$stage}, token: {$token}): " . $e->getMessage()
+            );
+
+            return false;
+        }
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection|null  $ganadores
+     */
+    private function construirContenidoRecordatorio(
+        Solicitud $solicitud,
+        string $stage,
+        string $url,
+        string $nombreAprobador,
+        $ganadores = null
+    ): string {
+        $empleado = $solicitud->empleadoid;
+
+        $titulos = [
+            'supervisor' => 'Recordatorio: solicitud pendiente de tu Vo.bo.',
+            'gerencia' => 'Recordatorio: falta elegir el ganador',
+            'administracion' => 'Recordatorio: solicitud pendiente de aprobación',
+        ];
+        $intros = [
+            'supervisor' => 'La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> sigue esperando tu revisión. Revisa los datos y da tu Vo.bo. o recházala.',
+            'gerencia' => 'La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> ya tiene las propuestas de cotización cargadas y sigue esperando que <strong>elijas el ganador</strong>.',
+            'administracion' => 'La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> ya tiene los ganadores seleccionados y sigue esperando la aprobación de Administración.',
+        ];
+        $botones = [
+            'supervisor' => 'Revisar solicitud',
+            'gerencia' => 'Ver propuestas y elegir ganador',
+            'administracion' => 'Ver ganadores y aprobar',
+        ];
+
+        return view('emails.recordatorio_solicitud', [
+            'stage'             => $stage,
+            'url'               => $url,
+            'boton'             => $botones[$stage] ?? 'Revisar solicitud',
+            'titulo'            => $titulos[$stage] ?? 'Recordatorio: solicitud pendiente',
+            'intro'            => $intros[$stage] ?? ('La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> sigue pendiente de tu revisión.'),
+            'nombreAprobador'   => $nombreAprobador,
+            'nombreSolicitante' => $empleado ? $empleado->NombreEmpleado : 'N/A',
+            'motivo'            => $solicitud->Motivo ?? 'N/A',
+            'desc'              => $solicitud->DescripcionMotivo ?? '',
+            'req'               => $solicitud->Requerimientos ?? '',
+            'ganadores'         => $ganadores,
+        ])->render();
     }
 
     private function configurarMailer(PHPMailer $mail): void

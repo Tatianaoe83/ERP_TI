@@ -19,7 +19,7 @@ class Kernel extends ConsoleKernel
     /**
      * Define the application's command schedule.
      *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @param $schedule
      * @return void
      */
     protected function schedule(Schedule $schedule)
@@ -38,6 +38,12 @@ class Kernel extends ConsoleKernel
 
         // Marcar encuestas de satisfacción vencidas una vez al día
         $schedule->command('tickets:surveys-expire')->everyFourHours()->withoutOverlapping();
+
+        // Recordatorios de solicitudes pendientes
+        $schedule->command('solicitudes:recordatorios')
+            ->dailyAt('10:00')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
