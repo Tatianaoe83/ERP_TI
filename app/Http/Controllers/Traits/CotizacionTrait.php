@@ -2,10 +2,17 @@
 
 namespace App\Http\Controllers\Traits;
 
+use App\Models\Cotizacion;
+
 trait CotizacionTrait
 {
+    // Genera clave única por propuesta+producto
+    private function claveProducto(Cotizacion $c): string
+    {
+        return 'np_' . (int)($c->NumeroPropuesta ?? 0) . '_prod_' . (int)($c->NumeroProducto ?? 1);
+    }
+
     // Agrupa cotizaciones jerárquicamente: Propuesta -> Producto -> Cotizaciones
-    // (el ganador se elige por propuesta, no por producto)
     private function agruparCotizacionesPorProducto($cotizaciones): array
     {
         $propuestas = [];

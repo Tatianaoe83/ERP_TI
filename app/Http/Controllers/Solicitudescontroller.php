@@ -184,9 +184,7 @@ class SolicitudesController extends Controller
                     'TiempoEntrega'   => $cot->TiempoEntrega,
                     'Observaciones'   => $cot->Observaciones,
                     'NumeroPropuesta' => (int) ($cot->NumeroPropuesta ?? 0),
-                    'NumeroProducto'  => (int) ($cot->NumeroProducto ?? 1),
                     'NombreEquipo'    => $cot->NombreEquipo ?? '',
-                    'Unidad'          => $cot->Unidad ?? null,
                 ])->toArray()
                 : [];
 
@@ -303,25 +301,23 @@ class SolicitudesController extends Controller
                 }
 
                 if ($cotizacionGanadora->Estatus === 'Seleccionada') {
-                    throw new \RuntimeException('Esta cotización ya fue seleccionada como ganadora para esta propuesta.');
+                    throw new \RuntimeException('Esta cotización ya fue seleccionada como ganadora para este producto.');
                 }
 
                 if (!in_array($cotizacionGanadora->Estatus, ['Pendiente', 'Seleccionada', 'Rechazada'], true)) {
                     throw new \RuntimeException('No se puede seleccionar esta cotización');
                 }
 
-                // Solo puede haber 1 ganador por propuesta: se rechazan las demás
-                // cotizaciones de la propuesta, sin importar el producto.
-                $numeroPropuesta = (int) ($cotizacionGanadora->NumeroPropuesta ?? 0);
+                $claveProducto = $this->claveProducto($cotizacionGanadora);
 
-                $cotizacionesMismaPropuesta = $solicitud->cotizaciones->filter(
-                    fn($c) => (int) ($c->NumeroPropuesta ?? 0) === $numeroPropuesta
+                $cotizacionesMismoProducto = $solicitud->cotizaciones->filter(
+                    fn($c) => $this->claveProducto($c) === $claveProducto
                 );
 
                 $cotizacionGanadora->Estatus = 'Seleccionada';
                 $cotizacionGanadora->save();
 
-                $idsRechazar = $cotizacionesMismaPropuesta
+                $idsRechazar = $cotizacionesMismoProducto
                     ->where('CotizacionID', '!=', $cotizacionGanadora->CotizacionID)
                     ->pluck('CotizacionID');
 

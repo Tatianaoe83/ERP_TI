@@ -1,7 +1,6 @@
-/* Importar estilos globales para DataTables en modo oscuro.
-   El @import debe ir primero: el CSS lo exige y de lo contrario se descarta. */
-@import 'datatables-dark.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Importar estilos globales para DataTables en modo oscuro */
+@import 'datatables-dark.css';
