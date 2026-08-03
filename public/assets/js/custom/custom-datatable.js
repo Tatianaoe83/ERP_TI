@@ -1,5 +1,6 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
+var __webpack_exports__ = {};
 /*!********************************************************!*\
   !*** ./resources/assets/js/custom/custom-datatable.js ***!
   \********************************************************/

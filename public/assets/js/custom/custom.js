@@ -3053,7 +3053,8 @@ return $ || jsr;
 /******/ 	}
 /******/ 	
 /************************************************************************/
-// This entry needs to be wrapped in an IIFE because it needs to be in strict mode.
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
 "use strict";
 /*!**********************************************!*\
