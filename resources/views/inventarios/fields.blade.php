@@ -576,9 +576,11 @@
 <script>
     const empleadoInventarioActivo = @json($empleadoActivo);
     const permitePresupuestado = @json($permitePresupuestado);
+    const presupuestadoForzado = @json($presupuestadoForzado);
 
-    // El switch sólo existe en el DOM para FISICA/EXTRAORDINARIO; para el resto
-    // estas funciones son inocuas y el campo viaja siempre en 0.
+    // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
+    // asignado es presupuestado y para el resto el campo viaja siempre en 0.
+    // (El servidor vuelve a aplicar la regla, esto es sólo para la UI.)
     function setPresupuestado(selector, texto) {
         const marcado = String(texto ?? '').trim().toLowerCase() === 'si';
         $(selector).prop('checked', marcado);
@@ -586,6 +588,10 @@
     }
 
     function getPresupuestado(selector) {
+        if (presupuestadoForzado) {
+            return 1;
+        }
+
         return permitePresupuestado && $(selector).is(':checked') ? 1 : 0;
     }
 

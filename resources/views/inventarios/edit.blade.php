@@ -154,10 +154,14 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Presupuestado</label>
+                  @if($presupuestadoForzado)
+                  <div class="text-muted small">Si (todo lo asignado a una persona extraordinaria es presupuestado)</div>
+                  @else
                   <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoEquipo">
                     <label class="form-check-label" for="editPresupuestadoEquipo" id="editPresupuestadoEquipoLabel">No</label>
                   </div>
+                  @endif
                 </div>
               </div>
               <div class="col-md-6">
@@ -318,10 +322,14 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Presupuestado</label>
+                  @if($presupuestadoForzado)
+                  <div class="text-muted small">Si (todo lo asignado a una persona extraordinaria es presupuestado)</div>
+                  @else
                   <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoInsumo">
                     <label class="form-check-label" for="editPresupuestadoInsumo" id="editPresupuestadoInsumoLabel">No</label>
                   </div>
+                  @endif
                 </div>
               </div>
             </div>
@@ -383,10 +391,14 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Presupuestado</label>
+                  @if($presupuestadoForzado)
+                  <div class="text-muted small">Si (todo lo asignado a una persona extraordinaria es presupuestado)</div>
+                  @else
                   <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoLinea">
                     <label class="form-check-label" for="editPresupuestadoLinea" id="editPresupuestadoLineaLabel">No</label>
                   </div>
+                  @endif
                 </div>
               </div>
             </div>

@@ -289,9 +289,12 @@ class InventarioController extends AppBaseController
         return view('inventarios.edit')->with([
             'inventario' => $inventario,
             'empleadoActivo' => (bool) $inventario->Estado,
-            // El switch "Presupuestado" sólo aplica a los tipos de persona que alimentan
-            // los reportes de presupuesto.
+            // La columna/filtro "Presupuestado" aplica a los tipos de persona que
+            // alimentan los reportes de presupuesto.
             'permitePresupuestado' => in_array($inventario->tipo_persona, ['FISICA', 'EXTRAORDINARIO']),
+            // En EXTRAORDINARIO todo lo asignado es presupuestado por definición: no
+            // se muestra el switch y el valor se fuerza en el servidor.
+            'presupuestadoForzado' => $inventario->tipo_persona === 'EXTRAORDINARIO',
             'equiposAsignados' => $EquiposAsignados,
             'equipos' => $Equipos,
             'insumosAsignados' => $InsumosAsignados,
@@ -344,6 +347,8 @@ class InventarioController extends AppBaseController
 
         $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
 
+        $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID);
+
         $inventarioEquipo->update($data);
 
         return response()->json([
@@ -376,6 +381,8 @@ class InventarioController extends AppBaseController
         $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
 
         $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+
+        $data = $this->forzarPresupuestado($data, (int) $id);
 
         $inventarioEquipo = InventarioEquipo::create($data);
 
@@ -472,6 +479,8 @@ class InventarioController extends AppBaseController
             $data['FechaRenovacion'] = null;
         }
 
+        $data = $this->forzarPresupuestado($data, (int) $inventarioinsumo->EmpleadoID);
+
         $inventarioinsumo->update($data);
 
         return response()->json([
@@ -504,6 +513,8 @@ class InventarioController extends AppBaseController
                 $data['FechaRenovacion'] = $insumoMaster->FechaRenovacion;
             }
         }
+
+        $data = $this->forzarPresupuestado($data, (int) $id);
 
         $inventarioinsumo = InventarioInsumo::create($data);
 
@@ -560,6 +571,8 @@ class InventarioController extends AppBaseController
             if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
                 $data['FechaRenovacion'] = null;
             }
+
+            $data = $this->forzarPresupuestado($data, (int) $inventariotelf->EmpleadoID);
 
             $inventariotelf->update($data);
 
@@ -662,6 +675,8 @@ class InventarioController extends AppBaseController
             $data['MontoRenovacionFianza'] = $request->input('MontoRenovacionFianza', $lineaData->MontoRenovacionFianza);
             $data['CostoFianza'] = $lineaData->CostoFianza;
         }
+
+        $data = $this->forzarPresupuestado($data, (int) $id);
 
         $inventariotelf = InventarioLineas::create($data);
 
@@ -767,6 +782,10 @@ class InventarioController extends AppBaseController
 
         $hoy = Carbon::now()->toDateString();
 
+        // Si el destino es EXTRAORDINARIO, todo lo traspasado pasa a ser presupuestado.
+        $destinoExtraordinario = Empleados::where('EmpleadoID', $empleadoSeleccionado)
+            ->value('tipo_persona') === 'EXTRAORDINARIO';
+
         if (!empty($equiposSeleccionados)) {
             $equipos = InventarioEquipo::whereIn('InventarioID', $equiposSeleccionados)
                 ->select('InventarioID', 'FechaAsignacion')
@@ -774,6 +793,9 @@ class InventarioController extends AppBaseController
             foreach ($equipos as $equipo) {
                 $equipo->EmpleadoID = $empleadoSeleccionado;
                 $equipo->FechaAsignacion = $hoy;
+                if ($destinoExtraordinario) {
+                    $equipo->Presupuestado = 1;
+                }
                 $equipo->save();
             }
 
@@ -792,6 +814,9 @@ class InventarioController extends AppBaseController
             foreach ($insumos as $insumo) {
                 $insumo->EmpleadoID = $empleadoSeleccionado;
                 $insumo->FechaAsignacion = $hoy;
+                if ($destinoExtraordinario) {
+                    $insumo->Presupuestado = 1;
+                }
                 $insumo->save();
             }
         } else {
@@ -806,6 +831,9 @@ class InventarioController extends AppBaseController
             foreach ($lineas as $linea) {
                 $linea->EmpleadoID = $empleadoSeleccionado;
                 $linea->FechaAsignacion = $hoy;
+                if ($destinoExtraordinario) {
+                    $linea->Presupuestado = 1;
+                }
                 $linea->save();
             }
         } else {
@@ -1235,6 +1263,22 @@ class InventarioController extends AppBaseController
             new \App\Exports\InventarioAsignadoExport($filas, $encabezados, $titulo),
             $nombreArchivo
         );
+    }
+
+    /**
+     * Regla de negocio: todo lo que se asigna a una persona EXTRAORDINARIO es
+     * presupuestado, sin importar lo que llegue del formulario. El switch manual
+     * sólo existe para personas FISICA.
+     */
+    private function forzarPresupuestado(array $data, int $empleadoId): array
+    {
+        $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
+
+        if ($tipoPersona === 'EXTRAORDINARIO') {
+            $data['Presupuestado'] = 1;
+        }
+
+        return $data;
     }
 
     private function respuestaSiEmpleadoInactivo(int $empleadoId)
