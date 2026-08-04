@@ -2230,6 +2230,16 @@
         const clavesPrioridad = Object.keys(ticketsPorPrioridad);
         const hasPrioridad = clavesPrioridad.length > 0;
 
+        // El color depende de la prioridad, no de la posicion en el arreglo:
+        // Alta = rojo (0), Media = amarillo (1), Baja = verde (2)
+        const indicePrioridad = { alta: 0, media: 1, baja: 2 };
+        const colorPrioridad = (paleta, etiqueta) => {
+            const i = indicePrioridad[String(etiqueta).trim().toLowerCase()];
+            return i === undefined ? colores.grid : paleta[i];
+        };
+        const bgPrioridad = clavesPrioridad.map(k => colorPrioridad(p.prioridad, k));
+        const hoverPrioridad = clavesPrioridad.map(k => colorPrioridad(p.prioridadHover, k));
+
         chartPrioridad = new Chart(ctxPrioridad, {
             type: 'bar',
             data: {
@@ -2237,8 +2247,8 @@
                 datasets: [{
                     label: 'Tickets',
                     data: hasPrioridad ? Object.values(ticketsPorPrioridad) : [0],
-                    backgroundColor: hasPrioridad ? p.prioridad : [colores.grid],
-                    hoverBackgroundColor: hasPrioridad ? p.prioridadHover : [colores.grid],
+                    backgroundColor: hasPrioridad ? bgPrioridad : [colores.grid],
+                    hoverBackgroundColor: hasPrioridad ? hoverPrioridad : [colores.grid],
                     borderColor: hasPrioridad ? p.prioridadBorde : ['transparent'],
                     borderWidth: hasPrioridad ? (dark ? 1.5 : 1) : 0,
                     borderRadius: 8,
