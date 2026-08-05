@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Empleados;
 use App\Models\Solicitud;
+use App\Models\SolicitudPasos;
+use App\Models\SolicitudTokens;
 use Illuminate\Support\Facades\Log;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -11,9 +13,33 @@ use PHPMailer\PHPMailer\Exception;
 /**
  * Envío de correos para el flujo de aprobación de solicitudes.
  * - Revisión pendiente (al crear, al aprobar siguiente, al transferir).
+ * - Cotizaciones listas para elegir ganador.
+ * - Ganadores seleccionados (proceder a compra).
+ * - Recordatorios diarios.
+ *
+ * Todos los correos comparten la vista emails.solicitudes.mensaje.
  */
 class SolicitudAprobacionEmailService
 {
+    /** Etiqueta corta de cada etapa del flujo. */
+    private const ETAPAS = [
+        'supervisor'     => 'Supervisor',
+        'gerencia'       => 'Gerencia',
+        'administracion' => 'Administración',
+    ];
+
+    /** Orden del flujo, para saber qué etapas ya pasaron. */
+    private const ORDEN_ETAPAS = [
+        'supervisor'     => 1,
+        'gerencia'       => 2,
+        'administracion' => 3,
+    ];
+
+    /** Paleta por tipo de correo. */
+    private const ACENTO_MARCA     = ['#0F766E', '#F0FDFA'];
+    private const ACENTO_EXITO     = ['#047857', '#ECFDF5'];
+    private const ACENTO_RECUERDO  = ['#B45309', '#FFFBEB'];
+
     protected $smtpHost;
     protected $smtpPort;
     protected $smtpUsername;
@@ -43,41 +69,76 @@ class SolicitudAprobacionEmailService
             return false;
         }
 
+        $stage = $this->resolverStage($token, $stageLabel);
+        $folio = '#' . $solicitud->SolicitudID;
+        $solicitante = $this->nombreSolicitante($solicitud);
         $url = url('/revision-solicitud/' . $token);
-        $asunto = "Revisión de solicitud #{$solicitud->SolicitudID} – {$stageLabel}";
-        $contenido = $this->construirContenidoRevision($solicitud, $stageLabel, $url, $aprobador->NombreEmpleado);
+        $aprobaciones = $this->historialAprobaciones($solicitud, $stage);
+        $ganadores = $stage === 'administracion' ? $this->ganadoresDe($solicitud) : collect();
 
-        try {
-            $mail = new PHPMailer(true);
-            $this->configurarMailer($mail);
+        if ($stage === 'administracion') {
+            $asunto = "Solicitud de compra {$folio} – Cotizaciones elegidas";
+            $datos = [
+                'accent'     => self::ACENTO_MARCA[0],
+                'accentSoft' => self::ACENTO_MARCA[1],
+                'eyebrow'    => 'Aprobación de Administración',
+                'titulo'     => 'Ya hay ganadores: falta tu autorización final',
+                'preheader'  => "Solicitud {$folio} de {$solicitante}: revisa los ganadores y autoriza la compra.",
+                'intro'      => 'La solicitud <strong>' . e($folio) . '</strong> ya recorrió todo el flujo de aprobación y los ganadores están elegidos. Sólo falta tu autorización para proceder con la compra.',
+                'boton'      => 'Ver ganadores y autorizar',
+            ];
+        } elseif ($stage === 'gerencia') {
+            $asunto = "Cotizaciones de la compra {$folio} – Elige ganadores";
+            $datos = [
+                'accent'     => self::ACENTO_MARCA[0],
+                'accentSoft' => self::ACENTO_MARCA[1],
+                'eyebrow'    => 'Elección de ganador',
+                'titulo'     => 'Las cotizaciones de esta solicitud ya están listas',
+                'preheader'  => "Solicitud {$folio} de {$solicitante}: compara las propuestas y elige el ganador.",
+                'intro'      => 'La solicitud <strong>' . e($folio) . '</strong> ya tiene las propuestas de cotización cargadas. Compara las opciones y <strong>elige el ganador de cada producto</strong>.',
+                'boton'      => 'Ver propuestas y elegir ganador',
+            ];
+        } else {
+            $asunto = "Solicitud de compra {$folio} – Requiere tu autorización";
+            $datos = [
+                'accent'     => self::ACENTO_MARCA[0],
+                'accentSoft' => self::ACENTO_MARCA[1],
+                'eyebrow'    => 'Vo.Bo. de supervisor',
+                'titulo'     => 'Necesitamos tu firma para una compra de producto',
+                'preheader'  => "{$solicitante} pide autorización de compra. Solicitud {$folio}.",
+                'intro'      => '<strong>' . e($solicitante) . '</strong> solicitó una compra de producto y necesita tu firma para continuar. Revisa el detalle y da tu Vo.Bo. o recházala.',
+                'boton'      => 'Revisar y firmar',
+            ];
+        }
 
-            $fromAddress = config('email_tickets.smtp.from_address', config('mail.from.address'));
-            $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
+        $contenido = $this->renderMensaje(array_merge($datos, [
+            'folio'        => $folio,
+            'saludo'       => $aprobador->NombreEmpleado,
+            'url'          => $url,
+            'nota'         => 'El enlace es personal y deja de funcionar cuando la solicitud avanza de etapa.',
+            'filas'        => $this->filasSolicitud($solicitud),
+            'bloques'      => $this->bloquesSolicitud($solicitud, $stage !== 'administracion'),
+            'aprobaciones' => $aprobaciones,
+            'ganadores'    => $ganadores,
+        ]));
 
-            $mail->setFrom($fromAddress, $nombreSoporte);
-            $mail->addAddress($aprobador->Correo, $aprobador->NombreEmpleado);
-            $mail->isHTML(true);
-            $mail->CharSet = 'UTF-8';
-            $mail->Subject = $asunto;
-            $mail->Body = $contenido;
-            $mail->send();
+        $enviado = $this->enviar($aprobador->Correo, $aprobador->NombreEmpleado, $asunto, $contenido);
 
+        if ($enviado) {
             Log::info(
                 "Email de revisión enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
-                    "(etapa: {$stageLabel}, token: {$token})"
+                    "(etapa: {$stage}, token: {$token})"
             );
-
             $this->marcarTokenNotificado($token);
-
             return true;
-        } catch (Exception $e) {
-            Log::error(
-                "Error enviando email de revisión solicitud #{$solicitud->SolicitudID} " .
-                    "a {$aprobador->Correo} (etapa: {$stageLabel}, token: {$token}): " . $e->getMessage()
-            );
-
-            return false;
         }
+
+        Log::error(
+            "Error enviando email de revisión solicitud #{$solicitud->SolicitudID} " .
+                "a {$aprobador->Correo} (etapa: {$stage}, token: {$token})"
+        );
+
+        return false;
     }
 
     /**
@@ -99,27 +160,32 @@ class SolicitudAprobacionEmailService
             Log::warning("No se proporcionó token para solicitud #{$solicitud->SolicitudID}, usando ruta general: {$urlElegir}");
         }
 
-        $asunto = "Propuestas listas – Elige ganador – Solicitud #{$solicitud->SolicitudID}";
-        $contenido = $this->construirContenidoCotizacionesListas($solicitud, $urlElegir, $gerente->NombreEmpleado);
+        $folio = '#' . $solicitud->SolicitudID;
+        $propuestas = $this->totalPropuestas($solicitud);
+        $detallePropuestas = $propuestas > 0
+            ? ' (' . $propuestas . ' ' . ($propuestas === 1 ? 'propuesta' : 'propuestas') . ')'
+            : '';
 
-        // Log del contenido del correo (solo la URL para verificar)
-        Log::info("Preparando correo para solicitud #{$solicitud->SolicitudID} - URL en correo: {$urlElegir} - Destinatario: {$gerente->Correo}");
+        $asunto = "Cotizaciones de la compra {$folio} – Elige ganadores";
 
-        try {
-            $mail = new PHPMailer(true);
-            $this->configurarMailer($mail);
+        $contenido = $this->renderMensaje([
+            'accent'       => self::ACENTO_MARCA[0],
+            'accentSoft'   => self::ACENTO_MARCA[1],
+            'eyebrow'      => 'Elección de ganador',
+            'titulo'       => 'Ya tienes las cotizaciones de esta solicitud',
+            'preheader'    => "Solicitud {$folio}: compara las propuestas y elige el ganador.",
+            'folio'        => $folio,
+            'saludo'       => $gerente->NombreEmpleado,
+            'intro'        => 'La solicitud <strong>' . e($folio) . '</strong> ya tiene sus cotizaciones cargadas' . e($detallePropuestas) . '. Compara las opciones y <strong>elige el ganador de cada producto</strong>.',
+            'url'          => $urlElegir,
+            'boton'        => 'Ver cotizaciones y elegir ganador',
+            'nota'         => 'El enlace es personal y deja de funcionar cuando eliges a todos los ganadores.',
+            'filas'        => $this->filasSolicitud($solicitud),
+            'bloques'      => $this->bloquesSolicitud($solicitud),
+            'aprobaciones' => $this->historialAprobaciones($solicitud, 'gerencia'),
+        ]);
 
-            $fromAddress = config('email_tickets.smtp.from_address', config('mail.from.address'));
-            $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
-
-            $mail->setFrom($fromAddress, $nombreSoporte);
-            $mail->addAddress($gerente->Correo, $gerente->NombreEmpleado);
-            $mail->isHTML(true);
-            $mail->CharSet = 'UTF-8';
-            $mail->Subject = $asunto;
-            $mail->Body = $contenido;
-            $mail->send();
-
+        if ($this->enviar($gerente->Correo, $gerente->NombreEmpleado, $asunto, $contenido)) {
             Log::info("Email cotizaciones listas enviado exitosamente para solicitud #{$solicitud->SolicitudID} a {$gerente->Correo} - URL: {$urlElegir}");
 
             if ($token) {
@@ -127,47 +193,10 @@ class SolicitudAprobacionEmailService
             }
 
             return true;
-        } catch (Exception $e) {
-            Log::error("Error enviando email cotizaciones listas solicitud #{$solicitud->SolicitudID} a {$gerente->Correo}: " . $e->getMessage());
-            Log::error("Stack trace: " . $e->getTraceAsString());
-            return false;
         }
-    }
 
-    private function construirContenidoRevision(Solicitud $solicitud, string $stageLabel, string $url, string $nombreAprobador): string
-    {
-        $empleado = $solicitud->empleadoid;
-        $nombreSolicitante = $empleado ? $empleado->NombreEmpleado : 'N/A';
-        $motivo = e($solicitud->Motivo ?? 'N/A');
-        $desc = e($solicitud->DescripcionMotivo ?? '');
-        $req = e($solicitud->Requerimientos ?? '');
-
-        return <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px;">
-    <div style="max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #0F766E;">Revisión de solicitud #{$solicitud->SolicitudID}</h2>
-        <p>Hola <strong>{$nombreAprobador}</strong>,</p>
-        <p>Hay una solicitud pendiente de tu aprobación en la etapa de <strong>{$stageLabel}</strong>.</p>
-        <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-            <p><strong>Solicitante:</strong> {$nombreSolicitante}</p>
-            <p><strong>Motivo:</strong> {$motivo}</p>
-            <p><strong>Descripción:</strong><br>{$desc}</p>
-            <p><strong>Requerimientos:</strong><br>{$req}</p>
-        </div>
-        <p>Accede al enlace siguiente para revisar, aprobar o rechazar:</p>
-        <p style="margin: 24px 0;">
-            <a href="{$url}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Revisar solicitud</a>
-        </p>
-        <p style="font-size: 12px; color: #6b7280;">Si el enlace no funciona, copia y pega en tu navegador: {$url}</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-        <p style="font-size: 12px; color: #9ca3af;">Este correo fue enviado automáticamente por el Sistema de Solicitudes.</p>
-    </div>
-</body>
-</html>
-HTML;
+        Log::error("Error enviando email cotizaciones listas solicitud #{$solicitud->SolicitudID} a {$gerente->Correo}");
+        return false;
     }
 
     /**
@@ -190,140 +219,32 @@ HTML;
             return false;
         }
 
-        $titulo = $ganadores->count() > 1 ? 'Ganadores seleccionados' : 'Ganador seleccionado';
-        $asunto = "{$titulo} – Proceder a compra – Solicitud #{$solicitud->SolicitudID}";
-        $contenido = $this->construirContenidoGanadoresSeleccionados($solicitud, $ganadores);
+        $folio = '#' . $solicitud->SolicitudID;
+        $varios = $ganadores->count() > 1;
+        $asunto = "Solicitud de compra {$folio} – Compra autorizada, proceder con el proveedor";
 
-        try {
-            $mail = new PHPMailer(true);
-            $this->configurarMailer($mail);
+        $contenido = $this->renderMensaje([
+            'accent'       => self::ACENTO_EXITO[0],
+            'accentSoft'   => self::ACENTO_EXITO[1],
+            'eyebrow'      => 'Listo para comprar',
+            'titulo'       => $varios ? 'Ganadores elegidos: ya puedes proceder a la compra' : 'Ganador elegido: ya puedes proceder a la compra',
+            'preheader'    => "Solicitud {$folio}: " . ($varios ? 'ganadores elegidos' : 'ganador elegido') . ', lista para compra.',
+            'folio'        => $folio,
+            'intro'        => 'La solicitud <strong>' . e($folio) . '</strong> completó su flujo de aprobación y ' . ($varios ? 'ya tiene un ganador por producto' : 'ya tiene ganador') . '. Puedes proceder con la compra.',
+            'url'          => route('tickets.index'),
+            'boton'        => 'Ver solicitud en el sistema',
+            'filas'        => $this->filasSolicitud($solicitud),
+            'aprobaciones' => $this->historialAprobaciones($solicitud),
+            'ganadores'    => $ganadores,
+        ]);
 
-            $fromAddress = config('email_tickets.smtp.from_address', config('mail.from.address'));
-            $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
-
-            $mail->setFrom($fromAddress, $nombreSoporte);
-            $mail->addAddress($correoDestinatario);
-            $mail->isHTML(true);
-            $mail->CharSet = 'UTF-8';
-            $mail->Subject = $asunto;
-            $mail->Body = $contenido;
-            $mail->send();
-
+        if ($this->enviar($correoDestinatario, null, $asunto, $contenido)) {
             Log::info("Email ganador(es) seleccionado(s) enviado para solicitud #{$solicitud->SolicitudID} a {$correoDestinatario}");
             return true;
-        } catch (Exception $e) {
-            Log::error("Error enviando email ganadores seleccionados solicitud #{$solicitud->SolicitudID}: " . $e->getMessage());
-            return false;
         }
-    }
 
-    private function construirContenidoCotizacionesListas(Solicitud $solicitud, string $url, string $nombreGerente): string
-    {
-        $empleado = $solicitud->empleadoid;
-        $nombreSolicitante = $empleado ? $empleado->NombreEmpleado : 'N/A';
-        $motivo = e($solicitud->Motivo ?? 'N/A');
-
-        return <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px;">
-    <div style="max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #0F766E;">Propuestas listas – Elige el ganador</h2>
-        <p>Hola <strong>{$nombreGerente}</strong>,</p>
-        <p>La solicitud <strong>#{$solicitud->SolicitudID}</strong> tiene las propuestas de cotización cargadas. Revisa las opciones y <strong>elige el ganador</strong>.</p>
-        <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-            <p><strong>Solicitante:</strong> {$nombreSolicitante}</p>
-            <p><strong>Motivo:</strong> {$motivo}</p>
-        </div>
-        <p style="margin: 24px 0;">
-            <a href="{$url}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Ver propuestas y elegir ganador</a>
-        </p>
-        <p style="font-size: 12px; color: #6b7280;">Si el enlace no funciona, copia y pega en tu navegador: {$url}</p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-        <p style="font-size: 12px; color: #9ca3af;">Este correo fue enviado automáticamente por el Sistema de Solicitudes.</p>
-    </div>
-</body>
-</html>
-HTML;
-    }
-
-    /**
-     * @param  \Illuminate\Support\Collection<int, \App\Models\Cotizacion>  $ganadores
-     */
-    private function construirContenidoGanadoresSeleccionados(Solicitud $solicitud, $ganadores): string
-    {
-        $empleado = $solicitud->empleadoid;
-        $nombreSolicitante = $empleado ? $empleado->NombreEmpleado : 'N/A';
-        $motivo = e($solicitud->Motivo ?? 'N/A');
-        $urlSistema = route('tickets.index');
-        $titulo = $ganadores->count() > 1 ? 'Ganadores seleccionados – Proceder a compra' : 'Ganador seleccionado – Proceder a compra';
-        $intro = $ganadores->count() > 1
-            ? 'Se han seleccionado los ganadores de todos los productos de la solicitud <strong>#' . $solicitud->SolicitudID . '</strong>. Ya puedes proceder con la compra.'
-            : 'Se ha seleccionado el ganador para la solicitud <strong>#' . $solicitud->SolicitudID . '</strong>. Ya puedes proceder con la compra.';
-
-        $filas = $ganadores->map(function ($c) {
-            $proveedor = e($c->Proveedor ?? 'N/A');
-            $descripcion = e($c->Descripcion ?? 'N/A');
-            $precio = number_format($c->Precio ?? 0, 2, '.', ',');
-            $numeroParte = e($c->NumeroParte ?? 'N/A');
-            $cant = (int) ($c->Cantidad ?? 1);
-            $cantidad = $cant > 1 ? " × {$cant}" : '';
-            return "<tr><td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;'>{$descripcion}{$cantidad}</td><td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;'>{$numeroParte}</td><td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;'>{$proveedor}</td><td style='padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;'>\$ {$precio} MXN</td></tr>";
-        })->implode('');
-
-        $tabla = $ganadores->count() > 1
-            ? "<div style='background:#ecfdf5;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #10b981;'><h3 style='color:#059669;margin-top:0;'>Ganadores por producto</h3><table style='width:100%;border-collapse:collapse;'><thead><tr><th style='text-align:left;padding:8px 12px;border-bottom:1px solid #10b981;'>Descripción</th><th style='text-align:left;padding:8px 12px;border-bottom:1px solid #10b981;'>No. Parte</th><th style='text-align:left;padding:8px 12px;border-bottom:1px solid #10b981;'>Proveedor</th><th style='text-align:right;padding:8px 12px;border-bottom:1px solid #10b981;'>Precio</th></tr></thead><tbody>{$filas}</tbody></table></div>"
-            : $this->construirBloqueGanadorUnico($ganadores->first());
-
-        return <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px;">
-    <div style="max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #0F766E;">{$titulo}</h2>
-        <p>Hola,</p>
-        <p>{$intro}</p>
-        <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-            <h3 style="color: #0F766E; margin-top: 0;">Información de la Solicitud</h3>
-            <p><strong>Solicitante:</strong> {$nombreSolicitante}</p>
-            <p><strong>Motivo:</strong> {$motivo}</p>
-            <p><strong>Solicitud ID:</strong> #{$solicitud->SolicitudID}</p>
-        </div>
-        {$tabla}
-        <p style="margin: 24px 0;">
-            <a href="{$urlSistema}" style="background: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">Ver solicitud en el sistema</a>
-        </p>
-        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
-        <p style="font-size: 12px; color: #9ca3af;">Este correo fue enviado automáticamente por el Sistema de Solicitudes.</p>
-    </div>
-</body>
-</html>
-HTML;
-    }
-
-    private function construirBloqueGanadorUnico(\App\Models\Cotizacion $cotizacion): string
-    {
-        $proveedor = e($cotizacion->Proveedor ?? 'N/A');
-        $descripcion = e($cotizacion->Descripcion ?? 'N/A');
-        $precio = number_format($cotizacion->Precio ?? 0, 2, '.', ',');
-        $numeroParte = e($cotizacion->NumeroParte ?? 'N/A');
-        return "<div style='background:#ecfdf5;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #10b981;'><h3 style='color:#059669;margin-top:0;'>Cotización Ganadora</h3><p><strong>Proveedor:</strong> {$proveedor}</p><p><strong>Número de Parte:</strong> {$numeroParte}</p><p><strong>Descripción:</strong> {$descripcion}</p><p><strong>Precio:</strong> \$ {$precio} MXN</p></div>";
-    }
-
-    /**
-     * Marcar el token como "ya notificado" para que entre al ciclo de recordatorios diarios.
-     */
-    private function marcarTokenNotificado(string $token): void
-    {
-        try {
-            \App\Models\SolicitudTokens::where('token', $token)
-                ->whereNull('notified_at')
-                ->update(['notified_at' => now()]);
-        } catch (\Throwable $e) {
-            Log::warning("No se pudo marcar notified_at del token {$token}: " . $e->getMessage());
-        }
+        Log::error("Error enviando email ganadores seleccionados solicitud #{$solicitud->SolicitudID}");
+        return false;
     }
 
     /**
@@ -350,25 +271,222 @@ HTML;
             return false;
         }
 
+        $folio = '#' . $solicitud->SolicitudID;
+        $solicitante = $this->nombreSolicitante($solicitud);
+
         $url = $stage === 'gerencia'
             ? url('/elegir-ganador/' . $token)
             : url('/revision-solicitud/' . $token);
 
-        $asuntos = [
-            'supervisor' => "Recordatorio: solicitud #{$solicitud->SolicitudID} pendiente de tu Vo.bo.",
-            'gerencia' => "Recordatorio: elige el ganador de la solicitud #{$solicitud->SolicitudID}",
-            'administracion' => "Recordatorio: solicitud #{$solicitud->SolicitudID} pendiente de aprobación de Administración",
+        $config = [
+            'supervisor' => [
+                'asunto' => "Recordatorio: Solicitud de compra {$folio} pendiente de tu autorización",
+                'titulo' => 'Sigue pendiente tu firma para esta compra',
+                'intro'  => 'La solicitud <strong>' . e($folio) . '</strong> de <strong>' . e($solicitante) . '</strong> sigue esperando tu Vo.Bo. Revisa el detalle y fírmala o recházala.',
+                'boton'  => 'Revisar y firmar',
+            ],
+            'gerencia' => [
+                'asunto' => "Recordatorio: Cotizaciones de la Solicitud {$folio} pendiente de elección",
+                'titulo' => 'Las cotizaciones siguen esperando tu elección',
+                'intro'  => 'La solicitud <strong>' . e($folio) . '</strong> ya tiene sus cotizaciones cargadas y sigue esperando que <strong>elijas el ganador</strong>.',
+                'boton'  => 'Ver cotizaciones y elegir ganador',
+            ],
+            'administracion' => [
+                'asunto' => "Recordatorio: Solicitud de compra {$folio} pendiente de aprobación",
+                'titulo' => 'Los ganadores siguen esperando tu autorización',
+                'intro'  => 'La solicitud <strong>' . e($folio) . '</strong> ya tiene los ganadores elegidos y sigue esperando la autorización de Administración.',
+                'boton'  => 'Ver ganadores y autorizar',
+            ],
         ];
-        $asunto = $asuntos[$stage] ?? "Recordatorio: solicitud #{$solicitud->SolicitudID} pendiente";
 
-        $contenido = $this->construirContenidoRecordatorio(
-            $solicitud,
-            $stage,
-            $url,
-            $aprobador->NombreEmpleado,
-            $ganadores
+        $c = $config[$stage] ?? [
+            'asunto' => "Recordatorio: Solicitud de compra {$folio} pendiente de tu revisión",
+            'titulo' => 'Esta solicitud sigue pendiente de tu revisión',
+            'intro'  => 'La solicitud <strong>' . e($folio) . '</strong> sigue pendiente de tu revisión.',
+            'boton'  => 'Revisar solicitud',
+        ];
+
+        $contenido = $this->renderMensaje([
+            'accent'       => self::ACENTO_RECUERDO[0],
+            'accentSoft'   => self::ACENTO_RECUERDO[1],
+            'eyebrow'      => 'Recordatorio',
+            'titulo'       => $c['titulo'],
+            'preheader'    => "Recordatorio de la solicitud {$folio}: " . strtolower(self::ETAPAS[$stage] ?? 'revisión') . ' pendiente.',
+            'folio'        => $folio,
+            'saludo'       => $aprobador->NombreEmpleado,
+            'intro'        => $c['intro'],
+            'url'          => $url,
+            'boton'        => $c['boton'],
+            'nota'         => 'Si ya atendiste la solicitud, ignora este mensaje: los recordatorios se detienen solos.',
+            'filas'        => $this->filasSolicitud($solicitud),
+            'bloques'      => $this->bloquesSolicitud($solicitud, $stage === 'supervisor'),
+            'aprobaciones' => $this->historialAprobaciones($solicitud, $stage),
+            'ganadores'    => $stage === 'administracion' ? ($ganadores ?: $this->ganadoresDe($solicitud)) : collect(),
+        ]);
+
+        if ($this->enviar($aprobador->Correo, $aprobador->NombreEmpleado, $c['asunto'], $contenido)) {
+            Log::info(
+                "Recordatorio enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
+                    "(etapa: {$stage}, token: {$token})"
+            );
+            return true;
+        }
+
+        Log::error(
+            "Error enviando recordatorio solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
+                "(etapa: {$stage}, token: {$token})"
         );
 
+        return false;
+    }
+
+    /**
+     * Historial de quién ya aprobó antes de la etapa indicada.
+     * Cuando el solicitante es Gerencia no hay supervisor real: ese paso se auto-aprueba
+     * al crear la solicitud y aquí se explica por qué aparece como aprobado.
+     *
+     * @return array<int, array{etapa:string,nombre:string,fecha:string,auto:bool,nota:string}>
+     */
+    private function historialAprobaciones(Solicitud $solicitud, ?string $stageActual = null): array
+    {
+        $limite = $stageActual !== null
+            ? (self::ORDEN_ETAPAS[$stageActual] ?? PHP_INT_MAX)
+            : PHP_INT_MAX;
+
+        $pasos = SolicitudPasos::with(['approverEmpleado', 'decidedByEmpleado'])
+            ->where('solicitud_id', $solicitud->SolicitudID)
+            ->where('status', 'approved')
+            ->orderBy('step_order')
+            ->get();
+
+        $historial = [];
+
+        foreach ($pasos as $paso) {
+            $orden = self::ORDEN_ETAPAS[$paso->stage] ?? PHP_INT_MAX;
+
+            if ($orden >= $limite) {
+                continue;
+            }
+
+            $empleado = $paso->decidedByEmpleado ?: $paso->approverEmpleado;
+            $comentario = trim((string) $paso->comment);
+            $auto = $comentario !== '' && stripos($comentario, 'autom') !== false;
+
+            if ($auto) {
+                $nota = 'Aprobación automática por jerarquía: el solicitante es Gerencia, así que la solicitud queda autorizada desde su origen.';
+            } elseif ($comentario !== '') {
+                $nota = 'Comentario: ' . $comentario;
+            } else {
+                $nota = '';
+            }
+
+            $historial[] = [
+                'etapa'  => self::ETAPAS[$paso->stage] ?? ucfirst($paso->stage),
+                'nombre' => $empleado->NombreEmpleado ?? 'Sin registrar',
+                'fecha'  => $paso->decided_at ? $paso->decided_at->format('d/m/Y H:i') : '',
+                'auto'   => $auto,
+                'nota'   => $nota,
+            ];
+        }
+
+        return $historial;
+    }
+
+    /**
+     * Etapa real del token; si no se puede resolver, se deduce de la etiqueta recibida.
+     */
+    private function resolverStage(string $token, string $stageLabel): string
+    {
+        $tokenRow = SolicitudTokens::with('approvalStep')->where('token', $token)->first();
+
+        if ($tokenRow && $tokenRow->approvalStep && isset(self::ETAPAS[$tokenRow->approvalStep->stage])) {
+            return $tokenRow->approvalStep->stage;
+        }
+
+        $etiqueta = mb_strtolower($stageLabel);
+
+        foreach (['administracion' => 'administraci', 'gerencia' => 'gerenc', 'supervisor' => 'supervisor'] as $stage => $aguja) {
+            if (mb_strpos($etiqueta, $aguja) !== false) {
+                return $stage;
+            }
+        }
+
+        return 'supervisor';
+    }
+
+    /**
+     * Datos cortos de la solicitud (tarjeta de detalle).
+     */
+    private function filasSolicitud(Solicitud $solicitud): array
+    {
+        $presupuesto = (float) ($solicitud->Presupuesto ?? 0);
+
+        return array_filter([
+            'Solicitante'          => $this->nombreSolicitante($solicitud),
+            'Motivo'               => $solicitud->Motivo ?: null,
+            'Fecha de solicitud'   => $solicitud->created_at ? $solicitud->created_at->format('d/m/Y') : null,
+            'Presupuesto estimado' => $presupuesto > 0 ? '$ ' . number_format($presupuesto, 2, '.', ',') . ' MXN' : null,
+        ]);
+    }
+
+    /**
+     * Textos largos de la solicitud. Sólo se muestran donde aportan (etapas de revisión).
+     */
+    private function bloquesSolicitud(Solicitud $solicitud, bool $incluirDetalle = true): array
+    {
+        if (! $incluirDetalle) {
+            return [];
+        }
+
+        return array_filter([
+            'Descripción'    => $solicitud->DescripcionMotivo ?: null,
+            'Requerimientos' => $solicitud->Requerimientos ?: null,
+        ]);
+    }
+
+    private function nombreSolicitante(Solicitud $solicitud): string
+    {
+        return $solicitud->empleadoid->NombreEmpleado ?? 'N/A';
+    }
+
+    /**
+     * Cotizaciones ganadoras de la solicitud.
+     */
+    private function ganadoresDe(Solicitud $solicitud)
+    {
+        $cotizaciones = $solicitud->relationLoaded('cotizaciones')
+            ? $solicitud->cotizaciones
+            : $solicitud->cotizaciones()->get();
+
+        return $cotizaciones ? $cotizaciones->where('Estatus', 'Seleccionada')->values() : collect();
+    }
+
+    /**
+     * Número de propuestas cargadas (agrupadas por NumeroPropuesta).
+     */
+    private function totalPropuestas(Solicitud $solicitud): int
+    {
+        $cotizaciones = $solicitud->relationLoaded('cotizaciones')
+            ? $solicitud->cotizaciones
+            : $solicitud->cotizaciones()->get();
+
+        if (! $cotizaciones || $cotizaciones->isEmpty()) {
+            return 0;
+        }
+
+        return $cotizaciones->groupBy(fn($c) => (int) ($c->NumeroPropuesta ?? 0))->count();
+    }
+
+    private function renderMensaje(array $datos): string
+    {
+        return view('emails.solicitudes.mensaje', $datos)->render();
+    }
+
+    /**
+     * Envío por SMTP. Devuelve false si PHPMailer falla (el motivo se registra arriba).
+     */
+    private function enviar(string $correo, ?string $nombre, string $asunto, string $contenido): bool
+    {
         try {
             $mail = new PHPMailer(true);
             $this->configurarMailer($mail);
@@ -377,70 +495,33 @@ HTML;
             $nombreSoporte = config('mail.from.name', 'Sistema de Solicitudes');
 
             $mail->setFrom($fromAddress, $nombreSoporte);
-            $mail->addAddress($aprobador->Correo, $aprobador->NombreEmpleado);
+            $mail->addAddress($correo, $nombre ?? '');
             $mail->isHTML(true);
             $mail->CharSet = 'UTF-8';
             $mail->Subject = $asunto;
             $mail->Body = $contenido;
+            $mail->AltBody = trim(html_entity_decode(strip_tags($contenido), ENT_QUOTES, 'UTF-8'));
             $mail->send();
-
-            Log::info(
-                "Recordatorio enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
-                    "(etapa: {$stage}, token: {$token})"
-            );
 
             return true;
         } catch (Exception $e) {
-            Log::error(
-                "Error enviando recordatorio solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
-                    "(etapa: {$stage}, token: {$token}): " . $e->getMessage()
-            );
-
+            Log::error("SolicitudAprobacionEmailService: fallo SMTP hacia {$correo} ({$asunto}): " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * @param  \Illuminate\Support\Collection|null  $ganadores
+     * Marcar el token como "ya notificado" para que entre al ciclo de recordatorios diarios.
      */
-    private function construirContenidoRecordatorio(
-        Solicitud $solicitud,
-        string $stage,
-        string $url,
-        string $nombreAprobador,
-        $ganadores = null
-    ): string {
-        $empleado = $solicitud->empleadoid;
-
-        $titulos = [
-            'supervisor' => 'Recordatorio: solicitud pendiente de tu Vo.bo.',
-            'gerencia' => 'Recordatorio: falta elegir el ganador',
-            'administracion' => 'Recordatorio: solicitud pendiente de aprobación',
-        ];
-        $intros = [
-            'supervisor' => 'La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> sigue esperando tu revisión. Revisa los datos y da tu Vo.bo. o recházala.',
-            'gerencia' => 'La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> ya tiene las propuestas de cotización cargadas y sigue esperando que <strong>elijas el ganador</strong>.',
-            'administracion' => 'La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> ya tiene los ganadores seleccionados y sigue esperando la aprobación de Administración.',
-        ];
-        $botones = [
-            'supervisor' => 'Revisar solicitud',
-            'gerencia' => 'Ver propuestas y elegir ganador',
-            'administracion' => 'Ver ganadores y aprobar',
-        ];
-
-        return view('emails.recordatorio_solicitud', [
-            'stage'             => $stage,
-            'url'               => $url,
-            'boton'             => $botones[$stage] ?? 'Revisar solicitud',
-            'titulo'            => $titulos[$stage] ?? 'Recordatorio: solicitud pendiente',
-            'intro'            => $intros[$stage] ?? ('La solicitud <strong>#' . $solicitud->SolicitudID . '</strong> sigue pendiente de tu revisión.'),
-            'nombreAprobador'   => $nombreAprobador,
-            'nombreSolicitante' => $empleado ? $empleado->NombreEmpleado : 'N/A',
-            'motivo'            => $solicitud->Motivo ?? 'N/A',
-            'desc'              => $solicitud->DescripcionMotivo ?? '',
-            'req'               => $solicitud->Requerimientos ?? '',
-            'ganadores'         => $ganadores,
-        ])->render();
+    private function marcarTokenNotificado(string $token): void
+    {
+        try {
+            SolicitudTokens::where('token', $token)
+                ->whereNull('notified_at')
+                ->update(['notified_at' => now()]);
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo marcar notified_at del token {$token}: " . $e->getMessage());
+        }
     }
 
     private function configurarMailer(PHPMailer $mail): void
