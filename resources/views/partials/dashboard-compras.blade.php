@@ -36,13 +36,11 @@
             <i class="fas fa-tasks text-indigo-500 mr-2"></i>
             Estado de solicitudes
         </h3>
-        {{-- OCULTO TEMPORAL — MANTENIMIENTO CORPORATIVO (ruta comentada en routes/web.php)
         @can('ver-compras')
             <a href="{{ route('tickets-mantenimiento.index') }}" class="text-sm font-semibold text-indigo-600 dark:text-indigo-300 hover:underline">
                 Ver tablero
             </a>
         @endcan
-        --}}
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -114,9 +112,6 @@
     </div>
 </div>
 
-{{-- OCULTO TEMPORAL — MANTENIMIENTO CORPORATIVO (ruta comentada en routes/web.php).
-     Es el único acceso rápido de esta sección, así que se oculta el bloque completo
-     para no dejar el encabezado "Accesos Rápidos" vacío.
 <div class="mb-4">
     <h2 class="text-xl font-bold text-[#101D49] dark:text-gray-300 mb-3">Accesos Rápidos</h2>
 </div>
@@ -141,4 +136,3 @@
     </a>
     @endcan
 </div>
---}}
