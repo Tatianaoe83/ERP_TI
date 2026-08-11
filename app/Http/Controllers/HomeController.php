@@ -70,16 +70,17 @@ class HomeController extends Controller
         }
     }
 
+    /**
+     * COMPRAS y DIRECTOR_VIEW tienen los mismos permisos, así que el tablero se decide por rol:
+     * DIRECTOR_VIEW (y TORDONEZ) ven las dos pestañas, COMPRAS solo la suya y el resto Informática.
+     */
     private function resolverTipoDashboard($user): string
     {
-        $tieneInformatica = $user->can('ver-dashboard');
-        $tieneCompras = $user->can('ver-compras');
-
-        if ($tieneInformatica && $tieneCompras) {
+        if ($user->username === 'TORDONEZ' || $user->hasRole('DIRECTOR_VIEW')) {
             return 'completo';
         }
 
-        if ($tieneCompras) {
+        if ($user->hasRole('COMPRAS')) {
             return 'compras';
         }
 
