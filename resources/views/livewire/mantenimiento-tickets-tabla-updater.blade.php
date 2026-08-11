@@ -1,9 +1,15 @@
-<div wire:poll.5s.visible="actualizarDatos">
+<div @if ($activo) wire:poll.5s.visible="actualizarDatos" @endif>
+    @if (!$activo)
+    <div class="p-10 text-center text-gray-400 dark:text-gray-500">
+        <i class="fas fa-circle-notch fa-spin text-2xl mb-2 opacity-40"></i>
+        <p class="text-sm">Cargando solicitudes...</p>
+    </div>
+    @else
     <div class="rounded-lg overflow-hidden w-full max-w-full bg-gray-50 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A]">
 
         <div class="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-[#2A2F3A]">
             <div class="text-sm text-gray-600 dark:text-gray-400">
-                Total: {{ count($tickets) }} solicitudes
+                Total: {{ $total }} solicitudes
             </div>
         </div>
 
@@ -83,5 +89,13 @@
                 </tbody>
             </table>
         </div>
+
+        @include('tickets-mantenimiento.partials.paginador', [
+            'pagina' => $pagina,
+            'ultima' => $this->ultimaPagina(),
+            'wireAnterior' => 'irAPagina(' . ($pagina - 1) . ')',
+            'wireSiguiente' => 'irAPagina(' . ($pagina + 1) . ')',
+        ])
     </div>
+    @endif
 </div>

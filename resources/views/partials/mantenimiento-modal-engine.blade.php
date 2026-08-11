@@ -67,6 +67,20 @@ function mantenimientoModal(soloPanel = false) {
             Livewire.on('mantenimiento-actualizados-kanban', (d) => this.procesarActualizacion(d));
             Livewire.on('mantenimiento-actualizados-lista', (d) => this.procesarActualizacion(d));
             Livewire.on('mantenimiento-actualizados-tabla', (d) => this.procesarActualizacion(d));
+
+            // Los tres tableros arrancan apagados: solo el visible pide datos al servidor.
+            document.addEventListener('livewire:load', () => this.avisarVistaActiva());
+            if (window.Livewire) this.avisarVistaActiva();
+        },
+
+        avisarVistaActiva() {
+            window.Livewire?.emit('mantenimiento-vista-activada', this.vista);
+        },
+
+        activarVista(vista) {
+            this.vista = vista;
+            localStorage.setItem('mantenimientoVista', vista);
+            this.avisarVistaActiva();
         },
 
         procesarActualizacion(datos) {

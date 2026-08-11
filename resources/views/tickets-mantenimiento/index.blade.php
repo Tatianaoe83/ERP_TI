@@ -38,7 +38,7 @@
 
     <div class="mt-2 w-full max-w-full overflow-x-hidden">
         <div x-show="tab === 1" x-transition.opacity x-cloak class="w-full max-w-full overflow-x-hidden">
-            @include('tickets-mantenimiento.indexTicket', ['ticketsStatus' => $ticketsStatus])
+            @include('tickets-mantenimiento.indexTicket')
         </div>
 
         <div x-show="tab === 2" x-transition.opacity x-cloak id="productividad-mantenimiento-tab" class="w-full">

@@ -24,17 +24,17 @@
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <span class="text-xs sm:text-sm text-gray-500 font-medium hidden sm:inline">Vista:</span>
             <div class="flex items-center gap-1 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-1">
-                <button @click="vista = 'kanban'; localStorage.setItem('mantenimientoVista', 'kanban')"
+                <button @click="activarVista('kanban')"
                     :class="vista === 'kanban' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2">
                     <i class="fas fa-columns text-xs"></i><span class="hidden sm:inline">Kanban</span>
                 </button>
-                <button @click="vista = 'lista'; localStorage.setItem('mantenimientoVista', 'lista')"
+                <button @click="activarVista('lista')"
                     :class="vista === 'lista' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2">
                     <i class="fas fa-list text-xs"></i><span class="hidden sm:inline">Lista</span>
                 </button>
-                <button @click="vista = 'tabla'; localStorage.setItem('mantenimientoVista', 'tabla')"
+                <button @click="activarVista('tabla')"
                     :class="vista === 'tabla' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
                     class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2">
                     <i class="fas fa-table text-xs"></i><span class="hidden sm:inline">Tabla</span>

@@ -28,9 +28,9 @@ class TicketsMantenimientoController extends Controller
         $anioFin    = $request->has('anio_fin') ? (int) $request->input('anio_fin') : null;
         $modoRango  = $mesInicio && $anioInicio && $mesFin && $anioFin;
 
-        $tickets = TicketMantenimiento::queryConRelaciones()->orderBy('created_at', 'desc')->get();
-
-        $ticketsStatus = TicketMantenimiento::agruparPorColumnas($tickets);
+        // El tablero lo arma Livewire por su cuenta; aquí solo se consulta lo que piden las
+        // métricas, y de las relaciones únicamente 'responsable' (lo demás no se usa).
+        $tickets = TicketMantenimiento::with('responsable')->orderBy('created_at', 'desc')->get();
 
         $metricasProductividad = $this->obtenerMetricasProductividad(
             $tickets,
@@ -43,7 +43,6 @@ class TicketsMantenimientoController extends Controller
         );
 
         return view('tickets-mantenimiento.index', compact(
-            'ticketsStatus',
             'metricasProductividad',
             'mes',
             'anio',
@@ -65,7 +64,7 @@ class TicketsMantenimientoController extends Controller
         $mesFin     = $esRango ? (int) $request->input('mes_fin') : null;
         $anioFin    = $esRango ? (int) $request->input('anio_fin') : null;
 
-        $tickets = TicketMantenimiento::queryConRelaciones()->orderBy('created_at', 'desc')->get();
+        $tickets = TicketMantenimiento::with('responsable')->orderBy('created_at', 'desc')->get();
         $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
 
         $html = view('tickets-mantenimiento.productividad', [

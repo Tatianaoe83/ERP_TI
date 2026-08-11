@@ -1,4 +1,10 @@
-<div wire:poll.5s.visible="actualizarDatos">
+<div @if ($activo) wire:poll.5s.visible="actualizarDatos" @endif>
+    @if (!$activo)
+    <div class="p-10 text-center text-gray-400 dark:text-gray-500">
+        <i class="fas fa-circle-notch fa-spin text-2xl mb-2 opacity-40"></i>
+        <p class="text-sm">Cargando solicitudes...</p>
+    </div>
+    @else
     <div class="space-y-4 w-full max-w-full overflow-x-hidden pb-6">
 
         @foreach (\App\Models\TicketMantenimiento::COLUMNAS_VISTA as $key => $titulo)
@@ -9,7 +15,7 @@
                 <h3 class="font-bold text-xs text-gray-800 dark:text-gray-100 uppercase tracking-wide">{{ $titulo }}</h3>
                 <span data-categoria-header="{{ $key }}"
                     class="text-[11px] font-bold min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                    {{ count($ticketsStatus[$key]) }}
+                    {{ $totales[$key] ?? count($ticketsStatus[$key]) }}
                 </span>
             </div>
 
@@ -39,8 +45,18 @@
                 </div>
                 @endforelse
             </div>
+
+            @if (in_array($key, \App\Models\TicketMantenimiento::COLUMNAS_PAGINADAS, true))
+                @include('tickets-mantenimiento.partials.paginador', [
+                    'pagina' => $paginas[$key],
+                    'ultima' => $this->ultimaPagina($key),
+                    'wireAnterior' => "irAPagina('{$key}', " . ($paginas[$key] - 1) . ')',
+                    'wireSiguiente' => "irAPagina('{$key}', " . ($paginas[$key] + 1) . ')',
+                ])
+            @endif
         </div>
 
         @endforeach
     </div>
+    @endif
 </div>

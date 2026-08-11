@@ -112,6 +112,64 @@ class TicketMantenimiento extends Model
         ];
     }
 
+    /** Estatus real detrás de cada columna del tablero. */
+    public const ESTATUS_COLUMNA = [
+        'pendiente'  => 'Pendiente',
+        'en_proceso' => 'En proceso',
+        'pausado'    => 'Pausado',
+        'atendido'   => 'Atendido',
+        'cancelado'  => 'Cancelado',
+    ];
+
+    /** Atendido y Cancelado solo acumulan, así que son las únicas columnas que se paginan. */
+    public const COLUMNAS_PAGINADAS = ['atendido', 'cancelado'];
+
+    public const POR_PAGINA_FINALIZADOS = 10;
+
+    /**
+     * Trae cada columna con su propia consulta: las abiertas completas y las finalizadas
+     * recortadas a una página. Evita cargar el histórico entero para pintar el tablero.
+     *
+     * @param  array<string,int>  $paginas  página actual por columna paginada
+     * @return array{grupos: array<string,\Illuminate\Support\Collection>, totales: array<string,int>}
+     */
+    public static function obtenerColumnas(array $paginas = []): array
+    {
+        $grupos = [];
+        $totales = [];
+
+        foreach (self::ESTATUS_COLUMNA as $key => $estatus) {
+            $query = self::queryConRelaciones()
+                ->where('Estatus', $estatus)
+                ->orderBy('created_at', 'desc');
+
+            if (!in_array($key, self::COLUMNAS_PAGINADAS, true)) {
+                $grupos[$key] = $query->get();
+                $totales[$key] = $grupos[$key]->count();
+                continue;
+            }
+
+            $totales[$key] = self::where('Estatus', $estatus)->count();
+            $pagina = max(1, (int) ($paginas[$key] ?? 1));
+            $grupos[$key] = $query->forPage($pagina, self::POR_PAGINA_FINALIZADOS)->get();
+        }
+
+        return ['grupos' => $grupos, 'totales' => $totales];
+    }
+
+    /** Firma de cambios del tablero: si no varía, el front no necesita repintar. */
+    public static function hashDeTickets($tickets): string
+    {
+        return md5(json_encode(collect($tickets)->map(fn ($ticket) => [
+            $ticket->MantenimientoID,
+            $ticket->Estatus,
+            $ticket->Prioridad,
+            $ticket->ResponsableID,
+            $ticket->Categoria,
+            $ticket->updated_at,
+        ])));
+    }
+
     public const CATEGORIAS = [
         'Plomería',
         'Electricidad',
