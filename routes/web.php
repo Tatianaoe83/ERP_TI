@@ -163,6 +163,12 @@ Route::group(['middleware' => ['auth']], function () {
 
     // Endpoint para el panel de notificaciones del sidebar
 Route::get('/notificaciones-panel', function () {
+    // El panel es compartido, pero cada área solo debe ver lo suyo: TI (soporte y solicitudes)
+    // y Compras (mantenimientos de compras). Quien tenga permisos de ambas las ve juntas.
+    $usuario = auth()->user();
+    $verTI = $usuario && $usuario->can('ver-soporte');
+    $verCompras = $usuario && ($usuario->can('ver-compras') || $usuario->can('ver-mantenimientos-compras'));
+
     $contarFacturasSolicitud = function ($solicitud) {
         if (!$solicitud->cotizaciones || $solicitud->cotizaciones->isEmpty()) {
             return [0, 0];
@@ -249,7 +255,7 @@ Route::get('/notificaciones-panel', function () {
     $corte = now()->subHours(24);
 
     // 1. Tickets (Pendiente): trae todos los no resueltos; 'vencidos' marca los de +24h arrastrados
-    $ticketsNuevos = \App\Models\Tickets::where('Estatus', 'Pendiente')
+    $ticketsNuevos = !$verTI ? collect() : \App\Models\Tickets::where('Estatus', 'Pendiente')
         ->with('empleado')
         ->orderBy('created_at', 'desc')
         ->limit(10)
@@ -263,7 +269,7 @@ Route::get('/notificaciones-panel', function () {
         ]);
 
     // 2. Solicitudes (sin Vo.bo. de supervisor): trae todas las no resueltas; 'vencidos' marca las de +24h
-    $solicitudesPendientes = \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
+    $solicitudesPendientes = !$verTI ? collect() : \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
         ->whereDoesntHave('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
         ->with('empleadoid')
         ->orderBy('created_at', 'desc')
@@ -280,7 +286,7 @@ Route::get('/notificaciones-panel', function () {
         ]);
 
     // 3. Solicitudes con Vo.bo. de supervisor que requieren cotización de TI
-    $solicitudesCotizacionTIFiltradas = \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
+    $solicitudesCotizacionTIFiltradas = !$verTI ? collect() : \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
         ->with(['empleadoid', 'pasoSupervisor', 'pasoGerencia', 'pasoAdministracion', 'cotizaciones'])
         ->whereHas('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
         ->orderBy('updated_at', 'desc')
@@ -308,7 +314,7 @@ Route::get('/notificaciones-panel', function () {
     $solicitudesCotizacionTICount = $solicitudesCotizacionTIFiltradas->count();
 
     // 4. Solicitudes que requieren seguimiento de TI (cotizaciones enviadas o re-cotización)
-    $solicitudesSeguimientoTI = \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])
+    $solicitudesSeguimientoTI = !$verTI ? collect() : \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])
         ->with('empleadoid')
         ->orderBy('updated_at', 'desc')
         ->limit(10)
@@ -323,7 +329,7 @@ Route::get('/notificaciones-panel', function () {
         ]);
 
     // 5. Solicitudes aprobadas con facturas pendientes de subir
-    $solicitudesFacturaPendienteFiltradas = $querySolicitudesAprobadas()
+    $solicitudesFacturaPendienteFiltradas = !$verTI ? collect() : $querySolicitudesAprobadas()
         ->orderBy('updated_at', 'desc')
         ->get()
         ->filter(function ($s) use ($contarFacturasSolicitud) {
@@ -339,7 +345,7 @@ Route::get('/notificaciones-panel', function () {
     $solicitudesFacturaPendienteCount = $solicitudesFacturaPendienteFiltradas->count();
 
     // 6. CORRECCIÓN AQUÍ: Aseguramos la captura del alias en la agregación
-    $mensajesNuevos = \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
+    $mensajesNuevos = !$verTI ? collect() : \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
         ->selectRaw('ticket_id, SUM(notificaciones_pendientes) as total, MAX(created_at) as last_created_at')
         ->groupBy('ticket_id')
         ->orderByRaw('MAX(created_at) DESC')
@@ -360,7 +366,7 @@ Route::get('/notificaciones-panel', function () {
 
     // 7. Mantenimientos de compras: siguen notificando hasta resolverse (Atendido/Cancelado),
     //    no solo mientras están en Pendiente.
-    $mantenimientosNuevos = \App\Models\TicketMantenimiento::whereNotIn('Estatus', ['Atendido', 'Cancelado'])
+    $mantenimientosNuevos = !$verCompras ? collect() : \App\Models\TicketMantenimiento::whereNotIn('Estatus', ['Atendido', 'Cancelado'])
         ->with('empleado')
         ->orderBy('created_at', 'desc')
         ->limit(10)
@@ -376,24 +382,24 @@ Route::get('/notificaciones-panel', function () {
 
     return response()->json([
         'tickets_nuevos' => $ticketsNuevos,
-        'tickets_nuevos_count' => \App\Models\Tickets::where('Estatus', 'Pendiente')
+        'tickets_nuevos_count' => !$verTI ? 0 : \App\Models\Tickets::where('Estatus', 'Pendiente')
             ->where('created_at', '>=', $corte)->count(),
         'mantenimientos_nuevos' => $mantenimientosNuevos,
-        'mantenimientos_nuevos_count' => \App\Models\TicketMantenimiento::where('Estatus', 'Pendiente')
+        'mantenimientos_nuevos_count' => !$verCompras ? 0 : \App\Models\TicketMantenimiento::where('Estatus', 'Pendiente')
             ->where('created_at', '>=', $corte)->count(),
         'solicitudes_pendientes' => $solicitudesPendientes,
-        'solicitudes_pendientes_count' => \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
+        'solicitudes_pendientes_count' => !$verTI ? 0 : \App\Models\Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cerrada', 'Aprobado', 'Aprobada', 'Cotizaciones Enviadas', 'Re-cotizar'])
             ->where('created_at', '>=', $corte)
             ->whereDoesntHave('pasoSupervisor', fn($q) => $q->where('status', 'approved'))
             ->count(),
         'solicitudes_cotizacion_ti' => $solicitudesCotizacionTI,
         'solicitudes_cotizacion_ti_count' => $solicitudesCotizacionTICount,
         'solicitudes_seguimiento_ti' => $solicitudesSeguimientoTI,
-        'solicitudes_seguimiento_ti_count' => \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])->count(),
+        'solicitudes_seguimiento_ti_count' => !$verTI ? 0 : \App\Models\Solicitud::whereIn('Estatus', ['Cotizaciones Enviadas', 'Re-cotizar'])->count(),
         'solicitudes_factura_pendiente' => $solicitudesFacturaPendiente,
         'solicitudes_factura_pendiente_count' => $solicitudesFacturaPendienteCount,
         'mensajes_nuevos' => $mensajesNuevos,
-'mensajes_nuevos_count' =>
+'mensajes_nuevos_count' => !$verTI ? 0 :
 \App\Models\TicketChat::where('notificaciones_pendientes', '>', 0)
     ->get()
     ->groupBy('ticket_id')
