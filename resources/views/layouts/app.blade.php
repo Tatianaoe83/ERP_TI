@@ -315,6 +315,66 @@
             --text-muted: #9ca3af;
         }
 
+        /* ===== Cambio de tema vía View Transitions (crossfade GPU, sin repaint por nodo) ===== */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 300ms;
+            animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Fallback para navegadores sin View Transitions: transición de color simple */
+        .theme-transition,
+        .theme-transition * {
+            transition: background-color 300ms ease,
+                        border-color 300ms ease,
+                        color 300ms ease !important;
+        }
+
+        /* ===== Scrollbar global moderno (theme-aware) ===== */
+        :root {
+            --sb-thumb: #c7ccd6;
+            --sb-thumb-hover: #a8afbd;
+            --sb-track: transparent;
+        }
+
+        .dark {
+            --sb-thumb: #3a4150;
+            --sb-thumb-hover: #4c5566;
+            --sb-track: transparent;
+        }
+
+        /* Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--sb-thumb) var(--sb-track);
+        }
+
+        /* WebKit (Chrome/Edge/Safari) */
+        *::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--sb-track);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: var(--sb-thumb);
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background: var(--sb-thumb-hover);
+            background-clip: content-box;
+        }
+
+        *::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
 
 
     
@@ -336,10 +396,10 @@
 
 <body class="bg-gray-100 dark:bg-[#0F1116] text-gray-800 dark:text-gray-200 transition-colors duration-500 ease-in-out">
     @livewireScripts
-    <div id="app">
-        <nav class="bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
+    <div id="app" class="h-screen flex flex-col overflow-hidden">
+        <nav class="shrink-0 bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
         </nav>
-        <div class="flex flex-1 min-h-[calc(100vh-60px)] md:min-h-[calc(100vh-60px)]">
+        <div class="flex flex-1 min-h-0 overflow-hidden">
             <!-- Overlay para m?vil -->
             <div id="mobile-overlay" 
                 class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 lg:hidden"
@@ -351,7 +411,7 @@
                 @include('layouts.sidebar')
             </aside>
 
-            <main class="flex-1 p-3 md:p-6 dark:bg-[#101010] w-full lg:w-auto">
+            <main class="flex-1 min-w-0 overflow-y-auto p-3 md:p-6 dark:bg-[#101010] w-full lg:w-auto py-1">
                 @yield('content')
             </main>
         </div>

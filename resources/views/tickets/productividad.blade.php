@@ -2227,8 +2227,22 @@
         // Gráfica de tickets por prioridad (Bar horizontal)
         // -----------------------------------------------------
         const ctxPrioridad = document.getElementById('chartPrioridad').getContext('2d');
-        const clavesPrioridad = Object.keys(ticketsPorPrioridad);
+        // Se ordena de mayor a menor: la barra mas alta queda hasta arriba
+        const entradasPrioridad = Object.entries(ticketsPorPrioridad)
+            .sort((a, b) => Number(b[1]) - Number(a[1]));
+        const clavesPrioridad = entradasPrioridad.map(e => e[0]);
+        const valoresPrioridad = entradasPrioridad.map(e => e[1]);
         const hasPrioridad = clavesPrioridad.length > 0;
+
+        // El color depende de la prioridad, no de la posicion en el arreglo:
+        // Alta = rojo (0), Media = amarillo (1), Baja = verde (2)
+        const indicePrioridad = { alta: 0, media: 1, baja: 2 };
+        const colorPrioridad = (paleta, etiqueta) => {
+            const i = indicePrioridad[String(etiqueta).trim().toLowerCase()];
+            return i === undefined ? colores.grid : paleta[i];
+        };
+        const bgPrioridad = clavesPrioridad.map(k => colorPrioridad(p.prioridad, k));
+        const hoverPrioridad = clavesPrioridad.map(k => colorPrioridad(p.prioridadHover, k));
 
         chartPrioridad = new Chart(ctxPrioridad, {
             type: 'bar',
@@ -2236,9 +2250,9 @@
                 labels: hasPrioridad ? clavesPrioridad : ['Sin tickets este mes'],
                 datasets: [{
                     label: 'Tickets',
-                    data: hasPrioridad ? Object.values(ticketsPorPrioridad) : [0],
-                    backgroundColor: hasPrioridad ? p.prioridad : [colores.grid],
-                    hoverBackgroundColor: hasPrioridad ? p.prioridadHover : [colores.grid],
+                    data: hasPrioridad ? valoresPrioridad : [0],
+                    backgroundColor: hasPrioridad ? bgPrioridad : [colores.grid],
+                    hoverBackgroundColor: hasPrioridad ? hoverPrioridad : [colores.grid],
                     borderColor: hasPrioridad ? p.prioridadBorde : ['transparent'],
                     borderWidth: hasPrioridad ? (dark ? 1.5 : 1) : 0,
                     borderRadius: 8,

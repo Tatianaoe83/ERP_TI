@@ -1794,6 +1794,9 @@ video {
 .max-w-\[11rem\] {
   max-width: 11rem;
 }
+.max-w-\[1800px\] {
+  max-width: 1800px;
+}
 .max-w-\[250px\] {
   max-width: 250px;
 }

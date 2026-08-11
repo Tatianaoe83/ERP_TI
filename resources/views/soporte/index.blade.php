@@ -474,15 +474,13 @@
                     <!-- Selector de Tipo -->
                     <div class="bg-white rounded-2xl p-4 md:p-5 shadow-sm border-2 border-gray-100">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de solicitud</label>
-                        <select name="type" id="type" class="w-full">
-                            <option value=""></option>
-                            <optgroup label="Tecnologías de la Información" data-area="ti">
-                                <option value="Ticket" data-area="ti">Ticket para soporte</option>
-                                <option value="Solicitud" data-area="ti">Compras de recursos tecnológicos</option>
-                            </optgroup>
-                            <optgroup label="Compras" data-area="compras">
-                                <option value="Mantenimiento" data-area="compras">Solicitud de mantenimiento corporativo</option>
-                            </optgroup>
+                        <select name="type" id="type" class="cursor-pointer border-2 border-gray-200 rounded-xl text-base text-black w-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white">
+                            <option value="" selected disabled>Selecciona una opción</option>
+                            <option value="Ticket">Ticket para soporte</option>
+                            <option value="Solicitud">Compras de recursos tecnológicos</option>
+                            {{-- OCULTO TEMPORAL — MANTENIMIENTO CORPORATIVO. El formulario #mantenimiento-form
+                                 y su JS siguen intactos más abajo; sin esta opción no hay forma de llegar a ellos. --}}
+                            {{-- <option value="Mantenimiento">Solicitud de mantenimiento corporativo</option> --}}
                         </select>
                         <div id="info-section" class="hidden mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                             <div class="flex items-start gap-2">

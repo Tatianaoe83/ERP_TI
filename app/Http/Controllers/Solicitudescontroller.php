@@ -184,7 +184,9 @@ class SolicitudesController extends Controller
                     'TiempoEntrega'   => $cot->TiempoEntrega,
                     'Observaciones'   => $cot->Observaciones,
                     'NumeroPropuesta' => (int) ($cot->NumeroPropuesta ?? 0),
+                    'NumeroProducto'  => (int) ($cot->NumeroProducto ?? 1),
                     'NombreEquipo'    => $cot->NombreEquipo ?? '',
+                    'Unidad'          => $cot->Unidad ?? null,
                 ])->toArray()
                 : [];
 
@@ -301,23 +303,25 @@ class SolicitudesController extends Controller
                 }
 
                 if ($cotizacionGanadora->Estatus === 'Seleccionada') {
-                    throw new \RuntimeException('Esta cotización ya fue seleccionada como ganadora para este producto.');
+                    throw new \RuntimeException('Esta cotización ya fue seleccionada como ganadora para esta propuesta.');
                 }
 
                 if (!in_array($cotizacionGanadora->Estatus, ['Pendiente', 'Seleccionada', 'Rechazada'], true)) {
                     throw new \RuntimeException('No se puede seleccionar esta cotización');
                 }
 
-                $claveProducto = $this->claveProducto($cotizacionGanadora);
+                // Solo puede haber 1 ganador por propuesta: se rechazan las demás
+                // cotizaciones de la propuesta, sin importar el producto.
+                $numeroPropuesta = (int) ($cotizacionGanadora->NumeroPropuesta ?? 0);
 
-                $cotizacionesMismoProducto = $solicitud->cotizaciones->filter(
-                    fn($c) => $this->claveProducto($c) === $claveProducto
+                $cotizacionesMismaPropuesta = $solicitud->cotizaciones->filter(
+                    fn($c) => (int) ($c->NumeroPropuesta ?? 0) === $numeroPropuesta
                 );
 
                 $cotizacionGanadora->Estatus = 'Seleccionada';
                 $cotizacionGanadora->save();
 
-                $idsRechazar = $cotizacionesMismoProducto
+                $idsRechazar = $cotizacionesMismaPropuesta
                     ->where('CotizacionID', '!=', $cotizacionGanadora->CotizacionID)
                     ->pluck('CotizacionID');
 
@@ -642,20 +646,19 @@ class SolicitudesController extends Controller
                         'success'         => false,
                         'message'         => 'Los ganadores se confirmaron, pero no se pudo enviar el correo a Administración.',
                         'todos_completos' => $todosGanadores,
-                        'redirect'        => '/revision-solicitud/' . $emailAdminData['token'],
+                        'redirect'        => $this->redirectGerenciaGanadores($request),
                     ], 500);
                 }
             }
 
-            $redirect = $emailAdminData
-                ? '/revision-solicitud/' . $emailAdminData['token']
-                : '/solicitudes/ganadores-confirmados';
-
+            // El gerente SIEMPRE vuelve a su propio enlace (ahora en solo lectura), nunca al
+            // enlace de administración: cada etapa solo ve su propia vista. Admin recibe
+            // su propio correo con su propio token.
             return response()->json([
                 'success'         => true,
                 'message'         => 'Ganadores confirmados. Se ha enviado la solicitud a Administración para su aprobación.',
                 'todos_completos' => $todosGanadores,
-                'redirect'        => $redirect,
+                'redirect'        => $this->redirectGerenciaGanadores($request),
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -1034,14 +1037,41 @@ class SolicitudesController extends Controller
             }
 
             $pasoGerencia->load('approverEmpleado');
-            $token = \Illuminate\Support\Str::uuid()->toString();
 
             try {
-                \App\Models\SolicitudTokens::create([
-                    'approval_step_id' => $pasoGerencia->id,
-                    'token'            => $token,
-                    'expires_at'       => now()->addDays(7),
-                ]);
+                // Reutilizar el token activo del paso (el que decide() crea por adelantado,
+                // o el de un envío anterior) en vez de generar una fila nueva cada vez.
+                // Así solo existe un registro de token por paso de gerencia.
+                $tokenRow = \App\Models\SolicitudTokens::where('approval_step_id', $pasoGerencia->id)
+                    ->whereNull('used_at')
+                    ->whereNull('revoked_at')
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($tokenRow) {
+                    // Por si quedaron duplicados históricos, revocar los demás activos.
+                    \App\Models\SolicitudTokens::where('approval_step_id', $pasoGerencia->id)
+                        ->whereNull('used_at')
+                        ->whereNull('revoked_at')
+                        ->where('id', '!=', $tokenRow->id)
+                        ->update(['revoked_at' => now()]);
+
+                    // Refrescar vigencia y reiniciar el ciclo de recordatorios para este (re)envío.
+                    // notified_at se vuelve a sellar dentro de enviarCotizacionesListasParaElegir().
+                    $tokenRow->update([
+                        'expires_at'       => now()->addDays(7),
+                        'notified_at'      => null,
+                        'last_reminder_at' => null,
+                    ]);
+                } else {
+                    $tokenRow = \App\Models\SolicitudTokens::create([
+                        'approval_step_id' => $pasoGerencia->id,
+                        'token'            => \Illuminate\Support\Str::uuid()->toString(),
+                        'expires_at'       => now()->addDays(7),
+                    ]);
+                }
+
+                $token = $tokenRow->token;
             } catch (\Exception $e) {
                 Log::error("No se pudo crear token para elegir ganador: " . $e->getMessage());
                 return response()->json(['success' => false, 'message' => 'Error al crear el token de acceso: ' . $e->getMessage()], 500);
@@ -1091,20 +1121,10 @@ class SolicitudesController extends Controller
             $solicitud = $paso->solicitud;
             if (!$solicitud) abort(404, 'Solicitud no encontrada');
 
-            // Token usado/revocado: si ya hay ganadores, redirigir a admin
-            if ($tokenRow->used_at || $tokenRow->revoked_at) {
-                $pasoAdmin = \App\Models\SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('stage', 'administracion')
-                    ->first();
-                if ($pasoAdmin) {
-                    $adminToken = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdmin->id)
-                        ->latest()->first();
-                    if ($adminToken) {
-                        return redirect('/revision-solicitud/' . $adminToken->token);
-                    }
-                }
-                abort(404, 'Token no encontrado o inválido');
-            }
+            // Token usado/revocado: el gerente ya terminó su parte. Se le muestra la misma
+            // vista con su elección marcada y todo deshabilitado (nunca se redirige al
+            // enlace de administración: cada etapa ve solo su vista).
+            $tokenConsumido = (bool)($tokenRow->used_at || $tokenRow->revoked_at);
 
             $solicitud->load([
                 'empleadoid',
@@ -1130,47 +1150,33 @@ class SolicitudesController extends Controller
             $todosConGanador = $solicitud->todosProductosTienenGanador();
             $ganadores       = $solicitud->cotizaciones ? $solicitud->cotizaciones->where('Estatus', 'Seleccionada') : collect();
 
-            if ($solicitud->Estatus === 'Aprobado' || $todosConGanador) {
-                $pasoAdmin = \App\Models\SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('stage', 'administracion')
-                    ->first();
+            // Solo lectura: el gerente ya eligió (token consumido, solicitud aprobada o
+            // todos los productos con ganador). Ve la misma vista con su elección marcada.
+            $soloLectura = $tokenConsumido || $solicitud->Estatus === 'Aprobado' || $todosConGanador;
 
-                if ($pasoAdmin) {
-                    $adminToken = \App\Models\SolicitudTokens::where('approval_step_id', $pasoAdmin->id)
-                        ->latest()
-                        ->first();
-
-                    if ($adminToken) {
-                        return redirect('/revision-solicitud/' . $adminToken->token);
-                    }
-                }
-
-                $tokenInfo = [
-                    'razon' => 'Ya se han seleccionado los ganadores de todos los productos de esta solicitud.',
-                ];
-                if ($ganadores->isNotEmpty()) {
-                    $lista = $ganadores->map(
-                        fn($g) => $g->Descripcion . ' – ' . $g->Proveedor . ' ($' . number_format($g->Precio, 2, '.', ',') . ')'
-                    )->implode('; ');
-                    $tokenInfo['proveedor_ganador']   = $lista;
-                    $tokenInfo['multiple_ganadores']  = $ganadores->count() > 1;
-                }
-                return view('solicitudes.token-invalido', compact('tokenInfo'))->with('status', 401);
+            // numeroPropuesta => CotizacionID ganadora
+            $seleccionadas = [];
+            foreach ($ganadores as $g) {
+                $seleccionadas[(int)($g->NumeroPropuesta ?? 1)] = (int)$g->CotizacionID;
             }
 
             if (!$solicitud->cotizaciones || $solicitud->cotizaciones->count() === 0) {
                 return view('solicitudes.elegir-ganador', [
-                    'solicitud' => $solicitud,
-                    'productos' => [],
-                    'token'     => $token,
-                    'error'     => 'No hay cotizaciones disponibles para esta solicitud',
+                    'solicitud'     => $solicitud,
+                    'productos'     => [],
+                    'token'         => $token,
+                    'soloLectura'   => $soloLectura,
+                    'seleccionadas' => $seleccionadas,
+                    'error'         => 'No hay cotizaciones disponibles para esta solicitud',
                 ]);
             }
 
             return view('solicitudes.elegir-ganador', [
-                'solicitud' => $solicitud,
-                'productos' => $productos,
-                'token'     => $token,
+                'solicitud'     => $solicitud,
+                'productos'     => $productos,
+                'token'         => $token,
+                'soloLectura'   => $soloLectura,
+                'seleccionadas' => $seleccionadas,
             ]);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
@@ -1178,5 +1184,18 @@ class SolicitudesController extends Controller
             Log::error("Error mostrando elegir ganador con token {$token}: " . $e->getMessage());
             abort(500, 'Error al cargar la página de elección de ganador');
         }
+    }
+
+    /**
+     * Destino del gerente tras confirmar ganadores: su mismo enlace, que ahora se
+     * muestra en solo lectura con su elección marcada.
+     */
+    private function redirectGerenciaGanadores(Request $request): string
+    {
+        $token = trim((string)$request->input('token'));
+
+        return $token !== ''
+            ? '/elegir-ganador/' . $token
+            : '/solicitudes/ganadores-confirmados';
     }
 }

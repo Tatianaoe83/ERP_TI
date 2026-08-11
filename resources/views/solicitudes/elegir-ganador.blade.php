@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Elegir Ganador - Solicitud #{{ $solicitud->SolicitudID }}</title>
+    <title>{{ ($soloLectura ?? false) ? 'Ganadores confirmados' : 'Elegir Ganador' }} - Solicitud #{{ $solicitud->SolicitudID }}</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
@@ -39,6 +39,8 @@
 
 <body class="bg-slate-50 dark:bg-slate-900">
     @php
+    $soloLectura = $soloLectura ?? false;
+    $seleccionadas = $seleccionadas ?? [];
     $propuestas = $productos ?? [];
     $totalPropuestas = count($propuestas);
     $totalProductos = 0;
@@ -65,13 +67,25 @@
                 
                 <div class="relative z-10">
                     <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white flex items-center gap-3 mb-3">
-                        <i class="fas fa-trophy text-amber-400 text-2xl md:text-3xl"></i>
-                        Elegir Ganador
+                        <i class="fas {{ $soloLectura ? 'fa-check-circle text-emerald-400' : 'fa-trophy text-amber-400' }} text-2xl md:text-3xl"></i>
+                        {{ $soloLectura ? 'Ganadores confirmados' : 'Elegir Ganador' }}
                     </h1>
                     <p class="text-sm md:text-base text-slate-300 mb-4">
                         Solicitud #{{ $solicitud->SolicitudID }} • {{ count($propuestas) }} propuestas • {{ $totalProductos }} productos • {{ $numProveedores }} proveedores
                     </p>
-                    @if($totalPropuestas > 0)
+
+                    @if($soloLectura)
+                    <div class="bg-emerald-500/10 backdrop-blur-sm rounded-xl p-4 border border-emerald-400/40">
+                        <p class="text-sm text-emerald-100 font-semibold flex items-center gap-2 mb-1">
+                            <i class="fas fa-lock"></i>
+                            Ya elegiste los ganadores de esta solicitud
+                        </p>
+                        <p class="text-xs text-emerald-200/90 leading-relaxed">
+                            Esta vista es solo de consulta: tu elección aparece marcada y no se puede modificar.
+                            La solicitud fue enviada a <strong>Administración</strong> para su aprobación final.
+                        </p>
+                    </div>
+                    @elseif($totalPropuestas > 0)
                     <div class="bg-slate-700/30 backdrop-blur-sm rounded-xl p-4 border border-slate-600/50">
                         <div class="flex items-center gap-3 mb-2">
                             <div class="flex-1 h-3 bg-slate-600/50 rounded-full overflow-hidden">
@@ -167,7 +181,7 @@
                             $total = $subtotal + $costoEnvio;
                             @endphp
 
-                            <div class="propuesta-card group relative bg-white dark:bg-slate-800 rounded-xl border-2 transition-all duration-200 border-slate-300 dark:border-slate-600 hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-lg cursor-pointer overflow-hidden"
+                            <div class="propuesta-card group relative bg-white dark:bg-slate-800 rounded-xl border-2 transition-all duration-200 border-slate-300 dark:border-slate-600 overflow-hidden {{ $soloLectura ? 'cursor-default select-none' : 'hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-lg cursor-pointer' }}"
                                 data-numero-propuesta="{{ $propuesta['numeroPropuesta'] }}"
                                 data-cotizacion-id="{{ $cotizacion->CotizacionID }}">
                                 
@@ -265,7 +279,25 @@
                 @endif
             </div>
 
-            @if(!isset($error) || !$error)
+            @if($soloLectura)
+            <!-- Solo lectura: sin acciones, solo salida -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 mb-4 p-4 md:p-5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-300 dark:border-emerald-700">
+                <p class="text-sm text-emerald-800 dark:text-emerald-200 leading-relaxed flex items-start gap-3">
+                    <i class="fas fa-check-circle text-emerald-500 dark:text-emerald-400 text-lg mt-0.5 shrink-0"></i>
+                    Tu elección quedó registrada. Ya no es posible cambiar los ganadores desde este enlace.
+                </p>
+                @auth
+                <a href="{{ route('home') }}" class="shrink-0 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-semibold transition-colors inline-flex items-center gap-2">
+                    <i class="fas fa-home"></i>
+                    Ir al Dashboard
+                </a>
+                @else
+                <button type="button" onclick="window.close()" class="shrink-0 px-5 py-2.5 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">
+                    Cerrar
+                </button>
+                @endauth
+            </div>
+            @elseif(!isset($error) || !$error)
             <!-- Botones de acción -->
             <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3 md:gap-4 mb-4">
                 <div class="flex flex-wrap items-center gap-2">
@@ -334,8 +366,10 @@
         window.ELECTOR_SOLICITUD_ID = {{ (int)($solicitud->SolicitudID ?? 0) }};
         window.ELECTOR_TOTAL = {{ $totalPropuestas ?? 0 }};
         window.ELECTOR_CSRF = @json(csrf_token());
+        window.ELECTOR_READONLY = @json($soloLectura);
 
-        const selecciones = {}; // numeroPropuesta -> cotizacionId
+        // numeroPropuesta -> cotizacionId (precargado cuando la elección ya fue hecha)
+        const selecciones = Object.assign({}, @json((object)$seleccionadas));
 
         function cancelar() {
             if (window.history.length > 1) window.history.back();
@@ -432,11 +466,22 @@
                     }
                 } else {
                     card.classList.remove('border-emerald-500', 'dark:border-emerald-400', 'bg-emerald-50', 'dark:bg-emerald-900/20', 'shadow-lg');
-                    card.classList.add('border-slate-300', 'dark:border-slate-600', 'hover:border-amber-400', 'dark:hover:border-amber-500');
+                    card.classList.add('border-slate-300', 'dark:border-slate-600');
+                    if (!window.ELECTOR_READONLY) {
+                        card.classList.add('hover:border-amber-400', 'dark:hover:border-amber-500');
+                    } else {
+                        card.classList.add('opacity-60');
+                    }
                     if (btn) {
                         btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
-                        btn.classList.add('bg-amber-500', 'hover:bg-amber-600');
-                        if (label) label.textContent = 'Elegir ganador';
+                        if (window.ELECTOR_READONLY) {
+                            btn.classList.remove('bg-amber-500', 'hover:bg-amber-600', 'text-white');
+                            btn.classList.add('bg-slate-200', 'dark:bg-slate-700', 'text-slate-500', 'dark:text-slate-400');
+                            if (label) label.textContent = 'No seleccionada';
+                        } else {
+                            btn.classList.add('bg-amber-500', 'hover:bg-amber-600');
+                            if (label) label.textContent = 'Elegir ganador';
+                        }
                     }
                 }
             });
@@ -467,11 +512,13 @@
         }
 
         function elegirGanador(numeroPropuesta, cotizacionId) {
+            if (window.ELECTOR_READONLY) return;
             selecciones[numeroPropuesta] = cotizacionId;
             actualizarUI();
         }
 
         function confirmarGanadores() {
+            if (window.ELECTOR_READONLY) return;
             const total = window.ELECTOR_TOTAL || 0;
             if (Object.keys(selecciones).length !== total) return;
             const ganadores = Object.values(selecciones).map(Number);
@@ -551,13 +598,15 @@
             });
         }
 
-        document.querySelectorAll('.propuesta-card').forEach(function(card) {
-            card.addEventListener('click', function() {
-                const numPropuesta = parseInt(this.dataset.numeroPropuesta, 10);
-                const cid = parseInt(this.dataset.cotizacionId, 10);
-                elegirGanador(numPropuesta, cid);
+        if (!window.ELECTOR_READONLY) {
+            document.querySelectorAll('.propuesta-card').forEach(function(card) {
+                card.addEventListener('click', function() {
+                    const numPropuesta = parseInt(this.dataset.numeroPropuesta, 10);
+                    const cid = parseInt(this.dataset.cotizacionId, 10);
+                    elegirGanador(numPropuesta, cid);
+                });
             });
-        });
+        }
 
         actualizarUI();
     </script>

@@ -26,6 +26,7 @@ use Illuminate\Http\Request;
 use DB;
 use PDF;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InventarioController extends AppBaseController
 {
@@ -288,9 +289,12 @@ class InventarioController extends AppBaseController
         return view('inventarios.edit')->with([
             'inventario' => $inventario,
             'empleadoActivo' => (bool) $inventario->Estado,
-            // El switch "Presupuestado" sólo aplica a los tipos de persona que alimentan
-            // los reportes de presupuesto.
+            // La columna/filtro "Presupuestado" aplica a los tipos de persona que
+            // alimentan los reportes de presupuesto.
             'permitePresupuestado' => in_array($inventario->tipo_persona, ['FISICA', 'EXTRAORDINARIO']),
+            // En EXTRAORDINARIO todo lo asignado es presupuestado por definición: no
+            // se muestra el switch y el valor se fuerza en el servidor.
+            'presupuestadoForzado' => $inventario->tipo_persona === 'EXTRAORDINARIO',
             'equiposAsignados' => $EquiposAsignados,
             'equipos' => $Equipos,
             'insumosAsignados' => $InsumosAsignados,
@@ -343,6 +347,8 @@ class InventarioController extends AppBaseController
 
         $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
 
+        $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID);
+
         $inventarioEquipo->update($data);
 
         return response()->json([
@@ -375,6 +381,8 @@ class InventarioController extends AppBaseController
         $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
 
         $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+
+        $data = $this->forzarPresupuestado($data, (int) $id);
 
         $inventarioEquipo = InventarioEquipo::create($data);
 
@@ -471,6 +479,8 @@ class InventarioController extends AppBaseController
             $data['FechaRenovacion'] = null;
         }
 
+        $data = $this->forzarPresupuestado($data, (int) $inventarioinsumo->EmpleadoID);
+
         $inventarioinsumo->update($data);
 
         return response()->json([
@@ -503,6 +513,8 @@ class InventarioController extends AppBaseController
                 $data['FechaRenovacion'] = $insumoMaster->FechaRenovacion;
             }
         }
+
+        $data = $this->forzarPresupuestado($data, (int) $id);
 
         $inventarioinsumo = InventarioInsumo::create($data);
 
@@ -559,6 +571,8 @@ class InventarioController extends AppBaseController
             if (isset($data['FechaRenovacion']) && (in_array($data['FechaRenovacion'], $invalidValues) || empty($data['FechaRenovacion']))) {
                 $data['FechaRenovacion'] = null;
             }
+
+            $data = $this->forzarPresupuestado($data, (int) $inventariotelf->EmpleadoID);
 
             $inventariotelf->update($data);
 
@@ -661,6 +675,8 @@ class InventarioController extends AppBaseController
             $data['MontoRenovacionFianza'] = $request->input('MontoRenovacionFianza', $lineaData->MontoRenovacionFianza);
             $data['CostoFianza'] = $lineaData->CostoFianza;
         }
+
+        $data = $this->forzarPresupuestado($data, (int) $id);
 
         $inventariotelf = InventarioLineas::create($data);
 
@@ -766,6 +782,10 @@ class InventarioController extends AppBaseController
 
         $hoy = Carbon::now()->toDateString();
 
+        // Si el destino es EXTRAORDINARIO, todo lo traspasado pasa a ser presupuestado.
+        $destinoExtraordinario = Empleados::where('EmpleadoID', $empleadoSeleccionado)
+            ->value('tipo_persona') === 'EXTRAORDINARIO';
+
         if (!empty($equiposSeleccionados)) {
             $equipos = InventarioEquipo::whereIn('InventarioID', $equiposSeleccionados)
                 ->select('InventarioID', 'FechaAsignacion')
@@ -773,6 +793,9 @@ class InventarioController extends AppBaseController
             foreach ($equipos as $equipo) {
                 $equipo->EmpleadoID = $empleadoSeleccionado;
                 $equipo->FechaAsignacion = $hoy;
+                if ($destinoExtraordinario) {
+                    $equipo->Presupuestado = 1;
+                }
                 $equipo->save();
             }
 
@@ -791,6 +814,9 @@ class InventarioController extends AppBaseController
             foreach ($insumos as $insumo) {
                 $insumo->EmpleadoID = $empleadoSeleccionado;
                 $insumo->FechaAsignacion = $hoy;
+                if ($destinoExtraordinario) {
+                    $insumo->Presupuestado = 1;
+                }
                 $insumo->save();
             }
         } else {
@@ -805,6 +831,9 @@ class InventarioController extends AppBaseController
             foreach ($lineas as $linea) {
                 $linea->EmpleadoID = $empleadoSeleccionado;
                 $linea->FechaAsignacion = $hoy;
+                if ($destinoExtraordinario) {
+                    $linea->Presupuestado = 1;
+                }
                 $linea->save();
             }
         } else {
@@ -1083,6 +1112,173 @@ class InventarioController extends AppBaseController
         $pdf = PDF::loadView('inventarios.pdfMante', $data);
         $pdf->setPaper('A4', 'portrait');
         return $pdf->stream("Mantenimiento.pdf", array("Attachment" => false));
+    }
+
+    /**
+     * Descarga en Excel el inventario asignado de un empleado para el tipo indicado
+     * (equipos, insumos o lineas), aplicando el filtro de la pestaña seleccionada.
+     */
+    public function exportarAsignados($id, $tipo, Request $request)
+    {
+        $empleado = Empleados::find((int) $id);
+
+        if (!$empleado) {
+            Flash::error('Empleado no encontrado');
+            return redirect(route('inventarios.index'));
+        }
+
+        $tipo = strtolower($tipo);
+        $filtro = $request->input('filtro', 'todos');
+
+        if (!in_array($tipo, ['equipos', 'insumos', 'lineas'])) {
+            Flash::error('Tipo de inventario no válido');
+            return back();
+        }
+
+        $aplicarFiltro = function ($query) use ($filtro) {
+            if ($filtro === 'presupuestados') {
+                $query->where('Presupuestado', 1);
+            } elseif ($filtro === 'no_presupuestados') {
+                $query->where(function ($q) {
+                    $q->where('Presupuestado', 0)->orWhereNull('Presupuestado');
+                });
+            }
+
+            return $query;
+        };
+
+        $siNo = fn($valor) => $valor ? 'Si' : 'No';
+        $fecha = fn($valor) => (empty($valor) || in_array($valor, ['Sin asignar', 'Sin asigna', '0000-00-00']))
+            ? 'Sin asignar'
+            : Carbon::parse($valor)->format('d/m/Y');
+
+        // La columna "Presupuestado" sólo aporta información cuando se exporta "Todos";
+        // en las otras pestañas el valor ya está implícito en el filtro.
+        $incluirPresupuestado = $filtro === 'todos';
+
+        if ($tipo === 'equipos') {
+            $registros = $aplicarFiltro(InventarioEquipo::where('EmpleadoID', $id))->get();
+
+            $encabezados = ['Categoria', 'Marca', 'Caracteristicas', 'Modelo', 'Precio', 'Fecha Asignacion', 'Fecha de Compra', 'Num. Serie', 'Folio', 'Gerencia Equipo', 'Comentarios', 'Mes de pago'];
+
+            $filas = $registros->map(function ($e) use ($fecha, $siNo, $incluirPresupuestado) {
+                $fila = [
+                    $e->CategoriaEquipo,
+                    $e->Marca,
+                    $e->Caracteristicas,
+                    $e->Modelo,
+                    $e->Precio,
+                    $fecha($e->FechaAsignacion),
+                    $fecha($e->FechaDeCompra),
+                    $e->NumSerie,
+                    $e->Folio,
+                    $e->GerenciaEquipo,
+                    $e->Comentarios,
+                    $e->MesDePago,
+                ];
+
+                if ($incluirPresupuestado) {
+                    $fila[] = $siNo($e->Presupuestado);
+                }
+
+                return $fila;
+            })->toArray();
+
+            $titulo = 'Equipos';
+        } elseif ($tipo === 'insumos') {
+            $registros = $aplicarFiltro(InventarioInsumo::where('EmpleadoID', $id))->get();
+
+            $encabezados = ['Categoria Insumo', 'Nombre Insumo', 'Costo Mensual', 'Costo Anual', 'Frecuencia de Pago', 'Fecha de Renovacion', 'Observaciones', 'Fecha de Asignacion', 'Num. Serie', 'Comentarios', 'Mes de pago'];
+
+            $filas = $registros->map(function ($i) use ($fecha, $siNo, $incluirPresupuestado) {
+                $fila = [
+                    $i->CateogoriaInsumo,
+                    $i->NombreInsumo,
+                    $i->CostoMensual,
+                    $i->CostoAnual,
+                    $i->FrecuenciaDePago,
+                    $fecha($i->FechaRenovacion),
+                    $i->Observaciones,
+                    $fecha($i->FechaAsignacion),
+                    $i->NumSerie,
+                    $i->Comentarios,
+                    $i->MesDePago,
+                ];
+
+                if ($incluirPresupuestado) {
+                    $fila[] = $siNo($i->Presupuestado);
+                }
+
+                return $fila;
+            })->toArray();
+
+            $titulo = 'Insumos';
+        } else {
+            $registros = $aplicarFiltro(InventarioLineas::where('EmpleadoID', $id))->get();
+
+            $encabezados = ['Num. Tel.', 'Compania', 'Plan', 'Costo Renta Mensual', 'Cuenta Padre', 'Cuenta Hija', 'Tipo Linea', 'Obra', 'Fecha Fianza', 'Costo Fianza', 'Fecha Asignacion', 'Comentario', 'Monto Renovacion Fianza', 'Fecha Renovacion'];
+
+            $filas = $registros->map(function ($l) use ($fecha, $siNo, $incluirPresupuestado) {
+                $fila = [
+                    $l->NumTelefonico,
+                    $l->Compania,
+                    $l->PlanTel,
+                    $l->CostoRentaMensual,
+                    $l->CuentaPadre,
+                    $l->CuentaHija,
+                    $l->TipoLinea,
+                    $l->lineastelefonicas->obras->NombreObra ?? 'Sin asignar',
+                    $fecha($l->FechaFianza),
+                    $l->CostoFianza,
+                    $fecha($l->FechaAsignacion),
+                    $l->Comentarios,
+                    $l->MontoRenovacionFianza,
+                    $fecha($l->FechaRenovacion),
+                ];
+
+                if ($incluirPresupuestado) {
+                    $fila[] = $siNo($l->Presupuestado);
+                }
+
+                return $fila;
+            })->toArray();
+
+            $titulo = 'Lineas';
+        }
+
+        if ($incluirPresupuestado) {
+            $encabezados[] = 'Presupuestado';
+        }
+
+        $etiquetaFiltro = [
+            'todos' => 'Todos',
+            'presupuestados' => 'Presupuestados',
+            'no_presupuestados' => 'Asignados',
+        ][$filtro] ?? 'Todos';
+
+        $nombreEmpleado = preg_replace('/[^A-Za-z0-9_\- ]/', '', $empleado->NombreEmpleado);
+        $nombreArchivo = $titulo . '_' . str_replace(' ', '_', $nombreEmpleado) . '_' . str_replace(' ', '_', $etiquetaFiltro) . '.xlsx';
+
+        return Excel::download(
+            new \App\Exports\InventarioAsignadoExport($filas, $encabezados, $titulo),
+            $nombreArchivo
+        );
+    }
+
+    /**
+     * Regla de negocio: todo lo que se asigna a una persona EXTRAORDINARIO es
+     * presupuestado, sin importar lo que llegue del formulario. El switch manual
+     * sólo existe para personas FISICA.
+     */
+    private function forzarPresupuestado(array $data, int $empleadoId): array
+    {
+        $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
+
+        if ($tipoPersona === 'EXTRAORDINARIO') {
+            $data['Presupuestado'] = 1;
+        }
+
+        return $data;
     }
 
     private function respuestaSiEmpleadoInactivo(int $empleadoId)

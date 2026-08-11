@@ -5,7 +5,7 @@
 
         @foreach (\App\Models\Tickets::COLUMNAS_VISTA as $key => $titulo)
 
-        <div class="flex flex-col h-full max-h-[80vh] rounded-xl overflow-hidden bg-gray-100/80 dark:bg-[#161920] border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
+        <div class="flex flex-col h-full max-h-[80vh] md:h-[calc(100vh-7rem)] md:max-h-[calc(100vh-7rem)] rounded-xl overflow-hidden bg-gray-100/80 dark:bg-[#161920] border border-gray-200 dark:border-[#2A2F3A] shadow-sm">
 
             <div class="px-3 py-2.5 flex justify-between items-center bg-white/70 dark:bg-[#1C1F26] border-b border-gray-200 dark:border-[#2A2F3A]">
                 <div class="flex items-center gap-2">
@@ -14,7 +14,7 @@
                 </div>
                 <span data-categoria-header="{{ $key }}"
                     class="text-[11px] font-bold min-w-[1.5rem] text-center px-1.5 py-0.5 rounded-full bg-gray-200/80 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                    {{ count($ticketsStatus[$key]) }}
+                    {{ $key === 'resueltos' && $cerrados ? $cerrados->total() : count($ticketsStatus[$key]) }}
                 </span>
             </div>
 
@@ -38,6 +38,12 @@
                 </div>
                 @endforelse
             </div>
+
+            @if ($key === 'resueltos' && $cerrados && $cerrados->hasPages())
+            <div class="shrink-0 px-1 py-1.5 border-t border-gray-200 dark:border-[#2A2F3A]">
+                {{ $cerrados->onEachSide(0)->links('livewire.paginacion-compacta') }}
+            </div>
+            @endif
         </div>
 
         @endforeach

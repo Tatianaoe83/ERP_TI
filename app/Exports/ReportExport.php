@@ -91,7 +91,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         $presup_datos = PresupuestoHelper::reporteLineasDatosPorGerencia($numerogerencia, $this->tipo, $this->modo)->toArray();
         $presup_gps = PresupuestoHelper::reporteLineasGPSPorGerencia($numerogerencia, $this->tipo, $this->modo)->toArray();
 
-        // Construir filtro SQL dinámico para queries de impresoras/internet
+        // Construir filtro SQL dinámico para queries de impresoras/internet.
+        // PENDIENTE: aquí tampoco se filtra por e.Estado; ver nota en PresupuestoHelper.
         $tipoPersonaFilter = $tiposPersona
             ? " AND e.tipo_persona IN ('" . implode("', '", $tiposPersona) . "') "
             : "";

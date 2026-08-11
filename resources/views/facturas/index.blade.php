@@ -63,7 +63,7 @@
     }
 </style>
 
-<div class="w-full mx-auto max-w-7xl">
+<div class="w-full mx-auto max-w-[1800px]">
 
     <div class="mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div class="flex items-center gap-3">

@@ -169,7 +169,7 @@ public function crearTickets(Request $request)
              $correo = $request->input('Correo');
              if (empty($correo)) return redirect()->back()->with('error', 'El correo electrónico es requerido');
              
-             $empleado = Empleados::where('Correo', $correo)->first();
+             $empleado = Empleados::where('Correo', $correo)->where('Estado', '1')->first();
              if (!$empleado) return redirect()->back()->with('error', 'No se encontró el empleado');
              
              $descripcion = $request->input('Descripcion');
@@ -191,7 +191,6 @@ public function crearTickets(Request $request)
                  $ticketData = [
                      'EmpleadoID' => $empleado->EmpleadoID,
                      'Descripcion' => $descripcion,
-                     'Prioridad' => 'Baja',
                      'Estatus' => 'Pendiente',
                  ];
                  if ($request->input('Numero')) $ticketData['Numero'] = $request->input('Numero');
