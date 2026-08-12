@@ -24,6 +24,9 @@ class SolicitudTokens extends Model
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
+    /** Días que dura el enlace de cada etapa, contados desde que se envía su correo. */
+    const VIGENCIA_DIAS = 7;
+
 
     protected $dates = ['deleted_at'];
 
