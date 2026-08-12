@@ -512,13 +512,20 @@ class SolicitudAprobacionEmailService
 
     /**
      * Marcar el token como "ya notificado" para que entre al ciclo de recordatorios diarios.
+     *
+     * Cada etapa tiene su propia ventana de 7 días. Los tokens de gerencia y administración
+     * se crean por adelantado, así que su vigencia arranca aquí: desde que el aprobador
+     * recibe el correo, no desde que se creó el registro.
      */
     private function marcarTokenNotificado(string $token): void
     {
         try {
             SolicitudTokens::where('token', $token)
                 ->whereNull('notified_at')
-                ->update(['notified_at' => now()]);
+                ->update([
+                    'notified_at' => now(),
+                    'expires_at' => now()->addDays(SolicitudTokens::VIGENCIA_DIAS),
+                ]);
         } catch (\Throwable $e) {
             Log::warning("No se pudo marcar notified_at del token {$token}: " . $e->getMessage());
         }
