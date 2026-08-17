@@ -33,17 +33,18 @@
                     <tr wire:key="mantenimiento-tabla-{{ $ticket['id'] }}"
                         class="transition cursor-pointer hover:bg-gray-100 dark:hover:bg-[#273244]"
                         data-ticket-id="{{ $ticket['id'] }}"
-                        data-ticket-asunto="{{ htmlspecialchars($ticket['asunto'] ?? '', ENT_QUOTES, 'UTF-8') }}"
-                        data-ticket-descripcion="{{ htmlspecialchars($ticket['descripcion'] ?? '', ENT_QUOTES, 'UTF-8') }}"
+                        {{-- Sin htmlspecialchars: Blade ya escapa con {{ }}; escapar dos veces deja &quot; literal en el dataset --}}
+                        data-ticket-asunto="{{ $ticket['asunto'] ?? '' }}"
+                        data-ticket-descripcion="{{ $ticket['descripcion'] ?? '' }}"
                         data-ticket-prioridad="{{ $ticket['prioridad'] }}"
                         data-ticket-estatus="{{ $ticket['estatus'] }}"
                         data-ticket-categoria="{{ $ticket['categoria'] ?? '' }}"
                         data-ticket-responsable="{{ $ticket['responsable_id'] ?? '' }}"
-                        data-ticket-solicitante="{{ htmlspecialchars($ticket['solicitante'] ?? '', ENT_QUOTES, 'UTF-8') }}"
+                        data-ticket-solicitante="{{ $ticket['solicitante'] ?? '' }}"
                         data-ticket-correo="{{ $ticket['correo'] ?? '' }}"
-                        data-ticket-area="{{ htmlspecialchars($ticket['area'] ?? '', ENT_QUOTES, 'UTF-8') }}"
+                        data-ticket-area="{{ $ticket['area'] ?? '' }}"
                         data-ticket-fecha="{{ \Carbon\Carbon::parse($ticket['created_at'])->format('d/m/Y H:i:s') }}"
-                        data-ticket-imagen="{{ htmlspecialchars(is_array($ticket['imagen'] ?? null) ? json_encode($ticket['imagen']) : ($ticket['imagen'] ?? ''), ENT_QUOTES, 'UTF-8') }}"
+                        data-ticket-imagen="{{ is_array($ticket['imagen'] ?? null) ? json_encode($ticket['imagen'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : ($ticket['imagen'] ?? '') }}"
                         @click="abrirModalDesdeElemento($el)">
                         <td class="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100">#{{ $ticket['id'] }}</td>
                         <td class="px-4 py-3 max-w-xs truncate text-gray-600 dark:text-gray-300">{{ $ticket['asunto'] }}</td>

@@ -17,6 +17,9 @@
 function mantenimientoModal(soloPanel = false) {
     return {
         soloPanel,
+        // Base pública de storage: asset() respeta el subdirectorio donde corre la app,
+        // una ruta fija '/storage/...' rompe cuando el sitio no está en la raíz del dominio.
+        storageBaseUrl: '{{ asset("storage") }}',
         vista: localStorage.getItem('mantenimientoVista') || 'kanban',
         mostrar: false,
         selected: {},
@@ -500,14 +503,37 @@ function mantenimientoModal(soloPanel = false) {
         formatearMensaje(m) {
             if (!m) return '';
             if (!/<[a-z][\s\S]*>/i.test(m)) return m.replace(/\n/g, '<br>').replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-600 hover:underline">$1</a>');
-            return m;
+            // Las imágenes embebidas se guardan con src="/storage/...", que rompe si la app
+            // no vive en la raíz del dominio. Reescribimos contra storageBaseUrl.
+            const base = (this.storageBaseUrl || '/storage').replace(/\/$/, '');
+            return m.replace(/(src|href)=(["'])\/storage\/([^"']+)\2/gi, (_, attr, q, ruta) => `${attr}=${q}${base}/${ruta}${q}`);
         },
         obtenerAdjuntos() {
-            if (!this.selected?.imagen) return [];
-            try {
-                const a = typeof this.selected.imagen === 'string' ? JSON.parse(this.selected.imagen) : this.selected.imagen;
-                return Array.isArray(a) ? a : (this.selected.imagen ? [this.selected.imagen] : []);
-            } catch (e) { return this.selected.imagen ? [this.selected.imagen] : []; }
+            const bruto = this.selected?.imagen;
+            if (!bruto) return [];
+            if (Array.isArray(bruto)) return bruto;
+            if (typeof bruto === 'object') return [bruto];
+
+            // Un data-attribute mal escapado puede llegar como [&quot;ruta&quot;]; lo decodificamos
+            // antes de parsear para no terminar tratando el JSON completo como si fuera una ruta.
+            let texto = String(bruto).trim();
+            if (/&(quot|#34|amp|#39|apos);/i.test(texto)) {
+                const ta = document.createElement('textarea');
+                ta.innerHTML = texto;
+                texto = ta.value.trim();
+            }
+            if (!texto) return [];
+
+            if (texto.startsWith('[') || texto.startsWith('{')) {
+                try {
+                    const a = JSON.parse(texto);
+                    if (Array.isArray(a)) return a;
+                    if (a && typeof a === 'object') return [a];
+                } catch (e) {
+                    // JSON inválido: caemos al manejo como ruta simple
+                }
+            }
+            return [texto];
         },
         obtenerNombreArchivo(r) {
             if (!r) return 'Archivo';
@@ -520,15 +546,51 @@ function mantenimientoModal(soloPanel = false) {
             const p = n.lastIndexOf('.');
             return p === -1 ? 'Sin extensión' : n.substring(p + 1).toUpperCase();
         },
+        /**
+         * Convierte una ruta relativa del disco 'public' en URL absoluta usando storageBaseUrl
+         * (asset('storage')), que respeta el subdirectorio donde está montada la app.
+         * Cada segmento se codifica para soportar nombres con espacios o acentos.
+         */
+        construirUrlStorage(rutaRelativa) {
+            const limpio = String(rutaRelativa)
+                .replace(/\\/g, '/')
+                .replace(/\/{2,}/g, '/')
+                .replace(/^\/+/, '')
+                .replace(/^storage\//, '')
+                .trim();
+            if (!limpio) return '#';
+            const codificado = limpio.split('/').map(s => encodeURIComponent(s)).join('/');
+            return (this.storageBaseUrl || '/storage').replace(/\/$/, '') + '/' + codificado;
+        },
         obtenerUrlArchivo(r) {
             if (!r) return '#';
-            if (typeof r === 'string' && (r.startsWith('http://') || r.startsWith('https://'))) return r;
-            if (typeof r === 'object' && r !== null) {
-                if (r.url) return r.url;
-                if (r.storage_path) return '/storage/' + r.storage_path.replace(/^\/+/, '');
-                if (r.path) return r.path.startsWith('/') ? r.path : '/storage/' + r.path.replace(/^\/+/, '');
+
+            if (typeof r === 'string') {
+                if (r.startsWith('http://') || r.startsWith('https://') || r.startsWith('data:')) return r;
+                return this.construirUrlStorage(r);
             }
-            return typeof r === 'string' ? (r.startsWith('/storage/') ? r : '/storage/' + r.replace(/^\/+/, '')) : '#';
+
+            if (typeof r === 'object') {
+                // Preferimos la ruta relativa: la 'url' guardada puede apuntar al host de APP_URL,
+                // que no siempre coincide con el host desde el que se navega.
+                const relativa = r.storage_path || (r.path && !/^[a-zA-Z]:[\\/]/.test(r.path) ? r.path : '') || '';
+                if (relativa) return this.construirUrlStorage(relativa);
+
+                if (r.url) {
+                    if (r.url.startsWith('data:')) return r.url;
+                    try {
+                        const u = new URL(r.url, window.location.origin);
+                        if (u.origin === window.location.origin) return u.href;
+                        return this.construirUrlStorage(u.pathname);
+                    } catch (e) {
+                        return this.construirUrlStorage(r.url);
+                    }
+                }
+
+                if (r.name) return this.construirUrlStorage(r.name);
+            }
+
+            return '#';
         },
     };
 }
