@@ -71,6 +71,7 @@ class InventarioController extends AppBaseController
             ->select([
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
+                'empleados.tipo_persona',
                 'puestos.NombrePuesto as nombre_puesto',
                 'obras.NombreObra as nombre_obra',
                 'empleados.NumTelefono',
@@ -138,7 +139,23 @@ class InventarioController extends AppBaseController
                 }
 
             })
-            ->rawColumns(['action', 'Estado'])
+            ->editColumn('tipo_persona', function ($row) {
+                $tipo = strtoupper((string) ($row->tipo_persona ?? 'FISICA'));
+
+                $map = [
+                    'FISICA' => ['label' => 'Física', 'class' => 'inv-tipo-fisica', 'hint' => 'Stock + Extra'],
+                    'REFERENCIADO' => ['label' => 'Referenciado', 'class' => 'inv-tipo-referenciado', 'hint' => 'Solo stock'],
+                    'EXTRAORDINARIO' => ['label' => 'Extraordinario', 'class' => 'inv-tipo-extraordinario', 'hint' => 'Todo extra'],
+                ];
+
+                $meta = $map[$tipo] ?? $map['FISICA'];
+
+                return '<span class="inv-tipo-badge ' . $meta['class'] . '" title="' . e($meta['hint']) . '">'
+                    . e($meta['label'])
+                    . '</span>'
+                    . '<div style="font-size:10px;color:#64748b;margin-top:3px;">' . e($meta['hint']) . '</div>';
+            })
+            ->rawColumns(['action', 'Estado', 'tipo_persona'])
             ->make(true);
     }
 

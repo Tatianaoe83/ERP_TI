@@ -1,38 +1,71 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Inventario de:</h3>
-<h5 style="margin-bottom: 6px;padding-left: 5px;">{{$inventario->NombreEmpleado}}</h5>
+@php
+    $tipoPersona = strtoupper((string) ($inventario->tipo_persona ?? 'FISICA'));
+    $tipoMeta = [
+        'FISICA' => [
+            'label' => 'Física',
+            'class' => 'inv-tipo-fisica',
+            'rules' => 'Puede tener Stock (asignado actual) y Extra (presupuesto futuro).',
+        ],
+        'REFERENCIADO' => [
+            'label' => 'Referenciado',
+            'class' => 'inv-tipo-referenciado',
+            'rules' => 'Gerencia / control de almacén: solo Stock (inventario actual). Sin extras de presupuesto.',
+        ],
+        'EXTRAORDINARIO' => [
+            'label' => 'Extraordinario',
+            'class' => 'inv-tipo-extraordinario',
+            'rules' => 'Todo lo asignado es Extra (presupuesto futuro). No aplica stock operativo.',
+        ],
+    ];
+    $meta = $tipoMeta[$tipoPersona] ?? $tipoMeta['FISICA'];
+    $iniciales = collect(preg_split('/\s+/', trim((string) $inventario->NombreEmpleado)))
+        ->filter()
+        ->take(2)
+        ->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))
+        ->implode('');
+@endphp
 
-<div class="content px-3">
+@include('inventarios.partials.tipo-persona-styles')
+@include('inventarios.partials.asignar-ui-styles')
 
-  @include('adminlte-templates::common.errors')
-
-  <div class="row">
-
-    <div class="row">
-      <div class="col-md-6">
-      </div>
-      <div class="col-md-6" style="text-align: end;">
-
-        <a href="{{ route('inventarios.index') }}" class="btn btn-danger">Regresar</a>
-
-
-      </div>
+<div class="inv-assign-page">
+    <div class="inv-hero">
+        <div class="inv-hero-left">
+            <div class="inv-avatar">{{ $iniciales ?: 'IN' }}</div>
+            <div>
+                <p class="inv-hero-label">Inventario de</p>
+                <h1 class="inv-hero-name">{{ $inventario->NombreEmpleado }}</h1>
+                <div class="mt-1 d-flex flex-wrap align-items-center gap-2">
+                    <span class="inv-tipo-badge {{ $meta['class'] }}">{{ $meta['label'] }}</span>
+                    <span class="text-muted small">{{ $meta['rules'] }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="inv-hero-actions">
+            <a href="{{ route('inventarios.index') }}" class="inv-btn-back">Regresar</a>
+        </div>
     </div>
 
+    @include('adminlte-templates::common.errors')
+
+    @if(!$empleadoActivo)
+    <div class="alert alert-warning">
+        Este empleado está <strong>inactivo</strong>. Solo puede consultar su inventario; no es posible asignar, editar ni eliminar elementos.
+    </div>
+    @endif
 
     @include('inventarios.fields')
-  </div>
 </div>
-</section>
 
 <!-- Modal de Edición -->
 <div class="modal" id="editModal" tabindex="-1">
   <div class="modal-dialog modal-xl">
-    <div class="modal-content dark:bg-[#101010]">
-      <div class="modal-header">
-        <h5 class="modal-title" id="titulo"></h5>
+    <div class="modal-content inv-modal-content dark:bg-[#101010]">
+      <div class="modal-header inv-modal-header">
+        <h5 class="modal-title inv-modal-title" id="titulo"></h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
@@ -151,22 +184,15 @@
 
             @if($permitePresupuestado)
             <div class="row mt-3">
-              <div class="col-md-6">
-                <div class="dark:text-white">
-                  <label>Presupuestado</label>
-                  @if($presupuestadoForzado)
-                  <div class="text-muted small">Si (todo lo asignado a una persona extraordinaria es presupuestado)</div>
-                  @else
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoEquipo">
-                    <label class="form-check-label" for="editPresupuestadoEquipo" id="editPresupuestadoEquipoLabel">No</label>
-                  </div>
-                  @endif
-                </div>
+              <div class="col-md-12">
+                @include('inventarios.partials.presupuestado-captura', [
+                    'switchId' => 'editPresupuestadoEquipo',
+                    'presupuestadoForzado' => $presupuestadoForzado,
+                ])
               </div>
-              <div class="col-md-6">
+              <div class="col-md-6 mt-3">
                 <div class="dark:text-white">
-                  <label>Mes de pago</label>
+                  <label>Mes de pago <span class="text-muted small">(recomendado si es Extra)</span></label>
                   <select class="form-select" id="editMesDePagoEquipo" name="MesDePago">
                     <option value="">Seleccione mes</option>
                     <option value="ENERO">enero</option>
@@ -319,18 +345,11 @@
 
             @if($permitePresupuestado)
             <div class="row mt-3">
-              <div class="col-md-6">
-                <div class="dark:text-white">
-                  <label>Presupuestado</label>
-                  @if($presupuestadoForzado)
-                  <div class="text-muted small">Si (todo lo asignado a una persona extraordinaria es presupuestado)</div>
-                  @else
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoInsumo">
-                    <label class="form-check-label" for="editPresupuestadoInsumo" id="editPresupuestadoInsumoLabel">No</label>
-                  </div>
-                  @endif
-                </div>
+              <div class="col-md-12">
+                @include('inventarios.partials.presupuestado-captura', [
+                    'switchId' => 'editPresupuestadoInsumo',
+                    'presupuestadoForzado' => $presupuestadoForzado,
+                ])
               </div>
             </div>
             @endif
@@ -388,18 +407,11 @@
 
             @if($permitePresupuestado)
             <div class="row mt-3">
-              <div class="col-md-6">
-                <div class="dark:text-white">
-                  <label>Presupuestado</label>
-                  @if($presupuestadoForzado)
-                  <div class="text-muted small">Si (todo lo asignado a una persona extraordinaria es presupuestado)</div>
-                  @else
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="editPresupuestadoLinea">
-                    <label class="form-check-label" for="editPresupuestadoLinea" id="editPresupuestadoLineaLabel">No</label>
-                  </div>
-                  @endif
-                </div>
+              <div class="col-md-12">
+                @include('inventarios.partials.presupuestado-captura', [
+                    'switchId' => 'editPresupuestadoLinea',
+                    'presupuestadoForzado' => $presupuestadoForzado,
+                ])
               </div>
             </div>
             @endif

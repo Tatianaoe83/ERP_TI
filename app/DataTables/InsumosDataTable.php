@@ -5,11 +5,12 @@ namespace App\DataTables;
 use App\Models\Insumos;
 use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\EloquentDataTable;
-use Yajra\DataTables\Html\Button;
+use App\DataTables\Concerns\HasIndexPageHtml;
 use Yajra\DataTables\Html\Column;
 
 class InsumosDataTable extends DataTable
 {
+    use HasIndexPageHtml;
     /**
      * Build DataTable class.
      *
@@ -75,64 +76,7 @@ class InsumosDataTable extends DataTable
      */
     public function html()
     {
-        return $this->builder()
-            ->setTableId('insumos-table')
-            ->columns($this->getColumns())
-            ->minifiedAjax()
-            ->dom('Bfrtip')
-            ->orderBy(1, 'asc')
-            ->buttons(array_filter([
-                auth()->user()->can('crear-insumos') ? [
-                    'extend' => 'collection',
-                    'className' => 'btn btn-primary',
-                    'text' => '<i class="fa fa-plus"></i> Crear',
-                    'action' => "function() {
-                    window.location = '" . route('insumos.create') . "';
-                }"
-                ] : null,
-
-                /*[
-                    'extend' => 'excel',
-                    'className' => 'btn btn-success',
-                    'text' => '<i class="fa fa-file-excel"></i> Excel'
-                ],
-                [
-                    'extend' => 'pdf',
-                    'className' => 'btn btn-danger',
-                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],*/
-
-                [
-                    'className' => 'btn btn-default',
-                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                    'action' => 'function() { 
-                    window.LaravelDataTables["insumos-table"].ajax.reload();
-                }'
-                ],
-            ]))
-            ->parameters([
-                'processing' => true,
-                'serverSide' => true,
-                'responsive' => true,
-                'pageLength' => 7,
-                'searching' => true,
-                'language' => [
-                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-                ],
-                'drawCallback' => 'function() {
-                $("[data-toggle=tooltip]").tooltip();
-            }',
-                'initComplete' => "function() {
-                this.api().columns().every(function () {
-                    var column = this;
-                    var input = document.createElement(\"input\");
-                    $(input).appendTo($(column.footer()).empty())
-                    .on('change', function () {
-                        column.search($(this).val(), false, false, true).draw();
-                    });
-                });
-            }",
-            ]);
+        return $this->indexPageHtml('insumos-table');
     }
 
     /**

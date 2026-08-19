@@ -1,26 +1,14 @@
-
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
-        <div class="container-fluid">
-            
-        </div>
-    </section>
+@include('flash::message')
 
-    <div class="content px-3">
-        @include('flash::message')
-        <div class="clearfix"></div>
-
-        <div class="card">
-            <div class="card-body">
-                @include('equipos.table')
-            </div>
-        </div>
-    </div>
+<x-index-page
+    title="Equipos"
+    icon="fa-laptop"
+    :create-url="route('equipos.create')"
+    create-permission="crear-equipos"
+>
+    @include('equipos.table')
+</x-index-page>
 @endsection
-
-
-
-
-

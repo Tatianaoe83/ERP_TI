@@ -1,22 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
-        <div class="container-fluid">
-            
-        </div>
-    </section>
+@include('flash::message')
 
-    <div class="content px-3">
-        @include('flash::message')
-        <div class="clearfix"></div>
-
-        <div class="card">
-            <div class="card-body">
-                @include('departamentos.table')
-            </div>
-        </div>
-    </div>
+<x-index-page
+    title="Departamentos"
+    icon="fa-tags"
+    :create-url="route('departamentos.create')"
+    create-permission="crear-departamentos"
+>
+    @include('departamentos.table')
+</x-index-page>
 @endsection
-
-

@@ -1,24 +1,14 @@
-
 @extends('layouts.app')
 
 @section('content')
-    <section class="content-header">
-        <div class="container-fluid">
-            
-        </div>
-    </section>
+@include('flash::message')
 
-    <div class="content px-3">
-        @include('flash::message')
-        <div class="clearfix"></div>
-
-        <div class="card">
-            <div class="card-body">
-                @include('puestos.table')
-            </div>
-        </div>
-    </div>
+<x-index-page
+    title="Puestos"
+    icon="fa-briefcase"
+    :create-url="route('puestos.create')"
+    create-permission="crear-puestos"
+>
+    @include('puestos.table')
+</x-index-page>
 @endsection
-
-
-

@@ -1,10 +1,21 @@
 @php
     $empleadoActivo = $empleadoActivo ?? ($inventario->Estado == 1 || $inventario->Estado === true);
+    $permitePresupuestado = $permitePresupuestado ?? false;
+    $presupuestadoForzado = $presupuestadoForzado ?? false;
+
+    $equiposStock = collect($equiposAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
+    $equiposExtra = collect($equiposAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
+    $insumosStock = collect($insumosAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
+    $insumosExtra = collect($insumosAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
+    $lineasStock = collect($LineasAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
+    $lineasExtra = collect($LineasAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
+
+    $fmtMoney = fn ($n) => '$' . number_format((float) $n, 0);
 @endphp
 
-<ul class="nav nav-tabs" id="myTab" role="tablist">
+<ul class="nav inv-tabs" id="myTab" role="tablist">
     <li class="nav-item">
-        <a class="nav-link active dark:text-white" data-toggle="tab" href="#empleados">Empleado</a>
+        <a class="nav-link active" data-toggle="tab" href="#empleados">Empleado</a>
     </li>
     <li class="nav-item">
         <a class="nav-link" data-toggle="tab" href="#equipo">Equipo de cómputo</a>
@@ -17,23 +28,18 @@
     </li>
 </ul>
 
-@if(!$empleadoActivo)
-<div class="alert alert-warning mt-3 mb-0">
-    Este empleado está <strong>inactivo</strong>. Solo puede consultar su inventario; no es posible asignar, editar ni eliminar elementos.
-</div>
-@endif
-
-<div class="tab-content mt-3">
+<div class="tab-content">
 
 
 
 
     <!-- TAB Empleado -->
     <div class="tab-pane fade show active" id="empleados">
+        <div class="inv-empleado-card">
         <div class="row">
             <!-- NombreEmpleado Field -->
             <div class="col-sm-6">
-                {!! Form::label('NombreEmpleado', 'Nombre del Empleado:', ['class' => 'dark:text-white']) !!}
+                {!! Form::label('NombreEmpleado', 'Nombre del Empleado:', ['class' => 'inv-form-label dark:text-white']) !!}
                 {!! Form::text('NombreEmpleado', old('NombreEmpleado', $inventario->NombreEmpleado ?? ''), ['class' => 'form-control', 'maxlength' => 100, 'disabled']) !!}
             </div>
 
@@ -92,24 +98,73 @@
                 {!! Form::email('Correo', old('Correo', $inventario->Correo ?? ''), ['class' => 'form-control', 'maxlength' => 150, 'disabled']) !!}
             </div>
 
-
+        </div>
         </div>
     </div>
 
     <!-- TAB Equipo de Computo -->
     <div class="tab-pane fade" id="equipo">
 
-        <div class="row">
+        <div class="inv-kpi-row">
+            <div class="inv-kpi inv-kpi-total">
+                <div class="inv-kpi-label">Equipos asignados</div>
+                <div class="inv-kpi-value" id="kpi-equipos-total">{{ $equiposAsignados->count() }}</div>
+                <div class="inv-kpi-sub">En resguardo / proyección</div>
+            </div>
+            @if($permitePresupuestado)
+            <div class="inv-kpi inv-kpi-stock">
+                <div class="inv-kpi-label">Stock</div>
+                <div class="inv-kpi-value">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
+                <div class="inv-kpi-sub">{{ $equiposStock->count() }} equipo(s) · asignado actual</div>
+            </div>
+            <div class="inv-kpi inv-kpi-extra">
+                <div class="inv-kpi-label">Extra / Presupuesto</div>
+                <div class="inv-kpi-value">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
+                <div class="inv-kpi-sub">{{ $equiposExtra->count() }} equipo(s) · futuro</div>
+            </div>
+            @else
+            <div class="inv-kpi inv-kpi-stock">
+                <div class="inv-kpi-label">Solo stock</div>
+                <div class="inv-kpi-value">{{ $fmtMoney(collect($equiposAsignados)->sum('Precio')) }}</div>
+                <div class="inv-kpi-sub">Referenciado: sin extras de presupuesto</div>
+            </div>
+            <div class="inv-kpi">
+                <div class="inv-kpi-label">Disponibles</div>
+                <div class="inv-kpi-value">{{ collect($equipos)->count() }}</div>
+                <div class="inv-kpi-sub">Catálogo para asignar</div>
+            </div>
+            @endif
+        </div>
+
+        <div class="inv-panel">
+            <div class="inv-panel-head inv-panel-head-asignados">
+                <span><i class="fas fa-check-circle mr-1"></i> Equipos asignados</span>
+                @include('inventarios.filtro_presupuestado', [
+                    'tabla' => 'equiposAsignadosTable',
+                    'tipo' => 'equipos',
+                    'permitePresupuestado' => $permitePresupuestado,
+                    'presupuestadoForzado' => $presupuestadoForzado,
+                    'empleadoID' => $inventario->EmpleadoID,
+                    'compacto' => true,
+                ])
+            </div>
+            <div class="inv-panel-body">
+                @if($permitePresupuestado && !$presupuestadoForzado)
+                <div class="inv-dual" data-tabla="equiposAsignadosTable">
+                    <div class="inv-dual-card" data-filtro="no_presupuestados">
+                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Stock en uso (<span class="conteo-no">{{ $equiposStock->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Inventario actual en resguardo</div>
+                        <div class="inv-money">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
+                    </div>
+                    <div class="inv-dual-card" data-filtro="presupuestados">
+                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Extra / Presupuesto (<span class="conteo-si">{{ $equiposExtra->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Proyección futura</div>
+                        <div class="inv-money">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
+                    </div>
+                </div>
+                @endif
 
             <!-- equiposAsignados Seleccionados -->
-            <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Equipos Asignados</span>
-
-            @include('inventarios.filtro_presupuestado', [
-                'tabla' => 'equiposAsignadosTable',
-                'tipo' => 'equipos',
-                'permitePresupuestado' => $permitePresupuestado,
-                'empleadoID' => $inventario->EmpleadoID,
-            ])
 
             <div class="table-responsive">
                 <table id="equiposAsignadosTable" class="table table-bordered table-striped">
@@ -128,7 +183,7 @@
                             <th>Gerencia Equipo</th>
                             <th>Comentarios</th>
                             @if($permitePresupuestado)
-                            <th>Presupuestado</th>
+                            <th>Stock / Extra</th>
                             <th>Mes de pago</th>
                             @endif
                         </tr>
@@ -165,18 +220,32 @@
                             <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
                             <td>{{ $equiposAsignado->Comentarios }}</td>
                             @if($permitePresupuestado)
-                            <td>{{ $equiposAsignado->Presupuestado ? 'Si' : 'No' }}</td>
-                            <td>{{ $equiposAsignado->MesDePago }}</td>
+                            <td>{!! $equiposAsignado->Presupuestado
+                                ? '<span class="inv-chip inv-chip-extra">Extra</span>'
+                                : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
+                            <td>@if($equiposAsignado->MesDePago)<span class="inv-mes-pill">{{ $equiposAsignado->MesDePago }}</span>@endif</td>
                             @endif
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            </div>
+        </div>
 
             <!-- equiposAsignados Disponibles -->
             @if($empleadoActivo)
-            <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Equipos Disponibles</span>
+        <div class="inv-panel">
+            <div class="inv-panel-head inv-panel-head-disponibles">
+                <span><i class="fas fa-plus-circle mr-1"></i> Equipos disponibles</span>
+            </div>
+            <div class="inv-panel-body">
+                <div class="inv-toolbar">
+                    <div class="inv-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="inv-table-search" data-tabla="equiposTable" placeholder="Buscar por marca, modelo o características...">
+                    </div>
+                </div>
 
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
@@ -211,32 +280,72 @@
                             @endforeach
                         </tbody>
                     </table>
-                </div>
+                      </div>
             </div>
-
-            @endif
-
-
-
+            </div>
         </div>
-
-
+        @endif
     </div>
 
     <!-- TAB Insumo -->
     <div class="tab-pane fade" id="insumo">
 
-        <div class="row">
+        <div class="inv-kpi-row">
+            <div class="inv-kpi inv-kpi-total">
+                <div class="inv-kpi-label">Insumos asignados</div>
+                <div class="inv-kpi-value">{{ $insumosAsignados->count() }}</div>
+                <div class="inv-kpi-sub">En resguardo / proyección</div>
+            </div>
+            @if($permitePresupuestado)
+            <div class="inv-kpi inv-kpi-stock">
+                <div class="inv-kpi-label">Stock</div>
+                <div class="inv-kpi-value">{{ $insumosStock->count() }}</div>
+                <div class="inv-kpi-sub">Asignado actual</div>
+            </div>
+            <div class="inv-kpi inv-kpi-extra">
+                <div class="inv-kpi-label">Extra / Presupuesto</div>
+                <div class="inv-kpi-value">{{ $insumosExtra->count() }}</div>
+                <div class="inv-kpi-sub">Proyección futura</div>
+            </div>
+            @else
+            <div class="inv-kpi inv-kpi-stock">
+                <div class="inv-kpi-label">Solo stock</div>
+                <div class="inv-kpi-value">{{ collect($insumosAsignados)->count() }}</div>
+                <div class="inv-kpi-sub">Referenciado</div>
+            </div>
+            <div class="inv-kpi">
+                <div class="inv-kpi-label">Disponibles</div>
+                <div class="inv-kpi-value">{{ collect($insumos)->count() }}</div>
+                <div class="inv-kpi-sub">Catálogo</div>
+            </div>
+            @endif
+        </div>
 
-            <!-- insumosasignados Seleccionados -->
-            <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Insumos Asignados</span>
-
-            @include('inventarios.filtro_presupuestado', [
-                'tabla' => 'insumosAsignadosTable',
-                'tipo' => 'insumos',
-                'permitePresupuestado' => $permitePresupuestado,
-                'empleadoID' => $inventario->EmpleadoID,
-            ])
+        <div class="inv-panel">
+            <div class="inv-panel-head inv-panel-head-asignados">
+                <span><i class="fas fa-check-circle mr-1"></i> Insumos asignados</span>
+                @include('inventarios.filtro_presupuestado', [
+                    'tabla' => 'insumosAsignadosTable',
+                    'tipo' => 'insumos',
+                    'permitePresupuestado' => $permitePresupuestado,
+                    'presupuestadoForzado' => $presupuestadoForzado,
+                    'empleadoID' => $inventario->EmpleadoID,
+                    'compacto' => true,
+                ])
+            </div>
+            <div class="inv-panel-body">
+                @if($permitePresupuestado && !$presupuestadoForzado)
+                <div class="inv-dual" data-tabla="insumosAsignadosTable">
+                    <div class="inv-dual-card" data-filtro="no_presupuestados">
+                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Stock en uso (<span class="conteo-no">{{ $insumosStock->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Asignaciones actuales</div>
+                    </div>
+                    <div class="inv-dual-card" data-filtro="presupuestados">
+                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Extra / Presupuesto (<span class="conteo-si">{{ $insumosExtra->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Proyecciones registradas</div>
+                    </div>
+                </div>
+                @endif
 
             <div class="table-responsive">
                 <table id="insumosAsignadosTable" class="table table-bordered table-striped">
@@ -255,7 +364,7 @@
                             <th>Comentarios</th>
                             <th>Mes de pago </th>
                             @if($permitePresupuestado)
-                            <th>Presupuestado</th>
+                            <th>Stock / Extra</th>
                             @endif
 
                         </tr>
@@ -295,7 +404,9 @@
                             <td>{{ $insumosAsignado->Comentarios }}</td>
                             <td>{{ $insumosAsignado->MesDePago }}</td>
                             @if($permitePresupuestado)
-                            <td>{{ $insumosAsignado->Presupuestado ? 'Si' : 'No' }}</td>
+                            <td>{!! $insumosAsignado->Presupuestado
+                                ? '<span class="inv-chip inv-chip-extra">Extra</span>'
+                                : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
                             @endif
                         </tr>
                         @endforeach
@@ -305,9 +416,22 @@
                 </table>
             </div>
 
+            </div>
+        </div>
+
             <!-- insumos Disponibles -->
             @if($empleadoActivo)
-            <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Insumos Disponibles</span>
+        <div class="inv-panel">
+            <div class="inv-panel-head inv-panel-head-disponibles">
+                <span><i class="fas fa-plus-circle mr-1"></i> Insumos disponibles</span>
+            </div>
+            <div class="inv-panel-body">
+                <div class="inv-toolbar">
+                    <div class="inv-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="inv-table-search" data-tabla="insumosTable" placeholder="Buscar insumo...">
+                    </div>
+                </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="insumosTable" class="table table-bordered table-striped">
@@ -351,29 +475,71 @@
                 </div>
             </div>
 
-            @endif
-
-
+            </div>
         </div>
-
-
+            @endif
     </div>
 
 
     <!-- TAB Línea -->
     <div class="tab-pane fade" id="linea">
 
-        <div class="row">
+        <div class="inv-kpi-row">
+            <div class="inv-kpi inv-kpi-total">
+                <div class="inv-kpi-label">Líneas asignadas</div>
+                <div class="inv-kpi-value">{{ $LineasAsignados->count() }}</div>
+                <div class="inv-kpi-sub">En uso / proyección</div>
+            </div>
+            @if($permitePresupuestado)
+            <div class="inv-kpi inv-kpi-stock">
+                <div class="inv-kpi-label">Stock en uso</div>
+                <div class="inv-kpi-value">{{ $lineasStock->count() }}</div>
+                <div class="inv-kpi-sub">Líneas físicas asignadas</div>
+            </div>
+            <div class="inv-kpi inv-kpi-extra">
+                <div class="inv-kpi-label">Presupuestado</div>
+                <div class="inv-kpi-value">{{ $lineasExtra->count() }}</div>
+                <div class="inv-kpi-sub">Proyecciones registradas</div>
+            </div>
+            @else
+            <div class="inv-kpi inv-kpi-stock">
+                <div class="inv-kpi-label">Solo stock</div>
+                <div class="inv-kpi-value">{{ collect($LineasAsignados)->count() }}</div>
+                <div class="inv-kpi-sub">Referenciado</div>
+            </div>
+            <div class="inv-kpi">
+                <div class="inv-kpi-label">Disponibles</div>
+                <div class="inv-kpi-value">{{ collect($Lineas)->count() }}</div>
+                <div class="inv-kpi-sub">Catálogo</div>
+            </div>
+            @endif
+        </div>
 
-            <!-- lineasasignados Seleccionados -->
-            <span class="badge badge-success " style="margin-bottom: 15px;margin-top: 15px;">Lineas Asignados</span>
-
-            @include('inventarios.filtro_presupuestado', [
-                'tabla' => 'lineasAsignadosTable',
-                'tipo' => 'lineas',
-                'permitePresupuestado' => $permitePresupuestado,
-                'empleadoID' => $inventario->EmpleadoID,
-            ])
+        <div class="inv-panel">
+            <div class="inv-panel-head inv-panel-head-asignados">
+                <span><i class="fas fa-check-circle mr-1"></i> Líneas asignadas</span>
+                @include('inventarios.filtro_presupuestado', [
+                    'tabla' => 'lineasAsignadosTable',
+                    'tipo' => 'lineas',
+                    'permitePresupuestado' => $permitePresupuestado,
+                    'presupuestadoForzado' => $presupuestadoForzado,
+                    'empleadoID' => $inventario->EmpleadoID,
+                    'compacto' => true,
+                ])
+            </div>
+            <div class="inv-panel-body">
+                @if($permitePresupuestado && !$presupuestadoForzado)
+                <div class="inv-dual" data-tabla="lineasAsignadosTable">
+                    <div class="inv-dual-card" data-filtro="no_presupuestados">
+                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Stock en uso (<span class="conteo-no">{{ $lineasStock->count() }}</span>)</div>
+                        <div class="inv-dual-empty">No hay líneas físicas asignadas si el conteo es 0</div>
+                    </div>
+                    <div class="inv-dual-card" data-filtro="presupuestados">
+                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Presupuestado (<span class="conteo-si">{{ $lineasExtra->count() }}</span>)</div>
+                        <div class="inv-dual-empty">No hay proyecciones registradas si el conteo es 0</div>
+                    </div>
+                </div>
+                @endif
 
             <div class="table-responsive">
                 <table id="lineasAsignadosTable" class="table table-bordered table-striped">
@@ -395,7 +561,7 @@
                             <th>Monto Renovación Fianza</th>
                             <th>Fecha Renovación</th>
                             @if($permitePresupuestado)
-                            <th>Presupuestado</th>
+                            <th>Stock / Extra</th>
                             @endif
 
 
@@ -441,7 +607,9 @@
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
                             <td>{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
                             @if($permitePresupuestado)
-                            <td>{{ $LineasAsignado->Presupuestado ? 'Si' : 'No' }}</td>
+                            <td>{!! $LineasAsignado->Presupuestado
+                                ? '<span class="inv-chip inv-chip-extra">Extra</span>'
+                                : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
                             @endif
 
                         </tr>
@@ -452,9 +620,22 @@
                 </table>
             </div>
 
+            </div>
+        </div>
+
             <!-- lineas Disponibles -->
             @if($empleadoActivo)
-            <span class="badge badge-primary" style="margin-bottom: 15px;margin-top: 15px;">Lineas Disponibles</span>
+        <div class="inv-panel">
+            <div class="inv-panel-head inv-panel-head-disponibles">
+                <span><i class="fas fa-plus-circle mr-1"></i> Líneas disponibles</span>
+            </div>
+            <div class="inv-panel-body">
+                <div class="inv-toolbar">
+                    <div class="inv-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="inv-table-search" data-tabla="lineasTable" placeholder="Buscar línea...">
+                    </div>
+                </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="lineasTable" class="table table-bordered table-striped">
@@ -511,13 +692,9 @@
                     </table>
                 </div>
             </div>
-
-            @endif
-
-
+            </div>
         </div>
-
-
+            @endif
     </div>
 
 
@@ -526,6 +703,8 @@
 @push('third_party_stylesheets')
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
+@include('inventarios.partials.tipo-persona-styles')
+@include('inventarios.partials.asignar-ui-styles')
 
 <style>
     .inventario-filtros .pill-group {
@@ -581,10 +760,33 @@
     // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
     // asignado es presupuestado y para el resto el campo viaja siempre en 0.
     // (El servidor vuelve a aplicar la regla, esto es sólo para la UI.)
+    function htmlChipPresupuestado(esExtra) {
+        return esExtra
+            ? '<span class="inv-chip inv-chip-extra">Extra</span>'
+            : '<span class="inv-chip inv-chip-stock">Stock</span>';
+    }
+
+    function textoCeldaEsExtra(texto) {
+        const v = String(texto ?? '').trim().toLowerCase();
+        return v === 'si' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1;
+    }
+
+    function syncModoCards(selector, marcado) {
+        const $wrap = $('[data-switch="' + selector + '"]');
+        if (!$wrap.length) return;
+        $wrap.find('.inv-modo-card').removeClass('is-active');
+        $wrap.find('.inv-modo-card[data-value="' + (marcado ? '1' : '0') + '"]').addClass('is-active');
+
+        const sid = selector.replace(/^#/, '');
+        $('[data-hint-for="' + sid + '"]').hide();
+        $('[data-hint-for="' + sid + '"].' + (marcado ? 'extra' : 'stock')).css('display', 'flex');
+    }
+
     function setPresupuestado(selector, texto) {
-        const marcado = String(texto ?? '').trim().toLowerCase() === 'si';
+        const marcado = textoCeldaEsExtra(texto) || (presupuestadoForzado === true);
         $(selector).prop('checked', marcado);
         $(selector + 'Label').text(marcado ? 'Si' : 'No');
+        syncModoCards(selector, marcado);
     }
 
     function getPresupuestado(selector) {
@@ -595,9 +797,18 @@
         return permitePresupuestado && $(selector).is(':checked') ? 1 : 0;
     }
 
-    // Mantener la etiqueta del switch en sync con su estado
+    // Mantener la etiqueta del switch / cards en sync con su estado
     $(document).on('change', '.form-check-input[role="switch"]', function() {
         $('#' + this.id + 'Label').text(this.checked ? 'Si' : 'No');
+        syncModoCards('#' + this.id, this.checked);
+    });
+
+    $(document).on('click', '.inv-modo-card:not(.is-locked)', function() {
+        const $card = $(this);
+        const selector = $card.closest('[data-switch]').data('switch');
+        const value = String($card.data('value')) === '1';
+        $(selector).prop('checked', value).trigger('change');
+        syncModoCards(selector, value);
     });
 
     function bloquearAccionInventarioInactivo() {
@@ -664,7 +875,9 @@
             "searching": true,
             "ordering": true,
             "info": true,
-
+            "columnDefs": [
+                { "visible": false, "targets": [3, 6, 7] } // características, fecha asignacion, fecha compra
+            ]
         });
 
         let table2 = $('#insumosAsignadosTable').DataTable({
@@ -710,7 +923,8 @@
     };
 
     function esFilaPresupuestada(valorCelda) {
-        return String(valorCelda ?? '').trim().toLowerCase() === 'si';
+        const v = String(valorCelda ?? '').trim().toLowerCase();
+        return v === 'si' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1;
     }
 
     // Filtro global de DataTables: las tablas sin entrada en el mapa no se ven afectadas.
@@ -745,6 +959,10 @@
         barra.find('.conteo-todos').text(si + no);
         barra.find('.conteo-si').text(si);
         barra.find('.conteo-no').text(no);
+
+        const dual = $('.inv-dual[data-tabla="' + tablaId + '"]');
+        dual.find('.conteo-si').text(si);
+        dual.find('.conteo-no').text(no);
     }
 
     function inicializarFiltrosPresupuestado() {
@@ -781,17 +999,49 @@
         barra.find('.pill-filtro').removeClass('activo');
         $(this).addClass('activo');
 
+        // Sync dual cards
+        const dual = $('.inv-dual[data-tabla="' + tablaId + '"]');
+        dual.find('.inv-dual-card').removeClass('is-active');
+        dual.find('.inv-dual-card[data-filtro="' + filtroPresupuestado[tablaId] + '"]').addClass('is-active');
+        if (filtroPresupuestado[tablaId] === 'todos') {
+            dual.find('.inv-dual-card').removeClass('is-active');
+        }
+
         aplicarVisibilidadPresupuestado(tablaId);
         $('#' + tablaId).DataTable().draw();
     });
 
-    // Descarga el Excel del tipo de la pestaña respetando el filtro seleccionado.
-    $(document).on('click', '.btn-excel-inventario', function() {
-        const barra = $(this).closest('.inventario-filtros');
-        const tablaId = barra.data('tabla');
-        const filtro = permitePresupuestado ? (filtroPresupuestado[tablaId] || 'todos') : 'todos';
+    $(document).on('click', '.inv-dual-card', function() {
+        const dual = $(this).closest('.inv-dual');
+        const tablaId = dual.data('tabla');
+        let filtro = $(this).data('filtro');
 
-        window.location = $(this).data('url') + '?filtro=' + filtro;
+        // Segundo clic en la misma tarjeta = ver todos
+        if ($(this).hasClass('is-active')) {
+            filtro = 'todos';
+            dual.find('.inv-dual-card').removeClass('is-active');
+        } else {
+            dual.find('.inv-dual-card').removeClass('is-active');
+            $(this).addClass('is-active');
+        }
+
+        filtroPresupuestado[tablaId] = filtro;
+
+        const barra = $('.inventario-filtros[data-tabla="' + tablaId + '"]');
+        barra.find('.pill-filtro').removeClass('activo');
+        const pill = barra.find('.pill-filtro[data-filtro="' + filtro + '"]');
+        if (pill.length) pill.addClass('activo');
+        else barra.find('.pill-filtro[data-filtro="todos"]').addClass('activo');
+
+        aplicarVisibilidadPresupuestado(tablaId);
+        $('#' + tablaId).DataTable().draw();
+    });
+
+    $(document).on('keyup', '.inv-table-search', function() {
+        const tablaId = $(this).data('tabla');
+        if ($.fn.DataTable.isDataTable('#' + tablaId)) {
+            $('#' + tablaId).DataTable().search(this.value).draw();
+        }
     });
 </script>
 
@@ -802,10 +1052,18 @@
             var target = $(this).attr('href');
 
             $('#myTab a').removeClass('active');
-            $('.tab-pane').removeClass('show active');
+            $('.tab-content > .tab-pane').removeClass('show active');
 
             $(this).addClass('active');
             $(target).addClass('show active');
+
+            // Recalcular columnas DataTables al mostrar pestaña (evita tablas “vacías”)
+            var $pane = $(target);
+            $pane.find('table').each(function() {
+                if ($.fn.DataTable.isDataTable(this)) {
+                    $(this).DataTable().columns.adjust();
+                }
+            });
         });
     });
 
@@ -1183,7 +1441,7 @@
         row.find('td:eq(10)').text(equipo.GerenciaEquipo);
         row.find('td:eq(11)').text(equipo.Comentarios);
         if (permitePresupuestado) {
-            row.find('td:eq(12)').text(equipo.Presupuestado ? 'Si' : 'No');
+            row.find('td:eq(12)').html(htmlChipPresupuestado(!!equipo.Presupuestado));
             row.find('td:eq(13)').text(equipo.MesDePago ?? '');
         }
         row.find('.edit-btn').data('id', equipo.InventarioID);
@@ -1217,7 +1475,7 @@
             <td>${equipo.Folio}</td>
             <td>${equipo.GerenciaEquipo}</td>
             <td>${equipo.Comentarios}</td>
-            ${permitePresupuestado ? `<td>${equipo.Presupuestado ? 'Si' : 'No'}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
+            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(!!equipo.Presupuestado)}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
         </tr>
     `;
         $('#equiposAsignadosTable').DataTable().row.add($(newRow)).draw(false);
@@ -1516,7 +1774,7 @@
         row.find('td:eq(10)').text(insumo.Comentarios);
         row.find('td:eq(11)').text(insumo.MesDePago);
         if (permitePresupuestado) {
-            row.find('td:eq(12)').text(insumo.Presupuestado ? 'Si' : 'No');
+            row.find('td:eq(12)').html(htmlChipPresupuestado(!!insumo.Presupuestado));
         }
 
         $('#insumosAsignadosTable').DataTable().row(row).invalidate().draw(false);
@@ -1547,7 +1805,7 @@
             <td>${insumo.NumSerie}</td>
             <td>${insumo.Comentarios}</td>
             <td>${insumo.MesDePago}</td>
-            ${permitePresupuestado ? `<td>${insumo.Presupuestado ? 'Si' : 'No'}</td>` : ''}
+            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(!!insumo.Presupuestado)}</td>` : ''}
         </tr>
     `;
         $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);
@@ -1826,7 +2084,7 @@
         row.find('td:eq(13)').text(telefono.MontoRenovacionFianza);
         row.find('td:eq(14)').text(formatFechaRenovacion(telefono.FechaRenovacion));
         if (permitePresupuestado) {
-            row.find('td:eq(15)').text(telefono.Presupuestado ? 'Si' : 'No');
+            row.find('td:eq(15)').html(htmlChipPresupuestado(!!telefono.Presupuestado));
         }
 
         $('#lineasAsignadosTable').DataTable().row(row).invalidate().draw(false);
@@ -1864,7 +2122,7 @@
         // La columna sólo existe para FISICA/EXTRAORDINARIO; DataTables exige que el
         // array tenga exactamente tantos elementos como columnas tenga la tabla.
         if (permitePresupuestado) {
-            newRow.push(telefono.Presupuestado ? 'Si' : 'No');
+            newRow.push(htmlChipPresupuestado(!!telefono.Presupuestado));
         }
 
         table.row.add(newRow).draw(false);

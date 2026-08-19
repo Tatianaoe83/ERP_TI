@@ -12,6 +12,7 @@
 
     <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    @include('inventarios.partials.tipo-persona-styles')
 
     <style>
         .select2-container .select2-selection--single {
@@ -33,6 +34,21 @@
         }
     </style>
     @endpush
+
+    <div class="inv-leyenda">
+        <div class="inv-leyenda-item">
+            <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+            <div><strong>Persona física</strong>Stock (asignado actual) + Extra (presupuesto futuro).</div>
+        </div>
+        <div class="inv-leyenda-item">
+            <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
+            <div><strong>Gerencia / referenciado</strong>Solo stock. Tiene asignaciones actuales, sin extras.</div>
+        </div>
+        <div class="inv-leyenda-item">
+            <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
+            <div><strong>Plaza extraordinaria</strong>Todo es Extra (presupuesto futuro).</div>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-xs-12 col-sm-12 col-md-12">
@@ -119,18 +135,18 @@
                             id="filtro-persona">
 
                             <option value="" selected>
-                                Seleccionar tipo de persona
+                                Físicas y referenciados (default)
                             </option>
                             <option value="FISICA">
-                                FISICA
+                                Física — stock + extra
                             </option>
 
                             <option value="REFERENCIADO">
-                                REFERENCIADO
+                                Referenciado — solo stock
                             </option>
 
                             <option value="EXTRAORDINARIO">
-                                EXTRAORDINARIO
+                                Extraordinario — todo extra
                             </option>
 
                         </select>
@@ -168,6 +184,7 @@
             <tr>
                 <th></th>
                 <th>Nombre</th>
+                <th>Tipo</th>
                 <th>Puesto</th>
                 <th>Obra</th>
                 <th>Teléfono</th>
@@ -250,6 +267,12 @@
                     },
 
                     {
+                        data: 'tipo_persona',
+                        orderable: false,
+                        class: 'dark:bg-[#101010] dark:text-white'
+                    },
+
+                    {
                         data: 'nombre_puesto',
                         class: 'dark:bg-[#101010] dark:text-white'
                     },
@@ -289,7 +312,7 @@
                     // =========================
                     // CARGAR OBRAS
                     // =========================
-                    var obras = api.column(3).data().unique().sort();
+                    var obras = api.column(4).data().unique().sort();
 
                     $('#filtro-obra')
                         .empty()
@@ -310,7 +333,7 @@
                     // =========================
                     // CARGAR PUESTOS
                     // =========================
-                    var puestos = api.column(2).data().unique().sort();
+                    var puestos = api.column(3).data().unique().sort();
 
                     $('#filtro-puesto')
                         .empty()

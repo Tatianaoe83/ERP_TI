@@ -1,52 +1,10 @@
-{!! Form::open(['route' => ['obras.destroy', $id], 'method' => 'delete']) !!}
-<div class='btn-group'>
-    @can('ver-obras')
-    <a href="{{ route('obras.show', $id) }}" class='btn btn-outline-primary btn-xs'>
-        <i class="fa fa-eye"></i>
-    </a>
-    @endcan
-
-    @can('editar-obras')
-
-    <a href="{{ route('obras.edit', $id) }}" class='btn btn-outline-secondary btn-xs'>
-        <i class="fa fa-edit"></i>
-    </a>
-    @endcan
-
-    @can('editar-obras')
-
-    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
-    @endcan
-</div>
-{!! Form::close() !!}
-
-
-
-<script type="text/javascript">
- 
-  $('.show_confirm').click(function(event) {
-       var form =  $(this).closest("form");
-       event.preventDefault();
-       swal.fire({
-           title: `¿Está seguro de que desea borrar esta obra? `,
-           icon: "warning",
-           //buttons: true,
-           showDenyButton: true,
-           confirmButtonText: 'Confirmar',
-           denyButtonText: `Cerrar`,
-           dangerMode: true,
-       }).then(function(willDelete) {
-         if (willDelete.isConfirmed) {
-          swal.fire({
-              title: 'Obra borrada',
-              icon: 'success'
-            }).then(function(){
-              form.submit();
-            });
-          }else if (willDelete.isDenied){
-            swal.fire("Cambios no generados");
-          }
-       });
-   });
-</script>
-
+<x-index-actions
+    :show-url="route('obras.show', $id)"
+    show-permission="ver-obras"
+    :edit-url="route('obras.edit', $id)"
+    edit-permission="editar-obras"
+    :destroy-route="['obras.destroy', $id]"
+    destroy-permission="editar-obras"
+    confirm-title="¿Está seguro de que desea borrar esta obra?"
+    success-title="Obra borrada"
+/>

@@ -1,9 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="px-3">
-    @include('flash::message')
+@include('flash::message')
 
+<x-index-page
+    title="Gerencias"
+    icon="fa-user-tie"
+    :create-url="route('gerencias.create')"
+    create-permission="crear-gerencias"
+>
     @include('gerencias.table')
-</div>
+</x-index-page>
 @endsection

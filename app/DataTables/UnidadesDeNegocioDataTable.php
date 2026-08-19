@@ -5,11 +5,13 @@ namespace App\DataTables;
 use App\Models\UnidadesDeNegocio;
 use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\EloquentDataTable;
-use Yajra\DataTables\Html\Button;
+use App\DataTables\Concerns\HasIndexPageHtml;
 use Yajra\DataTables\Html\Column;
 
 class UnidadesDeNegocioDataTable extends DataTable
 {
+    use HasIndexPageHtml;
+
     /**
      * Build DataTable class.
      *
@@ -63,78 +65,16 @@ class UnidadesDeNegocioDataTable extends DataTable
      */
     public function html()
     {
-
-        return $this->builder()
-            ->setTableId('unidadesDeNegocios-table')
-            ->columns($this->getColumns())
-            ->minifiedAjax()
-            ->dom('Bfrtip')
-            ->orderBy(1, 'asc')
-            ->buttons(array_filter([
-                auth()->user()->can('crear-unidadesdenegocio') ? [
-                    'extend' => 'collection',
-                    'className' => 'btn btn-primary',
-                    'text' => '<i class="fa fa-plus"></i> Crear',
-                    'action' => "function() {
-                        window.location = '" . route('unidadesDeNegocios.create') . "';
-                    }"
-                ] : null,
-                /*[
-                    'extend' => 'csv',
-                    'className' => 'btn btn-info',
-                    'text' => '<i class="fa fa-file-csv"></i> CSV'
-                ],
-                [
-                    'extend' => 'excel',
-                    'className' => 'btn btn-success',
-                    'text' => '<i class="fa fa-file-excel"></i> Excel'
-                ],
-                [
-                    'extend' => 'pdf',
-                    'className' => 'btn btn-danger',
-                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],*/
-                /*[
-                    'extend' => 'print',
-                    'className' => 'btn btn-light',
-                    'text' => '<i class="fa fa-print"></i> Imprimir'
-                ],*/
-                [
-                    'className' => 'btn btn-default',
-                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                    'action' => 'function() { 
-                        window.LaravelDataTables["unidadesDeNegocios-table"].ajax.reload();
-                    }'
-                ],
-            ]))
-            ->parameters([
-                'processing' => true,
-                'serverSide' => true,
+        return $this->indexPageHtml('unidadesDeNegocios-table', [
+            'parameters' => [
                 'responsive' => [
                     'details' => [
                         'type' => 'column',
-                        'target' => 'tr'
-                    ]
+                        'target' => 'tr',
+                    ],
                 ],
-                'pageLength' => 7,
-                'searching' => true,
-                'language' => [
-                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-                ],
-                'drawCallback' => 'function() {
-                    $("[data-toggle=tooltip]").tooltip();
-                }',
-                'initComplete' => "function() {
-                    this.api().columns().every(function () {
-                        var column = this;
-                        var input = document.createElement(\"input\");
-                        $(input).appendTo($(column.footer()).empty())
-                        .on('change', function () {
-                            column.search($(this).val(), false, false, true).draw();
-                        });
-                    });
-                }",
-            ]);
+            ],
+        ]);
     }
 
     /**

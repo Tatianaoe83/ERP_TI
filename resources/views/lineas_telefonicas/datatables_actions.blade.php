@@ -1,50 +1,10 @@
-{!! Form::open(['route' => ['lineasTelefonicas.destroy', $id], 'method' => 'delete']) !!}
-<div class='btn-group'>
-
-@can('ver-Lineastelefonicas')
-    <a href="{{ route('lineasTelefonicas.show', $id) }}" class='btn btn-outline-primary btn-xs'>
-        <i class="fa fa-eye"></i>
-    </a>
-    @endcan
-
-    @can('editar-Lineastelefonicas')
-    <a href="{{ route('lineasTelefonicas.edit', $id) }}" class='btn btn-outline-secondary btn-xs'>
-        <i class="fa fa-edit"></i>
-    </a>
-    @endcan
-
-    @can('borrar-Lineastelefonicas')
-    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm"><i class="fa fa-trash"></i></button>
-    @endcan
-</div>
-{!! Form::close() !!}
-
-
-
-<script type="text/javascript">
- 
-  $('.show_confirm').click(function(event) {
-       var form =  $(this).closest("form");
-       event.preventDefault();
-       swal.fire({
-           title: `¿Está seguro de que desea borrar esta linea telefonica? `,
-           icon: "warning",
-           //buttons: true,
-           showDenyButton: true,
-           confirmButtonText: 'Confirmar',
-           denyButtonText: `Cerrar`,
-           dangerMode: true,
-       }).then(function(willDelete) {
-         if (willDelete.isConfirmed) {
-          swal.fire({
-              title: 'Linea telefonica borrada',
-              icon: 'success'
-            }).then(function(){
-              form.submit();
-            });
-          }else if (willDelete.isDenied){
-            swal.fire("Cambios no generados");
-          }
-       });
-   });
-</script>
+<x-index-actions
+    :show-url="route('lineasTelefonicas.show', $id)"
+    show-permission="ver-Lineastelefonicas"
+    :edit-url="route('lineasTelefonicas.edit', $id)"
+    edit-permission="editar-Lineastelefonicas"
+    :destroy-route="['lineasTelefonicas.destroy', $id]"
+    destroy-permission="borrar-Lineastelefonicas"
+    confirm-title="¿Está seguro de que desea borrar esta línea telefónica?"
+    success-title="Línea telefónica borrada"
+/>

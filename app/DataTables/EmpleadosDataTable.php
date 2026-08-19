@@ -5,11 +5,12 @@ namespace App\DataTables;
 use App\Models\Empleados;
 use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\EloquentDataTable;
-use Yajra\DataTables\Html\Button;
+use App\DataTables\Concerns\HasIndexPageHtml;
 use Yajra\DataTables\Html\Column;
 
 class EmpleadosDataTable extends DataTable
 {
+    use HasIndexPageHtml;
     /**
      * Build DataTable class.
      *
@@ -73,61 +74,21 @@ class EmpleadosDataTable extends DataTable
      */
     public function html()
     {
-        return $this->builder()
-            ->setTableId('tabla-empleados')
-            ->columns($this->getColumns())
-            ->minifiedAjax()
-            ->dom('Brtip')
-            ->orderBy(1, 'asc')
-            ->buttons(array_filter([
-                auth()->user()->can('crear-empleados') ? [
-                    'extend' => 'collection',
-                    'className' => 'btn btn-primary',
-                    'text' => '<i class="fa fa-plus"></i> Crear',
-                    'action' => "function() {
-                    window.location = '" . route('empleados.create') . "';
-                }"
-                ] : null,
-
-                /*[
-                    'extend' => 'excel',
-                    'className' => 'btn btn-success',
-                    'text' => '<i class="fa fa-file-excel"></i> Excel'
-                ],
-                [
-                    'extend' => 'pdf',
-                    'className' => 'btn btn-danger',
-                    'text' => '<i class="fa fa-file-pdf"></i> PDF'
-                ],*/
-
-                [
-                    'className' => 'btn btn-default',
-                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                    'action' => 'function() { 
-                    window.LaravelDataTables["tabla-empleados"].ajax.reload();
-                }'
-                ],
-            ]))
-            ->parameters([
-                'processing' => true,
-                'serverSide' => true,
-                'responsive' => true,
-                'pageLength' => 7,
-                'searching' => true,
-                'language' => [
-                    'url' => 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
-                ],
-                'drawCallback' => 'function() {
-                $("[data-toggle=tooltip]").tooltip();
-            }',
+        return $this->indexPageHtml('tabla-empleados', [
+            'parameters' => [
                 'initComplete' => "function() {
-                // Cargar opciones en los selectores de filtros
-                cargarOpcionesFiltros();
-                
-                // Configurar eventos de filtros
-                configurarFiltros();
-            }",
-            ]);
+                    if (window.IndexPage) {
+                        window.IndexPage.init(this.api());
+                    }
+                    if (typeof cargarOpcionesFiltros === 'function') {
+                        cargarOpcionesFiltros();
+                    }
+                    if (typeof configurarFiltros === 'function') {
+                        configurarFiltros();
+                    }
+                }",
+            ],
+        ]);
     }
 
     /**
