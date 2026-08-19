@@ -815,7 +815,7 @@
         setInterval(actualizarNotificaciones, 15000);
 
         function posicionarTooltip() {
-            if (tooltip.style.display === 'none') return;
+            if (!boton || tooltip.style.display === 'none') return;
 
             const rect = boton.getBoundingClientRect();
             const tooltipW = tooltip.offsetWidth;
@@ -823,34 +823,35 @@
             const viewW = window.innerWidth;
             const viewH = window.innerHeight;
 
-            let top, left;
-            left = rect.right + 10;
-            if (left + tooltipW > viewW - 8) {
-                left = rect.left - tooltipW - 10;
-            }
+            // Abrir debajo del botón del header, alineado a la derecha
+            let left = rect.right - tooltipW;
             if (left < 8) left = 8;
+            if (left + tooltipW > viewW - 8) left = viewW - tooltipW - 8;
 
-            top = rect.top + (rect.height / 2) - (tooltipH / 2);
-            if (top + tooltipH > viewH - 8) top = viewH - tooltipH - 8;
-            if (top < 8) top = 8;
+            let top = rect.bottom + 10;
+            if (top + tooltipH > viewH - 8) {
+                top = Math.max(8, rect.top - tooltipH - 10);
+            }
 
             tooltip.style.top = top + 'px';
             tooltip.style.left = left + 'px';
         }
 
-        boton.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const isHidden = tooltip.style.display === 'none';
-            tooltip.style.display = isHidden ? 'block' : 'none';
-            if (isHidden) posicionarTooltip();
-        });
+        if (boton) {
+            boton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isHidden = tooltip.style.display === 'none';
+                tooltip.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) posicionarTooltip();
+            });
 
-        document.addEventListener('click', function(e) {
-            if (!tooltip.contains(e.target) && !boton.contains(e.target)) {
-                tooltip.style.display = 'none';
-            }
-        });
+            document.addEventListener('click', function(e) {
+                if (!tooltip.contains(e.target) && !boton.contains(e.target)) {
+                    tooltip.style.display = 'none';
+                }
+            });
 
-        window.addEventListener('resize', posicionarTooltip);
+            window.addEventListener('resize', posicionarTooltip);
+        }
     });
 </script>

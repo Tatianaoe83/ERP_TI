@@ -28,7 +28,44 @@
 
     @auth
     <div class="relative inline-block text-left dark:bg-[#101010]">
-        <div class="flex items-center gap-2 md:gap-4">
+        <div class="flex items-center gap-2 md:gap-3">
+            {{-- Notificaciones en header --}}
+            @can('tickets.notificaciones')
+            <button type="button" id="btnNotif"
+                class="relative inline-flex items-center justify-center w-10 h-10 md:w-11 md:h-11 rounded-full
+                       text-[#ff6600] bg-orange-50 hover:bg-orange-100
+                       dark:bg-orange-950/40 dark:hover:bg-orange-900/50
+                       ring-1 ring-orange-200 dark:ring-orange-800
+                       transition active:scale-95 select-none"
+                title="Notificaciones"
+                aria-label="Notificaciones">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    class="w-6 h-6 md:w-7 md:h-7"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11
+                           a6.002 6.002 0 00-4-5.659V4
+                           a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159
+                           c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1
+                           a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span id="badgeNotif"
+                    class="absolute -top-1 -right-1
+                           bg-red-500 text-white
+                           text-xs md:text-sm font-extrabold leading-none
+                           rounded-full min-w-[22px] h-[22px] md:min-w-[26px] md:h-[26px] px-1.5
+                           flex items-center justify-center
+                           shadow-md ring-2 ring-white dark:ring-[#101010]
+                           animate-pulse"
+                    style="display: none;">
+                </span>
+            </button>
+            @endcan
+
             <div class="hidden md:flex flex-col justify-center text-right leading-tight">
                 <span class="text-[15px] font-semibold text-[#101D49] dark:text-white">
                     {{ Auth::user()->name }}
@@ -73,6 +110,10 @@
             </form>
         </div>
     </div>
+
+    @can('tickets.notificaciones')
+        @include('layouts.notifications_blade_sidebar')
+    @endcan
     @endauth
 </div>
 
