@@ -24,7 +24,7 @@
                         <p class="lead mt-4">Equipos Asignados</p>
 
                         <div class="table-responsive">
-                            <table id="equiposAsignadosTable" class="table table-bordered table-striped">
+                            <table id="equiposAsignadosTable" class="table index-table w-full">
                                 <thead>
                                     <tr>
                                         <th><input type="checkbox" class="selectAll" data-table="equiposAsignadosTable"></th>
@@ -67,7 +67,7 @@
                         <p class="lead mt-4">Insumos Asignados</p>
 
                         <div class="table-responsive">
-                            <table id="insumosAsignadosTable" class="table table-bordered table-striped">
+                            <table id="insumosAsignadosTable" class="table index-table w-full">
                                 <thead>
                                     <tr>
                                         <th><input type="checkbox" class="selectAll" data-table="insumosAsignadosTable"></th>
@@ -109,7 +109,7 @@
                         <!-- lineas asignadas-->
                         <p class="lead mt-4">Líneas Asignadas</p>
                         <div class="table-responsive">
-                            <table id="lineasAsignadosTable" class="table table-bordered table-striped">
+                            <table id="lineasAsignadosTable" class="table index-table w-full">
                                 <thead>
                                     <tr>
                                         <th><input type="checkbox" class="selectAll" data-table="lineasAsignadosTable"></th>

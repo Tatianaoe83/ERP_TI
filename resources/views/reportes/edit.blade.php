@@ -1,8 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-
-<div class="container-fluid py-3 px-2">
+<x-crud-page title="Editar reporte" icon="fa-book" :subtitle="$reportes->title" :back-url="route('reportes.index')">
+<div class="container-fluid py-1 px-0">
 
         @include('adminlte-templates::common.errors')
 
@@ -638,4 +638,6 @@
     });
 </script>
 
+</div>
+</x-crud-page>
 @endsection

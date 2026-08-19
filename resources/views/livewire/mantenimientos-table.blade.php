@@ -1,63 +1,41 @@
 <div>
-    <div class="mb-3 d-flex flex-wrap align-items-end gap-2">
-        <div class="flex-grow-1" style="min-width: 260px;">
-            <label for="buscar-mantenimientos" class="mb-1 text-sm text-[#101D49] dark:text-white">Buscar</label>
-            <div class="input-group">
-                <input
-                    id="buscar-mantenimientos"
-                    type="text"
-                    wire:model.debounce.400ms="search"
-                    class="form-control"
-                    placeholder="Empleado, gerencia, folio, comentario, tipo o estatus..."
-                >
-                @if($search !== '')
-                    <div class="input-group-append">
-                        <button type="button" wire:click="limpiarBusqueda" class="btn btn-outline-secondary">
-                            Limpiar
-                        </button>
-                    </div>
-                @endif
-            </div>
-        </div>
-        <div>
-            <label for="anio-mantenimientos" class="mb-1 text-sm text-[#101D49] dark:text-white">Año</label>
-            <select
-                id="anio-mantenimientos"
-                wire:model="anio"
+    <div class="index-page__filters" style="padding: 0.9rem 1rem 0; margin-bottom: 0;">
+        <div class="form-group">
+            <label for="buscar-mantenimientos">Buscar</label>
+            <input
+                id="buscar-mantenimientos"
+                type="text"
+                wire:model.debounce.400ms="search"
                 class="form-control"
+                placeholder="Empleado, gerencia, folio, comentario, tipo o estatus..."
             >
+        </div>
+        <div class="form-group">
+            <label for="anio-mantenimientos">Año</label>
+            <select id="anio-mantenimientos" wire:model="anio" class="form-control">
                 <option value="todos">Todos</option>
                 @foreach($aniosDisponibles as $anioDisponible)
                     <option value="{{ $anioDisponible }}">{{ $anioDisponible }}</option>
                 @endforeach
             </select>
         </div>
-        <div>
-            <label for="estatus-mantenimientos" class="mb-1 text-sm text-[#101D49] dark:text-white">Filtrar por estatus</label>
-            <select
-                id="estatus-mantenimientos"
-                wire:model="estatus"
-                class="form-control"
-            >
+        <div class="form-group">
+            <label for="estatus-mantenimientos">Estatus</label>
+            <select id="estatus-mantenimientos" wire:model="estatus" class="form-control">
                 <option value="pendiente">Pendientes</option>
                 <option value="realizado">Completados</option>
                 <option value="todos">Todos</option>
             </select>
         </div>
-        <div>
-            <label for="por-pagina-mantenimientos" class="mb-1 text-sm text-[#101D49] dark:text-white">Registros por página</label>
-            <select
-                id="por-pagina-mantenimientos"
-                wire:model="perPage"
-                class="form-control"
-            >
+        <div class="form-group">
+            <label for="por-pagina-mantenimientos">Por página</label>
+            <select id="por-pagina-mantenimientos" wire:model="perPage" class="form-control">
                 <option value="10">10</option>
                 <option value="15">15</option>
                 <option value="25">25</option>
                 <option value="50">50</option>
             </select>
         </div>
-    
     </div>
 
     <div class="mant-table-summary mb-3">
@@ -74,8 +52,8 @@
             <span>No hay mantenimientos para este filtro.</span>
         </div>
     @else
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped align-middle">
+        <div class="index-page__table-wrap table-responsive">
+            <table class="table index-table w-full align-middle">
                 <thead>
                     <tr>
                         <th>Empleado</th>
@@ -104,14 +82,15 @@
                             </td>
                             <td>{{ $item->TipoMantenimiento }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->FechaReprogramada ?: $item->FechaMantenimiento)->translatedFormat('l, d \\d\\e F \\d\\e Y') }}</td>
-                            <td style="min-width: 260px;">
-                                <div class="mant-actions">
+                            <td>
+                                <div class="index-actions">
                                     <button
                                         type="button"
                                         wire:click="abrirDetalle({{ $item->id }})"
-                                        class="btn btn-link p-0 text-primary text-decoration-none mant-action-link"
+                                        class="index-action index-action--view"
+                                        title="Ver"
                                     >
-                                        <i class="fas fa-eye mr-1"></i> Ver
+                                        <i class="fas fa-eye"></i>
                                     </button>
 
                                     @can('editar-mantenimientos')
@@ -119,26 +98,26 @@
                                             <button
                                                 type="button"
                                                 wire:click="abrirReprogramar({{ $item->id }})"
-                                                class="btn btn-link p-0 text-decoration-none mant-action-link"
-                                                style="color: #6f42c1;"
+                                                class="index-action index-action--edit"
+                                                title="Reprogramar"
                                             >
-                                                <i class="fas fa-calendar-alt mr-1"></i> Reprogramar
+                                                <i class="fas fa-calendar-alt"></i>
                                             </button>
                                             <form
                                                 action="{{ route('mantenimientos.realizado', $item) }}"
                                                 method="POST"
-                                                class="d-inline"
+                                                class="index-action-form"
                                                 onsubmit="return confirmarMantenimientoRealizado(event, this);"
                                             >
                                                 @csrf
                                                 @method('PATCH')
-                                                <button type="submit" class="btn btn-link p-0 text-success text-decoration-none mant-action-link" title="Registrar mantenimiento realizado">
-                                                    <i class="fas fa-check-circle mr-1"></i> Realizado
+                                                <button type="submit" class="index-action index-action--success" title="Registrar realizado">
+                                                    <i class="fas fa-check-circle"></i>
                                                 </button>
                                             </form>
                                         @else
-                                            <span class="text-success mant-action-link">
-                                                <i class="fas fa-check-circle mr-1"></i> Completado
+                                            <span class="index-action index-action--success" title="Completado" style="cursor:default;">
+                                                <i class="fas fa-check-circle"></i>
                                             </span>
                                         @endif
                                     @endcan

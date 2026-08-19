@@ -4,48 +4,52 @@
 @php
     $tabInicial = request('tab') === 'compras' ? 2 : 1;
 @endphp
-<div class="container mx-auto px-4 py-6">
-    @if($tipoDashboard === 'completo')
-        <h1 class="text-2xl font-bold text-[#101D49] dark:text-white mb-4">Dashboard General</h1>
 
-        <div x-data="{ tab: {{ $tabInicial }} }" class="w-full">
-            <nav class="flex items-center border-b border-gray-200 dark:border-gray-700 mb-6" role="tablist" aria-label="Secciones del dashboard">
-                <button type="button"
-                    @click="tab = 1"
-                    :class="tab === 1 ? 'text-blue-600 border-b-2 border-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'"
-                    class="flex-1 relative px-4 py-3 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent"
-                    role="tab"
-                    :aria-selected="tab === 1">
-                    <i class="fas fa-desktop text-xs"></i>
-                    <span>Informática</span>
-                </button>
-                <button type="button"
-                    @click="tab = 2"
-                    :class="tab === 2 ? 'text-indigo-600 border-b-2 border-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'"
-                    class="flex-1 relative px-4 py-3 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent"
-                    role="tab"
-                    :aria-selected="tab === 2">
-                    <i class="fas fa-wrench text-xs"></i>
-                    <span>Compras</span>
-                </button>
-            </nav>
-
-            <div x-show="tab === 1" x-transition.opacity x-cloak role="tabpanel">
-                @include('partials.dashboard-informatica')
-            </div>
-
-            <div x-show="tab === 2" x-transition.opacity x-cloak role="tabpanel">
-                @include('partials.dashboard-compras')
-            </div>
+@if($tipoDashboard === 'completo')
+<div data-app-tabset>
+<x-index-page
+    title="Dashboard"
+    icon="fa-th-large"
+    subtitle="Resumen general"
+    :show-count="false"
+    :card="false"
+>
+    <x-slot name="tabs">
+        <div class="app-tabs" role="tablist" aria-label="Secciones del dashboard">
+            <button type="button"
+                data-app-tab="1"
+                class="app-tabs__btn {{ $tabInicial === 1 ? 'is-active' : '' }}"
+                role="tab">
+                <i class="fas fa-desktop"></i>
+                <span>Informática</span>
+            </button>
+            <button type="button"
+                data-app-tab="2"
+                class="app-tabs__btn {{ $tabInicial === 2 ? 'is-active' : '' }}"
+                role="tab">
+                <i class="fas fa-wrench"></i>
+                <span>Compras</span>
+            </button>
         </div>
-    @elseif($tipoDashboard === 'compras')
-        <h1 class="text-2xl font-bold text-[#101D49] dark:text-white mb-6">Dashboard Compras</h1>
-        @include('partials.dashboard-compras')
-    @else
-        <h1 class="text-2xl font-bold text-[#101D49] dark:text-white mb-6">Dashboard Informática</h1>
+    </x-slot>
+
+    <div data-app-panel="1" role="tabpanel" @if($tabInicial !== 1) hidden @endif>
         @include('partials.dashboard-informatica')
-    @endif
+    </div>
+    <div data-app-panel="2" role="tabpanel" @if($tabInicial !== 2) hidden @endif>
+        @include('partials.dashboard-compras')
+    </div>
+</x-index-page>
 </div>
+@elseif($tipoDashboard === 'compras')
+<x-index-page title="Dashboard" icon="fa-wrench" subtitle="Compras" :show-count="false" :card="false">
+    @include('partials.dashboard-compras')
+</x-index-page>
+@else
+<x-index-page title="Dashboard" icon="fa-desktop" subtitle="Informática" :show-count="false" :card="false">
+    @include('partials.dashboard-informatica')
+</x-index-page>
+@endif
 @endsection
 
 @push('third_party_stylesheets')

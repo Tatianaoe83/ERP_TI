@@ -1,12 +1,23 @@
 @extends('layouts.app')
+
 @section('content')
+@include('flash::message')
 
-<div class="content px-3">
-    @include('flash::message')
-    <div class="clearfix"></div>
+<x-index-page
+    title="Reporteador"
+    icon="fa-book"
+    :create-url="route('reportes.create')"
+    create-permission="crear-reportes"
+    create-label="+ Nuevo reporte"
+>
+    <x-slot name="headerActions">
+        @can('ver-reportes-especificos')
+        <a href="{{ route('reportes-especificos.index') }}" class="index-page__btn-secondary">
+            <i class="fas fa-chart-line"></i> Reportes específicos
+        </a>
+        @endcan
+    </x-slot>
 
-    <div class="card-body p-0">
-        @include('reportes.table')
-    </div>
-</div>
+    @include('reportes.table')
+</x-index-page>
 @endsection

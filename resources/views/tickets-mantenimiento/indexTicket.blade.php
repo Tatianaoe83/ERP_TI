@@ -15,37 +15,34 @@
 <div
     x-data="mantenimientoModal()"
     x-init="init()"
-    class="mantenimiento-container space-y-4 w-full max-w-full overflow-x-hidden min-h-screen p-6">
+    data-vista-root
+    data-vista-storage="mantenimientoVista"
+    data-vista-event="mantenimiento-vista-activada"
+    class="mantenimiento-container space-y-4 w-full max-w-full overflow-x-hidden">
 
-    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 mb-4">
-        <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">
-            <i class="fas fa-tools mr-2 text-blue-500"></i>Mantenimientos de Compras
-        </h2>
+    <div class="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-2 mb-2">
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <span class="text-xs sm:text-sm text-gray-500 font-medium hidden sm:inline">Vista:</span>
             <div class="flex items-center gap-1 border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg p-1">
-                <button @click="activarVista('kanban')"
-                    :class="vista === 'kanban' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
-                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2">
+                <button type="button" data-vista-btn="kanban"
+                    class="vista-switch__btn is-vista-active px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2 text-[#9CA3AF] hover:text-[#E5E7EB]">
                     <i class="fas fa-columns text-xs"></i><span class="hidden sm:inline">Kanban</span>
                 </button>
-                <button @click="activarVista('lista')"
-                    :class="vista === 'lista' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
-                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2">
+                <button type="button" data-vista-btn="lista"
+                    class="vista-switch__btn px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2 text-[#9CA3AF] hover:text-[#E5E7EB]">
                     <i class="fas fa-list text-xs"></i><span class="hidden sm:inline">Lista</span>
                 </button>
-                <button @click="activarVista('tabla')"
-                    :class="vista === 'tabla' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
-                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2">
+                <button type="button" data-vista-btn="tabla"
+                    class="vista-switch__btn px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2 text-[#9CA3AF] hover:text-[#E5E7EB]">
                     <i class="fas fa-table text-xs"></i><span class="hidden sm:inline">Tabla</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <div x-show="vista === 'kanban'" x-transition>@livewire('mantenimiento-tickets-kanban-updater')</div>
-    <div x-show="vista === 'lista'" x-transition>@livewire('mantenimiento-tickets-lista-updater')</div>
-    <div x-show="vista === 'tabla'" x-transition>@livewire('mantenimiento-tickets-tabla-updater')</div>
+    <div data-vista-panel="kanban">@livewire('mantenimiento-tickets-kanban-updater')</div>
+    <div data-vista-panel="lista" hidden>@livewire('mantenimiento-tickets-lista-updater')</div>
+    <div data-vista-panel="tabla" hidden>@livewire('mantenimiento-tickets-tabla-updater')</div>
 
     {{-- Mismo modal que monta el layout para el resto de las vistas --}}
     @include('partials.modal-mantenimiento')

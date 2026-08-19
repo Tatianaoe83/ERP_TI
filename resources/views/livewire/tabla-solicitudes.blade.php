@@ -16,57 +16,49 @@
     @click="abrirModalDesdeClick($event)">
 
     @if(!$soloModal)
-    <div class="rounded-lg shadow-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+    <div class="index-page__card overflow-hidden">
 
-        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-            <h2 class="text-xl font-semibold text-slate-800 dark:text-slate-100">Solicitudes de Equipos TI</h2>
+        <div class="index-page__dt-toolbar" style="flex-wrap: wrap;">
+            <div class="form-group" style="min-width:160px;margin:0;">
+                <label class="sr-only" for="filtroEstatus">Estatus</label>
+                <select wire:model.live="filtroEstatus" class="form-control">
+                    <option value="">Todos los estatus</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En revisión">En revisión</option>
+                    <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
+                    <option value="Re-cotizar">Re-cotizar</option>
+                    <option value="Aprobada">Aprobada</option>
+                    <option value="Cancelada">Cancelada</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1 1 220px;margin:0;position:relative;">
+                <label class="sr-only" for="searchSolicitudes">Buscar</label>
+                <input type="text"
+                    wire:model.live.debounce.300ms="search"
+                    placeholder="Buscar ID, empleado o motivo..."
+                    class="form-control">
+            </div>
+            <div class="form-group" style="min-width:110px;margin:0;">
+                <label class="sr-only">Mostrar</label>
+                <select wire:model.live="perPage" class="form-control">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            @if($filtroEstatus)
+            <button type="button" wire:click="$set('filtroEstatus', '')" class="index-page__btn-secondary">
+                Limpiar filtro
+            </button>
+            @endif
         </div>
 
         <div @if(!$modalAsignacionAbierto) wire:poll.15s @endif>
-            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-                <div class="flex gap-3 flex-wrap items-end">
-                    <div class="flex-1 min-w-[140px] max-w-xs">
-                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Estatus</label>
-                        <select wire:model.live="filtroEstatus" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-md bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Todos</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="En revisión">En revisión</option>
-                            <option value="Cotizaciones Enviadas">Cotizaciones Enviadas</option>
-                            <option value="Re-cotizar">Re-cotizar</option>
-                            <option value="Aprobada">Aprobada</option>
-                            <option value="Cancelada">Cancelada</option>
-                        </select>
-                    </div>
-                    <div class="flex-1 min-w-[180px] max-w-sm">
-                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Buscar</label>
-                        <div class="relative">
-                            <input type="text"
-                                wire:model.live.debounce.300ms="search"
-                                placeholder="ID, empleado o motivo..."
-                                class="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-md bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Mostrar</label>
-                        <select wire:model.live="perPage" class="px-3 py-2 text-sm border border-slate-300 rounded-md bg-gray-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                    </div>
-                    @if($filtroEstatus)
-                    <button wire:click="$set('filtroEstatus', '')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline pb-2">
-                        Limpiar filtro
-                    </button>
-                    @endif
-                </div>
-            </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <table class="min-w-full index-table">
                     <thead class="bg-slate-50 dark:bg-slate-800">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">ID</th>
@@ -162,34 +154,57 @@
                                 <span class="text-sm text-slate-700 dark:text-slate-300">{{ $solicitud->created_at->format('d/m/Y') }}</span>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
-                                <div class="flex items-center gap-3 flex-wrap">
+                                @php
+                                    $yaSubio = $solicitud->facturasSubidas >= $solicitud->totalFacturasNecesarias && $solicitud->totalFacturasNecesarias > 0;
+                                    $puedeCerrar = !in_array($solicitud->estatusDisplay, ['Cancelada', 'Rechazada'], true);
+                                @endphp
+                                <div class="index-actions">
                                     <button type="button"
                                         data-ver-solicitud="{{ $solicitud->SolicitudID }}"
                                         @click.prevent.stop="abrirModal({{ $solicitud->SolicitudID }})"
-                                        class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium transition-colors">
-                                        <i class="fas fa-eye mr-1"></i> Ver
+                                        class="index-action index-action--view"
+                                        title="Ver">
+                                        <i class="fas fa-eye"></i>
                                     </button>
                                     @if($solicitud->puedeCotizar)
                                     <a href="{{ route('solicitudes.cotizar', $solicitud->SolicitudID) }}"
-                                        class="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-sm font-medium transition-colors no-underline">
-                                        <i class="fas fa-file-invoice-dollar mr-1"></i> Cotizar
+                                        class="index-action index-action--edit no-underline"
+                                        title="Cotizar">
+                                        <i class="fas fa-file-invoice-dollar"></i>
                                     </a>
+                                    @else
+                                    <span class="index-action index-action--disabled"
+                                        title="No disponible: el estatus no permite cotizar"
+                                        aria-disabled="true">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                    </span>
                                     @endif
                                     @if($solicitud->puedeSubirFactura)
-                                    @php $yaSubio = $solicitud->facturasSubidas >= $solicitud->totalFacturasNecesarias && $solicitud->totalFacturasNecesarias > 0; @endphp
                                     <button type="button" wire:click="abrirModalAsignacion({{ $solicitud->SolicitudID }})"
                                         data-asignacion-solicitud="{{ $solicitud->SolicitudID }}"
-                                        class="{{ $yaSubio ? 'text-sky-600 dark:text-sky-400 hover:text-sky-800' : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-800' }} text-sm font-medium transition-colors">
-                                        <i class="fas {{ $yaSubio ? 'fa-eye' : 'fa-file-invoice' }} mr-1"></i>
-                                        {{ $yaSubio ? 'Ver Asignación' : 'Asignación' }}
+                                        class="index-action {{ $yaSubio ? 'index-action--view' : 'index-action--success' }}"
+                                        title="{{ $yaSubio ? 'Ver asignación' : 'Asignación' }}">
+                                        <i class="fas {{ $yaSubio ? 'fa-eye' : 'fa-file-invoice' }}"></i>
                                     </button>
+                                    @else
+                                    <span class="index-action index-action--disabled"
+                                        title="No disponible: el estatus no permite asignación"
+                                        aria-disabled="true">
+                                        <i class="fas fa-file-invoice"></i>
+                                    </span>
                                     @endif
-                                    @if(!in_array($solicitud->estatusDisplay, ['Cancelada', 'Rechazada']))
+                                    @if($puedeCerrar)
                                     <button type="button" wire:click="abrirModalCancelacion({{ $solicitud->SolicitudID }})"
-                                        class="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 text-sm font-medium transition-colors"
+                                        class="index-action index-action--delete"
                                         title="Cerrar solicitud">
-                                        <i class="fas fa-ban mr-1"></i> Cerrar
+                                        <i class="fas fa-ban"></i>
                                     </button>
+                                    @else
+                                    <span class="index-action index-action--disabled"
+                                        title="No se puede cerrar una solicitud {{ strtolower($solicitud->estatusDisplay) }}"
+                                        aria-disabled="true">
+                                        <i class="fas fa-ban"></i>
+                                    </span>
                                     @endif
                                 </div>
                             </td>

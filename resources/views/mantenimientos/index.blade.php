@@ -1,41 +1,28 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="content px-3">
-    @include('flash::message')
+@include('flash::message')
 
-    <div class="card">
-        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div class="d-flex flex-start  justify-start gap-2">
-                <h3 class="mb-0 text-[#101D49] dark:text-white">Mantenimientos</h3>
-            </div>
+<x-index-page
+    title="Mantenimientos"
+    icon="fa-tools"
+    subtitle="Programación y seguimiento"
+    :show-count="false"
+    :card="false"
+>
+    <x-slot name="headerActions">
+        <button id="btn-reporte-excel" type="button" class="index-page__btn-secondary">
+            <i class="fas fa-file-excel"></i> Generar Excel
+        </button>
+        @can('editar-mantenimientos')
+        <button id="btn-abrir-programacion-mantenimientos" type="button" class="index-page__btn-primary">
+            <i class="fas fa-file-invoice-dollar"></i> Generar programación
+        </button>
+        @endcan
+    </x-slot>
 
-            <diV class="d-flex flex-wrap justify-end gap-2">
-                <button
-                    id="btn-reporte-excel"
-                    type="button"
-                    class="btn text-white font-weight-bold px-4 py-2"
-                    style="background: #65c05b; border-radius: 10px; box-shadow: 0 8px 18px rgba(124, 58, 237, .25);">
-                    <i class="fas fa-file-excel mr-2"></i> Generar reporte Excel </button>
-
-                
-
-                @can('editar-mantenimientos')
-                <button
-                    id="btn-abrir-programacion-mantenimientos"
-                    type="button"
-                    class="btn text-white font-weight-bold px-4 py-2"
-                    style="background: #7c3aed; border-radius: 10px; box-shadow: 0 8px 18px rgba(124, 58, 237, .25);">
-                    <i class="fas fa-file-invoice-dollar mr-2"></i> Generar programación
-                </button>
-                @endcan
-            </div>
-        </diV>
-
-
-        <div class="card-body">
-            @livewire('mantenimientos-table')
-        </div>
+    <div class="index-page__card">
+        @livewire('mantenimientos-table')
     </div>
 
     @can('editar-mantenimientos')
@@ -110,7 +97,7 @@
         </div>
     </div>
     @endcan
-</div>
+</x-index-page>
 @endsection
 
 @push('third_party_stylesheets')

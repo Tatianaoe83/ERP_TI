@@ -5,15 +5,14 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="space-x-1 dark:bg-[#101010] dark:text-white">Detalles del Reporte: {{ $reportes->title }}</h3>
-<div class="content px-3">
-    <div class="row">
+<x-crud-page title="Detalle de reporte" icon="fa-book" :subtitle="$reportes->title" :back-url="route('reportes.index')">
+    <div class="row crud-show">
         @include('reportes.show_fields')
     </div>
-    <div class="card-footer">
-        <a href="{{ route('reportes.index') }}" class="btn btn-danger">Cancelar</a>
+    <div class="crud-page__actions">
+        <a href="{{ route('reportes.index') }}" class="crud-page__btn-ghost">Volver</a>
     </div>
-</div>
+</x-crud-page>
 @endsection
 
 @push('third_party_scripts')

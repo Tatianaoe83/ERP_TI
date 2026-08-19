@@ -1,9 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<h1 class="mb-3 text-[#101D49] dark:text-white">Crear Reporte</h1>
-
-<div class="content px-3">
+<x-crud-page title="Nuevo reporte" icon="fa-book" subtitle="Completa los datos" :back-url="route('reportes.index')">
     @livewire('reporte')
-</div>
+</x-crud-page>
 @endsection

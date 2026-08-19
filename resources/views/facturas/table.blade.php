@@ -1,29 +1,29 @@
-<div class="bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+<div class="index-page__card overflow-hidden">
 
-    <div id="gerenciaInfo" class="hidden p-4 bg-indigo-50 dark:bg-indigo-900/10 border-b border-indigo-100 dark:border-indigo-800 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shrink-0">
+    <div id="gerenciaInfo" class="hidden p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
+        <div class="index-page__icon">
             <i class="fas fa-building"></i>
         </div>
         <span id="titleGerencia" class="text-lg font-bold text-slate-800 dark:text-slate-100"></span>
     </div>
 
-    <div class="w-full overflow-x-auto">
-        <table id="facturasTable" class="w-full text-left border-collapse">
-            <thead class="bg-gray-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-700">
+    <div class="index-page__table-wrap table-responsive">
+        <table id="facturasTable" class="table index-table w-full">
+            <thead>
                 <tr>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">ID</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Insumo</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Emisor</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Solicitud</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Gerencia</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-right">Total</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Mes</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Año</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Último Cambio</th>
-                    <th class="py-4 px-4 text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">Acciones</th>
+                    <th>ID</th>
+                    <th>Insumo</th>
+                    <th>Emisor</th>
+                    <th>Solicitud</th>
+                    <th>Gerencia</th>
+                    <th class="text-right">Total</th>
+                    <th>Mes</th>
+                    <th>Año</th>
+                    <th>Último Cambio</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 bg-gray-50 dark:bg-slate-900"></tbody>
+            <tbody></tbody>
         </table>
     </div>
 
@@ -183,8 +183,8 @@
             searching: true,
             processing: false,
             serverSide: true,
-            pageLength: 12,
-            dom: 'rt<"flex flex-col sm:flex-row justify-between items-center p-5 border-t border-slate-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900"ip>',
+            pageLength: 10,
+            dom: "<'index-page__dt-toolbar'f>t<'index-page__dt-footer'ip>",
             language: {
                 zeroRecords: "<div class='py-10 text-center text-slate-400 italic'>No hay facturas con los filtros seleccionados</div>",
                 info: "<span class='text-xs font-medium text-slate-500'>_START_ - _END_ de _TOTAL_</span>",
@@ -347,42 +347,39 @@
                         const solID = row.SolicitudID || 'null';
                         const nombreFactura = row.Emisor ? row.Emisor.replace(/[\r\n]+/g, ' ').replace(/'/g, "\\'").replace(/"/g, '&quot;') : 'Factura';
 
-                        let actions = '';
+                        let actions = '<div class="index-actions">';
 
                         if (row.PdfRuta) {
-                            actions += `<a href="/storage/${row.PdfRuta}" target="_blank" class="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 text-[13px] font-bold transition-colors no-underline">
-                            <i class="fas fa-file-pdf mr-1"></i> PDF
+                            actions += `<a href="/storage/${row.PdfRuta}" target="_blank" class="index-action index-action--view" title="Ver PDF">
+                            <i class="fas fa-eye"></i>
                         </a>`;
                         } else if (row.ArchivoRuta) {
-                            actions += `<a href="/storage/${row.ArchivoRuta}" target="_blank" class="text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 text-[13px] font-bold transition-colors no-underline">
-                            <i class="fas fa-file-code mr-1"></i> XML
+                            actions += `<a href="/storage/${row.ArchivoRuta}" target="_blank" class="index-action index-action--view" title="Ver XML">
+                            <i class="fas fa-eye"></i>
                         </a>`;
-                        } else {
-                            actions += `<span class="text-[13px] text-slate-400 italic"><i class="fas fa-eye-slash mr-1"></i> N/A</span>`;
                         }
 
-                        actions += `<button type="button" onclick="abrirModalReemplazo(${row.FacturasID}, '${nombreFactura}', '${fileUrl}', '${insumoStr}', ${solID}, ${row.GerenciaID})" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-[13px] font-bold transition-colors">
-                        <i class="fas fa-sync-alt mr-1"></i> Actualizar
+                        actions += `<button type="button" onclick="abrirModalReemplazo(${row.FacturasID}, '${nombreFactura}', '${fileUrl}', '${insumoStr}', ${solID}, ${row.GerenciaID})" class="index-action index-action--edit" title="Actualizar">
+                        <i class="fas fa-edit"></i>
                     </button>`;
 
-                        return `<div class="flex items-center gap-4 flex-wrap">${actions}</div>`;
+                        return actions + '</div>';
                     }
                 }
             ],
             drawCallback: function() {
-                const btnClass = 'inline-flex items-center justify-center px-3 py-1.5 rounded-lg border text-xs font-bold leading-none no-underline transition-all duration-200 cursor-pointer shadow-sm ';
-                const normal = 'bg-gray-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700';
-                const active = '!bg-indigo-600 !border-indigo-600 !text-white hover:!bg-indigo-700';
-                const disabled = 'opacity-40 cursor-not-allowed shadow-none';
-
-                const $paginate = $('#facturasTable_wrapper .dataTables_paginate');
-                $paginate.find('.paginate_button').addClass(btnClass + normal);
-                $paginate.find('.paginate_button.current').removeClass(normal).addClass(active);
-                $paginate.find('.paginate_button.disabled').addClass(disabled);
+                if (window.IndexPage) {
+                    window.IndexPage.updateCount(this.api());
+                }
 
                 $('#facturasTable .mes-select').each(function () {
                     $(this).data('facturasMesPrev', $(this).val());
                 });
+            },
+            initComplete: function() {
+                if (window.IndexPage) {
+                    window.IndexPage.init(this.api());
+                }
             }
         });
 

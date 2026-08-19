@@ -1,12 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    <!-- Título del Dashboard -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-[#101D49] dark:text-white mb-2">Reportes Específicos</h1>
-        <p class="text-gray-600 dark:text-gray-300">Reportes predefinidos para descarga con opciones de filtrado</p>
-    </div>
+<x-index-page
+    title="Reportes específicos"
+    icon="fa-chart-line"
+    subtitle="Reportes predefinidos para descarga con opciones de filtrado"
+    :show-count="false"
+    :card="false"
+>
+    <x-slot name="headerActions">
+        <a href="{{ route('reportes.index') }}" class="index-page__btn-secondary">Volver al reporteador</a>
+    </x-slot>
 
     <!-- Cards de Reportes Específicos -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -121,14 +125,5 @@
             </div>
         </div>
     </div>
-
-    <!-- Botón de regreso -->
-    <div class="mt-8 text-center">
-        <a href="{{ route('reportes.index') }}" 
-           class="inline-flex items-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200">
-            <i class="fas fa-arrow-left mr-2"></i>
-            Volver a Reportes Generales
-        </a>
-    </div>
-</div>
+</x-index-page>
 @endsection

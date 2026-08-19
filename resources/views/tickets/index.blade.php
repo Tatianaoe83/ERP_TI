@@ -3,7 +3,6 @@
 @section('content')
 @php
     $tienePermisoProductividad = auth()->user()->can('tickets.ver-productividad');
-    $totalTabs = $tienePermisoProductividad ? 3 : 2;
     $tabSolicitudes = $tienePermisoProductividad ? 3 : 2;
     $tabInicial = 1;
     if (request('tab') === 'solicitudes') {
@@ -12,86 +11,79 @@
         $tabInicial = 2;
     }
 @endphp
-<div x-data="{
-    tab: {{ $tabInicial }},
-    cambiarTab(numeroTab) {
-        this.tab = numeroTab;
-    },
-    init() {
-        window.addEventListener('notif-abrir-solicitudes-tab', () => {
-            this.cambiarTab({{ $tabSolicitudes }});
-        });
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const solicitudId = urlParams.get('solicitud_id');
-        const accionSolicitud = urlParams.get('accion') || 'ver';
-        if (solicitudId && typeof window.ejecutarAccionSolicitudNotif === 'function') {
-            this.cambiarTab({{ $tabSolicitudes }});
-            setTimeout(() => {
-                window.ejecutarAccionSolicitudNotif(solicitudId, accionSolicitud);
-            }, 1500);
-        }
-    }
-}" class="px-2 w-full max-w-full overflow-x-hidden">
-
-    <div class="w-full mb-2">
-        <div
-            class="flex items-center border-b border-gray-200 w-full"
-            role="tablist">
+<div data-app-tabset id="soporte-tabset">
+<x-index-page
+    title="Soporte"
+    icon="fa-desktop"
+    subtitle="Tickets y solicitudes"
+    :show-count="false"
+    :card="false"
+>
+    <x-slot name="tabs">
+        <div class="app-tabs" role="tablist">
             <button
-                @click="cambiarTab(1)"
-                :class="tab === 1 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                class="flex-1 relative px-3 py-1.5 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent">
-                <i :class="tab === 1 ? 'fas fa-ticket-alt text-xs text-blue-600' : 'fas fa-ticket-alt text-xs text-gray-500'"></i>
+                type="button"
+                data-app-tab="1"
+                class="app-tabs__btn {{ $tabInicial === 1 ? 'is-active' : '' }}">
+                <i class="fas fa-ticket-alt"></i>
                 <span>Tickets</span>
             </button>
 
             @can('tickets.ver-productividad')
             <button
-                @click="cambiarTab(2)"
-                :class="tab === 2 ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                class="flex-1 relative px-3 py-1.5 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent">
-                <i :class="tab === 2 ? 'fas fa-chart-line text-xs text-blue-600' : 'fas fa-chart-line text-xs text-gray-500'"></i>
+                type="button"
+                data-app-tab="2"
+                class="app-tabs__btn {{ $tabInicial === 2 ? 'is-active' : '' }}">
+                <i class="fas fa-chart-line"></i>
                 <span>Productividad</span>
             </button>
             @endcan
 
             <button
-                @click="cambiarTab({{ $tabSolicitudes }})"
-                :class="tab === {{ $tabSolicitudes }} ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'"
-                class="flex-1 relative px-3 py-1.5 text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 border-b-2 border-transparent">
-                <i :class="tab === {{ $tabSolicitudes }} ? 'fas fa-file-alt text-xs text-blue-600' : 'fas fa-file-alt text-xs text-gray-500'"></i>
+                type="button"
+                data-app-tab="{{ $tabSolicitudes }}"
+                class="app-tabs__btn {{ $tabInicial === $tabSolicitudes ? 'is-active' : '' }}">
+                <i class="fas fa-file-alt"></i>
                 <span>Solicitudes</span>
             </button>
         </div>
+    </x-slot>
+
+    <div data-app-panel="1" class="w-full max-w-full" @if($tabInicial !== 1) hidden @endif>
+        @include('tickets.indexTicket', ['ticketsStatus' => $ticketsStatus, 'responsablesTI' => $responsablesTI])
     </div>
 
-    <div class="mt-2 w-full max-w-full overflow-x-hidden">
-        <div
-            x-show="tab === 1"
-            x-transition.opacity
-            x-cloak
-            class="w-full max-w-full overflow-x-hidden">
-            @include('tickets.indexTicket', ['ticketsStatus' => $ticketsStatus, 'responsablesTI' => $responsablesTI])
-        </div>
-
-        @can('tickets.ver-productividad')
-        <div
-            x-show="tab === 2"
-            x-transition.opacity
-            x-cloak
-            id="productividad-tab"
-            class="w-full">
-            @include('tickets.productividad', ['metricasProductividad' => $metricasProductividad, 'mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year])
-        </div>
-        @endcan
-        <div
-            x-show="tab === {{ $tabSolicitudes }}"
-            x-transition.opacity
-            x-cloak
-            class="w-full max-w-full overflow-x-hidden">
-            @include('tickets.indexSolicitudes', ['solicitudesStatus' => $solicitudesStatus ?? []])
-        </div>
+    @can('tickets.ver-productividad')
+    <div data-app-panel="2" id="productividad-tab" class="w-full" @if($tabInicial !== 2) hidden @endif>
+        @include('tickets.productividad', ['metricasProductividad' => $metricasProductividad, 'mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year])
     </div>
+    @endcan
+
+    <div data-app-panel="{{ $tabSolicitudes }}" class="w-full max-w-full" @if($tabInicial !== $tabSolicitudes) hidden @endif>
+        @include('tickets.indexSolicitudes', ['solicitudesStatus' => $solicitudesStatus ?? []])
+    </div>
+</x-index-page>
 </div>
 @endsection
+
+@push('third_party_scripts')
+<script>
+    document.addEventListener('notif-abrir-solicitudes-tab', function () {
+        var root = document.getElementById('soporte-tabset');
+        if (root && window.AppTabs) window.AppTabs.show(root, '{{ $tabSolicitudes }}');
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        var urlParams = new URLSearchParams(window.location.search);
+        var solicitudId = urlParams.get('solicitud_id');
+        var accionSolicitud = urlParams.get('accion') || 'ver';
+        if (solicitudId && typeof window.ejecutarAccionSolicitudNotif === 'function') {
+            var root = document.getElementById('soporte-tabset');
+            if (root && window.AppTabs) window.AppTabs.show(root, '{{ $tabSolicitudes }}');
+            setTimeout(function () {
+                window.ejecutarAccionSolicitudNotif(solicitudId, accionSolicitud);
+            }, 1500);
+        }
+    });
+</script>
+@endpush

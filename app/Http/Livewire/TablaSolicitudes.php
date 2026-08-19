@@ -347,6 +347,17 @@ class TablaSolicitudes extends Component
         return $solicitud;
     }
 
+    private function hydrateSolicitudById(int $solicitudId)
+    {
+        $user             = auth()->user();
+        $empleadoActual   = $user ? Empleados::query()->where('Correo', $user->email)->first() : null;
+        $empleadoActualId = $empleadoActual ? (int)$empleadoActual->EmpleadoID : null;
+        $solicitud        = Solicitud::with(['empleadoid', 'cotizaciones', 'pasoSupervisor', 'pasoGerencia', 'pasoAdministracion'])
+            ->find($solicitudId);
+
+        return $solicitud ? $this->hydrateSolicitudRow($solicitud, $user, $empleadoActualId) : null;
+    }
+
     private function formatNombreEmpleado(string $nombre): string
     {
         $partes = preg_split('/\s+/', trim($nombre));
@@ -671,6 +682,14 @@ class TablaSolicitudes extends Component
 
     public function abrirModalCancelacion(int $solicitudId): void
     {
+        $row = $this->hydrateSolicitudById($solicitudId);
+        if ($row && in_array($row->estatusDisplay, ['Cancelada', 'Rechazada'], true)) {
+            $this->dispatchBrowserEvent('swal:error', [
+                'message' => 'No se puede cerrar esta solicitud por su estatus actual.',
+            ]);
+            return;
+        }
+
         $this->resetErrorBag();
         $this->motivoCancelacion       = '';
         $this->solicitudCancelarId     = $solicitudId;
@@ -738,6 +757,14 @@ class TablaSolicitudes extends Component
 
     public function openAsignacion(int $solicitudId): void
     {
+        $row = $this->hydrateSolicitudById($solicitudId);
+        if ($row && !$row->puedeSubirFactura) {
+            $this->dispatchBrowserEvent('swal:error', [
+                'message' => 'Esta solicitud no admite asignación en su estatus actual.',
+            ]);
+            return;
+        }
+
         try {
             $this->resetAsignacionState();
             $this->asignacionSolicitudId = $solicitudId;

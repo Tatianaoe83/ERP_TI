@@ -167,7 +167,7 @@
             <!-- equiposAsignados Seleccionados -->
 
             <div class="table-responsive">
-                <table id="equiposAsignadosTable" class="table table-bordered table-striped">
+                <table id="equiposAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
                             <th>Action</th>
@@ -193,16 +193,19 @@
                         <tr data-id="{{ $equiposAsignado->InventarioID }}">
                             <td>
                                 @if($empleadoActivo)
-                                <button class='btn btn-outline-secondary btn-xs edit-btn mt-2' data-id="{{ $equiposAsignado->InventarioID }}">
-                                    <i class="fa fa-edit"></i>
-                                </button>
-                                {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroy', $equiposAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                {!! Form::button('<i class="fa fa-trash"></i>', [
-                                'type' => 'submit',
-                                'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn mt-2',
-                                'data-id' => $equiposAsignado->InventarioID
-                                ]) !!}
-                                {!! Form::close() !!}
+                                <div class="index-actions">
+                                    <button type="button" class="index-action index-action--edit edit-btn" data-id="{{ $equiposAsignado->InventarioID }}" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroy', $equiposAsignado->InventarioID], 'class' => 'index-action-form']) !!}
+                                    {!! Form::button('<i class="fas fa-trash-alt"></i>', [
+                                    'type' => 'submit',
+                                    'class' => 'index-action index-action--delete delete-btn',
+                                    'title' => 'Eliminar',
+                                    'data-id' => $equiposAsignado->InventarioID
+                                    ]) !!}
+                                    {!! Form::close() !!}
+                                </div>
                                 @else
                                 <span class="text-muted small">—</span>
                                 @endif
@@ -249,7 +252,7 @@
 
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
-                    <table id="equiposTable" class="table table-bordered table-striped">
+                    <table id="equiposTable" class="table index-table w-full">
                         <thead>
                             <tr>
                                 <th>Asignar</th>
@@ -348,7 +351,7 @@
                 @endif
 
             <div class="table-responsive">
-                <table id="insumosAsignadosTable" class="table table-bordered table-striped">
+                <table id="insumosAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
                             <th>Action</th>
@@ -374,17 +377,19 @@
                         <tr data-id="{{ $insumosAsignado->InventarioID }}">
                             <td>
                                 @if($empleadoActivo)
-                                <button class='btn btn-outline-secondary btn-xs edit-btn-insum' data-id="{{ $insumosAsignado->InventarioID }}">
-                                    <i class="fa fa-edit"></i>
-                                </button>
-
-                                {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroyInsumo', $insumosAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                {!! Form::button('<i class="fa fa-trash"></i>', [
-                                'type' => 'submit',
-                                'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-insumo',
-                                'data-id' => $insumosAsignado->InventarioID
-                                ]) !!}
-                                {!! Form::close() !!}
+                                <div class="index-actions">
+                                    <button type="button" class="index-action index-action--edit edit-btn-insum" data-id="{{ $insumosAsignado->InventarioID }}" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroyInsumo', $insumosAsignado->InventarioID], 'class' => 'index-action-form']) !!}
+                                    {!! Form::button('<i class="fas fa-trash-alt"></i>', [
+                                    'type' => 'submit',
+                                    'class' => 'index-action index-action--delete delete-btn-insumo',
+                                    'title' => 'Eliminar',
+                                    'data-id' => $insumosAsignado->InventarioID
+                                    ]) !!}
+                                    {!! Form::close() !!}
+                                </div>
                                 @else
                                 <span class="text-muted small">—</span>
                                 @endif
@@ -434,7 +439,7 @@
                 </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
-                    <table id="insumosTable" class="table table-bordered table-striped">
+                    <table id="insumosTable" class="table index-table w-full">
                         <thead>
                             <tr>
                                 <th>Asignar</th>
@@ -542,7 +547,7 @@
                 @endif
 
             <div class="table-responsive">
-                <table id="lineasAsignadosTable" class="table table-bordered table-striped">
+                <table id="lineasAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
                             <th>Action</th>
@@ -573,17 +578,19 @@
                         <tr data-id="{{ $LineasAsignado->InventarioID }}">
                             <td>
                                 @if($empleadoActivo)
-                                <button class='btn btn-outline-secondary btn-xs edit-btn-linea' data-id="{{ $LineasAsignado->InventarioID }}">
-                                    <i class="fa fa-edit"></i>
-                                </button>
-
-                                {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroylinea', $LineasAsignado->InventarioID], 'style' => 'display:inline']) !!}
-                                {!! Form::button('<i class="fa fa-trash"></i>', [
-                                'type' => 'submit',
-                                'class' => 'btn btn-xs btn-outline-danger btn-flat delete-btn-linea',
-                                'data-id' => $LineasAsignado->InventarioID
-                                ]) !!}
-                                {!! Form::close() !!}
+                                <div class="index-actions">
+                                    <button type="button" class="index-action index-action--edit edit-btn-linea" data-id="{{ $LineasAsignado->InventarioID }}" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {!! Form::open(['method' => 'DELETE', 'route' => ['inventarios.destroylinea', $LineasAsignado->InventarioID], 'class' => 'index-action-form']) !!}
+                                    {!! Form::button('<i class="fas fa-trash-alt"></i>', [
+                                    'type' => 'submit',
+                                    'class' => 'index-action index-action--delete delete-btn-linea',
+                                    'title' => 'Eliminar',
+                                    'data-id' => $LineasAsignado->InventarioID
+                                    ]) !!}
+                                    {!! Form::close() !!}
+                                </div>
                                 @else
                                 <span class="text-muted small">—</span>
                                 @endif
@@ -638,7 +645,7 @@
                 </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
-                    <table id="lineasTable" class="table table-bordered table-striped">
+                    <table id="lineasTable" class="table index-table w-full">
                         <thead>
                             <tr>
                                 <th>Asignar</th>
@@ -1455,14 +1462,16 @@
         let newRow = `
         <tr data-id="${equipo.InventarioID}">
             <td>
-                <button class="btn btn-outline-secondary btn-xs edit-btn" data-id="${equipo.InventarioID}">
-                    <i class="fa fa-edit"></i>
-                </button>
-                <form method="POST" action="/inventarios/destroy/${equipo.InventarioID}" style="display:inline">
-                    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat delete-btn" data-id="${equipo.InventarioID}">
-                        <i class="fa fa-trash"></i>
+                <div class="index-actions">
+                    <button type="button" class="index-action index-action--edit edit-btn" data-id="${equipo.InventarioID}" title="Editar">
+                        <i class="fas fa-edit"></i>
                     </button>
-                </form>
+                    <form method="POST" action="/inventarios/destroy/${equipo.InventarioID}" class="index-action-form">
+                        <button type="submit" class="index-action index-action--delete delete-btn" data-id="${equipo.InventarioID}" title="Eliminar">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+                </div>
             </td>
             <td>${equipo.CategoriaEquipo}</td>
             <td>${equipo.Marca}</td>
@@ -1785,14 +1794,16 @@
         let newRow = `
         <tr data-id="${insumo.InventarioID}">
             <td>
-                <button class="btn btn-outline-secondary btn-xs edit-btn-insum" data-id="${insumo.InventarioID}">
-                    <i class="fa fa-edit"></i>
-                </button>
-                <form method="POST" action="/inventarios/deleteInsumo/${insumo.InventarioID}" style="display:inline">
-                    <button type="submit" class="btn btn-xs btn-outline-danger btn-flat delete-btn-insumo" data-id="${insumo.InventarioID}">
-                        <i class="fa fa-trash"></i>
+                <div class="index-actions">
+                    <button type="button" class="index-action index-action--edit edit-btn-insum" data-id="${insumo.InventarioID}" title="Editar">
+                        <i class="fas fa-edit"></i>
                     </button>
-                </form>
+                    <form method="POST" action="/inventarios/deleteInsumo/${insumo.InventarioID}" class="index-action-form">
+                        <button type="submit" class="index-action index-action--delete delete-btn-insumo" data-id="${insumo.InventarioID}" title="Eliminar">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+                </div>
             </td>
             <td>${insumo.CateogoriaInsumo}</td>
             <td>${insumo.NombreInsumo}</td>
@@ -2095,14 +2106,16 @@
         const table = $('#lineasAsignadosTable').DataTable();
 
         const newRow = [
-            `<button class="btn btn-outline-secondary btn-xs edit-btn-linea" data-id="${telefono.InventarioID}">
-            <i class="fa fa-edit"></i>
-        </button>
-        <form method="POST" action="/inventarios/deleteL/${telefono.InventarioID}" style="display:inline">
-            <button type="submit" class="btn btn-xs btn-outline-danger btn-flat delete-btn-linea" data-id="${telefono.InventarioID}">
-                <i class="fa fa-trash"></i>
-            </button>
-        </form>`,
+            `<div class="index-actions">
+                <button type="button" class="index-action index-action--edit edit-btn-linea" data-id="${telefono.InventarioID}" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <form method="POST" action="/inventarios/deleteL/${telefono.InventarioID}" class="index-action-form">
+                    <button type="submit" class="index-action index-action--delete delete-btn-linea" data-id="${telefono.InventarioID}" title="Eliminar">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </form>
+            </div>`,
             telefono.NumTelefonico,
             telefono.Compania,
             telefono.PlanTel,

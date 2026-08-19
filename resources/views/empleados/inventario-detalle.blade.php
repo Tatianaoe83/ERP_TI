@@ -1,5 +1,5 @@
 <div class="table-responsive-sm">
-<table class="table table-striped ">
+<table class="table index-table w-full">
     <thead>
         <tr>
             <th>Categoría</th>

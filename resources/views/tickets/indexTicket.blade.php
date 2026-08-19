@@ -167,11 +167,13 @@
     x-init="
         const vistaGuardada = localStorage.getItem('ticketsVista') || 'kanban';
         vista = vistaGuardada;
-        // Kanban ya carga por defecto; solo avisamos si la vista guardada es otra.
         if (vistaGuardada !== 'kanban' && window.Livewire) window.Livewire.emit('soporte-vista-activa', vistaGuardada);
         init();
     "
-    class="tickets-container space-y-2 w-full max-w-full overflow-x-hidden px-6 pb-6 pt-1">
+    data-vista-root
+    data-vista-storage="ticketsVista"
+    data-vista-event="soporte-vista-activa"
+    class="tickets-container space-y-2 w-full max-w-full overflow-x-hidden pb-2 pt-1">
 
     <!-- Alert de Tickets Excedidos -->
     <div
@@ -249,24 +251,21 @@
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
             <div class="flex items-center gap-1 bg-[#fffff] border border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
-                <button
-                    @click="activarVista('kanban')"
-                    :class="vista === 'kanban' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
-                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
+                <button type="button"
+                    data-vista-btn="kanban"
+                    class="vista-switch__btn is-vista-active px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
                     <i class="fas fa-columns text-xs"></i>
                     <span class="hidden sm:inline">Kanban</span>
                 </button>
-                <button
-                    @click="activarVista('lista')"
-                    :class="vista === 'lista' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
-                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
+                <button type="button"
+                    data-vista-btn="lista"
+                    class="vista-switch__btn px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
                     <i class="fas fa-list text-xs"></i>
                     <span class="hidden sm:inline">Lista</span>
                 </button>
-                <button
-                    @click="activarVista('tabla')"
-                    :class="vista === 'tabla' ? 'bg-[#2563EB] text-white' : 'text-[#9CA3AF] hover:text-[#E5E7EB]'"
-                    class="px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center">
+                <button type="button"
+                    data-vista-btn="tabla"
+                    class="vista-switch__btn px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
                     <i class="fas fa-table text-xs"></i>
                     <span class="hidden sm:inline">Tabla</span>
                 </button>
@@ -276,18 +275,18 @@
 
     <!-- KANBAN liveWire -->
 
-    <div class="kanban-root w-full h-full" x-show="vista === 'kanban'" x-transition>
+    <div class="kanban-root w-full h-full" data-vista-panel="kanban">
     @livewire('tickets-kanban-updater')
     </div>
 
 
     <!-- Vista Lista Livewire -->
-    <div class="space-y-4 w-full max-w-full overflow-x-hidden pb-6" x-show="vista === 'lista'" x-transition>
+    <div class="space-y-4 w-full max-w-full overflow-x-hidden pb-6" data-vista-panel="lista" hidden>
     @livewire('tickets-lista-updater')
     </div>
 
     <!-- Vista Tabla Livewire -->
-    <div x-show="vista === 'tabla'" x-transition class="w-full">
+    <div data-vista-panel="tabla" hidden class="w-full">
 
     @livewire('tickets-tabla-updater')
 

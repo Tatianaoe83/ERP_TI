@@ -1,4 +1,4 @@
-<div class="space-y-6 min-h-screen p-6" id="productividad-mantenimiento-container">
+<div class="space-y-6" id="productividad-mantenimiento-container">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Reporte de Productividad</h2>
@@ -432,8 +432,8 @@ function inicializarGraficasMantenimiento() {
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        const tab = document.querySelector('[x-show="tab === 2"]');
-        if (tab && window.getComputedStyle(tab).display !== 'none') {
+        const tab = document.getElementById('productividad-mantenimiento-tab');
+        if (tab && !tab.hidden) {
             inicializarGraficasMantenimiento();
         }
     }, 300);

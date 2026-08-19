@@ -1,27 +1,25 @@
-<div class='btn-group'>
-    @can('ver-reportes')
-    <a href="{{ route('reportes.show', $id) }}" class='btn btn-outline-primary btn-xs'>
-        <i class="fas fa-eye"></i>
-    </a>
-    @endcan
-    @can('editar-reportes')
-    <a href="{{ route('reportes.edit', $id) }}" class='btn btn-outline-secondary btn-xs'>
-        <i class="fas fa-edit"></i>
-    </a>
-    @endcan
-
+<x-index-actions
+    :show-url="route('reportes.show', $id)"
+    show-permission="ver-reportes"
+    :edit-url="route('reportes.edit', $id)"
+    edit-permission="editar-reportes"
+    :destroy-route="['reportes.destroy', $id]"
+    destroy-permission="borrar-reportes"
+    confirm-title="¿Deseas borrar este reporte?"
+    success-title="Reporte borrado"
+>
+    @can('exportar-reportes')
     <div class="dropdown" style="position: relative;">
-        <button class="btn btn-outline-info btn-xs dropdown-toggle" type="button"
+        <button class="index-action index-action--edit" type="button"
             id="dropdownExportar{{ $id }}"
-            data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-download me-1"></i>
+            data-bs-toggle="dropdown" aria-expanded="false"
+            title="Exportar">
+            <i class="fas fa-download"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm"
             aria-labelledby="dropdownExportar{{ $id }}"
             style="min-width: 180px; z-index: 1050;">
-            @can('exportar-reportes')
             <li>
-                {{-- PDF: link GET directo, el navegador descarga sin iframe --}}
                 <a href="{{ route('reportes.exportPdf', $id) }}"
                    class="dropdown-item d-flex align-items-center gap-2 export-direct"
                    data-label="PDF" data-id="{{ $id }}">
@@ -30,7 +28,6 @@
                 </a>
             </li>
             <li>
-                {{-- Excel: POST via iframe --}}
                 <form action="{{ route('reportes.exportExcel', $id) }}" method="POST"
                       class="w-100 export-form" data-label="Excel">
                     @csrf
@@ -40,22 +37,11 @@
                     </button>
                 </form>
             </li>
-            @endcan
         </ul>
     </div>
-
-    @can('borrar-reportes')
-    <form action="{{ route('reportes.destroy', $id) }}" method="POST" style="display:inline;">
-        @csrf
-        @method('DELETE')
-        <button type="submit" class="btn btn-xs btn-outline-danger btn-flat show_confirm">
-            <i class="fa fa-trash"></i>
-        </button>
-    </form>
     @endcan
-</div>
+</x-index-actions>
 
-{{-- Modal de carga --}}
 <div class="modal fade" id="modalDescargando{{ $id }}" tabindex="-1"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -73,10 +59,10 @@
 
 <script>
 (function () {
-    const group = document.getElementById('dropdownExportar{{ $id }}')?.closest('.btn-group');
+    const group = document.getElementById('dropdownExportar{{ $id }}')?.closest('.index-actions')
+        || document.getElementById('dropdownExportar{{ $id }}')?.closest('.dropdown');
     if (!group) return;
 
-    // PDF via GET — window.location descarga directo
     group.querySelectorAll('a.export-direct').forEach(function (link) {
         if (link.dataset.ready) return;
         link.dataset.ready = '1';
@@ -108,7 +94,6 @@
         });
     });
 
-    // Excel via POST — iframe oculto
     group.querySelectorAll('form.export-form').forEach(function (form) {
         if (form.dataset.ready) return;
         form.dataset.ready = '1';
@@ -158,27 +143,4 @@
         });
     });
 })();
-</script>
-
-<script>
-    document.querySelectorAll('.show_confirm').forEach(function(btn) {
-        btn.addEventListener('click', function(event) {
-            var form = this.closest('form');
-            event.preventDefault();
-            swal.fire({
-                title: '¿Deseas borrar este reporte?',
-                icon: 'warning',
-                showDenyButton: true,
-                confirmButtonText: 'Confirmar',
-                denyButtonText: 'Cerrar',
-            }).then(function (willDelete) {
-                if (willDelete.isConfirmed) {
-                    swal.fire({ title: 'Reporte borrado', icon: 'success' })
-                        .then(function () { form.submit(); });
-                } else if (willDelete.isDenied) {
-                    swal.fire('Cambios no generados');
-                }
-            });
-        });
-    });
 </script>

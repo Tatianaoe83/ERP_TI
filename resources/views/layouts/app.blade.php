@@ -30,10 +30,15 @@
 
 
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    
+
     <!-- Alpine.js x-cloak styles -->
     <style>
         [x-cloak] { display: none !important; }
+
+        .vista-switch__btn.is-vista-active {
+            background-color: #2563EB !important;
+            color: #fff !important;
+        }
 
         /* SweetAlert siempre por encima de los modales (z-[9999]) */
         .swal2-container { z-index: 100000 !important; }
@@ -792,6 +797,87 @@
             }
         });
     });
+</script>
+
+<script>
+    window.AppTabs = {
+        show: function (root, tab) {
+            if (!root) return;
+            var id = String(tab);
+            root.querySelectorAll('[data-app-tab]').forEach(function (btn) {
+                btn.classList.toggle('is-active', btn.getAttribute('data-app-tab') === id);
+            });
+            root.querySelectorAll('[data-app-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-app-panel') !== id;
+            });
+            root.dispatchEvent(new CustomEvent('app-tab-change', { bubbles: true, detail: { tab: id } }));
+        }
+    };
+    document.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-app-tab]');
+        if (!btn) return;
+        var root = btn.closest('[data-app-tabset]');
+        if (!root) return;
+        event.preventDefault();
+        window.AppTabs.show(root, btn.getAttribute('data-app-tab'));
+    });
+
+    window.AppVistas = {
+        show: function (root, vista, options) {
+            if (!root || !vista) return;
+            options = options || {};
+            root.querySelectorAll('[data-vista-btn]').forEach(function (btn) {
+                btn.classList.toggle('is-vista-active', btn.getAttribute('data-vista-btn') === vista);
+            });
+            root.querySelectorAll('[data-vista-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-vista-panel') !== vista;
+            });
+            var key = root.getAttribute('data-vista-storage');
+            if (key && !options.skipStorage) {
+                try { localStorage.setItem(key, vista); } catch (e) {}
+            }
+            var evt = root.getAttribute('data-vista-event');
+            if (evt && window.Livewire && !options.skipEmit) {
+                window.Livewire.emit(evt, vista);
+            }
+            if (window.Alpine && typeof Alpine.$data === 'function') {
+                try {
+                    var data = Alpine.$data(root);
+                    if (data) data.vista = vista;
+                } catch (e) {}
+            }
+        }
+    };
+    document.addEventListener('click', function (event) {
+        var btn = event.target.closest('[data-vista-btn]');
+        if (!btn) return;
+        var root = btn.closest('[data-vista-root]');
+        if (!root) return;
+        event.preventDefault();
+        window.AppVistas.show(root, btn.getAttribute('data-vista-btn'));
+    });
+    document.querySelectorAll('[data-vista-root]').forEach(function (root) {
+        var key = root.getAttribute('data-vista-storage');
+        var saved = null;
+        try { saved = key ? localStorage.getItem(key) : null; } catch (e) {}
+        window.AppVistas.show(root, saved || 'kanban', {
+            skipStorage: true,
+            skipEmit: !saved || saved === 'kanban'
+        });
+    });
+
+    (function loadAlpineAsync() {
+        var collapse = document.createElement('script');
+        collapse.src = 'https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.8/dist/cdn.min.js';
+        collapse.async = true;
+        collapse.onload = function () {
+            var alpine = document.createElement('script');
+            alpine.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js';
+            alpine.async = true;
+            document.body.appendChild(alpine);
+        };
+        document.body.appendChild(collapse);
+    })();
 </script>
 
 </html>

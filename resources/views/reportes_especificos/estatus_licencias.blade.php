@@ -108,9 +108,11 @@
             <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css">
             @endpush
 
-            <div class="table-responsive">
-                {!! $dataTable->table(['width' => '100%', 'class' => 'table table-bordered table-striped']) !!}
-                </div>
+            <div class="index-page__card overflow-hidden">
+            <div class="index-page__table-wrap table-responsive">
+                {!! $dataTable->table(['width' => '100%', 'class' => 'table index-table w-full']) !!}
+            </div>
+            </div>
 
             @push('third_party_scripts')
             <!-- DataTables Core -->

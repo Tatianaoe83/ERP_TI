@@ -1,9 +1,4 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="col-xs-12 col-sm-12 col-md-12">
-
-    <h3 class="text-[#101D49] dark:text-white">Inventario</h3>
+<div>
 
     @push('third_party_stylesheets')
     <!-- CSS -->
@@ -50,159 +45,67 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-xs-12 col-sm-12 col-md-12">
-
-            <div class="row">
-
-                <!-- Nombre -->
-                <div class="col-xs-6 col-sm-5 col-md-7">
-                    <div class="form-group">
-                        <label class="text-[#101D49] dark:text-white">
-                            Nombre empleado:
-                        </label>
-
-                        <input type="text"
-                            class="form-control"
-                            id="filtro-nombre"
-                            placeholder="Buscar empleado...">
-                    </div>
-                </div>
-
-                <!-- Obra -->
-                <div class="col-xs-6 col-sm-4 col-md-5">
-                    <div class="form-group">
-
-                        <label class="text-[#101D49] dark:text-white">
-                            Obra empleado:
-                        </label>
-
-                        <select id="filtro-obra" class="jz-inv form-control">
-                            <option value="">Todas las obras</option>
-                        </select>
-
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="row">
-
-                <!-- Puesto -->
-                <div class="col-xs-6 col-sm-6 col-md-3">
-
-                    <div class="form-group">
-
-                        <label class="text-[#101D49] dark:text-white">
-                            Puesto empleado:
-                        </label>
-
-                        <select id="filtro-puesto" class="jz-inv form-control">
-                            <option value="">Todos los puestos</option>
-                        </select>
-
-                    </div>
-
-                </div>
-
-                <!-- Inventario -->
-                <div class="col-xs-6 col-sm-6 col-md-3">
-
-                    <div class="form-group">
-
-                        <label class="text-[#101D49] dark:text-white">
-                            Buscar Inventario:
-                        </label>
-
-                        <input type="text"
-                            class="form-control"
-                            id="filtro-inventario">
-
-                    </div>
-
-                </div>
-
-                <!-- Tipo Persona -->
-                <div class="col-xs-6 col-sm-6 col-md-3">
-
-                    <div class="form-group">
-
-                        <label class="text-[#101D49] dark:text-white">
-                            Tipo de Persona:
-                        </label>
-
-                        <select class="form-control jz-inv"
-                            id="filtro-persona">
-
-                            <option value="" selected>
-                                Físicas y referenciados (default)
-                            </option>
-                            <option value="FISICA">
-                                Física — stock + extra
-                            </option>
-
-                            <option value="REFERENCIADO">
-                                Referenciado — solo stock
-                            </option>
-
-                            <option value="EXTRAORDINARIO">
-                                Extraordinario — todo extra
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-                <!-- Estatus -->
-                <div class="col-xs-6 col-sm-6 col-md-3">
-
-                    <div class="form-group">
-
-                        <label class="text-[#101D49] dark:text-white">
-                            Estatus:
-                        </label>
-
-                        <select class="form-control" id="filtro-estatus">
-                            <option value="1" selected>Activo</option>
-                            <option value="0">Inactivo</option>
-                            <option value="2">Todos</option>
-                        </select>
-
-                    </div>
-
-                </div>
-
-            </div>
-
+    <div class="index-page__filters" style="padding: 0.9rem 1rem 0;">
+        <div class="form-group">
+            <label for="filtro-nombre">Nombre empleado</label>
+            <input type="text" class="form-control" id="filtro-nombre" placeholder="Buscar empleado...">
+        </div>
+        <div class="form-group">
+            <label for="filtro-obra">Obra</label>
+            <select id="filtro-obra" class="jz-inv form-control">
+                <option value="">Todas las obras</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtro-puesto">Puesto</label>
+            <select id="filtro-puesto" class="jz-inv form-control">
+                <option value="">Todos los puestos</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtro-inventario">Inventario</label>
+            <input type="text" class="form-control" id="filtro-inventario" placeholder="Buscar inventario...">
+        </div>
+        <div class="form-group">
+            <label for="filtro-persona">Tipo de persona</label>
+            <select class="form-control jz-inv" id="filtro-persona">
+                <option value="" selected>Físicas y referenciados (default)</option>
+                <option value="FISICA">Física — stock + extra</option>
+                <option value="REFERENCIADO">Referenciado — solo stock</option>
+                <option value="EXTRAORDINARIO">Extraordinario — todo extra</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtro-estatus">Estatus</label>
+            <select class="form-control" id="filtro-estatus">
+                <option value="1" selected>Activo</option>
+                <option value="0">Inactivo</option>
+                <option value="2">Todos</option>
+            </select>
         </div>
     </div>
 
-    <table id="tabla-empleados" class="table" style="width: 100%;">
-        <thead>
-            <tr>
-                <th></th>
-                <th>Nombre</th>
-                <th>Tipo</th>
-                <th>Puesto</th>
-                <th>Obra</th>
-                <th>Teléfono</th>
-                <th>Correo</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-    </table>
+    <div class="index-page__table-wrap table-responsive">
+        <table id="tabla-empleados" class="table index-table w-full">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Puesto</th>
+                    <th>Obra</th>
+                    <th>Teléfono</th>
+                    <th>Correo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
 
     @push('third_party_scripts')
-
-    <!-- Bootstrap -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- DataTables -->
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+    @include('layouts.datatables_js')
+    @include('layouts.partials.index-page-js')
 
     <!-- Buttons -->
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
@@ -237,7 +140,8 @@
             var table = $('#tabla-empleados').DataTable({
                 responsive: true,
                 searching: false,
-                pageLength: 7,
+                pageLength: 10,
+                dom: "t<'index-page__dt-footer'ip>",
 
                 ajax: {
                     url: '{{ route("inventarios.indexVista") }}',
@@ -308,6 +212,9 @@
                 initComplete: function() {
 
                     var api = this.api();
+                    if (window.IndexPage) {
+                        window.IndexPage.init(api);
+                    }
 
                     // =========================
                     // CARGAR OBRAS
@@ -358,6 +265,11 @@
                         allowClear: true
                     });
 
+                },
+                drawCallback: function() {
+                    if (window.IndexPage) {
+                        window.IndexPage.updateCount(this.api());
+                    }
                 }
             });
 
@@ -429,4 +341,3 @@
     @endpush
 
 </div>
-@endsection

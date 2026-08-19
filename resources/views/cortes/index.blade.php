@@ -597,19 +597,14 @@
 
 <div id="ui-toast-wrapper"></div>
 
-<div class="w-full mx-auto bg-gray-50 dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors duration-300">
-
-    <div class="px-6 md:px-8 pt-6 md:pt-8 pb-4 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950">
-        <div class="flex items-center gap-3">
-            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
-                <i class="fas fa-file-invoice-dollar text-xl"></i>
-            </div>
-            <div>
-                <h2 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Generar Presupuesto Oficial</h2>
-                <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gestión visual de costos por gerencia.</p>
-            </div>
-        </div>
-    </div>
+<x-index-page
+    title="Presupuestos oficiales"
+    icon="fa-money-check-alt"
+    subtitle="Gestión visual de costos por gerencia"
+    :show-count="false"
+    :card="false"
+>
+<div class="index-page__card overflow-hidden">
 
     <div class="px-6 md:px-8 py-5 border-b border-slate-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/30">
         <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 ml-1">Filtros y acciones</p>
@@ -849,6 +844,7 @@
     </div>
 
 </div>
+</x-index-page>
 @endsection
 
 @push('third_party_scripts')

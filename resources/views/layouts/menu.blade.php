@@ -1,6 +1,3 @@
-<script src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
 @php
 $user = auth()->user();
 $puedeVerEmpresa = $user && (
@@ -119,7 +116,7 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             </div>
             <i :class="{ 'rotate-90': open === 1 }" class="fas fa-chevron-right sidebar-chevron transition-transform duration-200 flex-shrink-0"></i>
         </button>
-        <ul x-show="open === 1" x-collapse class="sidebar-sub space-y-0.5 text-xs">
+        <ul x-show="open === 1" x-collapse x-cloak class="sidebar-sub space-y-0.5 text-xs">
             @if(auth()->check() && auth()->user()->can('ver-unidadesdenegocio'))
             <li>
                 <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('unidadesDeNegocios*') ? 'is-active' : '' }}"
@@ -188,7 +185,7 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             </div>
             <i :class="{ 'rotate-90': open === 2 }" class="fas fa-chevron-right sidebar-chevron transition-transform duration-200 flex-shrink-0"></i>
         </button>
-        <ul x-show="open === 2" x-collapse class="sidebar-sub space-y-0.5 text-xs">
+        <ul x-show="open === 2" x-collapse x-cloak class="sidebar-sub space-y-0.5 text-xs">
             @if(auth()->check() && auth()->user()->can('ver-Lineastelefonicas'))
             <li>
                 <a href="/lineasTelefonicas" title="Líneas"
@@ -252,7 +249,7 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             </div>
             <i :class="{ 'rotate-90': open === 3 }" class="fas fa-chevron-right sidebar-chevron transition-transform duration-200 flex-shrink-0"></i>
         </button>
-        <ul x-show="open === 3" x-collapse class="sidebar-sub space-y-0.5 text-xs">
+        <ul x-show="open === 3" x-collapse x-cloak class="sidebar-sub space-y-0.5 text-xs">
             @if(auth()->check() && auth()->user()->can('transferir-inventario'))
             <li>
                 <a href="/inventarios" title="Inventario"
@@ -276,7 +273,7 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             </div>
             <i :class="{ 'rotate-90': open === 4 }" class="fas fa-chevron-right sidebar-chevron transition-transform duration-200 flex-shrink-0"></i>
         </button>
-        <ul x-show="open === 4" x-collapse class="sidebar-sub space-y-0.5 text-xs">
+        <ul x-show="open === 4" x-collapse x-cloak class="sidebar-sub space-y-0.5 text-xs">
             @if(auth()->check() && auth()->user()->can('ver-presupuesto'))
             <li>
                 <a href="/presupuesto" title="Presupuesto"
@@ -322,7 +319,7 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             </div>
             <i :class="{ 'rotate-90': open === 5 }" class="fas fa-chevron-right sidebar-chevron transition-transform duration-200 flex-shrink-0"></i>
         </button>
-        <ul x-show="open === 5" x-collapse class="sidebar-sub space-y-0.5 text-xs">
+        <ul x-show="open === 5" x-collapse x-cloak class="sidebar-sub space-y-0.5 text-xs">
             @if(auth()->check() && auth()->user()->can('ver-presupuestos'))
             <li>
                 <a href="/cortes" title="Presupuestos Oficiales"
@@ -359,7 +356,7 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             </div>
             <i :class="{ 'rotate-90': open === 6 }" class="fas fa-chevron-right sidebar-chevron transition-transform duration-200 flex-shrink-0"></i>
         </button>
-        <ul x-show="open === 6" x-collapse class="sidebar-sub space-y-0.5 text-xs">
+        <ul x-show="open === 6" x-collapse x-cloak class="sidebar-sub space-y-0.5 text-xs">
             @if(auth()->check() && auth()->user()->can('ver-usuarios'))
             <li>
                 <a href="/usuarios" title="Usuarios"
