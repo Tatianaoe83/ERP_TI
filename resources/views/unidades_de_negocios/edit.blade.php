@@ -1,27 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Editar Unidades De Negocio</h3>
-
-<div class="content px-3">
-
+<x-crud-page title="Editar unidad de negocio" icon="fa-city" subtitle="Actualiza los datos" :back-url="route('unidadesDeNegocios.index')">
     @include('adminlte-templates::common.errors')
-
-
     {!! Form::model($unidadesDeNegocio, ['route' => ['unidadesDeNegocios.update', $unidadesDeNegocio->UnidadNegocioID], 'method' => 'patch']) !!}
-
-    <div class="flex flex-col gap-2">
-        <div class="row">
-            @include('unidades_de_negocios.fields')
-        </div>
-
-        <div class="">
-            {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-            <a href="{{ route('unidadesDeNegocios.index') }}" class="btn btn-danger">Cancelar</a>
-        </div>
+    <div class="row crud-form">
+        @include('unidades_de_negocios.fields')
     </div>
-
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary">Guardar</button>
+        <a href="{{ route('unidadesDeNegocios.index') }}" class="crud-page__btn-ghost">Cancelar</a>
+    </div>
     {!! Form::close() !!}
-
-</div>
+</x-crud-page>
 @endsection

@@ -1,112 +1,94 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-xl font-extrabold text-[#101D49] dark:text-white mb-4">
-    Editar Departamento
-</h3>
-
-<div class="content px-3">
-
+<x-crud-page title="Editar departamento" icon="fa-tags" subtitle="Actualiza los datos" :back-url="route('departamentos.index')">
     @include('adminlte-templates::common.errors')
-
     {!! Form::model($departamentos, ['route' => ['departamentos.update', $departamentos->DepartamentoID], 'method' => 'patch']) !!}
 
-    <div class="flex flex-col gap-6">
+    <div class="row crud-form">
+        @include('departamentos.fields')
+    </div>
 
-        {{-- DATOS DEL DEPARTAMENTO --}}
-        <div class="row">
-            @include('departamentos.fields')
-        </div>
+    <div class="crud-section">
+        <h4>Perfil de requerimientos</h4>
+        <p>Selecciona los recursos que aplican al departamento.</p>
 
-        {{-- PERFIL DE REQUERIMIENTOS --}}
-        <div>
-            <h4 class="text-lg font-extrabold text-[#101D49] dark:text-white mb-2">
-                Perfil de Requerimientos
-            </h4>
+        @foreach ($requerimientos as $categoria => $items)
+        <div class="mb-6">
+            <h5 class="font-semibold text-slate-700 dark:text-slate-200 mb-3">
+                {{ $categoria }}
+            </h5>
 
-            <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Selecciona los recursos que aplican al departamento.
-            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                @foreach ($items as $idx => $item)
+                @php
+                $id = 'req-' . md5($categoria . $item['nombre'] . $idx);
+                $checked = !empty($item['seleccionado']);
+                @endphp
 
-            @foreach ($requerimientos as $categoria => $items)
-            <div class="mb-6">
-                <h5 class="font-semibold text-slate-700 dark:text-slate-200 mb-3">
-                    {{ $categoria }}
-                </h5>
+                <div
+                    class="req-card cursor-pointer rounded-xl border border-slate-200 dark:border-slate-700
+                                   bg-slate-50 dark:bg-slate-900 px-4 py-3 transition-all duration-200 hover:shadow-sm"
+                    data-target="{{ $id }}"
+                    data-checked="{{ $checked ? '1' : '0' }}"
+                    role="button"
+                    tabindex="0"
+                    aria-pressed="{{ $checked ? 'true' : 'false' }}"
+                    style="transform: translateZ(0);">
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    @foreach ($items as $idx => $item)
-                    @php
-                    $id = 'req-' . md5($categoria . $item['nombre'] . $idx);
-                    $checked = !empty($item['seleccionado']);
-                    @endphp
+                    {{-- CHECKBOX REAL (el que se manda en el form) --}}
+                    <input
+                        id="{{ $id }}"
+                        type="checkbox"
+                        name="requerimientos[]"
+                        value="{{ $item['nombre'] }}"
+                        class="req-checkbox"
+                        {{ $checked ? 'checked' : '' }}
+                        style="position:absolute; left:-9999px; width:1px; height:1px;" />
 
-                    <div
-                        class="req-card cursor-pointer rounded-xl border border-slate-200 dark:border-slate-700
-                                       bg-slate-50 dark:bg-slate-900 px-4 py-3 transition-all duration-200 hover:shadow-sm"
-                        data-target="{{ $id }}"
-                        data-checked="{{ $checked ? '1' : '0' }}"
-                        role="button"
-                        tabindex="0"
-                        aria-pressed="{{ $checked ? 'true' : 'false' }}"
-                        style="transform: translateZ(0);">
+                    <div class="flex items-center gap-3">
+                        {{-- CHECK VISUAL --}}
+                        <div
+                            class="req-box flex h-5 w-5 items-center justify-center rounded-md border border-slate-300 dark:border-slate-600"
+                            style="{{ $checked ? 'background:#4F46E5; border-color:#4F46E5;' : 'background:#ffffff;' }}">
+                            <svg
+                                class="req-check h-3 w-3"
+                                style="{{ $checked ? 'display:block; color:#ffffff; transform:scale(1); opacity:1;' : 'display:none; color:#ffffff; transform:scale(0.6); opacity:0;' }}"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
 
-                        {{-- CHECKBOX REAL (el que se manda en el form) --}}
-                        <input
-                            id="{{ $id }}"
-                            type="checkbox"
-                            name="requerimientos[]"
-                            value="{{ $item['nombre'] }}"
-                            class="req-checkbox"
-                            {{ $checked ? 'checked' : '' }}
-                            style="position:absolute; left:-9999px; width:1px; height:1px;" />
+                        {{-- TEXTO --}}
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                {{ $item['nombre'] }}
+                            </span>
 
-                        <div class="flex items-center gap-3">
-                            {{-- CHECK VISUAL --}}
-                            <div
-                                class="req-box flex h-5 w-5 items-center justify-center rounded-md border border-slate-300 dark:border-slate-600"
-                                style="{{ $checked ? 'background:#4F46E5; border-color:#4F46E5;' : 'background:#ffffff;' }}">
-                                <svg
-                                    class="req-check h-3 w-3"
-                                    style="{{ $checked ? 'display:block; color:#ffffff; transform:scale(1); opacity:1;' : 'display:none; color:#ffffff; transform:scale(0.6); opacity:0;' }}"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="3">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-
-                            {{-- TEXTO --}}
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                    {{ $item['nombre'] }}
-                                </span>
-
-                                @if (!empty($item['opcional']))
-                                <span class="text-xs font-bold" style="color:#6366F1;">
-                                    Opcional
-                                </span>
-                                @endif
-                            </div>
+                            @if (!empty($item['opcional']))
+                            <span class="text-xs font-bold" style="color:#6366F1;">
+                                Opcional
+                            </span>
+                            @endif
                         </div>
                     </div>
-                    @endforeach
                 </div>
+                @endforeach
             </div>
-            @endforeach
         </div>
+        @endforeach
+    </div>
 
-        {{-- BOTONES --}}
-        <div class="flex gap-3">
-            {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-            <a href="{{ route('departamentos.index') }}" class="btn btn-danger">Cancelar</a>
-        </div>
-
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary">Guardar</button>
+        <a href="{{ route('departamentos.index') }}" class="crud-page__btn-ghost">Cancelar</a>
     </div>
 
     {!! Form::close() !!}
-</div>
+</x-crud-page>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {

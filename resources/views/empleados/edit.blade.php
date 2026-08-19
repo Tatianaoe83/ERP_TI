@@ -1,28 +1,19 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Editar Empleado</h3>
-<div class="content px-3">
-
+<x-crud-page title="Editar empleado" icon="fa-user" subtitle="Actualiza los datos" :back-url="route('empleados.index')">
     @include('adminlte-templates::common.errors')
-
-
     {!! Form::model($empleados, ['route' => ['empleados.update', $empleados->EmpleadoID], 'method' => 'patch']) !!}
-
-    <div class="flex flex-col gap-2">
-        <div class="row">
-            @include('empleados.fields')
-        </div>
-
-        <div class="">
-            {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-            <a href="{{ route('empleados.index') }}" class="btn btn-danger">Cancelar</a>
-        </div>
+    <div class="row crud-form">
+        @include('empleados.fields')
     </div>
-
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary">Guardar</button>
+        <a href="{{ route('empleados.index') }}" class="crud-page__btn-ghost">Cancelar</a>
+    </div>
     {!! Form::close() !!}
+</x-crud-page>
 
-</div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // ubicamos el valor original del tipo de persona
@@ -64,7 +55,7 @@ function EvitarCamposTelefonoCorreo() {
         $('#NumTelefono').val('').prop('disabled', true);
         $('#Correo').val('').prop('disabled', true);
 
-    } 
+    }
     else {
 
         $('#NumTelefono').prop('disabled', false);

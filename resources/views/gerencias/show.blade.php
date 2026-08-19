@@ -1,17 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Gerencia Detalles</h3>
-
-<div class="content px-3">
-    <div>
-        <div class="row">
-            @include('gerencias.show_fields')
-        </div>
+<x-crud-page title="Detalle de gerencia" icon="fa-user-tie" subtitle="Solo lectura" :back-url="route('gerencias.index')">
+    <div class="row crud-show">
+        @include('gerencias.show_fields')
     </div>
-    <div>
-        <a href="{{ route('gerencias.index') }}" class="btn btn-danger">Cancelar</a>
+    <div class="crud-page__actions">
+        <a href="{{ route('gerencias.index') }}" class="crud-page__btn-ghost">Volver</a>
     </div>
-</div>
-
+</x-crud-page>
 @endsection

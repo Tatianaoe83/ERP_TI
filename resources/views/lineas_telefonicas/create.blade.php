@@ -1,12 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-
-<h3 class="text-[#101D49] dark:text-white">Crear Lineas Telefonicas</h3>
-<div class="content px-3">
-
+<x-crud-page title="Nueva línea telefónica" icon="fa-phone-alt" subtitle="Completa los datos" :back-url="route('lineasTelefonicas.index')">
     @include('adminlte-templates::common.errors')
-
 
     {!! Form::open(['route' => 'lineasTelefonicas.store']) !!}
 
@@ -22,19 +18,13 @@
     </script>
     @endif
 
-
-    <div class="flex flex-col gap-2">
-        <div class="row">
-            @include('lineas_telefonicas.fields')
-        </div>
-
-        <div class="">
-            {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-            <a href="{{ route('lineasTelefonicas.index') }}" class="btn btn-danger">Cancelar</a>
-        </div>
+    <div class="row crud-form">
+        @include('lineas_telefonicas.fields')
     </div>
-
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary">Guardar</button>
+        <a href="{{ route('lineasTelefonicas.index') }}" class="crud-page__btn-ghost">Cancelar</a>
+    </div>
     {!! Form::close() !!}
-
-</div>
+</x-crud-page>
 @endsection

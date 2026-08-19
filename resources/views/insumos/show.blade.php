@@ -1,15 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Insumos Detalles</h3>
-
-<div class="content px-3">
-    <div class="row">
+<x-crud-page title="Detalle de insumo" icon="fa-box" subtitle="Solo lectura" :back-url="route('insumos.index')">
+    <div class="row crud-show">
         @include('insumos.show_fields')
     </div>
-    <div class=>
-        <a href="{{ route('insumos.index') }}" class="btn btn-danger">Cancelar</a>
+    <div class="crud-page__actions">
+        <a href="{{ route('insumos.index') }}" class="crud-page__btn-ghost">Volver</a>
     </div>
-</div>
-
+</x-crud-page>
 @endsection

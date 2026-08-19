@@ -1,31 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text">Crear Gerencias</h3>
-
-
-
-<div class="content px-3">
-
+<x-crud-page title="Nueva gerencia" icon="fa-user-tie" subtitle="Completa los datos" :back-url="route('gerencias.index')">
     @include('adminlte-templates::common.errors')
-
     {!! Form::open(['route' => 'gerencias.store']) !!}
-
-    <div class="flex flex-col gap-2">
-        <div>
-            <div class="row">
-                @include('gerencias.fields')
-            </div>
-
-        </div>
-
-        <div>
-            {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-            <a href="{{ route('gerencias.index') }}" class="btn btn-danger">Cancelar</a>
-        </div>
+    <div class="row crud-form">
+        @include('gerencias.fields')
     </div>
-
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary">Guardar</button>
+        <a href="{{ route('gerencias.index') }}" class="crud-page__btn-ghost">Cancelar</a>
+    </div>
     {!! Form::close() !!}
-
-</div>
+</x-crud-page>
 @endsection

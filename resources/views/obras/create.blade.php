@@ -1,29 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Crear Obras</h3>
-
-
-
-<div class="content px-3">
-
+<x-crud-page title="Nueva obra" icon="fa-hard-hat" subtitle="Completa los datos" :back-url="route('obras.index')">
     @include('adminlte-templates::common.errors')
-
-
     {!! Form::open(['route' => 'obras.store']) !!}
-
-    <div class="flex flex-col gap-2">
-        <div class="row">
-            @include('obras.fields')
-        </div>
-
-        <div class="">
-            {!! Form::submit('Guardar', ['class' => 'btn btn-primary']) !!}
-            <a href="{{ route('obras.index') }}" class="btn btn-danger">Cancelar</a>
-        </div>
+    <div class="row crud-form">
+        @include('obras.fields')
     </div>
-
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary">Guardar</button>
+        <a href="{{ route('obras.index') }}" class="crud-page__btn-ghost">Cancelar</a>
+    </div>
     {!! Form::close() !!}
-
-</div>
+</x-crud-page>
 @endsection

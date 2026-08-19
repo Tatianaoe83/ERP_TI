@@ -1,77 +1,49 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Editar Líneas Telefónicas</h3>
-
-<div class="content px-3">
-
+<x-crud-page title="Editar línea telefónica" icon="fa-phone-alt" subtitle="Actualiza los datos" :back-url="route('lineasTelefonicas.index')">
     @include('adminlte-templates::common.errors')
 
     {!! Form::model($lineasTelefonicas, ['route' => ['lineasTelefonicas.update', $lineasTelefonicas->LineaID], 'method' => 'patch', 'id' => 'edit-linea-form']) !!}
 
     <div class="row">
-        <!-- Formulario Principal -->
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-phone me-2"></i>Información de la Línea Telefónica
-                    </h5>
-                </div>
-                <div class="card-body">
-                <div class="row">
-                    @include('lineas_telefonicas.fields')
-                    </div>
-                </div>
+            <div class="row crud-form">
+                @include('lineas_telefonicas.fields')
             </div>
         </div>
 
-        <!-- Panel de Sincronización -->
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-sync me-2"></i>Sincronización con Inventario
-                    </h5>
+            <aside class="crud-aside">
+                <h5><i class="fas fa-sync me-2"></i>Sincronización con inventario</h5>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Sincronización automática</strong>
+                    <p class="mb-0 mt-2">Los cambios se aplicarán automáticamente a todos los registros del inventario que correspondan a esta línea telefónica.</p>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle me-2"></i>
-                        <strong>Sincronización Automática</strong>
-                        <p class="mb-0 mt-2">Los cambios se aplicarán automáticamente a todos los registros del inventario que correspondan a esta línea telefónica.</p>
-                    </div>
 
-                    <!-- Información de registros afectados -->
-                    <div id="info-inventario">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Registros en inventario:</strong>
-                            <span id="count-inventario">Cargando...</span> registros se actualizarán automáticamente.
-                        </div>
-                        <div id="error-inventario" class="alert alert-warning" style="display: none;">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Nota:</strong> No se pudo cargar la información del inventario. Los cambios se aplicarán cuando se guarden.
-                        </div>
+                <div id="info-inventario">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Registros en inventario:</strong>
+                        <span id="count-inventario">Cargando...</span> registros se actualizarán automáticamente.
+                    </div>
+                    <div id="error-inventario" class="alert alert-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Nota:</strong> No se pudo cargar la información del inventario. Los cambios se aplicarán cuando se guarden.
                     </div>
                 </div>
-            </div>
-
-            <!-- Botones de Acción -->
-            <div class="card mt-3">
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        {!! Form::submit('Guardar Cambios', ['class' => 'btn btn-primary btn-lg', 'id' => 'btn-guardar']) !!}
-                        <a href="{{ route('lineasTelefonicas.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-2"></i>Cancelar
-                        </a>
-                    </div>
-                </div>
-            </div>
-            </div>
+            </aside>
         </div>
+    </div>
 
-        {!! Form::close() !!}
-</div>
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary" id="btn-guardar">Guardar</button>
+        <a href="{{ route('lineasTelefonicas.index') }}" class="crud-page__btn-ghost">Cancelar</a>
+    </div>
+
+    {!! Form::close() !!}
+</x-crud-page>
 
 <script>
 // Función para inicializar cuando jQuery esté disponible
@@ -350,5 +322,4 @@ if (typeof $ !== 'undefined') {
     });
 }
 </script>
-
 @endsection

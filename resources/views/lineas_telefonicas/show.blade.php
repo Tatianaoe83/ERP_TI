@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-
-<h3 class="text-[#101D49] dark:text-white">Lineas Telefonicas Detalles</h3>
-<div class="content px-3 grid grid-cols-2">
-    @include('lineas_telefonicas.show_fields')
-</div>
-<div class="">
-    <a href="{{ route('lineasTelefonicas.index') }}" class="btn btn-danger">Cancelar</a>
-</div>
+<x-crud-page title="Detalle de línea telefónica" icon="fa-phone-alt" subtitle="Solo lectura" :back-url="route('lineasTelefonicas.index')">
+    <div class="row crud-show">
+        @include('lineas_telefonicas.show_fields')
+    </div>
+    <div class="crud-page__actions">
+        <a href="{{ route('lineasTelefonicas.index') }}" class="crud-page__btn-ghost">Volver</a>
+    </div>
+</x-crud-page>
 @endsection

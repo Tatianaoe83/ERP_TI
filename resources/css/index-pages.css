@@ -480,3 +480,213 @@
     background: #374151;
     color: #fff;
 }
+
+/* ==========================================
+   CRUD create / edit / show
+   ========================================== */
+
+.crud-page__card {
+    padding: 1.25rem 1.35rem 1.15rem;
+}
+
+.crud-page__btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #fff;
+    color: #374151 !important;
+    border: 1px solid var(--index-border);
+    border-radius: 0.6rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none !important;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.crud-page__btn-ghost:hover {
+    background: #f9fafb;
+    color: var(--index-navy) !important;
+    text-decoration: none;
+}
+
+.crud-page__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.crud-page__actions .index-page__btn-primary,
+.crud-page__actions button.index-page__btn-primary,
+.crud-page__actions input.index-page__btn-primary {
+    cursor: pointer;
+}
+
+.crud-page label,
+.crud-page .control-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--index-muted);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.crud-page .form-control,
+.crud-page .form-select,
+.crud-page select.form-control,
+.crud-page textarea.form-control {
+    border-radius: 0.6rem;
+    border: 1px solid var(--index-border);
+    min-height: 2.5rem;
+    font-size: 0.875rem;
+    color: #111827;
+    box-shadow: none;
+}
+
+.crud-page .form-control:focus,
+.crud-page select.form-control:focus {
+    border-color: #93c5fd;
+    box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.35);
+}
+
+.crud-form .col-sm-6,
+.crud-form .col-sm-12,
+.crud-form .col-lg-8,
+.crud-form [class*="col-"] {
+    margin-bottom: 1rem;
+}
+
+.crud-show [class*="col-"] {
+    margin-bottom: 0.85rem;
+}
+
+.crud-show p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #111827;
+    font-weight: 500;
+}
+
+.crud-aside {
+    background: #f8fafc;
+    border: 1px solid var(--index-border);
+    border-radius: 0.75rem;
+    padding: 1rem 1.1rem;
+    height: 100%;
+}
+
+.crud-aside h5 {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--index-navy);
+}
+
+.crud-aside .alert {
+    border-radius: 0.6rem;
+    font-size: 0.8rem;
+}
+
+.dark .crud-page__btn-ghost {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb !important;
+}
+
+.dark .crud-page__actions {
+    border-top-color: #374151;
+}
+
+.dark .crud-page .form-control,
+.dark .crud-page select.form-control,
+.dark .crud-page textarea.form-control {
+    background: #111827;
+    border-color: #374151;
+    color: #f9fafb;
+}
+
+.dark .crud-show p {
+    color: #e5e7eb;
+}
+
+.dark .crud-aside {
+    background: #111827;
+    border-color: #374151;
+}
+
+.dark .crud-aside h5 {
+    color: #fff;
+}
+
+.crud-section {
+    margin-top: 0.35rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.crud-section h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--index-navy);
+    margin: 0 0 0.25rem;
+}
+
+.crud-section > p {
+    font-size: 0.8rem;
+    color: var(--index-muted);
+    margin: 0 0 1rem;
+}
+
+.crud-select-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--index-navy);
+    color: #fff;
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 0.5rem 0 0.85rem;
+    user-select: none;
+}
+
+.crud-perms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 0.4rem 0.85rem;
+}
+
+.crud-page .crud-perms label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #111827;
+    margin: 0;
+    cursor: pointer;
+}
+
+.dark .crud-section {
+    border-top-color: #374151;
+}
+
+.dark .crud-section h4 {
+    color: #fff;
+}
+
+.dark .crud-page .crud-perms label {
+    color: #e5e7eb;
+}
+

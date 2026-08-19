@@ -1,59 +1,46 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="text-[#101D49] dark:text-white">Editar Rol</h3>
-<div class="row">
-    <div class="col-lg-12">
-
-        @if ($errors->any())
-        <div class="alert alert-dark alert-dismissible fade show" role="alert">
-            <strong>¡Revise los campos!</strong>
-            @foreach ($errors->all() as $error)
-            <span class="badge badge-danger">{{ $error }}</span>
-            @endforeach
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        @endif
-
-        {!! Form::model($role, ['method' => 'PATCH','route' => ['roles.update', $role->id]]) !!}
-        <div class="row">
-            <div class="col-xs-12 col-sm-12 col-md-12">
-                <div>
-                    <label for="" class="text-[#101D49] dark:text-white">Nombre del Rol:</label>
-                    {!! Form::text('name', null, array('class' => 'form-control')) !!}
-                </div>
-            </div>
-            <div class="col-xs-12 col-sm-12 col-md-12">
-                <div class="form-group">
-                    <label for="" class="text-[#101D49] dark:text-white">Permisos para este Rol:</label>
-                    <br />
-                    <div>
-                        <div class="bg-[#101D49] text-white dark:bg-white dark:!text-[#101D49] rounded-md flex items-start w-[170px] justify-center cursor-pointer transition" id="selectAll">Seleccionar todos</div>
-                    </div>
-                    <br />
-
-                    <div class="grid grid-cols-1 sm:grid-cols-4 lg:grid-cols-10 gap-0.5">
-                        @foreach($permission as $value)
-                        <div class="form-group flex items-center space-x-2">
-                            <label class="text-md text-[#101D49] dark:text-white">
-                                {{ Form::checkbox('permission[]', $value->id, in_array($value->id, $rolePermissions) ? true : false, array('class' => 'name cursor-pointer')) }}
-                                <span>{{ $value->name }}</span>
-                            </label>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{{ route('roles.index') }}" class="btn btn-danger">Cancelar</a>
-
-
-        {!! Form::close() !!}
+<x-crud-page title="Editar rol" icon="fa-shield-alt" subtitle="Actualiza los datos" :back-url="route('roles.index')">
+    @if ($errors->any())
+    <div class="alert alert-dark alert-dismissible fade show" role="alert">
+        <strong>¡Revise los campos!</strong>
+        @foreach ($errors->all() as $error)
+        <span class="badge badge-danger">{{ $error }}</span>
+        @endforeach
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
     </div>
-</div>
+    @endif
+
+    {!! Form::model($role, ['method' => 'PATCH','route' => ['roles.update', $role->id]]) !!}
+    <div class="row crud-form">
+        <div class="col-xs-12 col-sm-12 col-md-12">
+            <label for="">Nombre del Rol</label>
+            {!! Form::text('name', null, array('class' => 'form-control')) !!}
+        </div>
+        <div class="col-xs-12 col-sm-12 col-md-12">
+            <label for="">Permisos para este Rol</label>
+            <div class="crud-select-all" id="selectAll">Seleccionar todos</div>
+            <div class="crud-perms">
+                @foreach($permission as $value)
+                <div class="form-group flex items-center space-x-2">
+                    <label>
+                        {{ Form::checkbox('permission[]', $value->id, in_array($value->id, $rolePermissions) ? true : false, array('class' => 'name cursor-pointer')) }}
+                        <span>{{ $value->name }}</span>
+                    </label>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    <div class="crud-page__actions">
+        <button type="submit" class="index-page__btn-primary">Guardar</button>
+        <a href="{{ route('roles.index') }}" class="crud-page__btn-ghost">Cancelar</a>
+    </div>
+    {!! Form::close() !!}
+</x-crud-page>
 @endsection
 
 @push('third_party_scripts')
