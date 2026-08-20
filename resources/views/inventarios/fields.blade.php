@@ -1147,6 +1147,21 @@
     });
 
     // Seccion equipo 
+    // La tabla de equipos oculta las columnas 3, 6 y 7 (características, fecha de
+    // asignación y de compra), y DataTables saca esos <td> del DOM: "td:eq(N)" deja de
+    // coincidir con el número de columna. La API sí conserva las celdas ocultas, así
+    // que el acceso por índice original pasa siempre por ella.
+    function celdasEquipo($row) {
+        const dt = $('#equiposAsignadosTable').DataTable();
+        const indice = dt.row($row).index();
+        const nodo = (columna) => $(dt.cell(indice, columna).node() || []);
+
+        return {
+            nodo: nodo,
+            texto: (columna) => nodo(columna).text().trim(),
+        };
+    }
+
     // Editar equipo (abriendo el modal con los datos)
     $(document).on('click', '.edit-btn', function() {
         if (bloquearAccionInventarioInactivo()) {
@@ -1155,24 +1170,25 @@
 
         let row = $(this).closest('tr');
         let id = row.data('id');
+        const celda = celdasEquipo(row);
 
         // Asignar valores al formulario
         document.getElementById('titulo').innerHTML = 'Editar Equipo';
         $('#editId').val(id);
         $('#editEmp').val('');
-        $('#editCategoria').val(row.find("td:eq(1)").text());
-        $('#editMarca').val(row.find("td:eq(2)").text());
-        $('#editCaracteristicas').val(row.find("td:eq(3)").text());
-        $('#editModelo').val(row.find("td:eq(4)").text());
-        $('#editPrecio').val(row.find("td:eq(5)").text());
-        $('#editFechaAsignacion').val(row.find("td:eq(6)").text());
-        $('#editFechaDeCompra').val(row.find("td:eq(7)").text());
-        $('#editNumSerie').val(row.find("td:eq(8)").text());
-        $('#editFolio').val(row.find("td:eq(9)").text());
-        $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('id')).trigger('change');
-        $('#editComentarios').val(row.find("td:eq(11)").text());
-        setPresupuestado('#editPresupuestadoEquipo', row.find("td:eq(12)").text());
-        $('#editMesDePagoEquipo').val(row.find("td:eq(13)").text().trim());
+        $('#editCategoria').val(celda.texto(1));
+        $('#editMarca').val(celda.texto(2));
+        $('#editCaracteristicas').val(celda.texto(3));
+        $('#editModelo').val(celda.texto(4));
+        $('#editPrecio').val(celda.texto(5));
+        $('#editFechaAsignacion').val(celda.texto(6));
+        $('#editFechaDeCompra').val(celda.texto(7));
+        $('#editNumSerie').val(celda.texto(8));
+        $('#editFolio').val(celda.texto(9));
+        $('#editGerenciaEquipo').val(celda.nodo(10).data('id')).trigger('change');
+        $('#editComentarios').val(celda.texto(11));
+        setPresupuestado('#editPresupuestadoEquipo', celda.texto(12));
+        $('#editMesDePagoEquipo').val(celda.texto(13));
 
         $('#editModal').modal('show');
     });
@@ -1531,20 +1547,22 @@
     // Actualizar una fila en la tabla después de editar
     function updateTableRow(equipo) {
         let row = $(`tr[data-id=${equipo.InventarioID}]`);
-        row.find('td:eq(1)').text(equipo.CategoriaEquipo);
-        row.find('td:eq(2)').text(equipo.Marca);
-        row.find('td:eq(3)').text(equipo.Caracteristicas);
-        row.find('td:eq(4)').text(equipo.Modelo);
-        row.find('td:eq(5)').text(equipo.Precio);
-        row.find('td:eq(6)').text(equipo.FechaAsignacion);
-        row.find('td:eq(7)').text(equipo.FechaDeCompra);
-        row.find('td:eq(8)').text(equipo.NumSerie);
-        row.find('td:eq(9)').text(equipo.Folio);
-        row.find('td:eq(10)').text(equipo.GerenciaEquipo);
-        row.find('td:eq(11)').text(equipo.Comentarios);
+        const celda = celdasEquipo(row);
+        celda.nodo(1).text(equipo.CategoriaEquipo);
+        celda.nodo(2).text(equipo.Marca);
+        celda.nodo(3).text(equipo.Caracteristicas);
+        celda.nodo(4).text(equipo.Modelo);
+        celda.nodo(5).text(equipo.Precio);
+        celda.nodo(6).text(equipo.FechaAsignacion);
+        celda.nodo(7).text(equipo.FechaDeCompra);
+        celda.nodo(8).text(equipo.NumSerie);
+        celda.nodo(9).text(equipo.Folio);
+        // El data-id de la gerencia es lo que relee el modal al reabrirlo.
+        celda.nodo(10).attr('data-id', equipo.GerenciaEquipoID).text(equipo.GerenciaEquipo);
+        celda.nodo(11).text(equipo.Comentarios);
         if (permitePresupuestado) {
-            row.find('td:eq(12)').html(htmlChipTipoEquipo(equipo.tipoEquipo));
-            row.find('td:eq(13)').text(equipo.MesDePago ?? '');
+            celda.nodo(12).html(htmlChipTipoEquipo(equipo.tipoEquipo));
+            celda.nodo(13).text(equipo.MesDePago ?? '');
         }
         row.find('.edit-btn').data('id', equipo.InventarioID);
 
@@ -1577,7 +1595,7 @@
             <td>${equipo.FechaDeCompra}</td>
             <td>${equipo.NumSerie}</td>
             <td>${equipo.Folio}</td>
-            <td>${equipo.GerenciaEquipo}</td>
+            <td data-id="${equipo.GerenciaEquipoID}">${equipo.GerenciaEquipo}</td>
             <td>${equipo.Comentarios}</td>
             ${permitePresupuestado ? `<td>${htmlChipTipoEquipo(equipo.tipoEquipo)}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
         </tr>
