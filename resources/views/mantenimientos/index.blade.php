@@ -4,10 +4,11 @@
 @include('flash::message')
 
 <x-index-page
+    id="mantenimientos-page"
     title="Mantenimientos"
     icon="fa-tools"
-    subtitle="Programación y seguimiento"
-    :show-count="false"
+    subtitle="0 registros"
+    :show-count="true"
     :card="false"
 >
     <x-slot name="headerActions">

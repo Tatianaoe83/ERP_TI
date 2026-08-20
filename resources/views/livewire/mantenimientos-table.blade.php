@@ -38,13 +38,16 @@
         </div>
     </div>
 
-    <div class="mant-table-summary mb-3">
-        @if($mantenimientos->total() > 0)
-            Mostrando {{ $mantenimientos->firstItem() }}-{{ $mantenimientos->lastItem() }} de {{ $mantenimientos->total() }} registro(s).
-        @else
-            Total: 0 registro(s).
-        @endif
-    </div>
+    @php
+        $totalMant = $mantenimientos->total();
+        $desdeMant = $mantenimientos->firstItem() ?: 0;
+        $hastaMant = $mantenimientos->lastItem() ?: 0;
+        $infoMant = $totalMant > 0
+            ? 'Mostrando ' . $desdeMant . ' a ' . $hastaMant . ' de ' . $totalMant
+            : 'Mostrando 0 a 0 de 0';
+        $countMant = $totalMant === 1 ? '1 registro' : $totalMant . ' registros';
+    @endphp
+    <span id="mant-count-sync" class="d-none" data-total="{{ $totalMant }}" data-label="{{ $countMant }}"></span>
 
     @if($mantenimientos->isEmpty())
         <div class="mant-empty-state">
@@ -128,16 +131,16 @@
                 </tbody>
             </table>
         </div>
+    @endif
 
-        <div class="mt-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <div class="mant-table-summary">
-                Página {{ $mantenimientos->currentPage() }} de {{ $mantenimientos->lastPage() }}
-            </div>
-            <div>
+    <div class="index-page__dt-footer">
+        <div class="dataTables_info" role="status">{{ $infoMant }}</div>
+        @if(!$mantenimientos->isEmpty())
+            <div class="dataTables_paginate">
                 {{ $mantenimientos->links() }}
             </div>
-        </div>
-    @endif
+        @endif
+    </div>
 
     @if($modalReprogramarAbierto)
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);" wire:click.self="cerrarReprogramar">
@@ -219,6 +222,24 @@
     @once
         @push('third_party_scripts')
             <script>
+                function syncMantenimientosCount() {
+                    var sync = document.getElementById('mant-count-sync');
+                    var el = document.querySelector('#mantenimientos-page .index-page__count');
+                    if (!sync || !el) return;
+                    el.textContent = sync.getAttribute('data-label') || '0 registros';
+                }
+
+                document.addEventListener('livewire:load', function () {
+                    syncMantenimientosCount();
+                    if (window.Livewire && typeof Livewire.hook === 'function') {
+                        Livewire.hook('message.processed', function () {
+                            syncMantenimientosCount();
+                        });
+                    }
+                });
+                document.addEventListener('DOMContentLoaded', syncMantenimientosCount);
+                setTimeout(syncMantenimientosCount, 50);
+
                 function confirmarMantenimientoRealizado(event, form) {
                     event.preventDefault();
 
