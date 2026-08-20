@@ -987,6 +987,14 @@
                             old.remove();
                             return;
                         }
+                        if (code.indexOf('function inicializarGraficasEmpleados') !== -1 && typeof window.inicializarGraficas === 'function') {
+                            old.remove();
+                            return;
+                        }
+                        if (code.indexOf('function inicializarGraficasMantenimiento') !== -1 && typeof window.inicializarGraficasMantenimiento === 'function') {
+                            old.remove();
+                            return;
+                        }
                         var s = document.createElement('script');
                         s.textContent = code;
                         if (old.parentNode) old.parentNode.replaceChild(s, old);

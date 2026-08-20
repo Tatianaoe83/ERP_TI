@@ -1,289 +1,241 @@
 @extends('layouts.app')
 
 @section('content')
-<section class="section">
-    <div class="flex flex-row items-center gap-3">
-        <h3 class="dark:bg-[#101010] dark:text-white">Cartas de entrega de: </h3>
-        <h5 class="dark:bg-[#101010] dark:text-white">{{$empleado->NombreEmpleado}}</h5>
+@include('flash::message')
+@include('adminlte-templates::common.errors')
+
+@php
+    $nItems = $inventario->count();
+    $tareasPreven = [
+        1 => 'Desarme y ensamble de equipo',
+        2 => 'Formateo e instalación del sistema operativo',
+        3 => 'Limpieza interna',
+        4 => 'Respaldo de información',
+        6 => 'Cambio de pasta térmica',
+        7 => 'Limpieza de periféricos',
+        8 => 'Actualizaciones de software',
+        9 => 'Eliminación de temporales',
+        10 => 'Limpieza de ventiladores',
+        11 => 'Limpieza de fuente de poder',
+        12 => 'Instalación de software por licencia',
+        14 => 'Limpieza del teclado',
+        15 => 'Cambio de piezas',
+        16 => 'Cambio de pasta térmica en la tarjeta gráfica',
+        17 => 'Cambio de equipo de cómputo',
+    ];
+@endphp
+
+<x-index-page
+    class="crud-page"
+    title="Cartas de entrega"
+    icon="fa-print"
+    :subtitle="$empleado->NombreEmpleado"
+    :card="false"
+>
+    <x-slot name="headerActions">
+        <a href="{{ route('inventarios.index') }}" class="index-page__btn-secondary">Regresar</a>
+    </x-slot>
+
+    <p class="text-sm text-gray-500 dark:text-gray-400" style="margin: -0.35rem 0 1.1rem;">
+        Genera el formato de mantenimiento preventivo o la carta de entrega de inventario.
+    </p>
+
+    <div class="index-page__card crud-page__card cartas-card">
+        <div class="cartas-card-head">
+            <div>
+                <h2>Mantenimiento preventivo</h2>
+                <span class="index-page__count">Selecciona el equipo y las actividades realizadas</span>
+            </div>
+        </div>
+
+        <form id="formulario2" action="{{ route('inventarios.mantenimiento', $id) }}" method="POST" target="_blank">
+            @csrf
+            <div class="crud-form">
+                {!! Form::label('IdEquipo', 'Equipo') !!}
+                {!! Form::select(
+                    'IdEquipo',
+                    App\Models\InventarioEquipo::select(DB::raw("CONCAT(Folio,' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
+                        ->where('EmpleadoID', '=', $id)
+                        ->pluck('NombreEq', 'InventarioID'),
+                    null,
+                    ['placeholder' => 'Seleccionar', 'class' => 'jz form-control', 'style' => 'width: 100%', 'required' => true]
+                ) !!}
+            </div>
+
+            <div class="crud-select-all" id="selectAllPreven">Seleccionar todos</div>
+            <div class="crud-perms">
+                @foreach ($tareasPreven as $valor => $etiqueta)
+                    <label>
+                        <input class="name cursor-pointer" type="checkbox" name="inventarioPreven[]" value="{{ $valor }}" id="defaultCheck{{ $valor }}">
+                        <span>{{ $etiqueta }}</span>
+                    </label>
+                @endforeach
+            </div>
+
+            <div class="crud-page__actions">
+                <button type="submit" class="index-page__btn-primary">Generar formato</button>
+            </div>
+        </form>
     </div>
 
-    <div class="content px-3">
-        @include('adminlte-templates::common.errors')
-
-            <div class="row">
-            <div class="col-12 col-sm-12 col-lg-12">
-                <div class="card">
-                  <div class="card-header">
-                    <h4>Mantenimiento preventivo</h4>
-                  </div>
-                  <div class="card-body">
-                    
-                        <form id="formulario2" action="{{ route('inventarios.mantenimiento', $id) }}" method="POST" target="_blank">
-                            @csrf
-
-                            <div class="row">
-                                <div class="col-12 col-sm-12 col-lg-12" style="margin-bottom: 12px;">
-                                    {!! Form::label('IdEquipo', 'Seleccione el equipo:') !!}
-
-                                    {!!Form::select('IdEquipo',App\Models\InventarioEquipo::select(DB::raw("CONCAT(Folio,' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
-                                    ->where('EmpleadoID', '=', $id)
-                                    ->pluck('NombreEq','InventarioID'),null,['placeholder' => 'Seleccionar','class'=>'jz form-control','style' => 'width: 100%', 'required' => true])!!}
-                                </div>
-                            </div>
-
-
-                            <div class="row">
-                                <div class="col-12 col-sm-12 col-lg-12" style="margin-bottom: 12px;">
-                                    <button type="button" class="btn btn-sm btn-warning" id="selectAll">Seleccionar todos</button>
-                                </div>
-                            </div>
-
-
-                            <div class="row">
-
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='1' id="defaultCheck1">
-                                        <label class="form-check-label" for="defaultCheck1">
-                                            Desarme y ensamble de equipo
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='2' id="defaultCheck2">
-                                        <label class="form-check-label" for="defaultCheck2">
-                                            Formateo e instalación del sistema operativo
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='3' id="defaultCheck3">
-                                        <label class="form-check-label" for="defaultCheck3">
-                                            Limpieza interna
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='4' id="defaultCheck4">
-                                        <label class="form-check-label" for="defaultCheck4">
-                                            Respaldo de información
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='6' id="defaultCheck6">
-                                        <label class="form-check-label" for="defaultCheck6">
-                                            Cambio de pasta térmica
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='7' id="defaultCheck7">
-                                        <label class="form-check-label" for="defaultCheck7">
-                                            Limpieza de periféricos
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='8' id="defaultCheck8">
-                                        <label class="form-check-label" for="defaultCheck8">
-                                            Actualizaciones de software
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='9' id="defaultCheck9">
-                                        <label class="form-check-label" for="defaultCheck9">
-                                            Eliminación de temporales
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='10' id="defaultCheck10">
-                                        <label class="form-check-label" for="defaultCheck10">
-                                            Limpieza de ventiladores
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='11' id="defaultCheck11">
-                                        <label class="form-check-label" for="defaultCheck11">
-                                            Limpieza de fuente de poder
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='12' id="defaultCheck12">
-                                        <label class="form-check-label" for="defaultCheck12">
-                                            Instalación de software por licencia
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='14' id="defaultCheck14">
-                                        <label class="form-check-label" for="defaultCheck14">
-                                            Limpieza del teclado
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='15' id="defaultCheck15">
-                                        <label class="form-check-label" for="defaultCheck15">
-                                            Cambio de piezas
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-3 col-sm-3 col-lg-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='16' id="defaultCheck16">
-                                        <label class="form-check-label" for="defaultCheck16">
-                                            Cambio de pasta térmica en la tarjeta grafica
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-12 col-sm-12 col-lg-12">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="inventarioPreven[]" value='17' id="defaultCheck17">
-                                        <label class="form-check-label" for="defaultCheck17">
-                                            Cambio de equipo de computo
-                                        </label>
-                                    </div>
-
-                                </div>
-                            </div>
-
-
-
-
-                    </div>
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">Generar formato</button>
-                    </div>
-                    </form>
+    <form id="formulario" action="{{ route('inventarios.pdffile', $id) }}" method="POST" target="_blank">
+        @csrf
+        <div class="index-page__card overflow-hidden cartas-card">
+            <div class="cartas-card-head cartas-card-head--padded">
+                <div>
+                    <h2>Carta de entrega</h2>
+                    <span class="index-page__count cartas-table-count">{{ $nItems === 1 ? '1 registro' : $nItems . ' registros' }}</span>
                 </div>
-
-
+            </div>
+            <div class="index-page__table-wrap table-responsive">
+                <table class="table index-table w-full" id="inventarioTable">
+                    <thead>
+                        <tr>
+                            <th class="cartas-check-col"><input type="checkbox" id="checkAll" class="cartas-check" title="Seleccionar todos"></th>
+                            <th>ID</th>
+                            <th>Categoría</th>
+                            <th>Marca / nombre</th>
+                            <th>Características</th>
+                            <th>Modelo</th>
+                            <th>Número de serie</th>
+                            <th>Fecha asignación / comentarios</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($inventario as $item)
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="cartas-check" name="inventarioSeleccionado[]" value="{{ $item->id }}|{{ $item->tipo }}">
+                            </td>
+                            <td>{{ $item->id }}</td>
+                            <td>{{ $item->categoria }}</td>
+                            <td>{{ $item->Marca }}</td>
+                            <td>{{ $item->Caracteristicas ?? 'N/A' }}</td>
+                            <td>{{ $item->Modelo ?? 'N/A' }}</td>
+                            <td>{{ $item->NumSerie }}</td>
+                            <td>{{ $item->FechaAsignacion ?? 'N/A' }}</td>
+                            <td>
+                                @if ($item->tipo == 'EQUIPO')
+                                    <span class="index-badge index-badge--dark">Equipo</span>
+                                @elseif ($item->tipo == 'INSUMO')
+                                    <span class="index-badge index-badge--success">Insumo</span>
+                                @elseif ($item->tipo == 'TELEFONO')
+                                    <span class="index-badge index-badge--warning">Teléfono</span>
+                                @else
+                                    {{ $item->tipo }}
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="crud-page__actions cartas-actions">
+                <button type="submit" class="index-page__btn-primary">Generar</button>
+                <a href="{{ route('inventarios.index') }}" class="index-page__btn-secondary">Cancelar</a>
             </div>
         </div>
-
-        <div class="card-body">
-            <div class="row">
-                <form id="formulario" action="{{ route('inventarios.pdffile', $id) }}" method="POST" target="_blank">
-                    @csrf
-                    <div class="table-responsive">
-                        <table class="table table-sm" id="inventarioTable">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="checkAll"></th>
-                                    <th>ID</th>
-                                    <th>Categoría</th>
-                                    <th>Marca/Nombre</th>
-                                    <th>Características</th>
-                                    <th>Modelo</th>
-                                    <th>Número de Serie</th>
-                                    <th>Fecha Asignación / Comentarios</th>
-                                    <th>Tipo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($inventario as $item)
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" name="inventarioSeleccionado[]" value="{{ $item->id }}|{{ $item->tipo }}">
-                                    </td>
-                                    <td>{{ $item->id }}</td>
-                                    <td>{{ $item->categoria }}</td>
-                                    <td>{{ $item->Marca }}</td>
-                                    <td>{{ $item->Caracteristicas ?? 'N/A' }}</td>
-                                    <td>{{ $item->Modelo ?? 'N/A' }}</td>
-                                    <td>{{ $item->NumSerie }}</td>
-                                    <td>{{ $item->FechaAsignacion ?? 'N/A' }}</td>
-                                    <td>
-                                        @if ($item->tipo == 'EQUIPO')
-                                        <span style="color: blue; font-weight: bold;">Equipo</span>
-                                        @elseif ($item->tipo == 'INSUMO')
-                                        <span style="color: green; font-weight: bold;">Insumo</span>
-                                        @elseif ($item->tipo == 'TELEFONO')
-                                        <span style="color: red; font-weight: bold;">Teléfono</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Generar</button>
-                    <a href="{{ route('inventarios.index') }}" class="btn btn-danger">Cancelar</a>
-                </form>
-            </div>
-        </div>
-
-    </div>
-</section>
+    </form>
+</x-index-page>
 @endsection
 
+@push('third_party_stylesheets')
+    @include('layouts.datatables_css')
+    <style>
+        .cartas-card { margin-bottom: 1.15rem; }
+        .cartas-card-head h2 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--index-navy, #101d49);
+            letter-spacing: -0.02em;
+        }
+        .cartas-card-head--padded {
+            padding: 0.95rem 1rem 0;
+        }
+        .cartas-card .index-page__dt-toolbar { padding-top: 0.5rem; }
+        .cartas-check-col { width: 2.5rem; }
+        .cartas-check {
+            width: 1.05rem;
+            height: 1.05rem;
+            accent-color: #101d49;
+            cursor: pointer;
+        }
+        .cartas-actions {
+            margin: 0;
+            padding: 0.85rem 1rem 1rem;
+        }
+        .dark .cartas-card-head h2 { color: #fff; }
+    </style>
+@endpush
+
 @push('third_party_scripts')
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/cleave.js@1.6.0/dist/cleave.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        new Cleave('.phone-number', {
-            numericOnly: true,
-            blocks: [10]
+    @include('layouts.datatables_js')
+    @include('layouts.partials.index-page-js')
+    <script>
+        $(document).ready(function () {
+            var table = $('#inventarioTable').DataTable({
+                destroy: true,
+                responsive: true,
+                paging: true,
+                pageLength: 10,
+                searching: true,
+                ordering: true,
+                info: true,
+                autoWidth: false,
+                columnDefs: [
+                    { orderable: false, searchable: false, targets: 0 }
+                ],
+                order: [],
+                dom: "<'index-page__dt-toolbar'f>t<'index-page__dt-footer'ip>",
+                language: {
+                    sProcessing: 'Procesando...',
+                    sZeroRecords: 'No se encontraron resultados',
+                    sEmptyTable: 'Ningún dato disponible en esta tabla',
+                    sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',
+                    sInfoEmpty: 'Mostrando 0 a 0 de 0',
+                    sInfoFiltered: '(filtrado de _MAX_ registros)',
+                    sSearch: '',
+                    searchPlaceholder: 'Buscar...',
+                    oPaginate: {
+                        sFirst: 'Primero',
+                        sLast: 'Último',
+                        sNext: 'Siguiente',
+                        sPrevious: 'Anterior'
+                    }
+                },
+                drawCallback: function () {
+                    var api = this.api();
+                    var total = api.page.info().recordsDisplay;
+                    var label = total === 1 ? '1 registro' : total + ' registros';
+                    $(api.table().container()).closest('.index-page__card').find('.cartas-table-count').text(label);
+                },
+                initComplete: function () {
+                    var $input = $(this.api().table().container()).find('.dataTables_filter input');
+                    if ($input.length && !$input.attr('placeholder')) {
+                        $input.attr('placeholder', 'Buscar...');
+                    }
+                }
+            });
+
+            $('#checkAll').on('click', function (e) {
+                e.stopPropagation();
+                table.$("input[name='inventarioSeleccionado[]']").prop('checked', this.checked);
+            });
         });
-    });
-</script>
 
-<script>
-    $(document).ready(function() {
-        // Inicializar DataTables
-        let table = $('#inventarioTable').DataTable();
-
-        // Check All Functionality
-        $("#checkAll").click(function() {
-            $("input[name='inventarioSeleccionado[]']").prop('checked', this.checked);
-        });
-
-
-    });
-</script>
-
-<script>
-    document.getElementById('selectAll').addEventListener('click', function() {
-        const checkboxes = document.querySelectorAll('input[name="inventarioPreven[]"]');
-        const isChecked = checkboxes[0].checked;
-
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = !isChecked;
-        });
-
-        this.textContent = isChecked ? 'Seleccionar todos' : 'Deseleccionar todos';
-    });
-</script>
-
-
+        var selectAllPreven = document.getElementById('selectAllPreven');
+        if (selectAllPreven) {
+            selectAllPreven.addEventListener('click', function () {
+                var checkboxes = document.querySelectorAll('input[name="inventarioPreven[]"]');
+                if (!checkboxes.length) return;
+                var isChecked = checkboxes[0].checked;
+                checkboxes.forEach(function (checkbox) {
+                    checkbox.checked = !isChecked;
+                });
+                this.textContent = isChecked ? 'Seleccionar todos' : 'Deseleccionar todos';
+            });
+        }
+    </script>
 @endpush

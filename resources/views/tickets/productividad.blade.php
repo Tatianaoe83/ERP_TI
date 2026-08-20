@@ -1605,7 +1605,14 @@
 <script src="{{ asset('vendor/chartjs/chartjs-plugin-datalabels.min.js') }}"></script>
 
 <script>
-    Chart.register(ChartDataLabels);
+    window.__erpProdCharts = window.__erpProdCharts || {};
+    var C = window.__erpProdCharts;
+
+    try {
+        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+            Chart.register(ChartDataLabels);
+        }
+    } catch (e) {}
 
     /** Índice del carrusel de empleados TI (persiste al recargar productividad por AJAX). */
     function prodEmpleadoIdxInicial(total) {
@@ -1928,12 +1935,6 @@
         };
     }
 
-    // Variables globales para almacenar las instancias de gráficas
-    let chartEstado, chartResueltos, chartTendencias, chartPrioridad, chartClasificacion, chartTipoTicket;
-    let chartComparacionTiempos6Meses, chartIncidenciasMatriz;
-
-
-
     function obtenerDatosFrescos() {
         const rawData = document.getElementById('productividad-json-data');
         if (!rawData) return null;
@@ -1953,22 +1954,22 @@
                 } catch (e) { }
             }
         }
-        destruir(chartEstado);
-        destruir(chartResueltos);
-        destruir(chartTendencias);
-        destruir(chartPrioridad);
-        destruir(chartClasificacion);
-        destruir(chartTipoTicket);
-        destruir(chartComparacionTiempos6Meses);
-        destruir(chartIncidenciasMatriz);
-        chartEstado = null;
-        chartResueltos = null;
-        chartTendencias = null;
-        chartPrioridad = null;
-        chartClasificacion = null;
-        chartTipoTicket = null;
-        chartComparacionTiempos6Meses = null;
-        chartIncidenciasMatriz = null;
+        destruir(C.estado);
+        destruir(C.resueltos);
+        destruir(C.tendencias);
+        destruir(C.prioridad);
+        destruir(C.clasificacion);
+        destruir(C.tipoTicket);
+        destruir(C.comparacionTiempos6Meses);
+        destruir(C.incidenciasMatriz);
+        C.estado = null;
+        C.resueltos = null;
+        C.tendencias = null;
+        C.prioridad = null;
+        C.clasificacion = null;
+        C.tipoTicket = null;
+        C.comparacionTiempos6Meses = null;
+        C.incidenciasMatriz = null;
 
         var md = null;
         try {
@@ -2017,7 +2018,9 @@
     }
 
     function inicializarGraficas() {
-        // Verificar que los elementos existan
+        if (typeof Chart === 'undefined') {
+            return;
+        }
         if (!document.getElementById('chartEstado')) {
             return;
         }
@@ -2046,14 +2049,14 @@
         };
 
         // Destruir gráficas existentes si ya están creadas
-        if (chartEstado) chartEstado.destroy();
-        if (chartResueltos) chartResueltos.destroy();
-        if (chartTendencias) chartTendencias.destroy();
-        if (chartPrioridad) chartPrioridad.destroy();
-        if (chartClasificacion) chartClasificacion.destroy();
-        if (chartTipoTicket) chartTipoTicket.destroy();
-        if (chartComparacionTiempos6Meses) chartComparacionTiempos6Meses.destroy();
-        if (chartIncidenciasMatriz) chartIncidenciasMatriz.destroy();
+        if (C.estado) C.estado.destroy();
+        if (C.resueltos) C.resueltos.destroy();
+        if (C.tendencias) C.tendencias.destroy();
+        if (C.prioridad) C.prioridad.destroy();
+        if (C.clasificacion) C.clasificacion.destroy();
+        if (C.tipoTicket) C.tipoTicket.destroy();
+        if (C.comparacionTiempos6Meses) C.comparacionTiempos6Meses.destroy();
+        if (C.incidenciasMatriz) C.incidenciasMatriz.destroy();
 
         // Datos para las gráficas extraídos dinámicamente
         const distribucionEstado = metricasData.distribucion_estado || {};
@@ -2091,7 +2094,7 @@
         const valoresEstado = Object.values(distribucionEstado);
         const sumaEstados = valoresEstado.reduce((a, b) => a + b, 0);
 
-        chartEstado = new Chart(ctxEstado, {
+        C.estado = new Chart(ctxEstado, {
             type: 'doughnut',
             data: {
                 labels: sumaEstados > 0 ? Object.keys(distribucionEstado) : ['Sin tickets este mes'],
@@ -2150,7 +2153,7 @@
 
         const fechasFormateadas = fechas.map(formatearClaveFechaProductividad);
 
-        chartResueltos = new Chart(ctxResueltos, {
+        C.resueltos = new Chart(ctxResueltos, {
             type: 'line',
             data: {
                 labels: fechasFormateadas,
@@ -2300,7 +2303,7 @@
         const bgPrioridad = clavesPrioridad.map(k => colorPrioridad(p.prioridad, k));
         const hoverPrioridad = clavesPrioridad.map(k => colorPrioridad(p.prioridadHover, k));
 
-        chartPrioridad = new Chart(ctxPrioridad, {
+        C.prioridad = new Chart(ctxPrioridad, {
             type: 'bar',
             data: {
                 labels: hasPrioridad ? clavesPrioridad : ['Sin tickets este mes'],
@@ -2367,7 +2370,7 @@
             const valoresClasificacion = Object.values(ticketsPorClasificacion);
             const sumaClasificacion = valoresClasificacion.reduce((a, b) => a + b, 0);
 
-            chartClasificacion = new Chart(ctxClasificacion.getContext('2d'), {
+            C.clasificacion = new Chart(ctxClasificacion.getContext('2d'), {
                 type: 'doughnut',
                 data: {
                     labels: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion) : ['Sin tickets este mes'],
@@ -2433,7 +2436,7 @@
             const tiposValores = Object.values(ticketsPorTipo);
             const hasTipos = tiposLabels.length > 0;
 
-            chartTipoTicket = new Chart(ctxTipoTicket.getContext('2d'), {
+            C.tipoTicket = new Chart(ctxTipoTicket.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: hasTipos ? tiposLabels : ['Sin tickets este mes'],
@@ -2507,7 +2510,7 @@
             const tiemposTotal = mesesLabels.map(mes => comparacionTiempos6Meses[mes].total);
             const hayDatos = mesesLabels.length > 0;
 
-            chartComparacionTiempos6Meses = new Chart(ctxComparacionTiempos.getContext('2d'), {
+            C.comparacionTiempos6Meses = new Chart(ctxComparacionTiempos.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: hayDatos ? mesesLabels : ['Sin datos'],
@@ -2713,7 +2716,7 @@
 
             const hayDatos = labels.length > 0 && datasets.some(ds => ds.data.some(v => v > 0));
 
-            chartIncidenciasMatriz = new Chart(ctxIncidenciasMatriz.getContext('2d'), {
+            C.incidenciasMatriz = new Chart(ctxIncidenciasMatriz.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: hayDatos ? labels : ['Sin datos'],
@@ -2825,7 +2828,7 @@
         let inicializado = false;
 
         if (canvasEstado && isElementVisible(canvasEstado)) {
-            if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
+            if (!C.estado || !chartProductividadCanvasConectado(C.estado)) {
                 inicializarGraficas();
                 inicializado = true;
             }
@@ -2873,7 +2876,7 @@
                     if (!canvasEstado || !isElementVisible(canvasEstado)) {
                         return;
                     }
-                    if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
+                    if (!C.estado || !chartProductividadCanvasConectado(C.estado)) {
                         inicializarGraficas();
                     }
                     if (necesitaReiniciarGraficasEmpleados()) {
@@ -2904,7 +2907,7 @@
                                 if (!canvasEstado || !isElementVisible(canvasEstado)) {
                                     return;
                                 }
-                                if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
+                                if (!C.estado || !chartProductividadCanvasConectado(C.estado)) {
                                     inicializarGraficas();
                                 }
                                 if (necesitaReiniciarGraficasEmpleados()) {
@@ -2938,7 +2941,7 @@
             if (productividadVisible) {
                 const style = window.getComputedStyle(productividadVisible);
                 if (style.display !== 'none' && !productividadVisible.hasAttribute('x-cloak')) {
-                    if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
+                    if (!C.estado || !chartProductividadCanvasConectado(C.estado)) {
                         inicializarGraficas();
                     }
                     if (necesitaReiniciarGraficasEmpleados()) {
@@ -2958,7 +2961,7 @@
     // =======================================================
     function inicializarGraficasEmpleados() {
         try {
-            // Obtener la data fresca dinámica
+            if (typeof Chart === 'undefined') return;
             const metricasData = obtenerDatosFrescos();
             if (!metricasData) return;
 
@@ -3213,7 +3216,7 @@
                 if (!canvasEstado || !isElementVisible(canvasEstado)) {
                     return;
                 }
-                if (!chartEstado || !chartProductividadCanvasConectado(chartEstado)) {
+                if (!C.estado || !chartProductividadCanvasConectado(C.estado)) {
                     inicializarGraficas();
                 }
                 if (necesitaReiniciarGraficasEmpleados()) {
