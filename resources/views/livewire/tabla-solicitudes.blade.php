@@ -18,8 +18,8 @@
     @if(!$soloModal)
     <div class="index-page__card overflow-hidden">
 
-        <div class="index-page__dt-toolbar" style="flex-wrap: wrap;">
-            <div class="form-group" style="min-width:160px;margin:0;">
+        <div class="index-page__dt-toolbar" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.85rem 1rem;padding:0.95rem 1rem 0.85rem;">
+            <div class="form-group" style="min-width:180px;flex:0 1 220px;">
                 <label class="sr-only" for="filtroEstatus">Estatus</label>
                 <select wire:model.live="filtroEstatus" class="form-control">
                     <option value="">Todos los estatus</option>
@@ -31,14 +31,14 @@
                     <option value="Cancelada">Cancelada</option>
                 </select>
             </div>
-            <div class="form-group" style="flex:1 1 220px;margin:0;position:relative;">
+            <div class="form-group" style="flex:1 1 240px;min-width:200px;position:relative;">
                 <label class="sr-only" for="searchSolicitudes">Buscar</label>
                 <input type="text"
                     wire:model.live.debounce.300ms="search"
                     placeholder="Buscar ID, empleado o motivo..."
                     class="form-control">
             </div>
-            <div class="form-group" style="min-width:110px;margin:0;">
+            <div class="form-group" style="min-width:110px;flex:0 0 110px;">
                 <label class="sr-only">Mostrar</label>
                 <select wire:model.live="perPage" class="form-control">
                     <option value="5">5</option>
@@ -172,26 +172,14 @@
                                         title="Cotizar">
                                         <i class="fas fa-file-invoice-dollar"></i>
                                     </a>
-                                    @else
-                                    <span class="index-action index-action--disabled"
-                                        title="No disponible: el estatus no permite cotizar"
-                                        aria-disabled="true">
-                                        <i class="fas fa-file-invoice-dollar"></i>
-                                    </span>
                                     @endif
                                     @if($solicitud->puedeSubirFactura)
                                     <button type="button" wire:click="abrirModalAsignacion({{ $solicitud->SolicitudID }})"
                                         data-asignacion-solicitud="{{ $solicitud->SolicitudID }}"
-                                        class="index-action {{ $yaSubio ? 'index-action--view' : 'index-action--success' }}"
+                                        class="index-action index-action--view"
                                         title="{{ $yaSubio ? 'Ver asignación' : 'Asignación' }}">
-                                        <i class="fas {{ $yaSubio ? 'fa-eye' : 'fa-file-invoice' }}"></i>
-                                    </button>
-                                    @else
-                                    <span class="index-action index-action--disabled"
-                                        title="No disponible: el estatus no permite asignación"
-                                        aria-disabled="true">
                                         <i class="fas fa-file-invoice"></i>
-                                    </span>
+                                    </button>
                                     @endif
                                     @if($puedeCerrar)
                                     <button type="button" wire:click="abrirModalCancelacion({{ $solicitud->SolicitudID }})"
@@ -199,12 +187,6 @@
                                         title="Cerrar solicitud">
                                         <i class="fas fa-ban"></i>
                                     </button>
-                                    @else
-                                    <span class="index-action index-action--disabled"
-                                        title="No se puede cerrar una solicitud {{ strtolower($solicitud->estatusDisplay) }}"
-                                        aria-disabled="true">
-                                        <i class="fas fa-ban"></i>
-                                    </span>
                                     @endif
                                 </div>
                             </td>

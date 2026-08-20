@@ -3,14 +3,14 @@
         @forelse($stats['insumos_por_licencia'] as $index => $insumo)
         <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
             <div class="flex items-center">
-                <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                <span class="dash-chip w-6 h-6 justify-center mr-3">
                     {{ ($stats['insumos_por_licencia']->currentPage() - 1) * $stats['insumos_por_licencia']->perPage() + $index + 1 }}
                 </span>
                 <div>
                     <p class="font-medium text-[#101D49] dark:text-white text-sm">{{ $insumo->NombreInsumo }}</p>
                 </div>
             </div>
-            <div class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
+            <div class="dash-chip">
                 {{ $insumo->total_inventario }}
             </div>
         </div>

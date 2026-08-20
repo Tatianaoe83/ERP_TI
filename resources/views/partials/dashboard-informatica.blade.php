@@ -1,338 +1,211 @@
-<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 mb-8">
-    <div class="dashboard-card dashboard-card-orange relative overflow-hidden rounded-xl text-white shadow-lg p-5 flex flex-col min-h-0">
-        <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-        <div class="absolute bottom-2 right-2 text-white/30"><i class="fas fa-phone text-3xl"></i></div>
-        <div class="relative flex-1 flex flex-col">
-            <p class="text-sm font-semibold">Líneas que puedes asignar</p>
-            <p class="text-xs opacity-90 mt-0.5">Libres + referenciadas</p>
-            <p class="text-3xl font-bold mt-2">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
-            <div class="w-12 h-0.5 bg-orange-400 mt-1 rounded-full"></div>
-            <div class="dashboard-card-inner mt-4 flex items-center justify-between py-2.5 px-3 rounded-lg backdrop-blur-sm">
-                <span class="text-sm font-medium">Asignadas a persona física</span>
-                <span class="text-lg font-bold">{{ $stats['inventario']['lineas']['asignadas'] }}</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="dashboard-card dashboard-card-blue rounded-xl p-5 text-white shadow-lg flex flex-col min-h-0">
-        <div class="flex justify-between items-start flex-1">
+<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 mb-6">
+    <div class="dash-kpi">
+        <div class="dash-kpi__top">
             <div>
-                <p class="text-sm font-medium mb-1">Total de empleados activos</p>
-                <p class="text-3xl font-bold">{{ $stats['empleados']['activos'] }}</p>
+                <p class="dash-kpi__label">Líneas que puedes asignar</p>
+                <p class="dash-kpi__hint">Libres + referenciadas</p>
+                <p class="dash-kpi__value">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
             </div>
-            <div class="dashboard-card-icon rounded-full p-3 shrink-0">
-                <i class="fas fa-users text-xl"></i>
-            </div>
+            <span class="dash-kpi__icon dash-kpi__icon--amber" aria-hidden="true">
+                <i class="fas fa-phone"></i>
+            </span>
+        </div>
+        <div class="dash-stat mt-4 flex items-center justify-between">
+            <span class="dash-stat__label">Asignadas a persona física</span>
+            <span class="dash-stat__value" style="font-size:1.05rem;">{{ $stats['inventario']['lineas']['asignadas'] }}</span>
         </div>
     </div>
 
-    <div class="dashboard-card dashboard-card-orange relative overflow-hidden rounded-xl text-white shadow-lg p-5 flex flex-col min-h-0">
-        <div class="absolute bottom-0 left-0 w-28 h-28 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
-        <div class="relative flex-1 flex flex-col gap-3">
-            <div class="grid grid-cols-2 gap-2">
-                <div class="dashboard-card-inner py-4 px-3 rounded-lg backdrop-blur-sm text-center">
-                    <p class="text-xs font-medium opacity-90">Sin asignar</p>
-                    <p class="text-2xl font-bold mt-0.5">{{ $stats['inventario']['lineas']['libres'] }}</p>
-                </div>
-                <div class="dashboard-card-inner py-4 px-3 rounded-lg backdrop-blur-sm text-center">
-                    <p class="text-xs font-medium opacity-90">Referenciadas</p>
-                    <p class="text-2xl font-bold mt-0.5">{{ $stats['inventario']['lineas']['referenciados'] }}</p>
-                </div>
+    <div class="dash-kpi">
+        <div class="dash-kpi__top">
+            <div>
+                <p class="dash-kpi__label">Total de empleados activos</p>
+                <p class="dash-kpi__value">{{ $stats['empleados']['activos'] }}</p>
             </div>
-            @if($stats['inventario']['lineas']['referenciados'] > 0)
-                <p class="text-xs opacity-85 italic">Referenciadas = asignadas pero no a persona física</p>
-            @endif
+            <span class="dash-kpi__icon dash-kpi__icon--blue" aria-hidden="true">
+                <i class="fas fa-users"></i>
+            </span>
         </div>
     </div>
 
-    <div class="dashboard-card dashboard-card-green rounded-xl p-5 text-white shadow-lg flex flex-col min-h-0">
-        <p class="text-green-100 text-sm font-medium mb-3">Equipos asignados en inventario</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1">
+    <div class="dash-kpi">
+        <div class="grid grid-cols-2 gap-3">
+            <div class="dash-stat text-center">
+                <p class="dash-stat__label">Sin asignar</p>
+                <p class="dash-stat__value">{{ $stats['inventario']['lineas']['libres'] }}</p>
+            </div>
+            <div class="dash-stat text-center">
+                <p class="dash-stat__label">Referenciadas</p>
+                <p class="dash-stat__value">{{ $stats['inventario']['lineas']['referenciados'] }}</p>
+            </div>
+        </div>
+        @if($stats['inventario']['lineas']['referenciados'] > 0)
+            <p class="dash-kpi__hint mt-3">Referenciadas = asignadas pero no a persona física</p>
+        @endif
+    </div>
+
+    <div class="dash-kpi">
+        <p class="dash-kpi__label mb-3">Equipos asignados en inventario</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
-            <div class="dashboard-card-inner flex items-center justify-between p-3 rounded-lg border">
-                <div class="flex items-center">
-                    <i class="fas fa-desktop text-white mr-3"></i>
-                    <span class="text-green-100 font-medium">{{ Str::limit($equipo->CategoriaEquipo, 15) }}</span>
-                </div>
-                <span class="font-bold text-xl text-green-100">{{ $equipo->total_inventario }}</span>
+            <div class="dash-stat flex items-center justify-between gap-2">
+                <span class="dash-stat__name">{{ Str::limit($equipo->CategoriaEquipo, 18) }}</span>
+                <span class="dash-stat__value" style="font-size:1.1rem;">{{ $equipo->total_inventario }}</span>
             </div>
             @empty
-            <p class="text-green-100 text-center py-4 text-sm col-span-3">No hay equipos disponibles</p>
+            <p class="dash-kpi__hint col-span-3 text-center py-2">No hay equipos disponibles</p>
             @endforelse
         </div>
     </div>
 </div>
 
-<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6 lg:mb-8">
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h3 class="text-lg font-semibold text-[#101D49] dark:text-gray-300 flex items-center mb-0">
-            <i class="fas fa-tools text-purple-500 mr-2"></i>
+<div class="dash-panel mb-6">
+    <div class="dash-panel__head">
+        <h3 class="dash-panel__title">
+            <i class="fas fa-tools"></i>
             Mantenimientos {{ $stats['mantenimientos']['anio'] }}
         </h3>
         @can('ver-mantenimientos')
-            <a href="{{ route('mantenimientos.index') }}" class="text-sm font-semibold text-purple-600 dark:text-purple-300 hover:underline">
-                Ver detalle
-            </a>
+            <a href="{{ route('mantenimientos.index') }}" class="dash-panel__link">Ver detalle</a>
         @endcan
     </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
-        <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg">
-            <div class="flex items-center">
-                <div class="bg-red-500 text-white h-10 w-10 rounded-lg flex items-center justify-center mr-3">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <span class="text-[#101D49] dark:text-gray-300 font-medium">Pendientes</span>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div class="dash-stat flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-clock"></i></span>
+                <span class="dash-stat__name">Pendientes</span>
             </div>
-            <span class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $stats['mantenimientos']['pendientes'] }}</span>
+            <span class="dash-stat__value">{{ $stats['mantenimientos']['pendientes'] }}</span>
         </div>
-
-        <div class="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-lg">
-            <div class="flex items-center">
-                <div class="bg-green-500 text-white h-10 w-10 rounded-lg flex items-center justify-center mr-3">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <span class="text-[#101D49] dark:text-gray-300 font-medium">Realizados</span>
+        <div class="dash-stat flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="dash-kpi__icon dash-kpi__icon--green"><i class="fas fa-check-circle"></i></span>
+                <span class="dash-stat__name">Realizados</span>
             </div>
-            <span class="font-bold text-2xl text-[#101D49] dark:text-white">{{ $stats['mantenimientos']['realizados'] }}</span>
+            <span class="dash-stat__value">{{ $stats['mantenimientos']['realizados'] }}</span>
         </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-        <h3 class="text-lg font-semibold text-[#101D49] dark:text-gray-300 mb-3 flex items-center">
-            <i class="fas fa-certificate text-yellow-500 mr-2"></i>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+    <div class="dash-panel">
+        <h3 class="dash-panel__title mb-3">
+            <i class="fas fa-certificate"></i>
             Licencias asignadas
         </h3>
         @include('partials.insumos-licencia', ['stats' => $stats])
     </div>
 
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-        <h3 class="text-lg font-semibold text-[#101D49] dark:text-gray-300 mb-3 flex items-center">
-            <i class="fas fa-building text-blue-500 mr-2"></i>
-            Gerencias con mayor numero de empleados activos
+    <div class="dash-panel">
+        <h3 class="dash-panel__title mb-3">
+            <i class="fas fa-building"></i>
+            Gerencias con mayor número de empleados activos
         </h3>
         <div class="space-y-2">
             @forelse($stats['estadisticas_gerencia'] as $gerencia)
-            <div class="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div class="flex items-center justify-between">
-                    <p class="font-medium text-[#101D49] dark:text-white text-sm">{{ $gerencia->NombreGerencia }}</p>
-                    <span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-medium px-2 py-1 rounded-full">
-                        {{ $gerencia->empleados_activos }}
-                    </span>
-                </div>
+            <div class="dash-row">
+                <p class="dash-row__name">{{ $gerencia->NombreGerencia }}</p>
+                <span class="dash-chip">{{ $gerencia->empleados_activos }}</span>
             </div>
             @empty
-            <p class="text-gray-500 dark:text-gray-400 text-center py-4 text-sm">No hay datos disponibles</p>
+            <p class="dash-kpi__hint text-center py-4">No hay datos disponibles</p>
             @endforelse
         </div>
     </div>
 </div>
 
-<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-    <h3 class="text-lg font-semibold text-[#101D49] dark:text-gray-300 mb-3 lg:mb-4 flex items-center">
-        <i class="fas fa-sitemap text-green-500 mr-2"></i>
-        Resumen Organizacional
+<div class="dash-panel mb-6">
+    <h3 class="dash-panel__title mb-3">
+        <i class="fas fa-sitemap"></i>
+        Resumen organizacional
     </h3>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div class="flex items-center">
-                <i class="fas fa-hard-hat text-orange-500 mr-3"></i>
-                <span class="text-[#101D49] dark:text-gray-300 font-medium">Obras</span>
-            </div>
-            <span class="font-bold text-xl text-[#101D49] dark:text-white">{{ $stats['organizacion']['obras'] }}</span>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="dash-stat flex items-center justify-between">
+            <span class="dash-stat__name">Obras</span>
+            <span class="dash-stat__value">{{ $stats['organizacion']['obras'] }}</span>
         </div>
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div class="flex items-center">
-                <i class="fas fa-building text-blue-500 mr-3"></i>
-                <span class="text-[#101D49] dark:text-gray-300 font-medium">Gerencias</span>
-            </div>
-            <span class="font-bold text-xl text-[#101D49] dark:text-white">{{ $stats['organizacion']['gerencias'] }}</span>
+        <div class="dash-stat flex items-center justify-between">
+            <span class="dash-stat__name">Gerencias</span>
+            <span class="dash-stat__value">{{ $stats['organizacion']['gerencias'] }}</span>
         </div>
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div class="flex items-center">
-                <i class="fas fa-industry text-purple-500 mr-3"></i>
-                <span class="text-[#101D49] dark:text-gray-300 font-medium">Unidades</span>
-            </div>
-            <span class="font-bold text-xl text-[#101D49] dark:text-white">{{ $stats['organizacion']['unidades_negocio'] }}</span>
+        <div class="dash-stat flex items-center justify-between">
+            <span class="dash-stat__name">Unidades</span>
+            <span class="dash-stat__value">{{ $stats['organizacion']['unidades_negocio'] }}</span>
         </div>
     </div>
 </div>
 
-<div class="mb-4">
-    <h2 class="text-xl font-bold text-[#101D49] dark:text-gray-300 mb-3">Accesos Rápidos</h2>
-</div>
-
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 lg:gap-4">
+<p class="dash-section-title">Accesos rápidos</p>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
     @if(auth()->user()->can('ver-inventario') or auth()->user()->can('transferir-inventario') or auth()->user()->can('cartas-inventario') or auth()->user()->can('asignar-inventario'))
-    <a href="/inventarios" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-blue-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-clipboard-list text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Inventarios</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Gestión</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/inventarios" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--blue"><i class="fas fa-clipboard-list"></i></span>
+        <span class="dash-quick__name">Inventarios</span>
+        <span class="dash-quick__hint">Gestión</span>
     </a>
     @endif
 
     @if(auth()->user()->can('ver-empleados') or auth()->user()->can('crear-empleados') or auth()->user()->can('editar-empleados') or auth()->user()->can('borrar-empleados'))
-    <a href="/empleados" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-green-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-users text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Empleados</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Gestión</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-white text-sm"></i>
-            </div>
-        </div>
+    <a href="/empleados" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--green"><i class="fas fa-users"></i></span>
+        <span class="dash-quick__name">Empleados</span>
+        <span class="dash-quick__hint">Gestión</span>
     </a>
     @endif
 
     @if(auth()->user()->can('ver-equipos') or auth()->user()->can('crear-equipos') or auth()->user()->can('editar-equipos') or auth()->user()->can('borrar-equipes'))
-    <a href="/equipos" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-purple-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-laptop text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Equipos</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Catálogo</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/equipos" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-laptop"></i></span>
+        <span class="dash-quick__name">Equipos</span>
+        <span class="dash-quick__hint">Catálogo</span>
     </a>
     @endif
 
     @if(auth()->user()->can('ver-reportes') or auth()->user()->can('crear-reportes') or auth()->user()->can('editar-reportes') or auth()->user()->can('borrar-reportes') or auth()->user()->can('exportar-reportes') or auth()->user()->can('ver-reportes-especificos'))
-    <a href="/reportes" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-orange-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-chart-bar text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Reportes</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Generar</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/reportes" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--amber"><i class="fas fa-chart-bar"></i></span>
+        <span class="dash-quick__name">Reportes</span>
+        <span class="dash-quick__hint">Generar</span>
     </a>
     @endif
 
     @if(auth()->user()->can('ver-reportes-especificos') or auth()->user()->can('exportar-reportes-especificos'))
-    <a href="/reportes-especificos" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-green-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-download text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Reportes Específicos</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Descargar</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/reportes-especificos" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--green"><i class="fas fa-download"></i></span>
+        <span class="dash-quick__name">Reportes específicos</span>
+        <span class="dash-quick__hint">Descargar</span>
     </a>
     @endif
 
     @if(auth()->user()->can('ver-usuarios') or auth()->user()->can('crear-usuarios') or auth()->user()->can('editar-usuarios') or auth()->user()->can('borrar-usuarios'))
-    <a href="/usuarios" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-indigo-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-user-cog text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Usuarios</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Gestión</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/usuarios" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--navy"><i class="fas fa-user-cog"></i></span>
+        <span class="dash-quick__name">Usuarios</span>
+        <span class="dash-quick__hint">Gestión</span>
     </a>
     @endif
 
     @if(auth()->user()->can('ver-rol') or auth()->user()->can('crear-rol') or auth()->user()->can('editar-rol') or auth()->user()->can('borrar-rol'))
-    <a href="/roles" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-red-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-shield-alt text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Roles</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Permisos</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/roles" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-shield-alt"></i></span>
+        <span class="dash-quick__name">Roles</span>
+        <span class="dash-quick__hint">Permisos</span>
     </a>
     @endif
 
     @can('ver-presupuesto')
-    <a href="/presupuesto" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-teal-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-file-invoice-dollar text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Presupuestos</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Informes</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/presupuesto" class="dash-quick">
+        <span class="dash-kpi__icon dash-kpi__icon--blue"><i class="fas fa-file-invoice-dollar"></i></span>
+        <span class="dash-quick__name">Presupuestos</span>
+        <span class="dash-quick__hint">Informes</span>
     </a>
     @endcan
 
     @if(auth()->user()->can('ver-informe') or auth()->user()->can('buscar-informe'))
-    <a href="/informe" class="group block no-underline">
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-            <div class="flex justify-center">
-                <div class="bg-gray-600 h-[50px] w-[50px] text-white p-2 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-history text-xl"></i>
-                </div>
-            </div>
-            <div class="text-center">
-                <div class="text-sm font-semibold text-[#101D49] dark:text-gray-300 mb-1">Informes</div>
-                <div class="text-xs text-gray-600 dark:text-gray-300">Registro</div>
-            </div>
-            <div class="flex justify-center">
-                <i class="fas fa-arrow-right transform transition-transform duration-300 group-hover:translate-x-1 text-[#101D49] dark:text-gray-300 text-sm"></i>
-            </div>
-        </div>
+    <a href="/informe" class="dash-quick">
+        <span class="dash-kpi__icon"><i class="fas fa-history"></i></span>
+        <span class="dash-quick__name">Informes</span>
+        <span class="dash-quick__hint">Registro</span>
     </a>
     @endif
 </div>
