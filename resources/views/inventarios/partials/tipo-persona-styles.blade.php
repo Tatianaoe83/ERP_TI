@@ -62,6 +62,123 @@
         border: 1px solid #bfdbfe;
     }
 
+    /* Insumo marcado como licencia pirata (sólo stock). */
+    .inv-chip-pirata {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    /* Toggle de licencia pirata: misma familia visual que .inv-modo-card, pero de
+       una sola opción, así que el estado activo se marca con la palomita. */
+    .inv-pirata-card {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        text-align: left;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 0.75rem;
+        padding: 0.85rem 0.95rem;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .dark .inv-pirata-card {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    .inv-pirata-card:hover {
+        border-color: #94a3b8;
+    }
+
+    .inv-pirata-ico {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 0.6rem;
+        background: #f1f5f9;
+        color: #64748b;
+        transition: background .15s ease, color .15s ease;
+    }
+
+    .dark .inv-pirata-ico {
+        background: #1e293b;
+        color: #94a3b8;
+    }
+
+    .inv-pirata-body {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .inv-pirata-title {
+        display: block;
+        font-weight: 700;
+        font-size: 0.92rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .inv-pirata-desc {
+        display: block;
+        font-size: 0.75rem;
+        color: #64748b;
+        line-height: 1.35;
+    }
+
+    .inv-pirata-check {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 999px;
+        border: 1.5px solid #cbd5e1;
+        color: transparent;
+        font-size: 0.7rem;
+        transition: background .15s ease, border-color .15s ease, color .15s ease;
+    }
+
+    .dark .inv-pirata-check {
+        border-color: #475569;
+    }
+
+    /* Estado activo */
+    .inv-pirata-card.is-active {
+        border-color: #dc2626;
+        background: #fef2f2;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
+    .dark .inv-pirata-card.is-active {
+        background: rgba(220, 38, 38, 0.1);
+        border-color: rgba(220, 38, 38, 0.6);
+    }
+
+    .inv-pirata-card.is-active .inv-pirata-ico {
+        background: #dc2626;
+        color: #fff;
+    }
+
+    .inv-pirata-card.is-active .inv-pirata-title {
+        color: #b91c1c;
+    }
+
+    .dark .inv-pirata-card.is-active .inv-pirata-title {
+        color: #fca5a5;
+    }
+
+    .inv-pirata-card.is-active .inv-pirata-check {
+        background: #dc2626;
+        border-color: #dc2626;
+        color: #fff;
+    }
+
     .inv-leyenda {
         display: flex;
         flex-wrap: wrap;

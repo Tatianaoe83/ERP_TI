@@ -35,13 +35,15 @@ class InventarioInsumo extends Model implements Auditable
         'NumSerie',
         'Comentarios',
         'MesDePago',
-        'Presupuestado'
+        'Presupuestado',
+        'LicenciaPirata'
     ];
 
      protected $casts = [
         'FechaAsignacion' => 'date',
         'FechaRenovacion' => 'date',
         'Presupuestado'   => 'boolean',
+        'LicenciaPirata'  => 'boolean',
     ];
 
     public function empleados()

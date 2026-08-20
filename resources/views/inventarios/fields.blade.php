@@ -373,12 +373,17 @@
                             @if($permitePresupuestado)
                             <th>Stock / Extra</th>
                             @endif
+                            <th>Licencia</th>
 
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($insumosAsignados as $insumosAsignado)
-                        <tr data-id="{{ $insumosAsignado->InventarioID }}">
+                        {{-- data-* evita depender del índice de la columna, que se corre cuando DataTables
+                             colapsa columnas en responsive o cuando cambia el tipo de persona. --}}
+                        <tr data-id="{{ $insumosAsignado->InventarioID }}"
+                            data-pirata="{{ (int) ($insumosAsignado->LicenciaPirata ?? 0) }}"
+                            data-categoria="{{ $insumosAsignado->CateogoriaInsumo }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
@@ -417,6 +422,7 @@
                                 ? '<span class="inv-chip inv-chip-extra">Extra</span>'
                                 : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
                             @endif
+                            <td>@if($insumosAsignado->LicenciaPirata)<span class="inv-chip inv-chip-pirata">Pirata</span>@endif</td>
                         </tr>
                         @endforeach
 
@@ -785,6 +791,11 @@
         return '<span class="inv-chip inv-chip-stock">Stock</span>';
     }
 
+    // Insumos: la columna "Licencia" queda vacía salvo que sea pirata.
+    function htmlChipPirata(esPirata) {
+        return esPirata ? '<span class="inv-chip inv-chip-pirata">Pirata</span>' : '';
+    }
+
     function textoCeldaEsExtra(texto) {
         const v = String(texto ?? '').trim().toLowerCase();
         return v === 'si' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1;
@@ -856,7 +867,44 @@
         if (selector === '#editPresupuestadoEquipo') {
             aplicarRequeridosEquipo(v === '2');
         }
+
+        if (selector === '#editPresupuestadoInsumo') {
+            refrescarLicenciaPirata();
+        }
     }
+
+    // Sólo los insumos de categoría LICENCIA pueden ser piratas, y sólo en stock:
+    // una licencia pirata no se paga, así que nunca se proyecta como gasto.
+    function esCategoriaLicencia() {
+        return String($('#editCategoriaInsumo').val() ?? '').toLowerCase().indexOf('licencia') !== -1;
+    }
+
+    // El modal se rellena por pasos; al terminar de abrirse ya está todo puesto.
+    $(document).on('shown.bs.modal', '#editModalInsumo', refrescarLicenciaPirata);
+
+    function refrescarLicenciaPirata() {
+        const esStock = getPresupuestado('#editPresupuestadoInsumo') !== 1;
+        const aplica = esStock && esCategoriaLicencia();
+
+        $('.insumo-solo-stock').toggle(aplica);
+
+        if (!aplica) {
+            setLicenciaPirata(false);
+        }
+    }
+
+    // El checkbox real queda oculto; la card es la que se ve y se pulsa.
+    function setLicenciaPirata(activa) {
+        const marcada = !!activa;
+        $('#editLicenciaPirata').prop('checked', marcada);
+        $('#editLicenciaPirataCard')
+            .toggleClass('is-active', marcada)
+            .attr('aria-pressed', marcada ? 'true' : 'false');
+    }
+
+    $(document).on('click', '.inv-pirata-card', function() {
+        setLicenciaPirata(!$('#' + $(this).data('target')).is(':checked'));
+    });
 
     function setPresupuestado(selector, texto) {
         aplicarValorModo(selector, valorModoDesdeTexto(texto));
@@ -1700,7 +1748,8 @@
 
         $('#editId_insumo').val(id);
         $('#editEmp_insumo').val('');
-        $('#editCategoriaInsumo').val(row.find("td:eq(1)").text());
+        // data-categoria es la fuente confiable; el <td> se corre si DataTables colapsa columnas.
+        $('#editCategoriaInsumo').val(row.data('categoria') ?? row.find("td:eq(1)").text());
         $('#editNombreInsumo').val(row.find("td:eq(2)").text());
         $('#editCostoMensual').val(row.find("td:eq(3)").text());
         $('#editCostoAnual').val(row.find("td:eq(4)").text());
@@ -1713,6 +1762,9 @@
         $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
         $('#editMesDePago').val(row.find("td:eq(11)").text());
         setPresupuestado('#editPresupuestadoInsumo', row.find("td:eq(12)").text());
+        setLicenciaPirata(String(row.data('pirata')) === '1');
+        // Va al final: apaga la bandera si el insumo no es licencia o es presupuestado.
+        refrescarLicenciaPirata();
 
         $('#editModalInsumo').modal('show');
     });
@@ -1754,6 +1806,8 @@
         $('#editId_insumo').val('');
         $('#editEmp_insumo').val(id_E);
         setPresupuestado('#editPresupuestadoInsumo', 'No');
+        setLicenciaPirata(false);
+        refrescarLicenciaPirata();
 
         $('#editModalInsumo').modal('show');
     });
@@ -1816,6 +1870,7 @@
             Comentarios: $('#editComentariosInsumo').val(),
             MesDePago: $('#editMesDePago').val(),
             Presupuestado: getPresupuestado('#editPresupuestadoInsumo'),
+            LicenciaPirata: $('#editLicenciaPirata').is(':checked') ? 1 : 0,
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1898,6 +1953,10 @@
         if (permitePresupuestado) {
             row.find('td:eq(12)').html(htmlChipPresupuestado(!!insumo.Presupuestado));
         }
+        // .data() cachea, así que hay que actualizar ambos para que el modal relea bien.
+        row.attr('data-pirata', insumo.LicenciaPirata ? 1 : 0).data('pirata', insumo.LicenciaPirata ? 1 : 0);
+        row.attr('data-categoria', insumo.CateogoriaInsumo).data('categoria', insumo.CateogoriaInsumo);
+        row.find('td').last().html(htmlChipPirata(insumo.LicenciaPirata));
 
         $('#insumosAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }
@@ -1905,7 +1964,7 @@
 
     function addinsumoNewRow(insumo) {
         let newRow = `
-        <tr data-id="${insumo.InventarioID}">
+        <tr data-id="${insumo.InventarioID}" data-pirata="${insumo.LicenciaPirata ? 1 : 0}" data-categoria="${insumo.CateogoriaInsumo}">
             <td>
                 <div class="index-actions">
                     <button type="button" class="index-action index-action--edit edit-btn-insum" data-id="${insumo.InventarioID}" title="Editar">
@@ -1930,6 +1989,7 @@
             <td>${insumo.Comentarios}</td>
             <td>${insumo.MesDePago}</td>
             ${permitePresupuestado ? `<td>${htmlChipPresupuestado(!!insumo.Presupuestado)}</td>` : ''}
+            <td>${htmlChipPirata(insumo.LicenciaPirata)}</td>
         </tr>
     `;
         $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);
