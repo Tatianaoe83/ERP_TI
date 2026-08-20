@@ -1062,7 +1062,8 @@
             var main = document.getElementById('app-main');
             var nextMain = doc.getElementById('app-main') || doc.querySelector('main');
             if (!main || !nextMain) {
-                throw new Error('sin-main');
+                window.location.assign(href);
+                return Promise.resolve();
             }
             if (typeof destruirGraficasProductividad === 'function') {
                 try { destruirGraficasProductividad(); } catch (e) {}
@@ -1094,8 +1095,8 @@
             window.AppTopbar.start();
             fetch(href, {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'text/html'
+                    'Accept': 'text/html',
+                    'X-App-Nav': '1'
                 },
                 credentials: 'same-origin'
             }).then(function (res) {
