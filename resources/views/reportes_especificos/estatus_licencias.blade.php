@@ -1,140 +1,74 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-6 dark:bg-[#101010] dark:text-white">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-[#101D49] dark:text-white mb-2">Listado de licencias Asignadas</h1>
-            <p class="text-gray-600 dark:text-gray-300">Reporte de licencias asignadas a empleados</p>
-        </div>
-        <div class="flex space-x-3">
-            <a href="{{ route('reportes-especificos.export-estatus-licencias-excel', $filtros) }}" 
-               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
-                <i class="fas fa-file-excel mr-2"></i>Descargar Excel
-            </a>
-            
-            <a href="{{ route('reportes-especificos.index') }}" 
-               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
-                <i class="fas fa-arrow-left mr-2"></i>Volver
-            </a>
-        </div>
-    </div>
+<x-index-page
+    title="Licencias asignadas"
+    icon="fa-certificate"
+    subtitle="0 registros"
+>
+    <x-slot name="headerActions">
+        @can('exportar-reportes-especificos')
+        <a href="{{ route('reportes-especificos.export-estatus-licencias-excel', $filtros) }}" class="index-page__btn-primary">
+            <i class="fas fa-file-excel"></i> Descargar Excel
+        </a>
+        @endcan
+        <a href="{{ route('reportes-especificos.index') }}" class="index-page__btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </x-slot>
 
-    <!-- Filtros -->
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-        <h3 class="text-lg font-semibold text-[#101D49] dark:text-white mb-4">
-            <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
-        </h3>
-        
-        <form method="GET" action="{{ route('reportes-especificos.estatus-licencias') }}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Empleado -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Empleado</label>
-                <select name="empleado_id" class="jz form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+    <x-slot name="filters">
+        <form method="GET" action="{{ route('reportes-especificos.estatus-licencias') }}">
+            <div class="form-group">
+                <label for="empleado_id">Empleado</label>
+                <select id="empleado_id" name="empleado_id" class="jz form-control">
                     <option value="">Todos los empleados</option>
                     @foreach(\App\Models\Empleados::whereNull('deleted_at')->get() as $empleado)
-                        <option value="{{ $empleado->EmpleadoID }}" {{ $filtros['empleado_id'] == $empleado->EmpleadoID ? 'selected' : '' }}>
+                        <option value="{{ $empleado->EmpleadoID }}" {{ (string) $filtros['empleado_id'] === (string) $empleado->EmpleadoID ? 'selected' : '' }}>
                             {{ $empleado->NombreEmpleado }}
                         </option>
                     @endforeach
                 </select>
             </div>
-
-          <!-- Frecuencia de Pago -->
-          <div>
-            <label class="form-label">Frecuencia de Pago</label>
-            <select name="frecuencia_pago" class="jz form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
-                <option value="">Todas las frecuencias</option>
-                <option value="Pago único" {{ $filtros['frecuencia_pago'] == 'Pago único' ? 'selected' : '' }}>Pago único</option>
-                <option value="Mensual" {{ $filtros['frecuencia_pago'] == 'Mensual' ? 'selected' : '' }}>Mensual</option>
-                <option value="Anual" {{ $filtros['frecuencia_pago'] == 'Anual' ? 'selected' : '' }}>Anual</option>
-            </select>
+            <div class="form-group">
+                <label for="frecuencia_pago">Frecuencia de pago</label>
+                <select id="frecuencia_pago" name="frecuencia_pago" class="jz form-control">
+                    <option value="">Todas las frecuencias</option>
+                    <option value="Pago único" {{ $filtros['frecuencia_pago'] == 'Pago único' ? 'selected' : '' }}>Pago único</option>
+                    <option value="Mensual" {{ $filtros['frecuencia_pago'] == 'Mensual' ? 'selected' : '' }}>Mensual</option>
+                    <option value="Anual" {{ $filtros['frecuencia_pago'] == 'Anual' ? 'selected' : '' }}>Anual</option>
+                </select>
             </div>
-
-            <!-- MES DE PAGO -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mes de Pago</label>
-                <select name="inventarioinsumo_mes_pago" class="jz form-control w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+            <div class="form-group">
+                <label for="inventarioinsumo_mes_pago">Mes de pago</label>
+                <select id="inventarioinsumo_mes_pago" name="inventarioinsumo_mes_pago" class="jz form-control">
                     <option value="">Todos los meses</option>
                     @foreach(\App\Models\InventarioInsumo::select('MesDePago')->distinct()->where('CateogoriaInsumo', 'Licencia')->get() as $mes)
-                
                         <option value="{{ $mes->MesDePago }}" {{ $filtros['inventarioinsumo_mes_pago'] == $mes->MesDePago ? 'selected' : '' }}>
                             {{ $mes->MesDePago }}
                         </option>
                     @endforeach
                 </select>
             </div>
-
-            <!-- Fecha Desde -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Desde Asignación</label>
-                <input type="date" name="fecha_desde" value="{{ $filtros['fecha_desde'] ?? '' }}" 
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+            <div class="form-group">
+                <label for="fecha_desde">Fecha desde</label>
+                <input id="fecha_desde" type="date" name="fecha_desde" value="{{ $filtros['fecha_desde'] ?? '' }}" class="form-control">
             </div>
-
-            <!-- Fecha Hasta -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha Hasta Asignación</label>
-                <input type="date" name="fecha_hasta" value="{{ $filtros['fecha_hasta'] ?? '' }}" 
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+            <div class="form-group">
+                <label for="fecha_hasta">Fecha hasta</label>
+                <input id="fecha_hasta" type="date" name="fecha_hasta" value="{{ $filtros['fecha_hasta'] ?? '' }}" class="form-control">
             </div>
-
-            <!-- Botones -->
-            <div class="md:col-span-2 lg:col-span-4 flex space-x-3">
-                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
-                    <i class="fas fa-search mr-2"></i>Aplicar Filtros
+            <div class="index-page__filters-actions">
+                <button type="submit" class="index-page__btn-primary">
+                    <i class="fas fa-search"></i> Aplicar filtros
                 </button>
-                <a href="{{ route('reportes-especificos.estatus-licencias') }}" 
-                   class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200">
-                    <i class="fas fa-times mr-2"></i>Limpiar Filtros
+                <a href="{{ route('reportes-especificos.estatus-licencias') }}" class="index-page__btn-secondary">
+                    <i class="fas fa-times"></i> Limpiar
                 </a>
             </div>
         </form>
-    </div>
+    </x-slot>
 
-    <!-- Resultados -->
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-4">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-[#101D49] dark:text-white">
-                    Resultados del Reporte
-                </h3>
-            </div>
-
-            @push('third_party_stylesheets')
-            <!-- DataTables CSS -->
-            <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
-            <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css">
-            @endpush
-
-            <div class="index-page__card overflow-hidden">
-            <div class="index-page__table-wrap table-responsive">
-                {!! $dataTable->table(['width' => '100%', 'class' => 'table index-table w-full']) !!}
-            </div>
-            </div>
-
-            @push('third_party_scripts')
-            <!-- DataTables Core -->
-            <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-            <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
-
-            <!-- DataTables Buttons -->
-            <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap4.min.js"></script>
-            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-            <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
-
-            <!-- JSZIP y PDFMake para exportación -->
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js"></script>
-
-            <!-- DataTables Scripts -->
-            {!! $dataTable->scripts() !!}
-            @endpush
-        </div>
-    </div>
-</div>
+    @include('layouts.partials.index-datatable')
+</x-index-page>
 @endsection

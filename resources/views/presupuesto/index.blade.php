@@ -158,47 +158,63 @@
 @include('presupuesto.modal')
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('presupuestoForm');
-    const btnPdf = document.getElementById('btn-validar-pdf');
-    const btnExcel = document.getElementById('btn-validar-excel');
-    const submitButtonInput = document.getElementById('submitbutton');
-    const modalElement = document.getElementById('modalFaltantes');
-    const modal = new bootstrap.Modal(modalElement);
+(function () {
+    function valorGerencia(id) {
+        var el = document.getElementById(id);
+        if (!el) return '';
+        if (window.jQuery && jQuery.fn && jQuery.fn.select2 && jQuery(el).hasClass('select2-hidden-accessible')) {
+            return jQuery(el).val() || '';
+        }
+        return el.value || '';
+    }
+
+    function mostrarModalFaltantes() {
+        var el = document.getElementById('modalFaltantes');
+        if (!el || !window.bootstrap || !bootstrap.Modal) return;
+        bootstrap.Modal.getOrCreateInstance(el).show();
+    }
 
     function validarYEnviar(tipoBoton) {
-        const gerenciaId = document.getElementById('GerenciaID').value;
+        var form = document.getElementById('presupuestoForm');
+        var btnPdf = document.getElementById('btn-validar-pdf');
+        var btnExcel = document.getElementById('btn-validar-excel');
+        var submitButtonInput = document.getElementById('submitbutton');
+        var gerenciaId = valorGerencia('GerenciaID');
+
+        if (!form || !submitButtonInput) return;
         if (!gerenciaId) {
             alert('Por favor selecciona una Gerencia');
             return;
         }
 
-        btnPdf.disabled = true;
-        btnExcel.disabled = true;
+        if (btnPdf) btnPdf.disabled = true;
+        if (btnExcel) btnExcel.disabled = true;
 
+        var csrf = document.querySelector('meta[name="csrf-token"]');
         fetch('{{ route("presupuesto.verificar") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '{{ csrf_token() }}'
             },
             body: JSON.stringify({ GerenciaID: gerenciaId })
         })
-        .then(response => response.json())
-        .then(data => {
-            btnPdf.disabled = false;
-            btnExcel.disabled = false;
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (btnPdf) btnPdf.disabled = false;
+            if (btnExcel) btnExcel.disabled = false;
 
             if (data.success === false) {
                 alert('Error de validación: ' + (data.error || 'Desconocido'));
                 return;
             }
 
-            const totalEmp = document.getElementById('totalEmpleadosModal');
-            const sinMesPagoMensual = document.getElementById('sinMesPagoMensualModal');
-            const sinMesPagoAnual = document.getElementById('sinMesPagoAnualModal');
-            const lineasConFecha = document.getElementById('lineasSinAsignarConFechaModal');
-            const insumosConFecha = document.getElementById('insumosSinAsignarConFechaModal');
+            var totalEmp = document.getElementById('totalEmpleadosModal');
+            var sinMesPagoMensual = document.getElementById('sinMesPagoMensualModal');
+            var sinMesPagoAnual = document.getElementById('sinMesPagoAnualModal');
+            var lineasConFecha = document.getElementById('lineasSinAsignarConFechaModal');
+            var insumosConFecha = document.getElementById('insumosSinAsignarConFechaModal');
 
             if (totalEmp) totalEmp.innerText = data.totalEmpleados || 0;
             if (sinMesPagoMensual) sinMesPagoMensual.innerText = data.empleadosSinMesPagoMensual || 0;
@@ -206,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lineasConFecha) lineasConFecha.innerText = data.lineasSinAsignarConFecha || 0;
             if (insumosConFecha) insumosConFecha.innerText = data.insumosSinAsignarConFecha || 0;
 
-            const tieneFaltantes = (
+            var tieneFaltantes = (
                 data.empleadosSinMesPagoMensual > 0 ||
                 data.empleadosSinMesPagoAnual > 0 ||
                 data.lineasSinAsignarConFecha > 0 ||
@@ -214,51 +230,52 @@ document.addEventListener('DOMContentLoaded', function() {
             );
 
             if (tieneFaltantes) {
-                modal.show();
+                mostrarModalFaltantes();
             } else {
                 submitButtonInput.value = tipoBoton;
                 form.submit();
             }
         })
-        .catch(error => {
+        .catch(function (error) {
             console.error('Error:', error);
-            btnPdf.disabled = false;
-            btnExcel.disabled = false;
+            if (btnPdf) btnPdf.disabled = false;
+            if (btnExcel) btnExcel.disabled = false;
             alert('Ocurrió un error al validar los datos.');
         });
     }
 
-    btnPdf.addEventListener('click', function() { validarYEnviar('pdf'); });
-    btnExcel.addEventListener('click', function() { validarYEnviar('excel'); });
+    function enviarInventario(tipoBoton) {
+        var inventarioForm = document.getElementById('inventarioForm');
+        var submitInv = document.getElementById('submitbutton_inventario');
+        var gerencia = valorGerencia('GerenciaID_inventario');
 
-    const inventarioForm = document.getElementById('inventarioForm');
-    const btnPdfInv = document.getElementById('btn-pdf-inventario');
-    const btnExcelInv = document.getElementById('btn-excel-inventario');
-    const submitInv = document.getElementById('submitbutton_inventario');
-
-    if (btnPdfInv) {
-        btnPdfInv.addEventListener('click', function() {
-            const gerencia = document.getElementById('GerenciaID_inventario').value;
-            if (!gerencia) {
-                alert('Por favor selecciona una Gerencia');
-                return;
-            }
-            submitInv.value = 'pdf';
-            inventarioForm.submit();
-        });
+        if (!inventarioForm || !submitInv) return;
+        if (!gerencia) {
+            alert('Por favor selecciona una Gerencia');
+            return;
+        }
+        submitInv.value = tipoBoton;
+        inventarioForm.submit();
     }
 
-    if (btnExcelInv) {
-        btnExcelInv.addEventListener('click', function() {
-            const gerencia = document.getElementById('GerenciaID_inventario').value;
-            if (!gerencia) {
-                alert('Por favor selecciona una Gerencia');
-                return;
-            }
-            submitInv.value = 'excel';
-            inventarioForm.submit();
-        });
+    function bindOnce(el, event, handler) {
+        if (!el || el.dataset.bound === '1') return;
+        el.dataset.bound = '1';
+        el.addEventListener(event, handler);
     }
-});
+
+    function initPresupuestoPage() {
+        bindOnce(document.getElementById('btn-validar-pdf'), 'click', function () { validarYEnviar('pdf'); });
+        bindOnce(document.getElementById('btn-validar-excel'), 'click', function () { validarYEnviar('excel'); });
+        bindOnce(document.getElementById('btn-pdf-inventario'), 'click', function () { enviarInventario('pdf'); });
+        bindOnce(document.getElementById('btn-excel-inventario'), 'click', function () { enviarInventario('excel'); });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPresupuestoPage);
+    } else {
+        initPresupuestoPage();
+    }
+})();
 </script>
 @endsection
