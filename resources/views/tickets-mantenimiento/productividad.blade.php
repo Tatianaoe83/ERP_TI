@@ -462,14 +462,23 @@ function inicializarGraficasMantenimiento() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            const tab = document.getElementById('productividad-mantenimiento-tab');
+            if (tab && !tab.hidden) {
+                inicializarGraficasMantenimiento();
+            }
+        }, 300);
+    });
+} else {
     setTimeout(() => {
         const tab = document.getElementById('productividad-mantenimiento-tab');
         if (tab && !tab.hidden) {
             inicializarGraficasMantenimiento();
         }
-    }, 300);
-});
+    }, 80);
+}
 
 const observerDarkModeMant = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {

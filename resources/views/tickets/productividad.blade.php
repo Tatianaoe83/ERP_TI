@@ -2843,7 +2843,11 @@
     }
 
     // Intentar inicializar cuando el DOM esté listo
-    document.addEventListener('DOMContentLoaded', function () {
+    function appOnReadyProd(fn) {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+        else fn();
+    }
+    appOnReadyProd(function () {
         let intentos = 0;
         const maxIntentos = 10;
 
@@ -2859,7 +2863,7 @@
 
     // Observar cuando el tab cambie (debounce: evita destruir Chart.js al mover el tooltip o al reconciliar Alpine)
     let prodTabMutDebounce = null;
-    document.addEventListener('DOMContentLoaded', function () {
+    appOnReadyProd(function () {
         const container = document.querySelector('[x-data*="tab"]');
         if (container) {
             const observer = new MutationObserver(function () {

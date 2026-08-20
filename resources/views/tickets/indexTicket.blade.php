@@ -4598,7 +4598,11 @@
     };
     window.loadTertipos = null;
    
-    document.addEventListener('DOMContentLoaded', function() {
+    function appOnReadyTicket(fn) {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+        else fn();
+    }
+    appOnReadyTicket(function() {
         const tipoSelect = document.getElementById('tipo-select');
         const subtipoSelect = document.getElementById('subtipo-select');
         const tertipoSelect = document.getElementById('tertipo-select');

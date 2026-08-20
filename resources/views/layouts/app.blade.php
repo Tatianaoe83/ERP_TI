@@ -35,6 +35,33 @@
             color: #fff !important;
         }
 
+        #app-topbar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 80;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        #app-topbar.is-on {
+            opacity: 1;
+        }
+        #app-topbar > span {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: #101D49;
+            box-shadow: 0 0 10px rgba(16, 29, 73, 0.35);
+            transition: width 0.2s ease-out;
+        }
+        .dark #app-topbar > span {
+            background: #60a5fa;
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.45);
+        }
+
         a.app-tabs__btn {
             text-decoration: none;
         }
@@ -518,6 +545,7 @@
 </head>
 
 <body class="bg-gray-100 dark:bg-[#0F1116] text-gray-800 dark:text-gray-200 transition-colors duration-500 ease-in-out">
+    <div id="app-topbar" aria-hidden="true"><span></span></div>
     @livewireScripts
     <div id="app" class="h-screen flex flex-col overflow-hidden">
         <nav class="shrink-0 bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
@@ -534,7 +562,7 @@
                 @include('layouts.sidebar')
             </aside>
 
-            <main class="flex-1 min-w-0 overflow-y-auto p-3 md:p-6 dark:bg-[#101010] w-full lg:w-auto py-1">
+            <main id="app-main" class="flex-1 min-w-0 overflow-y-auto p-3 md:p-6 dark:bg-[#101010] w-full lg:w-auto py-1">
                 @yield('content')
             </main>
         </div>
@@ -543,6 +571,7 @@
         </footer> -->
     </div>
 
+    <div id="app-shell-extras">
     @include('profile.change_password')
     @include('profile.edit_profile')
     @include('partials.modal-detalle-solicitud')
@@ -563,12 +592,7 @@
             @include('partials.modal-mantenimiento')
         </div>
     @endunless
-
-
-
-
-</body>
-
+</div>
 
 <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
 <script src="{{ asset('assets/js/jquery.nicescroll.js') }}"></script>
@@ -577,19 +601,18 @@
 <script src="{{ asset('assets/js/sweetalert.min.js') }}"></script>
 <script src="{{ asset('assets/js/iziToast.min.js') }}"></script>
 <script src="{{ asset('assets/js/select2.min.js') }}"></script>
-
-
-<!-- Template JS File -->
 <script src="{{ asset('web/js/stisla.js') }}"></script>
 <script src="{{ asset('web/js/scripts.js') }}"></script>
 <script src="{{ mix('assets/js/profile.js') }}"></script>
 <script src="{{ mix('assets/js/custom/custom.js') }}"></script>
 <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
 
+<div id="app-page-scripts">
 @stack('third_party_scripts')
-
-
 @yield('scripts')
+</div>
+
+</body>
 
 <script type="text/javascript">
     $(function() {
@@ -864,6 +887,252 @@
             skipEmit: false
         });
     });
+
+    window.AppTopbar = (function () {
+        var bar = document.getElementById('app-topbar');
+        var fill = bar ? bar.querySelector('span') : null;
+        var timer = null;
+        var value = 0;
+
+        function setWidth(pct) {
+            value = pct;
+            if (fill) fill.style.width = pct + '%';
+        }
+
+        return {
+            start: function () {
+                if (!bar || !fill) return;
+                clearInterval(timer);
+                fill.style.transition = '';
+                bar.classList.add('is-on');
+                setWidth(12);
+                timer = setInterval(function () {
+                    if (value >= 82) return;
+                    setWidth(value + Math.max(0.6, (82 - value) * 0.08));
+                }, 180);
+            },
+            done: function () {
+                if (!bar || !fill) return;
+                clearInterval(timer);
+                setWidth(100);
+                setTimeout(function () {
+                    bar.classList.remove('is-on');
+                    fill.style.transition = 'none';
+                    setWidth(0);
+                    requestAnimationFrame(function () {
+                        fill.style.transition = '';
+                    });
+                }, 220);
+            }
+        };
+    })();
+
+    window.AppNav = (function () {
+        var loading = false;
+
+        function shouldIgnore(anchor, event) {
+            if (!anchor || !anchor.getAttribute('href')) return true;
+            if (anchor.target && anchor.target !== '_self') return true;
+            if (anchor.hasAttribute('download')) return true;
+            if (anchor.dataset.fullLoad === '1') return true;
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return true;
+            if (event.button && event.button !== 0) return true;
+            var href = anchor.getAttribute('href');
+            if (href.charAt(0) === '#' || href.indexOf('javascript:') === 0 || href.indexOf('mailto:') === 0 || href.indexOf('tel:') === 0) return true;
+            if (/\.(pdf|xlsx|xls|csv|zip|docx?|png|jpe?g|gif)(\?|$)/i.test(href)) return true;
+            return false;
+        }
+
+        function isJsScript(el) {
+            var type = (el.getAttribute('type') || 'text/javascript').toLowerCase();
+            return type === '' ||
+                type === 'text/javascript' ||
+                type === 'application/javascript' ||
+                type === 'module';
+        }
+
+        function scriptAlreadyLoaded(src) {
+            return Array.prototype.some.call(document.scripts, function (s) {
+                return s.src === src;
+            });
+        }
+
+        function runScripts(root) {
+            if (!root) return Promise.resolve();
+            var scripts = Array.prototype.slice.call(root.querySelectorAll('script'));
+            return scripts.reduce(function (chain, old) {
+                return chain.then(function () {
+                    try {
+                        if (!isJsScript(old)) return;
+                        if (old.src) {
+                            if (scriptAlreadyLoaded(old.src)) {
+                                old.remove();
+                                return;
+                            }
+                            return new Promise(function (resolve) {
+                                var s = document.createElement('script');
+                                s.src = old.src;
+                                s.onload = s.onerror = resolve;
+                                document.body.appendChild(s);
+                                old.remove();
+                            });
+                        }
+                        var code = old.textContent || '';
+                        if (!code.trim()) return;
+                        if (code.indexOf('function ticketsModal') !== -1 && typeof window.ticketsModal === 'function') {
+                            old.remove();
+                            return;
+                        }
+                        if (code.indexOf('function mantenimientoModal') !== -1 && typeof window.mantenimientoModal === 'function') {
+                            old.remove();
+                            return;
+                        }
+                        var s = document.createElement('script');
+                        s.textContent = code;
+                        if (old.parentNode) old.parentNode.replaceChild(s, old);
+                        else old.remove();
+                    } catch (err) {
+                        try { old.remove(); } catch (e2) {}
+                    }
+                });
+            }, Promise.resolve());
+        }
+
+        function restoreSidebarCollapsed() {
+            var sidebar = document.getElementById('sidebar');
+            var toggleIcon = document.getElementById('sidebar-toggle-icon');
+            if (!sidebar) return;
+            var collapsed = false;
+            try { collapsed = localStorage.getItem('sidebarCollapsed') === 'true'; } catch (e) {}
+            if (collapsed && window.innerWidth >= 1024) {
+                sidebar.classList.add('sidebar-collapsed');
+                sidebar.classList.remove('lg:w-[260px]');
+                sidebar.classList.add('lg:w-[80px]');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-left');
+                    toggleIcon.classList.add('fa-chevron-right');
+                }
+            }
+        }
+
+        function bootPage(roots) {
+            roots.forEach(function (root) {
+                if (!root || !window.Alpine || typeof Alpine.initTree !== 'function') return;
+                try { Alpine.initTree(root); } catch (e) {}
+            });
+            var sidebar = document.getElementById('sidebar');
+            if (sidebar && window.Alpine && typeof Alpine.initTree === 'function') {
+                try { Alpine.initTree(sidebar); } catch (e) {}
+            }
+            if (window.Livewire && typeof Livewire.restart === 'function') {
+                try { Livewire.restart(); } catch (e) {}
+            }
+            if (window.AppVistas) {
+                document.querySelectorAll('[data-vista-root]').forEach(function (root) {
+                    var key = root.getAttribute('data-vista-storage');
+                    var saved = null;
+                    try { saved = key ? localStorage.getItem(key) : null; } catch (err) {}
+                    window.AppVistas.show(root, saved || 'kanban', {
+                        skipStorage: true,
+                        skipEmit: false
+                    });
+                });
+            }
+            if (window.jQuery) {
+                try { window.jQuery('.jz').select2(); } catch (e) {}
+            }
+            restoreSidebarCollapsed();
+            setTimeout(function () {
+                if (typeof inicializarGraficas === 'function') inicializarGraficas();
+                if (typeof inicializarGraficasEmpleados === 'function') inicializarGraficasEmpleados();
+                if (typeof inicializarGraficasMantenimiento === 'function') inicializarGraficasMantenimiento();
+            }, 80);
+        }
+
+        function copySection(doc, id) {
+            var cur = document.getElementById(id);
+            var next = doc.getElementById(id);
+            if (!cur || !next) return null;
+            cur.innerHTML = next.innerHTML;
+            return cur;
+        }
+
+        function swapPage(html, href, push) {
+            var doc = new DOMParser().parseFromString(html, 'text/html');
+            var main = document.getElementById('app-main');
+            var nextMain = doc.getElementById('app-main') || doc.querySelector('main');
+            if (!main || !nextMain) {
+                throw new Error('sin-main');
+            }
+            if (typeof destruirGraficasProductividad === 'function') {
+                try { destruirGraficasProductividad(); } catch (e) {}
+            }
+            if (typeof destruirGraficasMantenimiento === 'function') {
+                try { destruirGraficasMantenimiento(); } catch (e) {}
+            }
+
+            main.innerHTML = nextMain.innerHTML;
+            copySection(doc, 'sidebar');
+            var extras = copySection(doc, 'app-shell-extras');
+            var pageScripts = copySection(doc, 'app-page-scripts');
+
+            var csrf = doc.querySelector('meta[name="csrf-token"]');
+            var currentCsrf = document.querySelector('meta[name="csrf-token"]');
+            if (csrf && currentCsrf) currentCsrf.setAttribute('content', csrf.getAttribute('content'));
+            document.title = doc.title || document.title;
+            if (push) history.pushState({ appNav: true }, '', href);
+
+            var chain = runScripts(main);
+            if (extras) chain = chain.then(function () { return runScripts(extras); });
+            if (pageScripts) chain = chain.then(function () { return runScripts(pageScripts); });
+            return chain.then(function () { bootPage([main, extras]); });
+        }
+
+        function visit(href, push) {
+            if (loading) return;
+            loading = true;
+            window.AppTopbar.start();
+            fetch(href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html'
+                },
+                credentials: 'same-origin'
+            }).then(function (res) {
+                if (!res.ok) throw new Error('http ' + res.status);
+                return res.text();
+            }).then(function (html) {
+                return swapPage(html, href, push);
+            }).catch(function (err) {
+                console.warn('AppNav', err);
+            }).then(function () {
+                loading = false;
+                window.AppTopbar.done();
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            var anchor = event.target.closest('a[href]');
+            if (shouldIgnore(anchor, event)) return;
+            var url;
+            try { url = new URL(anchor.href, window.location.href); } catch (e) { return; }
+            if (url.origin !== window.location.origin) return;
+            if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            if (window.innerWidth < 1024 && anchor.closest('#sidebar')) {
+                try { toggleMobileMenu(); } catch (e) {}
+            }
+            visit(url.href, true);
+        }, true);
+
+        window.addEventListener('popstate', function () {
+            visit(window.location.href, false);
+        });
+
+        return { visit: visit };
+    })();
 
 </script>
 <script src="{{ asset('vendor/alpine/collapse.min.js') }}"></script>
