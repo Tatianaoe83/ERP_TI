@@ -371,6 +371,17 @@
         color: #0f172a;
     }
 
+    /* Tres modalidades sólo en equipos (stock / presupuestado / propio). */
+    .inv-segment-3 {
+        grid-template-columns: 1fr 1fr 1fr !important;
+    }
+
+    @media (max-width: 575.98px) {
+        .inv-segment-3 {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
     .inv-segment {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -405,6 +416,11 @@
         color: #fff;
     }
 
+    .inv-segment .inv-modo-card.is-active[data-value="2"] {
+        background: #1d4ed8;
+        color: #fff;
+    }
+
     .inv-segment .inv-modo-card.is-active .modo-title,
     .inv-segment .inv-modo-card.is-active i {
         color: #fff !important;
@@ -432,6 +448,14 @@
         background: #f5f3ff;
         color: #5b21b6;
         border: 1px solid #ddd6fe;
+    }
+
+    .inv-modo-hint.propio {
+        display: flex;
+        gap: 0.5rem;
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
     }
 
     .inv-form-label {

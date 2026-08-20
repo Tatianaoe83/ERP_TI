@@ -27,6 +27,7 @@ use DB;
 use PDF;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Validator;
 
 class InventarioController extends AppBaseController
 {
@@ -343,8 +344,12 @@ class InventarioController extends AppBaseController
             return $respuesta;
         }
 
+        if ($respuesta = $this->validarEquipo($request)) {
+            return $respuesta;
+        }
+
         // Validar unicidad del Folio (excluyendo el registro actual)
-        $folio = trim($request->Folio);
+        $folio = trim((string) $request->Folio);
         if ($folio) {
             $folioExistente = InventarioEquipo::where('Folio', $folio)
                 ->where('InventarioID', '!=', $id)
@@ -358,13 +363,20 @@ class InventarioController extends AppBaseController
             }
         }
 
-        $data = $request->all();
+        $data = $this->normalizarDatosEquipo($request->all());
 
-        $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
+        $gerencianombre = Gerencia::where('GerenciaID', $request->GerenciaEquipoID)->value('NombreGerencia');
 
-        $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+        if (!$gerencianombre) {
+            return response()->json([
+                'success' => false,
+                'errors'  => ['GerenciaEquipoID' => ['Debe seleccionar una gerencia válida']],
+            ], 422);
+        }
 
-        $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID);
+        $data['GerenciaEquipo'] = $gerencianombre;
+
+        $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID, 'tipoEquipo');
 
         $inventarioEquipo->update($data);
 
@@ -374,14 +386,85 @@ class InventarioController extends AppBaseController
         ]);
     }
 
+    /**
+     * Validación de alta/edición de equipo.
+     *
+     * Un equipo propio (tipoEquipo = 2) es del empleado, no de la empresa: no tiene
+     * costo, ni folio interno, ni fecha de compra ni mes de pago, así que esos cuatro
+     * campos dejan de ser obligatorios. El resto se sigue exigiendo igual.
+     *
+     * @return \Illuminate\Http\JsonResponse|null  null si todo está bien.
+     */
+    private function validarEquipo(Request $request)
+    {
+        $esPropio = (int) $request->input('tipoEquipo', 0) === InventarioEquipo::TIPO_PROPIO;
+        $obligatorioSalvoPropio = $esPropio ? 'nullable' : 'required';
+
+        $validador = Validator::make($request->all(), [
+            'CategoriaEquipo'  => ['required', 'string', 'max:150'],
+            'Marca'            => ['required', 'string', 'max:150'],
+            'Caracteristicas'  => ['required', 'string', 'max:255'],
+            'Modelo'           => ['required', 'string', 'max:100'],
+            'NumSerie'         => ['required', 'string', 'max:100'],
+            'FechaAsignacion'  => ['required', 'date'],
+            'GerenciaEquipoID' => ['required', 'integer'],
+            'Comentarios'      => ['nullable', 'string', 'max:400'],
+            'tipoEquipo'       => ['nullable', 'integer', 'in:0,1,2'],
+
+            'Precio'           => [$obligatorioSalvoPropio, 'numeric', 'min:0'],
+            'Folio'            => [$obligatorioSalvoPropio, 'string', 'max:50'],
+            'FechaDeCompra'    => [$obligatorioSalvoPropio, 'date'],
+            'MesDePago'        => ['nullable', 'string', 'max:20'],
+        ], [
+            'required' => 'Este campo es requerido',
+            'numeric'  => 'Debe ser un número',
+            'date'     => 'Debe ser una fecha válida',
+        ]);
+
+        if ($validador->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors'  => $validador->errors(),
+            ], 422);
+        }
+
+        return null;
+    }
+
+    /**
+     * Rellena lo que el equipo propio deja vacío: Precio y Folio son NOT NULL en BD,
+     * y las fechas/mes vacíos deben guardarse como NULL, no como cadena vacía.
+     */
+    private function normalizarDatosEquipo(array $data): array
+    {
+        if ((int) ($data['tipoEquipo'] ?? 0) === InventarioEquipo::TIPO_PROPIO) {
+            // Laravel convierte los campos vacíos del formulario en null, así que hay
+            // que cubrir ambos casos: Precio y Folio son NOT NULL en la tabla.
+            $data['Precio'] = in_array($data['Precio'] ?? null, [null, ''], true) ? 0 : $data['Precio'];
+            $data['Folio']  = trim((string) ($data['Folio'] ?? ''));
+        }
+
+        foreach (['FechaDeCompra', 'MesDePago', 'FechaAsignacion'] as $campo) {
+            if (array_key_exists($campo, $data) && $data[$campo] === '') {
+                $data[$campo] = null;
+            }
+        }
+
+        return $data;
+    }
+
     public function crearequipo($id, Request $request)
     {
         if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $id)) {
             return $respuesta;
         }
 
+        if ($respuesta = $this->validarEquipo($request)) {
+            return $respuesta;
+        }
+
         // Validar unicidad del Folio
-        $folio = trim($request->Folio);
+        $folio = trim((string) $request->Folio);
         if ($folio) {
             $folioExistente = InventarioEquipo::where('Folio', $folio)->exists();
             if ($folioExistente) {
@@ -392,14 +475,21 @@ class InventarioController extends AppBaseController
             }
         }
 
-        $data = $request->all();
+        $data = $this->normalizarDatosEquipo($request->all());
         $data['EmpleadoID'] = $id;
 
-        $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
+        $gerencianombre = Gerencia::where('GerenciaID', $request->GerenciaEquipoID)->value('NombreGerencia');
 
-        $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+        if (!$gerencianombre) {
+            return response()->json([
+                'success' => false,
+                'errors'  => ['GerenciaEquipoID' => ['Debe seleccionar una gerencia válida']],
+            ], 422);
+        }
 
-        $data = $this->forzarPresupuestado($data, (int) $id);
+        $data['GerenciaEquipo'] = $gerencianombre;
+
+        $data = $this->forzarPresupuestado($data, (int) $id, 'tipoEquipo');
 
         $inventarioEquipo = InventarioEquipo::create($data);
 
@@ -811,7 +901,7 @@ class InventarioController extends AppBaseController
                 $equipo->EmpleadoID = $empleadoSeleccionado;
                 $equipo->FechaAsignacion = $hoy;
                 if ($destinoExtraordinario) {
-                    $equipo->Presupuestado = 1;
+                    $equipo->tipoEquipo = InventarioEquipo::TIPO_PRESUPUESTADO;
                 }
                 $equipo->save();
             }
@@ -1152,17 +1242,24 @@ class InventarioController extends AppBaseController
             return back();
         }
 
-        $aplicarFiltro = function ($query) use ($filtro) {
+        // Los equipos usan "tipoEquipo" (0 stock, 1 presupuestado, 2 propio); insumos y
+        // líneas siguen con el booleano "Presupuestado". El propio cuenta como stock.
+        $aplicarFiltro = function ($query, string $columna = 'Presupuestado') use ($filtro) {
             if ($filtro === 'presupuestados') {
-                $query->where('Presupuestado', 1);
+                $query->where($columna, 1);
             } elseif ($filtro === 'no_presupuestados') {
-                $query->where(function ($q) {
-                    $q->where('Presupuestado', 0)->orWhereNull('Presupuestado');
+                $query->where(function ($q) use ($columna) {
+                    $q->where($columna, '!=', 1)->orWhereNull($columna);
                 });
             }
 
             return $query;
         };
+
+        $etiquetaTipoEquipo = fn($valor) => [
+            InventarioEquipo::TIPO_PRESUPUESTADO => 'Si',
+            InventarioEquipo::TIPO_PROPIO        => 'Propio',
+        ][(int) $valor] ?? 'No';
 
         $siNo = fn($valor) => $valor ? 'Si' : 'No';
         $fecha = fn($valor) => (empty($valor) || in_array($valor, ['Sin asignar', 'Sin asigna', '0000-00-00']))
@@ -1174,11 +1271,11 @@ class InventarioController extends AppBaseController
         $incluirPresupuestado = $filtro === 'todos';
 
         if ($tipo === 'equipos') {
-            $registros = $aplicarFiltro(InventarioEquipo::where('EmpleadoID', $id))->get();
+            $registros = $aplicarFiltro(InventarioEquipo::where('EmpleadoID', $id), 'tipoEquipo')->get();
 
             $encabezados = ['Categoria', 'Marca', 'Caracteristicas', 'Modelo', 'Precio', 'Fecha Asignacion', 'Fecha de Compra', 'Num. Serie', 'Folio', 'Gerencia Equipo', 'Comentarios', 'Mes de pago'];
 
-            $filas = $registros->map(function ($e) use ($fecha, $siNo, $incluirPresupuestado) {
+            $filas = $registros->map(function ($e) use ($fecha, $etiquetaTipoEquipo, $incluirPresupuestado) {
                 $fila = [
                     $e->CategoriaEquipo,
                     $e->Marca,
@@ -1195,7 +1292,7 @@ class InventarioController extends AppBaseController
                 ];
 
                 if ($incluirPresupuestado) {
-                    $fila[] = $siNo($e->Presupuestado);
+                    $fila[] = $etiquetaTipoEquipo($e->tipoEquipo);
                 }
 
                 return $fila;
@@ -1264,7 +1361,7 @@ class InventarioController extends AppBaseController
         }
 
         if ($incluirPresupuestado) {
-            $encabezados[] = 'Presupuestado';
+            $encabezados[] = $tipo === 'equipos' ? 'Tipo de equipo' : 'Presupuestado';
         }
 
         $etiquetaFiltro = [
@@ -1287,12 +1384,12 @@ class InventarioController extends AppBaseController
      * presupuestado, sin importar lo que llegue del formulario. El switch manual
      * sólo existe para personas FISICA.
      */
-    private function forzarPresupuestado(array $data, int $empleadoId): array
+    private function forzarPresupuestado(array $data, int $empleadoId, string $columna = 'Presupuestado'): array
     {
         $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
 
         if ($tipoPersona === 'EXTRAORDINARIO') {
-            $data['Presupuestado'] = 1;
+            $data[$columna] = 1;
         }
 
         return $data;

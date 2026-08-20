@@ -916,7 +916,6 @@
         </div>
     </div>
     @endif
-</div>
 
 <script>
     /* ── Dropdown de Insumos: vanilla JS, un solo panel flotante compartido ── */
@@ -1173,3 +1172,4 @@
         });
     });
 </script>
+</div>

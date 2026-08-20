@@ -55,6 +55,13 @@
         border: 1px solid #fdba74;
     }
 
+    /* Equipo propiedad del empleado: cuenta como stock, pero se distingue a simple vista. */
+    .inv-chip-propio {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
     .inv-leyenda {
         display: flex;
         flex-wrap: wrap;
@@ -215,6 +222,12 @@
         border-color: #f97316;
         background: #fff7ed;
         box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
+    }
+
+    .inv-modo-card.is-active[data-value="2"] {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
     }
 
     .inv-modo-card .modo-title {

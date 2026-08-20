@@ -109,7 +109,7 @@
             </div>
 
             <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-6 equipo-solo-empresa">
                 <div class="dark:text-white">
                   <label>Precio</label>
                   <input type="number" class="form-control" id="editPrecio" required min="1" step="1" pattern="\d*" readonly>
@@ -125,7 +125,7 @@
             </div>
 
             <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-6 equipo-solo-empresa">
                 <div class="dark:text-white">
                   <label>Fecha de Compra</label>
                   <input type="date" class="form-control" id="editFechaDeCompra" required>
@@ -139,7 +139,7 @@
               </div>
             </div>
 
-            <div class="row">
+            <div class="row equipo-solo-empresa">
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Folio</label>
@@ -188,9 +188,10 @@
                 @include('inventarios.partials.presupuestado-captura', [
                     'switchId' => 'editPresupuestadoEquipo',
                     'presupuestadoForzado' => $presupuestadoForzado,
+                    'permitePropio' => true,
                 ])
               </div>
-              <div class="col-md-6 mt-3">
+              <div class="col-md-6 mt-3 equipo-solo-empresa">
                 <div class="dark:text-white">
                   <label>Mes de pago <span class="text-muted small">(recomendado si es Extra)</span></label>
                   <select class="form-select" id="editMesDePagoEquipo" name="MesDePago">

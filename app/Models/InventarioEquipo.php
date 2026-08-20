@@ -39,13 +39,24 @@ class InventarioEquipo extends Model implements Auditable
         'GerenciaEquipo',
         'Comentarios',
         'FechaDeCompra',
-        'Presupuestado',
+        'tipoEquipo',
         'MesDePago'
     ];
 
     protected $casts = [
-        'Presupuestado' => 'boolean',
+        'tipoEquipo' => 'integer',
     ];
+
+    /** Modalidades de la columna tipoEquipo. */
+    public const TIPO_NO_PRESUPUESTADO = 0;
+    public const TIPO_PRESUPUESTADO    = 1;
+    public const TIPO_PROPIO           = 2;
+
+    /**
+     * Los equipos propios se listan junto a los no presupuestados: ambos son
+     * inventario actual, sólo el presupuestado (1) es proyección futura.
+     */
+    public const TIPOS_STOCK = [self::TIPO_NO_PRESUPUESTADO, self::TIPO_PROPIO];
 
     public function empleados()
     {

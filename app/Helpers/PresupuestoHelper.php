@@ -24,7 +24,16 @@ class PresupuestoHelper
     // Diferenciador de reporte de presupuesto e inventario 
     private static function soloPresupuestados($query, string $modo)
     {
-        return $query->where('Presupuestado', $modo === 'presupuesto' ? 1 : 0);
+        // inventarioequipo migró a "tipoEquipo" (0 stock, 1 presupuestado, 2 propio);
+        // insumos y líneas siguen con el booleano "Presupuestado".
+        $columna = $query->getModel()->getTable() === 'inventarioequipo'
+            ? 'tipoEquipo'
+            : 'Presupuestado';
+
+        // El equipo propio no es presupuesto: cuenta como inventario actual, igual que el 0.
+        return $modo === 'presupuesto'
+            ? $query->where($columna, 1)
+            : $query->where($columna, '!=', 1);
     }
 
     // Filtro de tipos de persona para tipo de reporte

@@ -3,8 +3,10 @@
     $permitePresupuestado = $permitePresupuestado ?? false;
     $presupuestadoForzado = $presupuestadoForzado ?? false;
 
-    $equiposStock = collect($equiposAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
-    $equiposExtra = collect($equiposAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
+    // Equipos: tipoEquipo 0 = stock, 1 = presupuestado, 2 = propio. El propio se lista
+    // junto al stock porque también es inventario actual.
+    $equiposStock = collect($equiposAsignados)->filter(fn ($e) => (int) ($e->tipoEquipo ?? 0) !== 1);
+    $equiposExtra = collect($equiposAsignados)->filter(fn ($e) => (int) ($e->tipoEquipo ?? 0) === 1);
     $insumosStock = collect($insumosAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
     $insumosExtra = collect($insumosAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
     $lineasStock = collect($LineasAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
@@ -223,9 +225,11 @@
                             <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
                             <td>{{ $equiposAsignado->Comentarios }}</td>
                             @if($permitePresupuestado)
-                            <td>{!! $equiposAsignado->Presupuestado
-                                ? '<span class="inv-chip inv-chip-extra">Extra</span>'
-                                : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
+                            <td>{!! [
+                                    1 => '<span class="inv-chip inv-chip-extra">Extra</span>',
+                                    2 => '<span class="inv-chip inv-chip-propio">Propio</span>',
+                                ][(int) ($equiposAsignado->tipoEquipo ?? 0)]
+                                ?? '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
                             <td>@if($equiposAsignado->MesDePago)<span class="inv-mes-pill">{{ $equiposAsignado->MesDePago }}</span>@endif</td>
                             @endif
                         </tr>
@@ -773,49 +777,117 @@
             : '<span class="inv-chip inv-chip-stock">Stock</span>';
     }
 
+    // Equipos: 0 = stock, 1 = presupuestado (extra), 2 = propio del empleado.
+    function htmlChipTipoEquipo(valor) {
+        const v = String(valor ?? '0');
+        if (v === '1') return '<span class="inv-chip inv-chip-extra">Extra</span>';
+        if (v === '2') return '<span class="inv-chip inv-chip-propio">Propio</span>';
+        return '<span class="inv-chip inv-chip-stock">Stock</span>';
+    }
+
     function textoCeldaEsExtra(texto) {
         const v = String(texto ?? '').trim().toLowerCase();
         return v === 'si' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1;
     }
 
-    function syncModoCards(selector, marcado) {
+    // Traduce el texto de la celda (o un valor crudo) a la modalidad 0 / 1 / 2.
+    function valorModoDesdeTexto(texto) {
+        const v = String(texto ?? '').trim().toLowerCase();
+        if (v === '2' || v.indexOf('propio') !== -1) return '2';
+        return textoCeldaEsExtra(v) ? '1' : '0';
+    }
+
+    function syncModoCards(selector, valor) {
         const $wrap = $('[data-switch="' + selector + '"]');
         if (!$wrap.length) return;
+        const v = String(valor ?? '0');
         $wrap.find('.inv-modo-card').removeClass('is-active');
-        $wrap.find('.inv-modo-card[data-value="' + (marcado ? '1' : '0') + '"]').addClass('is-active');
+        $wrap.find('.inv-modo-card[data-value="' + v + '"]').addClass('is-active');
 
         const sid = selector.replace(/^#/, '');
+        const hint = v === '1' ? 'extra' : (v === '2' ? 'propio' : 'stock');
         $('[data-hint-for="' + sid + '"]').hide();
-        $('[data-hint-for="' + sid + '"].' + (marcado ? 'extra' : 'stock')).css('display', 'flex');
+        $('[data-hint-for="' + sid + '"].' + hint).css('display', 'flex');
+    }
+
+    // Un equipo propio es del empleado: la empresa no le pone precio, folio, fecha de
+    // compra ni mes de pago. Esos cuatro campos se ocultan por completo y se guardan
+    // vacíos (ver guardarEquipo), no sólo dejan de ser obligatorios.
+    const camposOpcionalesEquipoPropio = ['#editPrecio', '#editFolio', '#editFechaDeCompra', '#editMesDePagoEquipo'];
+
+    function aplicarRequeridosEquipo(esPropio) {
+        // Los contenedores marcados en el modal desaparecen; el required se quita
+        // igual porque un input oculto y obligatorio bloquea la validación nativa.
+        $('.equipo-solo-empresa').toggle(!esPropio);
+
+        camposOpcionalesEquipoPropio.forEach(function(sel) {
+            const $campo = $(sel);
+            if (!$campo.length) return;
+
+            // Se recuerda el estado del HTML para no volver obligatorio lo que nunca lo fue.
+            if ($campo.data('requeridoOriginal') === undefined) {
+                $campo.data('requeridoOriginal', $campo.prop('required'));
+            }
+
+            const requerido = !esPropio && $campo.data('requeridoOriginal') === true;
+            $campo.prop('required', requerido);
+
+            if (!requerido) {
+                $campo.removeClass('is-invalid');
+            }
+        });
+
+        // Folio oculto: no hay duplicado que revisar.
+        if (esPropio) {
+            folioValido = true;
+            $('#editFolio').removeClass('is-invalid is-valid');
+        }
+    }
+
+    // Fuente de verdad del modo: el hidden #<switchId>Valor. El checkbox se conserva
+    // sólo por compatibilidad con el resto del formulario (etiqueta Si/No).
+    function aplicarValorModo(selector, valor) {
+        const v = presupuestadoForzado ? '1' : String(valor ?? '0');
+        $(selector + 'Valor').val(v);
+        $(selector).prop('checked', v === '1');
+        $(selector + 'Label').text(v === '1' ? 'Si' : 'No');
+        syncModoCards(selector, v);
+
+        if (selector === '#editPresupuestadoEquipo') {
+            aplicarRequeridosEquipo(v === '2');
+        }
     }
 
     function setPresupuestado(selector, texto) {
-        const marcado = textoCeldaEsExtra(texto) || (presupuestadoForzado === true);
-        $(selector).prop('checked', marcado);
-        $(selector + 'Label').text(marcado ? 'Si' : 'No');
-        syncModoCards(selector, marcado);
+        aplicarValorModo(selector, valorModoDesdeTexto(texto));
     }
 
     function getPresupuestado(selector) {
+        return getModo(selector) === 1 ? 1 : 0;
+    }
+
+    // Valor completo (0/1/2) para equipos; insumos y líneas siguen usando getPresupuestado.
+    function getModo(selector) {
         if (presupuestadoForzado) {
             return 1;
         }
 
-        return permitePresupuestado && $(selector).is(':checked') ? 1 : 0;
+        if (!permitePresupuestado) {
+            return 0;
+        }
+
+        return parseInt($(selector + 'Valor').val() || '0', 10);
     }
 
     // Mantener la etiqueta del switch / cards en sync con su estado
     $(document).on('change', '.form-check-input[role="switch"]', function() {
-        $('#' + this.id + 'Label').text(this.checked ? 'Si' : 'No');
-        syncModoCards('#' + this.id, this.checked);
+        aplicarValorModo('#' + this.id, this.checked ? '1' : '0');
     });
 
     $(document).on('click', '.inv-modo-card:not(.is-locked)', function() {
         const $card = $(this);
         const selector = $card.closest('[data-switch]').data('switch');
-        const value = String($card.data('value')) === '1';
-        $(selector).prop('checked', value).trigger('change');
-        syncModoCards(selector, value);
+        aplicarValorModo(selector, String($card.data('value')));
     });
 
     function bloquearAccionInventarioInactivo() {
@@ -1278,9 +1350,16 @@
 
         let id = $('#editId').val();
         let id_E = $('#editEmp').val();
-        let folio = $('#editFolio').val().trim();
+        // En equipo propio el folio está oculto: se ignora lo que traiga el input.
+        let folio = getModo('#editPresupuestadoEquipo') === 2 ? '' : $('#editFolio').val().trim();
         let excluirId = id || null;
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Sin folio no hay nada que verificar: se guarda directo.
+        if (!folio) {
+            guardarEquipo(id, id_E, folio, csrfToken);
+            return;
+        }
 
         // Verificación final de unicidad del folio antes de enviar
         $.ajax({
@@ -1302,102 +1381,7 @@
                     return;
                 }
 
-                // Folio único: proceder con el guardado
-                let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
-                let method = id ? 'PUT' : 'POST';
-
-                let formData = {
-                    CategoriaEquipo: $('#editCategoria').val(),
-                    GerenciaEquipoID: $('#editGerenciaEquipo').val(),
-                    Marca: $('#editMarca').val(),
-                    Caracteristicas: $('#editCaracteristicas').val(),
-                    Modelo: $('#editModelo').val(),
-                    Precio: $('#editPrecio').val(),
-                    FechaAsignacion: $('#editFechaAsignacion').val(),
-                    NumSerie: $('#editNumSerie').val(),
-                    Folio: folio,
-                    FechaDeCompra: $('#editFechaDeCompra').val(),
-                    Comentarios: $('#editComentarios').val(),
-                    FechaRenovacion: $('#editFechaDeRenovacion').val(),
-                    Presupuestado: getPresupuestado('#editPresupuestadoEquipo'),
-                    MesDePago: $('#editMesDePagoEquipo').val(),
-                };
-
-                $.ajax({
-                    url: url,
-                    method: method,
-                    data: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    success: function(response) {
-                        if (response.errors) {
-                            // Mostrar errores de validación
-                            Object.keys(response.errors).forEach(field => {
-                                const input = $(`#edit${field}`);
-                                input.addClass('is-invalid');
-                                input.siblings('.invalid-feedback').text(response.errors[field][0]);
-                            });
-
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error de validación',
-                                text: 'Por favor revise los campos marcados en rojo',
-                                customClass: {
-                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
-                                }
-                            });
-                        } else {
-                            // Si la solicitud fue exitosa, actualizar la fila correspondiente o agregar una nueva
-                            Swal.fire({
-                                position: "top-end",
-                                icon: "success",
-                                title: "Datos del equipo guardados correctamente",
-                                showConfirmButton: false,
-                                timer: 1500,
-                                customClass: {
-                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
-                                }
-                            });
-
-                            // Actualizar o agregar la fila en la tabla
-                            if (id) {
-                                updateTableRow(response.equipo);
-                            } else {
-                                addNewRow(response.equipo);
-                            }
-
-                            $('#editModal').modal('hide');
-                        }
-                    },
-                    error: function(xhr) {
-                        // Manejar error 422 del backend (folio duplicado)
-                        if (xhr.status === 422) {
-                            let resp = xhr.responseJSON;
-                            if (resp && resp.errors && resp.errors.Folio) {
-                                $('#editFolio').addClass('is-invalid').focus();
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Folio duplicado',
-                                    text: resp.errors.Folio[0],
-                                    customClass: {
-                                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
-                                    }
-                                });
-                            }
-                        } else {
-                            console.error('Error:', xhr);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Ocurrió un error al guardar los datos',
-                                customClass: {
-                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
-                                }
-                            });
-                        }
-                    }
-                });
+                guardarEquipo(id, id_E, folio, csrfToken);
             },
             error: function() {
                 // Si falla la verificación, dejar pasar y que el backend valide
@@ -1405,6 +1389,117 @@
             }
         });
     });
+
+    // Mapa de campo del backend -> input del modal (no todos comparten nombre).
+    const inputPorCampoEquipo = {
+        CategoriaEquipo: '#editCategoria',
+        GerenciaEquipoID: '#editGerenciaEquipo',
+        MesDePago: '#editMesDePagoEquipo',
+    };
+
+    function marcarErroresEquipo(errores) {
+        Object.keys(errores).forEach(function(campo) {
+            const input = $(inputPorCampoEquipo[campo] || ('#edit' + campo));
+            input.addClass('is-invalid');
+            input.siblings('.invalid-feedback').text(errores[campo][0]);
+        });
+
+        const primero = Object.keys(errores)[0];
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de validación',
+            text: errores[primero][0] || 'Por favor revise los campos marcados en rojo',
+            customClass: {
+                popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+            }
+        });
+    }
+
+    function guardarEquipo(id, id_E, folio, csrfToken) {
+        let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
+        let method = id ? 'PUT' : 'POST';
+
+        const modo = getModo('#editPresupuestadoEquipo');
+        // Campos ocultos en equipo propio: se envían vacíos para no arrastrar el valor
+        // que quedó en el input al cambiar de modalidad.
+        const soloEmpresa = (valor) => modo === 2 ? '' : valor;
+
+        let formData = {
+            CategoriaEquipo: $('#editCategoria').val(),
+            GerenciaEquipoID: $('#editGerenciaEquipo').val(),
+            Marca: $('#editMarca').val(),
+            Caracteristicas: $('#editCaracteristicas').val(),
+            Modelo: $('#editModelo').val(),
+            Precio: soloEmpresa($('#editPrecio').val()),
+            FechaAsignacion: $('#editFechaAsignacion').val(),
+            NumSerie: $('#editNumSerie').val(),
+            Folio: folio,
+            FechaDeCompra: soloEmpresa($('#editFechaDeCompra').val()),
+            Comentarios: $('#editComentarios').val(),
+            FechaRenovacion: $('#editFechaDeRenovacion').val(),
+            tipoEquipo: modo,
+            MesDePago: soloEmpresa($('#editMesDePagoEquipo').val()),
+        };
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: formData,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
+            success: function(response) {
+                if (response.errors) {
+                    marcarErroresEquipo(response.errors);
+                    return;
+                }
+
+                Swal.fire({
+                    position: "top-end",
+                    icon: "success",
+                    title: "Datos del equipo guardados correctamente",
+                    showConfirmButton: false,
+                    timer: 1500,
+                    customClass: {
+                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                    }
+                });
+
+                // Actualizar o agregar la fila en la tabla
+                if (id) {
+                    updateTableRow(response.equipo);
+                } else {
+                    addNewRow(response.equipo);
+                }
+
+                $('#editModal').modal('hide');
+            },
+            error: function(xhr) {
+                const resp = xhr.responseJSON;
+
+                if (xhr.status === 422 && resp && resp.errors) {
+                    if (resp.errors.Folio) {
+                        $('#editFolio').focus();
+                        folioValido = false;
+                    }
+
+                    marcarErroresEquipo(resp.errors);
+                    return;
+                }
+
+                console.error('Error:', xhr);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al guardar los datos',
+                    customClass: {
+                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                    }
+                });
+            }
+        });
+    }
 
 
     // Helper para formatear fechas a dd/mm/yyyy o 'Sin asignar'
@@ -1448,7 +1543,7 @@
         row.find('td:eq(10)').text(equipo.GerenciaEquipo);
         row.find('td:eq(11)').text(equipo.Comentarios);
         if (permitePresupuestado) {
-            row.find('td:eq(12)').html(htmlChipPresupuestado(!!equipo.Presupuestado));
+            row.find('td:eq(12)').html(htmlChipTipoEquipo(equipo.tipoEquipo));
             row.find('td:eq(13)').text(equipo.MesDePago ?? '');
         }
         row.find('.edit-btn').data('id', equipo.InventarioID);
@@ -1484,7 +1579,7 @@
             <td>${equipo.Folio}</td>
             <td>${equipo.GerenciaEquipo}</td>
             <td>${equipo.Comentarios}</td>
-            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(!!equipo.Presupuestado)}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
+            ${permitePresupuestado ? `<td>${htmlChipTipoEquipo(equipo.tipoEquipo)}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
         </tr>
     `;
         $('#equiposAsignadosTable').DataTable().row.add($(newRow)).draw(false);
