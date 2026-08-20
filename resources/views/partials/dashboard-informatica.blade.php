@@ -1,60 +1,64 @@
-<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 mb-6">
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Líneas que puedes asignar</p>
-                <p class="dash-kpi__hint">Libres + referenciadas</p>
-                <p class="dash-kpi__value">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
+    <div class="space-y-4">
+        <div class="dash-kpi">
+            <div class="dash-kpi__top">
+                <div>
+                    <p class="dash-kpi__label">Líneas que puedes asignar</p>
+                    <p class="dash-kpi__hint">Libres + referenciadas</p>
+                    <p class="dash-kpi__value">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
+                </div>
+                <span class="dash-kpi__icon dash-kpi__icon--amber" aria-hidden="true">
+                    <i class="fas fa-phone"></i>
+                </span>
             </div>
-            <span class="dash-kpi__icon dash-kpi__icon--amber" aria-hidden="true">
-                <i class="fas fa-phone"></i>
-            </span>
+            <div class="dash-stat mt-4 flex items-center justify-between">
+                <span class="dash-stat__label">Asignadas a persona física</span>
+                <span class="dash-stat__value" style="font-size:1.05rem;">{{ $stats['inventario']['lineas']['asignadas'] }}</span>
+            </div>
         </div>
-        <div class="dash-stat mt-4 flex items-center justify-between">
-            <span class="dash-stat__label">Asignadas a persona física</span>
-            <span class="dash-stat__value" style="font-size:1.05rem;">{{ $stats['inventario']['lineas']['asignadas'] }}</span>
+
+        <div class="dash-kpi">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="dash-stat text-center">
+                    <p class="dash-stat__label">Sin asignar</p>
+                    <p class="dash-stat__value">{{ $stats['inventario']['lineas']['libres'] }}</p>
+                </div>
+                <div class="dash-stat text-center">
+                    <p class="dash-stat__label">Referenciadas</p>
+                    <p class="dash-stat__value">{{ $stats['inventario']['lineas']['referenciados'] }}</p>
+                </div>
+            </div>
+            @if($stats['inventario']['lineas']['referenciados'] > 0)
+                <p class="dash-kpi__hint mt-3">Referenciadas = asignadas pero no a persona física</p>
+            @endif
         </div>
     </div>
 
-    <div class="dash-kpi">
-        <div class="dash-kpi__top">
-            <div>
-                <p class="dash-kpi__label">Total de empleados activos</p>
-                <p class="dash-kpi__value">{{ $stats['empleados']['activos'] }}</p>
-            </div>
-            <span class="dash-kpi__icon dash-kpi__icon--blue" aria-hidden="true">
-                <i class="fas fa-users"></i>
-            </span>
-        </div>
-    </div>
-
-    <div class="dash-kpi">
-        <div class="grid grid-cols-2 gap-3">
-            <div class="dash-stat text-center">
-                <p class="dash-stat__label">Sin asignar</p>
-                <p class="dash-stat__value">{{ $stats['inventario']['lineas']['libres'] }}</p>
-            </div>
-            <div class="dash-stat text-center">
-                <p class="dash-stat__label">Referenciadas</p>
-                <p class="dash-stat__value">{{ $stats['inventario']['lineas']['referenciados'] }}</p>
+    <div class="space-y-4">
+        <div class="dash-kpi">
+            <div class="dash-kpi__top">
+                <div>
+                    <p class="dash-kpi__label">Total de empleados activos</p>
+                    <p class="dash-kpi__value">{{ $stats['empleados']['activos'] }}</p>
+                </div>
+                <span class="dash-kpi__icon dash-kpi__icon--blue" aria-hidden="true">
+                    <i class="fas fa-users"></i>
+                </span>
             </div>
         </div>
-        @if($stats['inventario']['lineas']['referenciados'] > 0)
-            <p class="dash-kpi__hint mt-3">Referenciadas = asignadas pero no a persona física</p>
-        @endif
-    </div>
 
-    <div class="dash-kpi">
-        <p class="dash-kpi__label mb-3">Equipos asignados en inventario</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
-            <div class="dash-stat flex items-center justify-between gap-2">
-                <span class="dash-stat__name">{{ Str::limit($equipo->CategoriaEquipo, 18) }}</span>
-                <span class="dash-stat__value" style="font-size:1.1rem;">{{ $equipo->total_inventario }}</span>
+        <div class="dash-kpi">
+            <p class="dash-kpi__label mb-3">Equipos asignados en inventario</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
+                <div class="dash-stat flex items-center justify-between gap-2">
+                    <span class="dash-stat__name">{{ Str::limit($equipo->CategoriaEquipo, 18) }}</span>
+                    <span class="dash-stat__value" style="font-size:1.1rem;">{{ $equipo->total_inventario }}</span>
+                </div>
+                @empty
+                <p class="dash-kpi__hint col-span-3 text-center py-2">No hay equipos disponibles</p>
+                @endforelse
             </div>
-            @empty
-            <p class="dash-kpi__hint col-span-3 text-center py-2">No hay equipos disponibles</p>
-            @endforelse
         </div>
     </div>
 </div>
