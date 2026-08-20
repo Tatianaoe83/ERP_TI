@@ -5,8 +5,5 @@
     <div class="row crud-show">
         @include('categorias.show_fields')
     </div>
-    <div class="crud-page__actions">
-        <a href="{{ route('categorias.index') }}" class="crud-page__btn-ghost">Volver</a>
-    </div>
 </x-crud-page>
 @endsection

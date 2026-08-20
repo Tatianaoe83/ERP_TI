@@ -321,10 +321,6 @@
             </div>
 
             <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-                <a href="{{ route('reportes.index') }}" class="btn btn-outline-secondary d-flex align-items-center gap-2">
-                    <i class="fas fa-times"></i>
-                    Cancelar
-                </a>
                 <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2" id="btnPreview">
                     <i class="fas fa-eye"></i>
                     Vista Previa

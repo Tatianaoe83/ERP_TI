@@ -2,6 +2,24 @@
 
 @push('third_party_scripts')
 <script>
+function reiniciarSelect2FiltrosEmpleados() {
+    if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.select2 !== 'function') {
+        return;
+    }
+    jQuery('.jz1').each(function () {
+        var $el = jQuery(this);
+        if ($el.hasClass('select2-hidden-accessible')) {
+            try { $el.select2('destroy'); } catch (e) {}
+        }
+        $el.select2({
+            width: '100%',
+            placeholder: 'Seleccionar...',
+            allowClear: true,
+            dropdownParent: jQuery('body')
+        });
+    });
+}
+
 function cargarOpcionesFiltros() {
     $.ajax({
         url: '{{ route("empleados.filtros") }}',
@@ -40,12 +58,7 @@ function cargarOpcionesFiltros() {
                 });
             }
 
-            $('.jz1').select2('destroy').select2({
-                width: '100%',
-                placeholder: 'Seleccionar...',
-                allowClear: true,
-                dropdownParent: $('body')
-            });
+            reiniciarSelect2FiltrosEmpleados();
         },
         error: function() {
             cargarOpcionesFiltrosFallback();
@@ -54,6 +67,9 @@ function cargarOpcionesFiltros() {
 }
 
 function cargarOpcionesFiltrosFallback() {
+    if (!$.fn.DataTable || !$.fn.DataTable.isDataTable('#tabla-empleados')) {
+        return;
+    }
     var table = $('#tabla-empleados').DataTable();
 
     setTimeout(function() {
@@ -93,16 +109,14 @@ function cargarOpcionesFiltrosFallback() {
             }
         });
 
-        $('.jz1').select2('destroy').select2({
-            width: '100%',
-            placeholder: 'Seleccionar...',
-            allowClear: true,
-            dropdownParent: $('body')
-        });
+        reiniciarSelect2FiltrosEmpleados();
     }, 1000);
 }
 
 function configurarFiltros() {
+    if (!$.fn.DataTable || !$.fn.DataTable.isDataTable('#tabla-empleados')) {
+        return;
+    }
     var table = $('#tabla-empleados').DataTable();
 
     $('#limpiarFiltros').on('click', function() {

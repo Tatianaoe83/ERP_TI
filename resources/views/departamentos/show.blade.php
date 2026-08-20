@@ -77,9 +77,5 @@
             </div>
         @endif
     </div>
-
-    <div class="crud-page__actions">
-        <a href="{{ route('departamentos.index') }}" class="crud-page__btn-ghost">Volver</a>
-    </div>
 </x-crud-page>
 @endsection

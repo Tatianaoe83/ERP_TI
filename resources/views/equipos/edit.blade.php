@@ -35,7 +35,6 @@
 
     <div class="crud-page__actions">
         <button type="submit" class="index-page__btn-primary" id="btn-guardar">Guardar</button>
-        <a href="{{ route('equipos.index') }}" class="crud-page__btn-ghost">Cancelar</a>
     </div>
 
     {!! Form::close() !!}

@@ -650,10 +650,19 @@
 
         // Asegurar que Select2 tambi?n se inicialice correctamente
         $(document).ready(function() {
-            $('.jz').select2();
-            $('.jz1').select2({
-                dropdownParent: "#editModal",
-                width: '100%'
+            $('.jz').each(function () {
+                var $el = $(this);
+                if ($el.hasClass('select2-hidden-accessible')) return;
+                $el.select2();
+            });
+            $('.jz1').each(function () {
+                var $el = $(this);
+                if ($el.hasClass('select2-hidden-accessible')) return;
+                var opts = { width: '100%' };
+                if ($('#editModal').length) {
+                    opts.dropdownParent = $('#editModal');
+                }
+                $el.select2(opts);
             });
         });
 
@@ -930,6 +939,12 @@
     window.AppNav = (function () {
         var loading = false;
 
+        var executedSrc = Object.create(null);
+
+        Array.prototype.forEach.call(document.scripts, function (s) {
+            if (s.src) executedSrc[s.src] = true;
+        });
+
         function shouldIgnore(anchor, event) {
             if (!anchor || !anchor.getAttribute('href')) return true;
             if (anchor.target && anchor.target !== '_self') return true;
@@ -952,9 +967,24 @@
         }
 
         function scriptAlreadyLoaded(src) {
-            return Array.prototype.some.call(document.scripts, function (s) {
-                return s.src === src;
-            });
+            return !!executedSrc[src];
+        }
+
+        function skipVendorIfPresent(src) {
+            if (!src) return false;
+            if (/jquery\.dataTables(\.min)?\.js/i.test(src) && window.jQuery && jQuery.fn && typeof jQuery.fn.DataTable === 'function') {
+                return true;
+            }
+            if (/\/chart(\.umd)?(\.min)?\.js/i.test(src) && typeof window.Chart === 'function') {
+                return true;
+            }
+            if (/jquery\.min\.js/i.test(src) && window.jQuery) {
+                return true;
+            }
+            if (/select2(\.min)?\.js/i.test(src) && window.jQuery && jQuery.fn && jQuery.fn.select2) {
+                return true;
+            }
+            return false;
         }
 
         function runScripts(root) {
@@ -965,14 +995,19 @@
                     try {
                         if (!isJsScript(old)) return;
                         if (old.src) {
-                            if (scriptAlreadyLoaded(old.src)) {
+                            if (scriptAlreadyLoaded(old.src) || skipVendorIfPresent(old.src)) {
+                                executedSrc[old.src] = true;
                                 old.remove();
                                 return;
                             }
                             return new Promise(function (resolve) {
                                 var s = document.createElement('script');
                                 s.src = old.src;
-                                s.onload = s.onerror = resolve;
+                                s.onload = function () {
+                                    executedSrc[old.src] = true;
+                                    resolve();
+                                };
+                                s.onerror = resolve;
                                 document.body.appendChild(s);
                                 old.remove();
                             });
@@ -1046,8 +1081,24 @@
                     });
                 });
             }
-            if (window.jQuery) {
-                try { window.jQuery('.jz').select2(); } catch (e) {}
+            if (window.jQuery && jQuery.fn && typeof jQuery.fn.select2 === 'function') {
+                try {
+                    window.jQuery('.jz').each(function () {
+                        var $el = window.jQuery(this);
+                        if (!$el.hasClass('select2-hidden-accessible')) {
+                            $el.select2();
+                        }
+                    });
+                    window.jQuery('.jz1').each(function () {
+                        var $el = window.jQuery(this);
+                        if ($el.hasClass('select2-hidden-accessible')) return;
+                        var opts = { width: '100%' };
+                        if (window.jQuery('#editModal').length) {
+                            opts.dropdownParent = window.jQuery('#editModal');
+                        }
+                        $el.select2(opts);
+                    });
+                } catch (e) {}
             }
             restoreSidebarCollapsed();
             setTimeout(function () {
