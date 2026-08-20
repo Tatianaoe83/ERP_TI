@@ -33,7 +33,8 @@ class TicketsController extends Controller
         $this->middleware('permission:ver-soporte');
     }
 
-    // Carga el dashboard principal con tickets, solicitudes y métricas del mes
+    // Carga el tablero de soporte. Productividad y solicitudes se arman
+    // solo cuando esa pestaña es la activa, para no retrasar Tickets.
     public function index(Request $request)
     {
         $mes  = (int)$request->input('mes', now()->month);
@@ -45,43 +46,47 @@ class TicketsController extends Controller
         $mesFin     = $esRango ? (int)$request->input('mes_fin')     : null;
         $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
         $modoRango  = $esRango;
-
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
-            $query->orderBy('created_at', 'desc')->limit(1);
-        }])->orderBy('created_at', 'desc')->get();
-
-       $tickets = $tickets->map(function ($ticket) {
-    $ultimoMensaje = $ticket->chat->first();
-    
-    // Calculamos si el último es del usuario
-    $notificaciones = ($ultimoMensaje && $ultimoMensaje->remitente === 'usuario') ? 1 : 0;
-    
-    // ¡AQUÍ ESTÁ EL TRUCO! 
-    // Sobreescribimos el valor de la columna para que tu vista reciba el 1 en '$ticket['notificaciones_pendientes']'
-    $ticket->setAttribute('notificaciones_pendientes', $notificaciones);
-    
-    return $ticket;
-});
+        $tab        = $request->input('tab', 'tickets');
+        if ($request->filled('solicitud_id') || $request->filled('asignacion_id')) {
+            $tab = 'solicitudes';
+        }
+        if (! in_array($tab, ['tickets', 'productividad', 'solicitudes'], true)) {
+            $tab = 'tickets';
+        }
+        if ($tab === 'productividad' && ! auth()->user()->can('tickets.ver-productividad')) {
+            $tab = 'tickets';
+        }
 
         $ticketsStatus = [
-            'nuevos'    => $tickets->where('Estatus', 'Pendiente'),
-            'proceso'   => $tickets->where('Estatus', 'En progreso'),
-            'resueltos' => $tickets->where('Estatus', 'Cerrado'),
+            'nuevos'    => collect(),
+            'proceso'   => collect(),
+            'resueltos' => collect(),
         ];
-
+        $metricasProductividad = [];
+        $solicitudesStatus     = [[]];
+        $metricasSolicitudes   = [];
         $responsablesTI        = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
-        $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
 
-        $solicitudes = Solicitud::with([
-            'empleadoid',
-            'pasoSupervisor',
-            'pasoGerencia',
-            'pasoAdministracion',
-            'cotizaciones',
-        ])->orderBy('created_at', 'desc')->get();
+        if ($tab === 'productividad' && auth()->user()->can('tickets.ver-productividad')) {
+            $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
+                $query->orderBy('created_at', 'desc')->limit(1);
+            }])->orderBy('created_at', 'desc')->get();
 
-        $solicitudesStatus   = [$solicitudes->all()];
-        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
+            $tickets = $tickets->map(function ($ticket) {
+                $ultimoMensaje = $ticket->chat->first();
+                $notificaciones = ($ultimoMensaje && $ultimoMensaje->remitente === 'usuario') ? 1 : 0;
+                $ticket->setAttribute('notificaciones_pendientes', $notificaciones);
+                return $ticket;
+            });
+
+            $ticketsStatus = [
+                'nuevos'    => $tickets->where('Estatus', 'Pendiente'),
+                'proceso'   => $tickets->where('Estatus', 'En progreso'),
+                'resueltos' => $tickets->where('Estatus', 'Cerrado'),
+            ];
+            $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
+            $metricasSolicitudes   = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
+        }
 
         return view('tickets.index', compact(
             'ticketsStatus',
@@ -95,7 +100,8 @@ class TicketsController extends Controller
             'mesInicio',
             'anioInicio',
             'mesFin',
-            'anioFin'
+            'anioFin',
+            'tab'
         ));
     }
 

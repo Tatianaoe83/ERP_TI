@@ -1,10 +1,69 @@
-<div class="space-y-6 min-h-screen p-6" id="productividad-container"
+<div class="prod-page" id="productividad-container"
     x-data="{ activeTab: sessionStorage.getItem('prodTab') || 'general' }"
     x-init="$watch('activeTab', val => sessionStorage.setItem('prodTab', val))">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+<style>
+    #productividad-container.prod-page {
+        min-height: 0;
+        padding: 0;
+    }
+    #productividad-container.prod-page > .prod-page__toolbar {
+        margin-bottom: 0.65rem;
+    }
+    #productividad-container .prod-page__tabs {
+        margin-bottom: 0.7rem;
+        padding-bottom: 0;
+    }
+    #productividad-container .prod-page__tabs nav {
+        gap: 0.35rem;
+    }
+    #productividad-container .prod-page__tabs button {
+        padding: 0.4rem 0.85rem;
+    }
+    #productividad-container .space-y-6 > :not([hidden]) ~ :not([hidden]),
+    #productividad-container .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+        margin-top: 0.7rem;
+    }
+    #productividad-container h3.text-lg,
+    #productividad-container h3 {
+        font-size: 0.95rem;
+        line-height: 1.3;
+    }
+    #productividad-container .gap-6 { gap: 0.7rem; }
+    #productividad-container .gap-4 { gap: 0.65rem; }
+    #productividad-container .mb-6 { margin-bottom: 0.65rem; }
+    #productividad-container .mb-8 { margin-bottom: 0.7rem; }
+    #productividad-container .my-8 { margin-top: 0.35rem; margin-bottom: 0.35rem; }
+    #productividad-container .mt-8 { margin-top: 0.7rem; }
+    #productividad-container .mb-4 { margin-bottom: 0.5rem; }
+    #productividad-container .p-6 { padding: 0.8rem 0.95rem; }
+    #productividad-container .sm\:p-6 { padding: 0.8rem 0.95rem; }
+    #productividad-container .rounded-2xl { border-radius: 0.75rem; }
+    #productividad-container .h-\[300px\],
+    #productividad-container .h-80 { height: 210px; }
+    #productividad-container .h-64 { height: 180px; }
+    #productividad-container hr { display: none; }
+    #productividad-container table th,
+    #productividad-container table td {
+        padding-top: 0.45rem;
+        padding-bottom: 0.45rem;
+        padding-left: 0.7rem;
+        padding-right: 0.7rem;
+    }
+    #productividad-container [aria-hidden="true"] {
+        display: none;
+    }
+    #productividad-container .text-3xl { font-size: 1.45rem; line-height: 1.2; }
+    #productividad-container .prod-kpi-icon {
+        padding: 0.55rem;
+    }
+    #productividad-container .prod-kpi-icon i {
+        font-size: 1rem;
+    }
+</style>
+    <div class="prod-page__toolbar flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Reporte de Productividad</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Análisis de rendimiento y métricas de tiempos.</p>
+            <h2 class="text-base font-semibold text-gray-800 dark:text-white leading-tight">Reporte de productividad</h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Rendimiento y tiempos del periodo seleccionado.</p>
         </div>
 
         @php
@@ -170,19 +229,19 @@
         </div>
     </div>
 
-    <div class="border-b border-gray-200 dark:border-[#2A2F3A] mb-6">
-        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+    <div class="prod-page__tabs border-b border-gray-200 dark:border-[#2A2F3A]">
+        <nav class="flex flex-wrap" aria-label="Tabs">
             <button
                 @click="activeTab = 'general'; setTimeout(() => { inicializarGraficas(); inicializarGraficasEmpleados(); }, 100);"
                 :class="activeTab === 'general' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
-                <i class="fas fa-chart-pie"></i> Resumen de Tickets
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
+                <i class="fas fa-chart-pie"></i> Resumen de tickets
             </button>
 
             <button @click="activeTab = 'solicitudes'"
-                :class="activeTab === 'solicitudes' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
-                <i class="fas fa-stopwatch"></i> Métricas de Solicitudes (Tiempos)
+                :class="activeTab === 'solicitudes' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
+                <i class="fas fa-stopwatch"></i> Métricas de solicitudes
             </button>
         </nav>
     </div>
@@ -191,33 +250,33 @@
 
         <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 transform translate-y-2"
-            x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
+            x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-3">
 
             <script id="productividad-json-data" type="application/json">
                 {!! json_encode($metricasProductividad) !!}
             </script>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
 
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <div class="flex items-center justify-between">
+                <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-sm font-medium dark:text-[#9CA3AF]">Total de Tickets</p>
-                            <p class="text-3xl font-bold mt-2 dark:text-white">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Total de tickets</p>
+                            <p class="text-2xl font-bold mt-1 dark:text-white leading-none">
                                 {{ $metricasProductividad['total_tickets'] }}
                             </p>
                         </div>
-                        <div class="rounded-full p-4 bg-blue-500/15">
-                            <i class="fas fa-ticket-alt text-blue-500 text-2xl"></i>
+                        <div class="prod-kpi-icon rounded-full bg-blue-500/15">
+                            <i class="fas fa-ticket-alt text-blue-500"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <div class="flex items-center justify-between">
+                <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-sm font-medium dark:text-[#9CA3AF]">Tickets Cerrados</p>
-                            <p class="text-3xl font-bold mt-2 dark:text-white">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Tickets cerrados</p>
+                            <p class="text-2xl font-bold mt-1 dark:text-white leading-none">
                                 {{ $metricasProductividad['tickets_cerrados'] }}
                             </p>
                             <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">
@@ -226,42 +285,42 @@
     : 0 }}% del total
                             </p>
                         </div>
-                        <div class="rounded-full p-4 bg-green-500/15">
-                            <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                        <div class="prod-kpi-icon rounded-full bg-green-500/15">
+                            <i class="fas fa-check-circle text-green-500"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <div class="flex items-center justify-between">
+                <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-sm font-medium dark:text-[#9CA3AF]">Tiempo Promedio Resolución</p>
-                            <p class="text-3xl font-bold mt-2 dark:text-white">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio resolución</p>
+                            <p class="text-2xl font-bold mt-1 dark:text-white leading-none">
                                 {{ $metricasProductividad['tiempo_promedio_resolucion'] > 0
     ? number_format($metricasProductividad['tiempo_promedio_resolucion'], 1)
     : '0' }}
                             </p>
                             <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
                         </div>
-                        <div class="rounded-full p-4 bg-purple-500/15">
-                            <i class="fas fa-clock text-purple-500 text-2xl"></i>
+                        <div class="prod-kpi-icon rounded-full bg-purple-500/15">
+                            <i class="fas fa-clock text-purple-500"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A]">
-                    <div class="flex items-center justify-between">
+                <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+                    <div class="flex items-center justify-between gap-3">
                         <div>
-                            <p class="text-sm font-medium dark:text-[#9CA3AF]">Tiempo Promedio Respuesta</p>
-                            <p class="text-3xl font-bold mt-2 dark:text-white">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio respuesta</p>
+                            <p class="text-2xl font-bold mt-1 dark:text-white leading-none">
                                 {{ $metricasProductividad['tiempo_promedio_respuesta'] > 0
     ? number_format($metricasProductividad['tiempo_promedio_respuesta'], 1)
     : '0' }}
                             </p>
                             <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
                         </div>
-                        <div class="rounded-full p-4 bg-orange-500/15">
-                            <i class="fas fa-hourglass-half text-orange-500 text-2xl"></i>
+                        <div class="prod-kpi-icon rounded-full bg-orange-500/15">
+                            <i class="fas fa-hourglass-half text-orange-500"></i>
                         </div>
                     </div>
                 </div>
@@ -330,9 +389,7 @@
                 </div>
             @endif
 
-            <hr class="my-8 border-gray-200 dark:border-[#2A2F3A]">
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-blue-200/90 dark:hover:border-blue-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-blue-500/20 dark:focus-within:ring-blue-400/25 focus-within:border-blue-300/80 dark:focus-within:border-blue-500/40">
                     <div class="flex items-center justify-between gap-2 mb-3">
@@ -399,7 +456,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div
                     class="group rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gradient-to-br from-white via-gray-50/50 to-white dark:from-[#111827]/50 dark:via-[#0d1117]/40 dark:to-[#0B0F14]/70 shadow-sm transition-all duration-300 ease-out hover:shadow-lg hover:shadow-gray-200/50 dark:hover:shadow-black/45 hover:border-rose-200/80 dark:hover:border-rose-500/35 hover:-translate-y-0.5 focus-within:ring-2 focus-within:ring-rose-500/20 dark:focus-within:ring-rose-400/25">
                     <div class="flex items-center justify-between gap-2 mb-3">
@@ -1068,14 +1125,14 @@
 
         <div x-show="activeTab === 'solicitudes'" x-cloak x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 transform translate-y-2"
-            x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
+            x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-3">
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 <div
-                    class="rounded-2xl p-6 border border-blue-100 bg-blue-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-blue-500 text-white rounded-xl shadow-sm"><i
-                                class="fas fa-file-invoice-dollar text-xl"></i></div>
+                    class="rounded-xl p-3.5 border border-blue-100 bg-blue-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-500 text-white rounded-lg shadow-sm"><i
+                                class="fas fa-file-invoice-dollar"></i></div>
                         <div>
                             <p class="text-sm font-medium text-blue-900/70 dark:text-gray-400">Promedio Cotización</p>
                             <h4 class="text-2xl font-bold text-blue-900 dark:text-white">
@@ -1087,10 +1144,10 @@
                 </div>
 
                 <div
-                    class="rounded-2xl p-6 border border-emerald-100 bg-emerald-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-emerald-500 text-white rounded-xl shadow-sm"><i
-                                class="fas fa-cogs text-xl"></i></div>
+                    class="rounded-xl p-3.5 border border-emerald-100 bg-emerald-50/50 dark:bg-[#1F2937] dark:border-[#2A2F3A]">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-emerald-500 text-white rounded-lg shadow-sm"><i
+                                class="fas fa-cogs"></i></div>
                         <div>
                             <p class="text-sm font-medium text-emerald-900/70 dark:text-gray-400">Promedio Configuración
                             </p>
@@ -1104,10 +1161,10 @@
             </div>
 
             <div
-                class="rounded-2xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm overflow-hidden bg-gray-50 dark:bg-transparent">
-                <div class="px-6 py-4 border-b border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-transparent">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white"><i
-                            class="fas fa-list-ul mr-2 text-gray-400"></i> Desglose de Tiempos por Solicitud</h3>
+                class="rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm overflow-hidden bg-gray-50 dark:bg-transparent">
+                <div class="px-4 py-2.5 border-b border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-transparent">
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white"><i
+                            class="fas fa-list-ul mr-2 text-gray-400"></i> Desglose de tiempos por solicitud</h3>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -1544,9 +1601,8 @@
 </div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script
-    src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="{{ asset('vendor/chartjs/chart.min.js') }}"></script>
+<script src="{{ asset('vendor/chartjs/chartjs-plugin-datalabels.min.js') }}"></script>
 
 <script>
     Chart.register(ChartDataLabels);

@@ -21,15 +21,10 @@
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     <!-- Bootstrap 4.1.1 -->
     <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
-    <!-- Ionicons -->
-    <link href="//fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet">
-    <link href="{{ asset('assets/css/@fortawesome/fontawesome-free/css/all.css') }}" rel="stylesheet" type="text/css">
+    <link href="{{ asset('assets/css/@fortawesome/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="{{ asset('assets/css/iziToast.min.css') }}">
     <link href="{{ asset('assets/css/sweetalert.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/select2.min.css') }}" rel="stylesheet" type="text/css" />
-
-
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <!-- Alpine.js x-cloak styles -->
     <style>
@@ -38,6 +33,10 @@
         .vista-switch__btn.is-vista-active {
             background-color: #2563EB !important;
             color: #fff !important;
+        }
+
+        a.app-tabs__btn {
+            text-decoration: none;
         }
 
         /* SweetAlert siempre por encima de los modales (z-[9999]) */
@@ -512,8 +511,6 @@
     <!-- Template CSS -->
     <link rel="stylesheet" href="{{ asset('web/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('web/css/components.css')}}">
-    @yield('page_css')
-    @yield('scripts')
 
     @yield('css')
     @stack('third_party_stylesheets')
@@ -587,9 +584,7 @@
 <script src="{{ asset('web/js/scripts.js') }}"></script>
 <script src="{{ mix('assets/js/profile.js') }}"></script>
 <script src="{{ mix('assets/js/custom/custom.js') }}"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
 
 @stack('third_party_scripts')
 
@@ -818,6 +813,10 @@
         if (!btn) return;
         var root = btn.closest('[data-app-tabset]');
         if (!root) return;
+        var href = btn.getAttribute('href');
+        if (btn.tagName === 'A' && href && href !== '#') {
+            return;
+        }
         event.preventDefault();
         window.AppTabs.show(root, btn.getAttribute('data-app-tab'));
     });
@@ -862,22 +861,12 @@
         try { saved = key ? localStorage.getItem(key) : null; } catch (e) {}
         window.AppVistas.show(root, saved || 'kanban', {
             skipStorage: true,
-            skipEmit: !saved || saved === 'kanban'
+            skipEmit: false
         });
     });
 
-    (function loadAlpineAsync() {
-        var collapse = document.createElement('script');
-        collapse.src = 'https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.14.8/dist/cdn.min.js';
-        collapse.async = true;
-        collapse.onload = function () {
-            var alpine = document.createElement('script');
-            alpine.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js';
-            alpine.async = true;
-            document.body.appendChild(alpine);
-        };
-        document.body.appendChild(collapse);
-    })();
 </script>
+<script src="{{ asset('vendor/alpine/collapse.min.js') }}"></script>
+<script src="{{ asset('vendor/alpine/alpine.min.js') }}"></script>
 
 </html>

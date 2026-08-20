@@ -329,8 +329,7 @@
 @include('layouts.partials.index-page-js')
 <script>window.__facturaOcrBase = @json(rtrim(url('/'), '/'));</script>
 <script src="{{ mix('js/factura-pdf-ocr.js') }}"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+@include('layouts.datatables_js')
 
 <script>
 (function () {

@@ -3,12 +3,12 @@
 @section('content')
 @php
     $tienePermisoProductividad = auth()->user()->can('tickets.ver-productividad');
-    $tabSolicitudes = $tienePermisoProductividad ? 3 : 2;
-    $tabInicial = 1;
-    if (request('tab') === 'solicitudes') {
-        $tabInicial = $tabSolicitudes;
-    } elseif (request('tab') === 'productividad' && $tienePermisoProductividad) {
-        $tabInicial = 2;
+    $tabActiva = $tab ?? request('tab', 'tickets');
+    if (! in_array($tabActiva, ['tickets', 'productividad', 'solicitudes'], true)) {
+        $tabActiva = 'tickets';
+    }
+    if ($tabActiva === 'productividad' && ! $tienePermisoProductividad) {
+        $tabActiva = 'tickets';
     }
 @endphp
 
@@ -22,47 +22,47 @@
 >
     <x-slot name="tabs">
         <div class="app-tabs" role="tablist">
-            <button
-                type="button"
-                data-app-tab="1"
-                class="app-tabs__btn {{ $tabInicial === 1 ? 'is-active' : '' }}">
+            <a
+                href="{{ route('tickets.index') }}"
+                data-app-tab="tickets"
+                class="app-tabs__btn {{ $tabActiva === 'tickets' ? 'is-active' : '' }}">
                 <i class="fas fa-ticket-alt"></i>
                 <span>Tickets</span>
-            </button>
+            </a>
 
             @can('tickets.ver-productividad')
-            <button
-                type="button"
-                data-app-tab="2"
-                class="app-tabs__btn {{ $tabInicial === 2 ? 'is-active' : '' }}">
+            <a
+                href="{{ route('tickets.index', ['tab' => 'productividad']) }}"
+                data-app-tab="productividad"
+                class="app-tabs__btn {{ $tabActiva === 'productividad' ? 'is-active' : '' }}">
                 <i class="fas fa-chart-line"></i>
                 <span>Productividad</span>
-            </button>
+            </a>
             @endcan
 
-            <button
-                type="button"
-                data-app-tab="{{ $tabSolicitudes }}"
-                class="app-tabs__btn {{ $tabInicial === $tabSolicitudes ? 'is-active' : '' }}">
+            <a
+                href="{{ route('tickets.index', ['tab' => 'solicitudes']) }}"
+                data-app-tab="solicitudes"
+                class="app-tabs__btn {{ $tabActiva === 'solicitudes' ? 'is-active' : '' }}">
                 <i class="fas fa-file-alt"></i>
                 <span>Solicitudes</span>
-            </button>
+            </a>
         </div>
     </x-slot>
 
-    <div data-app-panel="1" class="w-full max-w-full" @if($tabInicial !== 1) hidden @endif>
+    @if($tabActiva === 'tickets')
+    <div data-app-panel="tickets" class="w-full max-w-full">
         @include('tickets.indexTicket', ['ticketsStatus' => $ticketsStatus, 'responsablesTI' => $responsablesTI])
     </div>
-
-    @can('tickets.ver-productividad')
-    <div data-app-panel="2" id="productividad-tab" class="w-full" @if($tabInicial !== 2) hidden @endif>
+    @elseif($tabActiva === 'productividad')
+    <div data-app-panel="productividad" id="productividad-tab" class="w-full">
         @include('tickets.productividad', ['metricasProductividad' => $metricasProductividad, 'mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year])
     </div>
-    @endcan
-
-    <div data-app-panel="{{ $tabSolicitudes }}" class="w-full max-w-full" @if($tabInicial !== $tabSolicitudes) hidden @endif>
+    @elseif($tabActiva === 'solicitudes')
+    <div data-app-panel="solicitudes" class="w-full max-w-full">
         @include('tickets.indexSolicitudes', ['solicitudesStatus' => $solicitudesStatus ?? []])
     </div>
+    @endif
 </x-index-page>
 </div>
 @endsection
@@ -70,16 +70,15 @@
 @push('third_party_scripts')
 <script>
     document.addEventListener('notif-abrir-solicitudes-tab', function () {
-        var root = document.getElementById('soporte-tabset');
-        if (root && window.AppTabs) window.AppTabs.show(root, '{{ $tabSolicitudes }}');
+        if (!document.querySelector('[data-app-panel="solicitudes"]')) {
+            window.location.href = @json(route('tickets.index', ['tab' => 'solicitudes']));
+        }
     });
     document.addEventListener('DOMContentLoaded', function () {
         var urlParams = new URLSearchParams(window.location.search);
         var solicitudId = urlParams.get('solicitud_id');
         var accionSolicitud = urlParams.get('accion') || 'ver';
         if (solicitudId && typeof window.ejecutarAccionSolicitudNotif === 'function') {
-            var root = document.getElementById('soporte-tabset');
-            if (root && window.AppTabs) window.AppTabs.show(root, '{{ $tabSolicitudes }}');
             setTimeout(function () {
                 window.ejecutarAccionSolicitudNotif(solicitudId, accionSolicitud);
             }, 1500);

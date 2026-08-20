@@ -1,8 +1,40 @@
-<div class="space-y-6" id="productividad-mantenimiento-container">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+<div class="prod-page" id="productividad-mantenimiento-container">
+<style>
+    #productividad-mantenimiento-container.prod-page {
+        min-height: 0;
+        padding: 0;
+    }
+    #productividad-mantenimiento-container.prod-page > .prod-page__toolbar {
+        margin-bottom: 0.65rem;
+    }
+    #productividad-mantenimiento-container.prod-page > .grid,
+    #productividad-mantenimiento-container.prod-page > .rounded-xl {
+        margin-top: 0.7rem;
+    }
+    #productividad-mantenimiento-container h3.text-lg,
+    #productividad-mantenimiento-container h3 {
+        font-size: 0.95rem;
+        line-height: 1.3;
+    }
+    #productividad-mantenimiento-container .gap-6 { gap: 0.7rem; }
+    #productividad-mantenimiento-container .gap-4 { gap: 0.65rem; }
+    #productividad-mantenimiento-container .mb-6 { margin-bottom: 0.65rem; }
+    #productividad-mantenimiento-container .mb-4 { margin-bottom: 0.5rem; }
+    #productividad-mantenimiento-container .mt-6 { margin-top: 0.7rem; }
+    #productividad-mantenimiento-container .p-6 { padding: 0.8rem 0.95rem; }
+    #productividad-mantenimiento-container .h-\[300px\],
+    #productividad-mantenimiento-container .h-\[260px\] { height: 210px; }
+    #productividad-mantenimiento-container table th,
+    #productividad-mantenimiento-container table td {
+        padding-top: 0.45rem;
+        padding-bottom: 0.45rem;
+    }
+    #productividad-mantenimiento-container .text-3xl { font-size: 1.45rem; line-height: 1.2; }
+</style>
+    <div class="prod-page__toolbar flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Reporte de Productividad</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Métricas de mantenimientos de compras.</p>
+            <h2 class="text-base font-semibold text-gray-800 dark:text-white leading-tight">Reporte de productividad</h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Métricas de mantenimientos de compras.</p>
         </div>
 
         @php
@@ -82,40 +114,40 @@
 
     <script id="productividad-mantenimiento-json" type="application/json">{!! json_encode($metricasProductividad) !!}</script>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Total Solicitudes</p>
-            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['total_tickets'] }}</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Total solicitudes</p>
+            <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white leading-none">{{ $metricasProductividad['total_tickets'] }}</p>
         </div>
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Atendidas / Canceladas</p>
-            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['tickets_cerrados'] }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Atendidas / canceladas</p>
+            <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white leading-none">{{ $metricasProductividad['tickets_cerrados'] }}</p>
+            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">
                 {{ $metricasProductividad['total_tickets'] > 0 ? round(($metricasProductividad['recibidas_ya_cerradas'] / $metricasProductividad['total_tickets']) * 100, 1) : 0 }}% del total
             </p>
         </div>
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Tiempo Promedio Resolución</p>
-            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['tiempo_promedio_resolucion'] ?: '0' }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">horas laborales</p>
+        <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio resolución</p>
+            <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white leading-none">{{ $metricasProductividad['tiempo_promedio_resolucion'] ?: '0' }}</p>
+            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
         </div>
-        <div class="rounded-lg p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <p class="text-sm font-medium text-gray-600 dark:text-[#9CA3AF]">Tiempo Promedio Respuesta</p>
-            <p class="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{{ $metricasProductividad['tiempo_promedio_respuesta'] ?: '0' }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">horas laborales</p>
+        <div class="rounded-lg p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio respuesta</p>
+            <p class="text-2xl font-bold mt-1 text-gray-900 dark:text-white leading-none">{{ $metricasProductividad['tiempo_promedio_respuesta'] ?: '0' }}</p>
+            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
         </div>
     </div>
 
     @php $sla = $metricasProductividad['metricas_sla'] ?? []; $slaResumen = $sla['resumen'] ?? []; @endphp
 
-    <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+    <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
             <div>
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                <h3 class="text-sm font-semibold text-gray-800 dark:text-white flex items-center gap-2">
                     <i class="fas fa-stopwatch text-blue-500"></i>
-                    Métricas SLA por Prioridad
+                    Métricas SLA por prioridad
                 </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Metas de atención en días laborales ({{ $sla['horario'] ?? 'Lunes a Viernes, 9:00 - 18:00' }}, {{ $sla['horas_por_dia'] ?? 9 }} h/día).
                 </p>
             </div>
@@ -129,10 +161,10 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5 mb-3">
             @foreach($sla['por_prioridad'] ?? [] as $row)
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#242933]" style="border-top: 4px solid {{ $row['color'] }}">
-                <div class="flex justify-between items-start mb-3">
+            <div class="rounded-lg p-3 border border-gray-200 dark:border-[#2A2F3A]" style="border-top: 4px solid {{ $row['color'] }}">
+                <div class="flex justify-between items-start mb-2">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $row['prioridad'] }}</p>
                         <p class="text-sm font-semibold text-gray-800 dark:text-white mt-0.5">Meta: {{ $row['meta'] }}</p>
@@ -167,7 +199,7 @@
                     </div>
                 </div>
                 @if($row['tiempo_promedio_dias'] > 0)
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     Promedio atendidos: <span class="font-semibold text-gray-700 dark:text-gray-200">{{ $row['tiempo_promedio_dias'] }} días laborales</span>
                 </p>
                 @endif
@@ -175,20 +207,20 @@
             @endforeach
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#242933]">
-                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-3">Cumplimiento SLA (atendidos)</h4>
-                <div class="h-[260px]"><canvas id="chartMantSlaCumplimiento"></canvas></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div class="rounded-lg p-3 border border-gray-200 dark:border-[#2A2F3A]">
+                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Cumplimiento SLA (atendidos)</h4>
+                <div class="h-[210px]"><canvas id="chartMantSlaCumplimiento"></canvas></div>
             </div>
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#242933]">
-                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-3">Estado actual por prioridad (abiertos)</h4>
-                <div class="h-[260px]"><canvas id="chartMantSlaAbiertos"></canvas></div>
+            <div class="rounded-lg p-3 border border-gray-200 dark:border-[#2A2F3A]">
+                <h4 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Estado actual por prioridad (abiertos)</h4>
+                <div class="h-[210px]"><canvas id="chartMantSlaAbiertos"></canvas></div>
             </div>
         </div>
 
         @if(!empty($sla['tickets_criticos']))
-        <div class="mt-6 rounded-lg border border-orange-200 dark:border-orange-900/40 overflow-hidden bg-gray-50 dark:bg-[#1C1F26]">
-            <div class="px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-900/40">
+        <div class="mt-3 rounded-lg border border-orange-200 dark:border-orange-900/40 overflow-hidden">
+            <div class="px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-900/40">
                 <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-300">
                     <i class="fas fa-exclamation-triangle mr-1"></i>
                     Solicitudes en riesgo o vencidas ({{ count($sla['tickets_criticos']) }})
@@ -241,28 +273,28 @@
         @endif
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Distribución por Estado</h3>
-            <div class="h-[300px]"><canvas id="chartMantEstado"></canvas></div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Distribución por estado</h3>
+            <div class="h-[210px]"><canvas id="chartMantEstado"></canvas></div>
         </div>
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Por Prioridad</h3>
-            <div class="h-[300px]"><canvas id="chartMantPrioridad"></canvas></div>
+        <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Por prioridad</h3>
+            <div class="h-[210px]"><canvas id="chartMantPrioridad"></canvas></div>
         </div>
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Por Categoría</h3>
-            <div class="h-[300px]"><canvas id="chartMantCategoria"></canvas></div>
+        <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Por categoría</h3>
+            <div class="h-[210px]"><canvas id="chartMantCategoria"></canvas></div>
         </div>
-        <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Tendencia del Periodo</h3>
-            <div class="h-[300px]"><canvas id="chartMantTendencia"></canvas></div>
+        <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Tendencia del periodo</h3>
+            <div class="h-[210px]"><canvas id="chartMantTendencia"></canvas></div>
         </div>
     </div>
 
     @if(!empty($metricasProductividad['tickets_por_responsable']) && count($metricasProductividad['tickets_por_responsable']))
-    <div class="rounded-xl p-6 border border-gray-200 dark:border-[#2A2F3A] bg-gray-50 dark:bg-[#1C1F26]">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Por Responsable</h3>
+    <div class="rounded-xl p-3.5 border border-gray-200 dark:border-[#2A2F3A]">
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Por responsable</h3>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
                 <thead>
@@ -291,7 +323,7 @@
     @endif
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{{ asset('vendor/chartjs/chart.min.js') }}"></script>
 <script>
 let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos;
 
