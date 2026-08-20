@@ -722,9 +722,11 @@
 @include('layouts.partials.index-page-js')
 
 <script>
-    const empleadoInventarioActivo = @json($empleadoActivo);
-    const permitePresupuestado = @json($permitePresupuestado);
-    const presupuestadoForzado = @json($presupuestadoForzado);
+    var empleadoInventarioActivo = @json($empleadoActivo);
+    var permitePresupuestado = @json($permitePresupuestado);
+    var presupuestadoForzado = @json($presupuestadoForzado);
+
+    $(document).off('.invAssign');
 
     // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
     // asignado es presupuestado y para el resto el campo viaja siempre en 0.
@@ -767,12 +769,12 @@
     }
 
     // Mantener la etiqueta del switch / cards en sync con su estado
-    $(document).on('change', '.form-check-input[role="switch"]', function() {
+    $(document).on('change.invAssign', '.form-check-input[role="switch"]', function() {
         $('#' + this.id + 'Label').text(this.checked ? 'Si' : 'No');
         syncModoCards('#' + this.id, this.checked);
     });
 
-    $(document).on('click', '.inv-modo-card:not(.is-locked)', function() {
+    $(document).on('click.invAssign', '.inv-modo-card:not(.is-locked)', function() {
         const $card = $(this);
         const selector = $card.closest('[data-switch]').data('switch');
         const value = String($card.data('value')) === '1';
@@ -830,23 +832,24 @@
             language: invDtLang
         };
 
-        if ($('#equiposTable').length) {
-            $('#equiposTable').DataTable(invDtBase);
-        }
-        if ($('#insumosTable').length) {
-            $('#insumosTable').DataTable(invDtBase);
-        }
-        if ($('#lineasTable').length) {
-            $('#lineasTable').DataTable(invDtBase);
+        function initInvDt(selector, extra) {
+            if (!$(selector).length) return;
+            if ($.fn.DataTable.isDataTable(selector)) {
+                $(selector).DataTable().destroy();
+            }
+            $(selector).DataTable($.extend(true, {}, invDtBase, extra || {}));
         }
 
-        $('#equiposAsignadosTable').DataTable($.extend(true, {}, invDtBase, {
+        initInvDt('#equiposTable');
+        initInvDt('#insumosTable');
+        initInvDt('#lineasTable');
+        initInvDt('#equiposAsignadosTable', {
             columnDefs: [
                 { visible: false, targets: [3, 6, 7] }
             ]
-        }));
-        $('#insumosAsignadosTable').DataTable(invDtBase);
-        $('#lineasAsignadosTable').DataTable(invDtBase);
+        });
+        initInvDt('#insumosAsignadosTable');
+        initInvDt('#lineasAsignadosTable');
 
         inicializarFiltrosPresupuestado();
     });
@@ -855,14 +858,14 @@
 <script>
     // Índice de la columna "Presupuestado" en cada tabla de asignados.
     // La columna sólo se pinta para FISICA/EXTRAORDINARIO.
-    const columnaPresupuestado = {
+    var columnaPresupuestado = {
         equiposAsignadosTable: 12,
         insumosAsignadosTable: 12,
         lineasAsignadosTable: 15,
     };
 
     // Filtro activo por tabla: todos | presupuestados | no_presupuestados
-    const filtroPresupuestado = {
+    var filtroPresupuestado = {
         equiposAsignadosTable: 'todos',
         insumosAsignadosTable: 'todos',
         lineasAsignadosTable: 'todos',
@@ -874,18 +877,21 @@
     }
 
     // Filtro global de DataTables: las tablas sin entrada en el mapa no se ven afectadas.
-    $.fn.dataTable.ext.search.push(function(settings, data) {
-        const tablaId = settings.nTable.id;
-        const filtro = filtroPresupuestado[tablaId];
+    if (!window.__invFiltroPresupuestadoDt) {
+        window.__invFiltroPresupuestadoDt = true;
+        $.fn.dataTable.ext.search.push(function(settings, data) {
+            var tablaId = settings.nTable.id;
+            var filtro = filtroPresupuestado[tablaId];
 
-        if (!permitePresupuestado || !filtro || filtro === 'todos') {
-            return true;
-        }
+            if (!permitePresupuestado || !filtro || filtro === 'todos') {
+                return true;
+            }
 
-        const presupuestada = esFilaPresupuestada(data[columnaPresupuestado[tablaId]]);
+            var presupuestada = esFilaPresupuestada(data[columnaPresupuestado[tablaId]]);
 
-        return filtro === 'presupuestados' ? presupuestada : !presupuestada;
-    });
+            return filtro === 'presupuestados' ? presupuestada : !presupuestada;
+        });
+    }
 
     function actualizarConteos(tablaId) {
         if (!permitePresupuestado) {
@@ -936,7 +942,7 @@
             .visible(mostrar, false);
     }
 
-    $(document).on('click', '.pill-filtro', function() {
+    $(document).on('click.invAssign', '.pill-filtro', function() {
         const barra = $(this).closest('.inventario-filtros');
         const tablaId = barra.data('tabla');
 
@@ -957,7 +963,7 @@
         $('#' + tablaId).DataTable().draw();
     });
 
-    $(document).on('click', '.inv-dual-card', function() {
+    $(document).on('click.invAssign', '.inv-dual-card', function() {
         const dual = $(this).closest('.inv-dual');
         const tablaId = dual.data('tabla');
         let filtro = $(this).data('filtro');
@@ -983,7 +989,7 @@
         $('#' + tablaId).DataTable().draw();
     });
 
-    $(document).on('keyup', '.inv-table-search', function() {
+    $(document).on('keyup.invAssign', '.inv-table-search', function() {
         const tablaId = $(this).data('tabla');
         if ($.fn.DataTable.isDataTable('#' + tablaId)) {
             $('#' + tablaId).DataTable().search(this.value).draw();
@@ -1014,7 +1020,7 @@
 
     // Seccion equipo 
     // Editar equipo (abriendo el modal con los datos)
-    $(document).on('click', '.edit-btn', function() {
+    $(document).on('click.invAssign', '.edit-btn', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1044,7 +1050,7 @@
     });
 
     // Crear equipo (con valores vacíos para nuevo registro)
-    $(document).on('click', '.crear-btn', function() {
+    $(document).on('click.invAssign', '.crear-btn', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1076,8 +1082,8 @@
     });
 
     // Validación en tiempo real del Folio (al escribir o al salir del campo)
-    let folioTimer = null;
-    let folioValido = true; // Estado de validez del folio actual
+    var folioTimer = null;
+    var folioValido = true; // Estado de validez del folio actual
 
     // Función para cargar los últimos 3 folios
     function cargarUltimosFolios() {
@@ -1101,17 +1107,17 @@
     }
 
     // Mostrar últimos 3 folios registrados cuando el usuario hace focus al input
-    $(document).on('focus', '#editFolio', function() {
+    $(document).on('focus.invAssign', '#editFolio', function() {
         cargarUltimosFolios();
         $('#folio-Info').fadeIn(200);
     });
 
     // Ocultar la advertencia al perder el foco
-    $(document).on('blur', '#editFolio', function() {
+    $(document).on('blur.invAssign', '#editFolio', function() {
         $('#folio-Info').fadeOut(200);
     });
 
-    $(document).on('input', '#editFolio', function() {
+    $(document).on('input.invAssign', '#editFolio', function() {
         clearTimeout(folioTimer);
         const folioInput = $(this);
         const folio = folioInput.val().trim();
@@ -1166,7 +1172,7 @@
     });
 
     // Enviar formulario de edición o creación con AJAX
-    $(document).on('click', '.submit_equipo', function(event) {
+    $(document).on('click.invAssign', '.submit_equipo', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -1429,7 +1435,7 @@
     }
 
     // Eliminar equipo con AJAX
-    $(document).on('click', '.delete-btn', function(event) {
+    $(document).on('click.invAssign', '.delete-btn', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -1512,7 +1518,7 @@
 
     // Seccion insumo
 
-    $(document).on('click', '.edit-btn-insum', function() {
+    $(document).on('click.invAssign', '.edit-btn-insum', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1542,7 +1548,7 @@
         $('#editModalInsumo').modal('show');
     });
 
-    $(document).on('click', '.crear-btn-insumo', function() {
+    $(document).on('click.invAssign', '.crear-btn-insumo', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1584,7 +1590,7 @@
     });
 
 
-    $(document).on('click', '.submit_insumo', function(event) {
+    $(document).on('click.invAssign', '.submit_insumo', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -1760,7 +1766,7 @@
         $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);
     }
 
-    $(document).on('click', '.delete-btn-insumo', function(event) {
+    $(document).on('click.invAssign', '.delete-btn-insumo', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -1843,7 +1849,7 @@
 
     // Seccion telefono
 
-    $(document).on('click', '.edit-btn-linea', function() {
+    $(document).on('click.invAssign', '.edit-btn-linea', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1866,7 +1872,7 @@
 
         $('#editModalLinea').modal('show');
     });
-    $(document).on('click', '.crear-btn-linea', function() {
+    $(document).on('click.invAssign', '.crear-btn-linea', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1905,7 +1911,7 @@
     });
 
 
-    $(document).on('click', '.submit_linea', function(event) {
+    $(document).on('click.invAssign', '.submit_linea', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -2079,7 +2085,7 @@
         $('#lineasAsignadosTable').DataTable().row.add(newRow).draw(false);
     }
 
-    $(document).on('click', '.delete-btn-linea', function(event) {
+    $(document).on('click.invAssign', '.delete-btn-linea', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
