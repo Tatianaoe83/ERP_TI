@@ -29,6 +29,7 @@
         @csrf
         @method('PUT')
 
+        <div class="index-page__stack">
         <div class="index-page__card overflow-hidden xfer-card">
             <div class="xfer-card-head">
                 <div>
@@ -175,6 +176,7 @@
                 </table>
             </div>
         </div>
+        </div>
 
         <div class="crud-page__actions xfer-actions">
             <button type="submit" class="index-page__btn-primary show_confirm">Transferir</button>
@@ -187,7 +189,7 @@
 @push('third_party_stylesheets')
     @include('layouts.datatables_css')
     <style>
-        .xfer-card { margin-bottom: 1.15rem; }
+        .xfer-card { margin-bottom: 0; }
         .xfer-card-head {
             display: flex;
             align-items: flex-start;
@@ -211,7 +213,7 @@
             cursor: pointer;
         }
         .xfer-actions {
-            margin-top: 0.25rem;
+            margin-top: 1.5rem;
             padding-top: 0;
             border-top: 0;
         }

@@ -13,21 +13,6 @@
     $fmtMoney = fn ($n) => '$' . number_format((float) $n, 0);
 @endphp
 
-<ul class="nav inv-tabs" id="myTab" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link active" data-toggle="tab" href="#empleados">Empleado</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#equipo">Equipo de cómputo</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#insumo">Insumo</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#linea">Línea de telefonía</a>
-    </li>
-</ul>
-
 <div class="tab-content">
 
 
@@ -35,7 +20,7 @@
 
     <!-- TAB Empleado -->
     <div class="tab-pane fade show active" id="empleados">
-        <div class="inv-empleado-card">
+        <div class="index-page__card crud-page__card inv-empleado-card">
         <div class="row">
             <!-- NombreEmpleado Field -->
             <div class="col-sm-6">
@@ -166,8 +151,8 @@
 
             <!-- equiposAsignados Seleccionados -->
 
-            <div class="table-responsive">
-                <table id="equiposAsignadosTable" class="table index-table w-full">
+                <div class="index-page__table-wrap table-responsive">
+                    <table id="equiposAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
                             <th>Action</th>
@@ -243,13 +228,6 @@
                 <span><i class="fas fa-plus-circle mr-1"></i> Equipos disponibles</span>
             </div>
             <div class="inv-panel-body">
-                <div class="inv-toolbar">
-                    <div class="inv-search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="inv-table-search" data-tabla="equiposTable" placeholder="Buscar por marca, modelo o características...">
-                    </div>
-                </div>
-
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="equiposTable" class="table index-table w-full">
@@ -269,7 +247,7 @@
                                 <td>
 
 
-                                    <button class='btn btn-outline-success btn-xs crear-btn' data-id="{{ $equipo->CategoriaID }}">
+                                    <button type="button" class="index-action index-action--success crear-btn" data-id="{{ $equipo->CategoriaID }}" title="Asignar">
                                         <i class="fas fa-plus"></i>
                                     </button>
 
@@ -431,12 +409,6 @@
                 <span><i class="fas fa-plus-circle mr-1"></i> Insumos disponibles</span>
             </div>
             <div class="inv-panel-body">
-                <div class="inv-toolbar">
-                    <div class="inv-search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="inv-table-search" data-tabla="insumosTable" placeholder="Buscar insumo...">
-                    </div>
-                </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="insumosTable" class="table index-table w-full">
@@ -459,7 +431,7 @@
                                 <td>
 
 
-                                    <button class='btn btn-outline-success btn-xs crear-btn-insumo' data-id="{{ $insumo->CategoriaID }}">
+                                    <button type="button" class="index-action index-action--success crear-btn-insumo" data-id="{{ $insumo->CategoriaID }}" title="Asignar">
                                         <i class="fas fa-plus"></i>
                                     </button>
 
@@ -637,12 +609,6 @@
                 <span><i class="fas fa-plus-circle mr-1"></i> Líneas disponibles</span>
             </div>
             <div class="inv-panel-body">
-                <div class="inv-toolbar">
-                    <div class="inv-search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="inv-table-search" data-tabla="lineasTable" placeholder="Buscar línea...">
-                    </div>
-                </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="lineasTable" class="table index-table w-full">
@@ -671,7 +637,7 @@
                                 <td>
 
 
-                                    <button class='btn btn-outline-success btn-xs crear-btn-linea' data-id="{{ $Linea->LineaID }}">
+                                    <button type="button" class="index-action index-action--success crear-btn-linea" data-id="{{ $Linea->LineaID }}" title="Asignar">
                                         <i class="fas fa-plus"></i>
                                     </button>
 
@@ -708,10 +674,7 @@
 </div>
 
 @push('third_party_stylesheets')
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
-@include('inventarios.partials.tipo-persona-styles')
-@include('inventarios.partials.asignar-ui-styles')
+@include('layouts.datatables_css')
 
 <style>
     .inventario-filtros .pill-group {
@@ -755,9 +718,8 @@
 @endpush
 
 @push('third_party_scripts')
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+@include('layouts.datatables_js')
+@include('layouts.partials.index-page-js')
 
 <script>
     const empleadoInventarioActivo = @json($empleadoActivo);
@@ -837,77 +799,54 @@
 
 <script>
     $(document).ready(function() {
+        var invDtLang = {
+            sProcessing: 'Procesando...',
+            sLengthMenu: 'Mostrar _MENU_',
+            sZeroRecords: 'No se encontraron resultados',
+            sEmptyTable: 'Ningún dato disponible en esta tabla',
+            sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',
+            sInfoEmpty: 'Mostrando 0 a 0 de 0',
+            sInfoFiltered: '(filtrado de _MAX_ registros)',
+            sSearch: '',
+            searchPlaceholder: 'Buscar...',
+            oPaginate: {
+                sFirst: 'Primero',
+                sLast: 'Último',
+                sNext: 'Siguiente',
+                sPrevious: 'Anterior'
+            }
+        };
+        var invDtDom = "<'index-page__dt-toolbar'f>t<'index-page__dt-footer'ip>";
+        var invDtBase = {
+            responsive: true,
+            paging: true,
+            lengthMenu: [5, 10, 25, 50],
+            pageLength: 5,
+            searching: true,
+            ordering: true,
+            info: true,
+            autoWidth: false,
+            dom: invDtDom,
+            language: invDtLang
+        };
+
         if ($('#equiposTable').length) {
-        let table1_1 = $('#equiposTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-        });
+            $('#equiposTable').DataTable(invDtBase);
         }
-
         if ($('#insumosTable').length) {
-        let table2_1 = $('#insumosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-        });
+            $('#insumosTable').DataTable(invDtBase);
         }
-
         if ($('#lineasTable').length) {
-        let table3_1 = $('#lineasTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-
-        });
+            $('#lineasTable').DataTable(invDtBase);
         }
 
-        let table = $('#equiposAsignadosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "columnDefs": [
-                { "visible": false, "targets": [3, 6, 7] } // características, fecha asignacion, fecha compra
+        $('#equiposAsignadosTable').DataTable($.extend(true, {}, invDtBase, {
+            columnDefs: [
+                { visible: false, targets: [3, 6, 7] }
             ]
-        });
-
-        let table2 = $('#insumosAsignadosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-
-        });
-
-        let table3 = $('#lineasAsignadosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-
-        });
+        }));
+        $('#insumosAsignadosTable').DataTable(invDtBase);
+        $('#lineasAsignadosTable').DataTable(invDtBase);
 
         inicializarFiltrosPresupuestado();
     });
@@ -1054,17 +993,16 @@
 
 <script>
     $(document).ready(function() {
-        $('#myTab a').on('click', function(event) {
+        $('#myTab [data-inv-tab]').on('click', function(event) {
             event.preventDefault();
-            var target = $(this).attr('href');
+            var target = $(this).attr('data-inv-tab');
 
-            $('#myTab a').removeClass('active');
+            $('#myTab [data-inv-tab]').removeClass('is-active active');
             $('.tab-content > .tab-pane').removeClass('show active');
 
-            $(this).addClass('active');
+            $(this).addClass('is-active active');
             $(target).addClass('show active');
 
-            // Recalcular columnas DataTables al mostrar pestaña (evita tablas “vacías”)
             var $pane = $(target);
             $pane.find('table').each(function() {
                 if ($.fn.DataTable.isDataTable(this)) {
@@ -2138,7 +2076,7 @@
             newRow.push(htmlChipPresupuestado(!!telefono.Presupuestado));
         }
 
-        table.row.add(newRow).draw(false);
+        $('#lineasAsignadosTable').DataTable().row.add(newRow).draw(false);
     }
 
     $(document).on('click', '.delete-btn-linea', function(event) {

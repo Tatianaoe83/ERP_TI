@@ -25,61 +25,6 @@
     </style>
     @endpush
 
-    <div class="inv-leyenda">
-        <div class="inv-leyenda-item">
-            <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-            <div><strong>Persona física</strong>Stock (asignado actual) + Extra (presupuesto futuro).</div>
-        </div>
-        <div class="inv-leyenda-item">
-            <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
-            <div><strong>Gerencia / referenciado</strong>Solo stock. Tiene asignaciones actuales, sin extras.</div>
-        </div>
-        <div class="inv-leyenda-item">
-            <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
-            <div><strong>Plaza extraordinaria</strong>Todo es Extra (presupuesto futuro).</div>
-        </div>
-    </div>
-
-    <div class="index-page__filters" style="padding: 0.9rem 1rem 0;">
-        <div class="form-group">
-            <label for="filtro-nombre">Nombre empleado</label>
-            <input type="text" class="form-control" id="filtro-nombre" placeholder="Buscar empleado...">
-        </div>
-        <div class="form-group">
-            <label for="filtro-obra">Obra</label>
-            <select id="filtro-obra" class="jz-inv form-control">
-                <option value="">Todas las obras</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="filtro-puesto">Puesto</label>
-            <select id="filtro-puesto" class="jz-inv form-control">
-                <option value="">Todos los puestos</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="filtro-inventario">Inventario</label>
-            <input type="text" class="form-control" id="filtro-inventario" placeholder="Buscar inventario...">
-        </div>
-        <div class="form-group">
-            <label for="filtro-persona">Tipo de persona</label>
-            <select class="form-control jz-inv" id="filtro-persona">
-                <option value="" selected>Físicas y referenciados (default)</option>
-                <option value="FISICA">Física — stock + extra</option>
-                <option value="REFERENCIADO">Referenciado — solo stock</option>
-                <option value="EXTRAORDINARIO">Extraordinario — todo extra</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="filtro-estatus">Estatus</label>
-            <select class="form-control" id="filtro-estatus">
-                <option value="1" selected>Activo</option>
-                <option value="0">Inactivo</option>
-                <option value="2">Todos</option>
-            </select>
-        </div>
-    </div>
-
     <div class="index-page__table-wrap table-responsive">
         <table id="tabla-empleados" class="table index-table w-full">
             <thead>
@@ -122,6 +67,21 @@
                 searching: false,
                 pageLength: 10,
                 dom: "t<'index-page__dt-footer'ip>",
+                language: {
+                    sProcessing: 'Procesando...',
+                    sLengthMenu: 'Mostrar _MENU_',
+                    sZeroRecords: 'No se encontraron resultados',
+                    sEmptyTable: 'Ningún dato disponible en esta tabla',
+                    sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',
+                    sInfoEmpty: 'Mostrando 0 a 0 de 0',
+                    sInfoFiltered: '(filtrado de _MAX_ registros)',
+                    oPaginate: {
+                        sFirst: 'Primero',
+                        sLast: 'Último',
+                        sNext: 'Siguiente',
+                        sPrevious: 'Anterior'
+                    }
+                },
 
                 ajax: {
                     url: '{{ route("inventarios.indexVista") }}',
@@ -265,10 +225,18 @@
 
             $('#filtro-obra, #filtro-puesto, #filtro-persona, #filtro-estatus')
                 .on('change', function() {
-
                     table.ajax.reload();
-
                 });
+
+            $('#limpiar-filtros-inv').on('click', function() {
+                $('#filtro-nombre').val('');
+                $('#filtro-inventario').val('');
+                $('#filtro-estatus').val('1');
+                $('#filtro-persona').val('').trigger('change');
+                $('#filtro-obra').val('').trigger('change');
+                $('#filtro-puesto').val('').trigger('change');
+                table.ajax.reload();
+            });
 
             // =========================
             // COLOR PLACEHOLDER

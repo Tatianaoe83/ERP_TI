@@ -2,12 +2,90 @@
 
 @section('content')
 @include('flash::message')
+@include('inventarios.partials.tipo-persona-styles')
+<style>
+    .index-page__filters .index-page__note { grid-column: 1 / -1; margin-bottom: 0.15rem; }
+    .inv-leyenda--inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        padding: 0;
+        margin: 0;
+        background: transparent;
+        border: 0;
+    }
+    .inv-leyenda--inline .inv-leyenda-item { max-width: 320px; }
+</style>
 
 <x-index-page
     title="Inventario"
     icon="fa-clipboard-list"
-    subtitle="Asignaciones por empleado"
+    subtitle="0 registros"
 >
+    <x-slot name="filters">
+        <div class="index-page__note">
+            <span class="index-page__note-icon" aria-hidden="true">
+                <i class="fas fa-info-circle"></i>
+            </span>
+            <div class="inv-leyenda inv-leyenda--inline">
+                <div class="inv-leyenda-item">
+                    <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+                    <div><strong>Persona física</strong>Stock (asignado actual) + Extra (presupuesto futuro).</div>
+                </div>
+                <div class="inv-leyenda-item">
+                    <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
+                    <div><strong>Gerencia / referenciado</strong>Solo stock. Tiene asignaciones actuales, sin extras.</div>
+                </div>
+                <div class="inv-leyenda-item">
+                    <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
+                    <div><strong>Plaza extraordinaria</strong>Todo es Extra (presupuesto futuro).</div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="filtro-nombre">Nombre empleado</label>
+            <input type="text" class="form-control" id="filtro-nombre" placeholder="Buscar empleado...">
+        </div>
+        <div class="form-group">
+            <label for="filtro-obra">Obra</label>
+            <select id="filtro-obra" class="jz-inv form-control">
+                <option value="">Todas las obras</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtro-puesto">Puesto</label>
+            <select id="filtro-puesto" class="jz-inv form-control">
+                <option value="">Todos los puestos</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtro-inventario">Inventario</label>
+            <input type="text" class="form-control" id="filtro-inventario" placeholder="Buscar inventario...">
+        </div>
+        <div class="form-group">
+            <label for="filtro-persona">Tipo de persona</label>
+            <select class="form-control jz-inv" id="filtro-persona">
+                <option value="">Físicas y referenciados</option>
+                <option value="FISICA">Física — stock + extra</option>
+                <option value="REFERENCIADO">Referenciado — solo stock</option>
+                <option value="EXTRAORDINARIO">Extraordinario — todo extra</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="filtro-estatus">Estatus</label>
+            <select class="form-control" id="filtro-estatus">
+                <option value="1" selected>Activo</option>
+                <option value="0">Inactivo</option>
+                <option value="2">Todos</option>
+            </select>
+        </div>
+        <div class="index-page__filters-actions">
+            <button type="button" id="limpiar-filtros-inv" class="index-page__btn-secondary">
+                <i class="fa fa-times"></i> Limpiar filtros
+            </button>
+        </div>
+    </x-slot>
+
     @include('inventarios.table')
 </x-index-page>
 @endsection
