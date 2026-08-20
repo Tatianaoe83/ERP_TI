@@ -89,6 +89,12 @@ class SeederTablaPermisos extends Seeder
             'cartas-inventario',
             'asignar-inventario',
 
+            //Operaciones sobre auditorías de equipos
+            'ver-auditorias',
+            'crear-auditorias',
+            'editar-auditorias',
+            'borrar-auditorias',
+
             //Operaciones sobre tabla usuarios
             'ver-usuarios',
             'crear-usuarios',
@@ -125,8 +131,10 @@ class SeederTablaPermisos extends Seeder
          
         ];
 
+        // firstOrCreate para poder volver a correr el seeder cuando se agregan
+        // permisos nuevos sin chocar con el índice único de "name".
         foreach($permisos as $permiso) {
-            Permission::create(['name'=>$permiso]);
+            Permission::firstOrCreate(['name'=>$permiso, 'guard_name'=>'web']);
         }
     }
 }

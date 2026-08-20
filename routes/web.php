@@ -12,6 +12,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CortesController;
 use App\Http\Controllers\FacturasController;
 use App\Http\Controllers\MantenimientosController;
+use App\Http\Controllers\AuditoriasController;
 use App\Http\Controllers\ReportesController;
 use App\Http\Controllers\SolicitudAprobacionController;
 use App\Http\Controllers\SolicitudesController;
@@ -445,6 +446,11 @@ Route::get('/notificaciones-panel', function () {
     Route::get('/auth/outlook', [App\Http\Controllers\OutlookAuthController::class, 'redirect']);
     Route::get('/auth/outlook/callback', [App\Http\Controllers\OutlookAuthController::class, 'callback']);
     Route::get('/auth/outlook/status', [App\Http\Controllers\OutlookAuthController::class, 'status']);
+
+
+    // Auditorías de equipos tecnológicos
+    Route::resource('/auditorias', AuditoriasController::class)
+        ->middleware('can:ver-auditorias');
 });
 
 // Soporte TI (sin auth)

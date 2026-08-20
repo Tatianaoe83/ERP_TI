@@ -15,7 +15,10 @@ $puedeVerActivos = $user && (
     $user->can('ver-categorias') ||
     $user->can('ver-planes')
 );
-$puedeVerMovimientos = $user && $user->can('transferir-inventario');
+$puedeVerMovimientos = $user && (
+    $user->can('transferir-inventario') ||
+    $user->can('ver-auditorias')
+);
 $puedeVerReportes = $user && (
     $user->can('ver-presupuesto') ||
     $user->can('ver-reportes') ||
@@ -46,7 +49,7 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
     $openDefault = 1;
 } elseif (request()->is('lineasTelefonicas*') || request()->is('equipos*') || request()->is('insumos*') || request()->is('categorias*') || request()->is('planes*')) {
     $openDefault = 2;
-} elseif (request()->is('inventarios*')) {
+} elseif (request()->is('inventarios*') || request()->is('auditorias*')) {
     $openDefault = 3;
 } elseif (request()->is('presupuesto*') || request()->is('reportes*') || request()->is('informe*')) {
     $openDefault = 4;
@@ -256,6 +259,15 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
                     class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('inventarios*') ? 'is-active' : '' }}">
                     <i class="fas fa-clipboard-list sidebar-ico sidebar-ico-sm"></i>
                     <span class="sidebar-text">Inventario</span>
+                </a>
+            </li>
+            @endif
+            @if(auth()->check() && auth()->user()->can('ver-auditorias'))
+            <li>
+                <a href="/auditorias" title="Auditorías"
+                    class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('auditorias*') ? 'is-active' : '' }}">
+                    <i class="fas fa-clipboard-check sidebar-ico sidebar-ico-sm"></i>
+                    <span class="sidebar-text">Auditorías</span>
                 </a>
             </li>
             @endif
