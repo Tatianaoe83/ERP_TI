@@ -6,6 +6,7 @@ namespace App\Exports;
 use App\Models\Gerencia;
 use App\Models\Empleados;
 use App\Helpers\PresupuestoHelper;
+use App\Models\PresupuestoConfiguracion;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Illuminate\Support\Facades\DB;
@@ -117,7 +118,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
         WHERE g.GerenciaID = ?
             " . $tipoPersonaFilter . $presupInsumoII . "
-            AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
+            AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
             ", [$numerogerencia]);
 
             $presup_internet_fijo = DB::select("
@@ -131,7 +132,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
     WHERE g.GerenciaID = ?
         " . $tipoPersonaFilter . $presupInsumoII . "
-        AND ii.CateogoriaInsumo = 'INTERNET'
+        AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
         ", [$numerogerencia]);
 
             
@@ -151,7 +152,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
                INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
                WHERE g.GerenciaID = ?
                    " . $tipoPersonaFilter . $presupInsumoII . "
-                   AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
+                   AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
                GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, (CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END)
            ) as impresoras_unicas
    ", [$numerogerencia]);
@@ -167,7 +168,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
            WHERE g.GerenciaID = ?
                " . $tipoPersonaFilter . $presupInsumoII . "
-               AND ii.CateogoriaInsumo = 'INTERNET'
+               AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
    ", [$numerogerencia]);
         }
 

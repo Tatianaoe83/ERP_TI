@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\Empleados;
+use App\Models\PresupuestoConfiguracion;
 
 class PresupuestoHelper
 {
@@ -93,14 +94,14 @@ class PresupuestoHelper
             })
             // Solo empleados con insumos de estas categorías
             ->whereHas('inventarioinsumo', function($query) use ($modo) {
-                $query->whereIn('CateogoriaInsumo', ['MANTENIMIENTO', 'REPARACIONES', 'SERVICIO', 'HOSTING']);
+                PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'otros_insumos');
                 self::soloPresupuestados($query, $modo);
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventarioinsumo' => function($query) use ($modo) {
-                    $query->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CateogoriaInsumo', 'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'MesDePago')
-                          ->whereIn('CateogoriaInsumo', ['MANTENIMIENTO', 'REPARACIONES', 'SERVICIO', 'HOSTING']);
+                    $query->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CateogoriaInsumo', 'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'MesDePago');
+                    PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'otros_insumos');
                     self::soloPresupuestados($query, $modo);
                 }
             ])
@@ -141,22 +142,21 @@ class PresupuestoHelper
     public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = self::tiposPersona($modo);
-        $categorias = ['LAPTOP', 'MONITOR', 'IMPRESORA', 'MODEM', 'TABLET', 'ANTENA'];
 
         return Empleados::query()
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
-            ->whereHas('inventarioequipo', function($query) use ($categorias, $modo) {
-                $query->whereIn('CategoriaEquipo', $categorias);
+            ->whereHas('inventarioequipo', function($query) use ($modo) {
+                PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
                 self::soloPresupuestados($query, $modo);
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
-                'inventarioequipo' => function($query) use ($categorias, $modo) {
-                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago')
-                          ->whereIn('CategoriaEquipo', $categorias);
+                'inventarioequipo' => function($query) use ($modo) {
+                    $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago');
+                    PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
                     self::soloPresupuestados($query, $modo);
                 }
             ])
@@ -198,16 +198,16 @@ class PresupuestoHelper
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
             ->whereHas('inventarioinsumo', function($query) use ($modo) {
-                $query->where('CateogoriaInsumo', 'LICENCIA')
-                      ->whereNotIn('NombreInsumo', ['WINDOWS 10 PRO', 'WINDOWS 11 PRO', 'ERP VSCONTROL TOTAL']);
+                PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'licencias');
+                PresupuestoConfiguracion::aplicarWhereNotIn($query, 'NombreInsumo', 'licencias_excluir_nombres');
                 self::soloPresupuestados($query, $modo);
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventarioinsumo' => function($query) use ($modo) {
-                    $query->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'MesDePago')
-                          ->where('CateogoriaInsumo', 'LICENCIA')
-                          ->whereNotIn('NombreInsumo', ['WINDOWS 10 PRO', 'WINDOWS 11 PRO', 'ERP VSCONTROL TOTAL']);
+                    $query->select('InventarioID', 'EmpleadoID', 'NombreInsumo', 'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'MesDePago');
+                    PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'licencias');
+                    PresupuestoConfiguracion::aplicarWhereNotIn($query, 'NombreInsumo', 'licencias_excluir_nombres');
                     self::soloPresupuestados($query, $modo);
                 }
             ])
@@ -264,14 +264,14 @@ class PresupuestoHelper
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
             ->whereHas('inventariolineas', function($query) use ($modo) {
-                $query->where('TipoLinea', 'Datos');
+                PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_datos');
                 self::soloPresupuestados($query, $modo);
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventariolineas' => function($query) use ($modo) {
-                    $query->select('InventarioID', 'EmpleadoID', 'TipoLinea', 'CostoRentaMensual', 'CostoFianza', 'MontoRenovacionFianza')
-                          ->where('TipoLinea', 'Datos');
+                    $query->select('InventarioID', 'EmpleadoID', 'TipoLinea', 'CostoRentaMensual', 'CostoFianza', 'MontoRenovacionFianza');
+                    PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_datos');
                     self::soloPresupuestados($query, $modo);
                 }
             ])
@@ -329,14 +329,14 @@ class PresupuestoHelper
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
             ->whereHas('inventariolineas', function($query) use ($modo) {
-                $query->where('TipoLinea', 'GPS');
+                PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_gps');
                 self::soloPresupuestados($query, $modo);
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventariolineas' => function($query) use ($modo) {
-                    $query->select('InventarioID', 'EmpleadoID', 'TipoLinea', 'CostoRentaMensual', 'CostoFianza', 'MontoRenovacionFianza')
-                          ->where('TipoLinea', 'GPS');
+                    $query->select('InventarioID', 'EmpleadoID', 'TipoLinea', 'CostoRentaMensual', 'CostoFianza', 'MontoRenovacionFianza');
+                    PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_gps');
                     self::soloPresupuestados($query, $modo);
                 }
             ])
@@ -394,14 +394,14 @@ class PresupuestoHelper
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
             ->whereHas('inventariolineas', function($query) use ($modo) {
-                $query->where('TipoLinea', 'Voz');
+                PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_voz');
                 self::soloPresupuestados($query, $modo);
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventariolineas' => function($query) use ($modo) {
-                    $query->select('InventarioID', 'EmpleadoID', 'TipoLinea', 'CostoRentaMensual', 'CostoFianza', 'MontoRenovacionFianza')
-                          ->where('TipoLinea', 'Voz');
+                    $query->select('InventarioID', 'EmpleadoID', 'TipoLinea', 'CostoRentaMensual', 'CostoFianza', 'MontoRenovacionFianza');
+                    PresupuestoConfiguracion::aplicarWhereIn($query, 'TipoLinea', 'lineas_voz');
                     self::soloPresupuestados($query, $modo);
                 }
             ])
@@ -503,7 +503,7 @@ class PresupuestoHelper
         $todosInsumos
             ->filter(fn ($i) =>
                 $i->FrecuenciaDePago === 'Mensual' &&
-                in_array($i->CateogoriaInsumo, ['LICENCIA', 'HOSTING', 'STARLINK', 'INTERNET', 'TABLET'])
+                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'insumos_mensuales')
             )
             ->groupBy('NombreInsumo')
             ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, &$resultado) {
@@ -524,7 +524,7 @@ class PresupuestoHelper
         $todosInsumos
             ->filter(fn ($i) =>
                 in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
-                $i->CateogoriaInsumo === 'LICENCIA' &&
+                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'licencias') &&
                 !($esExentaWindows && str_contains(strtoupper($i->NombreInsumo), 'WINDOWS'))
             )
             ->groupBy('NombreInsumo')
@@ -560,7 +560,7 @@ class PresupuestoHelper
         $todosInsumos
             ->filter(fn ($i) =>
                 in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
-                !in_array($i->CateogoriaInsumo, ['LAPTOP', 'MONITOR', 'NO BREAK', 'LICENCIA', 'ACCESORIOS', 'BATERIA UPS', 'IMPRESORA'])
+                !PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
             )
             ->groupBy(fn ($i) => strcasecmp($i->CateogoriaInsumo ?? '', 'REPARACIONES') === 0 ? 'ACCESORIOS Y REFACCIONES' : $i->NombreInsumo)
             ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, &$resultado) {
@@ -586,7 +586,11 @@ class PresupuestoHelper
 
         // --- ORDEN 4: Fianzas por compañía/tipo de línea ---
         $todasLineas
-            ->filter(fn ($l) => in_array(strtoupper(trim($l->TipoLinea ?? '')), ['VOZ', 'DATOS', 'GPS']))
+            ->filter(fn ($l) =>
+                PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_voz')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_datos')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_gps')
+            )
             ->groupBy(fn ($l) => strtoupper(trim($l->Compania ?? '')) . '|' . strtoupper(trim($l->TipoLinea ?? '')))
             ->each(function ($grupo, $key) use ($meses, $gerenciaId, &$resultado) {
                 [$compania, $tipoLinea] = explode('|', $key, 2);
@@ -635,7 +639,7 @@ class PresupuestoHelper
 
         // --- ORDEN 6: Inversiones (hardware + renovación fianzas en Junio) ---
         $equiposHardware = $todosEquipos->filter(fn ($e) =>
-            in_array($e->CategoriaEquipo, ['LAPTOP', 'MONITOR', 'IMPRESORA', 'TABLET', 'NO BREAK', 'MODEM', 'ANTENA'])
+            PresupuestoConfiguracion::contiene($e->CategoriaEquipo, 'hardware')
         );
 
         // Calcular costos por mes
@@ -750,7 +754,7 @@ class PresupuestoHelper
         $todosInsumos
             ->filter(fn ($i) =>
                 $norm($i->FrecuenciaDePago) === 'MENSUAL' &&
-                in_array($norm($i->CateogoriaInsumo), ['LICENCIA', 'HOSTING', 'STARLINK', 'INTERNET'], true)
+                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'insumos_mensuales')
             )
             ->groupBy(fn ($i) => $norm($i->NombreInsumo))
             ->sortKeys()
@@ -763,7 +767,7 @@ class PresupuestoHelper
         $todosInsumos
             ->filter(fn ($i) =>
                 in_array($norm($i->FrecuenciaDePago), ['ANUAL', 'PAGO ÚNICO'], true) &&
-                $norm($i->CateogoriaInsumo) === 'LICENCIA' &&
+                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'licencias') &&
                 !($esExentaWindows && str_starts_with($norm($i->NombreInsumo), 'WINDOWS'))
             )
             ->groupBy(fn ($i) => $norm($i->NombreInsumo))
@@ -789,8 +793,7 @@ class PresupuestoHelper
         $todosInsumos
             ->filter(fn ($i) =>
                 in_array($norm($i->FrecuenciaDePago), ['ANUAL', 'PAGO ÚNICO'], true) &&
-                !in_array($norm($i->CateogoriaInsumo),
-                    ['LAPTOP', 'MONITOR', 'NO BREAK', 'LICENCIA', 'ACCESORIOS', 'BATERIA UPS', 'IMPRESORA'], true)
+                !PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
             )
             ->groupBy(fn ($i) => $norm($nombreOtroInsumo($i)))
             ->sortKeys()
@@ -812,7 +815,11 @@ class PresupuestoHelper
         };
 
         $todasLineas
-            ->filter(fn ($l) => in_array($norm($l->TipoLinea), ['VOZ', 'DATOS', 'GPS'], true))
+            ->filter(fn ($l) =>
+                PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_voz')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_datos')
+                || PresupuestoConfiguracion::contiene($l->TipoLinea, 'lineas_gps')
+            )
             ->groupBy(fn ($l) => $norm($l->Compania . ' FIANZA - ' . $l->TipoLinea))
             ->sortKeys()
             ->each(function ($grupo) use ($agregar, $meses, $mesDeFecha) {
@@ -841,7 +848,7 @@ class PresupuestoHelper
 
         // --- ORDEN 6: hardware, cada compra en su MesDePago. La renovación de fianzas cae en Junio.
         $equipos = $todosEquipos->filter(fn ($e) =>
-            in_array($norm($e->CategoriaEquipo), ['LAPTOP', 'MONITOR', 'IMPRESORA', 'TABLETA', 'NO BREAK', 'ANTENA', 'MODEM'], true)
+            PresupuestoConfiguracion::contiene($e->CategoriaEquipo, 'hardware')
         );
 
         // Casi ningún equipo trae MesDePago; sin mes no cabe en el calendario, así que se cae al

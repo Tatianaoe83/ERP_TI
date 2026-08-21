@@ -44,6 +44,13 @@
     :show-count="false"
     :card="false"
 >
+    <x-slot name="headerActions">
+        @can('editar-conf-presupuesto')
+            <a href="{{ route('presupuesto.configuracion') }}" class="index-page__btn-secondary">
+                <i class="fas fa-sliders-h"></i> Conf. presupuesto
+            </a>
+        @endcan
+    </x-slot>
     <x-slot name="tabs">
         <div class="app-tabs" role="tablist">
             <button type="button" data-app-tab="1" class="app-tabs__btn is-active">

@@ -3,6 +3,7 @@
 namespace App\DataTables;
 
 use App\Models\InventarioInsumo;
+use App\Models\PresupuestoConfiguracion;
 use Yajra\DataTables\Services\DataTable;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\QueryDataTable;
@@ -40,10 +41,11 @@ class EstatusLicenciasDataTable extends DataTable
            
             
             $query = DB::table('inventarioinsumo')
-                ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
-                ->where('inventarioinsumo.CateogoriaInsumo', 'Licencia')
-           
-            ->select([
+                ->join('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID');
+
+            PresupuestoConfiguracion::aplicarWhereIn($query, 'inventarioinsumo.CateogoriaInsumo', 'licencias');
+
+            $query->select([
                 'inventarioinsumo.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
                 'inventarioinsumo.NombreInsumo as insumo_nombre',

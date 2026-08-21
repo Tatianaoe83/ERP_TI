@@ -43,7 +43,11 @@
                 <label for="inventarioinsumo_mes_pago">Mes de pago</label>
                 <select id="inventarioinsumo_mes_pago" name="inventarioinsumo_mes_pago" class="jz form-control">
                     <option value="">Todos los meses</option>
-                    @foreach(\App\Models\InventarioInsumo::select('MesDePago')->distinct()->where('CateogoriaInsumo', 'Licencia')->get() as $mes)
+                    @php
+                        $mesesLic = \App\Models\InventarioInsumo::select('MesDePago')->distinct();
+                        \App\Models\PresupuestoConfiguracion::aplicarWhereIn($mesesLic, 'CateogoriaInsumo', 'licencias');
+                    @endphp
+                    @foreach($mesesLic->get() as $mes)
                         <option value="{{ $mes->MesDePago }}" {{ $filtros['inventarioinsumo_mes_pago'] == $mes->MesDePago ? 'selected' : '' }}>
                             {{ $mes->MesDePago }}
                         </option>
