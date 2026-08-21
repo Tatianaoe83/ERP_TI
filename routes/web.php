@@ -452,6 +452,7 @@ Route::get('/notificaciones-panel', function () {
 
     // Auditorías de equipos tecnológicos
     Route::resource('/auditorias', AuditoriasController::class)
+        ->only(['index', 'show', 'store', 'destroy'])
         ->middleware('can:ver-auditorias');
 });
 
