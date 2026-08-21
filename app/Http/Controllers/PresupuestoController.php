@@ -8,6 +8,7 @@ use App\Models\Gerencia;
 use App\Models\Gerencias_usuarios;
 use App\Models\Empleados;
 use App\Helpers\PresupuestoHelper;
+use App\Models\PresupuestoConfiguracion;
 use PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ReportExport;
@@ -185,7 +186,7 @@ class PresupuestoController extends Controller
                 INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
                 INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
                 WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
-                    AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
+                    AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
                     ", $query_params);
 
                 $presup_internet_fijo = DB::select("
@@ -198,7 +199,7 @@ class PresupuestoController extends Controller
             INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
             INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
             WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
-                AND ii.CateogoriaInsumo = 'INTERNET'
+                AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
                 ", $query_params);
 
 
@@ -217,7 +218,7 @@ class PresupuestoController extends Controller
                                 INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
                                 INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
                                 WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
-                                    AND ii.CateogoriaInsumo = 'RENTA DE IMPRESORA'
+                                    AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
                                 GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, (CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END)
                             ) as impresoras_unicas
                     ", $query_params);
@@ -232,7 +233,7 @@ class PresupuestoController extends Controller
                    INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
                    INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
                    WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
-                       AND ii.CateogoriaInsumo = 'INTERNET'
+                       AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
             ", $query_params);
             }
 

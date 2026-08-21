@@ -1014,6 +1014,8 @@
                         }
                         var code = old.textContent || '';
                         if (!code.trim()) return;
+                        // AppNav reinyecta scripts: const/let globales no se pueden redeclarar
+                        code = code.replace(/(^|\n)([ \t]*)(const|let) /g, '$1$2var ');
                         if (code.indexOf('function ticketsModal') !== -1 && typeof window.ticketsModal === 'function') {
                             old.remove();
                             return;

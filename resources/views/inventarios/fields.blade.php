@@ -15,21 +15,6 @@
     $fmtMoney = fn ($n) => '$' . number_format((float) $n, 0);
 @endphp
 
-<ul class="nav inv-tabs" id="myTab" role="tablist">
-    <li class="nav-item">
-        <a class="nav-link active" data-toggle="tab" href="#empleados">Empleado</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#equipo">Equipo de cómputo</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#insumo">Insumo</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#linea">Línea de telefonía</a>
-    </li>
-</ul>
-
 <div class="tab-content">
 
 
@@ -37,7 +22,7 @@
 
     <!-- TAB Empleado -->
     <div class="tab-pane fade show active" id="empleados">
-        <div class="inv-empleado-card">
+        <div class="index-page__card crud-page__card inv-empleado-card">
         <div class="row">
             <!-- NombreEmpleado Field -->
             <div class="col-sm-6">
@@ -168,8 +153,8 @@
 
             <!-- equiposAsignados Seleccionados -->
 
-            <div class="table-responsive">
-                <table id="equiposAsignadosTable" class="table index-table w-full">
+                <div class="index-page__table-wrap table-responsive">
+                    <table id="equiposAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
                             <th>Action</th>
@@ -247,13 +232,6 @@
                 <span><i class="fas fa-plus-circle mr-1"></i> Equipos disponibles</span>
             </div>
             <div class="inv-panel-body">
-                <div class="inv-toolbar">
-                    <div class="inv-search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="inv-table-search" data-tabla="equiposTable" placeholder="Buscar por marca, modelo o características...">
-                    </div>
-                </div>
-
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="equiposTable" class="table index-table w-full">
@@ -273,7 +251,7 @@
                                 <td>
 
 
-                                    <button class='btn btn-outline-success btn-xs crear-btn' data-id="{{ $equipo->CategoriaID }}">
+                                    <button type="button" class="index-action index-action--success crear-btn" data-id="{{ $equipo->CategoriaID }}" title="Asignar">
                                         <i class="fas fa-plus"></i>
                                     </button>
 
@@ -441,12 +419,6 @@
                 <span><i class="fas fa-plus-circle mr-1"></i> Insumos disponibles</span>
             </div>
             <div class="inv-panel-body">
-                <div class="inv-toolbar">
-                    <div class="inv-search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="inv-table-search" data-tabla="insumosTable" placeholder="Buscar insumo...">
-                    </div>
-                </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="insumosTable" class="table index-table w-full">
@@ -469,7 +441,7 @@
                                 <td>
 
 
-                                    <button class='btn btn-outline-success btn-xs crear-btn-insumo' data-id="{{ $insumo->CategoriaID }}">
+                                    <button type="button" class="index-action index-action--success crear-btn-insumo" data-id="{{ $insumo->CategoriaID }}" title="Asignar">
                                         <i class="fas fa-plus"></i>
                                     </button>
 
@@ -647,12 +619,6 @@
                 <span><i class="fas fa-plus-circle mr-1"></i> Líneas disponibles</span>
             </div>
             <div class="inv-panel-body">
-                <div class="inv-toolbar">
-                    <div class="inv-search">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="inv-table-search" data-tabla="lineasTable" placeholder="Buscar línea...">
-                    </div>
-                </div>
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="lineasTable" class="table index-table w-full">
@@ -681,7 +647,7 @@
                                 <td>
 
 
-                                    <button class='btn btn-outline-success btn-xs crear-btn-linea' data-id="{{ $Linea->LineaID }}">
+                                    <button type="button" class="index-action index-action--success crear-btn-linea" data-id="{{ $Linea->LineaID }}" title="Asignar">
                                         <i class="fas fa-plus"></i>
                                     </button>
 
@@ -718,10 +684,7 @@
 </div>
 
 @push('third_party_stylesheets')
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
-@include('inventarios.partials.tipo-persona-styles')
-@include('inventarios.partials.asignar-ui-styles')
+@include('layouts.datatables_css')
 
 <style>
     .inventario-filtros .pill-group {
@@ -765,14 +728,15 @@
 @endpush
 
 @push('third_party_scripts')
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+@include('layouts.datatables_js')
+@include('layouts.partials.index-page-js')
 
 <script>
-    const empleadoInventarioActivo = @json($empleadoActivo);
-    const permitePresupuestado = @json($permitePresupuestado);
-    const presupuestadoForzado = @json($presupuestadoForzado);
+    var empleadoInventarioActivo = @json($empleadoActivo);
+    var permitePresupuestado = @json($permitePresupuestado);
+    var presupuestadoForzado = @json($presupuestadoForzado);
+
+    $(document).off('.invAssign');
 
     // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
     // asignado es presupuestado y para el resto el campo viaja siempre en 0.
@@ -928,11 +892,12 @@
     }
 
     // Mantener la etiqueta del switch / cards en sync con su estado
-    $(document).on('change', '.form-check-input[role="switch"]', function() {
-        aplicarValorModo('#' + this.id, this.checked ? '1' : '0');
+    $(document).on('change.invAssign', '.form-check-input[role="switch"]', function() {
+        $('#' + this.id + 'Label').text(this.checked ? 'Si' : 'No');
+        syncModoCards('#' + this.id, this.checked);
     });
 
-    $(document).on('click', '.inv-modo-card:not(.is-locked)', function() {
+    $(document).on('click.invAssign', '.inv-modo-card:not(.is-locked)', function() {
         const $card = $(this);
         const selector = $card.closest('[data-switch]').data('switch');
         aplicarValorModo(selector, String($card.data('value')));
@@ -957,77 +922,55 @@
 
 <script>
     $(document).ready(function() {
-        if ($('#equiposTable').length) {
-        let table1_1 = $('#equiposTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-        });
+        var invDtLang = {
+            sProcessing: 'Procesando...',
+            sLengthMenu: 'Mostrar _MENU_',
+            sZeroRecords: 'No se encontraron resultados',
+            sEmptyTable: 'Ningún dato disponible en esta tabla',
+            sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',
+            sInfoEmpty: 'Mostrando 0 a 0 de 0',
+            sInfoFiltered: '(filtrado de _MAX_ registros)',
+            sSearch: '',
+            searchPlaceholder: 'Buscar...',
+            oPaginate: {
+                sFirst: 'Primero',
+                sLast: 'Último',
+                sNext: 'Siguiente',
+                sPrevious: 'Anterior'
+            }
+        };
+        var invDtDom = "<'index-page__dt-toolbar'f>t<'index-page__dt-footer'ip>";
+        var invDtBase = {
+            responsive: true,
+            paging: true,
+            lengthMenu: [5, 10, 25, 50],
+            pageLength: 5,
+            searching: true,
+            ordering: true,
+            info: true,
+            autoWidth: false,
+            dom: invDtDom,
+            language: invDtLang
+        };
+
+        function initInvDt(selector, extra) {
+            if (!$(selector).length) return;
+            if ($.fn.DataTable.isDataTable(selector)) {
+                $(selector).DataTable().destroy();
+            }
+            $(selector).DataTable($.extend(true, {}, invDtBase, extra || {}));
         }
 
-        if ($('#insumosTable').length) {
-        let table2_1 = $('#insumosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-        });
-        }
-
-        if ($('#lineasTable').length) {
-        let table3_1 = $('#lineasTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-
-        });
-        }
-
-        let table = $('#equiposAsignadosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "columnDefs": [
-                { "visible": false, "targets": [3, 6, 7] } // características, fecha asignacion, fecha compra
+        initInvDt('#equiposTable');
+        initInvDt('#insumosTable');
+        initInvDt('#lineasTable');
+        initInvDt('#equiposAsignadosTable', {
+            columnDefs: [
+                { visible: false, targets: [3, 6, 7] }
             ]
         });
-
-        let table2 = $('#insumosAsignadosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-
-        });
-
-        let table3 = $('#lineasAsignadosTable').DataTable({
-            "responsive": true,
-            "paging": true,
-            "lengthMenu": [5, 10, 25, 50],
-            "pageLength": 5,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-
-        });
+        initInvDt('#insumosAsignadosTable');
+        initInvDt('#lineasAsignadosTable');
 
         inicializarFiltrosPresupuestado();
     });
@@ -1036,14 +979,14 @@
 <script>
     // Índice de la columna "Presupuestado" en cada tabla de asignados.
     // La columna sólo se pinta para FISICA/EXTRAORDINARIO.
-    const columnaPresupuestado = {
+    var columnaPresupuestado = {
         equiposAsignadosTable: 12,
         insumosAsignadosTable: 12,
         lineasAsignadosTable: 15,
     };
 
     // Filtro activo por tabla: todos | presupuestados | no_presupuestados
-    const filtroPresupuestado = {
+    var filtroPresupuestado = {
         equiposAsignadosTable: 'todos',
         insumosAsignadosTable: 'todos',
         lineasAsignadosTable: 'todos',
@@ -1055,18 +998,21 @@
     }
 
     // Filtro global de DataTables: las tablas sin entrada en el mapa no se ven afectadas.
-    $.fn.dataTable.ext.search.push(function(settings, data) {
-        const tablaId = settings.nTable.id;
-        const filtro = filtroPresupuestado[tablaId];
+    if (!window.__invFiltroPresupuestadoDt) {
+        window.__invFiltroPresupuestadoDt = true;
+        $.fn.dataTable.ext.search.push(function(settings, data) {
+            var tablaId = settings.nTable.id;
+            var filtro = filtroPresupuestado[tablaId];
 
-        if (!permitePresupuestado || !filtro || filtro === 'todos') {
-            return true;
-        }
+            if (!permitePresupuestado || !filtro || filtro === 'todos') {
+                return true;
+            }
 
-        const presupuestada = esFilaPresupuestada(data[columnaPresupuestado[tablaId]]);
+            var presupuestada = esFilaPresupuestada(data[columnaPresupuestado[tablaId]]);
 
-        return filtro === 'presupuestados' ? presupuestada : !presupuestada;
-    });
+            return filtro === 'presupuestados' ? presupuestada : !presupuestada;
+        });
+    }
 
     function actualizarConteos(tablaId) {
         if (!permitePresupuestado) {
@@ -1117,7 +1063,7 @@
             .visible(mostrar, false);
     }
 
-    $(document).on('click', '.pill-filtro', function() {
+    $(document).on('click.invAssign', '.pill-filtro', function() {
         const barra = $(this).closest('.inventario-filtros');
         const tablaId = barra.data('tabla');
 
@@ -1138,7 +1084,7 @@
         $('#' + tablaId).DataTable().draw();
     });
 
-    $(document).on('click', '.inv-dual-card', function() {
+    $(document).on('click.invAssign', '.inv-dual-card', function() {
         const dual = $(this).closest('.inv-dual');
         const tablaId = dual.data('tabla');
         let filtro = $(this).data('filtro');
@@ -1164,7 +1110,7 @@
         $('#' + tablaId).DataTable().draw();
     });
 
-    $(document).on('keyup', '.inv-table-search', function() {
+    $(document).on('keyup.invAssign', '.inv-table-search', function() {
         const tablaId = $(this).data('tabla');
         if ($.fn.DataTable.isDataTable('#' + tablaId)) {
             $('#' + tablaId).DataTable().search(this.value).draw();
@@ -1174,17 +1120,16 @@
 
 <script>
     $(document).ready(function() {
-        $('#myTab a').on('click', function(event) {
+        $('#myTab [data-inv-tab]').on('click', function(event) {
             event.preventDefault();
-            var target = $(this).attr('href');
+            var target = $(this).attr('data-inv-tab');
 
-            $('#myTab a').removeClass('active');
+            $('#myTab [data-inv-tab]').removeClass('is-active active');
             $('.tab-content > .tab-pane').removeClass('show active');
 
-            $(this).addClass('active');
+            $(this).addClass('is-active active');
             $(target).addClass('show active');
 
-            // Recalcular columnas DataTables al mostrar pestaña (evita tablas “vacías”)
             var $pane = $(target);
             $pane.find('table').each(function() {
                 if ($.fn.DataTable.isDataTable(this)) {
@@ -1211,7 +1156,7 @@
     }
 
     // Editar equipo (abriendo el modal con los datos)
-    $(document).on('click', '.edit-btn', function() {
+    $(document).on('click.invAssign', '.edit-btn', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1242,7 +1187,7 @@
     });
 
     // Crear equipo (con valores vacíos para nuevo registro)
-    $(document).on('click', '.crear-btn', function() {
+    $(document).on('click.invAssign', '.crear-btn', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1274,8 +1219,8 @@
     });
 
     // Validación en tiempo real del Folio (al escribir o al salir del campo)
-    let folioTimer = null;
-    let folioValido = true; // Estado de validez del folio actual
+    var folioTimer = null;
+    var folioValido = true; // Estado de validez del folio actual
 
     // Función para cargar los últimos 3 folios
     function cargarUltimosFolios() {
@@ -1299,17 +1244,17 @@
     }
 
     // Mostrar últimos 3 folios registrados cuando el usuario hace focus al input
-    $(document).on('focus', '#editFolio', function() {
+    $(document).on('focus.invAssign', '#editFolio', function() {
         cargarUltimosFolios();
         $('#folio-Info').fadeIn(200);
     });
 
     // Ocultar la advertencia al perder el foco
-    $(document).on('blur', '#editFolio', function() {
+    $(document).on('blur.invAssign', '#editFolio', function() {
         $('#folio-Info').fadeOut(200);
     });
 
-    $(document).on('input', '#editFolio', function() {
+    $(document).on('input.invAssign', '#editFolio', function() {
         clearTimeout(folioTimer);
         const folioInput = $(this);
         const folio = folioInput.val().trim();
@@ -1364,7 +1309,7 @@
     });
 
     // Enviar formulario de edición o creación con AJAX
-    $(document).on('click', '.submit_equipo', function(event) {
+    $(document).on('click.invAssign', '.submit_equipo', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -1652,7 +1597,7 @@
     }
 
     // Eliminar equipo con AJAX
-    $(document).on('click', '.delete-btn', function(event) {
+    $(document).on('click.invAssign', '.delete-btn', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -1735,7 +1680,7 @@
 
     // Seccion insumo
 
-    $(document).on('click', '.edit-btn-insum', function() {
+    $(document).on('click.invAssign', '.edit-btn-insum', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1769,7 +1714,7 @@
         $('#editModalInsumo').modal('show');
     });
 
-    $(document).on('click', '.crear-btn-insumo', function() {
+    $(document).on('click.invAssign', '.crear-btn-insumo', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -1813,7 +1758,7 @@
     });
 
 
-    $(document).on('click', '.submit_insumo', function(event) {
+    $(document).on('click.invAssign', '.submit_insumo', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -1995,7 +1940,7 @@
         $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);
     }
 
-    $(document).on('click', '.delete-btn-insumo', function(event) {
+    $(document).on('click.invAssign', '.delete-btn-insumo', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -2078,7 +2023,7 @@
 
     // Seccion telefono
 
-    $(document).on('click', '.edit-btn-linea', function() {
+    $(document).on('click.invAssign', '.edit-btn-linea', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -2101,7 +2046,7 @@
 
         $('#editModalLinea').modal('show');
     });
-    $(document).on('click', '.crear-btn-linea', function() {
+    $(document).on('click.invAssign', '.crear-btn-linea', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
         }
@@ -2140,7 +2085,7 @@
     });
 
 
-    $(document).on('click', '.submit_linea', function(event) {
+    $(document).on('click.invAssign', '.submit_linea', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {
@@ -2311,10 +2256,10 @@
             newRow.push(htmlChipPresupuestado(!!telefono.Presupuestado));
         }
 
-        table.row.add(newRow).draw(false);
+        $('#lineasAsignadosTable').DataTable().row.add(newRow).draw(false);
     }
 
-    $(document).on('click', '.delete-btn-linea', function(event) {
+    $(document).on('click.invAssign', '.delete-btn-linea', function(event) {
         event.preventDefault();
 
         if (bloquearAccionInventarioInactivo()) {

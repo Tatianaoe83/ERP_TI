@@ -21,33 +21,36 @@
         ],
     ];
     $meta = $tipoMeta[$tipoPersona] ?? $tipoMeta['FISICA'];
-    $iniciales = collect(preg_split('/\s+/', trim((string) $inventario->NombreEmpleado)))
-        ->filter()
-        ->take(2)
-        ->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))
-        ->implode('');
 @endphp
 
 @include('inventarios.partials.tipo-persona-styles')
 @include('inventarios.partials.asignar-ui-styles')
 
-<div class="inv-assign-page">
-    <div class="inv-hero">
-        <div class="inv-hero-left">
-            <div class="inv-avatar">{{ $iniciales ?: 'IN' }}</div>
-            <div>
-                <p class="inv-hero-label">Inventario de</p>
-                <h1 class="inv-hero-name">{{ $inventario->NombreEmpleado }}</h1>
-                <div class="mt-1 d-flex flex-wrap align-items-center gap-2">
-                    <span class="inv-tipo-badge {{ $meta['class'] }}">{{ $meta['label'] }}</span>
-                    <span class="text-muted small">{{ $meta['rules'] }}</span>
-                </div>
-            </div>
+@include('flash::message')
+
+<div data-app-tabset class="inv-assign-page">
+<x-index-page
+    title="Asignar inventario"
+    icon="fa-laptop"
+    :subtitle="$inventario->NombreEmpleado"
+    :show-count="false"
+    :card="false"
+>
+    <x-slot name="headerActions">
+        <span class="inv-tipo-badge {{ $meta['class'] }}">{{ $meta['label'] }}</span>
+        <a href="{{ route('inventarios.index') }}" class="index-page__btn-secondary">Volver</a>
+    </x-slot>
+
+    <x-slot name="tabs">
+        <div class="app-tabs" id="myTab" role="tablist">
+            <button type="button" class="app-tabs__btn is-active" data-inv-tab="#empleados">Empleado</button>
+            <button type="button" class="app-tabs__btn" data-inv-tab="#equipo">Equipo de cómputo</button>
+            <button type="button" class="app-tabs__btn" data-inv-tab="#insumo">Insumo</button>
+            <button type="button" class="app-tabs__btn" data-inv-tab="#linea">Línea de telefonía</button>
         </div>
-        <div class="inv-hero-actions">
-            <a href="{{ route('inventarios.index') }}" class="inv-btn-back">Regresar</a>
-        </div>
-    </div>
+    </x-slot>
+
+    <p class="inv-assign-note">{{ $meta['rules'] }}</p>
 
     @include('adminlte-templates::common.errors')
 
@@ -58,6 +61,7 @@
     @endif
 
     @include('inventarios.fields')
+</x-index-page>
 </div>
 
 <!-- Modal de Edición -->
@@ -216,8 +220,8 @@
           </div>
         </form>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" class="btn btn-primary submit_equipo">Guardar Cambios</button>
+          <button type="button" class="index-page__btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="index-page__btn-primary submit_equipo">Guardar cambios</button>
         </div>
 
       </div>
@@ -375,8 +379,8 @@
           </div>
         </form>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button type="button" class="btn btn-primary submit_insumo">Guardar Cambios</button>
+          <button type="button" class="index-page__btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="index-page__btn-primary submit_insumo">Guardar cambios</button>
         </div>
 
       </div>
@@ -443,8 +447,8 @@
 
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-primary submit_linea">Guardar Cambios</button>
+        <button type="button" class="index-page__btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="index-page__btn-primary submit_linea">Guardar cambios</button>
       </div>
     </div>
   </div>

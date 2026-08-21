@@ -75,26 +75,25 @@
         </div>
 
         <div id="dropdownmenu"
-            class="hidden absolute right-0 mt-1.5 z-[60] w-52
-                   bg-white border border-slate-200 rounded-lg shadow-sm
-                   dark:bg-[#1C1F26] dark:border-[#2A2F3A]
+            class="header-user-menu hidden absolute right-0 mt-1.5 z-[60] w-56
+                   rounded-xl shadow-lg
                    transition-opacity duration-150 opacity-0">
             @if(session('sistema_activo'))
-            <p class="px-3 pt-2.5 pb-1 text-[11px] text-slate-400 truncate">{{ ucfirst(session('sistema_activo')) }}</p>
+            <p class="header-user-menu__hint px-3 pt-2.5 pb-1 text-[11px] truncate">{{ ucfirst(session('sistema_activo')) }}</p>
             @endif
-            <div class="flex items-center justify-center gap-1 px-2 py-2 border-b border-slate-100 dark:border-[#2A2F3A]">
-                <button type="button" class="w-8 h-8 rounded-md text-slate-500 hover:bg-slate-100 hover:text-[#101D49] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white" onclick="setTheme('light')" title="Modo claro">
-                    <i class="fas fa-sun text-xs"></i>
+            <div class="header-theme-switch">
+                <button type="button" id="theme-btn-light" class="header-theme-btn" onclick="setTheme('light')" title="Modo claro" aria-label="Modo claro">
+                    <i class="fas fa-sun"></i>
                 </button>
-                <button type="button" class="w-8 h-8 rounded-md text-slate-500 hover:bg-slate-100 hover:text-[#101D49] dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white" onclick="setTheme('dark')" title="Modo oscuro">
-                    <i class="fas fa-moon text-xs"></i>
+                <button type="button" id="theme-btn-dark" class="header-theme-btn" onclick="setTheme('dark')" title="Modo oscuro" aria-label="Modo oscuro">
+                    <i class="fas fa-moon"></i>
                 </button>
             </div>
 
             <a href="{{ url('logout') }}"
                 onclick="event.preventDefault(); localStorage.clear(); document.getElementById('logout-form').submit();"
-                class="no-underline flex items-center gap-2 px-3 py-2.5 text-[13px] text-slate-600 hover:bg-slate-50 hover:text-[#101D49] dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white">
-                <i class="fas fa-sign-out-alt text-xs opacity-70"></i>
+                class="header-user-menu__logout no-underline">
+                <i class="fas fa-sign-out-alt"></i>
                 <span>Cerrar sesión</span>
             </a>
             <form id="logout-form" action="{{ url('/logout') }}" method="POST" class="hidden">
@@ -108,6 +107,119 @@
     @endcan
     @endauth
 </div>
+
+<style>
+    .header-user-menu {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        padding: 0.25rem 0 0.4rem;
+    }
+
+    .header-user-menu__hint {
+        margin: 0;
+        color: #94a3b8;
+    }
+
+    .header-theme-switch {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.85rem;
+        padding: 0.7rem 1rem 0.8rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .header-theme-btn {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 2.4rem;
+        height: 2.4rem;
+        margin: 0;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: 0.6rem;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        line-height: 1;
+        box-shadow: none;
+        outline: none;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .header-theme-btn:hover {
+        background: #f1f5f9;
+        color: #101D49;
+    }
+
+    .header-theme-btn.is-active {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+        color: #101D49;
+    }
+
+    .header-user-menu__logout {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin: 0.4rem 0.45rem 0.15rem;
+        padding: 0.65rem 0.8rem;
+        border-radius: 0.55rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: #475569;
+    }
+
+    .header-user-menu__logout:hover {
+        background: #f8fafc;
+        color: #101D49;
+        text-decoration: none;
+    }
+
+    .dark .header-user-menu {
+        background: #1C1F26;
+        border-color: #2A2F3A;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    .dark .header-user-menu__hint {
+        color: #94a3b8;
+    }
+
+    .dark .header-theme-switch {
+        border-bottom-color: #2A2F3A;
+    }
+
+    .dark .header-theme-btn {
+        color: #94a3b8;
+    }
+
+    .dark .header-theme-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+    }
+
+    .dark .header-theme-btn.is-active {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: #3d4654;
+        color: #ffffff;
+    }
+
+    .dark .header-user-menu__logout {
+        color: #cbd5e1;
+    }
+
+    .dark .header-user-menu__logout:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+        text-decoration: none;
+    }
+</style>
 
 <script>
     function toggleDropdown() {
@@ -132,7 +244,7 @@
     document.addEventListener("click", function(e) {
         const button = document.getElementById("dropdownbutton");
         const menu = document.getElementById("dropdownmenu");
-        if (!button.contains(e.target) && !menu.contains(e.target)) {
+        if (button && menu && !button.contains(e.target) && !menu.contains(e.target)) {
             menu.classList.add("hidden");
         }
     });
@@ -144,6 +256,7 @@
         } else if (theme === 'light') {
             document.documentElement.classList.remove('dark');
         }
+        if (typeof syncThemeButtons === 'function') syncThemeButtons();
     });
 
     let _themeTransitionTimer = null;
@@ -157,6 +270,15 @@
             root.classList.remove('dark');
             localStorage.setItem('theme', 'light');
         }
+        syncThemeButtons();
+    }
+
+    function syncThemeButtons() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const lightBtn = document.getElementById('theme-btn-light');
+        const darkBtn = document.getElementById('theme-btn-dark');
+        if (lightBtn) lightBtn.classList.toggle('is-active', !isDark);
+        if (darkBtn) darkBtn.classList.toggle('is-active', isDark);
     }
 
     function setTheme(mode) {
@@ -175,5 +297,9 @@
         _themeTransitionTimer = setTimeout(() => {
             root.classList.remove('theme-transition');
         }, 320);
+    }
+
+    if (typeof syncThemeButtons === 'function') {
+        syncThemeButtons();
     }
 </script>

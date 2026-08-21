@@ -13,6 +13,7 @@ use App\Models\Obras;
 use App\Models\Gerencia;
 use App\Models\UnidadesDeNegocio;
 use App\Models\TicketMantenimiento;
+use App\Models\PresupuestoConfiguracion;
 use DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -281,10 +282,13 @@ class HomeController extends Controller
 
     private function getInsumosPorLicencia(Request $request)
     {
-        return DB::table('inventarioinsumo')
+        $query = DB::table('inventarioinsumo')
             ->select('NombreInsumo')
-            ->selectRaw('COUNT(InventarioID) as total_inventario')
-            ->where('CateogoriaInsumo', 'LICENCIA')
+            ->selectRaw('COUNT(InventarioID) as total_inventario');
+
+        PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'licencias');
+
+        return $query
             ->groupBy('NombreInsumo')
             ->orderBy('total_inventario', 'desc')
             ->paginate(7);
@@ -292,10 +296,13 @@ class HomeController extends Controller
 
     private function getEquiposPorCategoria()
     {
-        return DB::table('inventarioequipo')
+        $query = DB::table('inventarioequipo')
             ->select('CategoriaEquipo')
-            ->selectRaw('COUNT(InventarioID) as total_inventario')
-            ->whereIn('CategoriaEquipo', ['LAPTOP', 'PC ESCRITORIO', 'IMPRESORA'])
+            ->selectRaw('COUNT(InventarioID) as total_inventario');
+
+        PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
+
+        return $query
             ->groupBy('CategoriaEquipo')
             ->orderBy('total_inventario', 'desc')
             ->get();

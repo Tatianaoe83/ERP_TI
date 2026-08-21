@@ -5,10 +5,12 @@ namespace App\DataTables;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\QueryDataTable;
-use Yajra\DataTables\Html\Column;
+use App\DataTables\Concerns\HasIndexPageHtml;
 
 class EquiposAsignadosDataTable extends DataTable
 {
+    use HasIndexPageHtml;
+
     /**
      * Build DataTable class.
      *
@@ -87,57 +89,10 @@ class EquiposAsignadosDataTable extends DataTable
      */
     public function html()
     {
-        return $this->builder()
-            ->setTableId('equipos-asignados-table')
-            ->columns($this->getColumns())
-            ->minifiedAjax()
-            ->dom('Bfrtip')
-            ->orderBy(8, 'desc') // Ordenar por fecha de asignación descendente
-            ->buttons([
-                [
-                    'className' => 'btn btn-default',
-                    'text' => '<i class="fa fa-sync-alt"></i> Recargar',
-                    'action' => 'function() { 
-                        window.LaravelDataTables["equipos-asignados-table"].ajax.reload();
-                    }'
-                ],
-            ])
-            ->parameters([
-                'processing' => true,
-                'serverSide' => true,
-                'responsive' => true,
-                'pageLength' => 10,
-                'searching' => true,
-                'language' => [
-                    'processing' => 'Procesando...',
-                    'lengthMenu' => 'Mostrar _MENU_ registros',
-                    'zeroRecords' => 'No se encontraron resultados',
-                    'emptyTable' => 'Ningún dato disponible en esta tabla',
-                    'info' => 'Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros',
-                    'infoEmpty' => 'Mostrando registros del 0 al 0 de un total de 0 registros',
-                    'infoFiltered' => '(filtrado de un total de _MAX_ registros)',
-                    'infoPostFix' => '',
-                    'search' => 'Buscar:',
-                    'url' => '',
-                    'infoThousands' => ',',
-                    'loadingRecords' => 'Cargando...',
-                    'paginate' => [
-                        'first' => 'Primero',
-                        'last' => 'Último',
-                        'next' => 'Siguiente',
-                        'previous' => 'Anterior'
-                    ],
-                    'aria' => [
-                        'sortAscending' => ': Activar para ordenar la columna de manera ascendente',
-                        'sortDescending' => ': Activar para ordenar la columna de manera descendente'
-                    ]
-                ],
-                'drawCallback' => 'function() {
-                    if (typeof $ !== "undefined" && $.fn.tooltip) {
-                        $("[data-toggle=tooltip]").tooltip();
-                    }
-                }',
-            ]);
+        return $this->indexPageHtml('equipos-asignados-table', [
+            'orderColumn' => 8,
+            'orderDir' => 'desc',
+        ]);
     }
 
     /**
@@ -200,12 +155,6 @@ class EquiposAsignadosDataTable extends DataTable
                 'title' => 'Fecha Asignación',
                 'data' => 'FechaAsignacion',
                 'name' => 'inventarioequipo.FechaAsignacion',
-                'class' => 'dark:bg-[#101010] dark:text-white'
-            ],
-            'CategoriaEquipo' => [
-                'title' => 'Categoria Equipo',
-                'data' => 'CategoriaEquipo',
-                'name' => 'inventarioequipo.CategoriaEquipo',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
         ];

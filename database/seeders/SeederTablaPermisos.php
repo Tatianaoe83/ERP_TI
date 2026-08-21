@@ -120,6 +120,7 @@ class SeederTablaPermisos extends Seeder
             // Permisos de administración: presupuestos oficiales
             'ver-presupuestos',
             'generar-cortes',
+            'editar-conf-presupuesto',
 
             // Permisos de administración: facturas
             'crear-facturas',

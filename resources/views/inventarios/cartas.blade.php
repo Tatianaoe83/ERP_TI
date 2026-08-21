@@ -40,6 +40,33 @@
         Genera el formato de mantenimiento preventivo o la carta de entrega de inventario.
     </p>
 
+    <style>
+        .cartas-page-stack .cartas-card-head h2 {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--index-navy, #101d49);
+            letter-spacing: -0.02em;
+        }
+        .cartas-page-stack .cartas-card-head--padded {
+            padding: 0.95rem 1rem 0;
+        }
+        .cartas-page-stack .cartas-card .index-page__dt-toolbar { padding-top: 0.5rem; }
+        .cartas-page-stack .cartas-check-col { width: 2.5rem; }
+        .cartas-page-stack .cartas-check {
+            width: 1.05rem;
+            height: 1.05rem;
+            accent-color: #101d49;
+            cursor: pointer;
+        }
+        .cartas-page-stack .cartas-actions {
+            margin: 0;
+            padding: 0.85rem 1rem 1rem;
+        }
+        .dark .cartas-page-stack .cartas-card-head h2 { color: #fff; }
+    </style>
+
+    <div class="cartas-page-stack">
     <div class="index-page__card crud-page__card cartas-card">
         <div class="cartas-card-head">
             <div>
@@ -78,7 +105,7 @@
         </form>
     </div>
 
-    <form id="formulario" action="{{ route('inventarios.pdffile', $id) }}" method="POST" target="_blank">
+    <form id="formulario" action="{{ route('inventarios.pdffile', $id) }}" method="POST" target="_blank" style="display:block;margin-top:2.5rem !important;">
         @csrf
         <div class="index-page__card overflow-hidden cartas-card">
             <div class="cartas-card-head cartas-card-head--padded">
@@ -137,37 +164,12 @@
             </div>
         </div>
     </form>
+    </div>
 </x-index-page>
 @endsection
 
 @push('third_party_stylesheets')
     @include('layouts.datatables_css')
-    <style>
-        .cartas-card { margin-bottom: 1.15rem; }
-        .cartas-card-head h2 {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--index-navy, #101d49);
-            letter-spacing: -0.02em;
-        }
-        .cartas-card-head--padded {
-            padding: 0.95rem 1rem 0;
-        }
-        .cartas-card .index-page__dt-toolbar { padding-top: 0.5rem; }
-        .cartas-check-col { width: 2.5rem; }
-        .cartas-check {
-            width: 1.05rem;
-            height: 1.05rem;
-            accent-color: #101d49;
-            cursor: pointer;
-        }
-        .cartas-actions {
-            margin: 0;
-            padding: 0.85rem 1rem 1rem;
-        }
-        .dark .cartas-card-head h2 { color: #fff; }
-    </style>
 @endpush
 
 @push('third_party_scripts')

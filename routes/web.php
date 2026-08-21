@@ -74,6 +74,8 @@ Route::group(['middleware' => ['auth']], function () {
 
     Route::post('presupuesto/verificar', [PresupuestoController::class, 'verificarFechas'])->name('presupuesto.verificar');
     Route::post('presupuesto/descargar', [PresupuestoController::class, 'descargar'])->name('presupuesto.descargar');
+    Route::get('presupuesto/configuracion', [App\Http\Controllers\PresupuestoConfiguracionController::class, 'index'])->name('presupuesto.configuracion');
+    Route::post('presupuesto/configuracion', [App\Http\Controllers\PresupuestoConfiguracionController::class, 'guardar'])->name('presupuesto.configuracion.guardar');
     Route::resource('presupuesto', App\Http\Controllers\PresupuestoController::class);
 
     Route::get('/informe/data', [AuditController::class, 'getAudits'])->name('audits.data');

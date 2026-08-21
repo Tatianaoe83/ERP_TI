@@ -6,6 +6,7 @@ use App\Models\Reportes;
 use Yajra\DataTables\Services\DataTable;
 use Yajra\DataTables\EloquentDataTable;
 use App\DataTables\Concerns\HasIndexPageHtml;
+use Yajra\DataTables\Html\Column;
 
 class ReportesDataTable extends DataTable
 {
@@ -48,6 +49,14 @@ class ReportesDataTable extends DataTable
                 'data' => 'title',
                 'name' => 'title',
             ],
+            Column::computed('action')
+                ->title('Acciones')
+                ->exportable(false)
+                ->printable(false)
+                ->orderable(false)
+                ->searchable(false)
+                ->width(140)
+                ->addClass('text-center'),
         ];
     }
 
