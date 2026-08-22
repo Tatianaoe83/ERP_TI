@@ -191,6 +191,14 @@
         margin-bottom: 0.65rem;
     }
 
+    .inv-segment--3 {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    @media (max-width: 575px) {
+        .inv-segment--3 { grid-template-columns: 1fr; }
+    }
+
     .dark .inv-segment { background: #111827; }
 
     .inv-segment .inv-modo-card {
@@ -212,6 +220,11 @@
 
     .inv-segment .inv-modo-card.is-active[data-value="1"] {
         background: #c2410c;
+        color: #fff;
+    }
+
+    .inv-segment .inv-modo-card.is-active[data-value="2"] {
+        background: #1d4ed8;
         color: #fff;
     }
 
@@ -242,6 +255,14 @@
         background: #fff7ed;
         color: #9a3412;
         border: 1px solid #fed7aa;
+    }
+
+    .inv-modo-hint.share {
+        display: flex;
+        gap: 0.5rem;
+        background: #eff6ff;
+        color: #1e3a8a;
+        border: 1px solid #bfdbfe;
     }
 
     .inv-form-label {
@@ -411,5 +432,114 @@
         .inv-assign-page .app-tabs {
             grid-template-columns: 1fr;
         }
+    }
+
+    .pago-meses {
+        border: 1px solid var(--index-border, #e5e7eb);
+        border-radius: 0.75rem;
+        padding: 0.75rem 0.85rem;
+        background: var(--index-card, #fff);
+    }
+
+    .dark .pago-meses {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .pago-meses__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+    }
+
+    .pago-meses__label {
+        font-weight: 600;
+        margin: 0;
+        color: var(--index-navy, #101d49);
+    }
+
+    .dark .pago-meses__label { color: #f8fafc; }
+
+    .pago-meses__actions {
+        display: flex;
+        gap: 0.4rem;
+    }
+
+    .pago-meses__btn {
+        border: 1px solid var(--index-border, #d1d5db);
+        background: #fff;
+        color: var(--index-navy, #101d49);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.2rem 0.7rem;
+        cursor: pointer;
+    }
+
+    .dark .pago-meses__btn {
+        background: #111827;
+        color: #e5e7eb;
+        border-color: #4b5563;
+    }
+
+    .pago-meses__grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+
+    @media (max-width: 767px) {
+        .pago-meses__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    .pago-meses__chip {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        cursor: pointer;
+        border: 1px solid var(--index-border, #d1d5db);
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--index-navy, #101d49);
+        background: #f8fafc;
+        user-select: none;
+    }
+
+    .dark .pago-meses__chip {
+        background: #111827;
+        color: #e5e7eb;
+        border-color: #4b5563;
+    }
+
+    .pago-meses__chip input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .pago-meses__chip:has(input:checked),
+    .pago-meses__chip.is-on {
+        background: var(--index-navy, #101d49);
+        border-color: var(--index-navy, #101d49);
+        color: #fff;
+    }
+
+    .pago-meses__hint {
+        margin: 0.55rem 0 0;
+        font-size: 0.75rem;
+        color: var(--index-muted, #6b7280);
+    }
+
+    .inv-meses-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.2rem;
+        max-width: 220px;
     }
 </style>

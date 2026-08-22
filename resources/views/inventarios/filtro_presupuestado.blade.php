@@ -18,15 +18,18 @@
                     Todos (<span class="conteo-todos">0</span>)
                 </button>
                 <button type="button" class="pill-filtro" data-filtro="no_presupuestados">
-                    Stock (<span class="conteo-no">0</span>)
+                    Inventario (<span class="conteo-no">0</span>)
                 </button>
                 <button type="button" class="pill-filtro" data-filtro="presupuestados">
-                    Extra (<span class="conteo-si">0</span>)
+                    Presupuesto (<span class="conteo-si">0</span>)
+                </button>
+                <button type="button" class="pill-filtro" data-filtro="compartidos">
+                    Compartido
                 </button>
             </div>
             @unless($compacto)
             <div class="inv-filtro-hint">
-                <strong>Stock</strong> = asignado ahora · <strong>Extra</strong> = presupuesto futuro
+                <strong>Inventario</strong> = stock + compartido · <strong>Presupuesto</strong> = extra + compartido
             </div>
             @endunless
         @endif

@@ -63,7 +63,6 @@ class InsumosDataTable extends DataTable
                 'insumos.CostoMensual',
                 'insumos.CostoAnual',
                 'insumos.Importe',
-                'insumos.FrecuenciaDePago',
                 'insumos.Observaciones',
                 'insumos.FechaRenovacion'
             ]);
@@ -123,13 +122,6 @@ class InsumosDataTable extends DataTable
                 'name' => 'Importe',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'FrecuenciaDePago' => [
-                'title' => 'Frecuencia de Pago',
-                'data' => 'FrecuenciaDePago',
-                'name' => 'FrecuenciaDePago',
-                'class' => 'dark:bg-[#101010] dark:text-white'
-            ],
-
             'Observaciones' => [
                 'title' => 'Observaciones',
                 'data' => 'Observaciones',

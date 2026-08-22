@@ -44,7 +44,7 @@ class InventarioEquipo extends Model implements Auditable
     ];
 
     protected $casts = [
-        'Presupuestado' => 'boolean',
+        'Presupuestado' => 'integer',
     ];
 
     public function empleados()

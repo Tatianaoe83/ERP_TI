@@ -87,12 +87,6 @@
     </div>
 </div>
 
-<!-- Frecuenciadepago Field -->
-<div class="col-sm-12 text-[#101D49] dark:text-white">
-    {!! Form::label('FrecuenciaDePago', 'Frecuencia de pago:') !!}
-    <p>{{ $insumos->FrecuenciaDePago }}</p>
-</div>
-
 <!-- Observaciones Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('Observaciones', 'Observaciones:') !!}

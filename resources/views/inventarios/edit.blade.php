@@ -186,6 +186,16 @@
 
             </div>
 
+            <div class="row mt-3">
+              <div class="col-md-12">
+                @include('inventarios.partials.meses-pago', [
+                    'mesesPagoId' => 'editMesDePagoEquipo',
+                    'mesesPagoLabel' => 'Meses de pago',
+                    'mesesPagoAyuda' => 'Pago único: un mes. Parcialidad: varios meses. El importe se reparte entre los meses marcados.',
+                ])
+              </div>
+            </div>
+
             @if($permitePresupuestado)
             <div class="row mt-3">
               <div class="col-md-12">
@@ -193,26 +203,6 @@
                     'switchId' => 'editPresupuestadoEquipo',
                     'presupuestadoForzado' => $presupuestadoForzado,
                 ])
-              </div>
-              <div class="col-md-6 mt-3">
-                <div class="dark:text-white">
-                  <label>Mes de pago <span class="text-muted small">(recomendado si es Extra)</span></label>
-                  <select class="form-select" id="editMesDePagoEquipo" name="MesDePago">
-                    <option value="">Seleccione mes</option>
-                    <option value="ENERO">enero</option>
-                    <option value="FEBRERO">febrero</option>
-                    <option value="MARZO">marzo</option>
-                    <option value="ABRIL">abril</option>
-                    <option value="MAYO">mayo</option>
-                    <option value="JUNIO">junio</option>
-                    <option value="JULIO">julio</option>
-                    <option value="AGOSTO">agosto</option>
-                    <option value="SEPTIEMBRE">septiembre</option>
-                    <option value="OCTUBRE">octubre</option>
-                    <option value="NOVIEMBRE">noviembre</option>
-                    <option value="DICIEMBRE">diciembre</option>
-                  </select>
-                </div>
               </div>
             </div>
             @endif
@@ -280,14 +270,7 @@
             </div>
 
             <div class="row">
-              <div class="col-md-6">
-                <div class="dark:text-white">
-                  <label>Frecuencia de pago</label>
-                  <input type="text" class="form-control" id="editFrecuenciaDePago" name="editFrecuenciaDePago" required readonly>
-
-                </div>
-              </div>
-              <div class="col-md-6">
+              <div class="col-md-12">
                 <div class="dark:text-white">
                   <label>Observaciones</label>
                   <input type="text" class="form-control" id="editobserv" name="editobserv" readonly>
@@ -313,37 +296,18 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="dark:text-white">
-                  <label>Mes de pago</label>
-
-                  <select class="form-select" id="editMesDePago" name="editMesDePago" required aria-label="Default select example">
-                    <option value="">Seleccione mes</option>
-                    <option value="N/A">N/A</option>
-                    <option value="ENERO">enero </option>
-                    <option value="FEBRERO">febrero</option>
-                    <option value="MARZO">marzo </option>
-                    <option value="ABRIL">abril </option>
-                    <option value="MAYO">mayo</option>
-                    <option value="JUNIO">junio</option>
-                    <option value="JULIO">julio</option>
-                    <option value="AGOSTO">agosto</option>
-                    <option value="SEPTIEMBRE">septiembre</option>
-                    <option value="OCTUBRE">octubre</option>
-                    <option value="NOVIEMBRE">noviembre</option>
-                    <option value="DICIEMBRE">diciembre</option>
-
-                  </select>
-
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="dark:text-white">
                   <label>Comentarios</label>
                   <div class="form-floating">
                     <textarea class="form-control" id="editComentariosInsumo" name="editComentariosInsumo" style="height: 100px"></textarea>
-
                   </div>
-
                 </div>
+              </div>
+              <div class="col-md-6">
+                @include('inventarios.partials.meses-pago', [
+                    'mesesPagoId' => 'editMesDePago',
+                    'mesesPagoLabel' => 'Meses de pago',
+                    'mesesPagoAyuda' => 'Un mes = ese mes. Varios = parcialidad. Los 12 = anual. El calendario de presupuesto usa estos meses.',
+                ])
               </div>
             </div>
 
@@ -406,6 +370,16 @@
                   </div>
 
                 </div>
+              </div>
+            </div>
+
+            <div class="row mt-3">
+              <div class="col-md-12">
+                @include('inventarios.partials.meses-pago', [
+                    'mesesPagoId' => 'editMesDePagoLinea',
+                    'mesesPagoLabel' => 'Meses de renta',
+                    'mesesPagoAyuda' => 'La renta entra al calendario sólo en los meses marcados. Un mes, parcial o anual (12).',
+                ])
               </div>
             </div>
 

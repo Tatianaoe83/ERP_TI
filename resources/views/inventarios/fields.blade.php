@@ -3,12 +3,12 @@
     $permitePresupuestado = $permitePresupuestado ?? false;
     $presupuestadoForzado = $presupuestadoForzado ?? false;
 
-    $equiposStock = collect($equiposAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
-    $equiposExtra = collect($equiposAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
-    $insumosStock = collect($insumosAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
-    $insumosExtra = collect($insumosAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
-    $lineasStock = collect($LineasAsignados)->filter(fn ($e) => !(int) ($e->Presupuestado ?? 0));
-    $lineasExtra = collect($LineasAsignados)->filter(fn ($e) => (int) ($e->Presupuestado ?? 0) === 1);
+    $equiposStock = collect($equiposAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnInventario($e->Presupuestado ?? 0));
+    $equiposExtra = collect($equiposAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->Presupuestado ?? 0));
+    $insumosStock = collect($insumosAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnInventario($e->Presupuestado ?? 0));
+    $insumosExtra = collect($insumosAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->Presupuestado ?? 0));
+    $lineasStock = collect($LineasAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnInventario($e->Presupuestado ?? 0));
+    $lineasExtra = collect($LineasAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->Presupuestado ?? 0));
 
     $fmtMoney = fn ($n) => '$' . number_format((float) $n, 0);
 @endphp
@@ -100,12 +100,12 @@
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Stock</div>
                 <div class="inv-kpi-value">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub">{{ $equiposStock->count() }} equipo(s) · asignado actual</div>
+                <div class="inv-kpi-sub">{{ $equiposStock->count() }} equipo(s) · sale en inventario</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Extra / Presupuesto</div>
                 <div class="inv-kpi-value">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub">{{ $equiposExtra->count() }} equipo(s) · futuro</div>
+                <div class="inv-kpi-sub">{{ $equiposExtra->count() }} equipo(s) · sale en presupuesto</div>
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
@@ -137,13 +137,13 @@
                 @if($permitePresupuestado && !$presupuestadoForzado)
                 <div class="inv-dual" data-tabla="equiposAsignadosTable">
                     <div class="inv-dual-card" data-filtro="no_presupuestados">
-                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Stock en uso (<span class="conteo-no">{{ $equiposStock->count() }}</span>)</div>
-                        <div class="inv-dual-empty">Inventario actual en resguardo</div>
+                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Inventario (<span class="conteo-no">{{ $equiposStock->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Stock y compartidos</div>
                         <div class="inv-money">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
                     </div>
                     <div class="inv-dual-card" data-filtro="presupuestados">
-                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Extra / Presupuesto (<span class="conteo-si">{{ $equiposExtra->count() }}</span>)</div>
-                        <div class="inv-dual-empty">Proyección futura</div>
+                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Presupuesto (<span class="conteo-si">{{ $equiposExtra->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Extra y compartidos</div>
                         <div class="inv-money">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
                     </div>
                 </div>
@@ -175,7 +175,7 @@
                     </thead>
                     <tbody>
                         @foreach ($equiposAsignados as $equiposAsignado)
-                        <tr data-id="{{ $equiposAsignado->InventarioID }}">
+                        <tr data-id="{{ $equiposAsignado->InventarioID }}" data-meses="{{ $equiposAsignado->MesDePago }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
@@ -208,10 +208,8 @@
                             <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
                             <td>{{ $equiposAsignado->Comentarios }}</td>
                             @if($permitePresupuestado)
-                            <td>{!! $equiposAsignado->Presupuestado
-                                ? '<span class="inv-chip inv-chip-extra">Extra</span>'
-                                : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
-                            <td>@if($equiposAsignado->MesDePago)<span class="inv-mes-pill">{{ $equiposAsignado->MesDePago }}</span>@endif</td>
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->Presupuestado) !!}</td>
+                            <td>@if($equiposAsignado->MesDePago)@include('inventarios.partials.meses-pills', ['mesesValor' => $equiposAsignado->MesDePago])@endif</td>
                             @endif
                         </tr>
                         @endforeach
@@ -281,12 +279,12 @@
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Stock</div>
                 <div class="inv-kpi-value">{{ $insumosStock->count() }}</div>
-                <div class="inv-kpi-sub">Asignado actual</div>
+                <div class="inv-kpi-sub">Sale en inventario</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Extra / Presupuesto</div>
                 <div class="inv-kpi-value">{{ $insumosExtra->count() }}</div>
-                <div class="inv-kpi-sub">Proyección futura</div>
+                <div class="inv-kpi-sub">Sale en presupuesto</div>
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
@@ -318,12 +316,12 @@
                 @if($permitePresupuestado && !$presupuestadoForzado)
                 <div class="inv-dual" data-tabla="insumosAsignadosTable">
                     <div class="inv-dual-card" data-filtro="no_presupuestados">
-                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Stock en uso (<span class="conteo-no">{{ $insumosStock->count() }}</span>)</div>
-                        <div class="inv-dual-empty">Asignaciones actuales</div>
+                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Inventario (<span class="conteo-no">{{ $insumosStock->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Stock y compartidos</div>
                     </div>
                     <div class="inv-dual-card" data-filtro="presupuestados">
-                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Extra / Presupuesto (<span class="conteo-si">{{ $insumosExtra->count() }}</span>)</div>
-                        <div class="inv-dual-empty">Proyecciones registradas</div>
+                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Presupuesto (<span class="conteo-si">{{ $insumosExtra->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Extra y compartidos</div>
                     </div>
                 </div>
                 @endif
@@ -337,13 +335,13 @@
                             <th>Nombre Insumo</th>
                             <th>Costo Mensual</th>
                             <th>Costo Anual</th>
-                            <th>Frecuencia de Pago</th>
+                            <th>Calendario</th>
                             <th>Fecha de Renovacion</th>
                             <th>Observaciones</th>
                             <th>Fecha de Asignacion</th>
                             <th>Num. Serie</th>
                             <th>Comentarios</th>
-                            <th>Mes de pago </th>
+                            <th>Meses de pago</th>
                             @if($permitePresupuestado)
                             <th>Stock / Extra</th>
                             @endif
@@ -352,7 +350,7 @@
                     </thead>
                     <tbody>
                         @foreach ($insumosAsignados as $insumosAsignado)
-                        <tr data-id="{{ $insumosAsignado->InventarioID }}">
+                        <tr data-id="{{ $insumosAsignado->InventarioID }}" data-meses="{{ $insumosAsignado->MesDePago }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
@@ -380,16 +378,14 @@
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
-                            <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
+                            <td>{{ \App\Helpers\PagoMeses::etiqueta($insumosAsignado->MesDePago, $insumosAsignado->FrecuenciaDePago) }}</td>
                             <td>{{ (empty($insumosAsignado->FechaRenovacion) || in_array($insumosAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
 <td>{{ $insumosAsignado->FechaAsignacion ? \Carbon\Carbon::parse($insumosAsignado->FechaAsignacion)->format('d/m/Y') : 'Sin asignar' }}</td>                            <td>{{ $insumosAsignado->NumSerie }}</td>
                             <td>{{ $insumosAsignado->Comentarios }}</td>
-                            <td>{{ $insumosAsignado->MesDePago }}</td>
+                            <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $insumosAsignado->MesDePago, 'mesesFrecuencia' => $insumosAsignado->FrecuenciaDePago])</td>
                             @if($permitePresupuestado)
-                            <td>{!! $insumosAsignado->Presupuestado
-                                ? '<span class="inv-chip inv-chip-extra">Extra</span>'
-                                : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
                             @endif
                         </tr>
                         @endforeach
@@ -419,7 +415,6 @@
                                 <th>Nombre Insumo</th>
                                 <th>Costo Mensual</th>
                                 <th>Costo Anual</th>
-                                <th>Frecuencia de Pago</th>
                                 <th>Fecha de Renovacion</th>
                                 <th>Observaciones</th>
 
@@ -441,7 +436,6 @@
                                 <td>{{ $insumo->NombreInsumo }}</td>
                                 <td>{{ $insumo->CostoMensual }}</td>
                                 <td>{{ $insumo->CostoAnual }}</td>
-                                <td>{{ $insumo->FrecuenciaDePago }}</td>
                                 <td>{{ (empty($insumo->FechaRenovacion) || in_array($insumo->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumo->FechaRenovacion)->format('d/m/Y') }}</td>
                                 <td>{{ $insumo->Observaciones }}</td>
 
@@ -469,14 +463,14 @@
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
-                <div class="inv-kpi-label">Stock en uso</div>
+                <div class="inv-kpi-label">Inventario</div>
                 <div class="inv-kpi-value">{{ $lineasStock->count() }}</div>
-                <div class="inv-kpi-sub">Líneas físicas asignadas</div>
+                <div class="inv-kpi-sub">Stock y compartidos</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
-                <div class="inv-kpi-label">Presupuestado</div>
+                <div class="inv-kpi-label">Presupuesto</div>
                 <div class="inv-kpi-value">{{ $lineasExtra->count() }}</div>
-                <div class="inv-kpi-sub">Proyecciones registradas</div>
+                <div class="inv-kpi-sub">Extra y compartidos</div>
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
@@ -508,12 +502,12 @@
                 @if($permitePresupuestado && !$presupuestadoForzado)
                 <div class="inv-dual" data-tabla="lineasAsignadosTable">
                     <div class="inv-dual-card" data-filtro="no_presupuestados">
-                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Stock en uso (<span class="conteo-no">{{ $lineasStock->count() }}</span>)</div>
-                        <div class="inv-dual-empty">No hay líneas físicas asignadas si el conteo es 0</div>
+                        <div class="inv-dual-title stock"><i class="fas fa-cube"></i> Inventario (<span class="conteo-no">{{ $lineasStock->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Stock y compartidos</div>
                     </div>
                     <div class="inv-dual-card" data-filtro="presupuestados">
-                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Presupuestado (<span class="conteo-si">{{ $lineasExtra->count() }}</span>)</div>
-                        <div class="inv-dual-empty">No hay proyecciones registradas si el conteo es 0</div>
+                        <div class="inv-dual-title extra"><i class="fas fa-calendar-alt"></i> Presupuesto (<span class="conteo-si">{{ $lineasExtra->count() }}</span>)</div>
+                        <div class="inv-dual-empty">Extra y compartidos</div>
                     </div>
                 </div>
                 @endif
@@ -540,6 +534,7 @@
                             @if($permitePresupuestado)
                             <th>Stock / Extra</th>
                             @endif
+                            <th>Meses de renta</th>
 
 
 
@@ -547,7 +542,7 @@
                     </thead>
                     <tbody>
                         @foreach ($LineasAsignados as $LineasAsignado)
-                        <tr data-id="{{ $LineasAsignado->InventarioID }}">
+                        <tr data-id="{{ $LineasAsignado->InventarioID }}" data-meses="{{ $LineasAsignado->MesDePago }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
@@ -586,10 +581,9 @@
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
                             <td>{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
                             @if($permitePresupuestado)
-                            <td>{!! $LineasAsignado->Presupuestado
-                                ? '<span class="inv-chip inv-chip-extra">Extra</span>'
-                                : '<span class="inv-chip inv-chip-stock">Stock</span>' !!}</td>
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($LineasAsignado->Presupuestado) !!}</td>
                             @endif
+                            <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $LineasAsignado->MesDePago])</td>
 
                         </tr>
                         @endforeach
@@ -731,54 +725,56 @@
     // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
     // asignado es presupuestado y para el resto el campo viaja siempre en 0.
     // (El servidor vuelve a aplicar la regla, esto es sólo para la UI.)
-    function htmlChipPresupuestado(esExtra) {
-        return esExtra
-            ? '<span class="inv-chip inv-chip-extra">Extra</span>'
-            : '<span class="inv-chip inv-chip-stock">Stock</span>';
-    }
-
-    function textoCeldaEsExtra(texto) {
+    function tipoAsignacionDesdeTexto(texto) {
         const v = String(texto ?? '').trim().toLowerCase();
-        return v === 'si' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1;
+        if (v.indexOf('compart') !== -1) return 2;
+        if (v === 'si' || v === '1' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1) return 1;
+        return 0;
     }
 
-    function syncModoCards(selector, marcado) {
+    function htmlChipPresupuestado(valor) {
+        const tipo = (valor === true || valor === '1') ? 1 : parseInt(valor, 10);
+        if (tipo === 2) return '<span class="inv-chip inv-chip-share">Compartido</span>';
+        if (tipo === 1) return '<span class="inv-chip inv-chip-extra">Extra</span>';
+        return '<span class="inv-chip inv-chip-stock">Stock</span>';
+    }
+
+    function syncModoCards(selector, valor) {
+        const tipo = parseInt(valor, 10) || 0;
         const $wrap = $('[data-switch="' + selector + '"]');
         if (!$wrap.length) return;
         $wrap.find('.inv-modo-card').removeClass('is-active');
-        $wrap.find('.inv-modo-card[data-value="' + (marcado ? '1' : '0') + '"]').addClass('is-active');
+        $wrap.find('.inv-modo-card[data-value="' + tipo + '"]').addClass('is-active');
 
         const sid = selector.replace(/^#/, '');
+        const hint = tipo === 2 ? 'share' : (tipo === 1 ? 'extra' : 'stock');
         $('[data-hint-for="' + sid + '"]').hide();
-        $('[data-hint-for="' + sid + '"].' + (marcado ? 'extra' : 'stock')).css('display', 'flex');
+        $('[data-hint-for="' + sid + '"].' + hint).css('display', 'flex');
+        $(selector + 'Label').text(tipo === 2 ? 'Compartido' : (tipo === 1 ? 'Extra' : 'Stock'));
     }
 
     function setPresupuestado(selector, texto) {
-        const marcado = textoCeldaEsExtra(texto) || (presupuestadoForzado === true);
-        $(selector).prop('checked', marcado);
-        $(selector + 'Label').text(marcado ? 'Si' : 'No');
-        syncModoCards(selector, marcado);
+        const tipo = presupuestadoForzado ? 1 : tipoAsignacionDesdeTexto(texto);
+        $(selector).val(tipo);
+        syncModoCards(selector, tipo);
     }
 
     function getPresupuestado(selector) {
         if (presupuestadoForzado) {
             return 1;
         }
+        if (!permitePresupuestado) {
+            return 0;
+        }
 
-        return permitePresupuestado && $(selector).is(':checked') ? 1 : 0;
+        return parseInt($(selector).val(), 10) || 0;
     }
-
-    // Mantener la etiqueta del switch / cards en sync con su estado
-    $(document).on('change.invAssign', '.form-check-input[role="switch"]', function() {
-        $('#' + this.id + 'Label').text(this.checked ? 'Si' : 'No');
-        syncModoCards('#' + this.id, this.checked);
-    });
 
     $(document).on('click.invAssign', '.inv-modo-card:not(.is-locked)', function() {
         const $card = $(this);
         const selector = $card.closest('[data-switch]').data('switch');
-        const value = String($card.data('value')) === '1';
-        $(selector).prop('checked', value).trigger('change');
+        const value = parseInt($card.data('value'), 10) || 0;
+        $(selector).val(value);
         syncModoCards(selector, value);
     });
 
@@ -871,25 +867,95 @@
         lineasAsignadosTable: 'todos',
     };
 
-    function esFilaPresupuestada(valorCelda) {
-        const v = String(valorCelda ?? '').trim().toLowerCase();
-        return v === 'si' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1;
+    var mesesPagoTodos = {!! json_encode(\App\Helpers\PagoMeses::MESES) !!};
+    var mesesPagoTodosStr = mesesPagoTodos.join(',');
+
+    function etiquetaMesesPago(valor) {
+        var sel = String(valor || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        if (sel.length === 0) return 'Sin meses';
+        if (sel.length === 12) return 'Anual (12 meses)';
+        if (sel.length === 1) return sel[0];
+        return 'Parcial (' + sel.length + ' meses)';
     }
 
-    // Filtro global de DataTables: las tablas sin entrada en el mapa no se ven afectadas.
+    function htmlPillsMeses(valor) {
+        var sel = String(valor || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+        if (!sel.length) return '<span class="text-muted">—</span>';
+        if (sel.length === 12) return '<span class="inv-mes-pill">Anual</span>';
+        return '<span class="inv-meses-pills">' + sel.map(function(m) {
+            return '<span class="inv-mes-pill">' + m.substring(0, 3) + '</span>';
+        }).join('') + '</span>';
+    }
+
+    function syncPagoMeses($root) {
+        var values = [];
+        $root.find('input[type=checkbox]').each(function() {
+            if (this.checked) values.push(this.value);
+            $(this).closest('.pago-meses__chip').toggleClass('is-on', this.checked);
+        });
+        var hiddenId = $root.data('pago-meses');
+        $('#' + hiddenId).val(values.join(','));
+        var n = values.length;
+        var hint = 'Sin meses seleccionados.';
+        if (n === 12) hint = 'Anual: el costo entra los 12 meses.';
+        else if (n === 1) hint = 'Un mes: ' + values[0] + '.';
+        else if (n > 1) hint = 'Parcialidad: ' + n + ' meses.';
+        $root.find('[data-meses-hint]').text(hint);
+    }
+
+    function setPagoMeses(hiddenId, valor) {
+        var id = String(hiddenId || '').replace('#', '');
+        var $root = $('[data-pago-meses="' + id + '"]');
+        var set = String(valor || '').split(',').map(function(s) {
+            return s.trim().toUpperCase();
+        }).filter(Boolean);
+        $root.find('input[type=checkbox]').each(function() {
+            this.checked = set.indexOf(String(this.value).toUpperCase()) !== -1;
+        });
+        syncPagoMeses($root);
+    }
+
+    $(document).off('.pagoMeses');
+    $(document).on('change.pagoMeses', '.pago-meses input[type=checkbox]', function() {
+        syncPagoMeses($(this).closest('.pago-meses'));
+    });
+    $(document).on('click.pagoMeses', '.pago-meses [data-meses-accion]', function() {
+        var $root = $(this).closest('.pago-meses');
+        var anual = $(this).data('meses-accion') === 'anual';
+        $root.find('input[type=checkbox]').prop('checked', anual);
+        syncPagoMeses($root);
+    });
+
+    function tipoFilaAsignacion(valorCelda) {
+        return tipoAsignacionDesdeTexto(valorCelda);
+    }
+
+    window.__invFiltroPresupuestadoFn = function(settings, data) {
+        var tablaId = settings.nTable.id;
+        var filtro = filtroPresupuestado[tablaId];
+
+        if (!permitePresupuestado || !filtro || filtro === 'todos') {
+            return true;
+        }
+
+        var tipo = tipoFilaAsignacion(data[columnaPresupuestado[tablaId]]);
+        if (filtro === 'presupuestados') {
+            return tipo === 1 || tipo === 2;
+        }
+        if (filtro === 'no_presupuestados') {
+            return tipo === 0 || tipo === 2;
+        }
+        if (filtro === 'compartidos') {
+            return tipo === 2;
+        }
+
+        return true;
+    };
+
     if (!window.__invFiltroPresupuestadoDt) {
         window.__invFiltroPresupuestadoDt = true;
         $.fn.dataTable.ext.search.push(function(settings, data) {
-            var tablaId = settings.nTable.id;
-            var filtro = filtroPresupuestado[tablaId];
-
-            if (!permitePresupuestado || !filtro || filtro === 'todos') {
-                return true;
-            }
-
-            var presupuestada = esFilaPresupuestada(data[columnaPresupuestado[tablaId]]);
-
-            return filtro === 'presupuestados' ? presupuestada : !presupuestada;
+            return window.__invFiltroPresupuestadoFn(settings, data);
         });
     }
 
@@ -899,22 +965,25 @@
         }
 
         const dt = $('#' + tablaId).DataTable();
-        let si = 0;
-        let no = 0;
+        let inventario = 0;
+        let presupuesto = 0;
+        let total = 0;
 
-        // {search:'none'} => cuenta sobre todas las filas, no sólo las visibles.
         dt.column(columnaPresupuestado[tablaId], { search: 'none' }).data().each(function(valor) {
-            esFilaPresupuestada(valor) ? si++ : no++;
+            const tipo = tipoFilaAsignacion(valor);
+            total++;
+            if (tipo === 0 || tipo === 2) inventario++;
+            if (tipo === 1 || tipo === 2) presupuesto++;
         });
 
         const barra = $('.inventario-filtros[data-tabla="' + tablaId + '"]');
-        barra.find('.conteo-todos').text(si + no);
-        barra.find('.conteo-si').text(si);
-        barra.find('.conteo-no').text(no);
+        barra.find('.conteo-todos').text(total);
+        barra.find('.conteo-si').text(presupuesto);
+        barra.find('.conteo-no').text(inventario);
 
         const dual = $('.inv-dual[data-tabla="' + tablaId + '"]');
-        dual.find('.conteo-si').text(si);
-        dual.find('.conteo-no').text(no);
+        dual.find('.conteo-si').text(presupuesto);
+        dual.find('.conteo-no').text(inventario);
     }
 
     function inicializarFiltrosPresupuestado() {
@@ -1044,7 +1113,7 @@
         $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('id')).trigger('change');
         $('#editComentarios').val(row.find("td:eq(11)").text());
         setPresupuestado('#editPresupuestadoEquipo', row.find("td:eq(12)").text());
-        $('#editMesDePagoEquipo').val(row.find("td:eq(13)").text().trim());
+        setPagoMeses('editMesDePagoEquipo', row.attr('data-meses') || '');
 
         $('#editModal').modal('show');
     });
@@ -1076,7 +1145,7 @@
         $('#editId').val('');
         $('#editEmp').val(id_E);
         setPresupuestado('#editPresupuestadoEquipo', 'No');
-        $('#editMesDePagoEquipo').val('');
+        setPagoMeses('editMesDePagoEquipo', '');
 
         $('#editModal').modal('show');
     });
@@ -1392,9 +1461,10 @@
         row.find('td:eq(10)').text(equipo.GerenciaEquipo);
         row.find('td:eq(11)').text(equipo.Comentarios);
         if (permitePresupuestado) {
-            row.find('td:eq(12)').html(htmlChipPresupuestado(!!equipo.Presupuestado));
-            row.find('td:eq(13)').text(equipo.MesDePago ?? '');
+            row.find('td:eq(12)').html(htmlChipPresupuestado(equipo.Presupuestado));
+            row.find('td:eq(13)').html(htmlPillsMeses(equipo.MesDePago ?? ''));
         }
+        row.attr('data-meses', equipo.MesDePago ?? '');
         row.find('.edit-btn').data('id', equipo.InventarioID);
 
         // Refrescar la caché de DataTables para que el filtro y los conteos vean el cambio.
@@ -1404,7 +1474,7 @@
     // Agregar una nueva fila en la tabla (para equipo creado)
     function addNewRow(equipo) {
         let newRow = `
-        <tr data-id="${equipo.InventarioID}">
+        <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}">
             <td>
                 <div class="index-actions">
                     <button type="button" class="index-action index-action--edit edit-btn" data-id="${equipo.InventarioID}" title="Editar">
@@ -1428,7 +1498,7 @@
             <td>${equipo.Folio}</td>
             <td>${equipo.GerenciaEquipo}</td>
             <td>${equipo.Comentarios}</td>
-            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(!!equipo.Presupuestado)}</td><td>${equipo.MesDePago ?? ''}</td>` : ''}
+            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.Presupuestado)}</td><td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
         </tr>
     `;
         $('#equiposAsignadosTable').DataTable().row.add($(newRow)).draw(false);
@@ -1535,14 +1605,12 @@
         $('#editNombreInsumo').val(row.find("td:eq(2)").text());
         $('#editCostoMensual').val(row.find("td:eq(3)").text());
         $('#editCostoAnual').val(row.find("td:eq(4)").text());
-        $('#editFrecuenciaDePago').val(row.find("td:eq(5)").text());
-        // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el input date
         $('#editFechaDeRenovacion').val(fechaDisplayToInput(row.find("td:eq(6)").text()));
         $('#editobserv').val(row.find("td:eq(7)").text());
         $('#editFechaDeAsigna').val(fechaDisplayToInput(row.find("td:eq(8)").text()));
         $('#editNumSerieInsu').val(row.find("td:eq(9)").text());
         $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
-        $('#editMesDePago').val(row.find("td:eq(11)").text());
+        setPagoMeses('editMesDePago', row.attr('data-meses') || '');
         setPresupuestado('#editPresupuestadoInsumo', row.find("td:eq(12)").text());
 
         $('#editModalInsumo').modal('show');
@@ -1563,8 +1631,7 @@
         let nombreinsumo = row.find("td:eq(2)").text();
         let costomensual = row.find("td:eq(3)").text();
         let costoanual = row.find("td:eq(4)").text();
-        let frecuenciadepago = row.find("td:eq(5)").text();
-        let fecharenovacion = row.find("td:eq(6)").text().trim();
+        let fecharenovacion = row.find("td:eq(5)").text().trim();
         // Si la fecha trae hora (ej. 2026-04-29 00:00:00), tomamos solo los primeros 10 caracteres
         if (fecharenovacion.length > 10) {
             fecharenovacion = fecharenovacion.substring(0, 10);
@@ -1573,18 +1640,18 @@
         if (fecharenovacion === 'Sin asignar' || fecharenovacion === 'Sin asigna' || fecharenovacion === '0000-00-00') {
             fecharenovacion = '';
         }
-        let observaciones = row.find("td:eq(7)").text();
+        let observaciones = row.find("td:eq(6)").text();
 
         $('#editCategoriaInsumo').val(categoria);
         $('#editNombreInsumo').val(nombreinsumo);
         $('#editCostoMensual').val(costomensual);
         $('#editCostoAnual').val(costoanual);
-        $('#editFrecuenciaDePago').val(frecuenciadepago);
         $('#editFechaDeRenovacion').val(fecharenovacion);
         $('#editobserv').val(observaciones);
         $('#editId_insumo').val('');
         $('#editEmp_insumo').val(id_E);
         setPresupuestado('#editPresupuestadoInsumo', 'No');
+        setPagoMeses('editMesDePago', mesesPagoTodosStr);
 
         $('#editModalInsumo').modal('show');
     });
@@ -1611,11 +1678,15 @@
             }
         });
 
+        if (!$('#editMesDePago').val()) {
+            isValid = false;
+        }
+
         if (!isValid) {
             Swal.fire({
                 icon: 'error',
                 title: 'Campos requeridos',
-                text: 'Por favor complete todos los campos obligatorios',
+                text: 'Seleccione al menos un mes de pago y complete los campos obligatorios',
                 customClass: {
                     popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                 }
@@ -1639,7 +1710,6 @@
             NombreInsumo: $('#editNombreInsumo').val(),
             CostoMensual: $('#editCostoMensual').val(),
             CostoAnual: $('#editCostoAnual').val(),
-            FrecuenciaDePago: $('#editFrecuenciaDePago').val(),
             FechaRenovacion: fechaRenovInsumo,
             Observaciones: $('#editobserv').val(),
             FechaAsignacion: $('#editFechaDeAsigna').val(),
@@ -1719,15 +1789,16 @@
         row.find('td:eq(2)').text(insumo.NombreInsumo);
         row.find('td:eq(3)').text(insumo.CostoMensual);
         row.find('td:eq(4)').text(insumo.CostoAnual);
-        row.find('td:eq(5)').text(insumo.FrecuenciaDePago);
+        row.find('td:eq(5)').text(etiquetaMesesPago(insumo.MesDePago));
         row.find('td:eq(6)').text(formatFechaRenovacion(insumo.FechaRenovacion));
         row.find('td:eq(7)').text(insumo.Observaciones);
         row.find('td:eq(8)').text(formatFechaRenovacion(insumo.FechaAsignacion));
         row.find('td:eq(9)').text(insumo.NumSerie);
         row.find('td:eq(10)').text(insumo.Comentarios);
-        row.find('td:eq(11)').text(insumo.MesDePago);
+        row.find('td:eq(11)').html(htmlPillsMeses(insumo.MesDePago));
+        row.attr('data-meses', insumo.MesDePago ?? '');
         if (permitePresupuestado) {
-            row.find('td:eq(12)').html(htmlChipPresupuestado(!!insumo.Presupuestado));
+            row.find('td:eq(12)').html(htmlChipPresupuestado(insumo.Presupuestado));
         }
 
         $('#insumosAsignadosTable').DataTable().row(row).invalidate().draw(false);
@@ -1736,7 +1807,7 @@
 
     function addinsumoNewRow(insumo) {
         let newRow = `
-        <tr data-id="${insumo.InventarioID}">
+        <tr data-id="${insumo.InventarioID}" data-meses="${insumo.MesDePago ?? ''}">
             <td>
                 <div class="index-actions">
                     <button type="button" class="index-action index-action--edit edit-btn-insum" data-id="${insumo.InventarioID}" title="Editar">
@@ -1753,14 +1824,14 @@
             <td>${insumo.NombreInsumo}</td>
             <td>${insumo.CostoMensual}</td>
             <td>${insumo.CostoAnual}</td>
-            <td>${insumo.FrecuenciaDePago}</td>
+            <td>${etiquetaMesesPago(insumo.MesDePago)}</td>
             <td>${formatFechaRenovacion(insumo.FechaRenovacion)}</td>
             <td>${insumo.Observaciones}</td>
             <td>${formatFechaRenovacion(insumo.FechaAsignacion)}</td>
             <td>${insumo.NumSerie}</td>
             <td>${insumo.Comentarios}</td>
-            <td>${insumo.MesDePago}</td>
-            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(!!insumo.Presupuestado)}</td>` : ''}
+            <td>${htmlPillsMeses(insumo.MesDePago)}</td>
+            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(insumo.Presupuestado)}</td>` : ''}
         </tr>
     `;
         $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);
@@ -1869,6 +1940,7 @@
         // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el hidden input
         $('#editFechaRenovacion').val(fechaDisplayToInput(row.find("td:eq(14)").text()));
         setPresupuestado('#editPresupuestadoLinea', row.find("td:eq(15)").text());
+        setPagoMeses('editMesDePagoLinea', row.attr('data-meses') || '');
 
         $('#editModalLinea').modal('show');
     });
@@ -1906,6 +1978,7 @@
         $('#editMontoRenovacionFianza').val(monto);
         $('#editFechaRenovacion').val(fecha);
         setPresupuestado('#editPresupuestadoLinea', 'No');
+        setPagoMeses('editMesDePagoLinea', mesesPagoTodosStr);
 
         $('#editModalLinea').modal('show');
     });
@@ -1932,11 +2005,15 @@
             }
         });
 
+        if (!$('#editMesDePagoLinea').val()) {
+            isValid = false;
+        }
+
         if (!isValid) {
             Swal.fire({
                 icon: 'error',
                 title: 'Campos requeridos',
-                text: 'Por favor complete todos los campos obligatorios',
+                text: 'Seleccione al menos un mes de renta y complete los campos obligatorios',
                 customClass: {
                     popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                 }
@@ -1961,7 +2038,8 @@
             Comentarios: $('#editcomenl').val(),
             MontoRenovacionFianza: $('#editMontoRenovacionFianza').val(),
             FechaRenovacion: fechaRenov,
-            Presupuestado: getPresupuestado('#editPresupuestadoLinea')
+            Presupuestado: getPresupuestado('#editPresupuestadoLinea'),
+            MesDePago: $('#editMesDePagoLinea').val()
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -2039,8 +2117,12 @@
         row.find('td:eq(13)').text(telefono.MontoRenovacionFianza);
         row.find('td:eq(14)').text(formatFechaRenovacion(telefono.FechaRenovacion));
         if (permitePresupuestado) {
-            row.find('td:eq(15)').html(htmlChipPresupuestado(!!telefono.Presupuestado));
+            row.find('td:eq(15)').html(htmlChipPresupuestado(telefono.Presupuestado));
+            row.find('td:eq(16)').html(htmlPillsMeses(telefono.MesDePago));
+        } else {
+            row.find('td:eq(15)').html(htmlPillsMeses(telefono.MesDePago));
         }
+        row.attr('data-meses', telefono.MesDePago ?? '');
 
         $('#lineasAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }
@@ -2079,10 +2161,13 @@
         // La columna sólo existe para FISICA/EXTRAORDINARIO; DataTables exige que el
         // array tenga exactamente tantos elementos como columnas tenga la tabla.
         if (permitePresupuestado) {
-            newRow.push(htmlChipPresupuestado(!!telefono.Presupuestado));
+            newRow.push(htmlChipPresupuestado(telefono.Presupuestado));
         }
+        newRow.push(htmlPillsMeses(telefono.MesDePago));
 
-        $('#lineasAsignadosTable').DataTable().row.add(newRow).draw(false);
+        var dtRow = $('#lineasAsignadosTable').DataTable().row.add(newRow);
+        $(dtRow.node()).attr('data-id', telefono.InventarioID).attr('data-meses', telefono.MesDePago || '');
+        dtRow.draw(false);
     }
 
     $(document).on('click.invAssign', '.delete-btn-linea', function(event) {

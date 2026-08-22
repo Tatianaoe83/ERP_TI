@@ -55,6 +55,12 @@
         border: 1px solid #fdba74;
     }
 
+    .inv-chip-share {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
     .inv-leyenda {
         display: flex;
         flex-wrap: wrap;

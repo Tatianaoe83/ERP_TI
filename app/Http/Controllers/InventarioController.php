@@ -21,6 +21,8 @@ use App\Models\Gerencia;
 use App\Models\Equipos;
 use App\Models\Mantenimiento;
 use App\Models\User;
+use App\Helpers\PagoMeses;
+use App\Helpers\PresupuestoAsignacion;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use DB;
@@ -365,6 +367,7 @@ class InventarioController extends AppBaseController
         $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
 
         $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID);
+        $data = $this->aplicarMesesDePago($data, false);
 
         $inventarioEquipo->update($data);
 
@@ -400,6 +403,7 @@ class InventarioController extends AppBaseController
         $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
 
         $data = $this->forzarPresupuestado($data, (int) $id);
+        $data = $this->aplicarMesesDePago($data, false);
 
         $inventarioEquipo = InventarioEquipo::create($data);
 
@@ -497,6 +501,7 @@ class InventarioController extends AppBaseController
         }
 
         $data = $this->forzarPresupuestado($data, (int) $inventarioinsumo->EmpleadoID);
+        $data = $this->aplicarMesesDePago($data, true);
 
         $inventarioinsumo->update($data);
 
@@ -532,6 +537,7 @@ class InventarioController extends AppBaseController
         }
 
         $data = $this->forzarPresupuestado($data, (int) $id);
+        $data = $this->aplicarMesesDePago($data, true);
 
         $inventarioinsumo = InventarioInsumo::create($data);
 
@@ -590,6 +596,7 @@ class InventarioController extends AppBaseController
             }
 
             $data = $this->forzarPresupuestado($data, (int) $inventariotelf->EmpleadoID);
+            $data = $this->aplicarMesesDePago($data, false);
 
             $inventariotelf->update($data);
 
@@ -694,6 +701,8 @@ class InventarioController extends AppBaseController
         }
 
         $data = $this->forzarPresupuestado($data, (int) $id);
+        $data['MesDePago'] = $request->input('MesDePago');
+        $data = $this->aplicarMesesDePago($data, false);
 
         $inventariotelf = InventarioLineas::create($data);
 
@@ -1154,17 +1163,17 @@ class InventarioController extends AppBaseController
 
         $aplicarFiltro = function ($query) use ($filtro) {
             if ($filtro === 'presupuestados') {
-                $query->where('Presupuestado', 1);
+                PresupuestoAsignacion::aplicarWhere($query, 'presupuesto');
             } elseif ($filtro === 'no_presupuestados') {
-                $query->where(function ($q) {
-                    $q->where('Presupuestado', 0)->orWhereNull('Presupuestado');
-                });
+                PresupuestoAsignacion::aplicarWhere($query, 'inventario');
+            } elseif ($filtro === 'compartidos') {
+                $query->where('Presupuestado', PresupuestoAsignacion::COMPARTIDO);
             }
 
             return $query;
         };
 
-        $siNo = fn($valor) => $valor ? 'Si' : 'No';
+        $siNo = fn($valor) => PresupuestoAsignacion::etiqueta($valor);
         $fecha = fn($valor) => (empty($valor) || in_array($valor, ['Sin asignar', 'Sin asigna', '0000-00-00']))
             ? 'Sin asignar'
             : Carbon::parse($valor)->format('d/m/Y');
@@ -1287,12 +1296,27 @@ class InventarioController extends AppBaseController
      * presupuestado, sin importar lo que llegue del formulario. El switch manual
      * sólo existe para personas FISICA.
      */
+    private function aplicarMesesDePago(array $data, bool $derivarFrecuencia): array
+    {
+        $raw = $data['MesDePago'] ?? $data['editMesDePago'] ?? '';
+        $data['MesDePago'] = PagoMeses::fromRequest($raw);
+        unset($data['editMesDePago'], $data['meses_pago']);
+
+        if ($derivarFrecuencia) {
+            $data['FrecuenciaDePago'] = PagoMeses::frecuenciaDerivada($data['MesDePago']);
+        }
+
+        return $data;
+    }
+
     private function forzarPresupuestado(array $data, int $empleadoId): array
     {
         $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
 
         if ($tipoPersona === 'EXTRAORDINARIO') {
-            $data['Presupuestado'] = 1;
+            $data['Presupuestado'] = PresupuestoAsignacion::EXTRA;
+        } elseif (array_key_exists('Presupuestado', $data)) {
+            $data['Presupuestado'] = PresupuestoAsignacion::normalizar($data['Presupuestado']);
         }
 
         return $data;
