@@ -23,6 +23,7 @@ class AuditoriaEquipo extends Model
         'NombreLicencia',
         'tiene_licencia',
         'original',
+        'observaciones',
     ];
 
     /**

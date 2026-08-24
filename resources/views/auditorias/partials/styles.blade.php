@@ -1187,4 +1187,102 @@
     @media (prefers-reduced-motion: reduce) {
         .aud * { transition: none !important; animation: none !important; }
     }
+
+    /* ── Textarea de observaciones ──────────────────────────────────────────── */
+    .aud-obs {
+        width: 100%;
+        min-width: 14rem;
+        padding: 0.35rem 0.55rem;
+        font-size: 0.82rem;
+        line-height: 1.4;
+        color: var(--aud-text);
+        background: var(--aud-surface-2);
+        border: 1px solid var(--aud-border);
+        border-radius: 0.45rem;
+        resize: vertical;
+        transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+    }
+    .aud-obs:focus {
+        outline: none;
+        border-color: var(--aud-primary);
+        box-shadow: 0 0 0 3px var(--aud-primary-soft);
+    }
+    /* Flash verde: guardado correctamente */
+    .aud-obs--ok {
+        border-color: var(--aud-ok);
+        background: var(--aud-ok-soft);
+        transition: border-color 0.15s, background 0.15s;
+    }
+    /* Flash rojo: falló el guardado */
+    .aud-obs--error {
+        border-color: var(--aud-danger);
+        background: var(--aud-danger-soft);
+        transition: border-color 0.15s, background 0.15s;
+    }
+    /* Cursor de espera mientras viaja */
+    .aud-obs--guardando {
+        opacity: 0.6;
+        cursor: wait;
+    }
+
+    /* ── Columna "Auditoría anterior" ───────────────────────────────────────── */
+    /* Agrupa el badge de marca + estado resumido + nota anterior */
+    .aud-antes {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 12rem;
+    }
+    .aud-antes__estado {
+        font-size: 0.8rem;
+        color: var(--aud-text-muted);
+    }
+    /* Nota de la corrida anterior: en gris claro, entre comillas, texto cortado */
+    .aud-antes__nota {
+        font-size: 0.75rem;
+        font-style: italic;
+        color: var(--aud-text-muted);
+        opacity: 0.8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 22rem;
+        cursor: help;          /* el title="" del elemento muestra el texto completo */
+    }
+
+    /* Texto atenuado genérico */
+    .aud-muted {
+        color: var(--aud-text-muted);
+        font-size: 0.8rem;
+    }
+
+    /* Fila de baja: la licencia desapareció del inventario.
+       Se atenúa para que destaque menos que las licencias activas,
+       pero sigue visible para dejar constancia de la desaparición. */
+    .aud-fila--baja td {
+        opacity: 0.6;
+    }
+    .aud-fila--baja .aud-strong {
+        text-decoration: line-through;
+        text-decoration-color: var(--aud-danger);
+    }
+    /* Badge estático para la columna "¿Tiene licencia?" */
+    .aud-badge {
+        display: inline-block;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 999px;
+        letter-spacing: 0.03em;
+    }
+    .aud-badge--si {
+        background: var(--aud-ok-soft);
+        color: var(--aud-ok);
+    }
+    .aud-badge--no {
+        background: var(--aud-danger-soft);
+        color: var(--aud-danger);
+    }
 </style>
+
+

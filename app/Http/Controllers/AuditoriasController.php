@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Auditoria;
 use App\Models\AuditoriaEquipo;
+use App\Models\Empleados;
 use App\Models\InventarioEquipo;
 use App\Models\InventarioInsumo;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -44,16 +46,16 @@ class AuditoriasController extends Controller
             ->pluck('total', 'EmpleadoID');
 
         return view('auditorias.index', [
-            'auditorias'        => $auditorias,
+            'auditorias'          => $auditorias,
             // Categoría, marca, modelo, serie y tipo salen del inventario en vivo:
             // la corrida sólo guarda el EmpleadoID, y de ahí se llega a sus equipos.
             'equiposPorAuditoria' => $this->equiposPorAuditoria($auditorias->getCollection()),
-            'ultima'            => Auditoria::with('empleado')->orderByDesc('created_at')->first(),
-            'catalogoLicencias' => $this->catalogoLicencias(),
-            'catalogoEquipos'   => $equipos,
+            'ultima'              => Auditoria::with('empleado')->orderByDesc('created_at')->first(),
+            'catalogoLicencias'   => $this->catalogoLicencias(),
+            'catalogoEquipos'     => $equipos,
             // La corrida es por empleado: sólo se ofrecen los que tienen algo auditable.
             // Sin licencias no hay nada que revisar, así que se marcan para bloquearlos.
-            'empleados'         => $equipos
+            'empleados'           => $equipos
                 ->unique('EmpleadoID')
                 ->map(fn($e) => (object) [
                     'EmpleadoID'     => $e->EmpleadoID,
@@ -65,9 +67,9 @@ class AuditoriasController extends Controller
                 ])
                 ->sortBy('NombreEmpleado', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values(),
-            'gerencias'         => $this->opcionesDe($equipos, 'NombreGerencia', 'Sin gerencia'),
-            'departamentos'     => $this->opcionesDe($equipos, 'NombreDepartamento', 'Sin departamento'),
-            'tiposPersona'      => $this->opcionesDe($equipos, 'tipo_persona', 'Sin tipo'),
+            'gerencias'           => $this->opcionesDe($equipos, 'NombreGerencia', 'Sin gerencia'),
+            'departamentos'       => $this->opcionesDe($equipos, 'NombreDepartamento', 'Sin departamento'),
+            'tiposPersona'        => $this->opcionesDe($equipos, 'tipo_persona', 'Sin tipo'),
         ]);
     }
 
@@ -138,9 +140,20 @@ class AuditoriasController extends Controller
             ->unique('NombreInsumo')
             ->values();
 
-        // Una auditoría sin ninguna licencia que revisar no audita nada: se corta
-        // aquí en vez de dejar una corrida vacía en el historial.
-        if ($licenciasDelEmpleado->isEmpty()) {
+        // Estado con que cerró la corrida anterior de este empleado, por licencia.
+        // De ahí se arrastra el último resultado conocido en vez de arrancar todo
+        // en blanco cada vez.
+        $previas = $this->estadoAnteriorPorLicencia($empleadoAuditado);
+
+        // Licencias que la corrida pasada sí encontró y que hoy ya no están en el
+        // inventario: entran como baja para dejar constancia de que desaparecieron.
+        $bajas = $previas
+            ->reject(fn($p) => $licenciasDelEmpleado->contains('NombreInsumo', $p->NombreLicencia))
+            ->filter(fn($p) => $p->tiene_licencia)
+            ->values();
+
+        // Una corrida sin licencias vivas ni bajas que reportar no audita nada.
+        if ($licenciasDelEmpleado->isEmpty() && $bajas->isEmpty()) {
             $tieneAlguna = InventarioInsumo::where('CateogoriaInsumo', 'LIKE', '%LICENCIA%')
                 ->where('EmpleadoID', $empleadoAuditado)
                 ->exists();
@@ -155,7 +168,7 @@ class AuditoriasController extends Controller
         $usuario = auth()->user();
         $ahora = Carbon::now();
 
-        $auditoria = DB::transaction(function () use ($usuario, $ahora, $licenciasDelEmpleado, $seleccion, $empleadoAuditado, $tipoEquipo) {
+        $auditoria = DB::transaction(function () use ($usuario, $ahora, $licenciasDelEmpleado, $seleccion, $empleadoAuditado, $tipoEquipo, $previas, $bajas) {
             $auditoria = Auditoria::create([
                 'Folio'                     => $this->siguienteFolio($ahora),
                 'id_empleado'               => $usuario?->id,
@@ -176,13 +189,27 @@ class AuditoriasController extends Controller
                 'updated_at'   => $ahora,
             ];
 
-            // Llegar aquí sin licencias es imposible: se validó antes de la transacción.
-            // "original" arranca en null: se revisa después sobre la corrida.
-            $filas = $licenciasDelEmpleado->map(fn($licencia) => $base + [
-                'NombreLicencia' => $licencia->NombreInsumo,
-                'tiene_licencia' => 1,
+            // Arrastre: lo ya auditado conserva su último resultado conocido; lo que
+            // no estaba en la corrida anterior nace sin revisar, a la fuerza. Las
+            // observaciones NUNCA se arrastran: son un hecho fechado de su corrida.
+            $filas = $licenciasDelEmpleado->map(function ($licencia) use ($base, $previas) {
+                $previa = $previas->get($licencia->NombreInsumo);
+
+                return $base + [
+                    'NombreLicencia' => $licencia->NombreInsumo,
+                    'tiene_licencia' => 1,
+                    'original'       => $previa->original ?? null,
+                    'observaciones'  => null,
+                ];
+            });
+
+            // Bajas: estaban en la corrida anterior y ya no en el inventario.
+            $filas = $filas->concat($bajas->map(fn($previa) => $base + [
+                'NombreLicencia' => $previa->NombreLicencia,
+                'tiene_licencia' => 0,
                 'original'       => null,
-            ]);
+                'observaciones'  => null,
+            ]));
 
             foreach ($filas->chunk(300) as $lote) {
                 AuditoriaEquipo::insert($lote->all());
@@ -209,16 +236,39 @@ class AuditoriasController extends Controller
             ->orderByRaw('NombreLicencia IS NULL, NombreLicencia')
             ->get();
 
+        // Corrida anterior del mismo empleado: la referencia del historial. El diff
+        // se calcula al abrir, no se guarda, así corregir un dato viejo lo corrige.
+        $anterior = Auditoria::where('EmpleadoID', $auditoria->EmpleadoID)
+            ->where('created_at', '<', $auditoria->created_at)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
+
+        $previas = $anterior
+            ? AuditoriaEquipo::where('auditoria_id', $anterior->id)->get()->keyBy('NombreLicencia')
+            : collect();
+
+        $comparadas = $detalle->map(function ($fila) use ($previas, $anterior) {
+            $previa = $previas->get($fila->NombreLicencia);
+
+            $fila->previa = $previa;
+            $fila->marca = $this->marcaDeCambio($fila, $previa, (bool) $anterior);
+
+            return $fila;
+        });
+
         return view('auditorias.show', [
             'auditoria' => $auditoria,
-            'detalle'   => $detalle,
+            'detalle'   => $comparadas,
             // Equipos del empleado leídos del inventario: la corrida no los copia.
             'equipos'   => $this->equiposPorAuditoria(collect([$auditoria]))[$auditoria->id] ?? collect(),
-            // Referencia contra la corrida inmediatamente anterior del mismo empleado.
-            'anterior'  => Auditoria::where('created_at', '<', $auditoria->created_at)
-                ->where('EmpleadoID', $auditoria->EmpleadoID)
-                ->orderByDesc('created_at')
-                ->first(),
+            'anterior'  => $anterior,
+            'resumen'   => [
+                'nueva'  => $comparadas->where('marca', 'nueva')->count(),
+                'baja'   => $comparadas->where('marca', 'baja')->count(),
+                'cambio' => $comparadas->where('marca', 'cambio')->count(),
+                'igual'  => $comparadas->where('marca', 'igual')->count(),
+            ],
         ]);
     }
 
@@ -235,24 +285,24 @@ class AuditoriasController extends Controller
         $registro = AuditoriaEquipo::findOrFail($fila);
 
         $datos = $request->validate([
-            'campo' => ['required', 'in:tiene_licencia,original'],
-            'valor' => ['nullable', 'in:0,1'],
+            'campo' => ['required', 'in:tiene_licencia,original,observaciones'],
+            'valor' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $valor = $datos['valor'] === null ? null : (int) $datos['valor'];
+        if ($datos['campo'] === 'observaciones') {
+            $registro->observaciones = trim((string) ($datos['valor'] ?? '')) ?: null;
+            $registro->save();
 
-        if ($datos['campo'] === 'tiene_licencia') {
-            $registro->tiene_licencia = (bool) $valor;
-
-            // Sin licencia no hay origen que revisar: se limpia para no dejar un
-            // "original" colgando de una licencia que ya no existe.
-            if (! $registro->tiene_licencia) {
-                $registro->original = null;
-            }
-        } else {
-            $registro->original = $valor;
+            return response()->json([
+                'success'       => true,
+                'observaciones' => $registro->observaciones,
+            ]);
         }
 
+        $campo = $datos['campo'];
+        $valor = $datos['valor'];
+
+        $registro->$campo = $valor === null ? null : (bool) (int) $valor;
         $registro->save();
 
         return response()->json([
@@ -285,6 +335,65 @@ class AuditoriasController extends Controller
         $consecutivo = $ultimo ? ((int) substr($ultimo, strlen($prefijo))) + 1 : 1;
 
         return $prefijo . str_pad((string) $consecutivo, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Relación de una licencia con la corrida anterior:
+     *   nueva  → no existía antes
+     *   baja   → la anterior la tenía y ésta ya no
+     *   cambio → el estado auditado no coincide con el anterior
+     *   igual  → mismo estado que la vez pasada
+     *
+     * Sin corrida anterior todo es "nueva": es la primera auditoría del empleado.
+     */
+    private function marcaDeCambio($fila, $previa, bool $hayAnterior): string
+    {
+        if (! $hayAnterior || ! $previa) {
+            return 'nueva';
+        }
+
+        if ($previa->tiene_licencia && ! $fila->tiene_licencia) {
+            return 'baja';
+        }
+
+        $mismoTiene = (bool) $previa->tiene_licencia === (bool) $fila->tiene_licencia;
+        // Comparación laxa a propósito: null y "sin revisar" son el mismo estado.
+        $mismoOrigen = $previa->original === $fila->original;
+
+        return $mismoTiene && $mismoOrigen ? 'igual' : 'cambio';
+    }
+
+    /**
+     * Corrida anterior de un empleado. Es la referencia contra la que se compara y
+     * de la que se arrastra el último resultado conocido.
+     */
+    private function corridaAnterior(int $empleadoID, ?int $excepto = null): ?Auditoria
+    {
+        return Auditoria::where('EmpleadoID', $empleadoID)
+            ->when($excepto, fn($q) => $q->where('id', '<>', $excepto))
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * Cómo cerró cada licencia en la corrida anterior del empleado, indexado por
+     * NombreLicencia. Vacío si es su primera auditoría.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    private function estadoAnteriorPorLicencia(int $empleadoID, ?int $excepto = null)
+    {
+        $anterior = $this->corridaAnterior($empleadoID, $excepto);
+
+        if (! $anterior) {
+            return collect();
+        }
+
+        return AuditoriaEquipo::where('auditoria_id', $anterior->id)
+            ->whereNotNull('NombreLicencia')
+            ->get()
+            ->keyBy('NombreLicencia');
     }
 
     /**

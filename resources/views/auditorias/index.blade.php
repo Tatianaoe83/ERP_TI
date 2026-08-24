@@ -14,7 +14,6 @@
     id="auditorias-page"
     title="Auditorías"
     icon="fa-clipboard-check"
-    subtitle="Corridas de auditoría de equipos tecnológicos"
     :show-count="false"
     :card="false"
 >
@@ -42,7 +41,7 @@
                 @if($ultima)
                     {{ $ultima->Folio }} · {{ $ultima->created_at?->format('d/m/Y H:i') ?: '—' }}
                 @else
-                    Nunca se ha generado una auditoría
+                    --
                 @endif
             </div>
         </div>
@@ -210,6 +209,8 @@
         'catalogoLicencias' => $catalogoLicencias,
         'catalogoEquipos'   => $catalogoEquipos,
         'gerencias'         => $gerencias,
+        'departamentos'     => $departamentos,
+        'tiposPersona'      => $tiposPersona,
         'empleados'         => $empleados,
     ])
 @endif
@@ -596,13 +597,13 @@
             });
         }
 
-        refrescarAlcance();
+        refrescar();
 
         // Generar toma unos segundos con inventarios grandes: bloquear el botón evita
         // corridas duplicadas por doble clic.
         if (form) {
             form.addEventListener('submit', function (e) {
-                if (marcadas() === 0 || (!esGeneral() && equiposMarcados() === 0)) {
+                if (marcadas() === 0 || equiposMarcados() === 0 || !hayEmpleado()) {
                     e.preventDefault();
                     return;
                 }
@@ -617,15 +618,12 @@
                 event.preventDefault();
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Eliminar ' + f.dataset.folio + '?',
+                    title: '¿Eliminar ' + f.dataset.folio + '?',
                     text: 'Se borra la corrida y todo su detalle. No se puede deshacer.',
                     showCancelButton: true,
                     confirmButtonText: 'Eliminar',
                     cancelButtonText: 'Cancelar',
                     confirmButtonColor: '#B91C1C',
-                    customClass: {
-                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
-                    }
                 }).then(function (r) {
                     if (r.isConfirmed) f.submit();
                 });
