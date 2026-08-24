@@ -312,33 +312,16 @@
               </div>
             </div>
 
+            @if($permitePresupuestado)
             <div class="row mt-3">
-              @if($permitePresupuestado)
-              <div class="col-md-8">
+              <div class="col-md-12">
                 @include('inventarios.partials.presupuestado-captura', [
                     'switchId' => 'editPresupuestadoInsumo',
                     'presupuestadoForzado' => $presupuestadoForzado,
                 ])
               </div>
-              @endif
-
-              {{-- Sólo aplica al stock: una licencia pirata no se paga ni entra al presupuesto. --}}
-              <div class="col-md-{{ $permitePresupuestado ? 4 : 12 }} insumo-solo-stock">
-                <div class="dark:text-white">
-                  <label class="inv-form-label d-block">Origen de la licencia</label>
-                  <button type="button" class="inv-pirata-card" id="editLicenciaPirataCard"
-                          aria-pressed="false" data-target="editLicenciaPirata">
-                    <span class="inv-pirata-ico"><i class="fas fa-shield-halved"></i></span>
-                    <span class="inv-pirata-body">
-                      <span class="inv-pirata-title">Licencia pirata</span>
-                      <span class="inv-pirata-desc">Sin respaldo legal · no genera costo</span>
-                    </span>
-                    <span class="inv-pirata-check"><i class="fas fa-check"></i></span>
-                  </button>
-                  <input type="checkbox" class="d-none" id="editLicenciaPirata">
-                </div>
-              </div>
             </div>
+            @endif
 
           </div>
         </form>

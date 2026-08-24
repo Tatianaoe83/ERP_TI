@@ -346,13 +346,17 @@
                             @if($permitePresupuestado)
                             <th>Stock / Extra</th>
                             @endif
-                            <th>Licencia</th>
 
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($insumosAsignados as $insumosAsignado)
-                        <tr data-id="{{ $insumosAsignado->InventarioID }}" data-meses="{{ $insumosAsignado->MesDePago }}">
+                        {{-- data-categoria y data-presupuestado: DataTables responsive puede
+                             sacar esos <td> del DOM, así que el modal los lee del <tr>. --}}
+                        <tr data-id="{{ $insumosAsignado->InventarioID }}"
+                            data-meses="{{ $insumosAsignado->MesDePago }}"
+                            data-categoria="{{ $insumosAsignado->CateogoriaInsumo }}"
+                            data-presupuestado="{{ \App\Helpers\PresupuestoAsignacion::normalizar($insumosAsignado->Presupuestado) }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
@@ -389,7 +393,6 @@
                             @if($permitePresupuestado)
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
                             @endif
-                            <td>@if($insumosAsignado->LicenciaPirata)<span class="inv-chip inv-chip-pirata">Pirata</span>@endif</td>
                         </tr>
                         @endforeach
 
@@ -743,6 +746,8 @@
 
     function tipoAsignacionDesdeTexto(texto) {
         const v = String(texto ?? '').trim().toLowerCase();
+        // Los data-* del <tr> traen el número directo; los <td>, el texto del chip.
+        if (/^[0-3]$/.test(v)) return parseInt(v, 10);
         if (v.indexOf('propio') !== -1) return MODO_PROPIO;
         if (v.indexOf('compart') !== -1) return MODO_COMPARTIDO;
         if (v === 'si' || v === '1' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1) return MODO_EXTRA;
@@ -808,39 +813,6 @@
             $('#editFolio').removeClass('is-invalid is-valid');
         }
     }
-
-    // Sólo los insumos de categoría LICENCIA pueden ser piratas, y sólo en stock:
-    // una licencia pirata no se paga, así que nunca se proyecta como gasto.
-    function esCategoriaLicencia() {
-        return String($('#editCategoriaInsumo').val() ?? '').toLowerCase().indexOf('licencia') !== -1;
-    }
-
-    // El modal se rellena por pasos; al terminar de abrirse ya está todo puesto.
-    $(document).on('shown.bs.modal', '#editModalInsumo', refrescarLicenciaPirata);
-
-    function refrescarLicenciaPirata() {
-        const esStock = getPresupuestado('#editPresupuestadoInsumo') !== 1;
-        const aplica = esStock && esCategoriaLicencia();
-
-        $('.insumo-solo-stock').toggle(aplica);
-
-        if (!aplica) {
-            setLicenciaPirata(false);
-        }
-    }
-
-    // El checkbox real queda oculto; la card es la que se ve y se pulsa.
-    function setLicenciaPirata(activa) {
-        const marcada = !!activa;
-        $('#editLicenciaPirata').prop('checked', marcada);
-        $('#editLicenciaPirataCard')
-            .toggleClass('is-active', marcada)
-            .attr('aria-pressed', marcada ? 'true' : 'false');
-    }
-
-    $(document).on('click', '.inv-pirata-card', function() {
-        setLicenciaPirata(!$('#' + $(this).data('target')).is(':checked'));
-    });
 
     function setPresupuestado(selector, texto) {
         const tipo = presupuestadoForzado ? 1 : tipoAsignacionDesdeTexto(texto);
@@ -1747,10 +1719,7 @@
         $('#editNumSerieInsu').val(row.find("td:eq(9)").text());
         $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
         setPagoMeses('editMesDePago', row.attr('data-meses') || '');
-        setPresupuestado('#editPresupuestadoInsumo', row.find("td:eq(12)").text());
-        setLicenciaPirata(String(row.data('pirata')) === '1');
-        // Va al final: apaga la bandera si el insumo no es licencia o es presupuestado.
-        refrescarLicenciaPirata();
+        setPresupuestado('#editPresupuestadoInsumo', row.data('presupuestado') ?? row.find("td:eq(12)").text());
 
         $('#editModalInsumo').modal('show');
     });
@@ -1856,7 +1825,6 @@
             Comentarios: $('#editComentariosInsumo').val(),
             MesDePago: $('#editMesDePago').val(),
             Presupuestado: getPresupuestado('#editPresupuestadoInsumo'),
-            LicenciaPirata: $('#editLicenciaPirata').is(':checked') ? 1 : 0,
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -1941,9 +1909,9 @@
             row.find('td:eq(12)').html(htmlChipPresupuestado(insumo.Presupuestado));
         }
         // .data() cachea, así que hay que actualizar ambos para que el modal relea bien.
-        row.attr('data-pirata', insumo.LicenciaPirata ? 1 : 0).data('pirata', insumo.LicenciaPirata ? 1 : 0);
         row.attr('data-categoria', insumo.CateogoriaInsumo).data('categoria', insumo.CateogoriaInsumo);
-        row.find('td').last().html(htmlChipPirata(insumo.LicenciaPirata));
+        const modoGuardado = tipoAsignacionDesdeTexto(insumo.Presupuestado);
+        row.attr('data-presupuestado', modoGuardado).data('presupuestado', modoGuardado);
 
         $('#insumosAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }

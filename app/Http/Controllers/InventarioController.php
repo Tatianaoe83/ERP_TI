@@ -633,25 +633,6 @@ class InventarioController extends AppBaseController
         ]);
     }
 
-    /**
-     * La bandera de licencia pirata sólo aplica a los insumos de categoría LICENCIA y
-     * sólo sobre el stock: una licencia pirata no se paga, así que jamás se proyecta en
-     * presupuesto. Fuera de esos dos casos la bandera se apaga sin importar lo que
-     * llegue del formulario.
-     */
-    private function normalizarLicenciaPirata(array $data): array
-    {
-        $esPresupuestado = (int) ($data['Presupuestado'] ?? 0) === 1;
-        $esLicencia = stripos((string) ($data['CateogoriaInsumo'] ?? ''), 'licencia') !== false;
-
-        $data['LicenciaPirata'] = ($esPresupuestado || !$esLicencia)
-            ? 0
-            : (int) (bool) ($data['LicenciaPirata'] ?? 0);
-
-        return $data;
-    }
-
-
     public function destroyInsumo($id)
     {
         // Buscar el insumo por InventarioID

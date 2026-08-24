@@ -35,8 +35,7 @@ class InventarioInsumo extends Model implements Auditable
         'NumSerie',
         'Comentarios',
         'MesDePago',
-        'Presupuestado',
-        'LicenciaPirata'
+        'Presupuestado'
     ];
 
      protected $casts = [
