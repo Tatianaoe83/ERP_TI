@@ -1,40 +1,41 @@
 @php
-    $chips = [
-        1 => ['clase' => 'extra',  'icono' => 'fa-calendar-alt', 'texto' => 'Extra'],
-        2 => ['clase' => 'share',  'icono' => 'fa-link',         'texto' => 'Compartido'],
-        3 => ['clase' => 'propio', 'icono' => 'fa-user-shield',  'texto' => 'Propio'],
-    ];
-    $chip = $chips[$fila->tipoEquipo] ?? ['clase' => 'stock', 'icono' => 'fa-cube', 'texto' => 'Stock'];
+    // Laravel 8 no trae @selected ni @disabled (llegaron en la 9): se arman a mano
+    // o se imprimen como texto dentro del <option>.
+    $tiene = (bool) $fila->tiene_licencia;
+    $original = $fila->original === null ? '' : (string) (int) $fila->original;
+
+    $claseTiene = $tiene ? 'si' : 'no';
+    $claseOriginal = $original === '' ? 'pendiente' : ($original === '1' ? 'si' : 'alerta');
+    $etiqueta = $fila->NombreLicencia ?: 'sin nombre';
 @endphp
 
-{{-- Una fila por licencia: el equipo se repite tantas veces como licencias tenga. --}}
-<tr>
-    <td class="aud-strong">{{ $fila->CategoriaEquipo }}</td>
-    <td>{{ trim($fila->Marca . ' ' . $fila->Modelo) ?: '—' }}</td>
-    <td class="aud-num">{{ $fila->NumSerie ?: '—' }}</td>
-    <td>{{ $fila->NombreEmpleado }}</td>
-    <td>{{ $fila->GerenciaEquipo }}</td>
+{{-- Una fila por licencia del empleado auditado. Los dos estados se capturan aquí
+     mismo: son <select> reales, no celdas que sólo parecen editables. --}}
+<tr data-fila="{{ $fila->id }}">
+    {{-- La licencia es el dato principal de la fila: va sin atenuar. --}}
+    <td class="aud-strong">{{ $fila->NombreLicencia ?: '—' }}</td>
+
     <td>
-        <span class="aud-chip aud-chip--{{ $chip['clase'] }}">
-            <i class="fas {{ $chip['icono'] }}" aria-hidden="true"></i> {{ $chip['texto'] }}
-        </span>
+        <label class="aud-sr" for="tiene-{{ $fila->id }}">¿Tiene la licencia {{ $etiqueta }}?</label>
+        <select id="tiene-{{ $fila->id }}"
+                class="aud-editable aud-editable--{{ $claseTiene }}"
+                data-fila="{{ $fila->id }}" data-campo="tiene_licencia">
+            <option value="1" {{ $tiene ? 'selected' : '' }}>Sí</option>
+            <option value="0" {{ $tiene ? '' : 'selected' }}>No</option>
+        </select>
     </td>
+
+    {{-- Tri-estado: sin revisar no es lo mismo que "no original", por eso es una
+         opción propia y no la ausencia de valor. --}}
     <td>
-        @if($fila->tiene_licencia && $fila->NombreLicencia)
-            <span class="aud-mini {{ $fila->pirata ? 'aud-mini--pirata' : '' }}"
-                  @if($fila->pirata) title="Licencia pirata" @endif>{{ $fila->NombreLicencia }}</span>
-        @else
-            <span class="aud-muted">Sin licencia</span>
-        @endif
-    </td>
-    <td>
-        {{-- Texto además del color: el estado no puede depender sólo del tono. --}}
-        @if($fila->en_dominio)
-            <span class="aud-chip aud-chip--stock">
-                <i class="fas fa-network-wired" aria-hidden="true"></i> En dominio
-            </span>
-        @else
-            <span class="aud-muted">Fuera del dominio</span>
-        @endif
+        <label class="aud-sr" for="original-{{ $fila->id }}">¿Es original la licencia {{ $etiqueta }}?</label>
+        <select id="original-{{ $fila->id }}"
+                class="aud-editable aud-editable--{{ $claseOriginal }}"
+                data-fila="{{ $fila->id }}" data-campo="original"
+                {{ $tiene ? '' : 'disabled' }}>
+            <option value=""  {{ $original === ''  ? 'selected' : '' }}>Sin revisar</option>
+            <option value="1" {{ $original === '1' ? 'selected' : '' }}>Sí</option>
+            <option value="0" {{ $original === '0' ? 'selected' : '' }}>No</option>
+        </select>
     </td>
 </tr>

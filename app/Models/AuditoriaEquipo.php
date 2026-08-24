@@ -6,12 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Detalle congelado de una corrida: una fila por LICENCIA de cada equipo auditado.
- * Un equipo con tres licencias deja tres filas; uno sin ninguna deja una sola con
- * NombreLicencia nulo y tiene_licencia en false.
+ * Detalle congelado de una corrida: una fila por LICENCIA del empleado auditado.
+ * Sin licencias queda una sola fila con NombreLicencia nulo y tiene_licencia en false.
  *
- * Guarda copia de los datos del equipo para que el reporte siga siendo legible
- * aunque el equipo se reasigne, se transfiera o se dé de baja después.
+ * No copia datos del equipo ni del empleado: se leen del empleado de la cabecera por
+ * relación, así que nunca se desfasan de lo que hay en el inventario.
  */
 class AuditoriaEquipo extends Model
 {
@@ -19,35 +18,19 @@ class AuditoriaEquipo extends Model
 
     public $table = 'auditorias_equipos';
 
-    /** Grupos de la columna "grupo". */
-    public const GRUPO_LAPTOP = 0;
-    public const GRUPO_PC     = 1;
-    public const GRUPO_OTROS  = 2;
-
     protected $fillable = [
         'auditoria_id',
-        'InventarioID',
-        'CategoriaEquipo',
-        'Marca',
-        'Modelo',
-        'NumSerie',
-        'Folio',
-        'GerenciaEquipo',
-        'NombreEmpleado',
-        'tipoEquipo',
-        'grupo',
         'NombreLicencia',
         'tiene_licencia',
-        'pirata',
-        'en_dominio',
+        'original',
     ];
 
+    /**
+     * "original" es tri-estado: true original, false no original, null sin revisar.
+     * Por eso no lleva cast a boolean, que convertiría el null en false.
+     */
     protected $casts = [
-        'tipoEquipo'     => 'integer',
-        'grupo'          => 'integer',
         'tiene_licencia' => 'boolean',
-        'pirata'         => 'boolean',
-        'en_dominio'     => 'boolean',
     ];
 
     public function auditoria()

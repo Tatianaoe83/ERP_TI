@@ -449,7 +449,6 @@
     .aud-chip--extra  { background: var(--aud-accent-soft); color: var(--aud-accent); border-color: currentColor; }
     .aud-chip--share  { background: var(--aud-info-soft, #eff6ff); color: var(--aud-info, #1d4ed8); border-color: currentColor; }
     .aud-chip--propio { background: var(--aud-primary-soft); color: var(--aud-primary); border-color: currentColor; }
-    .aud-chip--pirata { background: var(--aud-danger-soft); color: var(--aud-danger); border-color: currentColor; }
 
     .aud-mini {
         display: inline-block;
@@ -461,9 +460,118 @@
         font-size: 0.72rem;
     }
 
-    .aud-mini--pirata {
+    /* ── Estados de la fila ──
+       Siempre icono + texto: el color acompaña, nunca es el único indicador.
+       Los tokens ya traen variante clara y oscura, así que el contraste se
+       mantiene en los dos temas sin duplicar reglas. */
+    .aud-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.18rem 0.5rem;
+        border: 1px solid currentColor;
+        border-radius: 0.4rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .aud-estado--si {
+        background: var(--aud-ok-soft);
+        color: var(--aud-ok);
+    }
+
+    .aud-estado--no {
+        background: var(--aud-surface-2);
+        color: var(--aud-text-muted);
+    }
+
+    .aud-estado--alerta {
         background: var(--aud-danger-soft);
         color: var(--aud-danger);
+    }
+
+    /* Sin revisar no es un fallo: se distingue del "no original" con ámbar
+       y borde punteado, para que no se lea como incidencia. */
+    .aud-estado--pendiente {
+        background: var(--aud-accent-soft);
+        color: var(--aud-accent);
+        border-style: dashed;
+        cursor: help;
+    }
+
+    /* ── Celdas capturables ──
+       Es un <select> nativo: se ve como el estado que representa, pero conserva
+       teclado, lector de pantalla y el desplegable del sistema. */
+    /* Se conserva la flecha nativa del sistema: sin ella el control no se lee como
+       desplegable. Sólo se reserva espacio a la derecha para que no pise el texto.
+
+       Todo va anclado a .aud y con !important porque app.css trae reglas que le
+       ganan por especificidad y por importancia:
+         .dark select:disabled                 { background-color:#374151!important }
+         .dark .index-table tbody tr:hover td  { background:#1f2937!important }
+       Sin esto el color se pinta al cargar y lo pisa la hoja del proyecto. */
+    .aud select.aud-editable {
+        min-height: 36px;
+        padding: 0.18rem 1.6rem 0.18rem 0.4rem;
+        border: 1px solid currentColor !important;
+        border-radius: 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.4;
+        cursor: pointer;
+        max-width: 100%;
+    }
+
+    .aud select.aud-editable:focus-visible {
+        outline: 2px solid var(--aud-primary);
+        outline-offset: 1px;
+    }
+
+    /* El disabled se distingue por opacidad y cursor, no sólo por el color. */
+    .aud select.aud-editable:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .aud select.aud-editable--si,
+    .aud select.aud-editable--si:disabled {
+        background-color: var(--aud-ok-soft) !important;
+        color: var(--aud-ok) !important;
+    }
+
+    .aud select.aud-editable--no,
+    .aud select.aud-editable--no:disabled {
+        background-color: var(--aud-surface-2) !important;
+        color: var(--aud-text-muted) !important;
+    }
+
+    .aud select.aud-editable--alerta,
+    .aud select.aud-editable--alerta:disabled {
+        background-color: var(--aud-danger-soft) !important;
+        color: var(--aud-danger) !important;
+    }
+
+    .aud select.aud-editable--pendiente,
+    .aud select.aud-editable--pendiente:disabled {
+        background-color: var(--aud-accent-soft) !important;
+        color: var(--aud-accent) !important;
+        border-style: dashed !important;
+    }
+
+    /* Las opciones las pinta el sistema: sin esto heredan el color del select y
+       en tema oscuro salían texto claro sobre fondo claro. */
+    .aud select.aud-editable option {
+        background-color: var(--aud-surface);
+        color: var(--aud-text);
+        font-weight: 500;
+    }
+
+    /* El hover de la fila repinta el <td> con !important; el select tiene que
+       conservar el suyo o el color parpadea al pasar el mouse. */
+    .aud .index-table tbody tr:hover td .aud-editable {
+        box-shadow: none;
+    }
 
     .aud-num { font-variant-numeric: tabular-nums; }
     .aud-strong { font-weight: 600; }

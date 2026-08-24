@@ -21,80 +21,75 @@
         </a>
     </x-slot>
 
-    {{-- Las licencias auditadas ya no se resumen aquí: el detalle trae una fila por
-         licencia, así que repetirlas arriba sólo duplicaba la misma información. --}}
+    @php
+        $empleado = $auditoria->empleado;
+    @endphp
+
+    {{-- Quién la generó y a quién se auditó. El resto (tipo, gerencia, obra) sale del
+         empleado por relación, no de una copia en la cabecera. --}}
     <section class="aud-meta" aria-label="Resumen de la corrida">
         <div class="aud-meta__card">
             <div class="aud-meta__dato">
-                <span class="aud-meta__label">Auditoría anterior</span>
-                <span class="aud-meta__valor">
-                    @if($anterior)
-                        <a href="{{ route('auditorias.show', $anterior->id) }}" class="aud-meta__link">{{ $anterior->Folio }}</a>
-                        <span class="aud-meta__sep" aria-hidden="true">·</span>
-                        <span class="aud-num aud-meta__tenue">{{ $anterior->created_at?->format('d/m/Y H:i') ?: '—' }}</span>
-                    @else
-                        <span class="aud-meta__tenue">Es la primera auditoría</span>
-                    @endif
-                </span>
-            </div>
-
-            <div class="aud-meta__dato">
                 <span class="aud-meta__label">La generó</span>
-                <span class="aud-meta__valor">{{ $anterior?->generada_por_nombre ?: '—' }}</span>
-            </div>
-
-            {{-- El conteo sale del detalle congelado; la cabecera ya no lo duplica. --}}
-            <div class="aud-meta__dato">
-                <span class="aud-meta__label">Equipos auditados</span>
-                <span class="aud-meta__valor aud-num">{{ $detalle->count() }}</span>
+                <span class="aud-meta__valor">{{ $auditoria->generada_por_nombre ?: 'Sin usuario' }}</span>
             </div>
 
             <div class="aud-meta__dato">
                 <span class="aud-meta__label">Empleado auditado</span>
+                <span class="aud-meta__valor">{{ $empleado?->NombreEmpleado ?: '—' }}</span>
+            </div>
+
+            <div class="aud-meta__dato">
+                <span class="aud-meta__label">Tipo de empleado</span>
+                <span class="aud-meta__valor">{{ $empleado?->tipo_persona ?: '—' }}</span>
+            </div>
+
+            <div class="aud-meta__dato">
+                <span class="aud-meta__label">Tipo de equipo</span>
                 <span class="aud-meta__valor">
-                    {{ $auditoria->empleado?->NombreEmpleado ?: '—' }}
-                    @if($auditoria->empleado)
-                        <span class="aud-meta__sep" aria-hidden="true">·</span>
-                        <span class="aud-meta__tenue">{{ $auditoria->empleado->tipo_persona }}</span>
-                    @endif
+                    @forelse($tipos as $tipo)
+                        {!! \App\Helpers\PresupuestoAsignacion::chipHtml($tipo) !!}
+                    @empty
+                        <span class="aud-meta__tenue">—</span>
+                    @endforelse
                 </span>
             </div>
 
             <div class="aud-meta__dato">
                 <span class="aud-meta__label">Gerencia</span>
                 <span class="aud-meta__valor">
-                    {{ $auditoria->empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}
+                    {{ $empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}
                 </span>
+            </div>
+
+            <div class="aud-meta__dato">
+                <span class="aud-meta__label">Obra</span>
+                <span class="aud-meta__valor">{{ $empleado?->obras?->NombreObra ?: '—' }}</span>
             </div>
         </div>
     </section>
 
-    {{-- ── Hoja única: laptops y PC con las licencias del resguardante ── --}}
+    {{-- ── Licencias congeladas de la corrida ── --}}
     <div id="hoja-general" class="aud-tabla">
         <div class="index-page__card">
-            @if($general->isEmpty())
+            @if($detalle->isEmpty())
                 @include('auditorias.partials.vacio', [
-                    'icono' => 'fa-laptop',
-                    'titulo' => 'Sin laptops ni PC de escritorio',
-                    'texto' => 'Esta corrida no encontró equipos de cómputo asignados.',
+                    'icono' => 'fa-key',
+                    'titulo' => 'Sin licencias',
+                    'texto' => 'Esta corrida no congeló ninguna licencia del empleado.',
                 ])
             @else
             <div class="table-responsive">
                 <table id="tablaGeneral" class="table index-table w-full">
                     <thead>
                         <tr>
-                            <th scope="col">Equipo</th>
-                            <th scope="col">Marca / Modelo</th>
-                            <th scope="col">Num. Serie</th>
-                            <th scope="col">Resguardante</th>
-                            <th scope="col">Gerencia</th>
-                            <th scope="col">Tipo</th>
                             <th scope="col">Licencia</th>
-                            <th scope="col">Dominio</th>
+                            <th scope="col">¿Tiene licencia?</th>
+                            <th scope="col">¿Original?</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($general as $fila)
+                        @foreach($detalle as $fila)
                             @include('auditorias.partials.fila-equipo', ['fila' => $fila])
                         @endforeach
                     </tbody>

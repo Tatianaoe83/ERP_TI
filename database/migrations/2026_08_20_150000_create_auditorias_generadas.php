@@ -26,21 +26,20 @@ return new class extends Migration
         Schema::create('auditorias_equipos', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('auditoria_id');
-            $table->unsignedInteger('InventarioID');
 
             $table->string('NombreLicencia', 255)->nullable();
+
+            // Los dos únicos campos capturables sobre la corrida ya generada.
             $table->boolean('tiene_licencia')->default(false);
-            $table->boolean('pirata')->default(false);
-            $table->boolean('en_dominio')->default(false);
+
+            // Tri-estado a propósito: null = todavía no se revisó si es original.
+            $table->boolean('original')->nullable()->default(null);
 
             $table->timestamps();
 
-            // La unicidad ya es por licencia: el mismo equipo se repite una vez por cada una.
-            $table->unique(['auditoria_id', 'InventarioID', 'NombreLicencia'], 'auditoria_equipo_licencia_unico');
-            $table->index('grupo');
-            $table->index('tipoEquipo');
-            $table->index('pirata');
-            $table->index('en_dominio');
+            // Una licencia por corrida: el equipo ya no forma parte de la llave.
+            $table->unique(['auditoria_id', 'NombreLicencia'], 'auditoria_licencia_unico');
+            $table->index('original');
             $table->index('tiene_licencia');
             $table->foreign('auditoria_id')->references('id')->on('auditorias')->onDelete('cascade');
         });

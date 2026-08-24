@@ -454,6 +454,11 @@ Route::get('/notificaciones-panel', function () {
     Route::resource('/auditorias', AuditoriasController::class)
         ->only(['index', 'show', 'store', 'destroy'])
         ->middleware('can:ver-auditorias');
+
+    // Captura sobre la corrida ya generada: si tiene licencia y si es original.
+    Route::patch('/auditorias/licencias/{fila}', [AuditoriasController::class, 'actualizarLicencia'])
+        ->name('auditorias.licencias.update')
+        ->middleware('can:ver-auditorias');
 });
 
 // Soporte TI (sin auth)
