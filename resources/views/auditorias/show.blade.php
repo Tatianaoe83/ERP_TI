@@ -45,17 +45,6 @@
             </div>
 
             <div class="aud-meta__dato">
-                <span class="aud-meta__label">Tipo de equipo</span>
-                <span class="aud-meta__valor">
-                    @forelse($tipos as $tipo)
-                        {!! \App\Helpers\PresupuestoAsignacion::chipHtml($tipo) !!}
-                    @empty
-                        <span class="aud-meta__tenue">—</span>
-                    @endforelse
-                </span>
-            </div>
-
-            <div class="aud-meta__dato">
                 <span class="aud-meta__label">Gerencia</span>
                 <span class="aud-meta__valor">
                     {{ $empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}
@@ -65,6 +54,20 @@
             <div class="aud-meta__dato">
                 <span class="aud-meta__label">Obra</span>
                 <span class="aud-meta__valor">{{ $empleado?->obras?->NombreObra ?: '—' }}</span>
+            </div>
+
+            {{-- El equipo va al final y a fila completa: es el bloque más ancho, y
+                 mezclado con los datos de una línea desalineaba toda la tarjeta. --}}
+            <div class="aud-meta__dato aud-meta__dato--equipo">
+                <span class="aud-meta__label">
+                    Equipo
+                    @if($equipos->count() > 1)
+                        <span class="aud-meta__conteo aud-num">{{ $equipos->count() }}</span>
+                    @endif
+                </span>
+                <span class="aud-meta__valor">
+                    @include('auditorias.partials.equipos-lista', ['equipos' => $equipos])
+                </span>
             </div>
         </div>
     </section>

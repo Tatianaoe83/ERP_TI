@@ -34,15 +34,25 @@ class AuditoriasController extends Controller
             ->orderByDesc('created_at')
             ->paginate(15);
 
+        // Cuántas licencias tiene cada resguardante: una consulta agregada, no una
+        // por empleado. Con cero no hay auditoría posible.
+        $conLicencia = InventarioInsumo::query()
+            ->where('CateogoriaInsumo', 'LIKE', '%LICENCIA%')
+            ->whereIn('EmpleadoID', $equipos->pluck('EmpleadoID')->unique()->values()->all())
+            ->selectRaw('EmpleadoID, COUNT(DISTINCT NombreInsumo) AS total')
+            ->groupBy('EmpleadoID')
+            ->pluck('total', 'EmpleadoID');
+
         return view('auditorias.index', [
             'auditorias'        => $auditorias,
-            // El tipo que se muestra es el real de los equipos congelados, no el
-            // filtro con que se lanzó la corrida (que puede haber sido "cualquiera").
-            'tiposPorAuditoria' => $this->tiposEquipoPorAuditoria($auditorias->getCollection()),
+            // Categoría, marca, modelo, serie y tipo salen del inventario en vivo:
+            // la corrida sólo guarda el EmpleadoID, y de ahí se llega a sus equipos.
+            'equiposPorAuditoria' => $this->equiposPorAuditoria($auditorias->getCollection()),
             'ultima'            => Auditoria::with('empleado')->orderByDesc('created_at')->first(),
             'catalogoLicencias' => $this->catalogoLicencias(),
             'catalogoEquipos'   => $equipos,
             // La corrida es por empleado: sólo se ofrecen los que tienen algo auditable.
+            // Sin licencias no hay nada que revisar, así que se marcan para bloquearlos.
             'empleados'         => $equipos
                 ->unique('EmpleadoID')
                 ->map(fn($e) => (object) [
@@ -51,6 +61,7 @@ class AuditoriasController extends Controller
                     'tipo_persona'   => $e->tipo_persona,
                     'gerencia'       => trim((string) $e->NombreGerencia) ?: 'Sin gerencia',
                     'departamento'   => trim((string) $e->NombreDepartamento) ?: 'Sin departamento',
+                    'licencias'      => $conLicencia->get($e->EmpleadoID, 0),
                 ])
                 ->sortBy('NombreEmpleado', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values(),
@@ -121,12 +132,30 @@ class AuditoriasController extends Controller
             ]);
         }
 
+        $licenciasPorEmpleado = $this->licenciasPorEmpleado($seleccion->all());
+
+        $licenciasDelEmpleado = collect($licenciasPorEmpleado->get($empleadoAuditado, collect()))
+            ->unique('NombreInsumo')
+            ->values();
+
+        // Una auditoría sin ninguna licencia que revisar no audita nada: se corta
+        // aquí en vez de dejar una corrida vacía en el historial.
+        if ($licenciasDelEmpleado->isEmpty()) {
+            $tieneAlguna = InventarioInsumo::where('CateogoriaInsumo', 'LIKE', '%LICENCIA%')
+                ->where('EmpleadoID', $empleadoAuditado)
+                ->exists();
+
+            return back()->withErrors([
+                'licencias' => $tieneAlguna
+                    ? 'Ese empleado no tiene ninguna de las licencias seleccionadas. Elige otras licencias o cambia de empleado.'
+                    : 'Ese empleado no tiene ninguna licencia registrada en el inventario, así que no hay nada que auditar.',
+            ]);
+        }
+
         $usuario = auth()->user();
         $ahora = Carbon::now();
 
-        $licenciasPorEmpleado = $this->licenciasPorEmpleado($seleccion->all());
-
-        $auditoria = DB::transaction(function () use ($usuario, $ahora, $licenciasPorEmpleado, $seleccion, $empleadoAuditado, $tipoEquipo) {
+        $auditoria = DB::transaction(function () use ($usuario, $ahora, $licenciasDelEmpleado, $seleccion, $empleadoAuditado, $tipoEquipo) {
             $auditoria = Auditoria::create([
                 'Folio'                     => $this->siguienteFolio($ahora),
                 'id_empleado'               => $usuario?->id,
@@ -147,23 +176,13 @@ class AuditoriasController extends Controller
                 'updated_at'   => $ahora,
             ];
 
-            $licencias = collect($licenciasPorEmpleado->get($empleadoAuditado, collect()))
-                ->unique('NombreInsumo')
-                ->values();
-
-            // Sin licencias queda una sola fila: la corrida existió y no encontró nada.
-            $filas = $licencias->isEmpty()
-                ? collect([$base + [
-                    'NombreLicencia' => null,
-                    'tiene_licencia' => 0,
-                    'original'       => null,
-                ]])
-                // "original" arranca en null: se revisa después sobre la corrida.
-                : $licencias->map(fn($licencia) => $base + [
-                    'NombreLicencia' => $licencia->NombreInsumo,
-                    'tiene_licencia' => 1,
-                    'original'       => null,
-                ]);
+            // Llegar aquí sin licencias es imposible: se validó antes de la transacción.
+            // "original" arranca en null: se revisa después sobre la corrida.
+            $filas = $licenciasDelEmpleado->map(fn($licencia) => $base + [
+                'NombreLicencia' => $licencia->NombreInsumo,
+                'tiene_licencia' => 1,
+                'original'       => null,
+            ]);
 
             foreach ($filas->chunk(300) as $lote) {
                 AuditoriaEquipo::insert($lote->all());
@@ -193,8 +212,8 @@ class AuditoriasController extends Controller
         return view('auditorias.show', [
             'auditoria' => $auditoria,
             'detalle'   => $detalle,
-            // Modalidades reales de los equipos del empleado, leídas del inventario.
-            'tipos'     => $this->tiposEquipoPorAuditoria(collect([$auditoria]))[$auditoria->id] ?? [],
+            // Equipos del empleado leídos del inventario: la corrida no los copia.
+            'equipos'   => $this->equiposPorAuditoria(collect([$auditoria]))[$auditoria->id] ?? collect(),
             // Referencia contra la corrida inmediatamente anterior del mismo empleado.
             'anterior'  => Auditoria::where('created_at', '<', $auditoria->created_at)
                 ->where('EmpleadoID', $auditoria->EmpleadoID)
@@ -269,15 +288,16 @@ class AuditoriasController extends Controller
     }
 
     /**
-     * Modalidades de equipo del empleado de cada corrida. Se leen del inventario en
-     * vivo: el detalle ya no guarda copia del equipo, sólo las licencias.
+     * Equipos auditables del empleado de cada corrida, leídos del inventario en vivo:
+     * el detalle sólo guarda licencias, así que categoría, marca, modelo y serie se
+     * resuelven por EmpleadoID.
      *
-     * Una sola consulta agregada para toda la página; pedirlas por fila sería un N+1.
+     * Una sola consulta para toda la página; pedirlos por fila sería un N+1.
      *
      * @param \Illuminate\Support\Collection $auditorias
-     * @return array [auditoria_id => [0, 2, ...]]
+     * @return array [auditoria_id => Collection<equipo>]
      */
-    private function tiposEquipoPorAuditoria($auditorias): array
+    private function equiposPorAuditoria($auditorias): array
     {
         $porEmpleado = $auditorias->pluck('EmpleadoID', 'id')->filter();
 
@@ -285,18 +305,17 @@ class AuditoriasController extends Controller
             return [];
         }
 
-        $tipos = InventarioEquipo::query()
+        $equipos = InventarioEquipo::query()
             ->whereIn('EmpleadoID', $porEmpleado->unique()->values()->all())
             ->whereIn('CategoriaEquipo', [self::CATEGORIA_LAPTOP, self::CATEGORIA_PC])
-            ->select('EmpleadoID', 'tipoEquipo')
-            ->distinct()
-            ->orderBy('tipoEquipo')
+            ->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Marca', 'Modelo', 'NumSerie', 'Folio', 'tipoEquipo')
+            ->orderBy('CategoriaEquipo')
+            ->orderBy('Marca')
             ->get()
-            ->groupBy('EmpleadoID')
-            ->map(fn($filas) => $filas->pluck('tipoEquipo')->map(fn($v) => (int) $v)->unique()->values()->all());
+            ->groupBy('EmpleadoID');
 
         return $porEmpleado
-            ->map(fn($empleadoID) => $tipos[$empleadoID] ?? [])
+            ->map(fn($empleadoID) => $equipos[$empleadoID] ?? collect())
             ->all();
     }
 

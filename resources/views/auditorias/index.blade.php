@@ -74,6 +74,7 @@
                         <th scope="col">Empleado auditado</th>
                         <th scope="col">Tipo de persona</th>
                         <th scope="col">Gerencia</th>
+                        <th scope="col">Equipo</th>
                         <th scope="col">Tipo de equipo</th>
                         <th scope="col">Licencias auditadas</th>
                         <th scope="col">Acciones</th>
@@ -89,11 +90,20 @@
                         <td>{{ $a->empleado?->NombreEmpleado ?: '—' }}</td>
                         <td>{{ $a->empleado?->tipo_persona ?: '—' }}</td>
                         <td>{{ $a->empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}</td>
-                        {{-- El tipo real de los equipos congelados. Una corrida lanzada
-                             sin filtro puede traer varias modalidades a la vez. --}}
+                        {{-- Categoría, marca/modelo, serie y folio del equipo que
+                             resguarda el empleado, leídos del inventario en vivo. --}}
+                        @php $equiposFila = collect($equiposPorAuditoria[$a->id] ?? []); @endphp
                         <td>
-                            @php $tipos = $tiposPorAuditoria[$a->id] ?? []; @endphp
-                            @forelse($tipos as $tipo)
+                            @include('auditorias.partials.equipos-lista', [
+                                'equipos' => $equiposFila,
+                                'compacto' => true,
+                                'mostrarTipo' => false,
+                            ])
+                        </td>
+
+                        {{-- Modalidad real de cada equipo: un chip por valor distinto. --}}
+                        <td>
+                            @forelse($equiposFila->pluck('tipoEquipo')->map(fn($t) => (int) $t)->unique()->sort() as $tipo)
                                 {!! \App\Helpers\PresupuestoAsignacion::chipHtml($tipo) !!}
                             @empty
                                 <span class="aud-muted">—</span>
@@ -325,8 +335,25 @@
                 activo >= 0 && vis[activo] ? vis[activo].id : '');
         }
 
+        // Sin licencias no hay nada que revisar: la opción se ve, pero no se elige.
+        function bloqueada(opcion) {
+            return !!opcion && opcion.dataset.licencias === '0';
+        }
+
         function elegirEmpleado(opcion) {
             if (!opcion) return;
+
+            if (bloqueada(opcion)) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Sin licencias que auditar',
+                        text: opcion.dataset.nombre + ' no tiene ninguna licencia registrada en el inventario.'
+                    });
+                }
+                return;
+            }
+
             comboValor.value = opcion.dataset.valor;
             comboInput.value = opcion.dataset.nombre;
             if (comboLimpiar) comboLimpiar.hidden = false;
@@ -482,7 +509,12 @@
                 if (e.key === 'Enter') {
                     if (!comboLista.hidden && vis.length) {
                         e.preventDefault();
-                        elegirEmpleado(vis[activo >= 0 ? activo : 0]);
+                        // Con el teclado se salta a la siguiente elegible en vez de
+                        // dejar al usuario atorado en una opción que no responde.
+                        var elegible = vis.slice(activo >= 0 ? activo : 0).filter(function (o) {
+                            return !bloqueada(o);
+                        })[0];
+                        elegirEmpleado(elegible || vis[activo >= 0 ? activo : 0]);
                     }
                     return;
                 }

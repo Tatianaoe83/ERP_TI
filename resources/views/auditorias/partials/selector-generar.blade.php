@@ -113,11 +113,17 @@
                             <ul class="aud-combo__lista" id="listaEmpleados" role="listbox"
                                 aria-label="Empleados auditables" hidden>
                                 @foreach($empleados as $emp)
-                                    <li class="aud-combo__opcion" role="option" tabindex="-1"
+                                    @php $sinLicencias = ! $emp->licencias; @endphp
+                                    {{-- Sin licencias no hay nada que auditar: la opción
+                                         se muestra y se explica, pero no se puede elegir. --}}
+                                    <li class="aud-combo__opcion {{ $sinLicencias ? 'is-bloqueada' : '' }}"
+                                        role="option" tabindex="-1"
                                         id="empleado-{{ $emp->EmpleadoID }}"
                                         aria-selected="false"
+                                        @if($sinLicencias) aria-disabled="true" @endif
                                         data-valor="{{ $emp->EmpleadoID }}"
                                         data-nombre="{{ $emp->NombreEmpleado }}"
+                                        data-licencias="{{ (int) $emp->licencias }}"
                                         data-gerencia="{{ Str::lower($emp->gerencia) }}"
                                         data-departamento="{{ Str::lower($emp->departamento) }}"
                                         data-tipo-persona="{{ Str::lower($emp->tipo_persona) }}"
@@ -127,6 +133,11 @@
                                             <span class="aud-mini">{{ $emp->tipo_persona }}</span>
                                             <span class="aud-mini">{{ $emp->gerencia }}</span>
                                             <span class="aud-mini">{{ $emp->departamento }}</span>
+                                            @if($sinLicencias)
+                                                <span class="aud-mini aud-mini--bloqueo">
+                                                    <i class="fas fa-ban" aria-hidden="true"></i> Sin licencias
+                                                </span>
+                                            @endif
                                         </span>
                                     </li>
                                 @endforeach

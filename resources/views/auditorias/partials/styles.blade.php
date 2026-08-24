@@ -151,10 +151,104 @@
         border-bottom-color: currentColor;
     }
 
+    /* Conteo pegado a la etiqueta: dice cuántos son antes de leer la lista. */
+    .aud-meta__conteo {
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.35rem;
+        padding: 0 0.35rem;
+        border-radius: 999px;
+        background: var(--aud-primary-soft);
+        color: var(--aud-primary);
+        font-size: 0.68rem;
+        letter-spacing: 0;
+    }
+
+    /* El equipo ocupa la fila completa: es el bloque más ancho de la tarjeta. */
+    .aud-meta__dato--equipo { flex: 1 1 100%; }
+
     @media (max-width: 40rem) {
         .aud-meta__card { gap: 0.6rem 1.25rem; }
         .aud-meta__dato { flex: 1 1 100%; }
     }
+
+    /* ── Ficha de equipo ──
+       Se reutiliza en la celda del listado y en el encabezado del detalle, para
+       que el mismo dato se lea igual en los dos sitios. */
+    .aud-equipos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .aud-eqficha {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        min-width: 0;
+        padding: 0.45rem 0.6rem;
+        border: 1px solid var(--aud-border);
+        border-left: 3px solid var(--aud-primary);
+        border-radius: 0.5rem;
+        background: var(--aud-surface-2);
+    }
+
+    .aud-eqficha__top {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .aud-eqficha__cat {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--aud-text-muted);
+    }
+
+    .aud-eqficha__modelo {
+        font-size: 0.85rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--aud-text);
+    }
+
+    .aud-eqficha__ids {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.15rem 0.85rem;
+    }
+
+    /* Etiqueta arriba del valor: sin ella, serie y folio se confunden entre sí. */
+    .aud-eqficha__id {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.72rem;
+        color: var(--aud-text);
+    }
+
+    .aud-eqficha__etq {
+        font-size: 0.62rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--aud-text-muted);
+    }
+
+    /* En la celda del listado el espacio es poco: la ficha se aprieta y las
+       fichas se apilan en vez de competir a lo ancho. */
+    .aud-equipos--compacto {
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .aud-equipos--compacto .aud-eqficha {
+        padding: 0.35rem 0.5rem;
+    }
+
+    .aud-equipos--compacto .aud-eqficha__modelo { font-size: 0.78rem; }
 
     /* ── Botones ── */
     .aud-btn {
@@ -963,6 +1057,23 @@
     .aud-combo__opcion:hover,
     .aud-combo__opcion.is-activo {
         background: var(--aud-primary-soft);
+    }
+
+    /* Bloqueada: se atenúa y cambia el cursor, pero el motivo va escrito en la
+       propia opción. La opacidad sola no explica por qué no responde. */
+    .aud-combo__opcion.is-bloqueada {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .aud-combo__opcion.is-bloqueada:hover,
+    .aud-combo__opcion.is-bloqueada.is-activo {
+        background: var(--aud-surface-2);
+    }
+
+    .aud-mini--bloqueo {
+        background: var(--aud-danger-soft);
+        color: var(--aud-danger);
     }
 
     .aud-combo__nombre {
