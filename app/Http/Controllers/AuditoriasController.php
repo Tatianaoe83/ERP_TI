@@ -132,26 +132,43 @@ class AuditoriasController extends Controller
                 'total_licencias_auditadas' => $seleccion->count(),
             ]);
 
-            $filas = $equipos->map(function ($equipo) use ($auditoria, $licenciasPorEmpleado, $ahora) {
-                $licencias = collect($licenciasPorEmpleado->get($equipo->EmpleadoID, collect()));
-
-                return [
-                    'auditoria_id'      => $auditoria->id,
-                    'InventarioID'      => $equipo->InventarioID,
-                    'CategoriaEquipo'   => $equipo->CategoriaEquipo,
-                    'Marca'             => $equipo->Marca,
-                    'Modelo'            => $equipo->Modelo,
-                    'NumSerie'          => $equipo->NumSerie,
-                    'Folio'             => $equipo->Folio,
-                    'GerenciaEquipo'    => $equipo->GerenciaEquipo ?: 'Sin gerencia',
-                    'NombreEmpleado'    => $equipo->NombreEmpleado ?: 'Sin asignar',
-                    'tipoEquipo'        => (int) $equipo->tipoEquipo,
-                    'grupo'             => $this->grupoDe($equipo->CategoriaEquipo),
-                    'licencias'         => $licencias->pluck('NombreInsumo')->implode(' | '),
-                    'licencias_piratas' => $licencias->where('LicenciaPirata', true)->count(),
-                    'created_at'        => $ahora,
-                    'updated_at'        => $ahora,
+            // Una fila por licencia. El equipo sin ninguna deja una sola fila con
+            // NombreLicencia nulo, para que no desaparezca del reporte.
+            $filas = $equipos->flatMap(function ($equipo) use ($auditoria, $licenciasPorEmpleado, $ahora) {
+                $base = [
+                    'auditoria_id'    => $auditoria->id,
+                    'InventarioID'    => $equipo->InventarioID,
+                    'CategoriaEquipo' => $equipo->CategoriaEquipo,
+                    'Marca'           => $equipo->Marca,
+                    'Modelo'          => $equipo->Modelo,
+                    'NumSerie'        => $equipo->NumSerie,
+                    'Folio'           => $equipo->Folio,
+                    'GerenciaEquipo'  => $equipo->GerenciaEquipo ?: 'Sin gerencia',
+                    'NombreEmpleado'  => $equipo->NombreEmpleado ?: 'Sin asignar',
+                    'tipoEquipo'      => (int) $equipo->tipoEquipo,
+                    'grupo'           => $this->grupoDe($equipo->CategoriaEquipo),
+                    'en_dominio'      => 0,
+                    'created_at'      => $ahora,
+                    'updated_at'      => $ahora,
                 ];
+
+                $licencias = collect($licenciasPorEmpleado->get($equipo->EmpleadoID, collect()))
+                    ->unique('NombreInsumo')
+                    ->values();
+
+                if ($licencias->isEmpty()) {
+                    return [$base + [
+                        'NombreLicencia' => null,
+                        'tiene_licencia' => 0,
+                        'pirata'         => 0,
+                    ]];
+                }
+
+                return $licencias->map(fn($licencia) => $base + [
+                    'NombreLicencia' => $licencia->NombreInsumo,
+                    'tiene_licencia' => 1,
+                    'pirata'         => 0,
+                ])->all();
             });
 
             // Insert por lotes: una fila a la vez serían cientos de queries.
@@ -178,7 +195,6 @@ class AuditoriasController extends Controller
         return view('auditorias.show', [
             'auditoria' => $auditoria,
             'detalle'   => $detalle,
-            'piratas'   => $this->piratasPorEquipo($detalle),
             'general'   => $detalle->whereIn('grupo', [AuditoriaEquipo::GRUPO_LAPTOP, AuditoriaEquipo::GRUPO_PC])->values(),
             // Referencia contra la corrida inmediatamente anterior del mismo empleado.
             'anterior'  => Auditoria::where('created_at', '<', $auditoria->created_at)
@@ -280,51 +296,6 @@ class AuditoriasController extends Controller
             ->whereIn('NombreInsumo', $seleccion)
             ->get()
             ->groupBy('EmpleadoID');
-    }
-
-    /**
-     * Qué licencia es pirata en cada equipo de la corrida.
-     *
-     * El detalle congelado guarda los nombres y el conteo, pero no cuál renglón era
-     * pirata. Se resuelve por resguardante: del equipo se saca el empleado y de ahí
-     * sus licencias marcadas. Compararlo sólo por nombre pintaba de rojo la licencia
-     * en todos los equipos aunque su booleano fuera 0.
-     *
-     * @return array [InventarioID => [nombre en minúsculas, ...]]
-     */
-    private function piratasPorEquipo($detalle): array
-    {
-        $empleadoPorEquipo = InventarioEquipo::query()
-            ->whereIn('InventarioID', $detalle->pluck('InventarioID')->unique()->all())
-            ->pluck('EmpleadoID', 'InventarioID');
-
-        $piratasPorEmpleado = InventarioInsumo::query()
-            ->where('CateogoriaInsumo', 'LIKE', '%LICENCIA%')
-            ->where('LicenciaPirata', true)
-            ->whereIn('EmpleadoID', $empleadoPorEquipo->filter()->unique()->values()->all())
-            ->get(['EmpleadoID', 'NombreInsumo'])
-            ->groupBy('EmpleadoID')
-            ->map(fn($filas) => $filas
-                ->pluck('NombreInsumo')
-                ->map(fn($n) => mb_strtolower(trim((string) $n)))
-                ->unique()
-                ->values()
-                ->all());
-
-        $mapa = [];
-
-        foreach ($detalle as $fila) {
-            // El conteo congelado manda: si en la corrida no había piratas, no se
-            // pinta nada aunque hoy la licencia esté marcada.
-            if (! $fila->licencias_piratas) {
-                continue;
-            }
-
-            $empleado = $empleadoPorEquipo[$fila->InventarioID] ?? null;
-            $mapa[$fila->InventarioID] = $empleado ? ($piratasPorEmpleado[$empleado] ?? []) : [];
-        }
-
-        return $mapa;
     }
 
     /**

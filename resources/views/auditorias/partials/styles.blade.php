@@ -86,11 +86,11 @@
     }
 
     /* ── Encabezado de la corrida ──
-       Una fila, dos tarjetas: comparación contra la corrida anterior y alcance de
-       licencias. La de licencias es la que crece porque su contenido es variable. */
+       Una sola tarjeta: quién la generó, a quién se auditó y contra qué. El alcance
+       de licencias salió de aquí porque el detalle ya trae una fila por licencia. */
     .aud-meta {
         display: grid;
-        grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.75rem;
         margin-bottom: 0.75rem;
     }
@@ -106,23 +106,12 @@
         background: var(--aud-surface);
     }
 
-    .aud-meta__card--alcance {
-        align-items: flex-start;
-        background: var(--aud-surface-2);
-    }
-
-    @media (max-width: 60rem) {
-        .aud-meta { grid-template-columns: minmax(0, 1fr); }
-    }
-
     .aud-meta__dato {
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
         min-width: 0;
     }
-
-    .aud-meta__dato--alcance { flex: 1 1 100%; }
 
     .aud-meta__label {
         display: flex;
@@ -160,26 +149,6 @@
     .aud-meta__link:hover {
         color: var(--aud-primary);
         border-bottom-color: currentColor;
-    }
-
-    /* Conteo pegado a la etiqueta: dice cuántas son antes de leer la lista. */
-    .aud-meta__conteo {
-        display: inline-grid;
-        place-items: center;
-        min-width: 1.35rem;
-        padding: 0 0.35rem;
-        border-radius: 999px;
-        background: var(--aud-primary-soft);
-        color: var(--aud-primary);
-        font-size: 0.68rem;
-        letter-spacing: 0;
-    }
-
-    .aud-meta__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        margin-top: 0.1rem;
     }
 
     @media (max-width: 40rem) {
@@ -495,15 +464,6 @@
     .aud-mini--pirata {
         background: var(--aud-danger-soft);
         color: var(--aud-danger);
-    }
-
-    /* Resumen del sobrante: no es una licencia, se distingue del resto. */
-    .aud-mini--resto {
-        background: transparent;
-        border: 1px dashed var(--aud-border);
-        color: var(--aud-text-muted);
-        cursor: help;
-    }
 
     .aud-num { font-variant-numeric: tabular-nums; }
     .aud-strong { font-weight: 600; }

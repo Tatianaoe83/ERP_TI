@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Detalle congelado de un equipo dentro de una corrida de auditoría. Guarda copia de
- * los datos del equipo para que el reporte siga siendo legible aunque el equipo se
- * reasigne, se transfiera o se dé de baja después.
+ * Detalle congelado de una corrida: una fila por LICENCIA de cada equipo auditado.
+ * Un equipo con tres licencias deja tres filas; uno sin ninguna deja una sola con
+ * NombreLicencia nulo y tiene_licencia en false.
+ *
+ * Guarda copia de los datos del equipo para que el reporte siga siendo legible
+ * aunque el equipo se reasigne, se transfiera o se dé de baja después.
  */
 class AuditoriaEquipo extends Model
 {
@@ -33,24 +36,22 @@ class AuditoriaEquipo extends Model
         'NombreEmpleado',
         'tipoEquipo',
         'grupo',
-        'licencias',
-        'licencias_piratas',
+        'NombreLicencia',
+        'tiene_licencia',
+        'pirata',
+        'en_dominio',
     ];
 
     protected $casts = [
-        'tipoEquipo'        => 'integer',
-        'grupo'             => 'integer',
-        'licencias_piratas' => 'integer',
+        'tipoEquipo'     => 'integer',
+        'grupo'          => 'integer',
+        'tiene_licencia' => 'boolean',
+        'pirata'         => 'boolean',
+        'en_dominio'     => 'boolean',
     ];
 
     public function auditoria()
     {
         return $this->belongsTo(Auditoria::class, 'auditoria_id');
-    }
-
-    /** Las licencias se guardan como lista separada por " | " para leerlas directo. */
-    public function listaLicencias(): array
-    {
-        return array_filter(array_map('trim', explode('|', (string) $this->licencias)));
     }
 }

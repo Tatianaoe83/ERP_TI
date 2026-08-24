@@ -21,15 +21,8 @@
         </a>
     </x-slot>
 
-    @php
-        $licencias = $auditoria->auditoTodasLasLicencias() ? [] : $auditoria->licencias_auditadas;
-        // Se muestran las primeras y el resto se resume: una lista larga desbalancea
-        // la barra y obliga a scroll dentro del encabezado.
-        $visibles = array_slice($licencias, 0, 6);
-        $restantes = array_slice($licencias, 6);
-    @endphp
-
-    {{-- Una sola fila: comparación contra la corrida anterior y alcance de licencias. --}}
+    {{-- Las licencias auditadas ya no se resumen aquí: el detalle trae una fila por
+         licencia, así que repetirlas arriba sólo duplicaba la misma información. --}}
     <section class="aud-meta" aria-label="Resumen de la corrida">
         <div class="aud-meta__card">
             <div class="aud-meta__dato">
@@ -74,31 +67,6 @@
                 </span>
             </div>
         </div>
-
-        <div class="aud-meta__card aud-meta__card--alcance">
-            <div class="aud-meta__dato aud-meta__dato--alcance">
-                <span class="aud-meta__label">
-                    Licencias auditadas
-                    @unless($auditoria->auditoTodasLasLicencias())
-                        <span class="aud-meta__conteo aud-num">{{ $auditoria->total_licencias_auditadas }}</span>
-                    @endunless
-                </span>
-                @if($auditoria->auditoTodasLasLicencias())
-                    <span class="aud-meta__valor aud-meta__tenue">Todas — corrida previa a la selección</span>
-                @else
-                    <span class="aud-meta__chips">
-                        @foreach($visibles as $nombre)
-                            <span class="aud-mini">{{ $nombre }}</span>
-                        @endforeach
-                        @if($restantes)
-                            <span class="aud-mini aud-mini--resto" title="{{ implode(', ', $restantes) }}">
-                                +{{ count($restantes) }} más
-                            </span>
-                        @endif
-                    </span>
-                @endif
-            </div>
-        </div>
     </section>
 
     {{-- ── Hoja única: laptops y PC con las licencias del resguardante ── --}}
@@ -121,12 +89,13 @@
                             <th scope="col">Resguardante</th>
                             <th scope="col">Gerencia</th>
                             <th scope="col">Tipo</th>
-                            <th scope="col">Licencias</th>
+                            <th scope="col">Licencia</th>
+                            <th scope="col">Dominio</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($general as $fila)
-                            @include('auditorias.partials.fila-equipo', ['fila' => $fila, 'soloPiratas' => false, 'piratas' => $piratas])
+                            @include('auditorias.partials.fila-equipo', ['fila' => $fila])
                         @endforeach
                     </tbody>
                 </table>
