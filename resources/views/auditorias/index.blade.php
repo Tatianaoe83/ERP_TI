@@ -89,12 +89,15 @@
                         <td>{{ $a->empleado?->NombreEmpleado ?: '—' }}</td>
                         <td>{{ $a->empleado?->tipo_persona ?: '—' }}</td>
                         <td>{{ $a->empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}</td>
+                        {{-- El tipo real de los equipos congelados. Una corrida lanzada
+                             sin filtro puede traer varias modalidades a la vez. --}}
                         <td>
-                            @if($a->tipoEquipo === null)
-                                <span class="aud-muted">Todos</span>
-                            @else
-                                {!! \App\Helpers\PresupuestoAsignacion::chipHtml($a->tipoEquipo) !!}
-                            @endif
+                            @php $tipos = $tiposPorAuditoria[$a->id] ?? []; @endphp
+                            @forelse($tipos as $tipo)
+                                {!! \App\Helpers\PresupuestoAsignacion::chipHtml($tipo) !!}
+                            @empty
+                                <span class="aud-muted">—</span>
+                            @endforelse
                         </td>
                         <td>
                             @if($a->auditoTodasLasLicencias())

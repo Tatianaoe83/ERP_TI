@@ -30,10 +30,15 @@ class AuditoriasController extends Controller
     {
         $equipos = $this->equiposAuditables();
 
+        $auditorias = Auditoria::with('empleado.puestos.departamentos.gerencia')
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
         return view('auditorias.index', [
-            'auditorias'        => Auditoria::with('empleado.puestos.departamentos.gerencia')
-                ->orderByDesc('created_at')
-                ->paginate(15),
+            'auditorias'        => $auditorias,
+            // El tipo que se muestra es el real de los equipos congelados, no el
+            // filtro con que se lanzó la corrida (que puede haber sido "cualquiera").
+            'tiposPorAuditoria' => $this->tiposEquipoPorAuditoria($auditorias->pluck('id')->all()),
             'ultima'            => Auditoria::with('empleado')->orderByDesc('created_at')->first(),
             'catalogoLicencias' => $this->catalogoLicencias(),
             'catalogoEquipos'   => $equipos,
@@ -227,6 +232,30 @@ class AuditoriasController extends Controller
         $consecutivo = $ultimo ? ((int) substr($ultimo, strlen($prefijo))) + 1 : 1;
 
         return $prefijo . str_pad((string) $consecutivo, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Modalidades de equipo presentes en cada corrida, leídas del detalle congelado.
+     * Una sola consulta agregada: pedirlas por auditoría sería un N+1 en el listado.
+     *
+     * @return array [auditoria_id => [0, 2, ...]]
+     */
+    private function tiposEquipoPorAuditoria(array $ids): array
+    {
+        if (! $ids) {
+            return [];
+        }
+
+        return DB::table('auditorias_equipos')
+            ->whereIn('auditoria_id', $ids)
+            ->whereNotNull('tipoEquipo')
+            ->select('auditoria_id', 'tipoEquipo')
+            ->distinct()
+            ->orderBy('tipoEquipo')
+            ->get()
+            ->groupBy('auditoria_id')
+            ->map(fn($filas) => $filas->pluck('tipoEquipo')->map(fn($v) => (int) $v)->all())
+            ->all();
     }
 
     /** Valores únicos y ordenados para los filtros del modal. */
