@@ -98,11 +98,10 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             ? " AND e.tipo_persona IN ('" . implode("', '", $tiposPersona) . "') "
             : "";
 
-        // El switch "Presupuestado" parte el inventario en dos reportes que no se solapan:
-        // presupuesto lista lo marcado, inventario lo que no.
-        $presupInsumoII = $esPresupuesto
-            ? " AND ii.Presupuestado = 1 "
-            : " AND ii.Presupuestado = 0 ";
+        $presupInsumoII = \App\Helpers\PresupuestoAsignacion::sqlWhere(
+            'ii.Presupuestado',
+            $esPresupuesto ? 'presupuesto' : 'inventario'
+        );
 
           //Sumar costos de Renta de Impresora
           if ($this->tipo == 'mens') {

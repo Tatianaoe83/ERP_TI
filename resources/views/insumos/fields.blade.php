@@ -73,12 +73,6 @@
     </div>
 </div>
 
-<!-- Frecuenciadepago Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white  mt-2">
-    {!! Form::label('FrecuenciaDePago', 'Frecuencia de pago:') !!}
-    {!! Form::select('FrecuenciaDePago', ['Mensual' => 'Mensual', 'Pago único' => 'Pago único', 'Anual' => 'Anual'], null, ['class' => 'form-control', 'id' => 'FrecuenciaDePago']) !!}
-</div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {  
     const costoMensual = document.getElementById('CostoMensual_fields');

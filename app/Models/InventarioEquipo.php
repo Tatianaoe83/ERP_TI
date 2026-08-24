@@ -44,7 +44,7 @@ class InventarioEquipo extends Model implements Auditable
     ];
 
     protected $casts = [
-        'tipoEquipo' => 'integer',
+        'Presupuestado' => 'integer',
     ];
 
     /** Modalidades de la columna tipoEquipo. */

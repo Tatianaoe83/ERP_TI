@@ -5,36 +5,48 @@ namespace App\Helpers;
 use Illuminate\Support\Facades\DB;
 use App\Models\Empleados;
 use App\Models\PresupuestoConfiguracion;
+use App\Helpers\PagoMeses;
 
 class PresupuestoHelper
 {
-    // Un insumo es de 'Pago único' si su FrecuenciaDePago es exactamente esa cadena
-    private static function esPagoUnico($insumo): bool
+    private static function costoCeldaInsumo($insumo): float
     {
-        return strcasecmp($insumo->FrecuenciaDePago ?? '', 'Pago único') === 0;
+        return (float) ($insumo->CostoMensual ?? 0);
     }
 
-    // Un 'Pago único' se cobra una sola vez: su importe está en CostoMensual, no en CostoAnual
-    private static function costoAnualInsumo($insumo): float
+    private static function sumaEnMes($grupo, string $mes, callable $importe): float
     {
-        return self::esPagoUnico($insumo)
-            ? (float) ($insumo->CostoMensual ?? 0)
-            : (float) ($insumo->CostoAnual ?? 0);
+        return (float) $grupo->sum(function ($i) use ($mes, $importe) {
+            return PagoMeses::aplica($i->MesDePago ?? '', $mes, $i->FrecuenciaDePago ?? null)
+                ? (float) $importe($i)
+                : 0.0;
+        });
+    }
+
+    private static function precioEquipoEnMes($equipo, string $mes, array $meses, callable $mesDeFecha): float
+    {
+        $precio = (float) ($equipo->Precio ?? 0);
+        $raw = trim((string) ($equipo->MesDePago ?? ''));
+        $lista = PagoMeses::parse($raw, null);
+
+        if ($lista === []) {
+            $numero = $mesDeFecha($equipo->FechaDeCompra);
+            $fallback = $numero ? ($meses[$numero - 1] ?? '') : '';
+
+            return strcasecmp($fallback, $mes) === 0 ? $precio : 0.0;
+        }
+
+        if (! PagoMeses::aplica($raw, $mes, null)) {
+            return 0.0;
+        }
+
+        return $precio / count($lista);
     }
 
     // Diferenciador de reporte de presupuesto e inventario 
     private static function soloPresupuestados($query, string $modo)
     {
-        // inventarioequipo migró a "tipoEquipo" (0 stock, 1 presupuestado, 2 propio);
-        // insumos y líneas siguen con el booleano "Presupuestado".
-        $columna = $query->getModel()->getTable() === 'inventarioequipo'
-            ? 'tipoEquipo'
-            : 'Presupuestado';
-
-        // El equipo propio no es presupuesto: cuenta como inventario actual, igual que el 0.
-        return $modo === 'presupuesto'
-            ? $query->where($columna, 1)
-            : $query->where($columna, '!=', 1);
+        return PresupuestoAsignacion::aplicarWhere($query, $modo);
     }
 
     // Filtro de tipos de persona para tipo de reporte
@@ -43,52 +55,19 @@ class PresupuestoHelper
         return $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : null;
     }
 
-    // Cuenta cuántas frecuencias distintas tiene cada insumo, para decidir si se añade la frecuencia al nombre
-    private static function frecuenciasPorNombre($insumos, callable $nombreBase)
-    {
-        return $insumos
-            ->groupBy(fn ($i) => $nombreBase($i))
-            ->map(fn ($grupo) => $grupo
-                ->map(fn ($i) => strtoupper(trim((string) ($i->FrecuenciaDePago ?? ''))))
-                ->unique()
-                ->count());
-    }
-
-    // Añade la frecuencia al nombre sólo cuando el mismo insumo aparece con más de un registro
-    private static function nombreConFrecuencia(string $nombre, $insumo, $frecuenciasPorNombre): string
-    {
-        if (($frecuenciasPorNombre[$nombre] ?? 1) <= 1) {
-            return $nombre;
-        }
-
-        $frecuencia = trim((string) ($insumo->FrecuenciaDePago ?? ''));
-
-        return $frecuencia === '' ? $nombre : $nombre . ' (' . $frecuencia . ')';
-    }
-
-    // Costo de un grupo de insumos. Los recurrentes se suman directo; los 'Pago único' se
-    // agrupan por MesDePago y en el reporte mensual sólo cuenta el mes más caro.
+    // Costo de un grupo de insumos según los meses elegidos en la asignación.
     private static function costoGrupoInsumo($grupo, string $tipo): float
     {
-        [$unicos, $recurrentes] = $grupo->partition(fn ($i) => self::esPagoUnico($i));
+        return (float) $grupo->sum(function ($i) use ($tipo) {
+            $mensual = (float) ($i->CostoMensual ?? 0);
+            if ($tipo === 'mens') {
+                return $mensual;
+            }
 
-        $costo = $tipo === 'mens'
-            ? $recurrentes->sum(fn ($i) => (float) ($i->CostoMensual ?? 0))
-            : $recurrentes->sum(fn ($i) => (float) ($i->CostoAnual ?? 0));
+            $n = count(PagoMeses::parse($i->MesDePago ?? '', $i->FrecuenciaDePago ?? null));
 
-        if ($unicos->isEmpty()) {
-            return $costo;
-        }
-
-        $porMes = $unicos
-            ->groupBy(fn ($i) => strtoupper(trim((string) ($i->MesDePago ?? ''))))
-            ->map(fn ($mes) => $mes->sum(fn ($i) => (float) ($i->CostoMensual ?? 0)));
-
-        $costo += $tipo === 'mens'
-            ? (float) $porMes->max()
-            : (float) $porMes->sum();
-
-        return $costo;
+            return $mensual * $n;
+        });
     }
 
     // Reporte de accesorios y otros insumos
@@ -120,19 +99,16 @@ class PresupuestoHelper
                     ? 'ACCESORIOS Y REFACCIONES'
                     : (string) $i->NombreInsumo;
 
-                $frecuencias = self::frecuenciasPorNombre($empleado->inventarioinsumo, $nombreBase);
-
                 return $empleado->inventarioinsumo
-                    // Distinta categoría o frecuencia = insumo distinto, va en fila aparte
-                    ->groupBy(fn ($i) => $i->CateogoriaInsumo . '|' . $nombreBase($i) . '|' . strtoupper(trim((string) ($i->FrecuenciaDePago ?? ''))))
-                    ->map(function($grupo) use ($empleado, $tipo, $nombreBase, $frecuencias) {
+                    ->groupBy(fn ($i) => $i->CateogoriaInsumo . '|' . $nombreBase($i))
+                    ->map(function($grupo) use ($empleado, $tipo, $nombreBase) {
                         $insumo = $grupo->first();
 
                         return (object)[
                             'EmpleadoID' => $empleado->EmpleadoID,
                             'NombreEmpleado' => $empleado->NombreEmpleado,
                             'NombrePuesto' => $empleado->puestos->NombrePuesto ?? null,
-                            'NombreInsumo' => self::nombreConFrecuencia($nombreBase($insumo), $insumo, $frecuencias),
+                            'NombreInsumo' => $nombreBase($insumo),
                             'CateogoriaInsumo' => $insumo->CateogoriaInsumo,
                             'CostoTotal' => (int) round(self::costoGrupoInsumo($grupo, $tipo)),
                         ];
@@ -242,18 +218,17 @@ class PresupuestoHelper
                     });
 
                 $nombreBase = fn ($i) => (string) $i->NombreInsumo;
-                $frecuencias = self::frecuenciasPorNombre($licencias, $nombreBase);
 
                 return $licencias
-                    ->groupBy(fn ($i) => $nombreBase($i) . '|' . strtoupper(trim((string) ($i->FrecuenciaDePago ?? ''))))
-                    ->map(function($grupo) use ($empleado, $tipo, $nombreBase, $frecuencias) {
+                    ->groupBy(fn ($i) => $nombreBase($i))
+                    ->map(function($grupo) use ($empleado, $tipo, $nombreBase) {
                         $insumo = $grupo->first();
 
                         return (object)[
                             'EmpleadoID' => $empleado->EmpleadoID,
                             'NombreEmpleado' => $empleado->NombreEmpleado,
                             'NombrePuesto' => $empleado->puestos->NombrePuesto ?? null,
-                            'NombreInsumo' => self::nombreConFrecuencia($nombreBase($insumo), $insumo, $frecuencias),
+                            'NombreInsumo' => $nombreBase($insumo),
                             'CostoTotal' => (int) round(self::costoGrupoInsumo($grupo, $tipo)),
                         ];
                     })
@@ -489,10 +464,10 @@ class PresupuestoHelper
                 },
                 'inventariolineas' => function ($q) {
                     $q->select('InventarioID', 'EmpleadoID', 'Compania', 'TipoLinea',
-                               'CostoRentaMensual', 'CostoFianza', 'FechaFianza', 'MontoRenovacionFianza');
+                               'CostoRentaMensual', 'CostoFianza', 'FechaFianza', 'MontoRenovacionFianza', 'MesDePago');
                 },
                 'inventarioequipo' => function ($q) {
-                    $q->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago');
+                    $q->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago', 'FechaDeCompra');
                 },
             ])
             ->get();
@@ -508,52 +483,52 @@ class PresupuestoHelper
 
         $resultado = collect();
 
-        // --- ORDEN 1: Insumos Mensuales Directos ---
+        $enMensuales = fn ($i) => PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'insumos_mensuales');
+        $enLicencias = fn ($i) => PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'licencias');
+
+        // --- ORDEN 1: insumos con meses elegidos (antes "mensuales" por frecuencia) ---
         $todosInsumos
-            ->filter(fn ($i) =>
-                $i->FrecuenciaDePago === 'Mensual' &&
-                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'insumos_mensuales')
-            )
+            ->filter($enMensuales)
             ->groupBy('NombreInsumo')
             ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, &$resultado) {
-                $costoMensual = $grupo->sum('CostoMensual');
-                if ($costoMensual * 12 <= 0) return;
+                $costosPorMes = [];
+                foreach ($meses as $mes) {
+                    $costosPorMes[$mes] = self::sumaEnMes($grupo, $mes, fn ($i) => self::costoCeldaInsumo($i));
+                }
+                if (array_sum($costosPorMes) <= 0) return;
                 foreach ($meses as $mes) {
                     $resultado->push((object)[
                         'NombreInsumo' => $nombre,
                         'Mes'          => $mes,
-                        'Costo'        => (int) round($costoMensual),
+                        'Costo'        => (int) round($costosPorMes[$mes]),
                         'Orden'        => 1,
                         'GerenciaID'   => $gerenciaId,
                     ]);
                 }
             });
 
-        // --- ORDEN 2: Licencias Anuales ---
+        // --- ORDEN 2: licencias (meses que el usuario marcó) ---
         $todosInsumos
             ->filter(fn ($i) =>
-                in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
-                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'licencias') &&
+                $enLicencias($i) &&
+                ! $enMensuales($i) &&
                 !($esExentaWindows && str_contains(strtoupper($i->NombreInsumo), 'WINDOWS'))
             )
             ->groupBy('NombreInsumo')
             ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, $costoWin10Pro, $costoWin11Pro, &$resultado) {
+                $importe = function ($i) use ($nombre, $costoWin10Pro, $costoWin11Pro) {
+                    return match (strtoupper($nombre)) {
+                        'WINDOWS 10 HOME'                  => $costoWin10Pro,
+                        'WINDOWS 11 HOME'                  => $costoWin11Pro,
+                        'WINDOWS 10 PRO', 'WINDOWS 11 PRO' => 0,
+                        default                            => self::costoCeldaInsumo($i),
+                    };
+                };
                 $costosPorMes = [];
                 foreach ($meses as $mes) {
-                    $costosPorMes[$mes] = $grupo->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)
-                        ->sum(function ($i) use ($nombre, $costoWin10Pro, $costoWin11Pro) {
-                            return match (strtoupper($nombre)) {
-                                'WINDOWS 10 HOME'                   => $costoWin10Pro,
-                                'WINDOWS 11 HOME'                   => $costoWin11Pro,
-                                'WINDOWS 10 PRO', 'WINDOWS 11 PRO'  => 0,
-                                default                             => self::costoAnualInsumo($i),
-                            };
-                        });
+                    $costosPorMes[$mes] = self::sumaEnMes($grupo, $mes, $importe);
                 }
-
-                // HAVING del SP: descarta el insumo si su total anual es 0
                 if (array_sum($costosPorMes) <= 0) return;
-
                 foreach ($meses as $mes) {
                     $resultado->push((object)[
                         'NombreInsumo' => $nombre,
@@ -565,23 +540,24 @@ class PresupuestoHelper
                 }
             });
 
-        // --- ORDEN 3: Otros Insumos anuales (no hardware, no licencia) ---
+        // --- ORDEN 3: resto de insumos ---
+        $nombreOtroInsumo = fn ($i) => strcasecmp($i->CateogoriaInsumo ?? '', 'REPARACIONES') === 0
+            ? 'ACCESORIOS Y REFACCIONES'
+            : $i->NombreInsumo;
+
         $todosInsumos
             ->filter(fn ($i) =>
-                in_array($i->FrecuenciaDePago, ['Anual', 'Pago único']) &&
-                !PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
+                ! $enMensuales($i) &&
+                ! $enLicencias($i) &&
+                ! PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
             )
-            ->groupBy(fn ($i) => strcasecmp($i->CateogoriaInsumo ?? '', 'REPARACIONES') === 0 ? 'ACCESORIOS Y REFACCIONES' : $i->NombreInsumo)
+            ->groupBy(fn ($i) => $nombreOtroInsumo($i))
             ->each(function ($grupo, $nombre) use ($meses, $gerenciaId, &$resultado) {
                 $costosPorMes = [];
                 foreach ($meses as $mes) {
-                    $costosPorMes[$mes] = $grupo->filter(fn ($i) => strcasecmp($i->MesDePago ?? '', $mes) === 0)
-                        ->sum(fn ($i) => self::costoAnualInsumo($i));
+                    $costosPorMes[$mes] = self::sumaEnMes($grupo, $mes, fn ($i) => self::costoCeldaInsumo($i));
                 }
-
-                // HAVING del SP: descarta el insumo si su total anual es 0
                 if (array_sum($costosPorMes) <= 0) return;
-
                 foreach ($meses as $mes) {
                     $resultado->push((object)[
                         'NombreInsumo' => $nombre,
@@ -627,35 +603,46 @@ class PresupuestoHelper
                 }
             });
 
-        // --- ORDEN 5: Líneas Mensuales (renta por compañía/tipo) ---
+        // --- ORDEN 5: Líneas (renta sólo en los meses marcados) ---
         $todasLineas
             ->groupBy(fn ($l) => strtoupper(trim($l->Compania ?? '')) . '|' . strtoupper(trim($l->TipoLinea ?? '')))
             ->each(function ($grupo, $key) use ($meses, $gerenciaId, &$resultado) {
                 [$compania, $tipoLinea] = explode('|', $key, 2);
                 $nombre = $compania . ' ' . $tipoLinea;
-                $costoMensual = $grupo->sum('CostoRentaMensual');
-                if ($costoMensual * 12 <= 0) return;
+                $costosPorMes = [];
+                foreach ($meses as $mes) {
+                    $costosPorMes[$mes] = self::sumaEnMes($grupo, $mes, fn ($l) => (float) ($l->CostoRentaMensual ?? 0));
+                }
+                if (array_sum($costosPorMes) <= 0) return;
                 foreach ($meses as $mes) {
                     $resultado->push((object)[
                         'NombreInsumo' => $nombre,
                         'Mes'          => $mes,
-                        'Costo'        => (int) round($costoMensual),
+                        'Costo'        => (int) round($costosPorMes[$mes]),
                         'Orden'        => 5,
                         'GerenciaID'   => $gerenciaId,
                     ]);
                 }
             });
 
-        // --- ORDEN 6: Inversiones (hardware + renovación fianzas en Junio) ---
+        // --- ORDEN 6: Inversiones (hardware en los meses marcados + renovación fianzas en Junio) ---
         $equiposHardware = $todosEquipos->filter(fn ($e) =>
             PresupuestoConfiguracion::contiene($e->CategoriaEquipo, 'hardware')
         );
 
-        // Calcular costos por mes
+        $mesDeFechaCortes = function ($fecha): ?int {
+            if (empty($fecha)) {
+                return null;
+            }
+
+            return (int) ($fecha instanceof \DateTimeInterface
+                ? $fecha->format('n')
+                : date('n', strtotime((string) $fecha)));
+        };
+
         $costosTotalesPorMes = [];
         foreach ($meses as $mes) {
-            $costo = $equiposHardware->filter(fn ($e) => strcasecmp($e->MesDePago ?? '', $mes) === 0)
-                ->sum(fn ($e) => (float) ($e->Precio ?? 0));
+            $costo = $equiposHardware->sum(fn ($e) => self::precioEquipoEnMes($e, $mes, $meses, $mesDeFechaCortes));
             if ($mes === 'Junio') {
                 $costo += $totalRenovacionFianzas;
             }
@@ -714,7 +701,7 @@ class PresupuestoHelper
                 },
                 'inventariolineas' => function ($q) use ($modo) {
                     $q->select('InventarioID', 'EmpleadoID', 'Compania', 'TipoLinea',
-                               'CostoRentaMensual', 'CostoFianza', 'FechaFianza', 'MontoRenovacionFianza');
+                               'CostoRentaMensual', 'CostoFianza', 'FechaFianza', 'MontoRenovacionFianza', 'MesDePago');
                     self::soloPresupuestados($q, $modo);
                 },
                 'inventarioequipo' => function ($q) use ($modo) {
@@ -757,59 +744,59 @@ class PresupuestoHelper
             $filas[] = $fila;
         };
 
-        $mismoMes = fn ($valor, string $mes) => strcasecmp(trim((string) ($valor ?? '')), $mes) === 0;
+        $enMensuales = fn ($i) => PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'insumos_mensuales');
+        $enLicencias = fn ($i) => PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'licencias');
 
-        // --- ORDEN 1: insumos mensuales, se pagan los 12 meses ---
+        // --- ORDEN 1: insumos de categorías mensuales, sólo en los meses marcados ---
         $todosInsumos
-            ->filter(fn ($i) =>
-                $norm($i->FrecuenciaDePago) === 'MENSUAL' &&
-                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'insumos_mensuales')
-            )
+            ->filter($enMensuales)
             ->groupBy(fn ($i) => $norm($i->NombreInsumo))
             ->sortKeys()
             ->each(function ($grupo) use ($agregar) {
-                $costo = (float) $grupo->sum('CostoMensual');
-                $agregar((string) $grupo->first()->NombreInsumo, 1, fn () => $costo);
+                $agregar((string) $grupo->first()->NombreInsumo, 1, fn ($mes) =>
+                    self::sumaEnMes($grupo, $mes, fn ($i) => self::costoCeldaInsumo($i))
+                );
             });
 
-        // --- ORDEN 2: licencias anuales. Las HOME se cotizan al precio de su PRO.
+        // --- ORDEN 2: licencias. Las HOME se cotizan al precio de su PRO.
         $todosInsumos
             ->filter(fn ($i) =>
-                in_array($norm($i->FrecuenciaDePago), ['ANUAL', 'PAGO ÚNICO'], true) &&
-                PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'licencias') &&
+                $enLicencias($i) &&
+                ! $enMensuales($i) &&
                 !($esExentaWindows && str_starts_with($norm($i->NombreInsumo), 'WINDOWS'))
             )
             ->groupBy(fn ($i) => $norm($i->NombreInsumo))
             ->sortKeys()
-            ->each(function ($grupo) use ($agregar, $mismoMes, $norm, $costoWin10Pro, $costoWin11Pro) {
+            ->each(function ($grupo) use ($agregar, $norm, $costoWin10Pro, $costoWin11Pro) {
                 $importe = fn ($i) => match ($norm($i->NombreInsumo)) {
                     'WINDOWS 10 HOME'                  => (float) $costoWin10Pro,
                     'WINDOWS 11 HOME'                  => (float) $costoWin11Pro,
                     'WINDOWS 10 PRO', 'WINDOWS 11 PRO' => 0.0,
-                    default                            => self::costoAnualInsumo($i),
+                    default                            => self::costoCeldaInsumo($i),
                 };
 
-                $agregar((string) $grupo->first()->NombreInsumo, 2, fn ($mes) => $grupo
-                    ->filter(fn ($i) => $mismoMes($i->MesDePago, $mes))
-                    ->sum($importe));
+                $agregar((string) $grupo->first()->NombreInsumo, 2, fn ($mes) =>
+                    self::sumaEnMes($grupo, $mes, $importe)
+                );
             });
 
-        // --- ORDEN 3: resto de insumos anuales. Mantenimientos y refacciones.
+        // --- ORDEN 3: resto de insumos. Mantenimientos y refacciones.
         $nombreOtroInsumo = fn ($i) => $norm($i->CateogoriaInsumo) === 'REPARACIONES'
             ? 'ACCESORIOS Y REFACCIONES'
             : (string) $i->NombreInsumo;
 
         $todosInsumos
             ->filter(fn ($i) =>
-                in_array($norm($i->FrecuenciaDePago), ['ANUAL', 'PAGO ÚNICO'], true) &&
-                !PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
+                ! $enMensuales($i) &&
+                ! $enLicencias($i) &&
+                ! PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
             )
             ->groupBy(fn ($i) => $norm($nombreOtroInsumo($i)))
             ->sortKeys()
-            ->each(function ($grupo) use ($agregar, $mismoMes, $nombreOtroInsumo) {
-                $agregar($nombreOtroInsumo($grupo->first()), 3, fn ($mes) => $grupo
-                    ->filter(fn ($i) => $mismoMes($i->MesDePago, $mes))
-                    ->sum(fn ($i) => self::costoAnualInsumo($i)));
+            ->each(function ($grupo) use ($agregar, $nombreOtroInsumo) {
+                $agregar($nombreOtroInsumo($grupo->first()), 3, fn ($mes) =>
+                    self::sumaEnMes($grupo, $mes, fn ($i) => self::costoCeldaInsumo($i))
+                );
             });
 
         // --- ORDEN 4: fianzas de líneas, cada una en el mes de su FechaFianza ---
@@ -844,42 +831,26 @@ class PresupuestoHelper
                 });
             });
 
-        // --- ORDEN 5: renta de líneas, se paga los 12 meses ---
+        // --- ORDEN 5: renta de líneas, sólo en los meses marcados ---
         $todasLineas
             ->groupBy(fn ($l) => $norm($l->Compania . ' ' . $l->TipoLinea))
             ->sortKeys()
             ->each(function ($grupo) use ($agregar) {
                 $primera = $grupo->first();
-                $costo   = (float) $grupo->sum('CostoRentaMensual');
-
-                $agregar($primera->Compania . ' ' . $primera->TipoLinea, 5, fn () => $costo);
+                $agregar($primera->Compania . ' ' . $primera->TipoLinea, 5, fn ($mes) =>
+                    self::sumaEnMes($grupo, $mes, fn ($l) => (float) ($l->CostoRentaMensual ?? 0))
+                );
             });
 
-        // --- ORDEN 6: hardware, cada compra en su MesDePago. La renovación de fianzas cae en Junio.
+        // --- ORDEN 6: hardware en los meses marcados. La renovación de fianzas cae en Junio.
         $equipos = $todosEquipos->filter(fn ($e) =>
             PresupuestoConfiguracion::contiene($e->CategoriaEquipo, 'hardware')
         );
 
-        // Casi ningún equipo trae MesDePago; sin mes no cabe en el calendario, así que se cae al
-        // mes de su FechaDeCompra. Sólo el mes: el año de compra no se toma en cuenta.
-        $mesDelEquipo = function ($e) use ($mesDeFecha, $meses) {
-            $mes = trim((string) ($e->MesDePago ?? ''));
-            if ($mes !== '') {
-                return $mes;
-            }
-
-            $numero = $mesDeFecha($e->FechaDeCompra);
-
-            return $numero ? $meses[$numero - 1] : '';
-        };
-
-        // El bloque se publica si hay hardware o fianzas, aunque el mes de compra falte
         $totalInversiones = (float) $equipos->sum(fn ($e) => (float) ($e->Precio ?? 0)) + $totalRenovacionFianzas;
 
-        $agregar('INVERSIONES', 6, function ($mes) use ($equipos, $mismoMes, $mesDelEquipo, $totalRenovacionFianzas) {
-            $costo = $equipos
-                ->filter(fn ($e) => $mismoMes($mesDelEquipo($e), $mes))
-                ->sum(fn ($e) => (float) ($e->Precio ?? 0));
+        $agregar('INVERSIONES', 6, function ($mes) use ($equipos, $meses, $mesDeFecha, $totalRenovacionFianzas) {
+            $costo = $equipos->sum(fn ($e) => self::precioEquipoEnMes($e, $mes, $meses, $mesDeFecha));
 
             return $mes === 'Junio' ? $costo + $totalRenovacionFianzas : $costo;
         }, $totalInversiones);

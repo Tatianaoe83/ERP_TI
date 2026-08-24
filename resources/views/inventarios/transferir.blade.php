@@ -93,12 +93,12 @@
                             <th>Nombre insumo</th>
                             <th>Costo mensual</th>
                             <th>Costo anual</th>
-                            <th>Frecuencia de pago</th>
+                            <th>Calendario</th>
                             <th>Observaciones</th>
                             <th>Fecha de asignación</th>
                             <th>Núm. serie</th>
                             <th>Comentarios</th>
-                            <th>Mes de pago</th>
+                            <th>Meses de pago</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,12 +109,12 @@
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
-                            <td>{{ $insumosAsignado->FrecuenciaDePago }}</td>
+                            <td>{{ \App\Helpers\PagoMeses::etiqueta($insumosAsignado->MesDePago, $insumosAsignado->FrecuenciaDePago) }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
                             <td>{{ $insumosAsignado->FechaAsignacion }}</td>
                             <td>{{ $insumosAsignado->NumSerie }}</td>
                             <td>{{ $insumosAsignado->Comentarios }}</td>
-                            <td>{{ $insumosAsignado->MesDePago }}</td>
+                            <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $insumosAsignado->MesDePago, 'mesesFrecuencia' => $insumosAsignado->FrecuenciaDePago])</td>
                         </tr>
                         @endforeach
                     </tbody>

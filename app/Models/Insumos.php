@@ -81,7 +81,7 @@ class Insumos extends Model implements Auditable
         'CostoMensual' => 'required|numeric',
         'CostoAnual' => 'required|numeric',
         'Importe' => 'nullable|numeric',
-        'FrecuenciaDePago' => 'required|string|max:50',
+        'FrecuenciaDePago' => 'nullable|string|max:50',
         'Observaciones' => 'nullable|string|max:255',
         'FechaRenovacion' => 'nullable|date'
     ];

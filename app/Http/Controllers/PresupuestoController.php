@@ -165,11 +165,10 @@ class PresupuestoController extends Controller
                 ? " AND e.tipo_persona IN ('" . implode("', '", $tiposPersona) . "') "
                 : "";
 
-            // El switch "Presupuestado" parte el inventario en dos reportes que no se solapan:
-            // presupuesto lista lo marcado, inventario lo que no.
-            $presupInsumoII = $esPresupuesto
-                ? " AND ii.Presupuestado = 1 "
-                : " AND ii.Presupuestado = 0 ";
+            $presupInsumoII = \App\Helpers\PresupuestoAsignacion::sqlWhere(
+                'ii.Presupuestado',
+                $esPresupuesto ? 'presupuesto' : 'inventario'
+            );
 
             $query_params = [$numerogerencia];
 
@@ -179,7 +178,7 @@ class PresupuestoController extends Controller
                 $presup_impresoras = DB::select("
                         SELECT 
                 'Costo Renta de Impresora' AS Categoria,
-                 ROUND(SUM(DISTINCT IFNULL((CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END), 0)), 0) AS CostoTotal
+                 ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
                 FROM inventarioinsumo ii
                 INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
                 INNER JOIN puestos p ON e.PuestoID = p.PuestoID
@@ -210,7 +209,7 @@ class PresupuestoController extends Controller
                             'Costo Renta de Impresora' AS Categoria,
                             ROUND(SUM(CostoAnual * CantidadMeses), 0) AS CostoTotal
                             FROM (
-                                SELECT ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, (CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END) AS CostoAnual,
+                                SELECT ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual AS CostoAnual,
                                        COUNT(*) as CantidadMeses
                                 FROM inventarioinsumo ii
                                 INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
@@ -219,14 +218,14 @@ class PresupuestoController extends Controller
                                 INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
                                 WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
                                     AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
-                                GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, (CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END)
+                                GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual
                             ) as impresoras_unicas
                     ", $query_params);
 
                 $presup_internet_fijo = DB::select("
                     SELECT 
                    'Costo Internet Fijo' AS Categoria,
-                   ROUND(SUM(DISTINCT IFNULL((CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END), 0)), 0) AS CostoTotal
+                   ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
                    FROM inventarioinsumo ii
                    INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
                    INNER JOIN puestos p ON e.PuestoID = p.PuestoID
