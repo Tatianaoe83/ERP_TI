@@ -93,7 +93,6 @@
                             <th>Nombre insumo</th>
                             <th>Costo mensual</th>
                             <th>Costo anual</th>
-                            <th>Calendario</th>
                             <th>Observaciones</th>
                             <th>Fecha de asignación</th>
                             <th>Núm. serie</th>
@@ -109,7 +108,6 @@
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
-                            <td>{{ \App\Helpers\PagoMeses::etiqueta($insumosAsignado->MesDePago, $insumosAsignado->FrecuenciaDePago) }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
                             <td>{{ $insumosAsignado->FechaAsignacion }}</td>
                             <td>{{ $insumosAsignado->NumSerie }}</td>

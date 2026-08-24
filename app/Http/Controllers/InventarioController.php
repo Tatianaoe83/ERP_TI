@@ -15,6 +15,8 @@ use App\Models\InventarioEquipo;
 use App\Models\InventarioInsumo;
 use App\Models\InventarioLineas;
 use App\Models\LineasTelefonicas;
+use App\Models\Planes;
+use App\Models\Obras;
 use App\Models\UnidadesDeNegocio;
 use App\Models\Insumos;
 use App\Models\Gerencia;
@@ -300,10 +302,19 @@ class InventarioController extends AppBaseController
         $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID', '=', $id)->get();
         $Insumos = Insumos::select("*")->get();
 
-        $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID', '=', $id)->get();
-        $Lineas = LineasTelefonicas::select("*")->where('Disponible', '=', 1)->get();
-
-
+        $LineasAsignados = InventarioLineas::with('lineastelefonicas.obras')->where('EmpleadoID', '=', $id)->get();
+        $Lineas = LineasTelefonicas::with(['planes', 'obras'])->where('Disponible', '=', 1)->get();
+        $planesLinea = Planes::with('companiaslineastelefonicas')->orderBy('NombrePlan')->get();
+        $obrasLinea = Obras::orderBy('NombreObra')->get(['ObraID', 'NombreObra']);
+        $tiposLinea = collect(['VOZ', 'DATOS', 'GPS'])
+            ->merge(LineasTelefonicas::query()
+                ->whereNotNull('TipoLinea')
+                ->where('TipoLinea', '!=', '')
+                ->distinct()
+                ->orderBy('TipoLinea')
+                ->pluck('TipoLinea'))
+            ->unique()
+            ->values();
 
         return view('inventarios.edit')->with([
             'inventario' => $inventario,
@@ -319,8 +330,10 @@ class InventarioController extends AppBaseController
             'insumosAsignados' => $InsumosAsignados,
             'insumos' => $Insumos,
             'LineasAsignados' => $LineasAsignados,
-            'Lineas' => $Lineas
-
+            'Lineas' => $Lineas,
+            'planesLinea' => $planesLinea,
+            'obrasLinea' => $obrasLinea,
+            'tiposLinea' => $tiposLinea,
         ]);
     }
 
@@ -346,7 +359,7 @@ class InventarioController extends AppBaseController
         }
 
         // Validar unicidad del Folio (excluyendo el registro actual)
-        $folio = trim($request->Folio);
+        $folio = trim((string) $request->Folio);
         if ($folio) {
             $folioExistente = InventarioEquipo::where('Folio', $folio)
                 ->where('InventarioID', '!=', $id)
@@ -361,10 +374,8 @@ class InventarioController extends AppBaseController
         }
 
         $data = $request->all();
-
-        $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
-
-        $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+        $data = $this->resolverGerenciaEquipo($data, $request->GerenciaEquipoID);
+        $data = $this->vaciarCamposEstimacion($data);
 
         $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID);
         $data = $this->aplicarMesesDePago($data, false);
@@ -384,7 +395,7 @@ class InventarioController extends AppBaseController
         }
 
         // Validar unicidad del Folio
-        $folio = trim($request->Folio);
+        $folio = trim((string) $request->Folio);
         if ($folio) {
             $folioExistente = InventarioEquipo::where('Folio', $folio)->exists();
             if ($folioExistente) {
@@ -397,10 +408,8 @@ class InventarioController extends AppBaseController
 
         $data = $request->all();
         $data['EmpleadoID'] = $id;
-
-        $gerencianombre = Gerencia::select("NombreGerencia")->where('GerenciaID', $request->GerenciaEquipoID)->get();
-
-        $data['GerenciaEquipo'] = $gerencianombre[0]->NombreGerencia;
+        $data = $this->resolverGerenciaEquipo($data, $request->GerenciaEquipoID);
+        $data = $this->vaciarCamposEstimacion($data);
 
         $data = $this->forzarPresupuestado($data, (int) $id);
         $data = $this->aplicarMesesDePago($data, false);
@@ -502,6 +511,7 @@ class InventarioController extends AppBaseController
 
         $data = $this->forzarPresupuestado($data, (int) $inventarioinsumo->EmpleadoID);
         $data = $this->aplicarMesesDePago($data, true);
+        $data = $this->vaciarCamposEstimacion($data);
 
         $inventarioinsumo->update($data);
 
@@ -538,6 +548,7 @@ class InventarioController extends AppBaseController
 
         $data = $this->forzarPresupuestado($data, (int) $id);
         $data = $this->aplicarMesesDePago($data, true);
+        $data = $this->vaciarCamposEstimacion($data);
 
         $inventarioinsumo = InventarioInsumo::create($data);
 
@@ -595,10 +606,38 @@ class InventarioController extends AppBaseController
                 $data['FechaRenovacion'] = null;
             }
 
+            $data = $this->datosLineaDesdePlan($data, $request);
             $data = $this->forzarPresupuestado($data, (int) $inventariotelf->EmpleadoID);
             $data = $this->aplicarMesesDePago($data, false);
+            $data = $this->vaciarCamposEstimacion($data);
+
+            foreach (['PlanID', 'TipoLinea', 'ObraID', 'NumTelefonico', 'CuentaPadre', 'CuentaHija', 'FechaFianza', 'FechaAsignacion', 'CostoFianza'] as $campo) {
+                if (array_key_exists($campo, $data) && $data[$campo] === '') {
+                    unset($data[$campo]);
+                }
+            }
+
+            $modo = PresupuestoAsignacion::normalizar($data['Presupuestado'] ?? $inventariotelf->Presupuestado);
+            if ($modo !== PresupuestoAsignacion::EXTRA && empty($inventariotelf->LineaID)) {
+                $catalogo = $this->crearLineaEnCatalogo($request, $data);
+                if ($catalogo instanceof \Illuminate\Http\JsonResponse) {
+                    return $catalogo;
+                }
+                $data['LineaID'] = $catalogo->LineaID;
+                $data['NumTelefonico'] = $catalogo->NumTelefonico;
+                $data['CuentaPadre'] = $catalogo->CuentaPadre;
+                $data['CuentaHija'] = $catalogo->CuentaHija;
+                $data['FechaFianza'] = $catalogo->FechaFianza;
+                $data['TipoLinea'] = $catalogo->TipoLinea;
+                $data['ObraID'] = $catalogo->ObraID;
+                $data['CostoFianza'] = $catalogo->CostoFianza;
+                $data['MontoRenovacionFianza'] = $catalogo->MontoRenovacionFianza;
+                $data['FechaRenovacion'] = $catalogo->FechaRenovacion;
+            }
 
             $inventariotelf->update($data);
+            $inventariotelf->refresh();
+            $inventariotelf->load('lineastelefonicas.obras');
 
             return response()->json([
                 'telefono' => $inventariotelf,
@@ -620,7 +659,7 @@ class InventarioController extends AppBaseController
             return $respuesta;
         }
 
-        $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.FechaRenovacion', 'lineastelefonicas.LineaID', 'planes.NombrePlan AS PlanTel')
+        $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.FechaRenovacion', 'lineastelefonicas.LineaID', 'lineastelefonicas.PlanID', 'lineastelefonicas.ObraID', 'planes.NombrePlan AS PlanTel')
                 ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
                 ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
                 ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
@@ -703,8 +742,10 @@ class InventarioController extends AppBaseController
         $data = $this->forzarPresupuestado($data, (int) $id);
         $data['MesDePago'] = $request->input('MesDePago');
         $data = $this->aplicarMesesDePago($data, false);
+        $data = $this->vaciarCamposEstimacion($data);
 
         $inventariotelf = InventarioLineas::create($data);
+        $inventariotelf->load('lineastelefonicas.obras');
 
         $Lineas = DB::table('lineastelefonicas')
             ->where('LineaID', $telf)
@@ -716,6 +757,119 @@ class InventarioController extends AppBaseController
                 'telefono' => $inventariotelf,
                 'success' => true
             ]);
+    }
+
+    public function crearlineaextra($id, Request $request)
+    {
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $id)) {
+            return $respuesta;
+        }
+
+        $data = $request->all();
+        $data['EmpleadoID'] = $id;
+        $data['Estado'] = 'True';
+        $data['LineaID'] = null;
+        $data['NumTelefonico'] = null;
+        $data['CuentaPadre'] = null;
+        $data['CuentaHija'] = null;
+        $data['FechaFianza'] = null;
+        $data['FechaAsignacion'] = null;
+        $data['Presupuestado'] = PresupuestoAsignacion::EXTRA;
+
+        $data = $this->datosLineaDesdePlan($data, $request);
+        if (empty($data['PlanID']) || empty($data['TipoLinea']) || empty($data['ObraID'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La proyección extra requiere plan, tipo de línea y obra. El número y las cuentas se capturan al pasarla a stock.',
+            ], 422);
+        }
+
+        $data = $this->forzarPresupuestado($data, (int) $id);
+        $data['Presupuestado'] = PresupuestoAsignacion::EXTRA;
+        $data = $this->aplicarMesesDePago($data, false);
+        $data = $this->vaciarCamposEstimacion($data);
+        if (! isset($data['CostoFianza']) || $data['CostoFianza'] === null || $data['CostoFianza'] === '') {
+            $data['CostoFianza'] = 0;
+        }
+
+        $inventariotelf = InventarioLineas::create($data);
+        $inventariotelf->load('lineastelefonicas.obras');
+
+        return response()->json([
+            'telefono' => $inventariotelf,
+            'success' => true
+        ]);
+    }
+
+    public function cambiarAsignacionMasiva(Request $request)
+    {
+        $tipo = $request->input('tipo');
+        $ids = array_values(array_unique(array_map('intval', (array) $request->input('ids', []))));
+        $modo = PresupuestoAsignacion::normalizar($request->input('Presupuestado'));
+
+        if (! in_array($tipo, ['equipo', 'insumo', 'linea'], true) || $ids === []) {
+            return response()->json(['success' => false, 'message' => 'Seleccione al menos un registro.'], 422);
+        }
+
+        if (! in_array($modo, [PresupuestoAsignacion::STOCK, PresupuestoAsignacion::COMPARTIDO], true)) {
+            return response()->json(['success' => false, 'message' => 'Solo se puede pasar entre Stock y Compartido.'], 422);
+        }
+
+        $modelo = match ($tipo) {
+            'equipo' => InventarioEquipo::class,
+            'insumo' => InventarioInsumo::class,
+            default => InventarioLineas::class,
+        };
+
+        $registros = $modelo::whereIn('InventarioID', $ids)->get();
+        if ($registros->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'No se encontraron los registros.'], 404);
+        }
+
+        $empleadoIds = $registros->pluck('EmpleadoID')->unique();
+        if ($empleadoIds->count() > 1) {
+            return response()->json(['success' => false, 'message' => 'Los registros deben ser del mismo empleado.'], 422);
+        }
+
+        $empleadoId = (int) $empleadoIds->first();
+        if ($respuesta = $this->respuestaSiEmpleadoInactivo($empleadoId)) {
+            return $respuesta;
+        }
+
+        $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
+        if ($tipoPersona === 'EXTRAORDINARIO') {
+            return response()->json(['success' => false, 'message' => 'En extraordinario todo es extra; no aplica stock ni compartido.'], 422);
+        }
+        if ($tipoPersona === 'REFERENCIADO') {
+            return response()->json(['success' => false, 'message' => 'El referenciado solo maneja stock.'], 422);
+        }
+
+        $actualizados = [];
+        $omitidos = 0;
+
+        foreach ($registros as $registro) {
+            $actual = PresupuestoAsignacion::normalizar($registro->Presupuestado);
+            if ($actual === PresupuestoAsignacion::EXTRA) {
+                $omitidos++;
+                continue;
+            }
+
+            if ($tipo === 'linea' && empty($registro->LineaID) && $modo === PresupuestoAsignacion::COMPARTIDO) {
+                $omitidos++;
+                continue;
+            }
+
+            $registro->Presupuestado = $modo;
+            $registro->save();
+            $actualizados[] = (int) $registro->InventarioID;
+        }
+
+        return response()->json([
+            'success' => true,
+            'Presupuestado' => $modo,
+            'actualizados' => $actualizados,
+            'omitidos' => $omitidos,
+        ]);
     }
 
     public function destroylinea($id)
@@ -730,9 +884,15 @@ class InventarioController extends AppBaseController
             return $respuesta;
         }
 
-        DB::table('lineastelefonicas')
-            ->where('NumTelefonico', $inventarioLineas->NumTelefonico)
-            ->update(['Disponible' => 1]);
+        if ($inventarioLineas->LineaID) {
+            DB::table('lineastelefonicas')
+                ->where('LineaID', $inventarioLineas->LineaID)
+                ->update(['Disponible' => 1]);
+        } elseif (!empty($inventarioLineas->NumTelefonico)) {
+            DB::table('lineastelefonicas')
+                ->where('NumTelefonico', $inventarioLineas->NumTelefonico)
+                ->update(['Disponible' => 1]);
+        }
 
         $inventarioLineas->delete();
 
@@ -1214,7 +1374,7 @@ class InventarioController extends AppBaseController
         } elseif ($tipo === 'insumos') {
             $registros = $aplicarFiltro(InventarioInsumo::where('EmpleadoID', $id))->get();
 
-            $encabezados = ['Categoria Insumo', 'Nombre Insumo', 'Costo Mensual', 'Costo Anual', 'Frecuencia de Pago', 'Fecha de Renovacion', 'Observaciones', 'Fecha de Asignacion', 'Num. Serie', 'Comentarios', 'Mes de pago'];
+            $encabezados = ['Categoria Insumo', 'Nombre Insumo', 'Costo Mensual', 'Costo Anual', 'Fecha de Renovacion', 'Observaciones', 'Fecha de Asignacion', 'Num. Serie', 'Comentarios', 'Mes de pago'];
 
             $filas = $registros->map(function ($i) use ($fecha, $siNo, $incluirPresupuestado) {
                 $fila = [
@@ -1222,7 +1382,6 @@ class InventarioController extends AppBaseController
                     $i->NombreInsumo,
                     $i->CostoMensual,
                     $i->CostoAnual,
-                    $i->FrecuenciaDePago,
                     $fecha($i->FechaRenovacion),
                     $i->Observaciones,
                     $fecha($i->FechaAsignacion),
@@ -1320,6 +1479,115 @@ class InventarioController extends AppBaseController
         }
 
         return $data;
+    }
+
+    private function resolverGerenciaEquipo(array $data, $gerenciaId): array
+    {
+        if (empty($gerenciaId)) {
+            $data['GerenciaEquipoID'] = null;
+            $data['GerenciaEquipo'] = null;
+
+            return $data;
+        }
+
+        $nombre = Gerencia::where('GerenciaID', $gerenciaId)->value('NombreGerencia');
+        $data['GerenciaEquipoID'] = $gerenciaId;
+        $data['GerenciaEquipo'] = $nombre;
+
+        return $data;
+    }
+
+    private function vaciarCamposEstimacion(array $data): array
+    {
+        foreach ([
+            'FechaAsignacion', 'FechaDeCompra', 'FechaRenovacion',
+            'NumSerie', 'Folio', 'GerenciaEquipoID', 'GerenciaEquipo',
+            'Precio', 'Comentarios',
+        ] as $campo) {
+            if (array_key_exists($campo, $data) && ($data[$campo] === '' || $data[$campo] === '0')) {
+                if ($campo === 'Precio' && $data[$campo] === '0') {
+                    $data[$campo] = null;
+                } elseif ($data[$campo] === '') {
+                    $data[$campo] = null;
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    private function datosLineaDesdePlan(array $data, Request $request): array
+    {
+        $planId = $request->input('PlanID', $data['PlanID'] ?? null);
+        if (! $planId) {
+            unset($data['PlanID']);
+
+            return $data;
+        }
+
+        $plan = Planes::with('companiaslineastelefonicas')->find($planId);
+        if (! $plan) {
+            return $data;
+        }
+
+        $data['PlanID'] = $plan->ID;
+        $data['PlanTel'] = $plan->NombrePlan;
+        $data['CostoRentaMensual'] = $plan->PrecioPlan;
+        $data['Compania'] = optional($plan->companiaslineastelefonicas)->Compania ?? ($data['Compania'] ?? '');
+
+        if ($request->filled('ObraID')) {
+            $data['ObraID'] = $request->input('ObraID');
+            $data['Obra'] = Obras::where('ObraID', $data['ObraID'])->value('NombreObra');
+        }
+
+        if ($request->filled('TipoLinea')) {
+            $data['TipoLinea'] = $request->input('TipoLinea');
+        }
+
+        if ($request->exists('CostoFianza')) {
+            $data['CostoFianza'] = $request->input('CostoFianza') === '' ? null : $request->input('CostoFianza');
+        }
+
+        return $data;
+    }
+
+    private function crearLineaEnCatalogo(Request $request, array $data)
+    {
+        $numero = trim((string) $request->input('NumTelefonico', ''));
+        $planId = $request->input('PlanID', $data['PlanID'] ?? null);
+        $cuentaPadre = trim((string) $request->input('CuentaPadre', ''));
+        $cuentaHija = trim((string) $request->input('CuentaHija', ''));
+        $tipo = trim((string) ($request->input('TipoLinea') ?: ($data['TipoLinea'] ?? '')));
+        $obraId = $request->input('ObraID', $data['ObraID'] ?? null);
+
+        if ($numero === '' || ! $planId || $cuentaPadre === '' || $cuentaHija === '' || $tipo === '' || ! $obraId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Para pasar la línea a stock o compartido capture número, plan, cuentas, tipo y obra. Se creará en el catálogo como las demás.',
+            ], 422);
+        }
+
+        if (LineasTelefonicas::where('NumTelefonico', $numero)->exists()) {
+            return response()->json([
+                'success' => false,
+                'errors' => ['NumTelefonico' => ['Ese número telefónico ya existe en el catálogo.']],
+            ], 422);
+        }
+
+        return LineasTelefonicas::create([
+            'NumTelefonico' => $numero,
+            'PlanID' => $planId,
+            'CuentaPadre' => $cuentaPadre,
+            'CuentaHija' => $cuentaHija,
+            'TipoLinea' => $tipo,
+            'ObraID' => $obraId,
+            'FechaFianza' => $request->input('FechaFianza') ?: null,
+            'CostoFianza' => $request->input('CostoFianza') ?: ($data['CostoFianza'] ?? 0),
+            'Activo' => 1,
+            'Disponible' => 0,
+            'MontoRenovacionFianza' => $request->input('MontoRenovacionFianza') ?: null,
+            'FechaRenovacion' => $request->input('FechaRenovacion') ?: null,
+        ]);
     }
 
     private function respuestaSiEmpleadoInactivo(int $empleadoId)
