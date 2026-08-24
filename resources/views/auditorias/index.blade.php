@@ -40,7 +40,7 @@
             <div class="aud-bar__label">Auditoría anterior</div>
             <div class="aud-bar__valor">
                 @if($ultima)
-                    {{ $ultima->Folio }} · {{ $ultima->generada_en->format('d/m/Y H:i') }}
+                    {{ $ultima->Folio }} · {{ $ultima->created_at?->format('d/m/Y H:i') ?: '—' }}
                 @else
                     Nunca se ha generado una auditoría
                 @endif
@@ -51,17 +51,9 @@
             <div class="aud-bar__valor">{{ $ultima?->generada_por_nombre ?: '—' }}</div>
         </div>
         <div>
-            <div class="aud-bar__label">Equipos revisados</div>
-            <div class="aud-bar__valor aud-num">{{ $ultima?->total_equipos ?? 0 }}</div>
+            <div class="aud-bar__label">Empleado auditado</div>
+            <div class="aud-bar__valor">{{ $ultima?->empleado?->NombreEmpleado ?: '—' }}</div>
         </div>
-        @if($ultima && $ultima->total_piratas)
-        <div>
-            <div class="aud-bar__label">Licencias piratas</div>
-            <div class="aud-bar__valor aud-num" style="color: var(--aud-danger);">
-                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i> {{ $ultima->total_piratas }}
-            </div>
-        </div>
-        @endif
     </div>
 
     <div class="index-page__card">
@@ -79,27 +71,31 @@
                         <th scope="col">Folio</th>
                         <th scope="col">Fecha</th>
                         <th scope="col">Generada por</th>
-                        <th scope="col">Equipos</th>
-                        <th scope="col">Laptops</th>
-                        <th scope="col">PC</th>
-                        <th scope="col">Otros</th>
-                        <th scope="col">Propios</th>
+                        <th scope="col">Empleado auditado</th>
+                        <th scope="col">Tipo de persona</th>
+                        <th scope="col">Gerencia</th>
+                        <th scope="col">Tipo de equipo</th>
                         <th scope="col">Licencias auditadas</th>
-                        <th scope="col">Piratas</th>
                         <th scope="col">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($auditorias as $a)
                     <tr>
+                        {{-- Tipo de persona y gerencia salen del empleado, no de la cabecera. --}}
                         <td class="aud-strong">{{ $a->Folio }}</td>
-                        <td class="aud-num">{{ $a->generada_en->format('d/m/Y H:i') }}</td>
+                        <td class="aud-num">{{ $a->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
                         <td>{{ $a->generada_por_nombre ?: 'Sin usuario' }}</td>
-                        <td class="aud-num aud-strong">{{ $a->total_equipos }}</td>
-                        <td class="aud-num">{{ $a->total_laptops }}</td>
-                        <td class="aud-num">{{ $a->total_pcs }}</td>
-                        <td class="aud-num">{{ $a->total_otros }}</td>
-                        <td class="aud-num">{{ $a->total_propios }}</td>
+                        <td>{{ $a->empleado?->NombreEmpleado ?: '—' }}</td>
+                        <td>{{ $a->empleado?->tipo_persona ?: '—' }}</td>
+                        <td>{{ $a->empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}</td>
+                        <td>
+                            @if($a->tipoEquipo === null)
+                                <span class="aud-muted">Todos</span>
+                            @else
+                                {!! \App\Helpers\PresupuestoAsignacion::chipHtml($a->tipoEquipo) !!}
+                            @endif
+                        </td>
                         <td>
                             @if($a->auditoTodasLasLicencias())
                                 <span class="aud-muted">Todas</span>
@@ -108,15 +104,6 @@
                                     {{ $a->total_licencias_auditadas }}
                                     {{ $a->total_licencias_auditadas === 1 ? 'licencia' : 'licencias' }}
                                 </span>
-                            @endif
-                        </td>
-                        <td class="aud-num">
-                            @if($a->total_piratas)
-                                <span class="aud-chip aud-chip--pirata">
-                                    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i> {{ $a->total_piratas }}
-                                </span>
-                            @else
-                                <span class="aud-muted">0</span>
                             @endif
                         </td>
                         <td>
@@ -210,6 +197,7 @@
         'catalogoLicencias' => $catalogoLicencias,
         'catalogoEquipos'   => $catalogoEquipos,
         'gerencias'         => $gerencias,
+        'empleados'         => $empleados,
     ])
 @endif
 </div>
@@ -228,12 +216,18 @@
         var checks   = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaLicencias .aud-lic__check')) : [];
         var equipos  = modal ? Array.prototype.slice.call(modal.querySelectorAll('.aud-equipo__check')) : [];
         var filas    = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaEquipos .aud-lic')) : [];
-        var radios   = modal ? Array.prototype.slice.call(modal.querySelectorAll('input[name="alcance"]')) : [];
+        var opciones = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaEmpleados .aud-combo__opcion')) : [];
 
         var contador        = document.getElementById('contadorLicencias');
         var contadorEquipos = document.getElementById('contadorEquipos');
         var resumen         = document.getElementById('resumenAlcance');
-        var bloqueEquipos   = document.getElementById('bloqueEquipos');
+
+        var comboInput   = document.getElementById('buscarEmpleado');
+        var comboLista   = document.getElementById('listaEmpleados');
+        var comboValor   = document.getElementById('selectEmpleado');
+        var comboLimpiar = document.getElementById('limpiarEmpleado');
+        var comboVacio   = document.getElementById('sinEmpleados');
+        var activo = -1;
 
         function marcadas() {
             return checks.filter(function (c) { return c.checked; }).length;
@@ -243,23 +237,28 @@
             return equipos.filter(function (c) { return c.checked; }).length;
         }
 
-        function esGeneral() {
-            var elegido = radios.filter(function (r) { return r.checked; })[0];
-            return !elegido || elegido.value === 'todos';
+        // Equipos del empleado elegido, ya pasados por los filtros.
+        function equiposVisibles() {
+            return filas.filter(function (f) { return !f.hidden; }).length;
         }
 
-        // Auditar cero licencias, o cero equipos en modo selección, no significa nada:
+        function hayEmpleado() {
+            return !comboValor || !!comboValor.value;
+        }
+
+        // Sin licencias, sin equipos o sin empleado no hay corrida que valga:
         // el submit queda bloqueado hasta que el alcance tenga sentido.
         function refrescar() {
             var lic = marcadas();
-            var eq = esGeneral() ? equipos.length : equiposMarcados();
+            var disponibles = equiposVisibles();
+            var eq = equiposMarcados();
 
             if (contador) {
                 contador.textContent = lic + ' de ' + checks.length + ' licencias seleccionadas';
             }
 
             if (contadorEquipos) {
-                contadorEquipos.textContent = equiposMarcados() + ' de ' + equipos.length + ' equipos seleccionados';
+                contadorEquipos.textContent = eq + ' de ' + disponibles + ' equipos seleccionados';
             }
 
             if (resumen) {
@@ -267,42 +266,119 @@
                     ' · ' + lic + (lic === 1 ? ' licencia' : ' licencias');
             }
 
-            if (boton) boton.disabled = lic === 0 || eq === 0;
+            if (boton) boton.disabled = lic === 0 || eq === 0 || !hayEmpleado();
         }
 
-        // El bloque de equipos sólo estorba en modo general; los checkboxes se limpian
-        // para que no viajen en el POST.
-        function refrescarAlcance() {
-            var general = esGeneral();
-
-            if (bloqueEquipos) bloqueEquipos.hidden = general;
-            if (general) equipos.forEach(function (c) { c.checked = false; });
-
-            refrescar();
+        // ── Combobox de empleado ──────────────────────────────────────────────
+        // Los tres filtros de arriba acotan el universo; el texto busca dentro de él.
+        function opcionesVisibles() {
+            return opciones.filter(function (o) { return !o.hidden; });
         }
 
-        // Filtro combinado: el área y el texto se aplican juntos.
-        function filtrarEquipos() {
-            var area = (document.getElementById('filtroGerencia') || {}).value || '';
+        function filtrarEmpleados(usarTexto) {
+            var area  = (document.getElementById('filtroGerencia') || {}).value || '';
+            var depto = (document.getElementById('filtroDepartamento') || {}).value || '';
+            var tipo  = (document.getElementById('filtroTipoPersona') || {}).value || '';
+            var q = usarTexto ? (comboInput.value || '').trim().toLowerCase() : '';
+            var visibles = 0;
+
+            opciones.forEach(function (o) {
+                var coincide = (!area || o.dataset.gerencia === area) &&
+                               (!depto || o.dataset.departamento === depto) &&
+                               (!tipo || o.dataset.tipoPersona === tipo) &&
+                               (!q || o.dataset.busqueda.indexOf(q) !== -1);
+                o.hidden = !coincide;
+                if (coincide) visibles++;
+            });
+
+            if (comboVacio) comboVacio.hidden = visibles !== 0;
+            activo = -1;
+            marcarActivo();
+        }
+
+        function abrirLista() {
+            if (!comboLista) return;
+            comboLista.hidden = false;
+            comboInput.setAttribute('aria-expanded', 'true');
+        }
+
+        function cerrarLista() {
+            if (!comboLista) return;
+            comboLista.hidden = true;
+            comboInput.setAttribute('aria-expanded', 'false');
+            activo = -1;
+            marcarActivo();
+        }
+
+        function marcarActivo() {
+            var vis = opcionesVisibles();
+            vis.forEach(function (o, i) {
+                var esActivo = i === activo;
+                o.classList.toggle('is-activo', esActivo);
+                o.setAttribute('aria-selected', esActivo ? 'true' : 'false');
+                if (esActivo) o.scrollIntoView({ block: 'nearest' });
+            });
+            comboInput.setAttribute('aria-activedescendant',
+                activo >= 0 && vis[activo] ? vis[activo].id : '');
+        }
+
+        function elegirEmpleado(opcion) {
+            if (!opcion) return;
+            comboValor.value = opcion.dataset.valor;
+            comboInput.value = opcion.dataset.nombre;
+            if (comboLimpiar) comboLimpiar.hidden = false;
+            cerrarLista();
+            filtrarEquipos(true);
+        }
+
+        function limpiarEmpleado() {
+            comboValor.value = '';
+            comboInput.value = '';
+            if (comboLimpiar) comboLimpiar.hidden = true;
+            filtrarEmpleados(false);
+            filtrarEquipos(false);
+            comboInput.focus();
+        }
+
+        // Filtro de equipos: manda el empleado elegido; el tipo y el texto afinan.
+        // Sin empleado no se muestra ninguno: la corrida es de uno solo.
+        function filtrarEquipos(marcarTodos) {
+            var empleado = comboValor ? comboValor.value : '';
+            var tipo = (document.getElementById('selectTipoEquipo') || {}).value || '';
             var q = ((document.getElementById('buscarEquipo') || {}).value || '').trim().toLowerCase();
             var visibles = 0;
 
             filas.forEach(function (fila) {
-                var coincide = (!area || fila.dataset.gerencia === area) &&
+                var coincide = !!empleado &&
+                               fila.dataset.empleado === empleado &&
+                               (!tipo || fila.dataset.tipo === tipo) &&
                                (!q || fila.dataset.busqueda.indexOf(q) !== -1);
                 fila.hidden = !coincide;
+
+                var check = fila.querySelector('.aud-equipo__check');
+                if (check) {
+                    // Lo que no se ve no viaja en el POST; lo del empleado entra marcado
+                    // por defecto y el usuario destilda lo que quiera dejar fuera.
+                    if (!coincide) check.checked = false;
+                    else if (marcarTodos) check.checked = true;
+                }
+
                 if (coincide) visibles++;
             });
 
             var vacio = document.getElementById('sinEquipos');
             if (vacio) vacio.hidden = visibles !== 0;
+
+            refrescar();
         }
 
         function abrirModal() {
             modal.hidden = false;
             document.body.style.overflow = 'hidden';
-            var primero = modal.querySelector('input[name="alcance"]');
-            if (primero) primero.focus();
+            // Se recalcula al abrir: el alcance depende del empleado ya elegido.
+            filtrarEmpleados(false);
+            filtrarEquipos(false);
+            if (comboInput) comboInput.focus();
         }
 
         function cerrarModal() {
@@ -334,13 +410,98 @@
 
         checks.forEach(function (c) { c.addEventListener('change', refrescar); });
         equipos.forEach(function (c) { c.addEventListener('change', refrescar); });
-        radios.forEach(function (r) { r.addEventListener('change', refrescarAlcance); });
 
-        var filtroGerencia = document.getElementById('filtroGerencia');
         var buscarEquipo = document.getElementById('buscarEquipo');
+        var selectTipoEquipo = document.getElementById('selectTipoEquipo');
 
-        if (filtroGerencia) filtroGerencia.addEventListener('change', filtrarEquipos);
-        if (buscarEquipo) buscarEquipo.addEventListener('input', filtrarEquipos);
+        // Cambiar de área, departamento o tipo de empleado invalida al ya elegido si
+        // deja de cumplir: se limpia en vez de dejar una selección incoherente.
+        ['filtroGerencia', 'filtroDepartamento', 'filtroTipoPersona'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+
+            el.addEventListener('change', function () {
+                filtrarEmpleados(false);
+
+                var elegido = opciones.filter(function (o) {
+                    return o.dataset.valor === (comboValor ? comboValor.value : '');
+                })[0];
+
+                if (comboValor && comboValor.value && (!elegido || elegido.hidden)) {
+                    limpiarEmpleado();
+                } else {
+                    filtrarEquipos(false);
+                }
+            });
+        });
+
+        // El tipo de equipo cambia el universo del empleado: se remarca lo que queda.
+        if (selectTipoEquipo) {
+            selectTipoEquipo.addEventListener('change', function () { filtrarEquipos(true); });
+        }
+
+        // Buscar dentro de los equipos sólo oculta; no debe desmarcar lo ya elegido.
+        if (buscarEquipo) {
+            buscarEquipo.addEventListener('input', function () { filtrarEquipos(false); });
+        }
+
+        if (comboInput) {
+            comboInput.addEventListener('focus', function () {
+                filtrarEmpleados(true);
+                abrirLista();
+            });
+
+            comboInput.addEventListener('input', function () {
+                // Escribir invalida la selección previa: el texto ya no la representa.
+                if (comboValor.value) {
+                    comboValor.value = '';
+                    if (comboLimpiar) comboLimpiar.hidden = true;
+                    filtrarEquipos(false);
+                }
+                filtrarEmpleados(true);
+                abrirLista();
+            });
+
+            comboInput.addEventListener('keydown', function (e) {
+                var vis = opcionesVisibles();
+
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (comboLista.hidden) abrirLista();
+                    if (!vis.length) return;
+                    activo = e.key === 'ArrowDown'
+                        ? (activo + 1) % vis.length
+                        : (activo <= 0 ? vis.length - 1 : activo - 1);
+                    marcarActivo();
+                    return;
+                }
+
+                if (e.key === 'Enter') {
+                    if (!comboLista.hidden && vis.length) {
+                        e.preventDefault();
+                        elegirEmpleado(vis[activo >= 0 ? activo : 0]);
+                    }
+                    return;
+                }
+
+                // Esc cierra la lista sin cerrar el modal completo.
+                if (e.key === 'Escape' && !comboLista.hidden) {
+                    e.stopPropagation();
+                    cerrarLista();
+                }
+            });
+
+            opciones.forEach(function (o) {
+                o.addEventListener('click', function () { elegirEmpleado(o); });
+            });
+
+            document.addEventListener('click', function (e) {
+                var combo = document.getElementById('comboEmpleado');
+                if (combo && !combo.contains(e.target)) cerrarLista();
+            });
+        }
+
+        if (comboLimpiar) comboLimpiar.addEventListener('click', limpiarEmpleado);
 
         // "Visibles" respeta el filtro: marca lo que se está viendo, no todo el catálogo.
         var btnEquiposTodos = document.getElementById('btnEquiposTodos');

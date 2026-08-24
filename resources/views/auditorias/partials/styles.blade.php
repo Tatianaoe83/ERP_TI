@@ -755,51 +755,6 @@
         font-variant-numeric: tabular-nums;
     }
 
-    /* ── Alcance: general o por equipo ── */
-    .aud-opciones {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-        gap: 0.5rem;
-        margin-bottom: 0.6rem;
-    }
-
-    .aud-opcion {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.55rem;
-        padding: 0.6rem 0.75rem;
-        border: 1px solid var(--aud-border);
-        border-radius: 0.6rem;
-        background: var(--aud-surface);
-        cursor: pointer;
-    }
-
-    .aud-opcion:hover { border-color: var(--aud-primary); }
-
-    .aud-opcion input {
-        width: 1.05rem;
-        height: 1.05rem;
-        margin-top: 0.1rem;
-        accent-color: var(--aud-primary);
-        flex: 0 0 auto;
-    }
-
-    .aud-opcion:has(input:checked) {
-        border-color: var(--aud-primary);
-        background: var(--aud-primary-soft);
-    }
-
-    .aud-opcion__titulo {
-        display: block;
-        font-size: 0.82rem;
-        font-weight: 600;
-    }
-
-    .aud-opcion__ayuda {
-        display: block;
-        font-size: 0.72rem;
-        color: var(--aud-text-muted);
-    }
 
     .aud-select {
         flex: 0 1 13rem;
@@ -812,6 +767,155 @@
         font-size: 0.85rem;
         cursor: pointer;
     }
+
+    /* ── Filtros del alcance ──
+       Rejilla propia: en fila estos cuatro selects se apretaban al punto de
+       cortar los nombres de departamento. */
+    .aud-filtros {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+        gap: 0.6rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .aud-campo {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        min-width: 0;
+    }
+
+    /* Etiqueta visible, no sólo placeholder: al elegir, el placeholder se va y
+       con él la única pista de qué significa el campo. */
+    .aud-campo__label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--aud-text-muted);
+    }
+
+    .aud-campo__req { color: var(--aud-danger); }
+
+    .aud-campo .aud-select { flex: 1 1 auto; width: 100%; }
+
+    .aud-campo--empleado { margin-bottom: 0.85rem; }
+
+    .aud-campo__ayuda {
+        margin: 0;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        color: var(--aud-text-muted);
+    }
+
+    /* ── Combobox de empleado ── */
+    .aud-combo {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .aud-combo__ico {
+        position: absolute;
+        left: 0.75rem;
+        font-size: 0.8rem;
+        color: var(--aud-text-muted);
+        pointer-events: none;
+    }
+
+    .aud-combo__input {
+        width: 100%;
+        min-height: 46px;
+        padding: 0 2.5rem 0 2.15rem;
+        border: 1px solid var(--aud-border);
+        border-radius: 0.6rem;
+        background: var(--aud-surface);
+        color: var(--aud-text);
+        font-size: 0.9rem;
+    }
+
+    .aud-combo__input::placeholder { color: var(--aud-text-muted); }
+
+    .aud-combo__input:focus-visible,
+    .aud-select:focus-visible,
+    .aud-buscar:focus-visible {
+        outline: 2px solid var(--aud-primary);
+        outline-offset: 1px;
+    }
+
+    /* Target de 44px aunque el icono sea chico. */
+    .aud-combo__limpiar {
+        position: absolute;
+        right: 0.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: 0.5rem;
+        background: transparent;
+        color: var(--aud-text-muted);
+        cursor: pointer;
+    }
+
+    .aud-combo__limpiar:hover { color: var(--aud-text); }
+    .aud-combo__limpiar[hidden] { display: none; }
+
+    .aud-combo__lista {
+        position: absolute;
+        top: calc(100% + 0.3rem);
+        left: 0;
+        right: 0;
+        z-index: 20;
+        max-height: 16rem;
+        overflow-y: auto;
+        margin: 0;
+        padding: 0.25rem;
+        list-style: none;
+        border: 1px solid var(--aud-border);
+        border-radius: 0.7rem;
+        background: var(--aud-surface);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+    }
+
+    .aud-combo__lista[hidden] { display: none; }
+
+    .aud-combo__opcion {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        padding: 0.55rem 0.65rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+    }
+
+    .aud-combo__opcion[hidden] { display: none; }
+
+    .aud-combo__opcion:hover,
+    .aud-combo__opcion.is-activo {
+        background: var(--aud-primary-soft);
+    }
+
+    .aud-combo__nombre {
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: var(--aud-text);
+    }
+
+    .aud-combo__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+
+    .aud-combo__vacio {
+        padding: 0.7rem 0.65rem;
+        font-size: 0.8rem;
+        color: var(--aud-text-muted);
+    }
+
+    .aud-combo__vacio[hidden] { display: none; }
 
     /* ── Listas seleccionables ── */
     .aud-lic-lista {

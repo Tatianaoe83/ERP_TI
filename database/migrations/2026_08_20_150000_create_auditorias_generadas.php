@@ -13,19 +13,18 @@ return new class extends Migration
         Schema::create('auditorias', function (Blueprint $table) {
             $table->id();
             $table->string('Folio', 30)->unique();
-            $table->unsignedBigInteger('generada_por')->nullable();
+            $table->unsignedBigInteger('id_empleado')->nullable();
             $table->string('generada_por_nombre', 150)->nullable();
-            $table->timestamp('generada_en');
 
-            $table->unsignedInteger('total_equipos')->default(0);
-            $table->unsignedInteger('total_laptops')->default(0);
-            $table->unsignedInteger('total_pcs')->default(0);
-            $table->unsignedInteger('total_otros')->default(0);
-            $table->unsignedInteger('total_propios')->default(0);
-            $table->unsignedInteger('total_piratas')->default(0);
+            // Alcance de la corrida: un empleado auditado y una modalidad de equipo.
+            // El tipo de persona y la gerencia NO se guardan: salen del join con
+            // empleados, así que duplicarlos sólo abre la puerta a que se desfasen.
+            $table->integer('EmpleadoID')->nullable()->index();
+            $table->unsignedTinyInteger('tipoEquipo')->nullable();
 
             $table->timestamps();
-            $table->index('generada_en');
+            // El momento de la corrida es created_at; no hay una segunda fecha.
+            $table->index('created_at');
         });
 
         Schema::create('auditorias_equipos', function (Blueprint $table) {
@@ -41,7 +40,7 @@ return new class extends Migration
             $table->string('GerenciaEquipo', 150)->nullable();
             $table->string('NombreEmpleado', 200)->nullable();
             $table->unsignedTinyInteger('tipoEquipo')->default(0);
-            $table->unsignedTinyInteger('grupo')->default(2); // 0 laptop, 1 pc, 2 otros
+            $table->unsignedTinyInteger('grupo')->default(2);
             $table->text('licencias')->nullable();
             $table->unsignedSmallInteger('licencias_piratas')->default(0);
 

@@ -11,7 +11,7 @@
     id="auditoria-detalle"
     title="{{ $auditoria->Folio }}"
     icon="fa-clipboard-check"
-    subtitle="Generada el {{ $auditoria->generada_en->format('d/m/Y H:i') }} por {{ $auditoria->generada_por_nombre ?: 'Sin usuario' }}"
+    subtitle="Generada el {{ $auditoria->created_at?->format('d/m/Y H:i') ?: '—' }} por {{ $auditoria->generada_por_nombre ?: 'Sin usuario' }}"
     :show-count="false"
     :card="false"
 >
@@ -38,7 +38,7 @@
                     @if($anterior)
                         <a href="{{ route('auditorias.show', $anterior->id) }}" class="aud-meta__link">{{ $anterior->Folio }}</a>
                         <span class="aud-meta__sep" aria-hidden="true">·</span>
-                        <span class="aud-num aud-meta__tenue">{{ $anterior->generada_en->format('d/m/Y H:i') }}</span>
+                        <span class="aud-num aud-meta__tenue">{{ $anterior->created_at?->format('d/m/Y H:i') ?: '—' }}</span>
                     @else
                         <span class="aud-meta__tenue">Es la primera auditoría</span>
                     @endif
@@ -50,9 +50,28 @@
                 <span class="aud-meta__valor">{{ $anterior?->generada_por_nombre ?: '—' }}</span>
             </div>
 
+            {{-- El conteo sale del detalle congelado; la cabecera ya no lo duplica. --}}
             <div class="aud-meta__dato">
                 <span class="aud-meta__label">Equipos auditados</span>
-                <span class="aud-meta__valor aud-num">{{ $auditoria->total_equipos }}</span>
+                <span class="aud-meta__valor aud-num">{{ $detalle->count() }}</span>
+            </div>
+
+            <div class="aud-meta__dato">
+                <span class="aud-meta__label">Empleado auditado</span>
+                <span class="aud-meta__valor">
+                    {{ $auditoria->empleado?->NombreEmpleado ?: '—' }}
+                    @if($auditoria->empleado)
+                        <span class="aud-meta__sep" aria-hidden="true">·</span>
+                        <span class="aud-meta__tenue">{{ $auditoria->empleado->tipo_persona }}</span>
+                    @endif
+                </span>
+            </div>
+
+            <div class="aud-meta__dato">
+                <span class="aud-meta__label">Gerencia</span>
+                <span class="aud-meta__valor">
+                    {{ $auditoria->empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}
+                </span>
             </div>
         </div>
 

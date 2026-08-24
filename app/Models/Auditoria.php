@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Cabecera de una corrida de auditoría. Los totales se guardan congelados: recalcular
- * contra el inventario actual haría que una auditoría vieja dejara de reflejar el
- * momento en que se generó.
+ * Cabecera de una corrida de auditoría: quién la generó, a qué empleado se auditó y
+ * con qué alcance. El tipo de persona y la gerencia se leen del empleado por relación,
+ * no se copian aquí. El detalle congelado vive en auditorias_equipos.
  */
 class Auditoria extends Model
 {
@@ -18,23 +18,25 @@ class Auditoria extends Model
 
     protected $fillable = [
         'Folio',
-        'generada_por',
+        'id_empleado',
         'generada_por_nombre',
-        'generada_en',
-        'total_equipos',
-        'total_laptops',
-        'total_pcs',
-        'total_otros',
-        'total_propios',
-        'total_piratas',
+        'EmpleadoID',
+        'tipoEquipo',
         'licencias_auditadas',
         'total_licencias_auditadas',
     ];
 
     protected $casts = [
-        'generada_en'         => 'datetime',
+        'EmpleadoID'          => 'integer',
+        'tipoEquipo'          => 'integer',
         'licencias_auditadas' => 'array',
     ];
+
+    /** El empleado auditado: de aquí salen tipo_persona, puesto y gerencia. */
+    public function empleado()
+    {
+        return $this->belongsTo(Empleados::class, 'EmpleadoID', 'EmpleadoID');
+    }
 
     /**
      * Las corridas anteriores a la selección de licencias no guardan lista: en ellas

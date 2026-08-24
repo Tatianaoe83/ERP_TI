@@ -43,36 +43,109 @@
                         <span class="aud-paso__num">1</span> Equipos a auditar
                     </legend>
 
-                    <div class="aud-opciones">
-                        <label class="aud-opcion">
-                            <input type="radio" name="alcance" value="todos" checked>
-                            <span>
-                                <span class="aud-opcion__titulo">General</span>
-                                <span class="aud-opcion__ayuda">Los {{ $catalogoEquipos->count() }} equipos auditables</span>
-                            </span>
-                        </label>
-                        <label class="aud-opcion">
-                            <input type="radio" name="alcance" value="seleccion">
-                            <span>
-                                <span class="aud-opcion__titulo">Por equipo</span>
-                                <span class="aud-opcion__ayuda">Elegir a quién se le audita</span>
-                            </span>
-                        </label>
-                    </div>
-
-                    <div id="bloqueEquipos" hidden>
-                        <div class="aud-modal__barra">
-                            <label class="aud-sr" for="filtroGerencia">Filtrar por área</label>
+                    {{-- La corrida es de un empleado: su tipo de persona y su gerencia
+                         salen del propio empleado, por eso aquí sólo se elige a quién.
+                         Los filtros de arriba acotan la lista del buscador, no el POST. --}}
+                    <div class="aud-filtros">
+                        <div class="aud-campo">
+                            <label class="aud-campo__label" for="filtroGerencia">Área</label>
                             <select id="filtroGerencia" class="aud-select">
-                                <option value="">Todas las áreas</option>
+                                <option value="">Todas</option>
                                 @foreach($gerencias as $g)
                                     <option value="{{ Str::lower($g) }}">{{ $g }}</option>
                                 @endforeach
                             </select>
+                        </div>
 
+                        <div class="aud-campo">
+                            <label class="aud-campo__label" for="filtroDepartamento">Departamento</label>
+                            <select id="filtroDepartamento" class="aud-select">
+                                <option value="">Todos</option>
+                                @foreach($departamentos as $d)
+                                    <option value="{{ Str::lower($d) }}">{{ $d }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="aud-campo">
+                            <label class="aud-campo__label" for="filtroTipoPersona">Tipo de empleado</label>
+                            <select id="filtroTipoPersona" class="aud-select">
+                                <option value="">Todos</option>
+                                @foreach($tiposPersona as $t)
+                                    <option value="{{ Str::lower($t) }}">{{ $t }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="aud-campo">
+                            <label class="aud-campo__label" for="selectTipoEquipo">Tipo de equipo</label>
+                            <select id="selectTipoEquipo" name="tipoEquipo" class="aud-select">
+                                <option value="">Cualquiera</option>
+                                <option value="0">Stock</option>
+                                <option value="1">Extra</option>
+                                <option value="2">Compartido</option>
+                                <option value="3">Propio</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Combobox: escribir filtra, ↑↓ recorre, Enter elige, Esc cierra.
+                         El valor real viaja en el hidden, no en el texto visible. --}}
+                    <div class="aud-campo aud-campo--empleado">
+                        <label class="aud-campo__label" for="buscarEmpleado">
+                            Empleado a auditar <span class="aud-campo__req" aria-hidden="true">*</span>
+                        </label>
+
+                        <div class="aud-combo" id="comboEmpleado">
+                            <i class="fas fa-magnifying-glass aud-combo__ico" aria-hidden="true"></i>
+                            <input type="text" id="buscarEmpleado" class="aud-combo__input"
+                                   placeholder="Escribe el nombre del empleado…"
+                                   autocomplete="off" role="combobox"
+                                   aria-expanded="false" aria-autocomplete="list"
+                                   aria-controls="listaEmpleados"
+                                   aria-describedby="ayudaEmpleado">
+                            <button type="button" class="aud-combo__limpiar" id="limpiarEmpleado"
+                                    aria-label="Limpiar empleado seleccionado" hidden>
+                                <i class="fas fa-xmark" aria-hidden="true"></i>
+                            </button>
+                            <input type="hidden" name="EmpleadoID" id="selectEmpleado" value="">
+
+                            <ul class="aud-combo__lista" id="listaEmpleados" role="listbox"
+                                aria-label="Empleados auditables" hidden>
+                                @foreach($empleados as $emp)
+                                    <li class="aud-combo__opcion" role="option" tabindex="-1"
+                                        id="empleado-{{ $emp->EmpleadoID }}"
+                                        aria-selected="false"
+                                        data-valor="{{ $emp->EmpleadoID }}"
+                                        data-nombre="{{ $emp->NombreEmpleado }}"
+                                        data-gerencia="{{ Str::lower($emp->gerencia) }}"
+                                        data-departamento="{{ Str::lower($emp->departamento) }}"
+                                        data-tipo-persona="{{ Str::lower($emp->tipo_persona) }}"
+                                        data-busqueda="{{ Str::lower($emp->NombreEmpleado . ' ' . $emp->gerencia . ' ' . $emp->departamento . ' ' . $emp->tipo_persona) }}">
+                                        <span class="aud-combo__nombre">{{ $emp->NombreEmpleado }}</span>
+                                        <span class="aud-combo__meta">
+                                            <span class="aud-mini">{{ $emp->tipo_persona }}</span>
+                                            <span class="aud-mini">{{ $emp->gerencia }}</span>
+                                            <span class="aud-mini">{{ $emp->departamento }}</span>
+                                        </span>
+                                    </li>
+                                @endforeach
+                                <li class="aud-combo__vacio" id="sinEmpleados" hidden>
+                                    Ningún empleado coincide con los filtros.
+                                </li>
+                            </ul>
+                        </div>
+
+                        <p class="aud-campo__ayuda" id="ayudaEmpleado">
+                            Se auditan sus laptops y PC. Destilda abajo lo que quieras dejar fuera.
+                        </p>
+                    </div>
+
+                    <div id="bloqueEquipos">
+                        <div class="aud-modal__barra">
                             <label class="aud-sr" for="buscarEquipo">Buscar equipo</label>
                             <input type="search" id="buscarEquipo" class="aud-buscar"
-                                   placeholder="Empleado, serie o modelo…" autocomplete="off">
+                                   placeholder="Serie, folio o modelo…" autocomplete="off">
 
                             <div class="aud-modal__acciones">
                                 <button type="button" class="aud-btn aud-btn--ghost aud-btn--sm" id="btnEquiposTodos">
@@ -96,6 +169,8 @@
                                 @endphp
                                 <label class="aud-lic aud-lic--equipo"
                                        data-gerencia="{{ Str::lower($gerencia) }}"
+                                       data-empleado="{{ $equipo->EmpleadoID }}"
+                                       data-tipo="{{ (int) $equipo->tipoEquipo }}"
                                        data-busqueda="{{ $busqueda }}">
                                     <input type="checkbox" name="equipos[]" value="{{ $equipo->InventarioID }}"
                                            class="aud-lic__check aud-equipo__check">

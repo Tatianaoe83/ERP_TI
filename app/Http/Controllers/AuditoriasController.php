@@ -17,10 +17,10 @@ class AuditoriasController extends Controller
     private const CATEGORIA_PC     = 'PC ESCRITORIO';
 
     /**
-     * Sólo se audita lo resguardado por personal de planta. Los equipos de personas
-     * referenciadas o extraordinarias no entran a la revisión.
+     * Se audita al personal de planta y al referenciado. Los extraordinarios no:
+     * su inventario es proyección de presupuesto, no equipo resguardado.
      */
-    private const TIPO_PERSONA_AUDITABLE = 'FISICA';
+    private const TIPOS_PERSONA_AUDITABLES = ['FISICA', 'REFERENCIADO'];
 
     /**
      * Listado de corridas. La auditoría es un evento generado, así que lo primero
@@ -31,16 +31,27 @@ class AuditoriasController extends Controller
         $equipos = $this->equiposAuditables();
 
         return view('auditorias.index', [
-            'auditorias'        => Auditoria::orderByDesc('generada_en')->paginate(15),
-            'ultima'            => Auditoria::orderByDesc('generada_en')->first(),
+            'auditorias'        => Auditoria::with('empleado.puestos.departamentos.gerencia')
+                ->orderByDesc('created_at')
+                ->paginate(15),
+            'ultima'            => Auditoria::with('empleado')->orderByDesc('created_at')->first(),
             'catalogoLicencias' => $this->catalogoLicencias(),
             'catalogoEquipos'   => $equipos,
-            'gerencias'         => $equipos
-                ->pluck('GerenciaEquipo')
-                ->map(fn($g) => trim((string) $g) ?: 'Sin gerencia')
-                ->unique()
-                ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            // La corrida es por empleado: sólo se ofrecen los que tienen algo auditable.
+            'empleados'         => $equipos
+                ->unique('EmpleadoID')
+                ->map(fn($e) => (object) [
+                    'EmpleadoID'     => $e->EmpleadoID,
+                    'NombreEmpleado' => $e->NombreEmpleado ?: 'Sin asignar',
+                    'tipo_persona'   => $e->tipo_persona,
+                    'gerencia'       => trim((string) $e->NombreGerencia) ?: 'Sin gerencia',
+                    'departamento'   => trim((string) $e->NombreDepartamento) ?: 'Sin departamento',
+                ])
+                ->sortBy('NombreEmpleado', SORT_NATURAL | SORT_FLAG_CASE)
                 ->values(),
+            'gerencias'         => $this->opcionesDe($equipos, 'NombreGerencia', 'Sin gerencia'),
+            'departamentos'     => $this->opcionesDe($equipos, 'NombreDepartamento', 'Sin departamento'),
+            'tiposPersona'      => $this->opcionesDe($equipos, 'tipo_persona', 'Sin tipo'),
         ]);
     }
 
@@ -53,16 +64,21 @@ class AuditoriasController extends Controller
     public function store(Request $request)
     {
         $datos = $request->validate([
-            'alcance'     => ['required', 'in:todos,seleccion'],
+            'EmpleadoID'  => ['required', 'integer', 'exists:empleados,EmpleadoID'],
+            'tipoEquipo'  => ['nullable', 'integer', 'in:0,1,2,3'],
             'equipos'     => ['array'],
             'equipos.*'   => ['integer'],
             'licencias'   => ['required', 'array', 'min:1'],
             'licencias.*' => ['string', 'max:255'],
         ], [
-            'alcance.required'   => 'Indica si la auditoría es general o por equipos.',
-            'licencias.required' => 'Selecciona al menos una licencia para auditar.',
-            'licencias.min'      => 'Selecciona al menos una licencia para auditar.',
+            'EmpleadoID.required' => 'Selecciona al empleado a auditar.',
+            'EmpleadoID.exists'   => 'El empleado seleccionado ya no existe.',
+            'licencias.required'  => 'Selecciona al menos una licencia para auditar.',
+            'licencias.min'       => 'Selecciona al menos una licencia para auditar.',
         ]);
+
+        $empleadoAuditado = (int) $datos['EmpleadoID'];
+        $tipoEquipo = $datos['tipoEquipo'] ?? null;
 
         // Se normaliza contra el catálogo real para que nadie meta nombres inventados
         // por POST y la lista congelada quede con basura.
@@ -76,20 +92,27 @@ class AuditoriasController extends Controller
             return back()->withErrors(['licencias' => 'Las licencias seleccionadas ya no existen en el inventario.']);
         }
 
-        $equipos = $this->equiposAuditables();
+        // La corrida es de un solo empleado: todo lo demás se descarta aquí.
+        $equipos = $this->equiposAuditables()
+            ->where('EmpleadoID', $empleadoAuditado)
+            ->values();
 
-        if ($datos['alcance'] === 'seleccion') {
-            // Se cruza contra los auditables: por POST podrían llegar equipos de otra
-            // categoría o de personal no auditable.
-            $ids = collect($datos['equipos'] ?? [])->map(fn($id) => (int) $id)->unique();
+        if ($tipoEquipo !== null) {
+            $equipos = $equipos->where('tipoEquipo', $tipoEquipo)->values();
+        }
+
+        // Sin lista explícita entran todos los del empleado; con lista, sólo esos.
+        // Se cruza contra los auditables porque por POST podrían llegar equipos de
+        // otra categoría o de otro resguardante.
+        $ids = collect($datos['equipos'] ?? [])->map(fn($id) => (int) $id)->unique();
+
+        if ($ids->isNotEmpty()) {
             $equipos = $equipos->whereIn('InventarioID', $ids->all())->values();
         }
 
         if ($equipos->isEmpty()) {
             return back()->withErrors([
-                'equipos' => $datos['alcance'] === 'seleccion'
-                    ? 'Selecciona al menos un equipo para auditar.'
-                    : 'No hay equipos auditables en el inventario.',
+                'equipos' => 'Ese empleado no tiene equipos auditables con el alcance elegido.',
             ]);
         }
 
@@ -98,12 +121,13 @@ class AuditoriasController extends Controller
 
         $licenciasPorEmpleado = $this->licenciasPorEmpleado($seleccion->all());
 
-        $auditoria = DB::transaction(function () use ($usuario, $ahora, $equipos, $licenciasPorEmpleado, $seleccion) {
+        $auditoria = DB::transaction(function () use ($usuario, $ahora, $equipos, $licenciasPorEmpleado, $seleccion, $empleadoAuditado, $tipoEquipo) {
             $auditoria = Auditoria::create([
                 'Folio'                     => $this->siguienteFolio($ahora),
-                'generada_por'              => $usuario?->id,
+                'id_empleado'               => $usuario?->id,
                 'generada_por_nombre'       => $usuario?->name ?: $usuario?->username,
-                'generada_en'               => $ahora,
+                'EmpleadoID'                => $empleadoAuditado,
+                'tipoEquipo'                => $tipoEquipo,
                 'licencias_auditadas'       => $seleccion->all(),
                 'total_licencias_auditadas' => $seleccion->count(),
             ]);
@@ -135,21 +159,12 @@ class AuditoriasController extends Controller
                 AuditoriaEquipo::insert($lote->all());
             }
 
-            $auditoria->update([
-                'total_equipos' => $filas->count(),
-                'total_laptops' => $filas->where('grupo', AuditoriaEquipo::GRUPO_LAPTOP)->count(),
-                'total_pcs'     => $filas->where('grupo', AuditoriaEquipo::GRUPO_PC)->count(),
-                'total_otros'   => $filas->where('grupo', AuditoriaEquipo::GRUPO_OTROS)->count(),
-                'total_propios' => $filas->where('tipoEquipo', InventarioEquipo::TIPO_PROPIO)->count(),
-                'total_piratas' => $filas->sum('licencias_piratas'),
-            ]);
-
             return $auditoria;
         });
 
         return redirect()
             ->route('auditorias.show', $auditoria->id)
-            ->with('success', "Auditoría {$auditoria->Folio} generada con {$auditoria->total_equipos} equipos.");
+            ->with('success', "Auditoría {$auditoria->Folio} generada con {$equipos->count()} equipos.");
     }
 
     /**
@@ -157,16 +172,18 @@ class AuditoriasController extends Controller
      */
     public function show($id)
     {
-        $auditoria = Auditoria::findOrFail($id);
+        $auditoria = Auditoria::with('empleado.puestos.departamentos.gerencia')->findOrFail($id);
         $detalle = $auditoria->equipos()->orderBy('GerenciaEquipo')->orderBy('NombreEmpleado')->get();
 
         return view('auditorias.show', [
             'auditoria' => $auditoria,
+            'detalle'   => $detalle,
             'piratas'   => $this->piratasPorEquipo($detalle),
             'general'   => $detalle->whereIn('grupo', [AuditoriaEquipo::GRUPO_LAPTOP, AuditoriaEquipo::GRUPO_PC])->values(),
-            // Referencia contra la corrida inmediatamente anterior.
-            'anterior'  => Auditoria::where('generada_en', '<', $auditoria->generada_en)
-                ->orderByDesc('generada_en')
+            // Referencia contra la corrida inmediatamente anterior del mismo empleado.
+            'anterior'  => Auditoria::where('created_at', '<', $auditoria->created_at)
+                ->where('EmpleadoID', $auditoria->EmpleadoID)
+                ->orderByDesc('created_at')
                 ->first(),
         ]);
     }
@@ -196,6 +213,17 @@ class AuditoriasController extends Controller
         return $prefijo . str_pad((string) $consecutivo, 4, '0', STR_PAD_LEFT);
     }
 
+    /** Valores únicos y ordenados para los filtros del modal. */
+    private function opcionesDe($equipos, string $campo, string $vacio)
+    {
+        return $equipos
+            ->pluck($campo)
+            ->map(fn($v) => trim((string) $v) ?: $vacio)
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+    }
+
     private function grupoDe($categoria): int
     {
         $categoria = trim((string) $categoria);
@@ -222,10 +250,19 @@ class AuditoriasController extends Controller
     {
         return InventarioEquipo::query()
             ->join('empleados', 'empleados.EmpleadoID', '=', 'inventarioequipo.EmpleadoID')
-            ->where('empleados.tipo_persona', self::TIPO_PERSONA_AUDITABLE)
+            ->leftJoin('puestos', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+            ->leftJoin('departamentos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
+            ->leftJoin('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
+            ->whereIn('empleados.tipo_persona', self::TIPOS_PERSONA_AUDITABLES)
             ->whereIn('inventarioequipo.CategoriaEquipo', [self::CATEGORIA_LAPTOP, self::CATEGORIA_PC])
-            ->select('inventarioequipo.*', 'empleados.NombreEmpleado')
-            ->orderBy('inventarioequipo.GerenciaEquipo')
+            ->select(
+                'inventarioequipo.*',
+                'empleados.NombreEmpleado',
+                'empleados.tipo_persona',
+                'departamentos.NombreDepartamento',
+                'gerencia.NombreGerencia'
+            )
+            ->orderBy('gerencia.NombreGerencia')
             ->orderBy('empleados.NombreEmpleado')
             ->get();
     }
