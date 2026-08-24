@@ -205,8 +205,18 @@
         grid-template-columns: 1fr 1fr 1fr;
     }
 
+    /* Equipos: stock / extra / compartido / propio en una sola fila. */
+    .inv-segment--4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    @media (max-width: 991px) {
+        .inv-segment--4 { grid-template-columns: 1fr 1fr; }
+    }
+
     @media (max-width: 575px) {
-        .inv-segment--3 { grid-template-columns: 1fr; }
+        .inv-segment--3,
+        .inv-segment--4 { grid-template-columns: 1fr; }
     }
 
     .dark .inv-segment { background: #111827; }
@@ -235,6 +245,11 @@
 
     .inv-segment .inv-modo-card.is-active[data-value="2"] {
         background: #1d4ed8;
+        color: #fff;
+    }
+
+    .inv-segment .inv-modo-card.is-active[data-value="3"] {
+        background: #6d28d9;
         color: #fff;
     }
 
@@ -273,6 +288,14 @@
         background: #eff6ff;
         color: #1e3a8a;
         border: 1px solid #bfdbfe;
+    }
+
+    .inv-modo-hint.propio {
+        display: flex;
+        gap: 0.5rem;
+        background: #f5f3ff;
+        color: #5b21b6;
+        border: 1px solid #ddd6fe;
     }
 
     .inv-form-label {

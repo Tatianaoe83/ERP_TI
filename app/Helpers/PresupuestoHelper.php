@@ -44,9 +44,15 @@ class PresupuestoHelper
     }
 
     // Diferenciador de reporte de presupuesto e inventario 
-    private static function soloPresupuestados($query, string $modo)
+    // Los equipos guardan la modalidad en "tipoEquipo"; insumos y líneas en "Presupuestado".
+    private static function soloPresupuestados($query, string $modo, string $columna = PresupuestoAsignacion::COLUMNA_DEFAULT)
     {
-        return PresupuestoAsignacion::aplicarWhere($query, $modo);
+        return PresupuestoAsignacion::aplicarWhere($query, $modo, $columna);
+    }
+
+    private static function soloPresupuestadosEquipo($query, string $modo)
+    {
+        return self::soloPresupuestados($query, $modo, PresupuestoAsignacion::COLUMNA_EQUIPOS);
     }
 
     // Filtro de tipos de persona para tipo de reporte
@@ -135,14 +141,14 @@ class PresupuestoHelper
             })
             ->whereHas('inventarioequipo', function($query) use ($modo) {
                 PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
-                self::soloPresupuestados($query, $modo);
+                self::soloPresupuestadosEquipo($query, $modo);
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventarioequipo' => function($query) use ($modo) {
                     $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago');
                     PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
-                    self::soloPresupuestados($query, $modo);
+                    self::soloPresupuestadosEquipo($query, $modo);
                 }
             ])
             ->get()
@@ -706,7 +712,7 @@ class PresupuestoHelper
                 },
                 'inventarioequipo' => function ($q) use ($modo) {
                     $q->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago', 'FechaDeCompra');
-                    self::soloPresupuestados($q, $modo);
+                    self::soloPresupuestadosEquipo($q, $modo);
                 },
             ])
             ->get();

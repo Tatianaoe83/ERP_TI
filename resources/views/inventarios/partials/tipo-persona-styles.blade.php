@@ -61,6 +61,12 @@
         border: 1px solid #bfdbfe;
     }
 
+    .inv-chip-propio {
+        background: #f5f3ff;
+        color: #6d28d9;
+        border: 1px solid #ddd6fe;
+    }
+
     .inv-leyenda {
         display: flex;
         flex-wrap: wrap;
@@ -227,6 +233,12 @@
         border-color: #3b82f6;
         background: #eff6ff;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .inv-modo-card.is-active[data-value="3"] {
+        border-color: #8b5cf6;
+        background: #f5f3ff;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
     }
 
     .inv-modo-card .modo-title {

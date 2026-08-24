@@ -3,8 +3,9 @@
     $permitePresupuestado = $permitePresupuestado ?? false;
     $presupuestadoForzado = $presupuestadoForzado ?? false;
 
-    $equiposStock = collect($equiposAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnInventario($e->Presupuestado ?? 0));
-    $equiposExtra = collect($equiposAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->Presupuestado ?? 0));
+    // Los equipos guardan la modalidad en "tipoEquipo"; insumos y líneas en "Presupuestado".
+    $equiposStock = collect($equiposAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnInventario($e->tipoEquipo ?? 0));
+    $equiposExtra = collect($equiposAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->tipoEquipo ?? 0));
     $insumosStock = collect($insumosAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnInventario($e->Presupuestado ?? 0));
     $insumosExtra = collect($insumosAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->Presupuestado ?? 0));
     $lineasStock = collect($LineasAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnInventario($e->Presupuestado ?? 0));
@@ -208,7 +209,7 @@
                             <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
                             <td>{{ $equiposAsignado->Comentarios }}</td>
                             @if($permitePresupuestado)
-                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->Presupuestado) !!}</td>
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->tipoEquipo) !!}</td>
                             <td>@if($equiposAsignado->MesDePago)@include('inventarios.partials.meses-pills', ['mesesValor' => $equiposAsignado->MesDePago])@endif</td>
                             @endif
                         </tr>
@@ -727,45 +728,51 @@
     // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
     // asignado es presupuestado y para el resto el campo viaja siempre en 0.
     // (El servidor vuelve a aplicar la regla, esto es sólo para la UI.)
+    // Modalidades: 0 stock, 1 extra, 2 compartido, 3 propio (esta última sólo equipos).
+    const MODO_STOCK = 0;
+    const MODO_EXTRA = 1;
+    const MODO_COMPARTIDO = 2;
+    const MODO_PROPIO = 3;
+
+    const MODOS = {
+        0: { hint: 'stock',  etiqueta: 'Stock',      chip: 'inv-chip-stock'  },
+        1: { hint: 'extra',  etiqueta: 'Extra',      chip: 'inv-chip-extra'  },
+        2: { hint: 'share',  etiqueta: 'Compartido', chip: 'inv-chip-share'  },
+        3: { hint: 'propio', etiqueta: 'Propio',     chip: 'inv-chip-propio' },
+    };
+
     function tipoAsignacionDesdeTexto(texto) {
         const v = String(texto ?? '').trim().toLowerCase();
-        if (v.indexOf('compart') !== -1) return 2;
-        if (v === 'si' || v === '1' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1) return 1;
-        return 0;
+        if (v.indexOf('propio') !== -1) return MODO_PROPIO;
+        if (v.indexOf('compart') !== -1) return MODO_COMPARTIDO;
+        if (v === 'si' || v === '1' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1) return MODO_EXTRA;
+        return MODO_STOCK;
     }
 
     function htmlChipPresupuestado(valor) {
-        const tipo = (valor === true || valor === '1') ? 1 : parseInt(valor, 10);
-        if (tipo === 2) return '<span class="inv-chip inv-chip-share">Compartido</span>';
-        if (tipo === 1) return '<span class="inv-chip inv-chip-extra">Extra</span>';
-        return '<span class="inv-chip inv-chip-stock">Stock</span>';
+        const tipo = (valor === true || valor === '1') ? MODO_EXTRA : (parseInt(valor, 10) || MODO_STOCK);
+        const modo = MODOS[tipo] || MODOS[MODO_STOCK];
+        return '<span class="inv-chip ' + modo.chip + '">' + modo.etiqueta + '</span>';
     }
 
     function syncModoCards(selector, valor) {
-        const tipo = parseInt(valor, 10) || 0;
         const $wrap = $('[data-switch="' + selector + '"]');
         if (!$wrap.length) return;
+
+        const tipo = parseInt(valor, 10) || MODO_STOCK;
+        const modo = MODOS[tipo] || MODOS[MODO_STOCK];
+
         $wrap.find('.inv-modo-card').removeClass('is-active');
         $wrap.find('.inv-modo-card[data-value="' + tipo + '"]').addClass('is-active');
 
         const sid = selector.replace(/^#/, '');
-        const hint = tipo === 2 ? 'share' : (tipo === 1 ? 'extra' : 'stock');
         $('[data-hint-for="' + sid + '"]').hide();
-        $('[data-hint-for="' + sid + '"].' + hint).css('display', 'flex');
-        $(selector + 'Label').text(tipo === 2 ? 'Compartido' : (tipo === 1 ? 'Extra' : 'Stock'));
-    }
+        $('[data-hint-for="' + sid + '"].' + modo.hint).css('display', 'flex');
+        $(selector + 'Label').text(modo.etiqueta);
 
-    function syncModoCards(selector, valor) {
-        const $wrap = $('[data-switch="' + selector + '"]');
-        if (!$wrap.length) return;
-        const v = String(valor ?? '0');
-        $wrap.find('.inv-modo-card').removeClass('is-active');
-        $wrap.find('.inv-modo-card[data-value="' + v + '"]').addClass('is-active');
-
-        const sid = selector.replace(/^#/, '');
-        const hint = v === '1' ? 'extra' : (v === '2' ? 'propio' : 'stock');
-        $('[data-hint-for="' + sid + '"]').hide();
-        $('[data-hint-for="' + sid + '"].' + hint).css('display', 'flex');
+        if (selector === '#editPresupuestadoEquipo') {
+            aplicarRequeridosEquipo(tipo === MODO_PROPIO);
+        }
     }
 
     // Un equipo propio es del empleado: la empresa no le pone precio, folio, fecha de
@@ -799,24 +806,6 @@
         if (esPropio) {
             folioValido = true;
             $('#editFolio').removeClass('is-invalid is-valid');
-        }
-    }
-
-    // Fuente de verdad del modo: el hidden #<switchId>Valor. El checkbox se conserva
-    // sólo por compatibilidad con el resto del formulario (etiqueta Si/No).
-    function aplicarValorModo(selector, valor) {
-        const v = presupuestadoForzado ? '1' : String(valor ?? '0');
-        $(selector + 'Valor').val(v);
-        $(selector).prop('checked', v === '1');
-        $(selector + 'Label').text(v === '1' ? 'Si' : 'No');
-        syncModoCards(selector, v);
-
-        if (selector === '#editPresupuestadoEquipo') {
-            aplicarRequeridosEquipo(v === '2');
-        }
-
-        if (selector === '#editPresupuestadoInsumo') {
-            refrescarLicenciaPirata();
         }
     }
 
@@ -1045,13 +1034,13 @@
 
         var tipo = tipoFilaAsignacion(data[columnaPresupuestado[tablaId]]);
         if (filtro === 'presupuestados') {
-            return tipo === 1 || tipo === 2;
+            return tipo === MODO_EXTRA || tipo === MODO_COMPARTIDO;
         }
         if (filtro === 'no_presupuestados') {
-            return tipo === 0 || tipo === 2;
+            return tipo === MODO_STOCK || tipo === MODO_COMPARTIDO || tipo === MODO_PROPIO;
         }
         if (filtro === 'compartidos') {
-            return tipo === 2;
+            return tipo === MODO_COMPARTIDO;
         }
 
         return true;
@@ -1077,8 +1066,8 @@
         dt.column(columnaPresupuestado[tablaId], { search: 'none' }).data().each(function(valor) {
             const tipo = tipoFilaAsignacion(valor);
             total++;
-            if (tipo === 0 || tipo === 2) inventario++;
-            if (tipo === 1 || tipo === 2) presupuesto++;
+            if (tipo !== MODO_EXTRA) inventario++;
+            if (tipo === MODO_EXTRA || tipo === MODO_COMPARTIDO) presupuesto++;
         });
 
         const barra = $('.inventario-filtros[data-tabla="' + tablaId + '"]');
@@ -1413,7 +1402,7 @@
         let id = $('#editId').val();
         let id_E = $('#editEmp').val();
         // En equipo propio el folio está oculto: se ignora lo que traiga el input.
-        let folio = getModo('#editPresupuestadoEquipo') === 2 ? '' : $('#editFolio').val().trim();
+        let folio = getModo('#editPresupuestadoEquipo') === MODO_PROPIO ? '' : $('#editFolio').val().trim();
         let excluirId = id || null;
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -1485,7 +1474,7 @@
         const modo = getModo('#editPresupuestadoEquipo');
         // Campos ocultos en equipo propio: se envían vacíos para no arrastrar el valor
         // que quedó en el input al cambiar de modalidad.
-        const soloEmpresa = (valor) => modo === 2 ? '' : valor;
+        const soloEmpresa = (valor) => modo === MODO_PROPIO ? '' : valor;
 
         let formData = {
             CategoriaEquipo: $('#editCategoria').val(),

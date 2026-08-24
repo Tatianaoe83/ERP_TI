@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\PresupuestoAsignacion;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -44,19 +45,25 @@ class InventarioEquipo extends Model implements Auditable
     ];
 
     protected $casts = [
-        'Presupuestado' => 'integer',
+        'tipoEquipo' => 'integer',
     ];
 
-    /** Modalidades de la columna tipoEquipo. */
-    public const TIPO_NO_PRESUPUESTADO = 0;
-    public const TIPO_PRESUPUESTADO    = 1;
-    public const TIPO_PROPIO           = 2;
+    /** Modalidades de la columna tipoEquipo (mismos valores que PresupuestoAsignacion). */
+    public const TIPO_NO_PRESUPUESTADO = PresupuestoAsignacion::STOCK;
+    public const TIPO_PRESUPUESTADO    = PresupuestoAsignacion::EXTRA;
+    public const TIPO_COMPARTIDO       = PresupuestoAsignacion::COMPARTIDO;
+    public const TIPO_PROPIO           = PresupuestoAsignacion::PROPIO;
 
     /**
-     * Los equipos propios se listan junto a los no presupuestados: ambos son
-     * inventario actual, sólo el presupuestado (1) es proyección futura.
+     * Lo que se ve como inventario actual. El compartido también aparece aquí
+     * porque es un solo registro que vive en las dos vistas; sólo el extra (1)
+     * es proyección pura.
      */
-    public const TIPOS_STOCK = [self::TIPO_NO_PRESUPUESTADO, self::TIPO_PROPIO];
+    public const TIPOS_STOCK = [
+        self::TIPO_NO_PRESUPUESTADO,
+        self::TIPO_COMPARTIDO,
+        self::TIPO_PROPIO,
+    ];
 
     public function empleados()
     {

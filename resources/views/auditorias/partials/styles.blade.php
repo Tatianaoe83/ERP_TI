@@ -478,6 +478,7 @@
 
     .aud-chip--stock  { background: var(--aud-ok-soft); color: var(--aud-ok); border-color: currentColor; }
     .aud-chip--extra  { background: var(--aud-accent-soft); color: var(--aud-accent); border-color: currentColor; }
+    .aud-chip--share  { background: var(--aud-info-soft, #eff6ff); color: var(--aud-info, #1d4ed8); border-color: currentColor; }
     .aud-chip--propio { background: var(--aud-primary-soft); color: var(--aud-primary); border-color: currentColor; }
     .aud-chip--pirata { background: var(--aud-danger-soft); color: var(--aud-danger); border-color: currentColor; }
 

@@ -376,7 +376,7 @@ class InventarioController extends AppBaseController
             ], 422);
         }
 
-        $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID);
+        $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID, PresupuestoAsignacion::COLUMNA_EQUIPOS);
         $data = $this->aplicarMesesDePago($data, false);
 
         $inventarioEquipo->update($data);
@@ -390,7 +390,7 @@ class InventarioController extends AppBaseController
     /**
      * Validación de alta/edición de equipo.
      *
-     * Un equipo propio (tipoEquipo = 2) es del empleado, no de la empresa: no tiene
+     * Un equipo propio (tipoEquipo = 3) es del empleado, no de la empresa: no tiene
      * costo, ni folio interno, ni fecha de compra ni mes de pago, así que esos cuatro
      * campos dejan de ser obligatorios. El resto se sigue exigiendo igual.
      *
@@ -410,7 +410,7 @@ class InventarioController extends AppBaseController
             'FechaAsignacion'  => ['required', 'date'],
             'GerenciaEquipoID' => ['required', 'integer'],
             'Comentarios'      => ['nullable', 'string', 'max:400'],
-            'tipoEquipo'       => ['nullable', 'integer', 'in:0,1,2'],
+            'tipoEquipo'       => ['nullable', 'integer', 'in:0,1,2,3'],
 
             'Precio'           => [$obligatorioSalvoPropio, 'numeric', 'min:0'],
             'Folio'            => [$obligatorioSalvoPropio, 'string', 'max:50'],
@@ -488,7 +488,7 @@ class InventarioController extends AppBaseController
             ], 422);
         }
 
-        $data = $this->forzarPresupuestado($data, (int) $id);
+        $data = $this->forzarPresupuestado($data, (int) $id, PresupuestoAsignacion::COLUMNA_EQUIPOS);
         $data = $this->aplicarMesesDePago($data, false);
 
         $inventarioEquipo = InventarioEquipo::create($data);
@@ -1265,21 +1265,23 @@ class InventarioController extends AppBaseController
             return back();
         }
 
-        // Los equipos usan "tipoEquipo" (0 stock, 1 presupuestado, 2 propio); insumos y
-        // líneas siguen con el booleano "Presupuestado". El propio cuenta como stock.
-        $aplicarFiltro = function ($query, string $columna = 'Presupuestado') use ($filtro) {
+        // Los equipos guardan la modalidad en "tipoEquipo"; insumos y líneas en
+        // "Presupuestado". Los valores (0 stock, 1 extra, 2 compartido, 3 propio)
+        // son los mismos en las tres tablas.
+        $aplicarFiltro = function ($query, string $columna = PresupuestoAsignacion::COLUMNA_DEFAULT) use ($filtro) {
             if ($filtro === 'presupuestados') {
-                PresupuestoAsignacion::aplicarWhere($query, 'presupuesto');
+                PresupuestoAsignacion::aplicarWhere($query, 'presupuesto', $columna);
             } elseif ($filtro === 'no_presupuestados') {
-                PresupuestoAsignacion::aplicarWhere($query, 'inventario');
+                PresupuestoAsignacion::aplicarWhere($query, 'inventario', $columna);
             } elseif ($filtro === 'compartidos') {
-                $query->where('Presupuestado', PresupuestoAsignacion::COMPARTIDO);
+                $query->where($columna, PresupuestoAsignacion::COMPARTIDO);
             }
 
             return $query;
         };
 
         $siNo = fn($valor) => PresupuestoAsignacion::etiqueta($valor);
+        $etiquetaTipoEquipo = $siNo;
         $fecha = fn($valor) => (empty($valor) || in_array($valor, ['Sin asignar', 'Sin asigna', '0000-00-00']))
             ? 'Sin asignar'
             : Carbon::parse($valor)->format('d/m/Y');
@@ -1415,14 +1417,15 @@ class InventarioController extends AppBaseController
         return $data;
     }
 
-    private function forzarPresupuestado(array $data, int $empleadoId): array
+    // Los equipos guardan la modalidad en "tipoEquipo"; insumos y líneas en "Presupuestado".
+    private function forzarPresupuestado(array $data, int $empleadoId, string $columna = PresupuestoAsignacion::COLUMNA_DEFAULT): array
     {
         $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
 
         if ($tipoPersona === 'EXTRAORDINARIO') {
-            $data['Presupuestado'] = PresupuestoAsignacion::EXTRA;
-        } elseif (array_key_exists('Presupuestado', $data)) {
-            $data['Presupuestado'] = PresupuestoAsignacion::normalizar($data['Presupuestado']);
+            $data[$columna] = PresupuestoAsignacion::EXTRA;
+        } elseif (array_key_exists($columna, $data)) {
+            $data[$columna] = PresupuestoAsignacion::normalizar($data[$columna]);
         }
 
         return $data;

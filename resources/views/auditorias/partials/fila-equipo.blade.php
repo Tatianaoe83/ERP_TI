@@ -1,7 +1,8 @@
 @php
     $chips = [
         1 => ['clase' => 'extra',  'icono' => 'fa-calendar-alt', 'texto' => 'Extra'],
-        2 => ['clase' => 'propio', 'icono' => 'fa-user-shield',  'texto' => 'Propio'],
+        2 => ['clase' => 'share',  'icono' => 'fa-link',         'texto' => 'Compartido'],
+        3 => ['clase' => 'propio', 'icono' => 'fa-user-shield',  'texto' => 'Propio'],
     ];
     $chip = $chips[$fila->tipoEquipo] ?? ['clase' => 'stock', 'icono' => 'fa-cube', 'texto' => 'Stock'];
     $licencias = $fila->listaLicencias();
