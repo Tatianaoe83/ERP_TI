@@ -11,6 +11,32 @@
     $lineasExtra = collect($LineasAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->Presupuestado ?? 0));
 
     $fmtMoney = fn ($n) => '$' . number_format((float) $n, 0);
+
+    $esVacioInv = function ($valor) {
+        if ($valor === null || $valor === '') {
+            return true;
+        }
+        $v = mb_strtolower(trim((string) $valor), 'UTF-8');
+
+        return in_array($v, ['null', 'sin asignar', 'sin asigna', 'pendiente'], true);
+    };
+
+    $celdaPendiente = function ($valor, $esExtra) use ($esVacioInv) {
+        if ($esVacioInv($valor)) {
+            return $esExtra ? '<span class="inv-pendiente">Pendiente</span>' : '';
+        }
+
+        return e($valor);
+    };
+
+    $fechaPendiente = function ($fecha, $esExtra) {
+        $vacia = empty($fecha) || in_array($fecha, ['Sin asignar', 'Sin asigna', '0000-00-00', 'null'], true);
+        if ($vacia) {
+            return $esExtra ? '<span class="inv-pendiente">Pendiente</span>' : 'Sin asignar';
+        }
+
+        return e(\Carbon\Carbon::parse($fecha)->format('d/m/Y'));
+    };
 @endphp
 
 <div class="tab-content">
@@ -179,6 +205,7 @@
                     </thead>
                     <tbody>
                         @foreach ($equiposAsignados as $equiposAsignado)
+                        @php $esExtraEquipo = (int) $equiposAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
                         <tr data-id="{{ $equiposAsignado->InventarioID }}" data-meses="{{ $equiposAsignado->MesDePago }}" data-presupuestado="{{ $equiposAsignado->Presupuestado }}">
                             <td>
                                 @if($empleadoActivo)
@@ -213,13 +240,13 @@
                             <td>{{ $equiposAsignado->Marca }}</td>
                             <td>{{ $equiposAsignado->Caracteristicas }}</td>
                             <td>{{ $equiposAsignado->Modelo }}</td>
-                            <td>{{ $equiposAsignado->Precio }}</td>
-                            <td>{{ $equiposAsignado->FechaAsignacion }}</td>
-                            <td>{{ $equiposAsignado->FechaDeCompra }}</td>
-                            <td>{{ $equiposAsignado->NumSerie }}</td>
-                            <td>{{ $equiposAsignado->Folio }}</td>
-                            <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
-                            <td>{{ $equiposAsignado->Comentarios }}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->Precio, $esExtraEquipo) !!}</td>
+                            <td>{!! $fechaPendiente($equiposAsignado->FechaAsignacion, $esExtraEquipo) !!}</td>
+                            <td>{!! $fechaPendiente($equiposAsignado->FechaDeCompra, $esExtraEquipo) !!}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->NumSerie, $esExtraEquipo) !!}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->Folio, $esExtraEquipo) !!}</td>
+                            <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{!! $celdaPendiente($equiposAsignado->GerenciaEquipo, $esExtraEquipo) !!}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->Comentarios, $esExtraEquipo) !!}</td>
                             @if($permitePresupuestado)
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->Presupuestado) !!}</td>
                             <td>@if($equiposAsignado->MesDePago)@include('inventarios.partials.meses-pills', ['mesesValor' => $equiposAsignado->MesDePago])@endif</td>
@@ -367,6 +394,7 @@
                     </thead>
                     <tbody>
                         @foreach ($insumosAsignados as $insumosAsignado)
+                        @php $esExtraInsumo = (int) $insumosAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
                         <tr data-id="{{ $insumosAsignado->InventarioID }}" data-meses="{{ $insumosAsignado->MesDePago }}" data-presupuestado="{{ $insumosAsignado->Presupuestado }}">
                             <td>
                                 @if($empleadoActivo)
@@ -404,10 +432,11 @@
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
-                            <td>{{ (empty($insumosAsignado->FechaRenovacion) || in_array($insumosAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
+                            <td>{!! $fechaPendiente($insumosAsignado->FechaRenovacion, false) !!}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
-<td>{{ $insumosAsignado->FechaAsignacion ? \Carbon\Carbon::parse($insumosAsignado->FechaAsignacion)->format('d/m/Y') : 'Sin asignar' }}</td>                            <td>{{ $insumosAsignado->NumSerie }}</td>
-                            <td>{{ $insumosAsignado->Comentarios }}</td>
+                            <td>{!! $fechaPendiente($insumosAsignado->FechaAsignacion, $esExtraInsumo) !!}</td>
+                            <td>{!! $celdaPendiente($insumosAsignado->NumSerie, $esExtraInsumo) !!}</td>
+                            <td>{!! $celdaPendiente($insumosAsignado->Comentarios, $esExtraInsumo) !!}</td>
                             <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $insumosAsignado->MesDePago, 'mesesFrecuencia' => $insumosAsignado->FrecuenciaDePago])</td>
                             @if($permitePresupuestado)
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
@@ -920,12 +949,39 @@
         $('#editRentaLinea').val($opt.data('renta') || '');
     }
 
-    function celdaLineaPendiente(valor, esProy) {
-        const vacio = valor === null || valor === undefined || valor === '' || valor === 'null' || valor === 'Sin asignar';
-        if (esProy && vacio) {
+    function valorVacioInv(valor) {
+        if (valor === null || valor === undefined) {
+            return true;
+        }
+        var v = String(valor).trim().toLowerCase();
+        return v === '' || v === 'null' || v === 'sin asignar' || v === 'sin asigna' || v === 'pendiente' || v === '0000-00-00';
+    }
+
+    function esExtraAsignacion(valor) {
+        return parseInt(valor, 10) === 1;
+    }
+
+    function celdaPendiente(valor, esProy) {
+        if (esProy && valorVacioInv(valor)) {
             return '<span class="inv-pendiente">Pendiente</span>';
         }
-        return vacio ? '' : valor;
+        return valorVacioInv(valor) ? '' : valor;
+    }
+
+    function celdaFechaPendiente(valor, esProy) {
+        if (valorVacioInv(valor)) {
+            return esProy ? '<span class="inv-pendiente">Pendiente</span>' : 'Sin asignar';
+        }
+        return formatFechaRenovacion(valor);
+    }
+
+    function textoDeCelda($td) {
+        var v = String(($td && $td.text) ? $td.text() : ($td || '')).trim();
+        return valorVacioInv(v) ? '' : v;
+    }
+
+    function celdaLineaPendiente(valor, esProy) {
+        return celdaPendiente(valor, esProy);
     }
 
     function esProyeccionTel(telefono) {
@@ -1302,13 +1358,13 @@
         $('#editMarca').val(row.find("td:eq(2)").text());
         $('#editCaracteristicas').val(row.find("td:eq(3)").text());
         $('#editModelo').val(row.find("td:eq(4)").text());
-        $('#editPrecio').val(row.find("td:eq(5)").text());
-        $('#editFechaAsignacion').val(row.find("td:eq(6)").text());
-        $('#editFechaDeCompra').val(row.find("td:eq(7)").text());
-        $('#editNumSerie').val(row.find("td:eq(8)").text());
-        $('#editFolio').val(row.find("td:eq(9)").text());
+        $('#editPrecio').val(textoDeCelda(row.find("td:eq(5)")));
+        $('#editFechaAsignacion').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(6)"))));
+        $('#editFechaDeCompra').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(7)"))));
+        $('#editNumSerie').val(textoDeCelda(row.find("td:eq(8)")));
+        $('#editFolio').val(textoDeCelda(row.find("td:eq(9)")));
         $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('id')).trigger('change');
-        $('#editComentarios').val(row.find("td:eq(11)").text());
+        $('#editComentarios').val(textoDeCelda(row.find("td:eq(11)")));
         setPresupuestado('#editPresupuestadoEquipo', row.find("td:eq(12)").text());
         setPagoMeses('editMesDePagoEquipo', row.attr('data-meses') || '');
 
@@ -1634,7 +1690,7 @@
 
     // Helper para convertir dd/mm/yyyy a yyyy-mm-dd (para inputs type=date)
     function fechaDisplayToInput(fechaDisplay) {
-        if (!fechaDisplay || fechaDisplay === 'Sin asignar' || fechaDisplay === 'Sin asigna' || fechaDisplay === '0000-00-00') {
+        if (!fechaDisplay || fechaDisplay === 'Sin asignar' || fechaDisplay === 'Sin asigna' || fechaDisplay === '0000-00-00' || fechaDisplay === 'null' || fechaDisplay === 'Pendiente') {
             return '';
         }
         let parts = fechaDisplay.trim().split('/');
@@ -1648,17 +1704,18 @@
     // Actualizar una fila en la tabla después de editar
     function updateTableRow(equipo) {
         let row = $(`tr[data-id=${equipo.InventarioID}]`);
+        const extra = esExtraAsignacion(equipo.Presupuestado);
         row.find('td:eq(1)').text(equipo.CategoriaEquipo);
         row.find('td:eq(2)').text(equipo.Marca);
         row.find('td:eq(3)').text(equipo.Caracteristicas);
         row.find('td:eq(4)').text(equipo.Modelo);
-        row.find('td:eq(5)').text(equipo.Precio);
-        row.find('td:eq(6)').text(equipo.FechaAsignacion);
-        row.find('td:eq(7)').text(equipo.FechaDeCompra);
-        row.find('td:eq(8)').text(equipo.NumSerie);
-        row.find('td:eq(9)').text(equipo.Folio);
-        row.find('td:eq(10)').text(equipo.GerenciaEquipo);
-        row.find('td:eq(11)').text(equipo.Comentarios);
+        row.find('td:eq(5)').html(celdaPendiente(equipo.Precio, extra));
+        row.find('td:eq(6)').html(celdaFechaPendiente(equipo.FechaAsignacion, extra));
+        row.find('td:eq(7)').html(celdaFechaPendiente(equipo.FechaDeCompra, extra));
+        row.find('td:eq(8)').html(celdaPendiente(equipo.NumSerie, extra));
+        row.find('td:eq(9)').html(celdaPendiente(equipo.Folio, extra));
+        row.find('td:eq(10)').attr('data-id', equipo.GerenciaEquipoID || '').html(celdaPendiente(equipo.GerenciaEquipo, extra));
+        row.find('td:eq(11)').html(celdaPendiente(equipo.Comentarios, extra));
         if (permitePresupuestado) {
             row.find('td:eq(12)').html(htmlChipPresupuestado(equipo.Presupuestado));
             row.find('td:eq(13)').html(htmlPillsMeses(equipo.MesDePago ?? ''));
@@ -1673,6 +1730,7 @@
 
     // Agregar una nueva fila en la tabla (para equipo creado)
     function addNewRow(equipo) {
+        const extra = esExtraAsignacion(equipo.Presupuestado);
         let newRow = `
         <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}" data-presupuestado="${equipo.Presupuestado ?? 0}">
             <td>
@@ -1692,13 +1750,13 @@
             <td>${equipo.Marca}</td>
             <td>${equipo.Caracteristicas}</td>
             <td>${equipo.Modelo}</td>
-            <td>${equipo.Precio}</td>
-            <td>${equipo.FechaAsignacion}</td>
-            <td>${equipo.FechaDeCompra}</td>
-            <td>${equipo.NumSerie}</td>
-            <td>${equipo.Folio}</td>
-            <td>${equipo.GerenciaEquipo}</td>
-            <td>${equipo.Comentarios}</td>
+            <td>${celdaPendiente(equipo.Precio, extra)}</td>
+            <td>${celdaFechaPendiente(equipo.FechaAsignacion, extra)}</td>
+            <td>${celdaFechaPendiente(equipo.FechaDeCompra, extra)}</td>
+            <td>${celdaPendiente(equipo.NumSerie, extra)}</td>
+            <td>${celdaPendiente(equipo.Folio, extra)}</td>
+            <td data-id="${equipo.GerenciaEquipoID || ''}">${celdaPendiente(equipo.GerenciaEquipo, extra)}</td>
+            <td>${celdaPendiente(equipo.Comentarios, extra)}</td>
             ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.Presupuestado)}</td><td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
         </tr>
     `;
@@ -1806,11 +1864,11 @@
         $('#editNombreInsumo').val(row.find("td:eq(2)").text());
         $('#editCostoMensual').val(row.find("td:eq(3)").text());
         $('#editCostoAnual').val(row.find("td:eq(4)").text());
-        $('#editFechaDeRenovacion').val(fechaDisplayToInput(row.find("td:eq(5)").text()));
+        $('#editFechaDeRenovacion').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(5)"))));
         $('#editobserv').val(row.find("td:eq(6)").text());
-        $('#editFechaDeAsigna').val(fechaDisplayToInput(row.find("td:eq(7)").text()));
-        $('#editNumSerieInsu').val(row.find("td:eq(8)").text());
-        $('#editComentariosInsumo').val(row.find("td:eq(9)").text());
+        $('#editFechaDeAsigna').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(7)"))));
+        $('#editNumSerieInsu').val(textoDeCelda(row.find("td:eq(8)")));
+        $('#editComentariosInsumo').val(textoDeCelda(row.find("td:eq(9)")));
         setPagoMeses('editMesDePago', row.attr('data-meses') || '');
         setPresupuestado('#editPresupuestadoInsumo', row.find("td:eq(11)").text());
 
@@ -1980,15 +2038,16 @@
 
     function updateisnumoTableRow(insumo) {
         let row = $(`tr[data-id=${insumo.InventarioID}]`);
+        const extra = esExtraAsignacion(insumo.Presupuestado);
         row.find('td:eq(1)').text(insumo.CateogoriaInsumo);
         row.find('td:eq(2)').text(insumo.NombreInsumo);
         row.find('td:eq(3)').text(insumo.CostoMensual);
         row.find('td:eq(4)').text(insumo.CostoAnual);
         row.find('td:eq(5)').text(formatFechaRenovacion(insumo.FechaRenovacion));
         row.find('td:eq(6)').text(insumo.Observaciones);
-        row.find('td:eq(7)').text(formatFechaRenovacion(insumo.FechaAsignacion));
-        row.find('td:eq(8)').text(insumo.NumSerie);
-        row.find('td:eq(9)').text(insumo.Comentarios);
+        row.find('td:eq(7)').html(celdaFechaPendiente(insumo.FechaAsignacion, extra));
+        row.find('td:eq(8)').html(celdaPendiente(insumo.NumSerie, extra));
+        row.find('td:eq(9)').html(celdaPendiente(insumo.Comentarios, extra));
         row.find('td:eq(10)').html(htmlPillsMeses(insumo.MesDePago));
         row.attr('data-meses', insumo.MesDePago ?? '');
         if (permitePresupuestado) {
@@ -2001,6 +2060,7 @@
 
 
     function addinsumoNewRow(insumo) {
+        const extra = esExtraAsignacion(insumo.Presupuestado);
         let newRow = `
         <tr data-id="${insumo.InventarioID}" data-meses="${insumo.MesDePago ?? ''}" data-presupuestado="${insumo.Presupuestado ?? 0}">
             <td>
@@ -2021,10 +2081,10 @@
             <td>${insumo.CostoMensual}</td>
             <td>${insumo.CostoAnual}</td>
             <td>${formatFechaRenovacion(insumo.FechaRenovacion)}</td>
-            <td>${insumo.Observaciones}</td>
-            <td>${formatFechaRenovacion(insumo.FechaAsignacion)}</td>
-            <td>${insumo.NumSerie}</td>
-            <td>${insumo.Comentarios}</td>
+            <td>${insumo.Observaciones || ''}</td>
+            <td>${celdaFechaPendiente(insumo.FechaAsignacion, extra)}</td>
+            <td>${celdaPendiente(insumo.NumSerie, extra)}</td>
+            <td>${celdaPendiente(insumo.Comentarios, extra)}</td>
             <td>${htmlPillsMeses(insumo.MesDePago)}</td>
             ${permitePresupuestado ? `<td>${htmlChipPresupuestado(insumo.Presupuestado)}</td>` : ''}
         </tr>

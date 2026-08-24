@@ -129,7 +129,7 @@ class InventarioController extends AppBaseController
                 return view('inventarios.datatables_actions', [
                     'id' => $row->EmpleadoID,
                     'activo' => $row->Estado == 1 || $row->Estado === true,
-                    
+                    'tipo_persona' => $row->tipo_persona ?? 'FISICA',
                 ])->render();
             })
             ->editColumn('Estado', function ($row) {
@@ -936,16 +936,31 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
+        if ($redir = $this->bloquearSiExtraordinario((int) $id, 'transferir')) {
+            return $redir;
+        }
 
-        $EquiposAsignados = InventarioEquipo::select("*")->where('EmpleadoID', '=', $id)->get();
-        $InsumosAsignados = InventarioInsumo::select("*")->where('EmpleadoID', '=', $id)->get();
-        $LineasAsignados = InventarioLineas::select("*")->where('EmpleadoID', '=', $id)->get();
-        $Empleados = Empleados::select("*")->where('Estado', 1)->get();
+        $EquiposAsignados = InventarioEquipo::query()
+            ->where('EmpleadoID', $id);
+        PresupuestoAsignacion::aplicarWhere($EquiposAsignados, 'inventario');
+        $EquiposAsignados = $EquiposAsignados->get();
 
+        $InsumosAsignados = InventarioInsumo::query()
+            ->where('EmpleadoID', $id);
+        PresupuestoAsignacion::aplicarWhere($InsumosAsignados, 'inventario');
+        $InsumosAsignados = $InsumosAsignados->get();
 
+        $LineasAsignados = InventarioLineas::query()
+            ->where('EmpleadoID', $id);
+        PresupuestoAsignacion::aplicarWhere($LineasAsignados, 'inventario');
+        $LineasAsignados = $LineasAsignados->get();
 
-
-
+        $Empleados = Empleados::query()
+            ->where('Estado', 1)
+            ->whereIn('tipo_persona', ['FISICA', 'EXTRAORDINARIO'])
+            ->where('EmpleadoID', '!=', $id)
+            ->orderBy('NombreEmpleado')
+            ->get();
 
         return view('inventarios.transferir')->with([
             'inventario' => $inventario,
@@ -953,85 +968,113 @@ class InventarioController extends AppBaseController
             'insumosAsignados' => $InsumosAsignados,
             'LineasAsignados' => $LineasAsignados,
             'Empleados' => $Empleados
-
         ]);
     }
 
-    public function formTraspaso(Request $request)
+    public function formTraspaso(Request $request, $inventario)
     {
+        $origenId = (int) $inventario;
 
-        $equiposSeleccionados = $request->input('equipos', []);
-        $insumosSeleccionados = $request->input('insumos', []);
-        $lineasSeleccionadas = $request->input('lineas', []);
+        if ($redir = $this->bloquearSiExtraordinario($origenId, 'transferir')) {
+            return $redir;
+        }
 
+        $equiposSeleccionados = array_map('intval', (array) $request->input('equipos', []));
+        $insumosSeleccionados = array_map('intval', (array) $request->input('insumos', []));
+        $lineasSeleccionadas = array_map('intval', (array) $request->input('lineas', []));
         $empleadoSeleccionado = (int) $request->input('empleado_id');
 
+        if ($empleadoSeleccionado === $origenId) {
+            Flash::error('Seleccione un empleado distinto para la transferencia.');
+            return back();
+        }
+
+        $destino = Empleados::where('EmpleadoID', $empleadoSeleccionado)->first();
+        $tipoDestino = strtoupper((string) ($destino->tipo_persona ?? ''));
+
+        if (! $destino || ! $destino->Estado || ! in_array($tipoDestino, ['FISICA', 'EXTRAORDINARIO'], true)) {
+            Flash::error('El destino debe ser una persona física o extraordinaria activa.');
+            return back();
+        }
+
         $hoy = Carbon::now()->toDateString();
+        $destinoExtraordinario = $tipoDestino === 'EXTRAORDINARIO';
+        $movidos = 0;
 
-        // Si el destino es EXTRAORDINARIO, todo lo traspasado pasa a ser presupuestado.
-        $destinoExtraordinario = Empleados::where('EmpleadoID', $empleadoSeleccionado)
-            ->value('tipo_persona') === 'EXTRAORDINARIO';
+        if ($equiposSeleccionados) {
+            $equipos = InventarioEquipo::query()
+                ->where('EmpleadoID', $origenId)
+                ->whereIn('InventarioID', $equiposSeleccionados);
+            PresupuestoAsignacion::aplicarWhere($equipos, 'inventario');
+            $equipos = $equipos->get();
 
-        if (!empty($equiposSeleccionados)) {
-            $equipos = InventarioEquipo::whereIn('InventarioID', $equiposSeleccionados)
-                ->select('InventarioID', 'FechaAsignacion')
-                ->get();
             foreach ($equipos as $equipo) {
                 $equipo->EmpleadoID = $empleadoSeleccionado;
                 $equipo->FechaAsignacion = $hoy;
                 if ($destinoExtraordinario) {
-                    $equipo->Presupuestado = 1;
+                    $equipo->Presupuestado = PresupuestoAsignacion::EXTRA;
                 }
                 $equipo->save();
+                $movidos++;
             }
 
-            Mantenimiento::whereIn('InventarioID', $equiposSeleccionados)
-                ->where('Estatus', 'Pendiente')
-                ->update(['EmpleadoID' => $empleadoSeleccionado]);
-        } else {
-            Flash::error('Inventario no encontrado');
+            if ($equipos->isNotEmpty()) {
+                Mantenimiento::whereIn('InventarioID', $equipos->pluck('InventarioID'))
+                    ->where('Estatus', 'Pendiente')
+                    ->update(['EmpleadoID' => $empleadoSeleccionado]);
+            }
         }
-        if (!empty($insumosSeleccionados)) {
 
-            $insumos = InventarioInsumo::whereIn('InventarioID', $insumosSeleccionados)
-                ->select('InventarioID', 'FechaAsignacion')
-                ->get();
+        if ($insumosSeleccionados) {
+            $insumos = InventarioInsumo::query()
+                ->where('EmpleadoID', $origenId)
+                ->whereIn('InventarioID', $insumosSeleccionados);
+            PresupuestoAsignacion::aplicarWhere($insumos, 'inventario');
 
-            foreach ($insumos as $insumo) {
+            foreach ($insumos->get() as $insumo) {
                 $insumo->EmpleadoID = $empleadoSeleccionado;
                 $insumo->FechaAsignacion = $hoy;
                 if ($destinoExtraordinario) {
-                    $insumo->Presupuestado = 1;
+                    $insumo->Presupuestado = PresupuestoAsignacion::EXTRA;
                 }
                 $insumo->save();
+                $movidos++;
             }
-        } else {
-            Flash::error('Inventario no encontrado');
         }
-        if (!empty($lineasSeleccionadas)) {
 
-            $lineas = InventarioLineas::whereIn('InventarioID', $lineasSeleccionadas)
-                ->select('InventarioID', 'FechaAsignacion')
-                ->get();
+        if ($lineasSeleccionadas) {
+            $lineas = InventarioLineas::query()
+                ->where('EmpleadoID', $origenId)
+                ->whereIn('InventarioID', $lineasSeleccionadas);
+            PresupuestoAsignacion::aplicarWhere($lineas, 'inventario');
 
-            foreach ($lineas as $linea) {
+            foreach ($lineas->get() as $linea) {
                 $linea->EmpleadoID = $empleadoSeleccionado;
                 $linea->FechaAsignacion = $hoy;
                 if ($destinoExtraordinario) {
-                    $linea->Presupuestado = 1;
+                    $linea->Presupuestado = PresupuestoAsignacion::EXTRA;
                 }
                 $linea->save();
+                $movidos++;
             }
-        } else {
-            Flash::error('Inventario no encontrado');
         }
 
-        return back();
+        if ($movidos === 0) {
+            Flash::error('No hay elementos de stock o compartido para transferir.');
+            return back();
+        }
+
+        Flash::success('Se transfirieron ' . $movidos . ' registro(s) de inventario.');
+
+        return redirect(route('inventarios.index'));
     }
 
 
     public function cartas($id)
     {
+        if ($redir = $this->bloquearSiExtraordinario((int) $id, 'cartas')) {
+            return $redir;
+        }
 
         $empleado = Empleados::select("*")
             ->where('EmpleadoID', '=', $id)
@@ -1047,8 +1090,9 @@ class InventarioController extends AppBaseController
             'FechaAsignacion',
             DB::raw('"EQUIPO" as tipo')
         )
-            ->where('EmpleadoID', '=', $id)
-            ->get();
+            ->where('EmpleadoID', '=', $id);
+        PresupuestoAsignacion::aplicarWhere($data, 'inventario');
+        $data = $data->get();
 
         $insumos = InventarioInsumo::select(
             'InventarioID as id',
@@ -1061,8 +1105,9 @@ class InventarioController extends AppBaseController
             DB::raw('"INSUMO" as tipo')
         )
             ->where('EmpleadoID', '=', $id)
-            ->where('CateogoriaInsumo', '=', 'ACCESORIOS')
-            ->get();
+            ->where('CateogoriaInsumo', '=', 'ACCESORIOS');
+        PresupuestoAsignacion::aplicarWhere($insumos, 'inventario');
+        $insumos = $insumos->get();
 
         $telefono = InventarioLineas::select(
             'InventarioID as id',
@@ -1074,9 +1119,9 @@ class InventarioController extends AppBaseController
             'NumTelefonico as FechaAsignacion',
             DB::raw('"TELEFONO" as tipo')
         )
-            ->where('empleadoID', '=', $id)
-
-            ->get();
+            ->where('empleadoID', '=', $id);
+        PresupuestoAsignacion::aplicarWhere($telefono, 'inventario');
+        $telefono = $telefono->get();
 
 
         $inventario = $data->concat($insumos)->concat($telefono);
@@ -1090,6 +1135,9 @@ class InventarioController extends AppBaseController
 
     public function pdffile(request $request, $id)
     {
+        if ($redir = $this->bloquearSiExtraordinario((int) $id, 'cartas')) {
+            return $redir;
+        }
 
         $empleadoid = $id;
 
@@ -1213,6 +1261,9 @@ class InventarioController extends AppBaseController
 
     public function mantenimiento(request $request, $id)
     {
+        if ($redir = $this->bloquearSiExtraordinario((int) $id, 'transferir')) {
+            return $redir;
+        }
 
         $empleadoid = $id;
 
@@ -1466,6 +1517,22 @@ class InventarioController extends AppBaseController
         }
 
         return $data;
+    }
+
+    private function bloquearSiExtraordinario(int $empleadoId, string $accion = 'transferir')
+    {
+        $tipo = strtoupper((string) (Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona') ?? ''));
+        if ($tipo !== 'EXTRAORDINARIO') {
+            return null;
+        }
+
+        Flash::warning(
+            $accion === 'cartas'
+                ? 'Las personas extraordinarias no generan cartas de entrega.'
+                : 'Las personas extraordinarias no pueden transferir inventario.'
+        );
+
+        return redirect(route('inventarios.index'));
     }
 
     private function forzarPresupuestado(array $data, int $empleadoId): array

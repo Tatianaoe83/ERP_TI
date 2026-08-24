@@ -18,7 +18,6 @@ $puedeVerActivos = $user && (
 $puedeVerMovimientos = $user && $user->can('transferir-inventario');
 $puedeVerReportes = $user && (
     $user->can('ver-presupuesto') ||
-    $user->can('editar-conf-presupuesto') ||
     $user->can('ver-reportes') ||
     $user->can('ver-informe')
 );
@@ -278,18 +277,9 @@ if (request()->is('unidadesDeNegocios*') || request()->is('gerencias*') || reque
             @if(auth()->check() && auth()->user()->can('ver-presupuesto'))
             <li>
                 <a href="/presupuesto" title="Presupuesto"
-                    class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('presupuesto') || request()->is('presupuesto/') ? 'is-active' : '' }}">
+                    class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('presupuesto') || request()->is('presupuesto/') || request()->is('presupuesto/configuracion*') ? 'is-active' : '' }}">
                     <i class="fas fa-file-invoice sidebar-ico sidebar-ico-sm"></i>
                     <span class="sidebar-text">Presupuesto</span>
-                </a>
-            </li>
-            @endif
-            @if(auth()->check() && auth()->user()->can('editar-conf-presupuesto'))
-            <li>
-                <a href="{{ route('presupuesto.configuracion') }}" title="Conf. presupuesto"
-                    class="sidebar-link flex items-center gap-2 no-underline px-2.5 py-1.5 rounded-md {{ request()->is('presupuesto/configuracion*') ? 'is-active' : '' }}">
-                    <i class="fas fa-sliders-h sidebar-ico sidebar-ico-sm"></i>
-                    <span class="sidebar-text">Conf. presupuesto</span>
                 </a>
             </li>
             @endif

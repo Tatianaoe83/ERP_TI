@@ -11,18 +11,18 @@ use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithStyles;
 
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 
 
 
-class ReportExport implements FromView, ShouldAutoSize, WithStyles
+class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithStyles
 {
 
     private $gerencia;
@@ -57,10 +57,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
     {
 
         $numerogerencia = (int) $this->gerencia;
-        // El presupuesto sólo contempla FISICA y EXTRAORDINARIO; el de inventario no restringe
-        // por tipo de persona, para ser el complemento exacto (todo lo que no se presupuestó).
         $esPresupuesto = $this->modo === 'presupuesto';
-        $tiposPersona = $esPresupuesto ? ['FISICA', 'EXTRAORDINARIO'] : null;
+        $tiposPersona = PresupuestoHelper::tiposPersona($this->modo);
 
         // Obtener gerencia para la vista (solo 1 query simple)
         $gerencia = Gerencia::find($numerogerencia);
@@ -525,6 +523,8 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
             'tipoDocumento' => $this->modo === 'inventario' ? 'INVENTARIO' : 'PRESUPUESTO',
             'anioDocumento' => $this->modo === 'presupuesto' ? now()->year + 1 : now()->year,
             'modo' => $this->modo,
+            'etiquetaSeccion' => PresupuestoHelper::etiquetaSeccion($this->modo),
+            'leyendaInclusion' => PresupuestoHelper::leyendaInclusion($this->modo),
             'datosheader' => $datosheader,
             'GerenciaTb' => $gerencia ?? null,
             'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
@@ -552,467 +552,197 @@ class ReportExport implements FromView, ShouldAutoSize, WithStyles
         return view('presupuesto.reporteExcel', $data);
     }
 
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 34,
+            'B' => 28,
+        ];
+    }
 
     public function styles($sheet)
     {
-
-
-        $tituloLicenciamiento = $this->tablaencbezadoCount + 6;
-
-        $encabezadoicenciamiento = $tituloLicenciamiento + 1;
-        $totalLicenciamiento = $encabezadoicenciamiento + $this->tablapresup_licsCount + 1;
-
-        $titulohardware = $totalLicenciamiento + 2;
-        $encabezadohardware = $titulohardware + 1;
-        $totalhardware = $encabezadohardware + $this->presup_hardware + 1;
-
-        $tituloAccesorios = $totalhardware + 2;
-        $encabezadoAccesorios = $tituloAccesorios + 1;
-        $totalAccesorios = $encabezadoAccesorios + $this->tablapresup_otrosinsumsCount + 1;
-
-        $tituloTelefonia = $totalAccesorios + 2;
-        $encabezadoTelefonia = $tituloTelefonia + 1;
-        $totalTelefonia = $encabezadoTelefonia + $this->presup_accesCount + 1;
-
-        $tituloDatos = $totalTelefonia + 2;
-        $encabezadoDatos = $tituloDatos + 1;
-        $totalDatos = $encabezadoDatos + $this->presup_datosCount + 1;
-
-        $tituloGps = $totalDatos + 2;
-        $encabezadoGps = $tituloGps + 1;
-        $totalGps = $encabezadoGps + $this->presup_gpsCount + 1;
-
-        $tituloCalendario = $totalGps + 2;
-        $encabezadoCalendario = $tituloCalendario + 1;
-        $totalCalendario = $encabezadoCalendario + $this->presup_cal_pagosCount;
-
-
-
-        // IMAGEN
         $imagePath = public_path('img/logo.png');
+        if (is_file($imagePath)) {
+            $drawing = new Drawing();
+            $drawing->setName('Logo');
+            $drawing->setDescription('Logo de la empresa');
+            $drawing->setPath($imagePath);
+            $drawing->setCoordinates('G1');
+            $drawing->setHeight(40);
+            $drawing->setWorksheet($sheet);
+        }
 
-        $drawing = new Drawing();
-        $drawing->setName('Logo');
-        $drawing->setDescription('Logo de la empresa');
-        $drawing->setPath($imagePath);
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1')->applyFromArray($this->estiloTituloExcel());
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+        $sheet->getRowDimension(1)->setRowHeight(28);
 
-        $drawing->setCoordinates('d1');
-        $drawing->setWidth(80);
-        $drawing->setHeight(80);
-        $drawing->setWorksheet($sheet);
+        $ultimaFila = (int) $sheet->getHighestRow();
 
-        // DATOS GENERALES
-        $sheet->getStyle("A1:K14")->applyFromArray([
-            'font' => [
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_LEFT,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'FFF'],
-            ]
-        ]);
-        // TABLA LICENCIAMENTO
-        $sheet->getStyle("A{$tituloLicenciamiento}:M{$tituloLicenciamiento}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'c0c0c0'],
-            ]
-        ]);
-        $sheet->getStyle("A{$encabezadoicenciamiento}:M{$encabezadoicenciamiento}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => 'FFFFFF'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '191970'],
-            ]
-        ]);
+        for ($fila = 2; $fila <= $ultimaFila; $fila++) {
+            $texto = trim((string) $sheet->getCell('A' . $fila)->getValue());
+            if ($texto === '') {
+                continue;
+            }
 
-        // TOTALES
-        $sheet->getStyle("A{$totalLicenciamiento}:M{$totalLicenciamiento}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'add8e6'],
-            ]
-        ]);
+            if ($this->esLeyendaInclusion($texto) || $texto === 'Alcance') {
+                $sheet->mergeCells("B{$fila}:F{$fila}");
+                $sheet->getStyle("A{$fila}:F{$fila}")->applyFromArray([
+                    'font' => [
+                        'size' => 9,
+                        'italic' => true,
+                        'color' => ['argb' => '4338CA'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_LEFT,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                        'wrapText' => true,
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['argb' => 'EEF2FF'],
+                    ],
+                ]);
+                $sheet->getRowDimension($fila)->setRowHeight(32);
+                continue;
+            }
 
-        // TABLA INVERSIONES
-        $sheet->getStyle("A{$titulohardware}:M{$titulohardware}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'c0c0c0'],
-            ]
-        ]);
-        $sheet->getStyle("A{$encabezadohardware}:M{$encabezadohardware}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => 'FFFFFF'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '191970'],
-            ]
-        ]);
+            if (strpos($texto, 'Costo ') === 0 || $texto === 'Total Presupuestado') {
+                $sheet->getStyle("B{$fila}")->getNumberFormat()->setFormatCode('$#,##0');
+                $sheet->getStyle("B{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                if ($texto === 'Total Presupuestado') {
+                    $sheet->getStyle("A{$fila}:B{$fila}")->applyFromArray($this->estiloTotalExcel());
+                }
+                continue;
+            }
 
-        // TOTALES
-        $sheet->getStyle("A{$totalhardware}:M{$totalhardware}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'add8e6'],
-            ]
-        ]);
+            if ($this->esTituloSeccion($texto)) {
+                $columna = $this->ultimaColumnaUsada($sheet, $fila + 1);
+                $this->pintarBloque($sheet, "A{$fila}:{$columna}{$fila}", $this->estiloTituloExcel());
+                continue;
+            }
 
+            if ($texto === 'Empleado' || $texto === 'Insumo') {
+                $columna = $this->ultimaColumnaUsada($sheet, $fila);
+                $this->pintarBloque($sheet, "A{$fila}:{$columna}{$fila}", $this->estiloEncabezadoExcel());
 
-        // TABLA ACCESORIOS
-        // TITULO
-        $sheet->getStyle("A{$tituloAccesorios}:M{$tituloAccesorios}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'c0c0c0'],
-            ]
-        ]);
+                $inicioDatos = $fila + 1;
+                $finDatos = $inicioDatos;
+                for ($siguiente = $inicioDatos; $siguiente <= $ultimaFila; $siguiente++) {
+                    $celda = trim((string) $sheet->getCell('A' . $siguiente)->getValue());
+                    if ($this->esTituloSeccion($celda)) {
+                        break;
+                    }
+                    $finDatos = $siguiente;
+                    if ($celda === 'TOTAL') {
+                        break;
+                    }
+                }
 
-        // ENCABEZADOS
-        $sheet->getStyle("A{$encabezadoAccesorios}:M{$encabezadoAccesorios}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => 'FFFFFF'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '191970'],
-            ]
-        ]);
+                $colInicio = $texto === 'Insumo' ? 'B' : 'C';
+                $sheet->getStyle("{$colInicio}{$inicioDatos}:{$columna}{$finDatos}")
+                    ->getNumberFormat()
+                    ->setFormatCode('$#,##0');
+                continue;
+            }
 
-        // TOTALES
-        $sheet->getStyle("A{$totalAccesorios}:M{$totalAccesorios}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'add8e6'],
-            ]
-        ]);
-
-        // TABLA TELEFONIA
-        // TITULO
-        $sheet->getStyle("A{$tituloTelefonia}:E{$tituloTelefonia}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'c0c0c0'],
-            ]
-        ]);
-
-        // ENCABEZADOS
-        $sheet->getStyle("A{$encabezadoTelefonia}:E{$encabezadoTelefonia}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => 'FFFFFF'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '191970'],
-            ]
-        ]);
-
-        // TOTALES
-        $sheet->getStyle("A{$totalTelefonia}:E{$totalTelefonia}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'add8e6'],
-            ]
-        ]);
-
-        // TABLA DATOS
-        // TITULO
-        $sheet->getStyle("A{$tituloDatos}:E{$tituloDatos}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'c0c0c0'],
-            ]
-        ]);
-        $sheet->getStyle("A{$encabezadoDatos}:E{$encabezadoDatos}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => 'FFFFFF'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '191970'],
-            ]
-        ]);
-
-        // TOTALES
-        $sheet->getStyle("A{$totalDatos}:E{$totalDatos}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'add8e6'],
-            ]
-        ]);
-        // TABLA GPS
-        // TITULO
-        $sheet->getStyle("A{$tituloGps}:E{$tituloGps}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'c0c0c0'],
-            ]
-        ]);
-        $sheet->getStyle("A{$encabezadoGps}:E{$encabezadoGps}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => 'FFFFFF'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '191970'],
-            ]
-        ]);
-
-        // TOTALES
-        $sheet->getStyle("A{$totalGps}:E{$totalGps}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'add8e6'],
-            ]
-        ]);
-
-        // TABLA CALENDARIO DE PAGOS
-        // TITULO
-        $sheet->getStyle("A{$tituloCalendario}:N{$tituloCalendario}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'c0c0c0'],
-            ]
-        ]);
-        $sheet->getStyle("A{$encabezadoCalendario}:N{$encabezadoCalendario}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => 'FFFFFF'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => '191970'],
-            ]
-        ]);
-
-        // TOTALES
-        $sheet->getStyle("A{$totalCalendario}:N{$totalCalendario}")->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'size' => 12,
-                'color' => ['argb' => '030404'],
-            ],
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'fill' => [
-                'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['argb' => 'add8e6'],
-            ]
-        ]);
-
-        // Aplicar formato de moneda a todas las celdas numéricas
-        $this->applyNumberFormatting($sheet, $tituloLicenciamiento, $totalLicenciamiento, $titulohardware, $totalhardware, $tituloAccesorios, $totalAccesorios, $tituloTelefonia, $totalTelefonia, $tituloDatos, $totalDatos, $tituloGps, $totalGps, $tituloCalendario, $totalCalendario);
+            if ($texto === 'TOTAL') {
+                $columna = $this->ultimaColumnaUsada($sheet, $fila);
+                $this->pintarBloque($sheet, "A{$fila}:{$columna}{$fila}", $this->estiloTotalExcel());
+            }
+        }
     }
-
-    private function applyNumberFormatting($sheet, $tituloLicenciamiento, $totalLicenciamiento, $titulohardware, $totalhardware, $tituloAccesorios, $totalAccesorios, $tituloTelefonia, $totalTelefonia, $tituloDatos, $totalDatos, $tituloGps, $totalGps, $tituloCalendario, $totalCalendario)
-    {
-        // Formato numérico para la sección de costos generales (filas 7-14)
-        $sheet->getStyle("B5:B12")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-        $sheet->getStyle("B5:B12")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
-
-        // Formato de moneda para la tabla de licenciamiento (datos y totales)
-        $encabezadoicenciamiento = $tituloLicenciamiento + 1;
-        $sheet->getStyle("C{$encabezadoicenciamiento}:M{$totalLicenciamiento}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-
-        // Formato de moneda para la tabla de hardware/inversiones (datos y totales)
-        $encabezadohardware = $titulohardware + 1;
-        $sheet->getStyle("C{$encabezadohardware}:M{$totalhardware}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-
-        // Formato de moneda para la tabla de accesorios (datos y totales)
-        $encabezadoAccesorios = $tituloAccesorios + 1;
-        $sheet->getStyle("C{$encabezadoAccesorios}:E{$totalAccesorios}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-
-        // Formato de moneda para la tabla de telefonía (datos)
-        $encabezadoTelefonia = $tituloTelefonia + 1;
-        $sheet->getStyle("C{$encabezadoTelefonia}:E{$totalTelefonia}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-
-        // Formato de moneda para la tabla de datos (datos)
-        $encabezadoDatos = $tituloDatos + 1;
-        $sheet->getStyle("C{$encabezadoDatos}:E{$totalDatos}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-
-        // Formato de moneda para la tabla de GPS (datos)
-        $encabezadoGps = $tituloGps + 1;
-        $sheet->getStyle("C{$encabezadoGps}:E{$totalGps}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-
-        // Formato de moneda para la tabla de calendario de pagos (datos y totales)
-        $encabezadoCalendario = $tituloCalendario + 1;
-        $sheet->getStyle("B{$encabezadoCalendario}:N{$totalCalendario}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_CURRENCY_USD);
-    }
-
-
-
 
     public function title(): string
     {
         return 'Facturados';
     }
 
+    private function esTituloSeccion(string $texto): bool
+    {
+        return $texto === 'Calendario de Pagos'
+            || (bool) preg_match('/^(Presupuesto|Inventario) de /', $texto);
+    }
+
+    private function esLeyendaInclusion(string $texto): bool
+    {
+        return strpos($texto, 'Incluye asignaciones') !== false;
+    }
+
+    private function ultimaColumnaUsada($sheet, int $fila): string
+    {
+        $ultima = 'E';
+        for ($i = 1; $i <= 20; $i++) {
+            $columna = Coordinate::stringFromColumnIndex($i);
+            $valor = $sheet->getCell($columna . $fila)->getValue();
+            if ($valor !== null && $valor !== '') {
+                $ultima = $columna;
+            }
+        }
+
+        return $ultima;
+    }
+
+    private function pintarBloque($sheet, string $rango, array $estilo): void
+    {
+        $sheet->getStyle($rango)->applyFromArray($estilo);
+    }
+
+    private function estiloTituloExcel(): array
+    {
+        return [
+            'font' => [
+                'bold' => true,
+                'size' => 12,
+                'color' => ['argb' => 'FFFFFF'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => '101D49'],
+            ],
+        ];
+    }
+
+    private function estiloEncabezadoExcel(): array
+    {
+        return [
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['argb' => 'FFFFFF'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => '101D49'],
+            ],
+        ];
+    }
+
+    private function estiloTotalExcel(): array
+    {
+        return [
+            'font' => [
+                'bold' => true,
+                'size' => 11,
+                'color' => ['argb' => '101D49'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'DBEAFE'],
+            ],
+        ];
+    }
 }

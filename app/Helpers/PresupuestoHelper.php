@@ -49,10 +49,24 @@ class PresupuestoHelper
         return PresupuestoAsignacion::aplicarWhere($query, $modo);
     }
 
-    // Filtro de tipos de persona para tipo de reporte
-    private static function tiposPersona(string $modo): ?array
+    // Presupuesto: FÍSICA y EXTRAORDINARIO. Inventario: FÍSICA y REFERENCIADO.
+    public static function tiposPersona(string $modo): array
     {
-        return $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : null;
+        return $modo === 'presupuesto'
+            ? ['FISICA', 'EXTRAORDINARIO']
+            : ['FISICA', 'REFERENCIADO'];
+    }
+
+    public static function etiquetaSeccion(string $modo): string
+    {
+        return $modo === 'inventario' ? 'Inventario' : 'Presupuesto';
+    }
+
+    public static function leyendaInclusion(string $modo): string
+    {
+        return $modo === 'presupuesto'
+            ? 'Incluye asignaciones Extra y Compartido de empleados tipo FÍSICA y EXTRAORDINARIO.'
+            : 'Incluye asignaciones Stock y Compartido de empleados tipo FÍSICA y REFERENCIADO.';
     }
 
     // Costo de un grupo de insumos según los meses elegidos en la asignación.

@@ -11,6 +11,7 @@
 @endphp
 
 <x-index-page
+    class="crud-page"
     title="Transferir inventario"
     icon="fa-exchange-alt"
     :subtitle="$inventario->NombreEmpleado"
@@ -22,8 +23,70 @@
     </x-slot>
 
     <p class="text-sm text-gray-500 dark:text-gray-400" style="margin: -0.35rem 0 1.1rem;">
-        Marca los equipos, insumos o líneas que deseas pasar a otro empleado.
+        Solo se transfieren asignaciones de <strong>stock</strong> y <strong>compartido</strong>. El destino debe ser persona física o extraordinaria. El mantenimiento preventivo se genera desde esta misma pantalla.
     </p>
+
+    @php
+        $tareasPreven = [
+            1 => 'Desarme y ensamble de equipo',
+            2 => 'Formateo e instalación del sistema operativo',
+            3 => 'Limpieza interna',
+            4 => 'Respaldo de información',
+            6 => 'Cambio de pasta térmica',
+            7 => 'Limpieza de periféricos',
+            8 => 'Actualizaciones de software',
+            9 => 'Eliminación de temporales',
+            10 => 'Limpieza de ventiladores',
+            11 => 'Limpieza de fuente de poder',
+            12 => 'Instalación de software por licencia',
+            14 => 'Limpieza del teclado',
+            15 => 'Cambio de piezas',
+            16 => 'Cambio de pasta térmica en la tarjeta gráfica',
+            17 => 'Cambio de equipo de cómputo',
+        ];
+        $empleadoId = $inventario->EmpleadoID;
+    @endphp
+
+    <div class="index-page__card crud-page__card xfer-card xfer-preven" style="margin-bottom: 1.5rem;">
+        <div class="xfer-card-head">
+            <div>
+                <h2>Mantenimiento preventivo</h2>
+                <span class="index-page__count">Selecciona el equipo y las actividades realizadas</span>
+            </div>
+        </div>
+
+        <form id="formulario2" action="{{ route('inventarios.mantenimiento', $empleadoId) }}" method="POST" target="_blank">
+            @csrf
+            <div class="crud-form">
+                {!! Form::label('IdEquipo', 'Equipo') !!}
+                {!! Form::select(
+                    'IdEquipo',
+                    App\Models\InventarioEquipo::select(DB::raw("CONCAT(IFNULL(Folio, 'Sin folio'),' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
+                        ->where('EmpleadoID', '=', $empleadoId)
+                        ->where(function ($q) {
+                            \App\Helpers\PresupuestoAsignacion::aplicarWhere($q, 'inventario');
+                        })
+                        ->pluck('NombreEq', 'InventarioID'),
+                    null,
+                    ['placeholder' => 'Seleccionar', 'class' => 'jz form-control', 'style' => 'width: 100%', 'required' => true]
+                ) !!}
+            </div>
+
+            <div class="crud-select-all" id="selectAllPreven">Seleccionar todos</div>
+            <div class="crud-perms">
+                @foreach ($tareasPreven as $valor => $etiqueta)
+                    <label>
+                        <input class="name cursor-pointer" type="checkbox" name="inventarioPreven[]" value="{{ $valor }}" id="defaultCheck{{ $valor }}">
+                        <span>{{ $etiqueta }}</span>
+                    </label>
+                @endforeach
+            </div>
+
+            <div class="crud-page__actions">
+                <button type="submit" class="index-page__btn-primary">Generar formato</button>
+            </div>
+        </form>
+    </div>
 
     <form action="{{ route('inventarios.transpaso', $inventario->EmpleadoID) }}" method="POST" id="form-transferir">
         @csrf
@@ -188,6 +251,19 @@
     @include('layouts.datatables_css')
     <style>
         .xfer-card { margin-bottom: 0; }
+        .xfer-preven { margin-bottom: 1.5rem !important; }
+        .xfer-preven .crud-form,
+        .xfer-preven .crud-select-all,
+        .xfer-preven .crud-perms {
+            margin-left: 1.25rem;
+            margin-right: 1.25rem;
+        }
+        .xfer-preven .crud-form { margin-top: 0.75rem; }
+        .xfer-preven .crud-page__actions {
+            margin-left: 1.25rem;
+            margin-right: 1.25rem;
+            padding-bottom: 0.25rem;
+        }
         .xfer-card-head {
             display: flex;
             align-items: flex-start;
@@ -320,7 +396,7 @@
 
                 var empleadosOptions = '';
                 @foreach($Empleados as $empleado)
-                empleadosOptions += `<option value="{{ $empleado->EmpleadoID }}">{{ $empleado->NombreEmpleado }}</option>`;
+                empleadosOptions += `<option value="{{ $empleado->EmpleadoID }}">{{ $empleado->NombreEmpleado }} ({{ strtoupper((string) $empleado->tipo_persona) === 'EXTRAORDINARIO' ? 'Extraordinario' : 'Física' }})</option>`;
                 @endforeach
 
                 swal.fire({
@@ -400,6 +476,18 @@
                 });
             });
         });
+        var selectAllPreven = document.getElementById('selectAllPreven');
+        if (selectAllPreven) {
+            selectAllPreven.addEventListener('click', function () {
+                var checkboxes = document.querySelectorAll('input[name="inventarioPreven[]"]');
+                if (!checkboxes.length) return;
+                var isChecked = checkboxes[0].checked;
+                checkboxes.forEach(function (checkbox) {
+                    checkbox.checked = !isChecked;
+                });
+                this.textContent = isChecked ? 'Seleccionar todos' : 'Deseleccionar todos';
+            });
+        }
     </script>
     <style>
         .dark .select2-search__field {

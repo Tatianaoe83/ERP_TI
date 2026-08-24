@@ -1,38 +1,26 @@
 @extends('layouts.app')
 
 @section('content')
+@include('inventarios.partials.tipo-persona-styles')
 <style>
 [x-cloak] { display: none !important; }
 
-.info-banner {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.875rem 1.25rem;
+.presupuesto-note {
     margin-bottom: 1.25rem;
-    border-radius: 0.75rem;
-    border-left: 4px solid #6366f1;
-    background: #eef2ff;
-    font-size: 0.85rem;
-    color: #4338ca;
 }
-.dark .info-banner {
-    background: #1e1b4b;
-    border-left-color: #818cf8;
-    color: #a5b4fc;
-}
-.info-banner__title {
-    font-weight: 700;
-    font-size: 0.8125rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin: 0 0 0.25rem;
-}
-.info-banner__text {
-    font-size: 0.8125rem;
+.presupuesto-note p {
     margin: 0;
-    opacity: 0.9;
-    line-height: 1.4;
+    font-size: 0.8125rem;
+    color: #475569;
+    line-height: 1.7;
+}
+.dark .presupuesto-note p {
+    color: #cbd5e1;
+}
+.presupuesto-note .inv-tipo-badge,
+.presupuesto-note .inv-chip {
+    vertical-align: middle;
+    margin: 0 0.05rem;
 }
 </style>
 
@@ -67,10 +55,22 @@
     </x-slot>
 
     <div data-app-panel="1">
-        <div class="info-banner">
+        <div class="index-page__note presupuesto-note">
+            <span class="index-page__note-icon" aria-hidden="true">
+                <i class="fas fa-info-circle"></i>
+            </span>
             <div>
-                <p class="info-banner__title">Tipos de empleados incluidos</p>
-                <p class="info-banner__text">Este reporte solo toma en cuenta empleados tipo <strong>FÍSICA</strong> y <strong>EXTRAORDINARIO</strong>.</p>
+                <h4>Qué incluye este reporte</h4>
+                <p>
+                    Empleados tipo
+                    <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+                    y
+                    <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>.
+                    Solo asignaciones
+                    <span class="inv-chip inv-chip-extra">Extra</span>
+                    y
+                    <span class="inv-chip inv-chip-share">Compartido</span>.
+                </p>
             </div>
         </div>
 
@@ -114,10 +114,22 @@
 
     @can('tickets.ver-productividad')
     <div data-app-panel="2" hidden>
-        <div class="info-banner">
+        <div class="index-page__note presupuesto-note">
+            <span class="index-page__note-icon" aria-hidden="true">
+                <i class="fas fa-info-circle"></i>
+            </span>
             <div>
-                <p class="info-banner__title">Tipos de empleados incluidos</p>
-                <p class="info-banner__text">Este reporte solo toma en cuenta empleados tipo <strong>FÍSICA</strong> y <strong>REFERENCIADO</strong>.</p>
+                <h4>Qué incluye este reporte</h4>
+                <p>
+                    Empleados tipo
+                    <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+                    y
+                    <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>.
+                    Solo asignaciones
+                    <span class="inv-chip inv-chip-stock">Stock</span>
+                    y
+                    <span class="inv-chip inv-chip-share">Compartido</span>.
+                </p>
             </div>
         </div>
 
