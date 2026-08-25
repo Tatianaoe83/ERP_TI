@@ -605,7 +605,7 @@
 <script src="{{ asset('web/js/scripts.js') }}"></script>
 <script src="{{ mix('assets/js/profile.js') }}"></script>
 <script src="{{ mix('assets/js/custom/custom.js') }}"></script>
-<script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
+<script src="{{ asset('assets/js/sweetalert2.all.min.js') }}"></script>
 
 <div id="app-page-scripts">
 @stack('third_party_scripts')
@@ -1197,7 +1197,7 @@
     })();
 
 </script>
-<script src="{{ asset('vendor/alpine/collapse.min.js') }}"></script>
-<script src="{{ asset('vendor/alpine/alpine.min.js') }}"></script>
+<script src="{{ asset('assets/js/alpine-collapse.min.js') }}"></script>
+<script src="{{ asset('assets/js/alpine.min.js') }}"></script>
 
 </html>
