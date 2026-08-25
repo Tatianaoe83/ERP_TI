@@ -51,14 +51,9 @@
             </div>
 
             <div class="aud-meta__dato aud-meta__dato--equipo">
-                <span class="aud-meta__label">
-                    Equipo auditado
-                    @if($equipos->count() > 1)
-                        <span class="aud-meta__conteo aud-num">{{ $equipos->count() }}</span>
-                    @endif
-                </span>
+                <span class="aud-meta__label">Equipo revisado</span>
                 <span class="aud-meta__valor">
-                    @include('auditorias.partials.equipos-lista', ['equipos' => $equipos])
+                    @include('auditorias.partials.equipo-ficha', ['equipo' => $equipo])
                 </span>
             </div>
         </div>

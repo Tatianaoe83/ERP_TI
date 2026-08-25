@@ -37,10 +37,10 @@
                 {{-- Dos columnas: cada lista trae su propio scroll, apiladas se veían
                      como dos cajas desplazables encimadas. --}}
                 <div class="aud-pasos">
-                {{-- ── Paso 1: equipos ── --}}
+                {{-- ── Paso 1: empleado y equipo ── --}}
                 <fieldset class="aud-paso">
                     <legend class="aud-paso__titulo">
-                        <span class="aud-paso__num">1</span> Equipos a auditar
+                        <span class="aud-paso__num">1</span> Empleado y equipo
                     </legend>
 
                     {{-- La corrida es de un empleado: su tipo de persona y su gerencia
@@ -77,9 +77,11 @@
                             </select>
                         </div>
 
+                        {{-- Filtro de la lista, no del POST: la modalidad que se guarda
+                             se lee del equipo elegido, no de aquí. --}}
                         <div class="aud-campo">
                             <label class="aud-campo__label" for="selectTipoEquipo">Tipo de equipo</label>
-                            <select id="selectTipoEquipo" name="tipoEquipo" class="aud-select">
+                            <select id="selectTipoEquipo" class="aud-select">
                                 <option value="">Cualquiera</option>
                                 <option value="0">Stock</option>
                                 <option value="1">Extra</option>
@@ -148,7 +150,7 @@
                         </div>
 
                         <p class="aud-campo__ayuda" id="ayudaEmpleado">
-                            Se auditan sus laptops y PC. Destilda abajo lo que quieras dejar fuera.
+                            Elige al resguardante y luego cuál de sus equipos se está revisando.
                         </p>
                     </div>
 
@@ -157,17 +159,10 @@
                             <label class="aud-sr" for="buscarEquipo">Buscar equipo</label>
                             <input type="search" id="buscarEquipo" class="aud-buscar"
                                    placeholder="Serie, folio o modelo…" autocomplete="off">
-
-                            <div class="aud-modal__acciones">
-                                <button type="button" class="aud-btn aud-btn--ghost aud-btn--sm" id="btnEquiposTodos">
-                                    <i class="fas fa-check-double" aria-hidden="true"></i> Visibles
-                                </button>
-                                <button type="button" class="aud-btn aud-btn--ghost aud-btn--sm" id="btnEquiposNinguno">
-                                    <i class="fas fa-eraser" aria-hidden="true"></i> Ninguno
-                                </button>
-                            </div>
                         </div>
 
+                        {{-- Un equipo por corrida: radio, no checkbox. Si el empleado
+                             resguarda dos máquinas se generan dos corridas. --}}
                         <div class="aud-lic-lista aud-lic-lista--equipos" id="listaEquipos">
                             @foreach($catalogoEquipos as $equipo)
                                 @php
@@ -183,14 +178,15 @@
                                        data-empleado="{{ $equipo->EmpleadoID }}"
                                        data-tipo="{{ (int) $equipo->tipoEquipo }}"
                                        data-busqueda="{{ $busqueda }}">
-                                    <input type="checkbox" name="equipos[]" value="{{ $equipo->InventarioID }}"
+                                    <input type="radio" name="InventarioID" value="{{ $equipo->InventarioID }}"
                                            class="aud-lic__check aud-equipo__check">
                                     <span class="aud-equipo">
-                                        <span class="aud-equipo__nombre">{{ $equipo->NombreEmpleado ?: 'Sin asignar' }}</span>
+                                        <span class="aud-equipo__nombre">{{ $equipo->Marca ?: ($equipo->CategoriaEquipo ?: 'Equipo') }}</span>
                                         <span class="aud-equipo__meta">
                                             <span class="aud-mini">{{ $equipo->CategoriaEquipo }}</span>
-                                            @if($modelo)<span class="aud-mini">{{ $modelo }}</span>@endif
-                                            @if($equipo->NumSerie)<span class="aud-mini aud-num">{{ $equipo->NumSerie }}</span>@endif
+                                            @if($equipo->Modelo)<span class="aud-mini">{{ $equipo->Modelo }}</span>@endif
+                                            @if($equipo->NumSerie)<span class="aud-mini aud-num">SN {{ $equipo->NumSerie }}</span>@endif
+                                            @if($equipo->Folio)<span class="aud-mini aud-num">Folio {{ $equipo->Folio }}</span>@endif
                                         </span>
                                         <span class="aud-equipo__gerencia">{{ $gerencia }}</span>
                                     </span>
@@ -227,12 +223,16 @@
                         </div>
                     </div>
 
+                    {{-- El semáforo lo pinta el JS al elegir empleado: el estado es de
+                         cada par (empleado, licencia), no del catálogo global. --}}
                     <div class="aud-lic-lista" id="listaLicencias">
                         @foreach($catalogoLicencias as $lic)
-                        <label class="aud-lic" data-nombre="{{ Str::lower($lic) }}">
+                        <label class="aud-lic" data-nombre="{{ Str::lower($lic) }}"
+                               data-licencia="{{ $lic }}">
                             <input type="checkbox" name="licencias[]" value="{{ $lic }}"
                                    class="aud-lic__check" checked>
                             <span class="aud-lic__nombre">{{ $lic }}</span>
+                            <span class="aud-lic__estado aud-mini" data-lic-estado></span>
                         </label>
                         @endforeach
                     </div>
@@ -255,3 +255,9 @@
         </form>
     </div>
 </div>
+
+{{-- Estado vigente por empleado: qué licencia tiene hoy y cómo quedó la última vez
+     que se revisó. Va aparte del formulario porque es dato de lectura, no del POST. --}}
+<script type="application/json" id="estadoLicenciasData">
+    {!! json_encode($estadoLicencias ?? [], JSON_UNESCAPED_UNICODE) !!}
+</script>

@@ -1152,6 +1152,45 @@
         word-break: break-word;
     }
 
+    /* Semáforo del estado vigente: se empuja a la derecha para que la columna de
+       nombres siga leyéndose en vertical. Vacío no ocupa espacio. */
+    .aud-lic__estado {
+        margin-left: auto;
+        flex: 0 0 auto;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .aud-lic__estado:empty { display: none; }
+
+    /* Licencia que el empleado no resguarda: se atenúa pero sigue elegible, por si
+       el auditor encuentra una instalada que el inventario no tiene registrada. */
+    .aud-lic.is-ajena { opacity: 0.55; }
+
+    .aud-lic.is-ajena:hover { opacity: 1; }
+
+    .aud-lic__estado--aldia {
+        background: var(--aud-ok-soft);
+        color: var(--aud-ok);
+    }
+
+    .aud-lic__estado--caducada {
+        background: var(--aud-accent-soft);
+        color: var(--aud-accent);
+    }
+
+    .aud-lic__estado--nunca {
+        background: var(--aud-primary-soft);
+        color: var(--aud-primary);
+    }
+
+    .aud-lic__estado--notiene {
+        background: var(--aud-danger-soft);
+        color: var(--aud-danger);
+    }
+
     /* ── Fila de equipo ── */
     .aud-lic-lista--equipos { grid-template-columns: minmax(0, 1fr); }
 
@@ -1282,6 +1321,181 @@
     .aud-badge--no {
         background: var(--aud-danger-soft);
         color: var(--aud-danger);
+    }
+
+    /* ── Chips de cambio ──────────────────────────────────────────────────────
+       Se usan como botón (filtros del detalle) y como etiqueta (semáforo del
+       listado). El icono acompaña siempre al color: el estado no se comunica
+       sólo con color. */
+    .aud-marca {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.6rem;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background: var(--aud-surface-2);
+        color: var(--aud-text-muted);
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.5;
+        white-space: nowrap;
+    }
+
+    button.aud-marca {
+        cursor: pointer;
+        transition: border-color 160ms ease-out, transform 160ms ease-out;
+    }
+
+    button.aud-marca:hover { border-color: currentColor; }
+    button.aud-marca:active { transform: scale(0.97); }
+
+    button.aud-marca.is-activo {
+        border-color: currentColor;
+        box-shadow: inset 0 0 0 1px currentColor;
+    }
+
+    .aud-marca .aud-num {
+        padding-left: 0.2rem;
+        font-weight: 700;
+    }
+
+    .aud-marca--nueva { background: var(--aud-primary-soft); color: var(--aud-primary); }
+    .aud-marca--cambio { background: var(--aud-accent-soft); color: var(--aud-accent); }
+    .aud-marca--baja { background: var(--aud-danger-soft); color: var(--aud-danger); }
+    .aud-marca--igual { background: var(--aud-ok-soft); color: var(--aud-ok); }
+
+    /* Varios chips juntos: envuelven en vez de desbordar la celda. */
+    .aud-semaforo,
+    .aud-diff__marcas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    /* ── Listado agrupado por (empleado, equipo) ─────────────────────────────── */
+    .aud-col-toggle {
+        width: 3rem;
+        text-align: center;
+    }
+
+    /* 44×44 de área táctil aunque el icono sea chico. */
+    .aud-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: 0.5rem;
+        background: transparent;
+        color: var(--aud-text-muted);
+        cursor: pointer;
+        transition: background-color 160ms ease-out, color 160ms ease-out;
+    }
+
+    .aud-toggle:hover {
+        background: var(--aud-surface-2);
+        color: var(--aud-primary);
+    }
+
+    .aud-toggle:focus-visible {
+        outline: 2px solid var(--aud-primary);
+        outline-offset: 2px;
+    }
+
+    /* Sólo transform: no dispara reflow ni mueve la fila. */
+    .aud-toggle i {
+        transition: transform 180ms ease-out;
+    }
+
+    .aud-toggle.is-abierto i { transform: rotate(90deg); }
+
+    .aud-grupo.is-abierto > td { background: var(--aud-surface-2); }
+
+    .aud-conteo {
+        display: inline-block;
+        min-width: 1.9rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        background: var(--aud-primary-soft);
+        color: var(--aud-primary);
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        text-align: center;
+    }
+
+    /* ── Historial desplegado ────────────────────────────────────────────────── */
+    .aud-historial > td {
+        padding: 0 !important;
+        background: var(--aud-surface-2);
+        border-top: 0;
+    }
+
+    .aud-historial__inner {
+        padding: 0.85rem 1rem 1rem 3.5rem;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: opacity 200ms ease-out, transform 200ms ease-out;
+    }
+
+    .aud-historial__inner.is-abierto {
+        opacity: 1;
+        transform: none;
+    }
+
+    .aud-historial__tabla {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .aud-historial__tabla th {
+        padding: 0.4rem 0.6rem;
+        border-bottom: 1px solid var(--aud-border);
+        color: var(--aud-text-muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+
+    .aud-historial__tabla td {
+        padding: 0.55rem 0.6rem;
+        border-bottom: 1px solid var(--aud-border);
+        color: var(--aud-text);
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    .aud-historial__tabla tr:last-child td { border-bottom: 0; }
+
+    .aud-historial__acciones {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+    }
+
+    /* El despliegue es información, no decoración: sin motion sigue funcionando,
+       sólo aparece de golpe. */
+    @media (prefers-reduced-motion: reduce) {
+        .aud-toggle i,
+        .aud-historial__inner,
+        button.aud-marca {
+            transition: none;
+        }
+
+        .aud-historial__inner {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .aud-historial__inner { padding-left: 1rem; }
     }
 </style>
 

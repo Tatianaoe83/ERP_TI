@@ -55,8 +55,10 @@
         </div>
     </div>
 
+    {{-- Una fila por par (empleado, equipo). Las corridas siguen guardándose una por
+         una; aquí sólo se presentan juntas, y el historial se abre bajo demanda. --}}
     <div class="index-page__card">
-        @if($auditorias->isEmpty())
+        @if($grupos->isEmpty())
             <div class="aud-vacio">
                 <span class="aud-vacio__ico"><i class="fas fa-clipboard-list" aria-hidden="true"></i></span>
                 <p class="aud-vacio__titulo">Aún no hay auditorías generadas</p>
@@ -64,75 +66,187 @@
             </div>
         @else
         <div class="table-responsive">
-            <table class="table index-table w-full">
+            <table class="table index-table aud-grupos w-full">
                 <thead>
                     <tr>
-                        <th scope="col">Folio</th>
-                        <th scope="col">Fecha</th>
-                        <th scope="col">Generada por</th>
-                        <th scope="col">Empleado auditado</th>
-                        <th scope="col">Tipo de persona</th>
-                        <th scope="col">Gerencia</th>
-                        <th scope="col">Equipo</th>
-                        <th scope="col">Tipo de equipo</th>
-                        <th scope="col">Licencias auditadas</th>
+                        <th scope="col" class="aud-col-toggle"><span class="aud-sr">Desplegar historial</span></th>
+                        <th scope="col">Empleado</th>
+                        <th scope="col">Equipo revisado</th>
+                        <th scope="col">Auditorías</th>
+                        <th scope="col">Última</th>
+                        <th scope="col">Licencias hoy</th>
                         <th scope="col">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($auditorias as $a)
-                    <tr>
-                        {{-- Tipo de persona y gerencia salen del empleado, no de la cabecera. --}}
-                        <td class="aud-strong">{{ $a->Folio }}</td>
-                        <td class="aud-num">{{ $a->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
-                        <td>{{ $a->generada_por_nombre ?: 'Sin usuario' }}</td>
-                        <td>{{ $a->empleado?->NombreEmpleado ?: '—' }}</td>
-                        <td>{{ $a->empleado?->tipo_persona ?: '—' }}</td>
-                        <td>{{ $a->empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: '—' }}</td>
-                        {{-- Categoría, marca/modelo, serie y folio del equipo que
-                             resguarda el empleado, leídos del inventario en vivo. --}}
-                        @php $equiposFila = collect($equiposPorAuditoria[$a->id] ?? []); @endphp
+                    @foreach($grupos as $g)
+                    @php $panelId = 'historial-' . $g->clave; @endphp
+
+                    <tr class="aud-grupo" data-grupo="{{ $g->clave }}">
+                        <td class="aud-col-toggle">
+                            {{-- Botón real: Enter y Espacio funcionan sin JS extra. --}}
+                            <button type="button" class="aud-toggle"
+                                    data-toggle-grupo="{{ $panelId }}"
+                                    aria-expanded="false" aria-controls="{{ $panelId }}">
+                                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                <span class="aud-sr">
+                                    Ver las {{ $g->total }} auditorías de {{ $g->NombreEmpleado }}
+                                </span>
+                            </button>
+                        </td>
+
                         <td>
-                            @include('auditorias.partials.equipos-lista', [
-                                'equipos' => $equiposFila,
+                            <div class="aud-strong">{{ $g->NombreEmpleado }}</div>
+                            <div class="aud-mini aud-muted">
+                                {{ $g->gerencia }} · {{ $g->tipo_persona }}
+                            </div>
+                        </td>
+
+                        <td>
+                            @include('auditorias.partials.equipo-ficha', [
+                                'equipo' => $g->equipo,
                                 'compacto' => true,
-                                'mostrarTipo' => false,
                             ])
                         </td>
 
-                        {{-- Modalidad real de cada equipo: un chip por valor distinto. --}}
                         <td>
-                            @forelse($equiposFila->pluck('tipoEquipo')->map(fn($t) => (int) $t)->unique()->sort() as $tipo)
-                                {!! \App\Helpers\PresupuestoAsignacion::chipHtml($tipo) !!}
-                            @empty
-                                <span class="aud-muted">—</span>
-                            @endforelse
+                            <span class="aud-conteo" title="Corridas guardadas de este par">
+                                {{ $g->total }}
+                            </span>
                         </td>
+
                         <td>
-                            @if($a->auditoTodasLasLicencias())
-                                <span class="aud-muted">Todas</span>
+                            @if($g->ultima)
+                                <div class="aud-strong">{{ $g->ultima->Folio }}</div>
+                                <div class="aud-mini aud-muted">
+                                    {{ $g->ultima->created_at?->format('d/m/Y') ?: '—' }}
+                                    · {{ $g->ultima->generada_por_nombre ?: 'Sin usuario' }}
+                                </div>
                             @else
-                                <span class="aud-mini" title="{{ implode(', ', $a->licencias_auditadas) }}">
-                                    {{ $a->total_licencias_auditadas }}
-                                    {{ $a->total_licencias_auditadas === 1 ? 'licencia' : 'licencias' }}
-                                </span>
+                                <span class="aud-muted">—</span>
                             @endif
                         </td>
+
+                        {{-- Semáforo del estado vigente del empleado. El icono acompaña
+                             al color: el estado no se comunica sólo con color. --}}
                         <td>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('auditorias.show', $a->id) }}" class="aud-btn aud-btn--ghost aud-btn--sm">
-                                    <i class="fas fa-eye" aria-hidden="true"></i> Ver
-                                </a>
-                                @if($puedeBorrar)
-                                <form method="POST" action="{{ route('auditorias.destroy', $a->id) }}"
-                                      class="form-borrar-auditoria" data-folio="{{ $a->Folio }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="aud-btn aud-btn--danger aud-btn--sm">
-                                        <i class="fas fa-trash-alt" aria-hidden="true"></i> Eliminar
-                                    </button>
-                                </form>
-                                @endif
+                            @if($g->licencias === 0)
+                                <span class="aud-muted">Sin licencias</span>
+                            @else
+                                <div class="aud-semaforo">
+                                    @if($g->alDia)
+                                        <span class="aud-marca aud-marca--igual">
+                                            <i class="fas fa-circle-check" aria-hidden="true"></i>
+                                            Al día <span class="aud-num">{{ $g->alDia }}</span>
+                                        </span>
+                                    @endif
+                                    @if($g->caducadas)
+                                        <span class="aud-marca aud-marca--cambio">
+                                            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
+                                            Caducadas <span class="aud-num">{{ $g->caducadas }}</span>
+                                        </span>
+                                    @endif
+                                    @if($g->nunca)
+                                        <span class="aud-marca aud-marca--baja">
+                                            <i class="fas fa-circle-question" aria-hidden="true"></i>
+                                            Sin revisar <span class="aud-num">{{ $g->nunca }}</span>
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
+
+                        <td>
+                            @if($g->ultima)
+                            <a href="{{ route('auditorias.show', $g->ultima->id) }}"
+                               class="aud-btn aud-btn--ghost aud-btn--sm">
+                                <i class="fas fa-eye" aria-hidden="true"></i> Ver última
+                            </a>
+                            @endif
+                        </td>
+                    </tr>
+
+                    {{-- Historial del par. Se pinta siempre pero nace cerrado: son pocas
+                         filas por grupo y así el toggle no necesita ir al servidor. --}}
+                    <tr id="{{ $panelId }}" class="aud-historial" hidden>
+                        <td colspan="7">
+                            <div class="aud-historial__inner">
+                                <table class="aud-historial__tabla">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Folio</th>
+                                            <th scope="col">Fecha</th>
+                                            <th scope="col">Generada por</th>
+                                            <th scope="col">Licencias</th>
+                                            <th scope="col">Contra la corrida anterior</th>
+                                            <th scope="col">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{-- Más reciente arriba: es la que se consulta. --}}
+                                        @foreach($g->corridas->reverse() as $c)
+                                        <tr>
+                                            <td class="aud-strong">{{ $c->Folio }}</td>
+                                            <td class="aud-num">{{ $c->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
+                                            <td>{{ $c->generada_por_nombre ?: 'Sin usuario' }}</td>
+                                            <td class="aud-num">{{ $c->licencias }}</td>
+
+                                            {{-- El delta se calcula al leer, nunca se guarda:
+                                                 corregir una corrida vieja corrige el resumen. --}}
+                                            <td>
+                                                @php $cambios = $c->cambios; @endphp
+                                                @if($c->esPrimera)
+                                                    <span class="aud-mini aud-muted">Primera auditoría del empleado</span>
+                                                @elseif($cambios['nueva'] === 0 && $cambios['baja'] === 0 && $cambios['cambio'] === 0)
+                                                    <span class="aud-marca aud-marca--igual">
+                                                        <i class="fas fa-equals" aria-hidden="true"></i> Sin cambios
+                                                    </span>
+                                                @else
+                                                    <div class="aud-semaforo">
+                                                        @if($cambios['nueva'])
+                                                            <span class="aud-marca aud-marca--nueva">
+                                                                <i class="fas fa-circle-plus" aria-hidden="true"></i>
+                                                                Nuevas <span class="aud-num">{{ $cambios['nueva'] }}</span>
+                                                            </span>
+                                                        @endif
+                                                        @if($cambios['cambio'])
+                                                            <span class="aud-marca aud-marca--cambio">
+                                                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                                                                Cambiaron <span class="aud-num">{{ $cambios['cambio'] }}</span>
+                                                            </span>
+                                                        @endif
+                                                        @if($cambios['baja'])
+                                                            <span class="aud-marca aud-marca--baja">
+                                                                <i class="fas fa-circle-minus" aria-hidden="true"></i>
+                                                                Bajas <span class="aud-num">{{ $cambios['baja'] }}</span>
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @endif
+                                            </td>
+
+                                            <td>
+                                                <div class="aud-historial__acciones">
+                                                    <a href="{{ route('auditorias.show', $c->id) }}"
+                                                       class="aud-btn aud-btn--ghost aud-btn--sm">
+                                                        <i class="fas fa-eye" aria-hidden="true"></i> Ver
+                                                    </a>
+                                                    @if($puedeBorrar)
+                                                    <form method="POST" action="{{ route('auditorias.destroy', $c->id) }}"
+                                                          class="form-borrar-auditoria" data-folio="{{ $c->Folio }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="aud-btn aud-btn--danger aud-btn--sm">
+                                                            <i class="fas fa-trash-alt" aria-hidden="true"></i> Eliminar
+                                                        </button>
+                                                    </form>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
                         </td>
                     </tr>
@@ -142,36 +256,37 @@
         </div>
 
         {{-- Paginación propia: el paginador de Bootstrap no usa los tokens del módulo
-             y se pierde en modo oscuro. --}}
-        @if($auditorias->hasPages())
+             y se pierde en modo oscuro. Se pagina por grupo, así que abrir una fila
+             nunca parte su historial entre dos páginas. --}}
+        @if($grupos->hasPages())
         <nav class="aud-pag" role="navigation" aria-label="Paginación de auditorías">
             <span class="aud-muted">
-                Mostrando {{ $auditorias->firstItem() }}–{{ $auditorias->lastItem() }}
-                de {{ $auditorias->total() }} auditorías
+                Mostrando {{ $grupos->firstItem() }}–{{ $grupos->lastItem() }}
+                de {{ $grupos->total() }} equipos auditados
             </span>
 
             <div class="aud-pag__botones">
-                @if($auditorias->onFirstPage())
+                @if($grupos->onFirstPage())
                     <span class="aud-pag__btn is-disabled" aria-disabled="true">
                         <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
                     </span>
                 @else
-                    <a href="{{ $auditorias->previousPageUrl() }}" class="aud-pag__btn" rel="prev">
+                    <a href="{{ $grupos->previousPageUrl() }}" class="aud-pag__btn" rel="prev">
                         <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
                     </a>
                 @endif
 
                 @php
-                    // Ventana de páginas alrededor de la actual: con muchas corridas la
+                    // Ventana de páginas alrededor de la actual: con muchos grupos la
                     // lista completa de números no cabe.
-                    $actual = $auditorias->currentPage();
-                    $ultima = $auditorias->lastPage();
-                    $desde  = max(1, min($actual - 2, $ultima - 4));
-                    $hasta  = min($ultima, max($actual + 2, 5));
+                    $actual = $grupos->currentPage();
+                    $ultimaPag = $grupos->lastPage();
+                    $desde = max(1, min($actual - 2, $ultimaPag - 4));
+                    $hasta = min($ultimaPag, max($actual + 2, 5));
                 @endphp
 
                 @if($desde > 1)
-                    <a href="{{ $auditorias->url(1) }}" class="aud-pag__btn aud-num">1</a>
+                    <a href="{{ $grupos->url(1) }}" class="aud-pag__btn aud-num">1</a>
                     @if($desde > 2)<span class="aud-pag__gap" aria-hidden="true">…</span>@endif
                 @endif
 
@@ -179,17 +294,17 @@
                     @if($p === $actual)
                         <span class="aud-pag__btn is-actual aud-num" aria-current="page">{{ $p }}</span>
                     @else
-                        <a href="{{ $auditorias->url($p) }}" class="aud-pag__btn aud-num">{{ $p }}</a>
+                        <a href="{{ $grupos->url($p) }}" class="aud-pag__btn aud-num">{{ $p }}</a>
                     @endif
                 @endfor
 
-                @if($hasta < $ultima)
-                    @if($hasta < $ultima - 1)<span class="aud-pag__gap" aria-hidden="true">…</span>@endif
-                    <a href="{{ $auditorias->url($ultima) }}" class="aud-pag__btn aud-num">{{ $ultima }}</a>
+                @if($hasta < $ultimaPag)
+                    @if($hasta < $ultimaPag - 1)<span class="aud-pag__gap" aria-hidden="true">…</span>@endif
+                    <a href="{{ $grupos->url($ultimaPag) }}" class="aud-pag__btn aud-num">{{ $ultimaPag }}</a>
                 @endif
 
-                @if($auditorias->hasMorePages())
-                    <a href="{{ $auditorias->nextPageUrl() }}" class="aud-pag__btn" rel="next">
+                @if($grupos->hasMorePages())
+                    <a href="{{ $grupos->nextPageUrl() }}" class="aud-pag__btn" rel="next">
                         Siguiente <i class="fas fa-chevron-right" aria-hidden="true"></i>
                     </a>
                 @else
@@ -208,6 +323,7 @@
     @include('auditorias.partials.selector-generar', [
         'catalogoLicencias' => $catalogoLicencias,
         'catalogoEquipos'   => $catalogoEquipos,
+        'estadoLicencias'   => $estadoLicencias,
         'gerencias'         => $gerencias,
         'departamentos'     => $departamentos,
         'tiposPersona'      => $tiposPersona,
@@ -222,12 +338,71 @@
 @push('third_party_scripts')
 <script>
     (function () {
+        // ── Desplegar el historial de un grupo ───────────────────────────────
+        // Delegado en el contenedor: sobrevive al repintado de AppNav y no deja
+        // un listener por fila.
+        var tabla = document.querySelector('.aud-grupos');
+
+        if (tabla) {
+            tabla.addEventListener('click', function (e) {
+                var boton = e.target.closest('[data-toggle-grupo]');
+                if (!boton) return;
+
+                var panel = document.getElementById(boton.dataset.toggleGrupo);
+                if (!panel) return;
+
+                var abierto = boton.getAttribute('aria-expanded') === 'true';
+                var inner = panel.querySelector('.aud-historial__inner');
+
+                boton.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+                boton.classList.toggle('is-abierto', !abierto);
+                boton.closest('.aud-grupo, tr').classList.toggle('is-abierto', !abierto);
+
+                if (abierto) {
+                    if (inner) inner.classList.remove('is-abierto');
+                    panel.hidden = true;
+                    return;
+                }
+
+                panel.hidden = false;
+                // Doble rAF: el navegador necesita ver el estado inicial antes de
+                // que la clase dispare la transición.
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        if (inner) inner.classList.add('is-abierto');
+                    });
+                });
+            });
+        }
+
+        // Eliminar es irreversible: se confirma antes.
+        document.querySelectorAll('.form-borrar-auditoria').forEach(function (f) {
+            f.addEventListener('submit', function (event) {
+                event.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: '¿Eliminar ' + f.dataset.folio + '?',
+                    text: 'Se borra la corrida y todo su detalle. No se puede deshacer.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#B91C1C',
+                }).then(function (r) {
+                    if (r.isConfirmed) f.submit();
+                });
+            });
+        });
+
+        // ── Modal de generación ──────────────────────────────────────────────
         var modal  = document.getElementById('modalGenerar');
         var abrir  = document.getElementById('btnAbrirLicencias');
         var form   = document.getElementById('formGenerar');
         var boton  = document.getElementById('btnConfirmarGenerar');
 
         var checks   = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaLicencias .aud-lic__check')) : [];
+        // Orden del catálogo tal como lo pintó el servidor: es el desempate dentro de
+        // cada grupo cuando la lista se reordena por empleado.
+        var filasLic = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaLicencias .aud-lic')) : [];
         var equipos  = modal ? Array.prototype.slice.call(modal.querySelectorAll('.aud-equipo__check')) : [];
         var filas    = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaEquipos .aud-lic')) : [];
         var opciones = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaEmpleados .aud-combo__opcion')) : [];
@@ -235,6 +410,22 @@
         var contador        = document.getElementById('contadorLicencias');
         var contadorEquipos = document.getElementById('contadorEquipos');
         var resumen         = document.getElementById('resumenAlcance');
+
+        // Estado vigente por (empleado, licencia): lo que ya se auditó y cuándo.
+        var estadoLicencias = {};
+        try {
+            var datos = document.getElementById('estadoLicenciasData');
+            if (datos) estadoLicencias = JSON.parse(datos.textContent || '{}');
+        } catch (e) {
+            estadoLicencias = {};
+        }
+
+        var ETIQUETA_ESTADO = {
+            alDia:    { texto: 'revisada',      clase: 'aud-lic__estado--aldia'    },
+            caducada: { texto: 'caducada',      clase: 'aud-lic__estado--caducada' },
+            nunca:    { texto: 'sin revisar',   clase: 'aud-lic__estado--nunca'    },
+            noTiene:  { texto: 'no la tiene',   clase: 'aud-lic__estado--notiene'  }
+        };
 
         var comboInput   = document.getElementById('buscarEmpleado');
         var comboLista   = document.getElementById('listaEmpleados');
@@ -247,8 +438,72 @@
             return checks.filter(function (c) { return c.checked; }).length;
         }
 
+        // Radio: como mucho uno. Una corrida revisa un equipo.
         function equiposMarcados() {
             return equipos.filter(function (c) { return c.checked; }).length;
+        }
+
+        // Pinta, junto a cada licencia del catálogo, cómo quedó la última vez que se
+        // revisó en este empleado. Sin empleado elegido no hay nada que decir.
+        //
+        // Las que el empleado no resguarda se destildan pero siguen a la vista: quien
+        // audita necesita poder marcarlas si encuentra una instalada que el inventario
+        // no tiene registrada. Esconderlas le quitaría esa salida.
+        function pintarEstadoLicencias() {
+            var empleado = comboValor ? comboValor.value : '';
+            var delEmpleado = (empleado && estadoLicencias[empleado]) || null;
+
+            checks.forEach(function (check) {
+                var fila = check.closest('.aud-lic');
+                if (!fila) return;
+
+                var etq = fila.querySelector('[data-lic-estado]');
+                if (!etq) return;
+
+                etq.className = 'aud-lic__estado aud-mini';
+                etq.textContent = '';
+                fila.classList.remove('is-ajena');
+
+                if (!delEmpleado) {
+                    check.checked = true;
+                    return;
+                }
+
+                var info = delEmpleado[fila.dataset.licencia];
+
+                // Sólo entran marcadas las que el empleado sí tiene hoy.
+                check.checked = !!info;
+
+                var meta = ETIQUETA_ESTADO[info ? info.estado : 'noTiene'];
+                if (!meta) return;
+
+                if (!info) fila.classList.add('is-ajena');
+
+                etq.classList.add(meta.clase);
+                etq.textContent = info && info.fecha
+                    ? meta.texto + ' ' + info.fecha
+                    : meta.texto;
+            });
+
+            ordenarLicencias();
+            refrescar();
+        }
+
+        // Primero lo que el empleado sí resguarda, después lo ajeno. Dentro de cada
+        // grupo se respeta el orden del catálogo. Sin empleado elegido nada es ajeno,
+        // así que la lista vuelve sola a su orden original.
+        function ordenarLicencias() {
+            var lista = document.getElementById('listaLicencias');
+            if (!lista) return;
+
+            var propias = [];
+            var ajenas = [];
+
+            filasLic.forEach(function (fila) {
+                (fila.classList.contains('is-ajena') ? ajenas : propias).push(fila);
+            });
+
+            propias.concat(ajenas).forEach(function (fila) { lista.appendChild(fila); });
         }
 
         // Equipos del empleado elegido, ya pasados por los filtros.
@@ -260,7 +515,7 @@
             return !comboValor || !!comboValor.value;
         }
 
-        // Sin licencias, sin equipos o sin empleado no hay corrida que valga:
+        // Sin licencias, sin equipo o sin empleado no hay corrida que valga:
         // el submit queda bloqueado hasta que el alcance tenga sentido.
         function refrescar() {
             var lic = marcadas();
@@ -272,11 +527,13 @@
             }
 
             if (contadorEquipos) {
-                contadorEquipos.textContent = eq + ' de ' + disponibles + ' equipos seleccionados';
+                contadorEquipos.textContent = eq
+                    ? '1 equipo elegido de ' + disponibles + ' disponibles'
+                    : 'Elige 1 de ' + disponibles + (disponibles === 1 ? ' equipo' : ' equipos');
             }
 
             if (resumen) {
-                resumen.textContent = eq + (eq === 1 ? ' equipo' : ' equipos') +
+                resumen.textContent = (eq ? '1 equipo' : 'sin equipo') +
                     ' · ' + lic + (lic === 1 ? ' licencia' : ' licencias');
             }
 
@@ -360,6 +617,7 @@
             if (comboLimpiar) comboLimpiar.hidden = false;
             cerrarLista();
             filtrarEquipos(true);
+            pintarEstadoLicencias();
         }
 
         function limpiarEmpleado() {
@@ -368,16 +626,17 @@
             if (comboLimpiar) comboLimpiar.hidden = true;
             filtrarEmpleados(false);
             filtrarEquipos(false);
+            pintarEstadoLicencias();
             comboInput.focus();
         }
 
         // Filtro de equipos: manda el empleado elegido; el tipo y el texto afinan.
         // Sin empleado no se muestra ninguno: la corrida es de uno solo.
-        function filtrarEquipos(marcarTodos) {
+        function filtrarEquipos(autoElegir) {
             var empleado = comboValor ? comboValor.value : '';
             var tipo = (document.getElementById('selectTipoEquipo') || {}).value || '';
             var q = ((document.getElementById('buscarEquipo') || {}).value || '').trim().toLowerCase();
-            var visibles = 0;
+            var visibles = [];
 
             filas.forEach(function (fila) {
                 var coincide = !!empleado &&
@@ -387,18 +646,21 @@
                 fila.hidden = !coincide;
 
                 var check = fila.querySelector('.aud-equipo__check');
-                if (check) {
-                    // Lo que no se ve no viaja en el POST; lo del empleado entra marcado
-                    // por defecto y el usuario destilda lo que quiera dejar fuera.
-                    if (!coincide) check.checked = false;
-                    else if (marcarTodos) check.checked = true;
-                }
+                // Lo que no se ve no viaja en el POST.
+                if (check && !coincide) check.checked = false;
 
-                if (coincide) visibles++;
+                if (coincide) visibles.push(fila);
             });
 
+            // La mayoría resguarda una sola máquina: si sólo queda una, se elige sola
+            // en vez de obligar a un clic que no decide nada.
+            if (autoElegir && visibles.length === 1) {
+                var unico = visibles[0].querySelector('.aud-equipo__check');
+                if (unico) unico.checked = true;
+            }
+
             var vacio = document.getElementById('sinEquipos');
-            if (vacio) vacio.hidden = visibles !== 0;
+            if (vacio) vacio.hidden = visibles.length !== 0;
 
             refrescar();
         }
@@ -409,6 +671,7 @@
             // Se recalcula al abrir: el alcance depende del empleado ya elegido.
             filtrarEmpleados(false);
             filtrarEquipos(false);
+            pintarEstadoLicencias();
             if (comboInput) comboInput.focus();
         }
 
@@ -539,28 +802,6 @@
 
         if (comboLimpiar) comboLimpiar.addEventListener('click', limpiarEmpleado);
 
-        // "Visibles" respeta el filtro: marca lo que se está viendo, no todo el catálogo.
-        var btnEquiposTodos = document.getElementById('btnEquiposTodos');
-        var btnEquiposNinguno = document.getElementById('btnEquiposNinguno');
-
-        if (btnEquiposTodos) {
-            btnEquiposTodos.addEventListener('click', function () {
-                filas.forEach(function (fila) {
-                    if (fila.hidden) return;
-                    var check = fila.querySelector('.aud-equipo__check');
-                    if (check) check.checked = true;
-                });
-                refrescar();
-            });
-        }
-
-        if (btnEquiposNinguno) {
-            btnEquiposNinguno.addEventListener('click', function () {
-                equipos.forEach(function (c) { c.checked = false; });
-                refrescar();
-            });
-        }
-
         var btnTodas = document.getElementById('btnTodas');
         var btnNinguna = document.getElementById('btnNinguna');
 
@@ -587,7 +828,7 @@
                 var q = buscar.value.trim().toLowerCase();
                 var visibles = 0;
 
-                modal.querySelectorAll('.aud-lic').forEach(function (fila) {
+                modal.querySelectorAll('#listaLicencias .aud-lic').forEach(function (fila) {
                     var coincide = !q || fila.dataset.nombre.indexOf(q) !== -1;
                     fila.hidden = !coincide;
                     if (coincide) visibles++;
@@ -611,24 +852,6 @@
                 boton.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Generando…';
             });
         }
-
-        // Eliminar es irreversible: se confirma antes.
-        document.querySelectorAll('.form-borrar-auditoria').forEach(function (f) {
-            f.addEventListener('submit', function (event) {
-                event.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: '¿Eliminar ' + f.dataset.folio + '?',
-                    text: 'Se borra la corrida y todo su detalle. No se puede deshacer.',
-                    showCancelButton: true,
-                    confirmButtonText: 'Eliminar',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#B91C1C',
-                }).then(function (r) {
-                    if (r.isConfirmed) f.submit();
-                });
-            });
-        });
     })();
 </script>
 @endpush

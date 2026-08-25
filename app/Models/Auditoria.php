@@ -21,6 +21,7 @@ class Auditoria extends Model
         'id_empleado',
         'generada_por_nombre',
         'EmpleadoID',
+        'InventarioID',
         'tipoEquipo',
         'licencias_auditadas',
         'total_licencias_auditadas',
@@ -28,6 +29,7 @@ class Auditoria extends Model
 
     protected $casts = [
         'EmpleadoID'          => 'integer',
+        'InventarioID'        => 'integer',
         'tipoEquipo'          => 'integer',
         'licencias_auditadas' => 'array',
     ];
@@ -36,6 +38,15 @@ class Auditoria extends Model
     public function empleado()
     {
         return $this->belongsTo(Empleados::class, 'EmpleadoID', 'EmpleadoID');
+    }
+
+    /**
+     * El equipo que se revisó en esta visita. Sus datos (marca, modelo, serie,
+     * folio) se leen en vivo del inventario: la corrida sólo guarda cuál fue.
+     */
+    public function equipo()
+    {
+        return $this->belongsTo(InventarioEquipo::class, 'InventarioID', 'InventarioID');
     }
 
     /**
