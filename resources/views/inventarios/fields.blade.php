@@ -12,6 +12,32 @@
     $lineasExtra = collect($LineasAsignados)->filter(fn ($e) => \App\Helpers\PresupuestoAsignacion::entraEnPresupuesto($e->Presupuestado ?? 0));
 
     $fmtMoney = fn ($n) => '$' . number_format((float) $n, 0);
+
+    $esVacioInv = function ($valor) {
+        if ($valor === null || $valor === '') {
+            return true;
+        }
+        $v = mb_strtolower(trim((string) $valor), 'UTF-8');
+
+        return in_array($v, ['null', 'sin asignar', 'sin asigna', 'pendiente'], true);
+    };
+
+    $celdaPendiente = function ($valor, $esExtra) use ($esVacioInv) {
+        if ($esVacioInv($valor)) {
+            return $esExtra ? '<span class="inv-pendiente">Pendiente</span>' : '';
+        }
+
+        return e($valor);
+    };
+
+    $fechaPendiente = function ($fecha, $esExtra) {
+        $vacia = empty($fecha) || in_array($fecha, ['Sin asignar', 'Sin asigna', '0000-00-00', 'null'], true);
+        if ($vacia) {
+            return $esExtra ? '<span class="inv-pendiente">Pendiente</span>' : 'Sin asignar';
+        }
+
+        return e(\Carbon\Carbon::parse($fecha)->format('d/m/Y'));
+    };
 @endphp
 
 <div class="tab-content">
@@ -94,24 +120,24 @@
         <div class="inv-kpi-row">
             <div class="inv-kpi inv-kpi-total">
                 <div class="inv-kpi-label">Equipos asignados</div>
-                <div class="inv-kpi-value" id="kpi-equipos-total">{{ $equiposAsignados->count() }}</div>
+                <div class="inv-kpi-value" id="kpi-equipos-total" data-kpi="total">{{ $equiposAsignados->count() }}</div>
                 <div class="inv-kpi-sub">En resguardo / proyección</div>
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Stock</div>
-                <div class="inv-kpi-value">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub">{{ $equiposStock->count() }} equipo(s) · sale en inventario</div>
+                <div class="inv-kpi-value" data-kpi="stock-money">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
+                <div class="inv-kpi-sub" data-kpi="stock-sub">{{ $equiposStock->count() }} equipo(s) · sale en inventario</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Extra / Presupuesto</div>
-                <div class="inv-kpi-value">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub">{{ $equiposExtra->count() }} equipo(s) · sale en presupuesto</div>
+                <div class="inv-kpi-value" data-kpi="extra-money">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
+                <div class="inv-kpi-sub" data-kpi="extra-sub">{{ $equiposExtra->count() }} equipo(s) · sale en presupuesto</div>
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Solo stock</div>
-                <div class="inv-kpi-value">{{ $fmtMoney(collect($equiposAsignados)->sum('Precio')) }}</div>
+                <div class="inv-kpi-value" data-kpi="solo-stock-money">{{ $fmtMoney(collect($equiposAsignados)->sum('Precio')) }}</div>
                 <div class="inv-kpi-sub">Referenciado: sin extras de presupuesto</div>
             </div>
             <div class="inv-kpi">
@@ -151,6 +177,10 @@
                 @endif
 
             <!-- equiposAsignados Seleccionados -->
+                @include('inventarios.partials.bulk-asignacion', [
+                    'tabla' => 'equiposAsignadosTable',
+                    'tipo' => 'equipo',
+                ])
 
                 <div class="index-page__table-wrap table-responsive">
                     <table id="equiposAsignadosTable" class="table index-table w-full">
@@ -176,10 +206,33 @@
                     </thead>
                     <tbody>
                         @foreach ($equiposAsignados as $equiposAsignado)
-                        <tr data-id="{{ $equiposAsignado->InventarioID }}" data-meses="{{ $equiposAsignado->MesDePago }}">
+                        @php $esExtraEquipo = (int) $equiposAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
+                        <tr data-id="{{ $equiposAsignado->InventarioID }}"
+                            data-meses="{{ $equiposAsignado->MesDePago }}"
+                            data-presupuestado="{{ $equiposAsignado->Presupuestado }}"
+                            data-categoria="{{ $equiposAsignado->CategoriaEquipo }}"
+                            data-marca="{{ $equiposAsignado->Marca }}"
+                            data-caracteristicas="{{ $equiposAsignado->Caracteristicas }}"
+                            data-modelo="{{ $equiposAsignado->Modelo }}"
+                            data-precio="{{ $equiposAsignado->Precio }}"
+                            data-fecha-asignacion="{{ $equiposAsignado->FechaAsignacion ? \Carbon\Carbon::parse($equiposAsignado->FechaAsignacion)->toDateString() : '' }}"
+                            data-fecha-compra="{{ $equiposAsignado->FechaDeCompra ? \Carbon\Carbon::parse($equiposAsignado->FechaDeCompra)->toDateString() : '' }}"
+                            data-num-serie="{{ $equiposAsignado->NumSerie }}"
+                            data-folio="{{ $equiposAsignado->Folio }}"
+                            data-gerencia-id="{{ $equiposAsignado->GerenciaEquipoID }}"
+                            data-comentarios="{{ $equiposAsignado->Comentarios }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
+                                    @if($permitePresupuestado && !$presupuestadoForzado)
+                                        @if((int) $equiposAsignado->Presupuestado === 1)
+                                        <span class="inv-check inv-check--off" title="Extra: ábralo para cambiar el tipo"></span>
+                                        @else
+                                        <label class="inv-check" title="Seleccionar">
+                                            <input type="checkbox" class="inv-bulk-check" data-tipo="equipo" data-id="{{ $equiposAsignado->InventarioID }}" data-modo="{{ (int) $equiposAsignado->Presupuestado }}">
+                                        </label>
+                                        @endif
+                                    @endif
                                     <button type="button" class="index-action index-action--edit edit-btn" data-id="{{ $equiposAsignado->InventarioID }}" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -201,13 +254,13 @@
                             <td>{{ $equiposAsignado->Marca }}</td>
                             <td>{{ $equiposAsignado->Caracteristicas }}</td>
                             <td>{{ $equiposAsignado->Modelo }}</td>
-                            <td>{{ $equiposAsignado->Precio }}</td>
-                            <td>{{ $equiposAsignado->FechaAsignacion }}</td>
-                            <td>{{ $equiposAsignado->FechaDeCompra }}</td>
-                            <td>{{ $equiposAsignado->NumSerie }}</td>
-                            <td>{{ $equiposAsignado->Folio }}</td>
-                            <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{{ $equiposAsignado->GerenciaEquipo }}</td>
-                            <td>{{ $equiposAsignado->Comentarios }}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->Precio, $esExtraEquipo) !!}</td>
+                            <td>{!! $fechaPendiente($equiposAsignado->FechaAsignacion, $esExtraEquipo) !!}</td>
+                            <td>{!! $fechaPendiente($equiposAsignado->FechaDeCompra, $esExtraEquipo) !!}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->NumSerie, $esExtraEquipo) !!}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->Folio, $esExtraEquipo) !!}</td>
+                            <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{!! $celdaPendiente($equiposAsignado->GerenciaEquipo, $esExtraEquipo) !!}</td>
+                            <td>{!! $celdaPendiente($equiposAsignado->Comentarios, $esExtraEquipo) !!}</td>
                             @if($permitePresupuestado)
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->tipoEquipo) !!}</td>
                             <td>@if($equiposAsignado->MesDePago)@include('inventarios.partials.meses-pills', ['mesesValor' => $equiposAsignado->MesDePago])@endif</td>
@@ -273,18 +326,18 @@
         <div class="inv-kpi-row">
             <div class="inv-kpi inv-kpi-total">
                 <div class="inv-kpi-label">Insumos asignados</div>
-                <div class="inv-kpi-value">{{ $insumosAsignados->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="total">{{ $insumosAsignados->count() }}</div>
                 <div class="inv-kpi-sub">En resguardo / proyección</div>
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Stock</div>
-                <div class="inv-kpi-value">{{ $insumosStock->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="stock-count">{{ $insumosStock->count() }}</div>
                 <div class="inv-kpi-sub">Sale en inventario</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Extra / Presupuesto</div>
-                <div class="inv-kpi-value">{{ $insumosExtra->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="extra-count">{{ $insumosExtra->count() }}</div>
                 <div class="inv-kpi-sub">Sale en presupuesto</div>
             </div>
             @else
@@ -327,6 +380,11 @@
                 </div>
                 @endif
 
+                @include('inventarios.partials.bulk-asignacion', [
+                    'tabla' => 'insumosAsignadosTable',
+                    'tipo' => 'insumo',
+                ])
+
             <div class="table-responsive">
                 <table id="insumosAsignadosTable" class="table index-table w-full">
                     <thead>
@@ -336,7 +394,6 @@
                             <th>Nombre Insumo</th>
                             <th>Costo Mensual</th>
                             <th>Costo Anual</th>
-                            <th>Calendario</th>
                             <th>Fecha de Renovacion</th>
                             <th>Observaciones</th>
                             <th>Fecha de Asignacion</th>
@@ -351,15 +408,20 @@
                     </thead>
                     <tbody>
                         @foreach ($insumosAsignados as $insumosAsignado)
-                        {{-- data-categoria y data-presupuestado: DataTables responsive puede
-                             sacar esos <td> del DOM, así que el modal los lee del <tr>. --}}
-                        <tr data-id="{{ $insumosAsignado->InventarioID }}"
-                            data-meses="{{ $insumosAsignado->MesDePago }}"
-                            data-categoria="{{ $insumosAsignado->CateogoriaInsumo }}"
-                            data-presupuestado="{{ \App\Helpers\PresupuestoAsignacion::normalizar($insumosAsignado->Presupuestado) }}">
+                        @php $esExtraInsumo = (int) $insumosAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
+                        <tr data-id="{{ $insumosAsignado->InventarioID }}" data-meses="{{ $insumosAsignado->MesDePago }}" data-presupuestado="{{ $insumosAsignado->Presupuestado }}" data-categoria="{{ $insumosAsignado->CateogoriaInsumo }}" data-nombre="{{ $insumosAsignado->NombreInsumo }}" data-costo-mensual="{{ $insumosAsignado->CostoMensual }}" data-costo-anual="{{ $insumosAsignado->CostoAnual }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
+                                    @if($permitePresupuestado && !$presupuestadoForzado)
+                                        @if((int) $insumosAsignado->Presupuestado === 1)
+                                        <span class="inv-check inv-check--off" title="Extra: ábralo para cambiar el tipo"></span>
+                                        @else
+                                        <label class="inv-check" title="Seleccionar">
+                                            <input type="checkbox" class="inv-bulk-check" data-tipo="insumo" data-id="{{ $insumosAsignado->InventarioID }}" data-modo="{{ (int) $insumosAsignado->Presupuestado }}">
+                                        </label>
+                                        @endif
+                                    @endif
                                     <button type="button" class="index-action index-action--edit edit-btn-insum" data-id="{{ $insumosAsignado->InventarioID }}" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -384,11 +446,11 @@
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
-                            <td>{{ \App\Helpers\PagoMeses::etiqueta($insumosAsignado->MesDePago, $insumosAsignado->FrecuenciaDePago) }}</td>
-                            <td>{{ (empty($insumosAsignado->FechaRenovacion) || in_array($insumosAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($insumosAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
+                            <td>{!! $fechaPendiente($insumosAsignado->FechaRenovacion, false) !!}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
-<td>{{ $insumosAsignado->FechaAsignacion ? \Carbon\Carbon::parse($insumosAsignado->FechaAsignacion)->format('d/m/Y') : 'Sin asignar' }}</td>                            <td>{{ $insumosAsignado->NumSerie }}</td>
-                            <td>{{ $insumosAsignado->Comentarios }}</td>
+                            <td>{!! $fechaPendiente($insumosAsignado->FechaAsignacion, $esExtraInsumo) !!}</td>
+                            <td>{!! $celdaPendiente($insumosAsignado->NumSerie, $esExtraInsumo) !!}</td>
+                            <td>{!! $celdaPendiente($insumosAsignado->Comentarios, $esExtraInsumo) !!}</td>
                             <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $insumosAsignado->MesDePago, 'mesesFrecuencia' => $insumosAsignado->FrecuenciaDePago])</td>
                             @if($permitePresupuestado)
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
@@ -428,7 +490,11 @@
                         </thead>
                         <tbody>
                             @foreach ($insumos as $insumo)
-                            <tr>
+                            <tr data-insumo-id="{{ $insumo->ID }}"
+                                data-categoria="{{ optional($insumo->categorias)->Categoria }}"
+                                data-nombre="{{ $insumo->NombreInsumo }}"
+                                data-costo-mensual="{{ $insumo->CostoMensual }}"
+                                data-costo-anual="{{ $insumo->CostoAnual }}">
                                 <td>
 
 
@@ -464,18 +530,18 @@
         <div class="inv-kpi-row">
             <div class="inv-kpi inv-kpi-total">
                 <div class="inv-kpi-label">Líneas asignadas</div>
-                <div class="inv-kpi-value">{{ $LineasAsignados->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="total">{{ $LineasAsignados->count() }}</div>
                 <div class="inv-kpi-sub">En uso / proyección</div>
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Inventario</div>
-                <div class="inv-kpi-value">{{ $lineasStock->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="stock-count">{{ $lineasStock->count() }}</div>
                 <div class="inv-kpi-sub">Stock y compartidos</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Presupuesto</div>
-                <div class="inv-kpi-value">{{ $lineasExtra->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="extra-count">{{ $lineasExtra->count() }}</div>
                 <div class="inv-kpi-sub">Extra y compartidos</div>
             </div>
             @else
@@ -495,6 +561,11 @@
         <div class="inv-panel">
             <div class="inv-panel-head inv-panel-head-asignados">
                 <span><i class="fas fa-check-circle mr-1"></i> Líneas asignadas</span>
+                @if($empleadoActivo && $permitePresupuestado)
+                <button type="button" class="crear-btn-linea-extra" title="Proyección extra: solo plan, sin reservar del catálogo">
+                    <i class="fas fa-calendar-plus"></i> Agregar proyección extra
+                </button>
+                @endif
                 @include('inventarios.filtro_presupuestado', [
                     'tabla' => 'lineasAsignadosTable',
                     'tipo' => 'lineas',
@@ -517,6 +588,11 @@
                     </div>
                 </div>
                 @endif
+
+                @include('inventarios.partials.bulk-asignacion', [
+                    'tabla' => 'lineasAsignadosTable',
+                    'tipo' => 'linea',
+                ])
 
             <div class="table-responsive">
                 <table id="lineasAsignadosTable" class="table index-table w-full">
@@ -548,10 +624,43 @@
                     </thead>
                     <tbody>
                         @foreach ($LineasAsignados as $LineasAsignado)
-                        <tr data-id="{{ $LineasAsignado->InventarioID }}" data-meses="{{ $LineasAsignado->MesDePago }}">
+                        @php
+                            $esProyLinea = empty($LineasAsignado->LineaID) && (int) $LineasAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA;
+                            $obraLinea = $LineasAsignado->Obra ?: ($LineasAsignado->lineastelefonicas->obras->NombreObra ?? 'Sin asignar');
+                            $pendiente = '<span class="inv-pendiente">Pendiente</span>';
+                        @endphp
+                        <tr
+                            data-id="{{ $LineasAsignado->InventarioID }}"
+                            data-meses="{{ $LineasAsignado->MesDePago }}"
+                            data-linea-id="{{ $LineasAsignado->LineaID }}"
+                            data-plan-id="{{ $LineasAsignado->PlanID }}"
+                            data-tipo="{{ $LineasAsignado->TipoLinea }}"
+                            data-obra-id="{{ $LineasAsignado->ObraID }}"
+                            data-renta="{{ $LineasAsignado->CostoRentaMensual }}"
+                            data-compania="{{ $LineasAsignado->Compania }}"
+                            data-fianza="{{ $LineasAsignado->CostoFianza }}"
+                            data-num="{{ $LineasAsignado->NumTelefonico }}"
+                            data-cuenta-padre="{{ $LineasAsignado->CuentaPadre }}"
+                            data-cuenta-hija="{{ $LineasAsignado->CuentaHija }}"
+                            data-fecha-fianza="{{ $LineasAsignado->FechaFianza ? \Carbon\Carbon::parse($LineasAsignado->FechaFianza)->format('Y-m-d') : '' }}"
+                            data-fecha-asig="{{ $LineasAsignado->FechaAsignacion ? \Carbon\Carbon::parse($LineasAsignado->FechaAsignacion)->format('Y-m-d') : '' }}"
+                            data-comentarios="{{ $LineasAsignado->Comentarios }}"
+                            data-monto-renov="{{ $LineasAsignado->MontoRenovacionFianza }}"
+                            data-fecha-renov="{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? '' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('Y-m-d') }}"
+                            data-presupuestado="{{ $LineasAsignado->Presupuestado }}"
+                        >
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
+                                    @if($permitePresupuestado && !$presupuestadoForzado)
+                                        @if((int) $LineasAsignado->Presupuestado === 1)
+                                        <span class="inv-check inv-check--off" title="Extra: ábralo para cambiar el tipo"></span>
+                                        @else
+                                        <label class="inv-check" title="Seleccionar">
+                                            <input type="checkbox" class="inv-bulk-check" data-tipo="linea" data-id="{{ $LineasAsignado->InventarioID }}" data-modo="{{ (int) $LineasAsignado->Presupuestado }}">
+                                        </label>
+                                        @endif
+                                    @endif
                                     <button type="button" class="index-action index-action--edit edit-btn-linea" data-id="{{ $LineasAsignado->InventarioID }}" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -572,17 +681,17 @@
                             </td>
 
 
-                            <td>{{ $LineasAsignado->NumTelefonico}}</td>
+                            <td>{!! $esProyLinea && empty($LineasAsignado->NumTelefonico) ? $pendiente : e($LineasAsignado->NumTelefonico) !!}</td>
                             <td>{{ $LineasAsignado->Compania}}</td>
                             <td>{{ $LineasAsignado->PlanTel}}</td>
                             <td>{{ $LineasAsignado->CostoRentaMensual}}</td>
-                            <td>{{ $LineasAsignado->CuentaPadre}}</td>
-                            <td>{{ $LineasAsignado->CuentaHija}}</td>
+                            <td>{!! $esProyLinea && empty($LineasAsignado->CuentaPadre) ? $pendiente : e($LineasAsignado->CuentaPadre) !!}</td>
+                            <td>{!! $esProyLinea && empty($LineasAsignado->CuentaHija) ? $pendiente : e($LineasAsignado->CuentaHija) !!}</td>
                             <td>{{ $LineasAsignado->TipoLinea}}</td>  
-                            <td>{{ $LineasAsignado->lineastelefonicas->obras->NombreObra ?? 'Sin asignar'}}</td>
-                            <td>{{ $LineasAsignado->FechaFianza ? \Carbon\Carbon::parse($LineasAsignado->FechaFianza)->format('d/m/Y') : '' }}</td>
+                            <td>{{ $obraLinea }}</td>
+                            <td>{!! $esProyLinea && empty($LineasAsignado->FechaFianza) ? $pendiente : ($LineasAsignado->FechaFianza ? e(\Carbon\Carbon::parse($LineasAsignado->FechaFianza)->format('d/m/Y')) : '') !!}</td>
                             <td>{{ $LineasAsignado->CostoFianza}}</td>
-                            <td>{{ $LineasAsignado->FechaAsignacion ? \Carbon\Carbon::parse($LineasAsignado->FechaAsignacion)->format('d/m/Y') : '' }}</td>
+                            <td>{!! $esProyLinea && empty($LineasAsignado->FechaAsignacion) ? $pendiente : ($LineasAsignado->FechaAsignacion ? e(\Carbon\Carbon::parse($LineasAsignado->FechaAsignacion)->format('d/m/Y')) : '') !!}</td>
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
                             <td>{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
@@ -606,9 +715,12 @@
             @if($empleadoActivo)
         <div class="inv-panel">
             <div class="inv-panel-head inv-panel-head-disponibles">
-                <span><i class="fas fa-plus-circle mr-1"></i> Líneas disponibles</span>
+                <span><i class="fas fa-plus-circle mr-1"></i> Líneas disponibles (stock)</span>
             </div>
             <div class="inv-panel-body">
+            @if($permitePresupuestado)
+            <p class="inv-linea-hint mb-3">Para presupuesto extra no reserve una línea de aquí. Use <strong>Agregar proyección extra</strong>: solo plan y costos. El número se crea en el catálogo cuando pase a stock o compartido.</p>
+            @endif
             <div class="drag-area" id="disponibles">
                 <div class="table-responsive">
                     <table id="lineasTable" class="table index-table w-full">
@@ -746,18 +858,47 @@
 
     function tipoAsignacionDesdeTexto(texto) {
         const v = String(texto ?? '').trim().toLowerCase();
-        // Los data-* del <tr> traen el número directo; los <td>, el texto del chip.
-        if (/^[0-3]$/.test(v)) return parseInt(v, 10);
-        if (v.indexOf('propio') !== -1) return MODO_PROPIO;
-        if (v.indexOf('compart') !== -1) return MODO_COMPARTIDO;
-        if (v === 'si' || v === '1' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1) return MODO_EXTRA;
-        return MODO_STOCK;
+        if (v === '2' || v.indexOf('compart') !== -1) return 2;
+        if (v === 'si' || v === '1' || v.indexOf('extra') !== -1 || v.indexOf('presupuest') !== -1) return 1;
+        return 0;
     }
 
     function htmlChipPresupuestado(valor) {
         const tipo = (valor === true || valor === '1') ? MODO_EXTRA : (parseInt(valor, 10) || MODO_STOCK);
         const modo = MODOS[tipo] || MODOS[MODO_STOCK];
         return '<span class="inv-chip ' + modo.chip + '">' + modo.etiqueta + '</span>';
+    }
+
+    function htmlCheckBulk(tipo, id, modo) {
+        if (!empleadoInventarioActivo || !permitePresupuestado || presupuestadoForzado) {
+            return '';
+        }
+        modo = parseInt(modo, 10) || 0;
+        if (modo === 1) {
+            return '<span class="inv-check inv-check--off" title="Extra: ábralo para cambiar el tipo"></span>';
+        }
+        return '<label class="inv-check" title="Seleccionar"><input type="checkbox" class="inv-bulk-check" data-tipo="' + tipo + '" data-id="' + id + '" data-modo="' + modo + '"></label>';
+    }
+
+    function syncCheckFila($row, tipo, id, modo) {
+        var $cell = $row.find('.index-actions');
+        if (!$cell.length) {
+            return;
+        }
+        $cell.find('.inv-check').remove();
+        $cell.prepend(htmlCheckBulk(tipo, id, modo));
+        $row.attr('data-presupuestado', modo);
+    }
+
+    function checksBulk($bar) {
+        var tablaId = $bar.data('bulk-table');
+        return $bar.closest('.inv-panel-body').find('#' + tablaId + ' tbody tr:visible .inv-bulk-check');
+    }
+
+    function actualizarConteoBulk($bar) {
+        var n = checksBulk($bar).filter(':checked').length;
+        $bar.find('.inv-bulk-count').text(n + (n === 1 ? ' seleccionado' : ' seleccionados'));
+        $bar.find('.inv-bulk-btn').prop('disabled', n === 0);
     }
 
     function syncModoCards(selector, valor) {
@@ -818,6 +959,10 @@
         const tipo = presupuestadoForzado ? 1 : tipoAsignacionDesdeTexto(texto);
         $(selector).val(tipo);
         syncModoCards(selector, tipo);
+        const $form = $(selector).closest('form');
+        if ($form.length) {
+            syncRequeridosModo($form, selector);
+        }
     }
 
     function getPresupuestado(selector) {
@@ -836,12 +981,158 @@
         return parseInt($(selector).val(), 10) || 0;
     }
 
+    function esModoExtra(selector) {
+        return getPresupuestado(selector) === 1;
+    }
+
+    function esProyeccionLinea() {
+        return $('#editEsProyeccion').val() === '1' || (
+            !$('#editId_linea2').val() && !$('#editLineaCatalogoId').val()
+        );
+    }
+
+    function syncLineaModalModo() {
+        const $form = $('#editFormLinea');
+        if (!$form.length) {
+            return;
+        }
+
+        const extra = esModoExtra('#editPresupuestadoLinea');
+        const proyeccion = esProyeccionLinea();
+        const nuevaProyeccion = $('#editEsProyeccion').val() === '1' && !$('#editId_linea').val();
+
+        $form.find('.js-linea-plan').toggle(proyeccion);
+        $form.find('.js-linea-real').toggle(!(extra && proyeccion));
+        $form.find('.js-linea-proyeccion-hint').toggle(proyeccion);
+
+        $form.find('#editPlanLinea, #editTipoLinea, #editObraLinea').each(function() {
+            if (proyeccion) {
+                this.setAttribute('required', 'required');
+            } else {
+                this.removeAttribute('required');
+            }
+        });
+
+        if (!presupuestadoForzado) {
+            $form.find('.inv-modo-card').toggleClass('is-locked', nuevaProyeccion);
+        }
+    }
+
+    function aplicarPlanLineaSeleccionado() {
+        const $opt = $('#editPlanLinea option:selected');
+        $('#editCompaniaLinea').val($opt.data('compania') || '');
+        $('#editRentaLinea').val($opt.data('renta') || '');
+    }
+
+    function valorVacioInv(valor) {
+        if (valor === null || valor === undefined) {
+            return true;
+        }
+        var v = String(valor).trim().toLowerCase();
+        return v === '' || v === 'null' || v === 'sin asignar' || v === 'sin asigna' || v === 'pendiente' || v === '0000-00-00';
+    }
+
+    function esExtraAsignacion(valor) {
+        return parseInt(valor, 10) === 1;
+    }
+
+    function celdaPendiente(valor, esProy) {
+        if (esProy && valorVacioInv(valor)) {
+            return '<span class="inv-pendiente">Pendiente</span>';
+        }
+        return valorVacioInv(valor) ? '' : valor;
+    }
+
+    function celdaFechaPendiente(valor, esProy) {
+        if (valorVacioInv(valor)) {
+            return esProy ? '<span class="inv-pendiente">Pendiente</span>' : 'Sin asignar';
+        }
+        return formatFechaRenovacion(valor);
+    }
+
+    function filaPadre($el) {
+        var $row = $($el).closest('tr');
+        if ($row.hasClass('child') || $row.hasClass('dtr-details')) {
+            $row = $row.prev();
+        }
+        return $row;
+    }
+
+    function attrFila($row, clave) {
+        var v = $row.attr('data-' + clave);
+        if (v === undefined || v === null) {
+            return '';
+        }
+        v = String(v).trim();
+        return valorVacioInv(v) ? '' : v;
+    }
+
+    function setAttrFila($row, clave, valor) {
+        $row.attr('data-' + clave, valor == null ? '' : valor);
+    }
+
+    function escAttr(valor) {
+        return String(valor == null ? '' : valor)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function textoDeCelda($td) {
+        var v = String(($td && $td.text) ? $td.text() : ($td || '')).trim();
+        return valorVacioInv(v) ? '' : v;
+    }
+
+    function celdaLineaPendiente(valor, esProy) {
+        return celdaPendiente(valor, esProy);
+    }
+
+    function esProyeccionTel(telefono) {
+        return !telefono.LineaID && parseInt(telefono.Presupuestado, 10) === 1;
+    }
+
+    function syncRequeridosModo($form, selectorModo) {
+        const extra = esModoExtra(selectorModo);
+        $form.toggleClass('is-modo-extra', extra);
+        $form.find('[data-req-stock]').each(function() {
+            if (extra) {
+                this.removeAttribute('required');
+            } else {
+                this.setAttribute('required', 'required');
+            }
+        });
+        if ($form.is('#editFormLinea')) {
+            syncLineaModalModo();
+        }
+    }
+
+    function validarCamposRequeridos($form) {
+        let ok = true;
+        $form.find('[required]').each(function() {
+            if ($(this).is('[readonly],:disabled')) {
+                return;
+            }
+            if (!$(this).val()) {
+                ok = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        return ok;
+    }
+
     $(document).on('click.invAssign', '.inv-modo-card:not(.is-locked)', function() {
         const $card = $(this);
         const selector = $card.closest('[data-switch]').data('switch');
         const value = parseInt($card.data('value'), 10) || 0;
         $(selector).val(value);
         syncModoCards(selector, value);
+        const $form = $card.closest('form');
+        if ($form.length) {
+            syncRequeridosModo($form, selector);
+        }
     });
 
     function bloquearAccionInventarioInactivo() {
@@ -922,7 +1213,7 @@
     // La columna sólo se pinta para FISICA/EXTRAORDINARIO.
     var columnaPresupuestado = {
         equiposAsignadosTable: 12,
-        insumosAsignadosTable: 12,
+        insumosAsignadosTable: 11,
         lineasAsignadosTable: 15,
     };
 
@@ -1025,8 +1316,41 @@
         });
     }
 
+    function fmtMoneyInv(n) {
+        n = Math.round(Number(n) || 0);
+        return '$' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function montoFilaAsignada($row, tablaId) {
+        if (tablaId === 'equiposAsignadosTable') {
+            return parseFloat($row.attr('data-precio')) || 0;
+        }
+        if (tablaId === 'insumosAsignadosTable') {
+            return parseFloat($row.attr('data-costo-mensual')) || parseFloat($row.find('td:eq(3)').text()) || 0;
+        }
+        if (tablaId === 'lineasAsignadosTable') {
+            return parseFloat($row.attr('data-renta')) || 0;
+        }
+        return 0;
+    }
+
+    function tipoDesdeFila($row, tablaId) {
+        var raw = $row.attr('data-presupuestado');
+        if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
+            var n = parseInt(raw, 10);
+            if (!isNaN(n)) {
+                return n;
+            }
+        }
+        var col = columnaPresupuestado[tablaId];
+        if (col === undefined) {
+            return 0;
+        }
+        return tipoFilaAsignacion($row.find('td').eq(col).text());
+    }
+
     function actualizarConteos(tablaId) {
-        if (!permitePresupuestado) {
+        if (!$('#' + tablaId).length || !$.fn.DataTable.isDataTable('#' + tablaId)) {
             return;
         }
 
@@ -1034,12 +1358,24 @@
         let inventario = 0;
         let presupuesto = 0;
         let total = 0;
+        let montoInv = 0;
+        let montoPre = 0;
+        let montoTotal = 0;
 
-        dt.column(columnaPresupuestado[tablaId], { search: 'none' }).data().each(function(valor) {
-            const tipo = tipoFilaAsignacion(valor);
+        dt.rows({ search: 'none' }).every(function() {
+            const $n = $(this.node());
+            const tipo = tipoDesdeFila($n, tablaId);
+            const monto = montoFilaAsignada($n, tablaId);
             total++;
-            if (tipo !== MODO_EXTRA) inventario++;
-            if (tipo === MODO_EXTRA || tipo === MODO_COMPARTIDO) presupuesto++;
+            montoTotal += monto;
+            if (tipo === 0 || tipo === 2) {
+                inventario++;
+                montoInv += monto;
+            }
+            if (tipo === 1 || tipo === 2) {
+                presupuesto++;
+                montoPre += monto;
+            }
         });
 
         const barra = $('.inventario-filtros[data-tabla="' + tablaId + '"]');
@@ -1050,6 +1386,20 @@
         const dual = $('.inv-dual[data-tabla="' + tablaId + '"]');
         dual.find('.conteo-si').text(presupuesto);
         dual.find('.conteo-no').text(inventario);
+        dual.find('[data-filtro="no_presupuestados"] .inv-money').text(fmtMoneyInv(montoInv));
+        dual.find('[data-filtro="presupuestados"] .inv-money').text(fmtMoneyInv(montoPre));
+
+        const $pane = $('#' + tablaId).closest('.tab-pane');
+        $pane.find('[data-kpi="total"]').text(total);
+        $pane.find('[data-kpi="stock-count"]').text(inventario);
+        $pane.find('[data-kpi="extra-count"]').text(presupuesto);
+        $pane.find('[data-kpi="stock-money"]').text(fmtMoneyInv(montoInv));
+        $pane.find('[data-kpi="extra-money"]').text(fmtMoneyInv(montoPre));
+        $pane.find('[data-kpi="solo-stock-money"]').text(fmtMoneyInv(montoTotal));
+        if (tablaId === 'equiposAsignadosTable') {
+            $pane.find('[data-kpi="stock-sub"]').text(inventario + ' equipo(s) · sale en inventario');
+            $pane.find('[data-kpi="extra-sub"]').text(presupuesto + ' equipo(s) · sale en presupuesto');
+        }
     }
 
     function inicializarFiltrosPresupuestado() {
@@ -1175,26 +1525,25 @@
             return;
         }
 
-        let row = $(this).closest('tr');
+        let row = filaPadre(this);
         let id = row.data('id');
         const celda = celdasEquipo(row);
 
-        // Asignar valores al formulario
         document.getElementById('titulo').innerHTML = 'Editar Equipo';
         $('#editId').val(id);
         $('#editEmp').val('');
-        $('#editCategoria').val(row.find("td:eq(1)").text());
-        $('#editMarca').val(row.find("td:eq(2)").text());
-        $('#editCaracteristicas').val(row.find("td:eq(3)").text());
-        $('#editModelo').val(row.find("td:eq(4)").text());
-        $('#editPrecio').val(row.find("td:eq(5)").text());
-        $('#editFechaAsignacion').val(row.find("td:eq(6)").text());
-        $('#editFechaDeCompra').val(row.find("td:eq(7)").text());
-        $('#editNumSerie').val(row.find("td:eq(8)").text());
-        $('#editFolio').val(row.find("td:eq(9)").text());
-        $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('id')).trigger('change');
-        $('#editComentarios').val(row.find("td:eq(11)").text());
-        setPresupuestado('#editPresupuestadoEquipo', row.find("td:eq(12)").text());
+        $('#editCategoria').val(attrFila(row, 'categoria'));
+        $('#editMarca').val(attrFila(row, 'marca'));
+        $('#editCaracteristicas').val(attrFila(row, 'caracteristicas'));
+        $('#editModelo').val(attrFila(row, 'modelo'));
+        $('#editPrecio').val(attrFila(row, 'precio'));
+        $('#editFechaAsignacion').val(attrFila(row, 'fecha-asignacion'));
+        $('#editFechaDeCompra').val(attrFila(row, 'fecha-compra'));
+        $('#editNumSerie').val(attrFila(row, 'num-serie'));
+        $('#editFolio').val(attrFila(row, 'folio'));
+        $('#editGerenciaEquipo').val(attrFila(row, 'gerencia-id') || row.find("td:eq(10)").data('id')).trigger('change');
+        $('#editComentarios').val(attrFila(row, 'comentarios'));
+        setPresupuestado('#editPresupuestadoEquipo', row.attr('data-presupuestado') || row.find("td:eq(12)").text());
         setPagoMeses('editMesDePagoEquipo', row.attr('data-meses') || '');
 
         $('#editModal').modal('show');
@@ -1333,28 +1682,26 @@
         $('.error-message').remove();
         $('.is-invalid').removeClass('is-invalid');
 
-        let isValid = true;
-
-        // Validación de campos requeridos
-        $('#editForm [required]').each(function() {
-            if (!$(this).val()) {
-                isValid = false;
-                $(this).addClass('is-invalid');
-            } else {
-                $(this).removeClass('is-invalid');
-            }
-        });
+        syncRequeridosModo($('#editForm'), '#editPresupuestadoEquipo');
+        let isValid = validarCamposRequeridos($('#editForm'));
 
         if (!isValid) {
             Swal.fire({
                 icon: 'error',
                 title: 'Campos requeridos',
-                text: 'Por favor complete todos los campos obligatorios',
+                text: esModoExtra('#editPresupuestadoEquipo')
+                    ? 'En extra puede dejar vacíos folio, fechas y serie. Complete los datos del catálogo.'
+                    : 'Para pasar a stock o compartido complete folio, fechas, serie y gerencia.',
                 customClass: {
                     popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                 }
             });
             return;
+        }
+
+        const folioVacio = !$('#editFolio').val().trim();
+        if (esModoExtra('#editPresupuestadoEquipo') && folioVacio) {
+            folioValido = true;
         }
 
         // Bloquear el envío si el folio ya fue detectado como duplicado
@@ -1378,13 +1725,108 @@
         let excluirId = id || null;
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // Sin folio no hay nada que verificar: se guarda directo.
+        function enviarEquipo() {
+            let url = id ? '/inventarios/editar-equipo/' + id : '/inventarios/crear-equipo/' + id_E;
+            let method = id ? 'PUT' : 'POST';
+            let formData = {
+                CategoriaEquipo: $('#editCategoria').val(),
+                GerenciaEquipoID: $('#editGerenciaEquipo').val(),
+                Marca: $('#editMarca').val(),
+                Caracteristicas: $('#editCaracteristicas').val(),
+                Modelo: $('#editModelo').val(),
+                Precio: $('#editPrecio').val(),
+                FechaAsignacion: $('#editFechaAsignacion').val(),
+                NumSerie: $('#editNumSerie').val(),
+                Folio: folio,
+                FechaDeCompra: $('#editFechaDeCompra').val(),
+                Comentarios: $('#editComentarios').val(),
+                FechaRenovacion: $('#editFechaDeRenovacion').val(),
+                Presupuestado: getPresupuestado('#editPresupuestadoEquipo'),
+                MesDePago: $('#editMesDePagoEquipo').val(),
+            };
+
+            $.ajax({
+                url: url,
+                method: method,
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                    success: function(response) {
+                        if (response.errors) {
+                            // Mostrar errores de validación
+                            Object.keys(response.errors).forEach(field => {
+                                const input = $(`#edit${field}`);
+                                input.addClass('is-invalid');
+                                input.siblings('.invalid-feedback').text(response.errors[field][0]);
+                            });
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error de validación',
+                                text: 'Por favor revise los campos marcados en rojo',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
+                            });
+                        } else {
+                            // Si la solicitud fue exitosa, actualizar la fila correspondiente o agregar una nueva
+                            Swal.fire({
+                                position: "top-end",
+                                icon: "success",
+                                title: "Datos del equipo guardados correctamente",
+                                showConfirmButton: false,
+                                timer: 1500,
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
+                            });
+
+                            // Actualizar o agregar la fila en la tabla
+                            if (id) {
+                                updateTableRow(response.equipo);
+                            } else {
+                                addNewRow(response.equipo);
+                            }
+
+                            $('#editModal').modal('hide');
+                        }
+                    },
+                    error: function(xhr) {
+                        // Manejar error 422 del backend (folio duplicado)
+                        if (xhr.status === 422) {
+                            let resp = xhr.responseJSON;
+                            if (resp && resp.errors && resp.errors.Folio) {
+                                $('#editFolio').addClass('is-invalid').focus();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Folio duplicado',
+                                    text: resp.errors.Folio[0],
+                                    customClass: {
+                                        popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                    }
+                                });
+                            }
+                        } else {
+                            console.error('Error:', xhr);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Ocurrió un error al guardar los datos',
+                                customClass: {
+                                    popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                                }
+                            });
+                        }
+                    }
+                });
+        }
+
         if (!folio) {
-            guardarEquipo(id, id_E, folio, csrfToken);
+            enviarEquipo();
             return;
         }
 
-        // Verificación final de unicidad del folio antes de enviar
         $.ajax({
             url: '/inventarios/verificar-folio',
             method: 'GET',
@@ -1403,12 +1845,10 @@
                     folioValido = false;
                     return;
                 }
-
-                guardarEquipo(id, id_E, folio, csrfToken);
+                enviarEquipo();
             },
             error: function() {
-                // Si falla la verificación, dejar pasar y que el backend valide
-                console.warn('No se pudo verificar el folio en tiempo real.');
+                enviarEquipo();
             }
         });
     });
@@ -1540,7 +1980,7 @@
 
     // Helper para convertir dd/mm/yyyy a yyyy-mm-dd (para inputs type=date)
     function fechaDisplayToInput(fechaDisplay) {
-        if (!fechaDisplay || fechaDisplay === 'Sin asignar' || fechaDisplay === 'Sin asigna' || fechaDisplay === '0000-00-00') {
+        if (!fechaDisplay || fechaDisplay === 'Sin asignar' || fechaDisplay === 'Sin asigna' || fechaDisplay === '0000-00-00' || fechaDisplay === 'null' || fechaDisplay === 'Pendiente') {
             return '';
         }
         let parts = fechaDisplay.trim().split('/');
@@ -1554,25 +1994,37 @@
     // Actualizar una fila en la tabla después de editar
     function updateTableRow(equipo) {
         let row = $(`tr[data-id=${equipo.InventarioID}]`);
-        const celda = celdasEquipo(row);
-        celda.nodo(1).text(equipo.CategoriaEquipo);
-        celda.nodo(2).text(equipo.Marca);
-        celda.nodo(3).text(equipo.Caracteristicas);
-        celda.nodo(4).text(equipo.Modelo);
-        celda.nodo(5).text(equipo.Precio);
-        celda.nodo(6).text(equipo.FechaAsignacion);
-        celda.nodo(7).text(equipo.FechaDeCompra);
-        celda.nodo(8).text(equipo.NumSerie);
-        celda.nodo(9).text(equipo.Folio);
-        // El data-id de la gerencia es lo que relee el modal al reabrirlo.
-        celda.nodo(10).attr('data-id', equipo.GerenciaEquipoID).text(equipo.GerenciaEquipo);
-        celda.nodo(11).text(equipo.Comentarios);
+        const extra = esExtraAsignacion(equipo.Presupuestado);
+        row.find('td:eq(1)').text(equipo.CategoriaEquipo);
+        row.find('td:eq(2)').text(equipo.Marca);
+        row.find('td:eq(3)').text(equipo.Caracteristicas);
+        row.find('td:eq(4)').text(equipo.Modelo);
+        row.find('td:eq(5)').html(celdaPendiente(equipo.Precio, extra));
+        row.find('td:eq(6)').html(celdaFechaPendiente(equipo.FechaAsignacion, extra));
+        row.find('td:eq(7)').html(celdaFechaPendiente(equipo.FechaDeCompra, extra));
+        row.find('td:eq(8)').html(celdaPendiente(equipo.NumSerie, extra));
+        row.find('td:eq(9)').html(celdaPendiente(equipo.Folio, extra));
+        row.find('td:eq(10)').attr('data-id', equipo.GerenciaEquipoID || '').html(celdaPendiente(equipo.GerenciaEquipo, extra));
+        row.find('td:eq(11)').html(celdaPendiente(equipo.Comentarios, extra));
         if (permitePresupuestado) {
             row.find('td:eq(12)').html(htmlChipPresupuestado(equipo.Presupuestado));
             row.find('td:eq(13)').html(htmlPillsMeses(equipo.MesDePago ?? ''));
         }
         row.attr('data-meses', equipo.MesDePago ?? '');
         row.find('.edit-btn').data('id', equipo.InventarioID);
+        setAttrFila(row, 'categoria', equipo.CategoriaEquipo);
+        setAttrFila(row, 'marca', equipo.Marca);
+        setAttrFila(row, 'caracteristicas', equipo.Caracteristicas);
+        setAttrFila(row, 'modelo', equipo.Modelo);
+        setAttrFila(row, 'precio', equipo.Precio);
+        setAttrFila(row, 'fecha-asignacion', equipo.FechaAsignacion ? String(equipo.FechaAsignacion).substring(0, 10) : '');
+        setAttrFila(row, 'fecha-compra', equipo.FechaDeCompra ? String(equipo.FechaDeCompra).substring(0, 10) : '');
+        setAttrFila(row, 'num-serie', equipo.NumSerie);
+        setAttrFila(row, 'folio', equipo.Folio);
+        setAttrFila(row, 'gerencia-id', equipo.GerenciaEquipoID);
+        setAttrFila(row, 'comentarios', equipo.Comentarios);
+        setAttrFila(row, 'presupuestado', equipo.Presupuestado);
+        syncCheckFila(row, 'equipo', equipo.InventarioID, equipo.Presupuestado);
 
         // Refrescar la caché de DataTables para que el filtro y los conteos vean el cambio.
         $('#equiposAsignadosTable').DataTable().row(row).invalidate().draw(false);
@@ -1580,10 +2032,18 @@
 
     // Agregar una nueva fila en la tabla (para equipo creado)
     function addNewRow(equipo) {
+        const extra = esExtraAsignacion(equipo.Presupuestado);
         let newRow = `
-        <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}">
+        <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}" data-presupuestado="${equipo.Presupuestado ?? 0}"
+            data-categoria="${escAttr(equipo.CategoriaEquipo)}" data-marca="${escAttr(equipo.Marca)}"
+            data-caracteristicas="${escAttr(equipo.Caracteristicas)}" data-modelo="${escAttr(equipo.Modelo)}"
+            data-precio="${escAttr(equipo.Precio)}" data-fecha-asignacion="${escAttr(equipo.FechaAsignacion ? String(equipo.FechaAsignacion).substring(0, 10) : '')}"
+            data-fecha-compra="${escAttr(equipo.FechaDeCompra ? String(equipo.FechaDeCompra).substring(0, 10) : '')}"
+            data-num-serie="${escAttr(equipo.NumSerie)}" data-folio="${escAttr(equipo.Folio)}"
+            data-gerencia-id="${escAttr(equipo.GerenciaEquipoID)}" data-comentarios="${escAttr(equipo.Comentarios)}">
             <td>
                 <div class="index-actions">
+                    ${htmlCheckBulk('equipo', equipo.InventarioID, equipo.Presupuestado)}
                     <button type="button" class="index-action index-action--edit edit-btn" data-id="${equipo.InventarioID}" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -1598,13 +2058,13 @@
             <td>${equipo.Marca}</td>
             <td>${equipo.Caracteristicas}</td>
             <td>${equipo.Modelo}</td>
-            <td>${equipo.Precio}</td>
-            <td>${equipo.FechaAsignacion}</td>
-            <td>${equipo.FechaDeCompra}</td>
-            <td>${equipo.NumSerie}</td>
-            <td>${equipo.Folio}</td>
-            <td data-id="${equipo.GerenciaEquipoID}">${equipo.GerenciaEquipo}</td>
-            <td>${equipo.Comentarios}</td>
+            <td>${celdaPendiente(equipo.Precio, extra)}</td>
+            <td>${celdaFechaPendiente(equipo.FechaAsignacion, extra)}</td>
+            <td>${celdaFechaPendiente(equipo.FechaDeCompra, extra)}</td>
+            <td>${celdaPendiente(equipo.NumSerie, extra)}</td>
+            <td>${celdaPendiente(equipo.Folio, extra)}</td>
+            <td data-id="${equipo.GerenciaEquipoID || ''}">${celdaPendiente(equipo.GerenciaEquipo, extra)}</td>
+            <td>${celdaPendiente(equipo.Comentarios, extra)}</td>
             ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.Presupuestado)}</td><td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
         </tr>
     `;
@@ -1700,7 +2160,7 @@
             return;
         }
 
-        let row = $(this).closest('tr');
+        let row = filaPadre(this);
         let id = row.data('id');
 
         // Asignar valores al formulario
@@ -1708,18 +2168,17 @@
 
         $('#editId_insumo').val(id);
         $('#editEmp_insumo').val('');
-        // data-categoria es la fuente confiable; el <td> se corre si DataTables colapsa columnas.
-        $('#editCategoriaInsumo').val(row.data('categoria') ?? row.find("td:eq(1)").text());
-        $('#editNombreInsumo').val(row.find("td:eq(2)").text());
-        $('#editCostoMensual').val(row.find("td:eq(3)").text());
-        $('#editCostoAnual').val(row.find("td:eq(4)").text());
-        $('#editFechaDeRenovacion').val(fechaDisplayToInput(row.find("td:eq(6)").text()));
-        $('#editobserv').val(row.find("td:eq(7)").text());
-        $('#editFechaDeAsigna').val(fechaDisplayToInput(row.find("td:eq(8)").text()));
-        $('#editNumSerieInsu').val(row.find("td:eq(9)").text());
-        $('#editComentariosInsumo').val(row.find("td:eq(10)").text());
+        $('#editCategoriaInsumo').val(attrFila(row, 'categoria') || row.find("td:eq(1)").text());
+        $('#editNombreInsumo').val(attrFila(row, 'nombre') || row.find("td:eq(2)").text());
+        $('#editCostoMensual').val(attrFila(row, 'costo-mensual') || row.find("td:eq(3)").text());
+        $('#editCostoAnual').val(attrFila(row, 'costo-anual') || row.find("td:eq(4)").text());
+        $('#editFechaDeRenovacion').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(5)"))));
+        $('#editobserv').val(row.find("td:eq(6)").text());
+        $('#editFechaDeAsigna').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(7)"))));
+        $('#editNumSerieInsu').val(textoDeCelda(row.find("td:eq(8)")));
+        $('#editComentariosInsumo').val(textoDeCelda(row.find("td:eq(9)")));
         setPagoMeses('editMesDePago', row.attr('data-meses') || '');
-        setPresupuestado('#editPresupuestadoInsumo', row.data('presupuestado') ?? row.find("td:eq(12)").text());
+        setPresupuestado('#editPresupuestadoInsumo', row.find("td:eq(11)").text());
 
         $('#editModalInsumo').modal('show');
     });
@@ -1734,11 +2193,11 @@
         $('#editFormInsumo')[0].reset();
 
         document.getElementById('tituloinsumo').innerHTML = 'Crear insumo';
-        let row = $(this).closest('tr');
-        let categoria = row.find("td:eq(1)").text();
-        let nombreinsumo = row.find("td:eq(2)").text();
-        let costomensual = row.find("td:eq(3)").text();
-        let costoanual = row.find("td:eq(4)").text();
+        let row = filaPadre(this);
+        let categoria = attrFila(row, 'categoria') || row.find("td:eq(1)").text();
+        let nombreinsumo = attrFila(row, 'nombre') || row.find("td:eq(2)").text();
+        let costomensual = attrFila(row, 'costo-mensual') || row.find("td:eq(3)").text();
+        let costoanual = attrFila(row, 'costo-anual') || row.find("td:eq(4)").text();
         let fecharenovacion = row.find("td:eq(5)").text().trim();
         // Si la fecha trae hora (ej. 2026-04-29 00:00:00), tomamos solo los primeros 10 caracteres
         if (fecharenovacion.length > 10) {
@@ -1775,16 +2234,8 @@
         $('.error-message').remove();
         $('.is-invalid').removeClass('is-invalid');
 
-        let isValid = true;
-
-        $('#editFormInsumo [required]').each(function() {
-            if (!$(this).val()) {
-                isValid = false;
-                $(this).addClass('is-invalid');
-            } else {
-                $(this).removeClass('is-invalid');
-            }
-        });
+        syncRequeridosModo($('#editFormInsumo'), '#editPresupuestadoInsumo');
+        let isValid = validarCamposRequeridos($('#editFormInsumo'));
 
         if (!$('#editMesDePago').val()) {
             isValid = false;
@@ -1794,7 +2245,9 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Campos requeridos',
-                text: 'Seleccione al menos un mes de pago y complete los campos obligatorios',
+                text: esModoExtra('#editPresupuestadoInsumo')
+                    ? 'Seleccione los meses de pago. Fecha y serie pueden quedar vacíos en extra.'
+                    : 'Seleccione los meses de pago y complete fecha de asignación y número de serie.',
                 customClass: {
                     popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                 }
@@ -1893,35 +2346,39 @@
 
     function updateisnumoTableRow(insumo) {
         let row = $(`tr[data-id=${insumo.InventarioID}]`);
+        const extra = esExtraAsignacion(insumo.Presupuestado);
         row.find('td:eq(1)').text(insumo.CateogoriaInsumo);
         row.find('td:eq(2)').text(insumo.NombreInsumo);
         row.find('td:eq(3)').text(insumo.CostoMensual);
         row.find('td:eq(4)').text(insumo.CostoAnual);
-        row.find('td:eq(5)').text(etiquetaMesesPago(insumo.MesDePago));
-        row.find('td:eq(6)').text(formatFechaRenovacion(insumo.FechaRenovacion));
-        row.find('td:eq(7)').text(insumo.Observaciones);
-        row.find('td:eq(8)').text(formatFechaRenovacion(insumo.FechaAsignacion));
-        row.find('td:eq(9)').text(insumo.NumSerie);
-        row.find('td:eq(10)').text(insumo.Comentarios);
-        row.find('td:eq(11)').html(htmlPillsMeses(insumo.MesDePago));
+        row.find('td:eq(5)').text(formatFechaRenovacion(insumo.FechaRenovacion));
+        row.find('td:eq(6)').text(insumo.Observaciones);
+        row.find('td:eq(7)').html(celdaFechaPendiente(insumo.FechaAsignacion, extra));
+        row.find('td:eq(8)').html(celdaPendiente(insumo.NumSerie, extra));
+        row.find('td:eq(9)').html(celdaPendiente(insumo.Comentarios, extra));
+        row.find('td:eq(10)').html(htmlPillsMeses(insumo.MesDePago));
         row.attr('data-meses', insumo.MesDePago ?? '');
+        row.attr('data-presupuestado', insumo.Presupuestado ?? 0);
+        setAttrFila(row, 'categoria', insumo.CateogoriaInsumo);
+        setAttrFila(row, 'nombre', insumo.NombreInsumo);
+        setAttrFila(row, 'costo-mensual', insumo.CostoMensual);
+        setAttrFila(row, 'costo-anual', insumo.CostoAnual);
         if (permitePresupuestado) {
-            row.find('td:eq(12)').html(htmlChipPresupuestado(insumo.Presupuestado));
+            row.find('td:eq(11)').html(htmlChipPresupuestado(insumo.Presupuestado));
         }
-        // .data() cachea, así que hay que actualizar ambos para que el modal relea bien.
-        row.attr('data-categoria', insumo.CateogoriaInsumo).data('categoria', insumo.CateogoriaInsumo);
-        const modoGuardado = tipoAsignacionDesdeTexto(insumo.Presupuestado);
-        row.attr('data-presupuestado', modoGuardado).data('presupuestado', modoGuardado);
+        syncCheckFila(row, 'insumo', insumo.InventarioID, insumo.Presupuestado);
 
         $('#insumosAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }
 
 
     function addinsumoNewRow(insumo) {
+        const extra = esExtraAsignacion(insumo.Presupuestado);
         let newRow = `
-        <tr data-id="${insumo.InventarioID}" data-meses="${insumo.MesDePago ?? ''}">
+        <tr data-id="${insumo.InventarioID}" data-meses="${insumo.MesDePago ?? ''}" data-presupuestado="${insumo.Presupuestado ?? 0}" data-categoria="${escAttr(insumo.CateogoriaInsumo)}" data-nombre="${escAttr(insumo.NombreInsumo)}" data-costo-mensual="${escAttr(insumo.CostoMensual)}" data-costo-anual="${escAttr(insumo.CostoAnual)}">
             <td>
                 <div class="index-actions">
+                    ${htmlCheckBulk('insumo', insumo.InventarioID, insumo.Presupuestado)}
                     <button type="button" class="index-action index-action--edit edit-btn-insum" data-id="${insumo.InventarioID}" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -1936,12 +2393,11 @@
             <td>${insumo.NombreInsumo}</td>
             <td>${insumo.CostoMensual}</td>
             <td>${insumo.CostoAnual}</td>
-            <td>${etiquetaMesesPago(insumo.MesDePago)}</td>
             <td>${formatFechaRenovacion(insumo.FechaRenovacion)}</td>
-            <td>${insumo.Observaciones}</td>
-            <td>${formatFechaRenovacion(insumo.FechaAsignacion)}</td>
-            <td>${insumo.NumSerie}</td>
-            <td>${insumo.Comentarios}</td>
+            <td>${insumo.Observaciones || ''}</td>
+            <td>${celdaFechaPendiente(insumo.FechaAsignacion, extra)}</td>
+            <td>${celdaPendiente(insumo.NumSerie, extra)}</td>
+            <td>${celdaPendiente(insumo.Comentarios, extra)}</td>
             <td>${htmlPillsMeses(insumo.MesDePago)}</td>
             ${permitePresupuestado ? `<td>${htmlChipPresupuestado(insumo.Presupuestado)}</td>` : ''}
         </tr>
@@ -2032,6 +2488,8 @@
 
     // Seccion telefono
 
+    $(document).on('change.invAssign', '#editPlanLinea', aplicarPlanLineaSeleccionado);
+
     $(document).on('click.invAssign', '.edit-btn-linea', function() {
         if (bloquearAccionInventarioInactivo()) {
             return;
@@ -2039,20 +2497,38 @@
 
         let row = $(this).closest('tr');
         let id = row.data('id');
+        let lineaId = row.attr('data-linea-id') || '';
 
-        document.getElementById('titulolinea').innerHTML = 'Editar Linea';
+        document.getElementById('titulolinea').innerHTML = lineaId ? 'Editar línea' : 'Editar proyección extra';
 
-        // Asignar valores al formulario
+        $('#editFormLinea')[0].reset();
         $('#editId_linea').val(id);
         $('#editId_linea2').val('');
         $('#editEmp_linea').val('');
-        $('#editcomenl').val(row.find("td:eq(12)").text());
-        $('#editfechalinea').val(fechaDisplayToInput(row.find("td:eq(11)").text()));
-        $('#editMontoRenovacionFianza').val(row.find("td:eq(13)").text());
-        // Convertir dd/mm/yyyy del <td> a yyyy-mm-dd para el hidden input
-        $('#editFechaRenovacion').val(fechaDisplayToInput(row.find("td:eq(14)").text()));
-        setPresupuestado('#editPresupuestadoLinea', row.find("td:eq(15)").text());
+        $('#editLineaCatalogoId').val(lineaId);
+        $('#editEsProyeccion').val(lineaId ? '0' : '1');
+        $('#editPlanLinea').val(row.attr('data-plan-id') || '');
+        aplicarPlanLineaSeleccionado();
+        if (!$('#editCompaniaLinea').val()) {
+            $('#editCompaniaLinea').val(row.attr('data-compania') || '');
+        }
+        if (!$('#editRentaLinea').val()) {
+            $('#editRentaLinea').val(row.attr('data-renta') || '');
+        }
+        $('#editTipoLinea').val(row.attr('data-tipo') || '');
+        $('#editObraLinea').val(row.attr('data-obra-id') || '');
+        $('#editCostoFianzaLinea').val(row.attr('data-fianza') || '');
+        $('#editNumTelLinea').val(row.attr('data-num') || '');
+        $('#editCuentaPadreLinea').val(row.attr('data-cuenta-padre') || '');
+        $('#editCuentaHijaLinea').val(row.attr('data-cuenta-hija') || '');
+        $('#editFechaFianzaLinea').val(row.attr('data-fecha-fianza') || '');
+        $('#editfechalinea').val(row.attr('data-fecha-asig') || '');
+        $('#editcomenl').val(row.attr('data-comentarios') || '');
+        $('#editMontoRenovacionFianza').val(row.attr('data-monto-renov') || '');
+        $('#editFechaRenovacion').val(row.attr('data-fecha-renov') || '');
+        setPresupuestado('#editPresupuestadoLinea', row.attr('data-presupuestado') || row.find('td:eq(15)').text());
         setPagoMeses('editMesDePagoLinea', row.attr('data-meses') || '');
+        syncLineaModalModo();
 
         $('#editModalLinea').modal('show');
     });
@@ -2065,7 +2541,7 @@
 
         $('#editFormLinea')[0].reset();
 
-        document.getElementById('titulolinea').innerHTML = 'Asignar Linea';
+        document.getElementById('titulolinea').innerHTML = 'Asignar línea del catálogo';
         let row = $(this).closest('tr');
         
         let boton = $(this);
@@ -2087,10 +2563,32 @@
         $('#editId_linea').val('');
         $('#editId_linea2').val(id);
         $('#editEmp_linea').val(id_E);
+        $('#editLineaCatalogoId').val(id);
+        $('#editEsProyeccion').val('0');
         $('#editMontoRenovacionFianza').val(monto);
         $('#editFechaRenovacion').val(fecha);
         setPresupuestado('#editPresupuestadoLinea', 'No');
         setPagoMeses('editMesDePagoLinea', mesesPagoTodosStr);
+        syncLineaModalModo();
+
+        $('#editModalLinea').modal('show');
+    });
+
+    $(document).on('click.invAssign', '.crear-btn-linea-extra', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
+        $('#editFormLinea')[0].reset();
+        document.getElementById('titulolinea').innerHTML = 'Proyección extra de línea';
+        $('#editId_linea').val('');
+        $('#editId_linea2').val('');
+        $('#editEmp_linea').val('{{ $inventario->EmpleadoID }}');
+        $('#editLineaCatalogoId').val('');
+        $('#editEsProyeccion').val('1');
+        setPresupuestado('#editPresupuestadoLinea', '1');
+        setPagoMeses('editMesDePagoLinea', mesesPagoTodosStr);
+        syncLineaModalModo();
 
         $('#editModalLinea').modal('show');
     });
@@ -2106,16 +2604,8 @@
         $('.error-message').remove();
         $('.is-invalid').removeClass('is-invalid');
 
-        let isValid = true;
-
-        $('#editFormLinea [required]').each(function() {
-            if (!$(this).val()) {
-                isValid = false;
-                $(this).addClass('is-invalid');
-            } else {
-                $(this).removeClass('is-invalid');
-            }
-        });
+        syncRequeridosModo($('#editFormLinea'), '#editPresupuestadoLinea');
+        let isValid = validarCamposRequeridos($('#editFormLinea'));
 
         if (!$('#editMesDePagoLinea').val()) {
             isValid = false;
@@ -2125,7 +2615,11 @@
             Swal.fire({
                 icon: 'error',
                 title: 'Campos requeridos',
-                text: 'Seleccione al menos un mes de renta y complete los campos obligatorios',
+                text: esProyeccionLinea() && esModoExtra('#editPresupuestadoLinea')
+                    ? 'La proyección extra requiere plan, tipo, obra y meses de renta. El número se captura al pasarla a stock.'
+                    : (esModoExtra('#editPresupuestadoLinea')
+                        ? 'Seleccione los meses de renta. La fecha de asignación puede quedar vacía en extra.'
+                        : 'Capture número, cuentas, plan/tipo/obra si aplica, meses de renta y fecha de asignación.'),
                 customClass: {
                     popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
                 }
@@ -2135,8 +2629,15 @@
 
         let id = $('#editId_linea').val();
         let id2 = $('#editId_linea2').val();
-        let id_E = $('#editEmp_linea').val();
-        let url = id ? '/inventarios/editar-linea/' + id : '/inventarios/crear-linea/' + id_E + '/' + id2;
+        let id_E = $('#editEmp_linea').val() || '{{ $inventario->EmpleadoID }}';
+        let url;
+        if (id) {
+            url = '/inventarios/editar-linea/' + id;
+        } else if (esProyeccionLinea()) {
+            url = '/inventarios/crear-linea-extra/' + id_E;
+        } else {
+            url = '/inventarios/crear-linea/' + id_E + '/' + id2;
+        }
         let method = id ? 'PUT' : 'POST';
 
         // Limpiar FechaRenovacion: enviar vacío si tiene texto no-fecha
@@ -2151,7 +2652,17 @@
             MontoRenovacionFianza: $('#editMontoRenovacionFianza').val(),
             FechaRenovacion: fechaRenov,
             Presupuestado: getPresupuestado('#editPresupuestadoLinea'),
-            MesDePago: $('#editMesDePagoLinea').val()
+            MesDePago: $('#editMesDePagoLinea').val(),
+            PlanID: $('#editPlanLinea').val(),
+            TipoLinea: $('#editTipoLinea').val(),
+            ObraID: $('#editObraLinea').val(),
+            CostoFianza: $('#editCostoFianzaLinea').val(),
+            Compania: $('#editCompaniaLinea').val(),
+            CostoRentaMensual: $('#editRentaLinea').val(),
+            NumTelefonico: $('#editNumTelLinea').val(),
+            CuentaPadre: $('#editCuentaPadreLinea').val(),
+            CuentaHija: $('#editCuentaHijaLinea').val(),
+            FechaFianza: $('#editFechaFianzaLinea').val()
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -2222,11 +2733,63 @@
     });
 
 
+    function attrsFilaLinea(telefono) {
+        var fechaFianza = telefono.FechaFianza ? String(telefono.FechaFianza).substring(0, 10) : '';
+        var fechaAsig = telefono.FechaAsignacion ? String(telefono.FechaAsignacion).substring(0, 10) : '';
+        var fechaRenov = telefono.FechaRenovacion ? String(telefono.FechaRenovacion).substring(0, 10) : '';
+        return {
+            'data-id': telefono.InventarioID,
+            'data-meses': telefono.MesDePago || '',
+            'data-linea-id': telefono.LineaID || '',
+            'data-plan-id': telefono.PlanID || '',
+            'data-tipo': telefono.TipoLinea || '',
+            'data-obra-id': telefono.ObraID || '',
+            'data-renta': telefono.CostoRentaMensual || '',
+            'data-compania': telefono.Compania || '',
+            'data-fianza': telefono.CostoFianza || '',
+            'data-num': telefono.NumTelefonico || '',
+            'data-cuenta-padre': telefono.CuentaPadre || '',
+            'data-cuenta-hija': telefono.CuentaHija || '',
+            'data-fecha-fianza': fechaFianza,
+            'data-fecha-asig': fechaAsig,
+            'data-comentarios': telefono.Comentarios || '',
+            'data-monto-renov': telefono.MontoRenovacionFianza || '',
+            'data-fecha-renov': fechaRenov,
+            'data-presupuestado': telefono.Presupuestado
+        };
+    }
+
+    function aplicarAttrsFilaLinea($row, telefono) {
+        var attrs = attrsFilaLinea(telefono);
+        Object.keys(attrs).forEach(function(k) {
+            $row.attr(k, attrs[k]);
+        });
+    }
+
+    function obraLineaTexto(telefono) {
+        if (telefono.Obra) return telefono.Obra;
+        if (telefono.lineastelefonicas && telefono.lineastelefonicas.obras) {
+            return telefono.lineastelefonicas.obras.NombreObra;
+        }
+        return 'Sin asignar';
+    }
+
     function updatetelefTableRow(telefono) {
         let row = $(`tr[data-id=${telefono.InventarioID}]`);
-        row.find('td:eq(11)').text(formatFechaRenovacion(telefono.FechaAsignacion));
-        row.find('td:eq(12)').text(telefono.Comentarios);
-        row.find('td:eq(13)').text(telefono.MontoRenovacionFianza);
+        const proy = esProyeccionTel(telefono);
+        row.find('td:eq(1)').html(celdaLineaPendiente(telefono.NumTelefonico, proy));
+        row.find('td:eq(2)').text(telefono.Compania || '');
+        row.find('td:eq(3)').text(telefono.PlanTel || '');
+        row.find('td:eq(4)').text(telefono.CostoRentaMensual || '');
+        row.find('td:eq(5)').html(celdaLineaPendiente(telefono.CuentaPadre, proy));
+        row.find('td:eq(6)').html(celdaLineaPendiente(telefono.CuentaHija, proy));
+        row.find('td:eq(7)').text(telefono.TipoLinea || '');
+        row.find('td:eq(8)').text(obraLineaTexto(telefono));
+        row.find('td:eq(9)').html(celdaLineaPendiente(formatFechaRenovacion(telefono.FechaFianza), proy));
+        row.find('td:eq(10)').text(telefono.CostoFianza || '');
+        row.find('td:eq(11)').html(celdaLineaPendiente(formatFechaRenovacion(telefono.FechaAsignacion), proy));
+        row.find('td:eq(12)').text(telefono.Comentarios || '');
+        row.find('td:eq(13)').text(telefono.MontoRenovacionFianza || '');
         row.find('td:eq(14)').text(formatFechaRenovacion(telefono.FechaRenovacion));
         if (permitePresupuestado) {
             row.find('td:eq(15)').html(htmlChipPresupuestado(telefono.Presupuestado));
@@ -2234,7 +2797,8 @@
         } else {
             row.find('td:eq(15)').html(htmlPillsMeses(telefono.MesDePago));
         }
-        row.attr('data-meses', telefono.MesDePago ?? '');
+        aplicarAttrsFilaLinea(row, telefono);
+        syncCheckFila(row, 'linea', telefono.InventarioID, telefono.Presupuestado);
 
         $('#lineasAsignadosTable').DataTable().row(row).invalidate().draw(false);
     }
@@ -2242,9 +2806,11 @@
 
     function addtelefNewRow(telefono) {
         const table = $('#lineasAsignadosTable').DataTable();
+        const proy = esProyeccionTel(telefono);
 
         const newRow = [
             `<div class="index-actions">
+                ${htmlCheckBulk('linea', telefono.InventarioID, telefono.Presupuestado)}
                 <button type="button" class="index-action index-action--edit edit-btn-linea" data-id="${telefono.InventarioID}" title="Editar">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -2254,17 +2820,17 @@
                     </button>
                 </form>
             </div>`,
-            telefono.NumTelefonico,
+            celdaLineaPendiente(telefono.NumTelefonico, proy),
             telefono.Compania,
             telefono.PlanTel,
             telefono.CostoRentaMensual,
-            telefono.CuentaPadre,
-            telefono.CuentaHija,
+            celdaLineaPendiente(telefono.CuentaPadre, proy),
+            celdaLineaPendiente(telefono.CuentaHija, proy),
             telefono.TipoLinea,
-            telefono.Obra,
-            formatFechaRenovacion(telefono.FechaFianza),
+            obraLineaTexto(telefono),
+            celdaLineaPendiente(formatFechaRenovacion(telefono.FechaFianza), proy),
             telefono.CostoFianza,
-            formatFechaRenovacion(telefono.FechaAsignacion),
+            celdaLineaPendiente(formatFechaRenovacion(telefono.FechaAsignacion), proy),
             telefono.Comentarios,
             telefono.MontoRenovacionFianza,
             formatFechaRenovacion(telefono.FechaRenovacion)
@@ -2278,7 +2844,7 @@
         newRow.push(htmlPillsMeses(telefono.MesDePago));
 
         var dtRow = $('#lineasAsignadosTable').DataTable().row.add(newRow);
-        $(dtRow.node()).attr('data-id', telefono.InventarioID).attr('data-meses', telefono.MesDePago || '');
+        aplicarAttrsFilaLinea($(dtRow.node()), telefono);
         dtRow.draw(false);
     }
 
@@ -2365,6 +2931,104 @@
                     }
                 });
             }
+        });
+    });
+
+    $(document).on('change.invAssign', '.inv-bulk-check, .inv-bulk-all', function() {
+        var $bar = $(this).closest('.inv-panel-body').find('.inv-bulk');
+        if ($(this).hasClass('inv-bulk-all')) {
+            checksBulk($bar).prop('checked', this.checked);
+        }
+        actualizarConteoBulk($bar);
+    });
+
+    $(document).on('click.invAssign', '.inv-bulk-btn', function() {
+        if (bloquearAccionInventarioInactivo()) {
+            return;
+        }
+
+        var $btn = $(this);
+        var $bar = $btn.closest('.inv-bulk');
+        var tipo = $bar.data('bulk-tipo');
+        var tablaId = $bar.data('bulk-table');
+        var modo = parseInt($btn.data('modo'), 10);
+        var ids = [];
+        checksBulk($bar).filter(':checked').each(function() {
+            ids.push($(this).data('id'));
+        });
+
+        if (!ids.length) {
+            return;
+        }
+
+        var etiqueta = modo === 2 ? 'Compartido' : 'Stock';
+        Swal.fire({
+            title: 'Cambiar tipo',
+            text: 'Pasar ' + ids.length + ' registro(s) a ' + etiqueta + '.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Confirmar',
+            cancelButtonText: 'Cancelar',
+            customClass: {
+                popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+            }
+        }).then(function(result) {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $.ajax({
+                url: '/inventarios/cambiar-asignacion-masiva',
+                method: 'PUT',
+                data: {
+                    tipo: tipo,
+                    ids: ids,
+                    Presupuestado: modo,
+                    _token: $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    (response.actualizados || []).forEach(function(id) {
+                        var $row = $('#' + tablaId + ' tr[data-id="' + id + '"]');
+                        if (permitePresupuestado) {
+                            $row.find('td:eq(' + columnaPresupuestado[tablaId] + ')').html(htmlChipPresupuestado(modo));
+                        }
+                        syncCheckFila($row, tipo, id, modo);
+                        if ($.fn.DataTable.isDataTable('#' + tablaId)) {
+                            $('#' + tablaId).DataTable().row($row).invalidate();
+                        }
+                    });
+                    if ($.fn.DataTable.isDataTable('#' + tablaId)) {
+                        $('#' + tablaId).DataTable().draw(false);
+                    }
+                    $bar.find('.inv-bulk-all').prop('checked', false);
+                    actualizarConteoBulk($bar);
+
+                    var extra = '';
+                    if (response.omitidos) {
+                        extra = ' Se omitieron ' + response.omitidos + ' extra(s).';
+                    }
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Actualizado',
+                        text: (response.actualizados || []).length + ' registro(s) pasaron a ' + etiqueta + '.' + extra,
+                        timer: 1800,
+                        showConfirmButton: false,
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
+                    });
+                },
+                error: function(error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: (error.responseJSON && error.responseJSON.message) ? error.responseJSON.message : 'No se pudo cambiar el tipo.',
+                        customClass: {
+                            popup: document.documentElement.classList.contains('dark') ? 'bg-[#101010] text-white' : 'bg-white text-black'
+                        }
+                    });
+                }
+            });
         });
     });
 

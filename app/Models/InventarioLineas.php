@@ -31,6 +31,7 @@ class InventarioLineas extends Model implements Auditable
         'NumTelefonico',
         'Compania',
         'PlanTel',
+        'PlanID',
         'CostoRentaMensual',
         'CuentaPadre',
         'CuentaHija',

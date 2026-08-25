@@ -55,10 +55,24 @@ class PresupuestoHelper
         return self::soloPresupuestados($query, $modo, PresupuestoAsignacion::COLUMNA_EQUIPOS);
     }
 
-    // Filtro de tipos de persona para tipo de reporte
-    private static function tiposPersona(string $modo): ?array
+    // Presupuesto: FÍSICA y EXTRAORDINARIO. Inventario: FÍSICA y REFERENCIADO.
+    public static function tiposPersona(string $modo): array
     {
-        return $modo === 'presupuesto' ? ['FISICA', 'EXTRAORDINARIO'] : null;
+        return $modo === 'presupuesto'
+            ? ['FISICA', 'EXTRAORDINARIO']
+            : ['FISICA', 'REFERENCIADO'];
+    }
+
+    public static function etiquetaSeccion(string $modo): string
+    {
+        return $modo === 'inventario' ? 'Inventario' : 'Presupuesto';
+    }
+
+    public static function leyendaInclusion(string $modo): string
+    {
+        return $modo === 'presupuesto'
+            ? 'Incluye asignaciones Extra y Compartido de empleados tipo FÍSICA y EXTRAORDINARIO.'
+            : 'Incluye asignaciones Stock y Compartido de empleados tipo FÍSICA y REFERENCIADO.';
     }
 
     // Costo de un grupo de insumos según los meses elegidos en la asignación.
@@ -74,6 +88,32 @@ class PresupuestoHelper
 
             return $mensual * $n;
         });
+    }
+
+    // Insumo con categoría de hardware que no está ya en mensuales ni licencias.
+    private static function esInsumoDeInversion($insumo): bool
+    {
+        return PresupuestoConfiguracion::contiene($insumo->CateogoriaInsumo, 'hardware')
+            && ! PresupuestoConfiguracion::contiene($insumo->CateogoriaInsumo, 'insumos_mensuales')
+            && ! PresupuestoConfiguracion::contiene($insumo->CateogoriaInsumo, 'licencias');
+    }
+
+    private static function aplicarFiltroInsumoInversion($query)
+    {
+        PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'hardware');
+        PresupuestoConfiguracion::aplicarWhereNotIn($query, 'CateogoriaInsumo', 'insumos_mensuales');
+        PresupuestoConfiguracion::aplicarWhereNotIn($query, 'CateogoriaInsumo', 'licencias');
+
+        return $query;
+    }
+
+    // Importe anual de un insumo de inversión (costo mensual × meses marcados).
+    private static function costoInsumoInversion($insumo): float
+    {
+        $mensual = (float) ($insumo->CostoMensual ?? 0);
+        $n = count(PagoMeses::parse($insumo->MesDePago ?? '', $insumo->FrecuenciaDePago ?? null));
+
+        return $mensual * max($n, 1);
     }
 
     // Reporte de accesorios y otros insumos
@@ -129,7 +169,7 @@ class PresupuestoHelper
             ->values();
     }
 
-    // Reporte de hardware: sale de inventarioequipo.
+    // Reporte de hardware: equipos e insumos con categoría de inversión (laptop, monitor, etc.).
     public static function reporteHardwarePorGerencia(int $gerenciaId, string $tipo = 'mens', string $modo = 'presupuesto')
     {
         $tiposPersona = self::tiposPersona($modo);
@@ -139,21 +179,32 @@ class PresupuestoHelper
             ->whereHas('puestos.departamentos.gerencia', function($query) use ($gerenciaId) {
                 $query->where('gerencia.GerenciaID', $gerenciaId);
             })
-            ->whereHas('inventarioequipo', function($query) use ($modo) {
-                PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
-                self::soloPresupuestadosEquipo($query, $modo);
+            ->where(function ($q) use ($modo) {
+                $q->whereHas('inventarioequipo', function($query) use ($modo) {
+                    PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
+                    self::soloPresupuestados($query, $modo);
+                })->orWhereHas('inventarioinsumo', function($query) use ($modo) {
+                    self::aplicarFiltroInsumoInversion($query);
+                    self::soloPresupuestados($query, $modo);
+                });
             })
             ->with([
                 'puestos:PuestoID,NombrePuesto',
                 'inventarioequipo' => function($query) use ($modo) {
                     $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago');
                     PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
-                    self::soloPresupuestadosEquipo($query, $modo);
-                }
+                    self::soloPresupuestados($query, $modo);
+                },
+                'inventarioinsumo' => function($query) use ($modo) {
+                    $query->select('InventarioID', 'EmpleadoID', 'CateogoriaInsumo', 'NombreInsumo',
+                        'CostoMensual', 'CostoAnual', 'FrecuenciaDePago', 'MesDePago');
+                    self::aplicarFiltroInsumoInversion($query);
+                    self::soloPresupuestados($query, $modo);
+                },
             ])
             ->get()
             ->flatMap(function($empleado) {
-                return $empleado->inventarioequipo->map(function($equipo) use ($empleado) {
+                $deEquipos = $empleado->inventarioequipo->map(function($equipo) use ($empleado) {
                     return (object)[
                         'EmpleadoID' => $empleado->EmpleadoID,
                         'NombreEmpleado' => $empleado->NombreEmpleado,
@@ -163,6 +214,19 @@ class PresupuestoHelper
                         'CostoTotal' => (int) round($equipo->Precio ?? 0),
                     ];
                 });
+
+                $deInsumos = $empleado->inventarioinsumo->map(function($insumo) use ($empleado) {
+                    return (object)[
+                        'EmpleadoID' => $empleado->EmpleadoID,
+                        'NombreEmpleado' => $empleado->NombreEmpleado,
+                        'NombrePuesto' => $empleado->puestos->NombrePuesto ?? null,
+                        'NombreInsumo' => $insumo->CateogoriaInsumo,
+                        'CateogoriaInsumo' => $insumo->CateogoriaInsumo,
+                        'CostoTotal' => (int) round(self::costoInsumoInversion($insumo)),
+                    ];
+                });
+
+                return $deEquipos->concat($deInsumos);
             })
             ->sortBy('NombreEmpleado')
             ->values();
@@ -555,6 +619,7 @@ class PresupuestoHelper
             ->filter(fn ($i) =>
                 ! $enMensuales($i) &&
                 ! $enLicencias($i) &&
+                ! self::esInsumoDeInversion($i) &&
                 ! PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
             )
             ->groupBy(fn ($i) => $nombreOtroInsumo($i))
@@ -635,6 +700,7 @@ class PresupuestoHelper
         $equiposHardware = $todosEquipos->filter(fn ($e) =>
             PresupuestoConfiguracion::contiene($e->CategoriaEquipo, 'hardware')
         );
+        $insumosHardware = $todosInsumos->filter(fn ($i) => self::esInsumoDeInversion($i));
 
         $mesDeFechaCortes = function ($fecha): ?int {
             if (empty($fecha)) {
@@ -649,6 +715,7 @@ class PresupuestoHelper
         $costosTotalesPorMes = [];
         foreach ($meses as $mes) {
             $costo = $equiposHardware->sum(fn ($e) => self::precioEquipoEnMes($e, $mes, $meses, $mesDeFechaCortes));
+            $costo += self::sumaEnMes($insumosHardware, $mes, fn ($i) => self::costoCeldaInsumo($i));
             if ($mes === 'Junio') {
                 $costo += $totalRenovacionFianzas;
             }
@@ -795,6 +862,7 @@ class PresupuestoHelper
             ->filter(fn ($i) =>
                 ! $enMensuales($i) &&
                 ! $enLicencias($i) &&
+                ! self::esInsumoDeInversion($i) &&
                 ! PresupuestoConfiguracion::contiene($i->CateogoriaInsumo, 'excluir_otros_anuales')
             )
             ->groupBy(fn ($i) => $norm($nombreOtroInsumo($i)))
@@ -852,11 +920,15 @@ class PresupuestoHelper
         $equipos = $todosEquipos->filter(fn ($e) =>
             PresupuestoConfiguracion::contiene($e->CategoriaEquipo, 'hardware')
         );
+        $insumosHardware = $todosInsumos->filter(fn ($i) => self::esInsumoDeInversion($i));
 
-        $totalInversiones = (float) $equipos->sum(fn ($e) => (float) ($e->Precio ?? 0)) + $totalRenovacionFianzas;
+        $totalInversiones = (float) $equipos->sum(fn ($e) => (float) ($e->Precio ?? 0))
+            + (float) $insumosHardware->sum(fn ($i) => self::costoInsumoInversion($i))
+            + $totalRenovacionFianzas;
 
-        $agregar('INVERSIONES', 6, function ($mes) use ($equipos, $meses, $mesDeFecha, $totalRenovacionFianzas) {
+        $agregar('INVERSIONES', 6, function ($mes) use ($equipos, $insumosHardware, $meses, $mesDeFecha, $totalRenovacionFianzas) {
             $costo = $equipos->sum(fn ($e) => self::precioEquipoEnMes($e, $mes, $meses, $mesDeFecha));
+            $costo += self::sumaEnMes($insumosHardware, $mes, fn ($i) => self::costoCeldaInsumo($i));
 
             return $mes === 'Junio' ? $costo + $totalRenovacionFianzas : $costo;
         }, $totalInversiones);

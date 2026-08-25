@@ -64,6 +64,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::DELETE('inventarios/deleteL/{inventario}', [InventarioController::class, 'destroylinea'])->name('inventarios.destroylinea');
     Route::PUT('inventarios/editar-linea/{id}', [InventarioController::class, 'editarlinea'])->name('inventarios.editarlinea');
     Route::POST('inventarios/crear-linea/{id}/{telf}', [InventarioController::class, 'crearlinea'])->name('inventarios.crearlinea');
+    Route::POST('inventarios/crear-linea-extra/{id}', [InventarioController::class, 'crearlineaextra'])->name('inventarios.crearlineaextra');
+    Route::PUT('inventarios/cambiar-asignacion-masiva', [InventarioController::class, 'cambiarAsignacionMasiva'])->name('inventarios.cambiarAsignacionMasiva');
     Route::GET('inventarios/{inventario}/transferir', [InventarioController::class, 'transferir'])->name('inventarios.transferir');
     Route::PUT('inventarios/{inventario}/traspaso', [InventarioController::class, 'formTraspaso'])->name('inventarios.transpaso');
     Route::GET('inventarios/{inventario}/cartas', [InventarioController::class, 'cartas'])->name('inventarios.cartas');

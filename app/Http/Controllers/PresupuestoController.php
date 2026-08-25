@@ -125,10 +125,8 @@ class PresupuestoController extends Controller
 
         $numerogerencia = (int) $request->GerenciaID;
         $metadatosDocumento = $this->metadatosDocumentoReporte($request->input('modo', 'presupuesto'));
-        // El presupuesto sólo contempla FISICA y EXTRAORDINARIO; el de inventario no restringe
-        // por tipo de persona, para ser el complemento exacto (todo lo que no se presupuestó).
         $esPresupuesto = $metadatosDocumento['modo'] === 'presupuesto';
-        $tiposPersona = $esPresupuesto ? ['FISICA', 'EXTRAORDINARIO'] : null;
+        $tiposPersona = PresupuestoHelper::tiposPersona($metadatosDocumento['modo']);
 
         $gerencia = Gerencia::find($numerogerencia);
 
@@ -581,6 +579,8 @@ class PresupuestoController extends Controller
                 'tipoDocumento' => $metadatosDocumento['tipoDocumento'],
                 'anioDocumento' => $metadatosDocumento['anioDocumento'],
                 'modo' => $metadatosDocumento['modo'],
+                'etiquetaSeccion' => $metadatosDocumento['etiquetaSeccion'],
+                'leyendaInclusion' => $metadatosDocumento['leyendaInclusion'],
                 'datosheader' => $datosheader,
                 'GerenciaTb' => $gerencia ?? null,
                 'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
@@ -746,6 +746,8 @@ class PresupuestoController extends Controller
             'modo' => $modo,
             'tipoDocumento' => $modo === 'inventario' ? 'INVENTARIO' : 'PRESUPUESTO',
             'anioDocumento' => $modo === 'presupuesto' ? now()->year + 1 : now()->year,
+            'etiquetaSeccion' => PresupuestoHelper::etiquetaSeccion($modo),
+            'leyendaInclusion' => PresupuestoHelper::leyendaInclusion($modo),
         ];
     }
 

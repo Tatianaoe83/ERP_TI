@@ -119,7 +119,7 @@
         align-items: center;
         gap: 0.4rem;
         margin: 0;
-        padding: 0.4rem 0.7rem;
+        padding: 0.4rem 0.45rem 0.4rem 0.7rem;
         border: 1px solid #e5e7eb;
         border-radius: 999px;
         font-size: 0.75rem;
@@ -145,12 +145,53 @@
         border-color: #3b82f6;
         color: #dbeafe;
     }
+    .pconf-chip-del {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 1.15rem;
+        height: 1.15rem;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: inherit;
+        font-size: 0.62rem;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0.7;
+    }
+    .pconf-chip.is-on .pconf-chip-del { display: inline-flex; }
+    .pconf-chip-del:hover {
+        opacity: 1;
+        background: rgba(15, 23, 42, 0.12);
+    }
+    .dark .pconf-chip-del:hover { background: rgba(255, 255, 255, 0.16); }
     .pconf-add {
         display: flex;
         gap: 0.45rem;
         margin-top: 0.55rem;
     }
     .pconf-add .form-control { min-width: 0; }
+    .pconf-add-btn {
+        flex: 0 0 auto;
+        height: calc(1.5em + 0.75rem + 2px);
+        padding: 0 0.85rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.45rem;
+        background: #fff;
+        color: #101d49;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .pconf-add-btn:hover { background: #f8fafc; }
+    .dark .pconf-add-btn {
+        background: #111827;
+        border-color: #374151;
+        color: #e5e7eb;
+    }
     .pconf-actions {
         display: flex;
         flex-wrap: wrap;
@@ -175,18 +216,17 @@
     @endif
 
     <p class="pconf-note">
-        Si en inventario capturan una categoría nueva (por ejemplo una licencia o un tipo de equipo),
-        márcala aquí para que sume en el reporte.
+        Marca las categorías que deben sumar en cada bloque. Para quitar una,
+        pulsa la × de la etiqueta y guarda. Eso no borra la categoría del inventario.
     </p>
 
     <form method="POST" action="{{ route('presupuesto.configuracion.guardar') }}">
         @csrf
         <div class="pconf-grid">
             @foreach($grupos as $grupo)
-                <section class="pconf-card" data-pconf-card>
+                <section class="pconf-card" data-pconf-card data-pconf-clave="{{ $grupo['clave'] }}">
                     <h3>{{ $grupo['label'] }}</h3>
                     <p>{{ $grupo['hint'] }}</p>
-                    @if(count($grupo['opciones']) > 0)
                     <div class="pconf-toolbar">
                         <div class="pconf-search">
                             <i class="fas fa-search"></i>
@@ -197,17 +237,24 @@
                         </div>
                         <span class="pconf-count" data-pconf-count></span>
                     </div>
-                    @endif
                     <div class="pconf-list">
                         @forelse($grupo['opciones'] as $opcion)
-                            @php $on = in_array(mb_strtoupper($opcion, 'UTF-8'), $grupo['seleccionadas_upper'], true); @endphp
-                            <label class="pconf-chip {{ $on ? 'is-on' : '' }}" data-pconf-label="{{ mb_strtoupper($opcion, 'UTF-8') }}">
+                            @php
+                                $upper = mb_strtoupper($opcion, 'UTF-8');
+                                $on = in_array($upper, $grupo['seleccionadas_upper'], true);
+                                $custom = ! in_array($upper, $grupo['opciones_catalogo_upper'], true);
+                            @endphp
+                            <label class="pconf-chip {{ $on ? 'is-on' : '' }}"
+                                data-pconf-label="{{ $upper }}"
+                                data-pconf-custom="{{ $custom ? '1' : '0' }}">
                                 <input type="checkbox"
                                     name="grupos[{{ $grupo['clave'] }}][]"
                                     value="{{ $opcion }}"
-                                    {{ $on ? 'checked' : '' }}
-                                    onchange="this.closest('label').classList.toggle('is-on', this.checked); if (window.pconfRefreshCount) window.pconfRefreshCount(this.closest('[data-pconf-card]'));">
+                                    {{ $on ? 'checked' : '' }}>
                                 <span>{{ $opcion }}</span>
+                                <button type="button" class="pconf-chip-del" title="Quitar de este bloque" aria-label="Quitar {{ $opcion }}">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </label>
                         @empty
                             <span class="text-muted" style="font-size:0.8rem;">No hay valores en catálogo. Agrégalo abajo.</span>
@@ -216,10 +263,10 @@
                     </div>
                     <div class="pconf-add">
                         <input type="text"
-                            class="form-control"
-                            name="nuevo[{{ $grupo['clave'] }}]"
+                            class="form-control pconf-add-input"
                             maxlength="150"
                             placeholder="Agregar categoría que no aparezca en la lista">
+                        <button type="button" class="pconf-add-btn">Agregar</button>
                     </div>
                 </section>
             @endforeach
@@ -264,6 +311,62 @@
         refreshCount(card);
     }
 
+    function setChipOn(chip, on) {
+        var input = chip.querySelector('input');
+        if (input) input.checked = !!on;
+        chip.classList.toggle('is-on', !!on);
+    }
+
+    function quitarChip(chip) {
+        var card = chip.closest('[data-pconf-card]');
+        var custom = chip.getAttribute('data-pconf-custom') === '1';
+        setChipOn(chip, false);
+        if (custom) {
+            chip.remove();
+        }
+        if (card) refreshCount(card);
+    }
+
+    function chipExistente(card, label) {
+        var found = null;
+        card.querySelectorAll('.pconf-chip').forEach(function (chip) {
+            if ((chip.getAttribute('data-pconf-label') || '') === label) found = chip;
+        });
+        return found;
+    }
+
+    function agregarChip(card, valor) {
+        var texto = (valor || '').trim();
+        if (!texto) return;
+        var label = texto.toUpperCase();
+        var existente = chipExistente(card, label);
+        if (existente) {
+            setChipOn(existente, true);
+            existente.style.display = '';
+            refreshCount(card);
+            return;
+        }
+
+        var clave = card.getAttribute('data-pconf-clave');
+        var list = card.querySelector('.pconf-list');
+        var empty = list ? list.querySelector('.pconf-empty') : null;
+        var chip = document.createElement('label');
+        chip.className = 'pconf-chip is-on';
+        chip.setAttribute('data-pconf-label', label);
+        chip.setAttribute('data-pconf-custom', '1');
+        chip.innerHTML =
+            '<input type="checkbox" name="grupos[' + clave + '][]" value="" checked>' +
+            '<span></span>' +
+            '<button type="button" class="pconf-chip-del" title="Quitar de este bloque" aria-label="Quitar">' +
+            '<i class="fas fa-times"></i></button>';
+        chip.querySelector('input').value = texto;
+        chip.querySelector('span').textContent = texto;
+        chip.querySelector('.pconf-chip-del').setAttribute('aria-label', 'Quitar ' + texto);
+        if (empty) list.insertBefore(chip, empty);
+        else if (list) list.appendChild(chip);
+        refreshCount(card);
+    }
+
     function bind() {
         document.querySelectorAll('[data-pconf-card]').forEach(function (card) {
             var input = card.querySelector('.pconf-filter');
@@ -274,6 +377,49 @@
             refreshCount(card);
         });
     }
+
+    document.addEventListener('change', function (e) {
+        var input = e.target.closest('.pconf-chip input[type="checkbox"]');
+        if (!input) return;
+        var chip = input.closest('.pconf-chip');
+        var card = chip && chip.closest('[data-pconf-card]');
+        if (chip) chip.classList.toggle('is-on', input.checked);
+        if (card) refreshCount(card);
+    });
+
+    document.addEventListener('click', function (e) {
+        var del = e.target.closest('.pconf-chip-del');
+        if (del) {
+            e.preventDefault();
+            e.stopPropagation();
+            var chip = del.closest('.pconf-chip');
+            if (chip) quitarChip(chip);
+            return;
+        }
+
+        var addBtn = e.target.closest('.pconf-add-btn');
+        if (addBtn) {
+            var card = addBtn.closest('[data-pconf-card]');
+            var campo = card && card.querySelector('.pconf-add-input');
+            if (card && campo) {
+                agregarChip(card, campo.value);
+                campo.value = '';
+                campo.focus();
+            }
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        var campo = e.target.closest('.pconf-add-input');
+        if (!campo) return;
+        e.preventDefault();
+        var card = campo.closest('[data-pconf-card]');
+        if (card) {
+            agregarChip(card, campo.value);
+            campo.value = '';
+        }
+    });
 
     window.pconfRefreshCount = refreshCount;
     if (document.readyState === 'loading') {

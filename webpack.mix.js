@@ -128,3 +128,5 @@ mix.babel(
     "node_modules/izitoast/dist/js/iziToast.min.js",
     "public/assets/js/iziToast.min.js"
 );
+
+// Alpine y SweetAlert2 viven en public/assets/js (no en public/vendor, que Git ignora).
