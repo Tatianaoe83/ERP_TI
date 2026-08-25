@@ -1434,8 +1434,11 @@
         border-top: 0;
     }
 
+    /* Denso a propósito: es una sub-tabla de referencia, no la vista principal.
+       El sangrado izquierdo la alinea bajo la columna del empleado, no bajo el
+       chevron, para que se lea como dependiente de la fila de arriba. */
     .aud-historial__inner {
-        padding: 0.85rem 1rem 1rem 3.5rem;
+        padding: 0.3rem 0.6rem 0.4rem 2.6rem;
         opacity: 0;
         transform: translateY(-4px);
         transition: opacity 200ms ease-out, transform 200ms ease-out;
@@ -1452,10 +1455,10 @@
     }
 
     .aud-historial__tabla th {
-        padding: 0.4rem 0.6rem;
+        padding: 0.2rem 0.45rem;
         border-bottom: 1px solid var(--aud-border);
         color: var(--aud-text-muted);
-        font-size: 0.7rem;
+        font-size: 0.62rem;
         font-weight: 700;
         text-align: left;
         text-transform: uppercase;
@@ -1464,19 +1467,36 @@
     }
 
     .aud-historial__tabla td {
-        padding: 0.55rem 0.6rem;
+        padding: 0.28rem 0.45rem;
         border-bottom: 1px solid var(--aud-border);
         color: var(--aud-text);
-        font-size: 0.82rem;
+        font-size: 0.76rem;
+        line-height: 1.35;
         vertical-align: middle;
     }
 
     .aud-historial__tabla tr:last-child td { border-bottom: 0; }
 
+    /* Chips y botones bajan un escalón dentro del historial: compiten con la fila
+       principal si conservan su tamaño. */
+    .aud-historial .aud-marca {
+        padding: 0.05rem 0.4rem;
+        font-size: 0.66rem;
+        gap: 0.25rem;
+    }
+
+    .aud-historial .aud-btn--sm {
+        min-height: 26px;
+        padding: 0 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .aud-historial .aud-semaforo { gap: 0.25rem; }
+
     .aud-historial__acciones {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.4rem;
+        gap: 0.25rem;
     }
 
     /* El despliegue es información, no decoración: sin motion sigue funcionando,
