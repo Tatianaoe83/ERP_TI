@@ -3255,125 +3255,6 @@
     };
     window.loadTertipos = null;
    
-    document.addEventListener('DOMContentLoaded', function() {
-        const tipoSelect = document.getElementById('tipo-select');
-        const subtipoSelect = document.getElementById('subtipo-select');
-        const tertipoSelect = document.getElementById('tertipo-select');
-
-        loadTipos();
-
-        tipoSelect.addEventListener('change', function() {
-            const tipoId = this.value;
-            
-            clearSelect(subtipoSelect);
-            clearSelect(tertipoSelect);
-            subtipoSelect.disabled = true;
-            tertipoSelect.disabled = true;
-
-            if (tipoId) {
-                loadSubtipos(tipoId);
-            }
-        });
-
-        subtipoSelect.addEventListener('change', function() {
-            const subtipoId = this.value;
-            
-            clearSelect(tertipoSelect);
-            tertipoSelect.disabled = true;
-
-            if (subtipoId) {
-                loadTertipos(subtipoId);
-            }
-        });
-
-        async function loadTipos() {
-            try {
-                const response = await fetch('/tickets/tipos');
-                const data = await response.json();
-                
-                if (data.success) {
-                    data.tipos.forEach(tipo => {
-                        const option = document.createElement('option');
-                        option.value = tipo.TipoID;
-                        option.textContent = tipo.NombreTipo;
-                        tipoSelect.appendChild(option);
-                    });
-                } else {
-                }
-            } catch (error) {
-            }
-        }
-
-        window.loadSubtipos = async function loadSubtipos(tipoId) {
-            try {
-                // Verificar si el ticket está cerrado consultando Alpine.js
-                const alpineData = Alpine.$data(document.querySelector('[x-data]'));
-                const estaCerrado = alpineData && (alpineData.selected?.estatus === 'Cerrado' || alpineData.ticketEstatus === 'Cerrado');
-                
-                subtipoSelect.innerHTML = '<option value="">Seleccione un subtipo</option>';
-                subtipoSelect.disabled = true;
-                
-                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
-                tertipoSelect.disabled = true;
-                
-                if (!tipoId) {
-                    return;
-                }
-                
-                const response = await fetch(`/tickets/subtipos?tipo_id=${tipoId}`);
-                const data = await response.json();
-                
-                if (data.success && data.subtipos.length > 0) {
-                    data.subtipos.forEach(subtipo => {
-                        const option = document.createElement('option');
-                        option.value = subtipo.SubtipoID;
-                        option.textContent = subtipo.NombreSubtipo;
-                        subtipoSelect.appendChild(option);
-                    });
-                    // Solo habilitar si el ticket NO está cerrado
-                    // Alpine.js manejará el disabled basado en su lógica (:disabled="!ticketTipoID || selected.estatus === 'Cerrado'")
-                    if (!estaCerrado) {
-                    subtipoSelect.disabled = false;
-                    }
-                } 
-            } catch (error) {
-            }
-        }
-
-        window.loadTertipos = async function loadTertipos(subtipoId) {
-            try {
-                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
-                tertipoSelect.disabled = true;
-                
-                if (!subtipoId) {
-                    return;
-                }
-                
-                const response = await fetch(`/tickets/tertipos?subtipo_id=${subtipoId}`);
-                const data = await response.json();
-                
-                if (data.success && data.tertipos.length > 0) {
-                    data.tertipos.forEach(tertipo => {
-                        const option = document.createElement('option');
-                        option.value = tertipo.TertipoID;
-                        option.textContent = tertipo.NombreTertipo;
-                        tertipoSelect.appendChild(option);
-                    });
-                    // Habilitar el campo - Alpine.js lo deshabilitará automáticamente si el ticket está cerrado
-                    // mediante su directiva :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
-                    tertipoSelect.disabled = false;
-                } else {
-                }
-            } catch (error) {
-            }
-        }
-
-        function clearSelect(selectElement) {
-            while (selectElement.children.length > 1) {
-                selectElement.removeChild(selectElement.lastChild);
-            }
-        }
-    });
 
     // =====================================================================
     // POLLING EN TIEMPO REAL DE NOTIFICACIONES PENDIENTES
@@ -3492,4 +3373,137 @@
         pollNotificaciones();
         setInterval(pollNotificaciones, 5000);
     })();
+</script>
+
+{{-- Cascada Categoria > Grupo > Subgrupo: bloque aparte a proposito.
+     AppNav (layouts/app.blade.php) descarta el bloque de arriba cuando
+     window.ticketsModal ya existe, y con el se iba este setup. --}}
+<script>
+    // El shell SPA reinyecta este partial y vuelve a ejecutar el script, pero
+    // DOMContentLoaded ya disparó en esa navegación: hay que correr el setup directo.
+    function appOnReadyTicket(fn) {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+        else fn();
+    }
+    appOnReadyTicket(function() {
+        const tipoSelect = document.getElementById('tipo-select');
+        const subtipoSelect = document.getElementById('subtipo-select');
+        const tertipoSelect = document.getElementById('tertipo-select');
+
+        if (!tipoSelect || !subtipoSelect || !tertipoSelect) return;
+
+        loadTipos();
+
+        tipoSelect.addEventListener('change', function() {
+            const tipoId = this.value;
+            
+            clearSelect(subtipoSelect);
+            clearSelect(tertipoSelect);
+            subtipoSelect.disabled = true;
+            tertipoSelect.disabled = true;
+
+            if (tipoId) {
+                loadSubtipos(tipoId);
+            }
+        });
+
+        subtipoSelect.addEventListener('change', function() {
+            const subtipoId = this.value;
+            
+            clearSelect(tertipoSelect);
+            tertipoSelect.disabled = true;
+
+            if (subtipoId) {
+                loadTertipos(subtipoId);
+            }
+        });
+
+        async function loadTipos() {
+            try {
+                const response = await fetch('/tickets/tipos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    data.tipos.forEach(tipo => {
+                        const option = document.createElement('option');
+                        option.value = tipo.TipoID;
+                        option.textContent = tipo.NombreTipo;
+                        tipoSelect.appendChild(option);
+                    });
+                } else {
+                }
+            } catch (error) {
+            }
+        }
+
+        window.loadSubtipos = async function loadSubtipos(tipoId) {
+            try {
+                // Verificar si el ticket está cerrado consultando Alpine.js
+                const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+                const estaCerrado = alpineData && (alpineData.selected?.estatus === 'Cerrado' || alpineData.ticketEstatus === 'Cerrado');
+                
+                subtipoSelect.innerHTML = '<option value="">Seleccione un subtipo</option>';
+                subtipoSelect.disabled = true;
+                
+                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
+                tertipoSelect.disabled = true;
+                
+                if (!tipoId) {
+                    return;
+                }
+                
+                const response = await fetch(`/tickets/subtipos?tipo_id=${tipoId}`);
+                const data = await response.json();
+                
+                if (data.success && data.subtipos.length > 0) {
+                    data.subtipos.forEach(subtipo => {
+                        const option = document.createElement('option');
+                        option.value = subtipo.SubtipoID;
+                        option.textContent = subtipo.NombreSubtipo;
+                        subtipoSelect.appendChild(option);
+                    });
+                    // Solo habilitar si el ticket NO está cerrado
+                    // Alpine.js manejará el disabled basado en su lógica (:disabled="!ticketTipoID || selected.estatus === 'Cerrado'")
+                    if (!estaCerrado) {
+                    subtipoSelect.disabled = false;
+                    }
+                } 
+            } catch (error) {
+            }
+        }
+
+        window.loadTertipos = async function loadTertipos(subtipoId) {
+            try {
+                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
+                tertipoSelect.disabled = true;
+                
+                if (!subtipoId) {
+                    return;
+                }
+                
+                const response = await fetch(`/tickets/tertipos?subtipo_id=${subtipoId}`);
+                const data = await response.json();
+                
+                if (data.success && data.tertipos.length > 0) {
+                    data.tertipos.forEach(tertipo => {
+                        const option = document.createElement('option');
+                        option.value = tertipo.TertipoID;
+                        option.textContent = tertipo.NombreTertipo;
+                        tertipoSelect.appendChild(option);
+                    });
+                    // Habilitar el campo - Alpine.js lo deshabilitará automáticamente si el ticket está cerrado
+                    // mediante su directiva :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
+                    tertipoSelect.disabled = false;
+                } else {
+                }
+            } catch (error) {
+            }
+        }
+
+        function clearSelect(selectElement) {
+            while (selectElement.children.length > 1) {
+                selectElement.removeChild(selectElement.lastChild);
+            }
+        }
+    });
 </script>
