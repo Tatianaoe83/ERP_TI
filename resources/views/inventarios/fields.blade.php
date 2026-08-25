@@ -119,24 +119,24 @@
         <div class="inv-kpi-row">
             <div class="inv-kpi inv-kpi-total">
                 <div class="inv-kpi-label">Equipos asignados</div>
-                <div class="inv-kpi-value" id="kpi-equipos-total">{{ $equiposAsignados->count() }}</div>
+                <div class="inv-kpi-value" id="kpi-equipos-total" data-kpi="total">{{ $equiposAsignados->count() }}</div>
                 <div class="inv-kpi-sub">En resguardo / proyección</div>
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Stock</div>
-                <div class="inv-kpi-value">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub">{{ $equiposStock->count() }} equipo(s) · sale en inventario</div>
+                <div class="inv-kpi-value" data-kpi="stock-money">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
+                <div class="inv-kpi-sub" data-kpi="stock-sub">{{ $equiposStock->count() }} equipo(s) · sale en inventario</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Extra / Presupuesto</div>
-                <div class="inv-kpi-value">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub">{{ $equiposExtra->count() }} equipo(s) · sale en presupuesto</div>
+                <div class="inv-kpi-value" data-kpi="extra-money">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
+                <div class="inv-kpi-sub" data-kpi="extra-sub">{{ $equiposExtra->count() }} equipo(s) · sale en presupuesto</div>
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Solo stock</div>
-                <div class="inv-kpi-value">{{ $fmtMoney(collect($equiposAsignados)->sum('Precio')) }}</div>
+                <div class="inv-kpi-value" data-kpi="solo-stock-money">{{ $fmtMoney(collect($equiposAsignados)->sum('Precio')) }}</div>
                 <div class="inv-kpi-sub">Referenciado: sin extras de presupuesto</div>
             </div>
             <div class="inv-kpi">
@@ -206,7 +206,20 @@
                     <tbody>
                         @foreach ($equiposAsignados as $equiposAsignado)
                         @php $esExtraEquipo = (int) $equiposAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
-                        <tr data-id="{{ $equiposAsignado->InventarioID }}" data-meses="{{ $equiposAsignado->MesDePago }}" data-presupuestado="{{ $equiposAsignado->Presupuestado }}">
+                        <tr data-id="{{ $equiposAsignado->InventarioID }}"
+                            data-meses="{{ $equiposAsignado->MesDePago }}"
+                            data-presupuestado="{{ $equiposAsignado->Presupuestado }}"
+                            data-categoria="{{ $equiposAsignado->CategoriaEquipo }}"
+                            data-marca="{{ $equiposAsignado->Marca }}"
+                            data-caracteristicas="{{ $equiposAsignado->Caracteristicas }}"
+                            data-modelo="{{ $equiposAsignado->Modelo }}"
+                            data-precio="{{ $equiposAsignado->Precio }}"
+                            data-fecha-asignacion="{{ $equiposAsignado->FechaAsignacion ? \Carbon\Carbon::parse($equiposAsignado->FechaAsignacion)->toDateString() : '' }}"
+                            data-fecha-compra="{{ $equiposAsignado->FechaDeCompra ? \Carbon\Carbon::parse($equiposAsignado->FechaDeCompra)->toDateString() : '' }}"
+                            data-num-serie="{{ $equiposAsignado->NumSerie }}"
+                            data-folio="{{ $equiposAsignado->Folio }}"
+                            data-gerencia-id="{{ $equiposAsignado->GerenciaEquipoID }}"
+                            data-comentarios="{{ $equiposAsignado->Comentarios }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
@@ -312,18 +325,18 @@
         <div class="inv-kpi-row">
             <div class="inv-kpi inv-kpi-total">
                 <div class="inv-kpi-label">Insumos asignados</div>
-                <div class="inv-kpi-value">{{ $insumosAsignados->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="total">{{ $insumosAsignados->count() }}</div>
                 <div class="inv-kpi-sub">En resguardo / proyección</div>
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Stock</div>
-                <div class="inv-kpi-value">{{ $insumosStock->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="stock-count">{{ $insumosStock->count() }}</div>
                 <div class="inv-kpi-sub">Sale en inventario</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Extra / Presupuesto</div>
-                <div class="inv-kpi-value">{{ $insumosExtra->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="extra-count">{{ $insumosExtra->count() }}</div>
                 <div class="inv-kpi-sub">Sale en presupuesto</div>
             </div>
             @else
@@ -395,7 +408,7 @@
                     <tbody>
                         @foreach ($insumosAsignados as $insumosAsignado)
                         @php $esExtraInsumo = (int) $insumosAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
-                        <tr data-id="{{ $insumosAsignado->InventarioID }}" data-meses="{{ $insumosAsignado->MesDePago }}" data-presupuestado="{{ $insumosAsignado->Presupuestado }}">
+                        <tr data-id="{{ $insumosAsignado->InventarioID }}" data-meses="{{ $insumosAsignado->MesDePago }}" data-presupuestado="{{ $insumosAsignado->Presupuestado }}" data-categoria="{{ $insumosAsignado->CateogoriaInsumo }}" data-nombre="{{ $insumosAsignado->NombreInsumo }}" data-costo-mensual="{{ $insumosAsignado->CostoMensual }}" data-costo-anual="{{ $insumosAsignado->CostoAnual }}">
                             <td>
                                 @if($empleadoActivo)
                                 <div class="index-actions">
@@ -476,7 +489,11 @@
                         </thead>
                         <tbody>
                             @foreach ($insumos as $insumo)
-                            <tr>
+                            <tr data-insumo-id="{{ $insumo->ID }}"
+                                data-categoria="{{ optional($insumo->categorias)->Categoria }}"
+                                data-nombre="{{ $insumo->NombreInsumo }}"
+                                data-costo-mensual="{{ $insumo->CostoMensual }}"
+                                data-costo-anual="{{ $insumo->CostoAnual }}">
                                 <td>
 
 
@@ -512,18 +529,18 @@
         <div class="inv-kpi-row">
             <div class="inv-kpi inv-kpi-total">
                 <div class="inv-kpi-label">Líneas asignadas</div>
-                <div class="inv-kpi-value">{{ $LineasAsignados->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="total">{{ $LineasAsignados->count() }}</div>
                 <div class="inv-kpi-sub">En uso / proyección</div>
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
                 <div class="inv-kpi-label">Inventario</div>
-                <div class="inv-kpi-value">{{ $lineasStock->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="stock-count">{{ $lineasStock->count() }}</div>
                 <div class="inv-kpi-sub">Stock y compartidos</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
                 <div class="inv-kpi-label">Presupuesto</div>
-                <div class="inv-kpi-value">{{ $lineasExtra->count() }}</div>
+                <div class="inv-kpi-value" data-kpi="extra-count">{{ $lineasExtra->count() }}</div>
                 <div class="inv-kpi-sub">Extra y compartidos</div>
             </div>
             @else
@@ -975,6 +992,35 @@
         return formatFechaRenovacion(valor);
     }
 
+    function filaPadre($el) {
+        var $row = $($el).closest('tr');
+        if ($row.hasClass('child') || $row.hasClass('dtr-details')) {
+            $row = $row.prev();
+        }
+        return $row;
+    }
+
+    function attrFila($row, clave) {
+        var v = $row.attr('data-' + clave);
+        if (v === undefined || v === null) {
+            return '';
+        }
+        v = String(v).trim();
+        return valorVacioInv(v) ? '' : v;
+    }
+
+    function setAttrFila($row, clave, valor) {
+        $row.attr('data-' + clave, valor == null ? '' : valor);
+    }
+
+    function escAttr(valor) {
+        return String(valor == null ? '' : valor)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
     function textoDeCelda($td) {
         var v = String(($td && $td.text) ? $td.text() : ($td || '')).trim();
         return valorVacioInv(v) ? '' : v;
@@ -1212,8 +1258,41 @@
         });
     }
 
+    function fmtMoneyInv(n) {
+        n = Math.round(Number(n) || 0);
+        return '$' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function montoFilaAsignada($row, tablaId) {
+        if (tablaId === 'equiposAsignadosTable') {
+            return parseFloat($row.attr('data-precio')) || 0;
+        }
+        if (tablaId === 'insumosAsignadosTable') {
+            return parseFloat($row.attr('data-costo-mensual')) || parseFloat($row.find('td:eq(3)').text()) || 0;
+        }
+        if (tablaId === 'lineasAsignadosTable') {
+            return parseFloat($row.attr('data-renta')) || 0;
+        }
+        return 0;
+    }
+
+    function tipoDesdeFila($row, tablaId) {
+        var raw = $row.attr('data-presupuestado');
+        if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
+            var n = parseInt(raw, 10);
+            if (!isNaN(n)) {
+                return n;
+            }
+        }
+        var col = columnaPresupuestado[tablaId];
+        if (col === undefined) {
+            return 0;
+        }
+        return tipoFilaAsignacion($row.find('td').eq(col).text());
+    }
+
     function actualizarConteos(tablaId) {
-        if (!permitePresupuestado) {
+        if (!$('#' + tablaId).length || !$.fn.DataTable.isDataTable('#' + tablaId)) {
             return;
         }
 
@@ -1221,12 +1300,24 @@
         let inventario = 0;
         let presupuesto = 0;
         let total = 0;
+        let montoInv = 0;
+        let montoPre = 0;
+        let montoTotal = 0;
 
-        dt.column(columnaPresupuestado[tablaId], { search: 'none' }).data().each(function(valor) {
-            const tipo = tipoFilaAsignacion(valor);
+        dt.rows({ search: 'none' }).every(function() {
+            const $n = $(this.node());
+            const tipo = tipoDesdeFila($n, tablaId);
+            const monto = montoFilaAsignada($n, tablaId);
             total++;
-            if (tipo === 0 || tipo === 2) inventario++;
-            if (tipo === 1 || tipo === 2) presupuesto++;
+            montoTotal += monto;
+            if (tipo === 0 || tipo === 2) {
+                inventario++;
+                montoInv += monto;
+            }
+            if (tipo === 1 || tipo === 2) {
+                presupuesto++;
+                montoPre += monto;
+            }
         });
 
         const barra = $('.inventario-filtros[data-tabla="' + tablaId + '"]');
@@ -1237,6 +1328,20 @@
         const dual = $('.inv-dual[data-tabla="' + tablaId + '"]');
         dual.find('.conteo-si').text(presupuesto);
         dual.find('.conteo-no').text(inventario);
+        dual.find('[data-filtro="no_presupuestados"] .inv-money').text(fmtMoneyInv(montoInv));
+        dual.find('[data-filtro="presupuestados"] .inv-money').text(fmtMoneyInv(montoPre));
+
+        const $pane = $('#' + tablaId).closest('.tab-pane');
+        $pane.find('[data-kpi="total"]').text(total);
+        $pane.find('[data-kpi="stock-count"]').text(inventario);
+        $pane.find('[data-kpi="extra-count"]').text(presupuesto);
+        $pane.find('[data-kpi="stock-money"]').text(fmtMoneyInv(montoInv));
+        $pane.find('[data-kpi="extra-money"]').text(fmtMoneyInv(montoPre));
+        $pane.find('[data-kpi="solo-stock-money"]').text(fmtMoneyInv(montoTotal));
+        if (tablaId === 'equiposAsignadosTable') {
+            $pane.find('[data-kpi="stock-sub"]').text(inventario + ' equipo(s) · sale en inventario');
+            $pane.find('[data-kpi="extra-sub"]').text(presupuesto + ' equipo(s) · sale en presupuesto');
+        }
     }
 
     function inicializarFiltrosPresupuestado() {
@@ -1347,25 +1452,24 @@
             return;
         }
 
-        let row = $(this).closest('tr');
+        let row = filaPadre(this);
         let id = row.data('id');
 
-        // Asignar valores al formulario
         document.getElementById('titulo').innerHTML = 'Editar Equipo';
         $('#editId').val(id);
         $('#editEmp').val('');
-        $('#editCategoria').val(row.find("td:eq(1)").text());
-        $('#editMarca').val(row.find("td:eq(2)").text());
-        $('#editCaracteristicas').val(row.find("td:eq(3)").text());
-        $('#editModelo').val(row.find("td:eq(4)").text());
-        $('#editPrecio').val(textoDeCelda(row.find("td:eq(5)")));
-        $('#editFechaAsignacion').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(6)"))));
-        $('#editFechaDeCompra').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(7)"))));
-        $('#editNumSerie').val(textoDeCelda(row.find("td:eq(8)")));
-        $('#editFolio').val(textoDeCelda(row.find("td:eq(9)")));
-        $('#editGerenciaEquipo').val(row.find("td:eq(10)").data('id')).trigger('change');
-        $('#editComentarios').val(textoDeCelda(row.find("td:eq(11)")));
-        setPresupuestado('#editPresupuestadoEquipo', row.find("td:eq(12)").text());
+        $('#editCategoria').val(attrFila(row, 'categoria'));
+        $('#editMarca').val(attrFila(row, 'marca'));
+        $('#editCaracteristicas').val(attrFila(row, 'caracteristicas'));
+        $('#editModelo').val(attrFila(row, 'modelo'));
+        $('#editPrecio').val(attrFila(row, 'precio'));
+        $('#editFechaAsignacion').val(attrFila(row, 'fecha-asignacion'));
+        $('#editFechaDeCompra').val(attrFila(row, 'fecha-compra'));
+        $('#editNumSerie').val(attrFila(row, 'num-serie'));
+        $('#editFolio').val(attrFila(row, 'folio'));
+        $('#editGerenciaEquipo').val(attrFila(row, 'gerencia-id') || row.find("td:eq(10)").data('id')).trigger('change');
+        $('#editComentarios').val(attrFila(row, 'comentarios'));
+        setPresupuestado('#editPresupuestadoEquipo', row.attr('data-presupuestado') || row.find("td:eq(12)").text());
         setPagoMeses('editMesDePagoEquipo', row.attr('data-meses') || '');
 
         $('#editModal').modal('show');
@@ -1722,6 +1826,18 @@
         }
         row.attr('data-meses', equipo.MesDePago ?? '');
         row.find('.edit-btn').data('id', equipo.InventarioID);
+        setAttrFila(row, 'categoria', equipo.CategoriaEquipo);
+        setAttrFila(row, 'marca', equipo.Marca);
+        setAttrFila(row, 'caracteristicas', equipo.Caracteristicas);
+        setAttrFila(row, 'modelo', equipo.Modelo);
+        setAttrFila(row, 'precio', equipo.Precio);
+        setAttrFila(row, 'fecha-asignacion', equipo.FechaAsignacion ? String(equipo.FechaAsignacion).substring(0, 10) : '');
+        setAttrFila(row, 'fecha-compra', equipo.FechaDeCompra ? String(equipo.FechaDeCompra).substring(0, 10) : '');
+        setAttrFila(row, 'num-serie', equipo.NumSerie);
+        setAttrFila(row, 'folio', equipo.Folio);
+        setAttrFila(row, 'gerencia-id', equipo.GerenciaEquipoID);
+        setAttrFila(row, 'comentarios', equipo.Comentarios);
+        setAttrFila(row, 'presupuestado', equipo.Presupuestado);
         syncCheckFila(row, 'equipo', equipo.InventarioID, equipo.Presupuestado);
 
         // Refrescar la caché de DataTables para que el filtro y los conteos vean el cambio.
@@ -1732,7 +1848,13 @@
     function addNewRow(equipo) {
         const extra = esExtraAsignacion(equipo.Presupuestado);
         let newRow = `
-        <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}" data-presupuestado="${equipo.Presupuestado ?? 0}">
+        <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}" data-presupuestado="${equipo.Presupuestado ?? 0}"
+            data-categoria="${escAttr(equipo.CategoriaEquipo)}" data-marca="${escAttr(equipo.Marca)}"
+            data-caracteristicas="${escAttr(equipo.Caracteristicas)}" data-modelo="${escAttr(equipo.Modelo)}"
+            data-precio="${escAttr(equipo.Precio)}" data-fecha-asignacion="${escAttr(equipo.FechaAsignacion ? String(equipo.FechaAsignacion).substring(0, 10) : '')}"
+            data-fecha-compra="${escAttr(equipo.FechaDeCompra ? String(equipo.FechaDeCompra).substring(0, 10) : '')}"
+            data-num-serie="${escAttr(equipo.NumSerie)}" data-folio="${escAttr(equipo.Folio)}"
+            data-gerencia-id="${escAttr(equipo.GerenciaEquipoID)}" data-comentarios="${escAttr(equipo.Comentarios)}">
             <td>
                 <div class="index-actions">
                     ${htmlCheckBulk('equipo', equipo.InventarioID, equipo.Presupuestado)}
@@ -1852,7 +1974,7 @@
             return;
         }
 
-        let row = $(this).closest('tr');
+        let row = filaPadre(this);
         let id = row.data('id');
 
         // Asignar valores al formulario
@@ -1860,10 +1982,10 @@
 
         $('#editId_insumo').val(id);
         $('#editEmp_insumo').val('');
-        $('#editCategoriaInsumo').val(row.find("td:eq(1)").text());
-        $('#editNombreInsumo').val(row.find("td:eq(2)").text());
-        $('#editCostoMensual').val(row.find("td:eq(3)").text());
-        $('#editCostoAnual').val(row.find("td:eq(4)").text());
+        $('#editCategoriaInsumo').val(attrFila(row, 'categoria') || row.find("td:eq(1)").text());
+        $('#editNombreInsumo').val(attrFila(row, 'nombre') || row.find("td:eq(2)").text());
+        $('#editCostoMensual').val(attrFila(row, 'costo-mensual') || row.find("td:eq(3)").text());
+        $('#editCostoAnual').val(attrFila(row, 'costo-anual') || row.find("td:eq(4)").text());
         $('#editFechaDeRenovacion').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(5)"))));
         $('#editobserv').val(row.find("td:eq(6)").text());
         $('#editFechaDeAsigna').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(7)"))));
@@ -1885,11 +2007,11 @@
         $('#editFormInsumo')[0].reset();
 
         document.getElementById('tituloinsumo').innerHTML = 'Crear insumo';
-        let row = $(this).closest('tr');
-        let categoria = row.find("td:eq(1)").text();
-        let nombreinsumo = row.find("td:eq(2)").text();
-        let costomensual = row.find("td:eq(3)").text();
-        let costoanual = row.find("td:eq(4)").text();
+        let row = filaPadre(this);
+        let categoria = attrFila(row, 'categoria') || row.find("td:eq(1)").text();
+        let nombreinsumo = attrFila(row, 'nombre') || row.find("td:eq(2)").text();
+        let costomensual = attrFila(row, 'costo-mensual') || row.find("td:eq(3)").text();
+        let costoanual = attrFila(row, 'costo-anual') || row.find("td:eq(4)").text();
         let fecharenovacion = row.find("td:eq(5)").text().trim();
         // Si la fecha trae hora (ej. 2026-04-29 00:00:00), tomamos solo los primeros 10 caracteres
         if (fecharenovacion.length > 10) {
@@ -2050,6 +2172,11 @@
         row.find('td:eq(9)').html(celdaPendiente(insumo.Comentarios, extra));
         row.find('td:eq(10)').html(htmlPillsMeses(insumo.MesDePago));
         row.attr('data-meses', insumo.MesDePago ?? '');
+        row.attr('data-presupuestado', insumo.Presupuestado ?? 0);
+        setAttrFila(row, 'categoria', insumo.CateogoriaInsumo);
+        setAttrFila(row, 'nombre', insumo.NombreInsumo);
+        setAttrFila(row, 'costo-mensual', insumo.CostoMensual);
+        setAttrFila(row, 'costo-anual', insumo.CostoAnual);
         if (permitePresupuestado) {
             row.find('td:eq(11)').html(htmlChipPresupuestado(insumo.Presupuestado));
         }
@@ -2062,7 +2189,7 @@
     function addinsumoNewRow(insumo) {
         const extra = esExtraAsignacion(insumo.Presupuestado);
         let newRow = `
-        <tr data-id="${insumo.InventarioID}" data-meses="${insumo.MesDePago ?? ''}" data-presupuestado="${insumo.Presupuestado ?? 0}">
+        <tr data-id="${insumo.InventarioID}" data-meses="${insumo.MesDePago ?? ''}" data-presupuestado="${insumo.Presupuestado ?? 0}" data-categoria="${escAttr(insumo.CateogoriaInsumo)}" data-nombre="${escAttr(insumo.NombreInsumo)}" data-costo-mensual="${escAttr(insumo.CostoMensual)}" data-costo-anual="${escAttr(insumo.CostoAnual)}">
             <td>
                 <div class="index-actions">
                     ${htmlCheckBulk('insumo', insumo.InventarioID, insumo.Presupuestado)}

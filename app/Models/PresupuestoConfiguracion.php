@@ -27,8 +27,8 @@ class PresupuestoConfiguracion extends Model
     public const GRUPOS = [
         'hardware' => [
             'label' => 'Equipo de cómputo / inversiones',
-            'hint' => 'Categorías de equipo que entran al reporte de hardware, al bloque INVERSIONES del calendario y a los KPIs de cortes.',
-            'origen' => 'equipo',
+            'hint' => 'Categorías de equipo o insumo que entran al reporte de hardware y al bloque INVERSIONES del calendario. Un laptop capturado como insumo también cuenta aquí.',
+            'origen' => 'equipo_insumo',
             'defaults' => ['LAPTOP', 'MONITOR', 'IMPRESORA', 'MODEM', 'TABLET', 'TABLETA', 'ANTENA', 'NO BREAK', 'PC ESCRITORIO'],
         ],
         'otros_insumos' => [
@@ -182,6 +182,15 @@ class PresupuestoConfiguracion extends Model
         $deInventario = collect();
 
         try {
+            if ($origen === 'equipo_insumo') {
+                return collect(static::opciones('equipo'))
+                    ->merge(static::opciones('insumo'))
+                    ->unique(fn ($v) => mb_strtoupper(trim((string) $v), 'UTF-8'))
+                    ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+                    ->values()
+                    ->all();
+            }
+
             if ($origen === 'equipo') {
                 $deCatalogo = Categorias::query()
                     ->whereHas('tiposdecategorias', function ($t) {

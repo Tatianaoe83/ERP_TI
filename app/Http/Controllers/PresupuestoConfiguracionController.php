@@ -19,6 +19,10 @@ class PresupuestoConfiguracionController extends Controller
         foreach (PresupuestoConfiguracion::GRUPOS as $clave => $meta) {
             $seleccionadas = PresupuestoConfiguracion::valores($clave);
             $opciones = PresupuestoConfiguracion::opciones($meta['origen']);
+            $opcionesUpper = array_map(
+                fn ($v) => mb_strtoupper($v, 'UTF-8'),
+                $opciones
+            );
 
             foreach ($seleccionadas as $valor) {
                 $existe = collect($opciones)->contains(
@@ -40,6 +44,7 @@ class PresupuestoConfiguracionController extends Controller
                     $seleccionadas
                 ),
                 'opciones' => $opciones,
+                'opciones_catalogo_upper' => $opcionesUpper,
             ]);
         }
 

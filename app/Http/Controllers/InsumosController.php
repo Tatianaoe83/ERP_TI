@@ -82,16 +82,20 @@ class InsumosController extends AppBaseController
                 return response()->json(['records' => []]);
             }
 
-            // Buscar el insumo actual
-            $insumo = Insumos::find($insumoId);
+            $insumo = Insumos::with('categorias')->find($insumoId);
             if (!$insumo) {
                 return response()->json(['records' => []]);
             }
 
-          
-            // Buscar registros que coincidan con el nombre del insumo ACTUAL
-            // Esto mostrará cuántos registros se actualizarán si se modifica el insumo
-            $records = InventarioInsumo::where('NombreInsumo', $insumo->NombreInsumo)
+            $this->alinearCategoriaInventario($insumo);
+
+            $records = InventarioInsumo::query()
+                ->where(function ($q) use ($insumo) {
+                    $q->where('InsumoID', $insumo->ID);
+                    if ($insumo->NombreInsumo) {
+                        $q->orWhere('NombreInsumo', $insumo->NombreInsumo);
+                    }
+                })
                 ->leftJoin('empleados', 'inventarioinsumo.EmpleadoID', '=', 'empleados.EmpleadoID')
                 ->select([
                     'inventarioinsumo.InventarioID as id',
@@ -118,8 +122,8 @@ class InsumosController extends AppBaseController
                         'fecha_asignacion' => $record->FechaAsignacion 
                             ? \Carbon\Carbon::parse($record->FechaAsignacion)->format('d/m/Y') 
                             : 'Sin Asignar'
-        ];
-    });
+                    ];
+                });
 
             return response()->json(['records' => $records]);
         } catch (\Exception $e) {
@@ -248,12 +252,14 @@ class InsumosController extends AppBaseController
 
         // Obtener los datos actualizados
         $insumosActualizado = $this->insumosRepository->find($id);
+        $insumosActualizado->load('categorias');
 
         // Si hay cambios, sincronizar automáticamente con inventario usando datos originales
         if ($hayCambios) {
             $this->sincronizarConInventario($insumosActualizado, $datosOriginales);
             $mensaje = 'Insumo actualizado exitosamente y sincronizado automáticamente con inventario.';
         } else {
+            $this->alinearCategoriaInventario($insumosActualizado);
             $mensaje = 'Insumo actualizado exitosamente.';
         }
 
@@ -272,23 +278,39 @@ class InsumosController extends AppBaseController
         return redirect(route('insumos.index'));
     }
 
+    private function nombreCategoriaCatalogo(Insumos $insumo): string
+    {
+        $categoria = $insumo->categorias ?? Categorias::find($insumo->CategoriaID);
+
+        return $categoria ? (string) $categoria->Categoria : '';
+    }
+
+    private function alinearCategoriaInventario(Insumos $insumo): void
+    {
+        $nombreCategoria = $this->nombreCategoriaCatalogo($insumo);
+        if ($nombreCategoria === '') {
+            return;
+        }
+
+        InventarioInsumo::where('InsumoID', $insumo->ID)
+            ->where(function ($q) use ($nombreCategoria) {
+                $q->whereNull('CateogoriaInsumo')
+                    ->orWhere('CateogoriaInsumo', '!=', $nombreCategoria);
+            })
+            ->update(['CateogoriaInsumo' => $nombreCategoria]);
+    }
+
     private function sincronizarConInventario($insumoActualizado, $datosOriginales)
     {
-        // Obtener el nombre de la categoría actualizada
-        $categoria = Categorias::find($insumoActualizado->CategoriaID);
-        $nombreCategoria = $categoria ? $categoria->Categoria : '';
-        
-     
-        // Buscar registros de inventario usando los datos ORIGINALES del insumo
-        // Esto es crucial porque los registros en inventario tienen los datos viejos
-        $registrosInventario = InventarioInsumo::where('NombreInsumo', $datosOriginales['NombreInsumo'])
-            ->get();
-        
-       
-        
-        $registrosActualizados = 0;
-        
-        // Actualizar cada registro encontrado con los datos NUEVOS del equipo
+        $nombreCategoria = $this->nombreCategoriaCatalogo($insumoActualizado);
+
+        $registrosInventario = InventarioInsumo::where(function ($q) use ($insumoActualizado, $datosOriginales) {
+            $q->where('InsumoID', $insumoActualizado->ID);
+            if (! empty($datosOriginales['NombreInsumo'])) {
+                $q->orWhere('NombreInsumo', $datosOriginales['NombreInsumo']);
+            }
+        })->get();
+
         foreach ($registrosInventario as $registro) {
             $registro->update([
                 'CateogoriaInsumo' => $nombreCategoria,
@@ -299,11 +321,7 @@ class InsumosController extends AppBaseController
                 'Observaciones' => $insumoActualizado->Observaciones,
                 'FechaRenovacion' => $insumoActualizado->FechaRenovacion
             ]);
-            $registrosActualizados++;
-            
-          
         }
-    
     }
 
 

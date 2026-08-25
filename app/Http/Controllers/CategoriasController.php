@@ -12,6 +12,9 @@ use App\Http\Controllers\AppBaseController;
 use Response;
 use App\Models\Categorias;
 use Yajra\DataTables\DataTables;
+use App\Models\Insumos;
+use App\Models\InventarioInsumo;
+use App\Models\InventarioEquipo;
 
 class CategoriasController extends AppBaseController
 {
@@ -142,11 +145,36 @@ class CategoriasController extends AppBaseController
             return redirect(route('categorias.index'));
         }
 
+        $nombreAnterior = $categorias->Categoria;
+        $tipoId = (int) $categorias->TipoID;
+
         $categorias = $this->categoriasRepository->update($request->all(), $id);
+
+        if ($nombreAnterior !== $categorias->Categoria) {
+            $this->propagarNombreCategoria($id, $tipoId, $nombreAnterior, $categorias->Categoria);
+        }
 
         Flash::success('Categorias updated successfully.');
 
         return redirect(route('categorias.index'));
+    }
+
+    private function propagarNombreCategoria(int $categoriaId, int $tipoId, string $nombreAnterior, string $nombreNuevo): void
+    {
+        if ($tipoId === 1) {
+            $ids = Insumos::where('CategoriaID', $categoriaId)->pluck('ID');
+            if ($ids->isNotEmpty()) {
+                InventarioInsumo::whereIn('InsumoID', $ids)
+                    ->update(['CateogoriaInsumo' => $nombreNuevo]);
+            }
+
+            return;
+        }
+
+        if ($tipoId === 2 && $nombreAnterior !== '') {
+            InventarioEquipo::where('CategoriaEquipo', $nombreAnterior)
+                ->update(['CategoriaEquipo' => $nombreNuevo]);
+        }
     }
 
     /**

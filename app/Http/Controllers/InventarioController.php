@@ -376,6 +376,7 @@ class InventarioController extends AppBaseController
         $data = $request->all();
         $data = $this->resolverGerenciaEquipo($data, $request->GerenciaEquipoID);
         $data = $this->vaciarCamposEstimacion($data);
+        $data = $this->conservarCamposCatalogoEquipo($data, $inventarioEquipo);
 
         $data = $this->forzarPresupuestado($data, (int) $inventarioEquipo->EmpleadoID);
         $data = $this->aplicarMesesDePago($data, false);
@@ -502,6 +503,7 @@ class InventarioController extends AppBaseController
         $data = $request->all();
         $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
         $data['InsumoID'] = $idinsumo[0]->ID;
+        $data['CateogoriaInsumo'] = $this->categoriaDesdeCatalogoInsumo((int) $data['InsumoID'], $data['CateogoriaInsumo'] ?? null);
 
         // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
         $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
@@ -531,6 +533,7 @@ class InventarioController extends AppBaseController
         $data['EmpleadoID'] = $id;
         $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
         $data['InsumoID'] = $idinsumo[0]->ID;
+        $data['CateogoriaInsumo'] = $this->categoriaDesdeCatalogoInsumo((int) $data['InsumoID'], $data['CateogoriaInsumo'] ?? null);
         
         // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
         $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
@@ -1581,6 +1584,33 @@ class InventarioController extends AppBaseController
         }
 
         return $data;
+    }
+
+    private function conservarCamposCatalogoEquipo(array $data, InventarioEquipo $equipo): array
+    {
+        foreach (['CategoriaEquipo', 'Marca', 'Caracteristicas', 'Modelo'] as $campo) {
+            if (! array_key_exists($campo, $data)) {
+                continue;
+            }
+
+            $valor = $data[$campo];
+            if ($valor === null || trim((string) $valor) === '') {
+                $data[$campo] = $equipo->{$campo};
+            }
+        }
+
+        return $data;
+    }
+
+    private function categoriaDesdeCatalogoInsumo(int $insumoId, $fallback = null): ?string
+    {
+        $master = Insumos::with('categorias')->find($insumoId);
+        $nombre = optional(optional($master)->categorias)->Categoria;
+        if ($nombre !== null && trim((string) $nombre) !== '') {
+            return (string) $nombre;
+        }
+
+        return $fallback !== null ? (string) $fallback : null;
     }
 
     private function datosLineaDesdePlan(array $data, Request $request): array
