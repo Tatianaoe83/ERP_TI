@@ -22,6 +22,55 @@
         .select2-container {
             width: 100% !important;
         }
+
+        #tabla-empleados td.dt-control {
+            width: 2.5rem;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+        #tabla-empleados td.dt-control::before,
+        #tabla-empleados td.dt-control::after {
+            display: none !important;
+            content: none !important;
+            background: none !important;
+        }
+        .inv-row-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.85rem;
+            height: 1.85rem;
+            padding: 0;
+            border: 1px solid #d1d5db;
+            border-radius: 0.45rem;
+            background: #f8fafc;
+            color: #64748b;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .inv-row-toggle i {
+            font-size: 0.7rem;
+            transition: transform 0.18s ease;
+        }
+        #tabla-empleados tbody tr.shown .inv-row-toggle {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1d4ed8;
+        }
+        #tabla-empleados tbody tr.shown .inv-row-toggle i {
+            transform: rotate(90deg);
+        }
+        .dark .inv-row-toggle {
+            background: #1f2937;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
+        .dark #tabla-empleados tbody tr.shown .inv-row-toggle {
+            background: #1e3a8a;
+            border-color: #3b82f6;
+            color: #bfdbfe;
+        }
     </style>
     @endpush
 
@@ -29,7 +78,7 @@
         <table id="tabla-empleados" class="table index-table w-full">
             <thead>
                 <tr>
-                    <th></th>
+                    <th aria-label="Inventario"></th>
                     <th>Nombre</th>
                     <th>Tipo</th>
                     <th>Puesto</th>
@@ -63,6 +112,8 @@
             // DATATABLE
             // =========================
             var table = $('#tabla-empleados').DataTable({
+                serverSide: true,
+                processing: true,
                 responsive: true,
                 searching: false,
                 pageLength: 10,
@@ -101,8 +152,10 @@
                 columns: [{
                         className: 'dt-control dark:bg-[#101010] dark:text-white',
                         orderable: false,
+                        searchable: false,
                         data: null,
-                        defaultContent: '',
+                        width: '42px',
+                        defaultContent: '<button type="button" class="inv-row-toggle" title="Ver inventario" aria-label="Ver inventario del empleado" aria-expanded="false"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>',
                     },
 
                     {
@@ -216,11 +269,13 @@
             // =========================
             // FILTROS
             // =========================
+            var recargarFiltrosTexto = null;
             $('#filtro-nombre, #filtro-inventario')
                 .on('keyup', function() {
-
-                    table.ajax.reload();
-
+                    clearTimeout(recargarFiltrosTexto);
+                    recargarFiltrosTexto = setTimeout(function() {
+                        table.ajax.reload();
+                    }, 300);
                 });
 
             $('#filtro-obra, #filtro-puesto, #filtro-persona, #filtro-estatus')
@@ -262,16 +317,19 @@
 
                 var tr = $(this).closest('tr');
                 var row = table.row(tr);
+                var toggle = tr.find('.inv-row-toggle');
 
                 if (row.child.isShown()) {
 
                     row.child.hide();
                     tr.removeClass('shown');
+                    toggle.attr('aria-expanded', 'false');
 
                 } else {
 
                     row.child('<div class="text-center">Cargando...</div>').show();
                     tr.addClass('shown');
+                    toggle.attr('aria-expanded', 'true');
 
                     $.get(`/inventarios/${row.data().EmpleadoID}/inventario`, function(data) {
 

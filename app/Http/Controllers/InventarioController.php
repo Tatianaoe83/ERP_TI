@@ -83,11 +83,20 @@ class InventarioController extends AppBaseController
                 'empleados.Estado'
             ])
             ->orderBy('empleados.EmpleadoID', 'desc')
-            ->when($request->nombre, fn($q) => $q->where(function ($sub) use ($request) {
-                $sub->where('empleados.NombreEmpleado', 'like', '%' . $request->nombre . '%')
-                    ->orWhere('empleados.NumTelefono', 'like', '%' . $request->nombre . '%')
-                    ->orWhere('empleados.Correo', 'like', '%' . $request->nombre . '%');
-            }))
+            ->when($request->filled('nombre'), function ($q) use ($request) {
+                $tokens = preg_split('/\s+/', trim((string) $request->nombre), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+                $q->where(function ($sub) use ($tokens) {
+                    foreach ($tokens as $token) {
+                        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $token) . '%';
+                        $sub->where(function ($tokenQuery) use ($like) {
+                            $tokenQuery->where('empleados.NombreEmpleado', 'like', $like)
+                                ->orWhere('empleados.NumTelefono', 'like', $like)
+                                ->orWhere('empleados.Correo', 'like', $like);
+                        });
+                    }
+                });
+            })
             ->when($request->obra, fn($q) => $q->where('obras.NombreObra', 'like', '%' . $request->obra . '%'))
             ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', 'like', '%' . $request->puesto . '%'))
             ->when($request->has('estatus'), function ($q) use ($request) {

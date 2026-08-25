@@ -15,6 +15,26 @@
         border: 0;
     }
     .inv-leyenda--inline .inv-leyenda-item { max-width: 320px; }
+
+    .index-search {
+        position: relative;
+    }
+    .index-search__icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        font-size: 0.8rem;
+        pointer-events: none;
+        z-index: 1;
+    }
+    .index-search .form-control {
+        padding-left: 2.15rem;
+    }
+    .dark .index-search__icon {
+        color: #9ca3af;
+    }
 </style>
 
 <x-index-page
@@ -44,7 +64,10 @@
         </div>
         <div class="form-group">
             <label for="filtro-nombre">Nombre empleado</label>
-            <input type="text" class="form-control" id="filtro-nombre" placeholder="Buscar empleado...">
+            <div class="index-search">
+                <i class="fas fa-search index-search__icon" aria-hidden="true"></i>
+                <input type="text" class="form-control" id="filtro-nombre" placeholder="Buscar empleado..." autocomplete="off">
+            </div>
         </div>
         <div class="form-group">
             <label for="filtro-obra">Obra</label>
@@ -60,7 +83,10 @@
         </div>
         <div class="form-group">
             <label for="filtro-inventario">Inventario</label>
-            <input type="text" class="form-control" id="filtro-inventario" placeholder="Buscar inventario...">
+            <div class="index-search">
+                <i class="fas fa-search index-search__icon" aria-hidden="true"></i>
+                <input type="text" class="form-control" id="filtro-inventario" placeholder="Buscar inventario..." autocomplete="off">
+            </div>
         </div>
         <div class="form-group">
             <label for="filtro-persona">Tipo de persona</label>

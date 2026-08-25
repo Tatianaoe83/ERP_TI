@@ -146,9 +146,9 @@
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);" wire:click.self="cerrarReprogramar">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header mant-modal-header">
                         <h5 class="modal-title">Reprogramar mantenimiento</h5>
-                        <button type="button" class="close" wire:click="cerrarReprogramar" aria-label="Cerrar">
+                        <button type="button" class="mant-modal-close" wire:click="cerrarReprogramar" aria-label="Cerrar">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -195,9 +195,9 @@
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);" wire:click.self="cerrarDetalle">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header mant-modal-header">
                         <h5 class="modal-title">Detalle del mantenimiento</h5>
-                        <button type="button" class="close" wire:click="cerrarDetalle" aria-label="Cerrar">
+                        <button type="button" class="mant-modal-close" wire:click="cerrarDetalle" aria-label="Cerrar">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -382,6 +382,39 @@
                 font-size: 15px;
             }
 
+            .mant-modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+            }
+
+            .mant-modal-header .modal-title {
+                margin: 0;
+                flex: 1 1 auto;
+                min-width: 0;
+                padding-right: 0.5rem;
+            }
+
+            .mant-modal-close {
+                flex: 0 0 auto;
+                margin-left: auto;
+                border: 0;
+                background: transparent;
+                color: inherit;
+                cursor: pointer;
+                font-size: 1.75rem;
+                font-weight: 400;
+                line-height: 1;
+                opacity: 0.7;
+                padding: 0 0.15rem;
+            }
+
+            .mant-modal-close:hover,
+            .mant-modal-close:focus {
+                opacity: 1;
+            }
+
             .mant-modal-btn {
                 border: 0;
                 border-radius: 10px;
@@ -444,6 +477,10 @@
 
             .dark .mant-table-summary {
                 color: #cbd5e1;
+            }
+
+            .dark .mant-modal-close {
+                color: #e5e7eb;
             }
 
             .dark .mant-modal-btn-secondary {

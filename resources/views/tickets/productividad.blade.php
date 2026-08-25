@@ -1601,8 +1601,8 @@
 </div>
 
 
-<script src="{{ asset('vendor/chartjs/chart.min.js') }}"></script>
-<script src="{{ asset('vendor/chartjs/chartjs-plugin-datalabels.min.js') }}"></script>
+<script src="{{ asset('assets/js/chart.min.js') }}"></script>
+<script src="{{ asset('assets/js/chartjs-plugin-datalabels.min.js') }}"></script>
 
 <script>
     window.__erpProdCharts = window.__erpProdCharts || {};

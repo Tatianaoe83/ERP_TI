@@ -237,81 +237,68 @@
 
 @push('third_party_scripts')
 <script>
-    function abrirModalProgramacionMantenimientos() {
-        const modal = document.getElementById('modal-programacion-mantenimientos');
-        if (!modal) {
-            return;
-        }
-
+    window.abrirModalProgramacionMantenimientos = function () {
+        var modal = document.getElementById('modal-programacion-mantenimientos');
+        if (!modal) return;
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
-    }
+        window.inicializarOrdenGerenciasMantenimiento();
+    };
 
-    function cerrarModalProgramacionMantenimientos() {
-        const modal = document.getElementById('modal-programacion-mantenimientos');
-        if (!modal) {
-            return;
-        }
-
+    window.cerrarModalProgramacionMantenimientos = function () {
+        var modal = document.getElementById('modal-programacion-mantenimientos');
+        if (!modal) return;
         modal.style.display = 'none';
         document.body.style.overflow = '';
-    }
+    };
 
-    function inicializarOrdenGerenciasMantenimiento() {
-        const lista = document.getElementById('lista-gerencias-mantenimiento');
-        if (!lista) {
-            return;
-        }
+    window.inicializarOrdenGerenciasMantenimiento = function () {
+        var lista = document.getElementById('lista-gerencias-mantenimiento');
+        if (!lista || lista.dataset.sortableReady === '1') return;
+        lista.dataset.sortableReady = '1';
 
-        let itemArrastrado = null;
+        var itemArrastrado = null;
 
-        lista.querySelectorAll('.mant-sortable-item').forEach((item) => {
-            item.addEventListener('dragstart', () => {
-                itemArrastrado = item;
-                item.classList.add('mant-dragging');
-            });
+        lista.addEventListener('dragstart', function (event) {
+            var item = event.target.closest('.mant-sortable-item');
+            if (!item) return;
+            itemArrastrado = item;
+            item.classList.add('mant-dragging');
+        });
 
-            item.addEventListener('dragend', () => {
-                item.classList.remove('mant-dragging');
-                itemArrastrado = null;
-                lista.querySelectorAll('.mant-drag-over').forEach((elemento) => {
-                    elemento.classList.remove('mant-drag-over');
-                });
-            });
-
-            item.addEventListener('dragover', (event) => {
-                event.preventDefault();
-
-                if (!itemArrastrado || itemArrastrado === item) {
-                    return;
-                }
-
-                item.classList.add('mant-drag-over');
-                const rect = item.getBoundingClientRect();
-                const insertarDespues = event.clientY > rect.top + rect.height / 2;
-
-                lista.insertBefore(itemArrastrado, insertarDespues ? item.nextSibling : item);
-            });
-
-            item.addEventListener('dragleave', () => {
-                item.classList.remove('mant-drag-over');
+        lista.addEventListener('dragend', function () {
+            if (itemArrastrado) itemArrastrado.classList.remove('mant-dragging');
+            itemArrastrado = null;
+            lista.querySelectorAll('.mant-drag-over').forEach(function (el) {
+                el.classList.remove('mant-drag-over');
             });
         });
-    }
 
-    function confirmarGeneracionMantenimientos(event, form) {
+        lista.addEventListener('dragover', function (event) {
+            var item = event.target.closest('.mant-sortable-item');
+            if (!item || !itemArrastrado || itemArrastrado === item) return;
+            event.preventDefault();
+            item.classList.add('mant-drag-over');
+            var rect = item.getBoundingClientRect();
+            var insertarDespues = event.clientY > rect.top + rect.height / 2;
+            lista.insertBefore(itemArrastrado, insertarDespues ? item.nextSibling : item);
+        });
+
+        lista.addEventListener('dragleave', function (event) {
+            var item = event.target.closest('.mant-sortable-item');
+            if (item) item.classList.remove('mant-drag-over');
+        });
+    };
+
+    window.confirmarGeneracionMantenimientos = function (event, form) {
         event.preventDefault();
 
-        const fechaInicio = form.querySelector('[name="fecha_inicio"]').value;
-        const anio = fechaInicio ? new Date(fechaInicio + 'T00:00:00').getFullYear() : new Date().getFullYear();
-        const totalGerencias = form.querySelectorAll('[name="gerencias_orden[]"]').length;
-        const mensaje = `Se creará la lista del ${anio}, usando el orden seleccionado. Si ya existe una lista para ese corte, no se generará otra.`;
+        var fechaInicio = form.querySelector('[name="fecha_inicio"]').value;
+        var anio = fechaInicio ? new Date(fechaInicio + 'T00:00:00').getFullYear() : new Date().getFullYear();
+        var mensaje = 'Se creará la lista del ' + anio + ', usando el orden seleccionado. Si ya existe una lista para ese corte, no se generará otra.';
 
         if (typeof Swal === 'undefined') {
-            if (confirm(mensaje)) {
-                form.submit();
-            }
-
+            if (confirm(mensaje)) form.submit();
             return false;
         }
 
@@ -324,88 +311,85 @@
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#101D49',
             cancelButtonColor: '#6c757d'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
+        }).then(function (result) {
+            if (result.isConfirmed) form.submit();
         });
 
         return false;
-    }
+    };
 
-    function GenerarExcelMantenimientos() {
-        const anios = @json($aniosDisponibles ?? []);
-
-        let options = '<option value="todos">Todos los años</option>';
-        anios.forEach(anio => {
-            options += `<option value="${anio}">${anio}</option>`;
+    window.GenerarExcelMantenimientos = function () {
+        var anios = @json($aniosDisponibles ?? []);
+        var options = '<option value="todos">Todos los años</option>';
+        anios.forEach(function (anio) {
+            options += '<option value="' + anio + '">' + anio + '</option>';
         });
 
         if (typeof Swal === 'undefined') {
-            const anio = prompt('Ingresa el año (o deja vacío para todos):') || 'todos';
-            window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + anio;
+            var anio = prompt('Ingresa el año (o deja vacío para todos):') || 'todos';
+            window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + encodeURIComponent(anio);
             return;
         }
 
         Swal.fire({
             title: 'Reporte Excel de Mantenimientos',
-            html: `<div style="text-align:left;margin-top:8px;">
-                       <label style="font-weight:600;margin-bottom:4px;display:block;">Selecciona el año:</label>
-                       <select id="swal-anio-excel" class="swal2-input" style="margin:0;width:100%;">
-                           ${options}
-                       </select>
-                   </div>`,
+            html: '<div style="text-align:left;margin-top:8px;">'
+                + '<label style="font-weight:600;margin-bottom:4px;display:block;">Selecciona el año:</label>'
+                + '<select id="swal-anio-excel" class="swal2-input" style="margin:0;width:100%;">'
+                + options
+                + '</select></div>',
             confirmButtonText: '<i class="fas fa-file-excel"></i> Descargar',
             cancelButtonText: 'Cancelar',
             showCancelButton: true,
             confirmButtonColor: '#65c05b',
             cancelButtonColor: '#6c757d',
-            preConfirm: () => document.getElementById('swal-anio-excel').value,
-        }).then((result) => {
+            preConfirm: function () {
+                var sel = document.getElementById('swal-anio-excel');
+                return sel ? sel.value : 'todos';
+            },
+        }).then(function (result) {
             if (result.isConfirmed) {
-                window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + result.value;
+                window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + encodeURIComponent(result.value);
+            }
+        });
+    };
+
+    if (!window.__mantenimientosAccionesReady) {
+        window.__mantenimientosAccionesReady = true;
+
+        document.addEventListener('click', function (event) {
+            if (event.target.closest('#btn-reporte-excel')) {
+                event.preventDefault();
+                window.GenerarExcelMantenimientos();
+                return;
+            }
+            if (event.target.closest('#btn-abrir-programacion-mantenimientos')) {
+                event.preventDefault();
+                window.abrirModalProgramacionMantenimientos();
+                return;
+            }
+            if (
+                event.target.closest('#btn-cerrar-programacion-mantenimientos')
+                || event.target.closest('#btn-cancelar-programacion-mantenimientos')
+            ) {
+                event.preventDefault();
+                window.cerrarModalProgramacionMantenimientos();
+                return;
+            }
+            var modal = document.getElementById('modal-programacion-mantenimientos');
+            if (modal && event.target === modal) {
+                window.cerrarModalProgramacionMantenimientos();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                window.cerrarModalProgramacionMantenimientos();
             }
         });
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        inicializarOrdenGerenciasMantenimiento();
-
-        const botonAbrir = document.getElementById('btn-abrir-programacion-mantenimientos');
-        if (botonAbrir) {
-            botonAbrir.addEventListener('click', abrirModalProgramacionMantenimientos);
-        }
-
-        const botonCerrar = document.getElementById('btn-cerrar-programacion-mantenimientos');
-        if (botonCerrar) {
-            botonCerrar.addEventListener('click', cerrarModalProgramacionMantenimientos);
-        }
-
-        const botonCancelar = document.getElementById('btn-cancelar-programacion-mantenimientos');
-        if (botonCancelar) {
-            botonCancelar.addEventListener('click', cerrarModalProgramacionMantenimientos);
-        }
-
-        const botonAbrirExcel = document.getElementById('btn-reporte-excel');
-        if (botonAbrirExcel) {
-            botonAbrirExcel.addEventListener('click', GenerarExcelMantenimientos);
-        }
-
-        const modal = document.getElementById('modal-programacion-mantenimientos');
-        if (modal) {
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    cerrarModalProgramacionMantenimientos();
-                }
-            });
-        }
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                cerrarModalProgramacionMantenimientos();
-            }
-        });
-    });
+    window.inicializarOrdenGerenciasMantenimiento();
 
     @if(session('sweetalert_success'))
     if (typeof Swal !== 'undefined') {

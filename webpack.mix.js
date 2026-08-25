@@ -129,4 +129,4 @@ mix.babel(
     "public/assets/js/iziToast.min.js"
 );
 
-// Alpine y SweetAlert2 viven en public/assets/js (no en public/vendor, que Git ignora).
+// Alpine, SweetAlert2 y Chart.js viven en public/assets/js (no en public/vendor, que Git ignora).

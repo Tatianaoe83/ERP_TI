@@ -681,6 +681,29 @@
     color: #d97706;
 }
 
+.export-reporte-menu {
+    display: none;
+}
+
+.export-reporte-menu.is-open,
+.export-reporte-menu.show {
+    display: block;
+}
+
+.dark .export-reporte-menu {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+.dark .export-reporte-menu .dropdown-item {
+    color: #e5e7eb;
+}
+
+.dark .export-reporte-menu .dropdown-item:hover {
+    background: #374151;
+    color: #fff;
+}
+
 .index-action--disabled,
 .index-action--disabled:hover,
 a.index-action--disabled,
