@@ -129,4 +129,5 @@ mix.babel(
     "public/assets/js/iziToast.min.js"
 );
 
-// Alpine, SweetAlert2 y Chart.js viven en public/assets/js (no en public/vendor, que Git ignora).
+// Alpine, SweetAlert2, Chart.js y DataTables extras viven en public/assets
+// (no en public/vendor, que Git ignora y Laravel acaba sirviendo como HTML).
