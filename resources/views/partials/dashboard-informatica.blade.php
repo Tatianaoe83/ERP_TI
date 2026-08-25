@@ -1,5 +1,49 @@
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6 items-start">
-    <div class="space-y-4">
+<style>
+    .dash-top-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: stretch;
+    }
+    @media (min-width: 1024px) {
+        .dash-top-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .dash-top-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        min-height: 0;
+    }
+    .dash-kpi--fill {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+    }
+    .dash-kpi--fill .dash-equipos-grid {
+        flex: 1 1 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+    @media (min-width: 768px) {
+        .dash-kpi--fill .dash-equipos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .dash-kpi--fill .dash-stat {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 0.35rem;
+        min-height: 5.5rem;
+    }
+</style>
+
+<div class="dash-top-grid">
+    <div class="dash-top-col">
         <div class="dash-kpi">
             <div class="dash-kpi__top">
                 <div>
@@ -34,7 +78,7 @@
         </div>
     </div>
 
-    <div class="space-y-4">
+    <div class="dash-top-col">
         <div class="dash-kpi">
             <div class="dash-kpi__top">
                 <div>
@@ -47,13 +91,13 @@
             </div>
         </div>
 
-        <div class="dash-kpi">
+        <div class="dash-kpi dash-kpi--fill">
             <p class="dash-kpi__label mb-3">Equipos asignados en inventario</p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="dash-equipos-grid">
                 @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
-                <div class="dash-stat flex items-center justify-between gap-2">
+                <div class="dash-stat">
                     <span class="dash-stat__name">{{ Str::limit($equipo->CategoriaEquipo, 18) }}</span>
-                    <span class="dash-stat__value" style="font-size:1.1rem;">{{ $equipo->total_inventario }}</span>
+                    <span class="dash-stat__value" style="font-size:1.25rem;">{{ $equipo->total_inventario }}</span>
                 </div>
                 @empty
                 <p class="dash-kpi__hint col-span-3 text-center py-2">No hay equipos disponibles</p>

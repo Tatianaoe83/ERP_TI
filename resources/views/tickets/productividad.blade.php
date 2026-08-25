@@ -246,15 +246,24 @@
         </nav>
     </div>
 
-    <div class="relative" x-data="{ modalAbierto: false, infoModal: {} }">
+    <div class="relative" x-data="{
+            modalAbierto: false,
+            infoModal: {},
+            abrirInfoSolicitud(el) {
+                try {
+                    this.infoModal = JSON.parse(el.getAttribute('data-sol') || '{}');
+                    this.modalAbierto = true;
+                } catch (err) {
+                    this.infoModal = {};
+                }
+            }
+        }">
 
         <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200"
             x-transition:enter-start="opacity-0 transform translate-y-2"
             x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-3">
 
-            <script id="productividad-json-data" type="application/json">
-                {!! json_encode($metricasProductividad) !!}
-            </script>
+            <script id="productividad-json-data" type="application/json">{!! json_encode($metricasProductividad, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) !!}</script>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
 
@@ -1182,7 +1191,25 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-[#2A2F3A] bg-gray-50 dark:bg-transparent">
                             @forelse($metricasSolicitudes['desglose'] ?? [] as $sol)
-                                <tr @click="infoModal = { id: '{{ $sol['id'] }}', empleado: '{{ addslashes($sol['empleado'] ?? '') }}', proyecto: '{{ addslashes($sol['proyecto'] ?? '') }}', motivo: '{{ addslashes($sol['motivo'] ?? '') }}', descripcion: '{{ addslashes($sol['descripcion_motivo'] ?? '') }}', estatus: '{{ $sol['estatus'] ?? '' }}', creacion: '{{ $sol['fecha_creacion'] }}', actualizacion: '{{ $sol['fecha_actualizacion'] ?? '' }}', cierre: '{{ $sol['fecha_cierre'] ?? '' }}', voboSupervisor: '{{ $sol['fecha_vobo_supervisor'] ?? '' }}', cotizacionTi: '{{ $sol['fecha_cotizacion_ti'] ?? '' }}', ultimoHito: '{{ $sol['fecha_ultimo_hito'] ?? '' }}', estadoConfig: '{{ $sol['estado_configuracion'] ?? '' }}' }; modalAbierto = true;"
+                                @php
+                                    $solModal = [
+                                        'id' => (string) ($sol['id'] ?? ''),
+                                        'empleado' => (string) ($sol['empleado'] ?? ''),
+                                        'proyecto' => (string) ($sol['proyecto'] ?? ''),
+                                        'motivo' => (string) ($sol['motivo'] ?? ''),
+                                        'descripcion' => (string) ($sol['descripcion_motivo'] ?? ''),
+                                        'estatus' => (string) ($sol['estatus'] ?? ''),
+                                        'creacion' => (string) ($sol['fecha_creacion'] ?? ''),
+                                        'actualizacion' => (string) ($sol['fecha_actualizacion'] ?? ''),
+                                        'cierre' => (string) ($sol['fecha_cierre'] ?? ''),
+                                        'voboSupervisor' => (string) ($sol['fecha_vobo_supervisor'] ?? ''),
+                                        'cotizacionTi' => (string) ($sol['fecha_cotizacion_ti'] ?? ''),
+                                        'ultimoHito' => (string) ($sol['fecha_ultimo_hito'] ?? ''),
+                                        'estadoConfig' => (string) ($sol['estado_configuracion'] ?? ''),
+                                    ];
+                                @endphp
+                                <tr data-sol="{{ e(json_encode($solModal, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP)) }}"
+                                    @click="abrirInfoSolicitud($el)"
                                     class="hover:bg-gray-100 dark:hover:bg-[#1F2937]/50 transition-colors cursor-pointer">
 
                                     <td class="px-6 py-4 font-bold text-gray-900 dark:text-white">#{{ $sol['id'] }}</td>
