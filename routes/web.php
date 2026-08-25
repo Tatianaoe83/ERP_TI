@@ -461,6 +461,11 @@ Route::get('/notificaciones-panel', function () {
     Route::patch('/auditorias/licencias/{fila}', [AuditoriasController::class, 'actualizarLicencia'])
         ->name('auditorias.licencias.update')
         ->middleware('can:ver-auditorias');
+
+    // Captura del equipo: si apareció y la nota del auditor.
+    Route::patch('/auditorias/equipos/{fila}', [AuditoriasController::class, 'actualizarEquipo'])
+        ->name('auditorias.equipos.update')
+        ->middleware('can:ver-auditorias');
 });
 
 // Soporte TI (sin auth)

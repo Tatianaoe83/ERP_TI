@@ -31,21 +31,35 @@
                 columnDefs: [{ orderable: false, targets: [1, 2, 3, 4] }]
             });
 
-            // ── Color del select de original ────────────────────────────────────
-            var COLORES = {
-                original: function (v) { return v === '' ? 'pendiente' : (v === '1' ? 'si' : 'alerta'); }
-            };
+            // 6 columnas: Equipo(0), Serie(1), Folio(2), ¿Está?(3), Obs(4), Anterior(5)
+            montar('#tablaEquipos', {
+                language: $.extend({}, base.language, {
+                    searchPlaceholder: 'Buscar equipo…',
+                    zeroRecords: 'Ningún equipo coincide con la búsqueda'
+                }),
+                columnDefs: [{ orderable: false, targets: [3, 4, 5] }]
+            });
 
+            // La corrida tiene dos detalles con endpoints distintos; cada control dice
+            // a cuál pertenece para no cablear la URL en el script.
+            function urlDe($el) {
+                var recurso = $el.data('recurso') || 'licencias';
+                return '{{ url('auditorias') }}/' + recurso + '/' + $el.data('fila');
+            }
+
+            // ── Color del select tri-estado ─────────────────────────────────────
+            // Vale igual para "original" y para "presente": sin revisar es neutro,
+            // sí es correcto, no es alerta.
             function pintar($select) {
-                var clase = COLORES.original($select.val());
+                var v = $select.val();
+                var clase = v === '' ? 'pendiente' : (v === '1' ? 'si' : 'alerta');
                 $select.removeClass('aud-editable--si aud-editable--no aud-editable--alerta aud-editable--pendiente')
                        .addClass('aud-editable--' + clase);
             }
 
-            // ── Guardado de original (select) ───────────────────────────────────
+            // ── Guardado del select tri-estado ──────────────────────────────────
             $(document).off('change.audEdit').on('change.audEdit', '.aud-editable', function () {
                 var $select = $(this);
-                var fila    = $select.data('fila');
                 var valor   = $select.val();
                 var previo  = $select.data('previo');
 
@@ -53,12 +67,12 @@
                 pintar($select);
 
                 $.ajax({
-                    url: '{{ url('auditorias/licencias') }}/' + fila,
+                    url: urlDe($select),
                     method: 'POST',
                     data: {
                         _method: 'PATCH',
                         _token: $('meta[name="csrf-token"]').attr('content'),
-                        campo: 'original',
+                        campo: $select.data('campo'),
                         valor: valor === '' ? null : valor
                     }
                 }).done(function () {
@@ -83,7 +97,6 @@
             // ── Guardado de observaciones (textarea, auto-save en blur) ─────────
             $(document).off('blur.audObs').on('blur.audObs', '.aud-obs', function () {
                 var $ta   = $(this);
-                var fila  = $ta.data('fila');
                 var valor = $.trim($ta.val());
                 var previo = $ta.data('previo');
 
@@ -92,7 +105,7 @@
                 $ta.addClass('aud-obs--guardando');
 
                 $.ajax({
-                    url: '{{ url('auditorias/licencias') }}/' + fila,
+                    url: urlDe($ta),
                     method: 'POST',
                     data: {
                         _method: 'PATCH',

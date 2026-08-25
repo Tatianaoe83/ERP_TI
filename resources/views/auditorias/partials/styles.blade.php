@@ -800,6 +800,9 @@
         box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
     }
 
+    /* El modal de equipos sólo lista fichas: a 64rem quedan estiradas y vacías. */
+    .aud-modal__caja--sm { width: min(34rem, 100%); }
+
     .aud-modal__cabecera {
         display: flex;
         align-items: flex-start;
@@ -1171,6 +1174,38 @@
 
     .aud-lic.is-ajena:hover { opacity: 1; }
 
+    /* Equipo en el modal: se informa, no se elige. Sin cursor de clic ni hover,
+       para que nadie intente marcarlo. */
+    .aud-lic--info {
+        cursor: default;
+        background: var(--aud-surface-2);
+    }
+
+    .aud-lic--info:hover { border-color: var(--aud-border); }
+
+    /* Encabezado de sección en el detalle. */
+    .aud-seccion {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0 0 0.75rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--aud-text);
+    }
+
+    .aud-seccion i { color: var(--aud-text-muted); }
+
+    .aud-paso__nota {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0 0 0.5rem;
+        color: var(--aud-text-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
     .aud-lic__estado--aldia {
         background: var(--aud-ok-soft);
         color: var(--aud-ok);
@@ -1360,6 +1395,7 @@
         font-weight: 700;
     }
 
+    .aud-marca--todas { background: var(--aud-surface-2); color: var(--aud-text-muted); }
     .aud-marca--nueva { background: var(--aud-primary-soft); color: var(--aud-primary); }
     .aud-marca--cambio { background: var(--aud-accent-soft); color: var(--aud-accent); }
     .aud-marca--baja { background: var(--aud-danger-soft); color: var(--aud-danger); }
@@ -1373,7 +1409,87 @@
         gap: 0.35rem;
     }
 
-    /* ── Listado agrupado por (empleado, equipo) ─────────────────────────────── */
+    /* ── Buscador del listado ─────────────────────────────────────────────────── */
+    .aud-buscador {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .aud-buscador__campo {
+        position: relative;
+        flex: 1 1 22rem;
+        min-width: 0;
+    }
+
+    .aud-buscador__campo i {
+        position: absolute;
+        top: 50%;
+        left: 0.7rem;
+        transform: translateY(-50%);
+        color: var(--aud-text-muted);
+        pointer-events: none;
+    }
+
+    .aud-buscador__campo .aud-buscar {
+        width: 100%;
+        padding-left: 2.1rem;
+    }
+
+    /* ── Equipos en la fila del listado ──────────────────────────────────────── */
+    /* Badge con el conteo: la lista completa no cabe en la celda y con 16 equipos
+       rompe el alto de la fila. El detalle se abre en modal. */
+    .aud-chip-eq {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.65rem;
+        border: 1px solid var(--aud-border);
+        border-radius: 999px;
+        background: var(--aud-surface-2);
+        color: var(--aud-text);
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: border-color 160ms ease-out, color 160ms ease-out;
+    }
+
+    .aud-chip-eq:hover {
+        border-color: var(--aud-primary);
+        color: var(--aud-primary);
+    }
+
+    .aud-chip-eq:active { transform: scale(0.97); }
+
+    .aud-chip-eq:focus-visible {
+        outline: 2px solid var(--aud-primary);
+        outline-offset: 2px;
+    }
+
+    .aud-chip-eq i { color: var(--aud-text-muted); }
+    .aud-chip-eq:hover i { color: var(--aud-primary); }
+
+    /* Origen del modal: nunca se ve, sólo se clona. */
+    .aud-eqdatos { display: none; }
+
+    /* Lista dentro del modal: scroll propio para que 60 equipos no crezcan la caja. */
+    .aud-eqlista {
+        display: grid;
+        gap: 0.5rem;
+        max-height: 60vh;
+        overflow-y: auto;
+        padding: 0.25rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .aud-chip-eq { transition: none; }
+        .aud-chip-eq:active { transform: none; }
+    }
+
+    /* ── Listado por empleado ────────────────────────────────────────────────── */
     .aud-col-toggle {
         width: 3rem;
         text-align: center;

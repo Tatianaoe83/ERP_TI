@@ -7,8 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Cabecera de una corrida de auditoría: quién la generó, a qué empleado se auditó y
- * con qué alcance. El tipo de persona y la gerencia se leen del empleado por relación,
- * no se copian aquí. El detalle congelado vive en auditorias_equipos.
+ * con qué alcance.
+ *
+ * La corrida es la visita a un resguardante, no a una máquina: cubre TODOS sus equipos
+ * y las licencias elegidas. El tipo de persona y la gerencia se leen del empleado por
+ * relación, no se copian aquí. El detalle congelado vive en auditorias_equipos
+ * (una fila por equipo) y auditorias_licencias (una por licencia).
  */
 class Auditoria extends Model
 {
@@ -21,7 +25,6 @@ class Auditoria extends Model
         'id_empleado',
         'generada_por_nombre',
         'EmpleadoID',
-        'InventarioID',
         'tipoEquipo',
         'licencias_auditadas',
         'total_licencias_auditadas',
@@ -29,7 +32,6 @@ class Auditoria extends Model
 
     protected $casts = [
         'EmpleadoID'          => 'integer',
-        'InventarioID'        => 'integer',
         'tipoEquipo'          => 'integer',
         'licencias_auditadas' => 'array',
     ];
@@ -41,15 +43,6 @@ class Auditoria extends Model
     }
 
     /**
-     * El equipo que se revisó en esta visita. Sus datos (marca, modelo, serie,
-     * folio) se leen en vivo del inventario: la corrida sólo guarda cuál fue.
-     */
-    public function equipo()
-    {
-        return $this->belongsTo(InventarioEquipo::class, 'InventarioID', 'InventarioID');
-    }
-
-    /**
      * Las corridas anteriores a la selección de licencias no guardan lista: en ellas
      * se revisó todo el catálogo.
      */
@@ -58,8 +51,15 @@ class Auditoria extends Model
         return $this->licencias_auditadas === null;
     }
 
+    /** Los equipos que resguardaba el empleado al generarse la corrida. */
     public function equipos()
     {
         return $this->hasMany(AuditoriaEquipo::class, 'auditoria_id');
+    }
+
+    /** Las licencias revisadas en la corrida. */
+    public function licencias()
+    {
+        return $this->hasMany(AuditoriaLicencia::class, 'auditoria_id');
     }
 }

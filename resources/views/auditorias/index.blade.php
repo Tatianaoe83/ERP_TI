@@ -3,6 +3,12 @@
 @php
     $puedeGenerar = auth()->check() && auth()->user()->can('crear-auditorias');
     $puedeBorrar  = auth()->check() && auth()->user()->can('borrar-auditorias');
+
+    $estados = [
+        'pendiente' => ['clase' => 'cambio', 'icono' => 'fa-clock-rotate-left', 'texto' => 'Pendiente'],
+        'alDia'     => ['clase' => 'igual',  'icono' => 'fa-circle-check',      'texto' => 'Al día'],
+        'sinNada'   => ['clase' => 'todas',  'icono' => 'fa-minus',             'texto' => 'Nada que auditar'],
+    ];
 @endphp
 
 @section('content')
@@ -19,9 +25,8 @@
 >
     <x-slot name="headerActions">
         @if($puedeGenerar)
-        {{-- Generar no es directo: primero se eligen las licencias que entran a la corrida. --}}
         <button type="button" class="aud-btn aud-btn--primary" id="btnAbrirLicencias"
-                aria-haspopup="dialog" aria-controls="modalLicencias">
+                aria-haspopup="dialog" aria-controls="modalGenerar">
             <i class="fas fa-play" aria-hidden="true"></i> Generar auditoría
         </button>
         @endif
@@ -55,14 +60,38 @@
         </div>
     </div>
 
-    {{-- Una fila por par (empleado, equipo). Las corridas siguen guardándose una por
-         una; aquí sólo se presentan juntas, y el historial se abre bajo demanda. --}}
+    {{-- Buscador: la lista ya viene ordenada por urgencia, esto sólo sirve para
+         saltar a alguien concreto. Es GET para que la búsqueda sea compartible. --}}
+    <form method="GET" action="{{ route('auditorias.index') }}" class="aud-buscador">
+        <label class="aud-sr" for="buscarEmpleadoLista">Buscar empleado o equipo</label>
+        <div class="aud-buscador__campo">
+            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" name="q" id="buscarEmpleadoLista" class="aud-buscar"
+                   value="{{ $busqueda }}" autocomplete="off"
+                   placeholder="Empleado, área, marca, modelo, serie o folio…">
+        </div>
+        <button type="submit" class="aud-btn aud-btn--ghost aud-btn--sm">Buscar</button>
+        @if($busqueda !== '')
+            <a href="{{ route('auditorias.index') }}" class="aud-btn aud-btn--ghost aud-btn--sm">
+                <i class="fas fa-xmark" aria-hidden="true"></i> Limpiar
+            </a>
+        @endif
+    </form>
+
+    {{-- Una fila por empleado YA auditado: la lista crece conforme se generan
+         corridas. Dentro de eso, lo pendiente y más viejo sube solo. --}}
     <div class="index-page__card">
         @if($grupos->isEmpty())
             <div class="aud-vacio">
                 <span class="aud-vacio__ico"><i class="fas fa-clipboard-list" aria-hidden="true"></i></span>
-                <p class="aud-vacio__titulo">Aún no hay auditorías generadas</p>
-                <p>Genera la primera para congelar el estado actual del inventario y poder compararlo después.</p>
+                <p class="aud-vacio__titulo">
+                    {{ $busqueda !== '' ? 'Nadie coincide con la búsqueda' : 'Aún no hay auditorías generadas' }}
+                </p>
+                <p>
+                    {{ $busqueda !== ''
+                        ? 'Prueba con otro nombre, área, serie o folio.'
+                        : 'Genera la primera para congelar lo que resguarda un empleado y poder compararlo después.' }}
+                </p>
             </div>
         @else
         <div class="table-responsive">
@@ -71,16 +100,19 @@
                     <tr>
                         <th scope="col" class="aud-col-toggle"><span class="aud-sr">Desplegar historial</span></th>
                         <th scope="col">Empleado</th>
-                        <th scope="col">Equipo revisado</th>
-                        <th scope="col">Auditorías</th>
-                        <th scope="col">Última</th>
+                        <th scope="col">Equipos</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">Última auditoría</th>
                         <th scope="col">Licencias hoy</th>
                         <th scope="col">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($grupos as $g)
-                    @php $panelId = 'historial-' . $g->clave; @endphp
+                    @php
+                        $panelId = 'historial-' . $g->clave;
+                        $est = $estados[$g->estado] ?? $estados['sinNada'];
+                    @endphp
 
                     <tr class="aud-grupo" data-grupo="{{ $g->clave }}">
                         <td class="aud-col-toggle">
@@ -97,21 +129,65 @@
 
                         <td>
                             <div class="aud-strong">{{ $g->NombreEmpleado }}</div>
-                            <div class="aud-mini aud-muted">
-                                {{ $g->gerencia }} · {{ $g->tipo_persona }}
-                            </div>
+                            <div class="aud-mini aud-muted">{{ $g->gerencia }} · {{ $g->tipo_persona }}</div>
                         </td>
 
+                        {{-- La corrida cubre todos sus equipos, pero la lista no los
+                             pinta: con 16 máquinas la fila se vuelve ilegible. Va un
+                             badge con el conteo y el detalle se abre bajo demanda. --}}
                         <td>
-                            @include('auditorias.partials.equipo-ficha', [
-                                'equipo' => $g->equipo,
-                                'compacto' => true,
-                            ])
+                            @if($g->equipos->isEmpty())
+                                <span class="aud-muted">Sin equipos</span>
+                            @else
+                                <button type="button" class="aud-chip-eq"
+                                        data-ver-equipos="{{ $g->clave }}"
+                                        data-nombre="{{ $g->NombreEmpleado }}"
+                                        aria-haspopup="dialog">
+                                    <i class="fas fa-laptop" aria-hidden="true"></i>
+                                    <span class="aud-num">{{ $g->equipos->count() }}</span>
+                                    {{ $g->equipos->count() === 1 ? 'equipo' : 'equipos' }}
+                                </button>
+
+                                {{-- Origen del modal: se clona al abrir. Así el detalle
+                                     lo arma Blade y el JS no reconstruye markup. --}}
+                                <div class="aud-eqdatos" id="equipos-{{ $g->clave }}" hidden>
+                                    @foreach($g->equipos as $eq)
+                                        <div class="aud-eqficha">
+                                            <div class="aud-eqficha__top">
+                                                <span class="aud-eqficha__cat">
+                                                    <i class="fas {{ Str::contains(Str::upper($eq->CategoriaEquipo ?? ''), 'LAPTOP') ? 'fa-laptop' : 'fa-desktop' }}"
+                                                       aria-hidden="true"></i>
+                                                    {{ $eq->CategoriaEquipo ?: 'Sin categoría' }}
+                                                </span>
+                                                @if($eq->tipoEquipo !== null)
+                                                    {!! \App\Helpers\PresupuestoAsignacion::chipHtml((int) $eq->tipoEquipo) !!}
+                                                @endif
+                                            </div>
+
+                                            <div class="aud-eqficha__modelo">
+                                                {{ trim($eq->Marca . ' ' . $eq->Modelo) ?: 'Sin modelo' }}
+                                            </div>
+
+                                            <div class="aud-eqficha__ids">
+                                                <span class="aud-eqficha__id">
+                                                    <span class="aud-eqficha__etq">Serie</span>
+                                                    <span class="aud-num">{{ $eq->NumSerie ?: '—' }}</span>
+                                                </span>
+                                                <span class="aud-eqficha__id">
+                                                    <span class="aud-eqficha__etq">Folio</span>
+                                                    <span class="aud-num">{{ $eq->Folio ?: '—' }}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </td>
 
+                        {{-- El icono acompaña al color: el estado no se comunica sólo con color. --}}
                         <td>
-                            <span class="aud-conteo" title="Corridas guardadas de este par">
-                                {{ $g->total }}
+                            <span class="aud-marca aud-marca--{{ $est['clase'] }}">
+                                <i class="fas {{ $est['icono'] }}" aria-hidden="true"></i> {{ $est['texto'] }}
                             </span>
                         </td>
 
@@ -120,15 +196,13 @@
                                 <div class="aud-strong">{{ $g->ultima->Folio }}</div>
                                 <div class="aud-mini aud-muted">
                                     {{ $g->ultima->created_at?->format('d/m/Y') ?: '—' }}
-                                    · {{ $g->ultima->generada_por_nombre ?: 'Sin usuario' }}
+                                    · {{ $g->total }} {{ $g->total === 1 ? 'auditoría' : 'auditorías' }}
                                 </div>
                             @else
                                 <span class="aud-muted">—</span>
                             @endif
                         </td>
 
-                        {{-- Semáforo del estado vigente del empleado. El icono acompaña
-                             al color: el estado no se comunica sólo con color. --}}
                         <td>
                             @if($g->licencias === 0)
                                 <span class="aud-muted">Sin licencias</span>
@@ -157,17 +231,28 @@
                         </td>
 
                         <td>
-                            @if($g->ultima)
-                            <a href="{{ route('auditorias.show', $g->ultima->id) }}"
-                               class="aud-btn aud-btn--ghost aud-btn--sm">
-                                <i class="fas fa-eye" aria-hidden="true"></i> Ver última
-                            </a>
-                            @endif
+                            <div class="aud-historial__acciones">
+                                {{-- Auditar desde la fila: el modal ya sabe a quién, así
+                                     no hay que volver a buscarlo en el combo. --}}
+                                @if($puedeGenerar && $g->estado !== 'sinNada')
+                                <button type="button" class="aud-btn aud-btn--primary aud-btn--sm"
+                                        data-auditar="{{ $g->EmpleadoID }}"
+                                        data-nombre="{{ $g->NombreEmpleado }}">
+                                    <i class="fas fa-play" aria-hidden="true"></i> Auditar
+                                </button>
+                                @endif
+                                @if($g->ultima)
+                                <a href="{{ route('auditorias.show', $g->ultima->id) }}"
+                                   class="aud-btn aud-btn--ghost aud-btn--sm">
+                                    <i class="fas fa-eye" aria-hidden="true"></i> Ver
+                                </a>
+                                @endif
+                            </div>
                         </td>
                     </tr>
 
-                    {{-- Historial del par. Se pinta siempre pero nace cerrado: son pocas
-                         filas por grupo y así el toggle no necesita ir al servidor. --}}
+                    {{-- Historial del empleado. Nace cerrado: son pocas filas por
+                         empleado y así el toggle no necesita ir al servidor. --}}
                     <tr id="{{ $panelId }}" class="aud-historial" hidden>
                         <td colspan="7">
                             <div class="aud-historial__inner">
@@ -177,7 +262,7 @@
                                             <th scope="col">Folio</th>
                                             <th scope="col">Fecha</th>
                                             <th scope="col">Generada por</th>
-                                            <th scope="col">Licencias</th>
+                                            <th scope="col">Alcance</th>
                                             <th scope="col">Contra la corrida anterior</th>
                                             <th scope="col">Acciones</th>
                                         </tr>
@@ -189,14 +274,16 @@
                                             <td class="aud-strong">{{ $c->Folio }}</td>
                                             <td class="aud-num">{{ $c->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
                                             <td>{{ $c->generada_por_nombre ?: 'Sin usuario' }}</td>
-                                            <td class="aud-num">{{ $c->licencias }}</td>
+                                            <td class="aud-mini">
+                                                {{ $c->equipos }} eq · {{ $c->licencias }} lic
+                                            </td>
 
                                             {{-- El delta se calcula al leer, nunca se guarda:
                                                  corregir una corrida vieja corrige el resumen. --}}
                                             <td>
                                                 @php $cambios = $c->cambios; @endphp
                                                 @if($c->esPrimera)
-                                                    <span class="aud-mini aud-muted">Primera auditoría del empleado</span>
+                                                    <span class="aud-mini aud-muted">Primera auditoría</span>
                                                 @elseif($cambios['nueva'] === 0 && $cambios['baja'] === 0 && $cambios['cambio'] === 0)
                                                     <span class="aud-marca aud-marca--igual">
                                                         <i class="fas fa-equals" aria-hidden="true"></i> Sin cambios
@@ -256,13 +343,12 @@
         </div>
 
         {{-- Paginación propia: el paginador de Bootstrap no usa los tokens del módulo
-             y se pierde en modo oscuro. Se pagina por grupo, así que abrir una fila
-             nunca parte su historial entre dos páginas. --}}
+             y se pierde en modo oscuro. --}}
         @if($grupos->hasPages())
         <nav class="aud-pag" role="navigation" aria-label="Paginación de auditorías">
             <span class="aud-muted">
                 Mostrando {{ $grupos->firstItem() }}–{{ $grupos->lastItem() }}
-                de {{ $grupos->total() }} equipos auditados
+                de {{ $grupos->total() }} empleados
             </span>
 
             <div class="aud-pag__botones">
@@ -277,7 +363,7 @@
                 @endif
 
                 @php
-                    // Ventana de páginas alrededor de la actual: con muchos grupos la
+                    // Ventana de páginas alrededor de la actual: con 200+ empleados la
                     // lista completa de números no cabe.
                     $actual = $grupos->currentPage();
                     $ultimaPag = $grupos->lastPage();
@@ -319,6 +405,29 @@
     </div>
 </x-index-page>
 
+{{-- Equipos de un empleado. Uno solo para toda la tabla: se llena al abrirlo con
+     el contenido que ya pintó Blade en su fila. --}}
+<div class="aud-modal" id="modalEquipos" hidden>
+    <div class="aud-modal__fondo" data-cerrar-equipos></div>
+
+    <div class="aud-modal__caja aud-modal__caja--sm" role="dialog" aria-modal="true"
+         aria-labelledby="modalEquiposTitulo">
+        <div class="aud-modal__cabecera">
+            <div>
+                <h2 class="aud-modal__titulo" id="modalEquiposTitulo">
+                    <i class="fas fa-laptop" aria-hidden="true"></i> Equipos del resguardante
+                </h2>
+                <p class="aud-modal__ayuda" id="modalEquiposSub"></p>
+            </div>
+            <button type="button" class="aud-btn aud-btn--ghost aud-btn--sm" data-cerrar-equipos>
+                <i class="fas fa-xmark" aria-hidden="true"></i> Cerrar
+            </button>
+        </div>
+
+        <div class="aud-eqlista" id="modalEquiposLista"></div>
+    </div>
+</div>
+
 @if($puedeGenerar)
     @include('auditorias.partials.selector-generar', [
         'catalogoLicencias' => $catalogoLicencias,
@@ -338,7 +447,7 @@
 @push('third_party_scripts')
 <script>
     (function () {
-        // ── Desplegar el historial de un grupo ───────────────────────────────
+        // ── Desplegar el historial de un empleado ────────────────────────────
         // Delegado en el contenedor: sobrevive al repintado de AppNav y no deja
         // un listener por fila.
         var tabla = document.querySelector('.aud-grupos');
@@ -356,7 +465,7 @@
 
                 boton.setAttribute('aria-expanded', abierto ? 'false' : 'true');
                 boton.classList.toggle('is-abierto', !abierto);
-                boton.closest('.aud-grupo, tr').classList.toggle('is-abierto', !abierto);
+                boton.closest('tr').classList.toggle('is-abierto', !abierto);
 
                 if (abierto) {
                     if (inner) inner.classList.remove('is-abierto');
@@ -373,6 +482,61 @@
                     });
                 });
             });
+        }
+
+        // ── Modal de equipos ─────────────────────────────────────────────────
+        // Un solo modal para toda la tabla: al abrirlo se le copia el contenido que
+        // Blade ya dejó en la fila, así el JS no reconstruye markup.
+        var modalEq  = document.getElementById('modalEquipos');
+        var listaEq  = document.getElementById('modalEquiposLista');
+        var subEq    = document.getElementById('modalEquiposSub');
+        var origenEq = null;
+
+        function cerrarEquipos() {
+            if (!modalEq) return;
+            modalEq.hidden = true;
+            document.body.style.overflow = '';
+            if (listaEq) listaEq.innerHTML = '';
+            // El foco vuelve al badge que lo abrió, no al principio de la página.
+            if (origenEq) origenEq.focus();
+            origenEq = null;
+        }
+
+        if (tabla && modalEq) {
+            tabla.addEventListener('click', function (e) {
+                var badge = e.target.closest('[data-ver-equipos]');
+                if (!badge) return;
+
+                var datos = document.getElementById('equipos-' + badge.dataset.verEquipos);
+                if (!datos) return;
+
+                origenEq = badge;
+                if (listaEq) listaEq.innerHTML = datos.innerHTML;
+                if (subEq) subEq.textContent = badge.dataset.nombre || '';
+
+                modalEq.hidden = false;
+                document.body.style.overflow = 'hidden';
+
+                var cerrar = modalEq.querySelector('[data-cerrar-equipos]');
+                if (cerrar) cerrar.focus();
+            });
+
+            modalEq.querySelectorAll('[data-cerrar-equipos]').forEach(function (el) {
+                el.addEventListener('click', cerrarEquipos);
+            });
+
+            // AppNav reinyecta este script; el listener en document sobreviviría al
+            // intercambio y se acumularía apuntando a modales muertos.
+            if (window.__audEqEscHandler) {
+                document.removeEventListener('keydown', window.__audEqEscHandler);
+            }
+
+            window.__audEqEscHandler = function (e) {
+                var actual = document.getElementById('modalEquipos');
+                if (e.key === 'Escape' && actual && !actual.hidden) cerrarEquipos();
+            };
+
+            document.addEventListener('keydown', window.__audEqEscHandler);
         }
 
         // Eliminar es irreversible: se confirma antes.
@@ -403,8 +567,7 @@
         // Orden del catálogo tal como lo pintó el servidor: es el desempate dentro de
         // cada grupo cuando la lista se reordena por empleado.
         var filasLic = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaLicencias .aud-lic')) : [];
-        var equipos  = modal ? Array.prototype.slice.call(modal.querySelectorAll('.aud-equipo__check')) : [];
-        var filas    = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaEquipos .aud-lic')) : [];
+        var filasEq  = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaEquipos .aud-lic')) : [];
         var opciones = modal ? Array.prototype.slice.call(modal.querySelectorAll('#listaEmpleados .aud-combo__opcion')) : [];
 
         var contador        = document.getElementById('contadorLicencias');
@@ -438,9 +601,14 @@
             return checks.filter(function (c) { return c.checked; }).length;
         }
 
-        // Radio: como mucho uno. Una corrida revisa un equipo.
-        function equiposMarcados() {
-            return equipos.filter(function (c) { return c.checked; }).length;
+        // Los equipos no se eligen: la corrida los toma todos. Sólo se cuentan para
+        // decirle al auditor qué alcance va a generar.
+        function equiposVisibles() {
+            return filasEq.filter(function (f) { return !f.hidden; }).length;
+        }
+
+        function hayEmpleado() {
+            return !comboValor || !!comboValor.value;
         }
 
         // Pinta, junto a cada licencia del catálogo, cómo quedó la última vez que se
@@ -506,42 +674,30 @@
             propias.concat(ajenas).forEach(function (fila) { lista.appendChild(fila); });
         }
 
-        // Equipos del empleado elegido, ya pasados por los filtros.
-        function equiposVisibles() {
-            return filas.filter(function (f) { return !f.hidden; }).length;
-        }
-
-        function hayEmpleado() {
-            return !comboValor || !!comboValor.value;
-        }
-
-        // Sin licencias, sin equipo o sin empleado no hay corrida que valga:
-        // el submit queda bloqueado hasta que el alcance tenga sentido.
+        // Sin empleado, o sin nada que congelar, no hay corrida que valga.
         function refrescar() {
             var lic = marcadas();
-            var disponibles = equiposVisibles();
-            var eq = equiposMarcados();
+            var eq = equiposVisibles();
 
             if (contador) {
                 contador.textContent = lic + ' de ' + checks.length + ' licencias seleccionadas';
             }
 
             if (contadorEquipos) {
-                contadorEquipos.textContent = eq
-                    ? '1 equipo elegido de ' + disponibles + ' disponibles'
-                    : 'Elige 1 de ' + disponibles + (disponibles === 1 ? ' equipo' : ' equipos');
+                contadorEquipos.textContent = hayEmpleado()
+                    ? eq + (eq === 1 ? ' equipo entra' : ' equipos entran') + ' a la auditoría'
+                    : '';
             }
 
             if (resumen) {
-                resumen.textContent = (eq ? '1 equipo' : 'sin equipo') +
+                resumen.textContent = eq + (eq === 1 ? ' equipo' : ' equipos') +
                     ' · ' + lic + (lic === 1 ? ' licencia' : ' licencias');
             }
 
-            if (boton) boton.disabled = lic === 0 || eq === 0 || !hayEmpleado();
+            if (boton) boton.disabled = !hayEmpleado() || (lic === 0 && eq === 0);
         }
 
         // ── Combobox de empleado ──────────────────────────────────────────────
-        // Los tres filtros de arriba acotan el universo; el texto busca dentro de él.
         function opcionesVisibles() {
             return opciones.filter(function (o) { return !o.hidden; });
         }
@@ -593,30 +749,14 @@
                 activo >= 0 && vis[activo] ? vis[activo].id : '');
         }
 
-        // Sin licencias no hay nada que revisar: la opción se ve, pero no se elige.
-        function bloqueada(opcion) {
-            return !!opcion && opcion.dataset.licencias === '0';
-        }
-
         function elegirEmpleado(opcion) {
             if (!opcion) return;
-
-            if (bloqueada(opcion)) {
-                if (window.Swal) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Sin licencias que auditar',
-                        text: opcion.dataset.nombre + ' no tiene ninguna licencia registrada en el inventario.'
-                    });
-                }
-                return;
-            }
 
             comboValor.value = opcion.dataset.valor;
             comboInput.value = opcion.dataset.nombre;
             if (comboLimpiar) comboLimpiar.hidden = false;
             cerrarLista();
-            filtrarEquipos(true);
+            filtrarEquipos();
             pintarEstadoLicencias();
         }
 
@@ -625,42 +765,25 @@
             comboInput.value = '';
             if (comboLimpiar) comboLimpiar.hidden = true;
             filtrarEmpleados(false);
-            filtrarEquipos(false);
+            filtrarEquipos();
             pintarEstadoLicencias();
             comboInput.focus();
         }
 
-        // Filtro de equipos: manda el empleado elegido; el tipo y el texto afinan.
-        // Sin empleado no se muestra ninguno: la corrida es de uno solo.
-        function filtrarEquipos(autoElegir) {
+        // Sólo se muestran los equipos del empleado elegido: es el alcance real de
+        // la corrida, no una lista para escoger.
+        function filtrarEquipos() {
             var empleado = comboValor ? comboValor.value : '';
-            var tipo = (document.getElementById('selectTipoEquipo') || {}).value || '';
-            var q = ((document.getElementById('buscarEquipo') || {}).value || '').trim().toLowerCase();
-            var visibles = [];
+            var visibles = 0;
 
-            filas.forEach(function (fila) {
-                var coincide = !!empleado &&
-                               fila.dataset.empleado === empleado &&
-                               (!tipo || fila.dataset.tipo === tipo) &&
-                               (!q || fila.dataset.busqueda.indexOf(q) !== -1);
+            filasEq.forEach(function (fila) {
+                var coincide = !!empleado && fila.dataset.empleado === empleado;
                 fila.hidden = !coincide;
-
-                var check = fila.querySelector('.aud-equipo__check');
-                // Lo que no se ve no viaja en el POST.
-                if (check && !coincide) check.checked = false;
-
-                if (coincide) visibles.push(fila);
+                if (coincide) visibles++;
             });
 
-            // La mayoría resguarda una sola máquina: si sólo queda una, se elige sola
-            // en vez de obligar a un clic que no decide nada.
-            if (autoElegir && visibles.length === 1) {
-                var unico = visibles[0].querySelector('.aud-equipo__check');
-                if (unico) unico.checked = true;
-            }
-
             var vacio = document.getElementById('sinEquipos');
-            if (vacio) vacio.hidden = visibles.length !== 0;
+            if (vacio) vacio.hidden = !empleado || visibles !== 0;
 
             refrescar();
         }
@@ -668,9 +791,8 @@
         function abrirModal() {
             modal.hidden = false;
             document.body.style.overflow = 'hidden';
-            // Se recalcula al abrir: el alcance depende del empleado ya elegido.
             filtrarEmpleados(false);
-            filtrarEquipos(false);
+            filtrarEquipos();
             pintarEstadoLicencias();
             if (comboInput) comboInput.focus();
         }
@@ -702,11 +824,33 @@
             document.addEventListener('keydown', window.__audEscHandler);
         }
 
-        checks.forEach(function (c) { c.addEventListener('change', refrescar); });
-        equipos.forEach(function (c) { c.addEventListener('change', refrescar); });
+        // Auditar desde la fila: se abre el modal con el empleado ya puesto. Evita
+        // volver a buscarlo entre 200 nombres y garantiza que se audite al que se vio.
+        if (tabla && modal) {
+            tabla.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-auditar]');
+                if (!btn) return;
 
-        var buscarEquipo = document.getElementById('buscarEquipo');
-        var selectTipoEquipo = document.getElementById('selectTipoEquipo');
+                var opcion = opciones.filter(function (o) {
+                    return o.dataset.valor === btn.dataset.auditar;
+                })[0];
+
+                abrirModal();
+
+                if (opcion) {
+                    elegirEmpleado(opcion);
+                } else if (comboValor) {
+                    // El empleado no está en el combo (sin licencias): igual se fija.
+                    comboValor.value = btn.dataset.auditar;
+                    comboInput.value = btn.dataset.nombre || '';
+                    if (comboLimpiar) comboLimpiar.hidden = false;
+                    filtrarEquipos();
+                    pintarEstadoLicencias();
+                }
+            });
+        }
+
+        checks.forEach(function (c) { c.addEventListener('change', refrescar); });
 
         // Cambiar de área, departamento o tipo de empleado invalida al ya elegido si
         // deja de cumplir: se limpia en vez de dejar una selección incoherente.
@@ -723,21 +867,9 @@
 
                 if (comboValor && comboValor.value && (!elegido || elegido.hidden)) {
                     limpiarEmpleado();
-                } else {
-                    filtrarEquipos(false);
                 }
             });
         });
-
-        // El tipo de equipo cambia el universo del empleado: se remarca lo que queda.
-        if (selectTipoEquipo) {
-            selectTipoEquipo.addEventListener('change', function () { filtrarEquipos(true); });
-        }
-
-        // Buscar dentro de los equipos sólo oculta; no debe desmarcar lo ya elegido.
-        if (buscarEquipo) {
-            buscarEquipo.addEventListener('input', function () { filtrarEquipos(false); });
-        }
 
         if (comboInput) {
             comboInput.addEventListener('focus', function () {
@@ -750,7 +882,7 @@
                 if (comboValor.value) {
                     comboValor.value = '';
                     if (comboLimpiar) comboLimpiar.hidden = true;
-                    filtrarEquipos(false);
+                    filtrarEquipos();
                 }
                 filtrarEmpleados(true);
                 abrirLista();
@@ -773,12 +905,7 @@
                 if (e.key === 'Enter') {
                     if (!comboLista.hidden && vis.length) {
                         e.preventDefault();
-                        // Con el teclado se salta a la siguiente elegible en vez de
-                        // dejar al usuario atorado en una opción que no responde.
-                        var elegible = vis.slice(activo >= 0 ? activo : 0).filter(function (o) {
-                            return !bloqueada(o);
-                        })[0];
-                        elegirEmpleado(elegible || vis[activo >= 0 ? activo : 0]);
+                        elegirEmpleado(vis[activo >= 0 ? activo : 0]);
                     }
                     return;
                 }
@@ -844,7 +971,7 @@
         // corridas duplicadas por doble clic.
         if (form) {
             form.addEventListener('submit', function (e) {
-                if (marcadas() === 0 || equiposMarcados() === 0 || !hayEmpleado()) {
+                if (!hayEmpleado() || (marcadas() === 0 && equiposVisibles() === 0)) {
                     e.preventDefault();
                     return;
                 }

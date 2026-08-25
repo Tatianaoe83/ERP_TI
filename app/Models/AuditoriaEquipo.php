@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Detalle congelado de una corrida: una fila por LICENCIA del empleado auditado.
- * Sin licencias queda una sola fila con NombreLicencia nulo y tiene_licencia en false.
+ * Detalle congelado de una corrida: una fila por EQUIPO que el empleado resguardaba
+ * al generarla.
  *
- * No copia datos del equipo ni del empleado: se leen del empleado de la cabecera por
- * relación, así que nunca se desfasan de lo que hay en el inventario.
+ * Sólo guarda cuál equipo era y qué se encontró. Marca, modelo, serie y folio se leen
+ * del inventario en vivo por relación, así que nunca se desfasan de la ficha actual.
  */
 class AuditoriaEquipo extends Model
 {
@@ -20,22 +20,27 @@ class AuditoriaEquipo extends Model
 
     protected $fillable = [
         'auditoria_id',
-        'NombreLicencia',
-        'tiene_licencia',
-        'original',
+        'InventarioID',
+        'presente',
         'observaciones',
     ];
 
     /**
-     * "original" es tri-estado: true original, false no original, null sin revisar.
+     * "presente" es tri-estado: true está, false no apareció, null sin revisar.
      * Por eso no lleva cast a boolean, que convertiría el null en false.
      */
     protected $casts = [
-        'tiene_licencia' => 'boolean',
+        'InventarioID' => 'integer',
     ];
 
     public function auditoria()
     {
         return $this->belongsTo(Auditoria::class, 'auditoria_id');
+    }
+
+    /** La ficha del equipo, leída del inventario en vivo. */
+    public function equipo()
+    {
+        return $this->belongsTo(InventarioEquipo::class, 'InventarioID', 'InventarioID');
     }
 }

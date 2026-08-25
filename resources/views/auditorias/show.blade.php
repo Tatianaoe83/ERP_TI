@@ -23,8 +23,9 @@
         $e = $auditoria->empleado;
     @endphp
 
-    {{-- Datos del resguardante y equipo auditado. --}}
-    <section class="aud-meta" aria-label="Datos del empleado y equipo auditado">
+    {{-- La corrida es la visita al resguardante: la ficha es de la persona, no de
+         una máquina. Los equipos son parte de lo auditado, no del encabezado. --}}
+    <section class="aud-meta" aria-label="Datos del empleado auditado">
         <div class="aud-meta__card">
             <div class="aud-meta__dato">
                 <span class="aud-meta__label">Empleado auditado</span>
@@ -50,10 +51,11 @@
                 <span class="aud-meta__valor">{{ $e?->obras?->NombreObra ?: '—' }}</span>
             </div>
 
-            <div class="aud-meta__dato aud-meta__dato--equipo">
-                <span class="aud-meta__label">Equipo revisado</span>
+            <div class="aud-meta__dato">
+                <span class="aud-meta__label">Alcance</span>
                 <span class="aud-meta__valor">
-                    @include('auditorias.partials.equipo-ficha', ['equipo' => $equipo])
+                    {{ $equipos->count() }} {{ $equipos->count() === 1 ? 'equipo' : 'equipos' }}
+                    · {{ $licencias->count() }} {{ $licencias->count() === 1 ? 'licencia' : 'licencias' }}
                 </span>
             </div>
         </div>
@@ -71,11 +73,12 @@
             @endif
         </div>
 
-        {{-- Filtros: al hacer clic ocultan las filas que no correspondan. --}}
+        {{-- Filtros: al hacer clic ocultan las filas que no correspondan, en las dos
+             tablas a la vez. El cambio es de la visita, no de una sola naturaleza. --}}
         @if($anterior)
         <div class="aud-diff__marcas" role="group" aria-label="Filtrar por tipo de cambio">
             <button type="button" class="aud-marca aud-marca--todas is-activo" data-filtro-marca="todas">
-                Todas <span class="aud-num">{{ $detalle->count() }}</span>
+                Todas <span class="aud-num">{{ $equipos->count() + $licencias->count() }}</span>
             </button>
 
             <button type="button" class="aud-marca aud-marca--nueva" data-filtro-marca="nueva">
@@ -101,9 +104,52 @@
         @endif
     </div>
 
-    {{-- Tabla de licencias congeladas en esta corrida. --}}
+    {{-- ── Equipos ─────────────────────────────────────────────────────────── --}}
     <div class="index-page__card">
-        @if($detalle->isEmpty())
+        <h2 class="aud-seccion">
+            <i class="fas fa-laptop" aria-hidden="true"></i>
+            Equipos del resguardante
+            <span class="aud-conteo">{{ $equipos->count() }}</span>
+        </h2>
+
+        @if($equipos->isEmpty())
+            @include('auditorias.partials.vacio', [
+                'icono'  => 'fa-laptop',
+                'titulo' => 'Sin equipos que revisar',
+                'texto'  => 'Este empleado no resguardaba ninguna laptop ni PC de escritorio cuando se generó la corrida.',
+            ])
+        @else
+        <div class="table-responsive">
+            <table id="tablaEquipos" class="table index-table w-full">
+                <thead>
+                    <tr>
+                        <th scope="col">Equipo</th>
+                        <th scope="col">Serie</th>
+                        <th scope="col">Folio</th>
+                        <th scope="col">¿Está?</th>
+                        <th scope="col">Observaciones</th>
+                        <th scope="col">Auditoría anterior</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($equipos as $fila)
+                        @include('auditorias.partials.fila-equipo', ['fila' => $fila])
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+    </div>
+
+    {{-- ── Licencias ───────────────────────────────────────────────────────── --}}
+    <div class="index-page__card">
+        <h2 class="aud-seccion">
+            <i class="fas fa-key" aria-hidden="true"></i>
+            Licencias del resguardante
+            <span class="aud-conteo">{{ $licencias->count() }}</span>
+        </h2>
+
+        @if($licencias->isEmpty())
             @include('auditorias.partials.vacio', [
                 'icono'  => 'fa-key',
                 'titulo' => 'Sin licencias que auditar',
@@ -122,8 +168,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($detalle as $fila)
-                        @include('auditorias.partials.fila-equipo', ['fila' => $fila])
+                    @foreach($licencias as $fila)
+                        @include('auditorias.partials.fila-licencia', ['fila' => $fila])
                     @endforeach
                 </tbody>
             </table>

@@ -37,10 +37,10 @@
                 {{-- Dos columnas: cada lista trae su propio scroll, apiladas se veían
                      como dos cajas desplazables encimadas. --}}
                 <div class="aud-pasos">
-                {{-- ── Paso 1: empleado y equipo ── --}}
+                {{-- ── Paso 1: empleado ── --}}
                 <fieldset class="aud-paso">
                     <legend class="aud-paso__titulo">
-                        <span class="aud-paso__num">1</span> Empleado y equipo
+                        <span class="aud-paso__num">1</span> Empleado a auditar
                     </legend>
 
                     {{-- La corrida es de un empleado: su tipo de persona y su gerencia
@@ -77,18 +77,6 @@
                             </select>
                         </div>
 
-                        {{-- Filtro de la lista, no del POST: la modalidad que se guarda
-                             se lee del equipo elegido, no de aquí. --}}
-                        <div class="aud-campo">
-                            <label class="aud-campo__label" for="selectTipoEquipo">Tipo de equipo</label>
-                            <select id="selectTipoEquipo" class="aud-select">
-                                <option value="">Cualquiera</option>
-                                <option value="0">Stock</option>
-                                <option value="1">Extra</option>
-                                <option value="2">Compartido</option>
-                                <option value="3">Propio</option>
-                            </select>
-                        </div>
                     </div>
 
                     {{-- Combobox: escribir filtra, ↑↓ recorre, Enter elige, Esc cierra.
@@ -150,36 +138,22 @@
                         </div>
 
                         <p class="aud-campo__ayuda" id="ayudaEmpleado">
-                            Elige al resguardante y luego cuál de sus equipos se está revisando.
+                            La corrida cubre todos sus equipos: no hay que elegir máquina.
                         </p>
                     </div>
 
+                    {{-- Los equipos no se eligen, se informan: la corrida los toma todos.
+                         Se listan para que el auditor sepa qué va a encontrar antes de ir. --}}
                     <div id="bloqueEquipos">
-                        <div class="aud-modal__barra">
-                            <label class="aud-sr" for="buscarEquipo">Buscar equipo</label>
-                            <input type="search" id="buscarEquipo" class="aud-buscar"
-                                   placeholder="Serie, folio o modelo…" autocomplete="off">
-                        </div>
+                        <p class="aud-paso__nota">
+                            <i class="fas fa-circle-info" aria-hidden="true"></i>
+                            Equipos que entran a la auditoría
+                        </p>
 
-                        {{-- Un equipo por corrida: radio, no checkbox. Si el empleado
-                             resguarda dos máquinas se generan dos corridas. --}}
                         <div class="aud-lic-lista aud-lic-lista--equipos" id="listaEquipos">
                             @foreach($catalogoEquipos as $equipo)
-                                @php
-                                    $gerencia = trim((string) $equipo->GerenciaEquipo) ?: 'Sin gerencia';
-                                    $modelo = trim($equipo->Marca . ' ' . $equipo->Modelo);
-                                    $busqueda = Str::lower(implode(' ', array_filter([
-                                        $equipo->NombreEmpleado, $equipo->CategoriaEquipo,
-                                        $modelo, $equipo->NumSerie, $equipo->Folio, $gerencia,
-                                    ])));
-                                @endphp
-                                <label class="aud-lic aud-lic--equipo"
-                                       data-gerencia="{{ Str::lower($gerencia) }}"
-                                       data-empleado="{{ $equipo->EmpleadoID }}"
-                                       data-tipo="{{ (int) $equipo->tipoEquipo }}"
-                                       data-busqueda="{{ $busqueda }}">
-                                    <input type="radio" name="InventarioID" value="{{ $equipo->InventarioID }}"
-                                           class="aud-lic__check aud-equipo__check">
+                                <div class="aud-lic aud-lic--equipo aud-lic--info"
+                                     data-empleado="{{ $equipo->EmpleadoID }}">
                                     <span class="aud-equipo">
                                         <span class="aud-equipo__nombre">{{ $equipo->Marca ?: ($equipo->CategoriaEquipo ?: 'Equipo') }}</span>
                                         <span class="aud-equipo__meta">
@@ -188,14 +162,13 @@
                                             @if($equipo->NumSerie)<span class="aud-mini aud-num">SN {{ $equipo->NumSerie }}</span>@endif
                                             @if($equipo->Folio)<span class="aud-mini aud-num">Folio {{ $equipo->Folio }}</span>@endif
                                         </span>
-                                        <span class="aud-equipo__gerencia">{{ $gerencia }}</span>
                                     </span>
-                                </label>
+                                </div>
                             @endforeach
                         </div>
 
                         <p class="aud-modal__vacio-busqueda" id="sinEquipos" hidden>
-                            Ningún equipo coincide con el filtro.
+                            Este empleado no resguarda laptops ni PC de escritorio.
                         </p>
 
                         <p class="aud-muted" id="contadorEquipos" aria-live="polite"></p>
