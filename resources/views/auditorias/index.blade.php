@@ -66,6 +66,36 @@
     </div>
 
 
+    {{-- Filtros de la lista: Gerencia, Obra y Empleado, independientes entre
+         sí —elegir uno no acota las opciones de los otros—. No van por GET:
+         filtran el DataTable ya cargado en el navegador, sin recargar nada. --}}
+    <div class="aud-filtros" id="filtrosAuditorias">
+        <div class="aud-filtros__campo">
+            <label for="filtroListaGerencia">Gerencia</label>
+            <select id="filtroListaGerencia" autocomplete="off">
+                <option value="">(Todas)</option>
+                @foreach($filtroGerencias as $opcion)
+                    <option value="{{ $opcion }}">{{ $opcion }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="aud-filtros__campo">
+            <label for="filtroListaObra">Obra</label>
+            <select id="filtroListaObra" autocomplete="off">
+                <option value="">(Todas)</option>
+                @foreach($filtroObras as $opcion)
+                    <option value="{{ $opcion }}">{{ $opcion }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="aud-filtros__campo aud-filtros__campo--busqueda">
+            <label for="filtroListaEmpleado">Empleado</label>
+            <input type="search" id="filtroListaEmpleado" autocomplete="off" placeholder="Buscar por nombre…">
+        </div>
+    </div>
+
     {{-- Una fila por empleado YA auditado: la lista crece conforme se generan
          corridas. Dentro de eso, lo pendiente y más viejo sube solo. --}}
     <div class="index-page__card">
@@ -77,7 +107,7 @@
             </div>
         @else
         <div class="table-responsive">
-            <table class="table index-table aud-grupos w-full">
+            <table class="table index-table aud-grupos w-full" id="tablaAuditorias">
                 <thead>
                     <tr>
                         <th scope="col" class="aud-col-toggle"><span class="aud-sr">Desplegar historial</span></th>
@@ -87,26 +117,136 @@
                         <th scope="col">Equipos</th>
                         <th scope="col">Licencias</th>
                         <th scope="col" class="aud-col-acciones">Acciones</th>
+                        {{-- Ocultas: sólo alimentan los filtros de Gerencia y Obra. --}}
+                        <th scope="col">Gerencia</th>
+                        <th scope="col">Obra</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($grupos as $g)
                     @php
-                        $panelId = 'historial-' . $g->clave;
                         $est = $estados[$g->estado] ?? $estados['sinNada'];
                     @endphp
 
                     <tr class="aud-grupo" data-grupo="{{ $g->clave }}">
                         <td class="aud-col-toggle">
-                            {{-- Botón real: Enter y Espacio funcionan sin JS extra. --}}
-                            <button type="button" class="aud-toggle"
-                                    data-toggle-grupo="{{ $panelId }}"
-                                    aria-expanded="false" aria-controls="{{ $panelId }}">
+                            {{-- Botón real: Enter y Espacio funcionan sin JS extra. El
+                                 estado abierto/cerrado ya no lo guarda un panel con id
+                                 propio: lo guarda la fila-hija del DataTable. --}}
+                            <button type="button" class="aud-toggle" data-toggle-fila aria-expanded="false">
                                 <i class="fas fa-chevron-right" aria-hidden="true"></i>
                                 <span class="aud-sr">
                                     Ver las {{ $g->total }} auditorías de {{ $g->NombreEmpleado }}
                                 </span>
                             </button>
+
+                            {{-- Fuente del historial: no se pinta aquí —esta columna no
+                                 entra a la búsqueda del DataTable—, se clona a la
+                                 fila-hija cuando se abre el toggle. --}}
+                            <div class="aud-historial-fuente" hidden>
+                              <div class="aud-historial__inner">
+                                <div class="aud-historial__panel" id="historial-panel-{{ $g->clave }}">
+                                <table class="aud-historial__tabla">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Folio</th>
+                                            <th scope="col">Fecha</th>
+                                            <th scope="col">Generada por</th>
+                                            <th scope="col">Alcance</th>
+                                            <th scope="col">Auditoría anterior</th>
+                                            <th scope="col">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{-- Más reciente arriba: es la que se consulta. --}}
+                                        @foreach($g->corridas->reverse() as $c)
+                                        <tr class="aud-historial__fila">
+                                            <td class="aud-strong">{{ $c->Folio }}</td>
+                                            <td class="aud-num">{{ $c->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
+                                            <td>{{ $c->generada_por_nombre ?: 'Sin usuario' }}</td>
+                                            <td>
+                                                <div class="aud-alcance">
+                                                    <span class="aud-alcance__item">
+                                                        <i class="fas fa-laptop" aria-hidden="true"></i>
+                                                        <span class="aud-num">{{ $c->equipos }}</span> eq
+                                                    </span>
+                                                    <span class="aud-alcance__item">
+                                                        <i class="fas fa-key" aria-hidden="true"></i>
+                                                        <span class="aud-num">{{ $c->licencias }}</span> lic
+                                                    </span>
+                                                </div>
+                                            </td>
+
+                                            {{-- El delta se calcula al leer, nunca se guarda:
+                                                 corregir una corrida vieja corrige el resumen. --}}
+                                            <td>
+                                                @php $cambios = $c->cambios; @endphp
+                                                @if($c->esPrimera)
+                                                    <span class="aud-mini aud-muted">Primera auditoría</span>
+                                                @elseif($cambios['nueva'] === 0 && $cambios['baja'] === 0 && $cambios['cambio'] === 0)
+                                                    <span class="aud-marca aud-marca--igual">
+                                                        <i class="fas fa-equals" aria-hidden="true"></i> Sin cambios
+                                                    </span>
+                                                @else
+                                                    <div class="aud-semaforo">
+                                                        @if($cambios['nueva'])
+                                                            <span class="aud-marca aud-marca--nueva">
+                                                                <i class="fas fa-circle-plus" aria-hidden="true"></i>
+                                                                Nuevas <span class="aud-num">{{ $cambios['nueva'] }}</span>
+                                                            </span>
+                                                        @endif
+                                                        @if($cambios['cambio'])
+                                                            <span class="aud-marca aud-marca--cambio">
+                                                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                                                                Cambiaron <span class="aud-num">{{ $cambios['cambio'] }}</span>
+                                                            </span>
+                                                        @endif
+                                                        @if($cambios['baja'])
+                                                            <span class="aud-marca aud-marca--baja">
+                                                                <i class="fas fa-circle-minus" aria-hidden="true"></i>
+                                                                Bajas <span class="aud-num">{{ $cambios['baja'] }}</span>
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @endif
+                                            </td>
+
+                                            <td>
+                                                <div class="aud-historial__acciones">
+                                                    <a href="{{ route('auditorias.show', $c->id) }}"
+                                                       class="aud-btn aud-btn--ghost aud-btn--sm">
+                                                        <i class="fas fa-eye" aria-hidden="true"></i> Ver
+                                                    </a>
+                                                    @if($puedeBorrar)
+                                                    <form method="POST" action="{{ route('auditorias.destroy', $c->id) }}"
+                                                          class="form-borrar-auditoria" data-folio="{{ $c->Folio }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="aud-btn aud-btn--danger aud-btn--sm">
+                                                            <i class="fas fa-trash-alt" aria-hidden="true"></i> Eliminar
+                                                        </button>
+                                                    </form>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                                <div class="aud-historial__pag" data-pag-historial hidden>
+                                    <span class="aud-mini aud-muted" data-pag-info></span>
+                                    <div class="aud-pag__botones">
+                                        <button type="button" data-pag-prev>
+                                            <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
+                                        </button>
+                                        <button type="button" data-pag-next>
+                                            Siguiente <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                </div>
+                              </div>
+                            </div>
                         </td>
 
                         <td>
@@ -224,180 +364,16 @@
                                 @endif
                             </div>
                         </td>
-                    </tr>
 
-                    {{-- Historial del empleado. Nace cerrado: son pocas filas por
-                         empleado y así el toggle no necesita ir al servidor. --}}
-                    <tr id="{{ $panelId }}" class="aud-historial" hidden>
-                        <td colspan="7">
-                            <div class="aud-historial__inner">
-                              <div class="aud-historial__panel">
-                                <table class="aud-historial__tabla">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">Folio</th>
-                                            <th scope="col">Fecha</th>
-                                            <th scope="col">Generada por</th>
-                                            <th scope="col">Alcance</th>
-                                            <th scope="col">Auditoría anterior</th>
-                                            <th scope="col">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {{-- Más reciente arriba: es la que se consulta. --}}
-                                        @foreach($g->corridas->reverse() as $c)
-                                        <tr class="aud-historial__fila">
-                                            <td class="aud-strong">{{ $c->Folio }}</td>
-                                            <td class="aud-num">{{ $c->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
-                                            <td>{{ $c->generada_por_nombre ?: 'Sin usuario' }}</td>
-                                            <td>
-                                                <div class="aud-alcance">
-                                                    <span class="aud-alcance__item">
-                                                        <i class="fas fa-laptop" aria-hidden="true"></i>
-                                                        <span class="aud-num">{{ $c->equipos }}</span> eq
-                                                    </span>
-                                                    <span class="aud-alcance__item">
-                                                        <i class="fas fa-key" aria-hidden="true"></i>
-                                                        <span class="aud-num">{{ $c->licencias }}</span> lic
-                                                    </span>
-                                                </div>
-                                            </td>
-
-                                            {{-- El delta se calcula al leer, nunca se guarda:
-                                                 corregir una corrida vieja corrige el resumen. --}}
-                                            <td>
-                                                @php $cambios = $c->cambios; @endphp
-                                                @if($c->esPrimera)
-                                                    <span class="aud-mini aud-muted">Primera auditoría</span>
-                                                @elseif($cambios['nueva'] === 0 && $cambios['baja'] === 0 && $cambios['cambio'] === 0)
-                                                    <span class="aud-marca aud-marca--igual">
-                                                        <i class="fas fa-equals" aria-hidden="true"></i> Sin cambios
-                                                    </span>
-                                                @else
-                                                    <div class="aud-semaforo">
-                                                        @if($cambios['nueva'])
-                                                            <span class="aud-marca aud-marca--nueva">
-                                                                <i class="fas fa-circle-plus" aria-hidden="true"></i>
-                                                                Nuevas <span class="aud-num">{{ $cambios['nueva'] }}</span>
-                                                            </span>
-                                                        @endif
-                                                        @if($cambios['cambio'])
-                                                            <span class="aud-marca aud-marca--cambio">
-                                                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-                                                                Cambiaron <span class="aud-num">{{ $cambios['cambio'] }}</span>
-                                                            </span>
-                                                        @endif
-                                                        @if($cambios['baja'])
-                                                            <span class="aud-marca aud-marca--baja">
-                                                                <i class="fas fa-circle-minus" aria-hidden="true"></i>
-                                                                Bajas <span class="aud-num">{{ $cambios['baja'] }}</span>
-                                                            </span>
-                                                        @endif
-                                                    </div>
-                                                @endif
-                                            </td>
-
-                                            <td>
-                                                <div class="aud-historial__acciones">
-                                                    <a href="{{ route('auditorias.show', $c->id) }}"
-                                                       class="aud-btn aud-btn--ghost aud-btn--sm">
-                                                        <i class="fas fa-eye" aria-hidden="true"></i> Ver
-                                                    </a>
-                                                    @if($puedeBorrar)
-                                                    <form method="POST" action="{{ route('auditorias.destroy', $c->id) }}"
-                                                          class="form-borrar-auditoria" data-folio="{{ $c->Folio }}">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="aud-btn aud-btn--danger aud-btn--sm">
-                                                            <i class="fas fa-trash-alt" aria-hidden="true"></i> Eliminar
-                                                        </button>
-                                                    </form>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <div class="aud-historial__pag" data-pag-historial hidden>
-                                    <span class="aud-mini aud-muted" data-pag-info></span>
-                                    <div class="aud-pag__botones">
-                                        <button type="button" data-pag-prev>
-                                            <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
-                                        </button>
-                                        <button type="button" data-pag-next>
-                                            Siguiente <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                              </div>
-                            </div>
-                        </td>
+                        {{-- Ocultas: sólo alimentan los filtros de Gerencia y Obra. --}}
+                        <td>{{ $g->gerencia }}</td>
+                        <td>{{ $g->obra }}</td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
-
-        {{-- Paginación propia: el paginador de Bootstrap no usa los tokens del módulo
-             y se pierde en modo oscuro. --}}
-        @if($grupos->hasPages())
-        <nav class="aud-pag" role="navigation" aria-label="Paginación de auditorías">
-            <span class="aud-muted">
-                Mostrando {{ $grupos->firstItem() }}–{{ $grupos->lastItem() }}
-                de {{ $grupos->total() }} empleados
-            </span>
-
-            <div class="aud-pag__botones">
-                @if($grupos->onFirstPage())
-                    <span class="aud-pag__btn is-disabled" aria-disabled="true">
-                        <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
-                    </span>
-                @else
-                    <a href="{{ $grupos->previousPageUrl() }}" class="aud-pag__btn" rel="prev">
-                        <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
-                    </a>
-                @endif
-
-                @php
-                    // Ventana de páginas alrededor de la actual: con 200+ empleados la
-                    // lista completa de números no cabe.
-                    $actual = $grupos->currentPage();
-                    $ultimaPag = $grupos->lastPage();
-                    $desde = max(1, min($actual - 2, $ultimaPag - 4));
-                    $hasta = min($ultimaPag, max($actual + 2, 5));
-                @endphp
-
-                @if($desde > 1)
-                    <a href="{{ $grupos->url(1) }}" class="aud-pag__btn aud-num">1</a>
-                    @if($desde > 2)<span class="aud-pag__gap" aria-hidden="true">…</span>@endif
-                @endif
-
-                @for($p = $desde; $p <= $hasta; $p++)
-                    @if($p === $actual)
-                        <span class="aud-pag__btn is-actual aud-num" aria-current="page">{{ $p }}</span>
-                    @else
-                        <a href="{{ $grupos->url($p) }}" class="aud-pag__btn aud-num">{{ $p }}</a>
-                    @endif
-                @endfor
-
-                @if($hasta < $ultimaPag)
-                    @if($hasta < $ultimaPag - 1)<span class="aud-pag__gap" aria-hidden="true">…</span>@endif
-                    <a href="{{ $grupos->url($ultimaPag) }}" class="aud-pag__btn aud-num">{{ $ultimaPag }}</a>
-                @endif
-
-                @if($grupos->hasMorePages())
-                    <a href="{{ $grupos->nextPageUrl() }}" class="aud-pag__btn" rel="next">
-                        Siguiente <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                    </a>
-                @else
-                    <span class="aud-pag__btn is-disabled" aria-disabled="true">
-                        Siguiente <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                    </span>
-                @endif
-            </div>
-        </nav>
-        @endif
+        {{-- La paginación ya no es nuestra: la pinta el propio DataTable. --}}
         @endif
     </div>
 </x-index-page>
@@ -439,112 +415,161 @@
 </div>
 @endsection
 
+@push('third_party_stylesheets')
+    @include('layouts.datatables_css')
+@endpush
+
 {{-- Va en el stack, no en el contenido: SweetAlert y jQuery se cargan al final del
      layout, después de #app-main. --}}
 @push('third_party_scripts')
+    @include('layouts.datatables_js')
 <script>
     (function () {
-        // ── Desplegar el historial de un empleado ────────────────────────────
-        // Delegado en el contenedor: sobrevive al repintado de AppNav y no deja
-        // un listener por fila.
-        var tabla = document.querySelector('.aud-grupos');
+        // ── Tabla de auditorías: DataTable, con filtro propio de verdad ──────
+        // Se cargan TODAS las filas del servidor (ya no hay paginación propia)
+        // y DataTables filtra/pagina/ordena del lado del cliente. Gerencia y
+        // Obra viven en 2 columnas ocultas (sólo para filtrar); Empleado
+        // filtra la columna que ya se ve.
+        var tabla = document.getElementById('tablaAuditorias');
+        var table = null;
 
-        if (tabla) {
-            tabla.addEventListener('click', function (e) {
-                var boton = e.target.closest('[data-toggle-grupo]');
-                if (!boton) return;
+        if (tabla && window.jQuery && jQuery.fn.DataTable) {
+            var $tabla = jQuery(tabla);
 
-                var panel = document.getElementById(boton.dataset.toggleGrupo);
-                if (!panel) return;
+            if (jQuery.fn.DataTable.isDataTable($tabla)) {
+                $tabla.DataTable().destroy();
+            }
 
-                var abierto = boton.getAttribute('aria-expanded') === 'true';
-                var inner = panel.querySelector('.aud-historial__inner');
+            table = $tabla.DataTable({
+                order: [],
+                pageLength: 15,
+                autoWidth: false,
+                columnDefs: [
+                    { targets: 0, orderable: false, searchable: false },
+                    { targets: 6, orderable: false, searchable: false },
+                    { targets: [7, 8], visible: false }
+                ],
+                language: {
+                    sProcessing: 'Procesando...',
+                    sZeroRecords: 'No se encontraron resultados',
+                    sEmptyTable: 'Ningún dato disponible en esta tabla',
+                    sInfo: 'Mostrando _START_ a _END_ de _TOTAL_',
+                    sInfoEmpty: 'Mostrando 0 a 0 de 0',
+                    sInfoFiltered: '(filtrado de _MAX_ registros)',
+                    oPaginate: {
+                        sFirst: 'Primero',
+                        sLast: 'Último',
+                        sNext: 'Siguiente',
+                        sPrevious: 'Anterior'
+                    }
+                },
+                // Sin buscador propio de DataTables: los 3 filtros de arriba ya
+                // cubren esa función, uno de más sólo confundiría.
+                dom: "t<'index-page__dt-footer'ip>"
+            });
 
-                boton.setAttribute('aria-expanded', abierto ? 'false' : 'true');
-                boton.classList.toggle('is-abierto', !abierto);
-                boton.closest('tr').classList.toggle('is-abierto', !abierto);
+            var escapeRegex = jQuery.fn.dataTable.util.escapeRegex;
 
-                if (abierto) {
-                    if (inner) inner.classList.remove('is-abierto');
-                    panel.hidden = true;
+            jQuery('#filtroListaGerencia').on('change', function () {
+                var v = this.value;
+                table.column(7).search(v ? '^' + escapeRegex(v) + '$' : '', true, false).draw();
+            });
+
+            jQuery('#filtroListaObra').on('change', function () {
+                var v = this.value;
+                table.column(8).search(v ? '^' + escapeRegex(v) + '$' : '', true, false).draw();
+            });
+
+            var esperaEmpleado = null;
+            jQuery('#filtroListaEmpleado').on('input', function () {
+                var v = this.value;
+                clearTimeout(esperaEmpleado);
+                esperaEmpleado = setTimeout(function () {
+                    table.column(1).search(v).draw();
+                }, 250);
+            });
+
+            // ── Historial: fila-hija del propio DataTable ────────────────────
+            // No es un <tr> suelto: así el filtrado y el paginado de arriba no
+            // la confunden con un renglón de datos ni la dejan huérfana.
+            var PAG_HISTORIAL = 5;
+            var estadoPagHistorial = {};
+
+            function paginarHistorial(panel) {
+                var filas = Array.prototype.slice.call(panel.querySelectorAll('.aud-historial__fila'));
+                var barra = panel.querySelector('[data-pag-historial]');
+                if (!filas.length || !barra) {
+                    if (barra) barra.hidden = true;
                     return;
                 }
 
-                panel.hidden = false;
-                // Doble rAF: el navegador necesita ver el estado inicial antes de
-                // que la clase dispare la transición.
+                var totalPag = Math.ceil(filas.length / PAG_HISTORIAL);
+                if (totalPag <= 1) {
+                    barra.hidden = true;
+                    filas.forEach(function (f) { f.hidden = false; });
+                    return;
+                }
+
+                var actual = estadoPagHistorial[panel.id] || 1;
+                actual = Math.min(Math.max(actual, 1), totalPag);
+                estadoPagHistorial[panel.id] = actual;
+
+                filas.forEach(function (fila, i) {
+                    var pagDeFila = Math.floor(i / PAG_HISTORIAL) + 1;
+                    fila.hidden = pagDeFila !== actual;
+                });
+
+                barra.hidden = false;
+                var info = barra.querySelector('[data-pag-info]');
+                if (info) info.textContent = 'Página ' + actual + ' de ' + totalPag;
+
+                var prev = barra.querySelector('[data-pag-prev]');
+                var next = barra.querySelector('[data-pag-next]');
+                if (prev) prev.disabled = actual <= 1;
+                if (next) next.disabled = actual >= totalPag;
+            }
+
+            jQuery(tabla).on('click', 'td.aud-col-toggle', function () {
+                var tr = jQuery(this).closest('tr');
+                var row = table.row(tr);
+                var boton = tr.find('[data-toggle-fila]');
+
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('is-abierto');
+                    boton.removeClass('is-abierto').attr('aria-expanded', 'false');
+                    return;
+                }
+
+                var fuente = tr.find('.aud-historial-fuente');
+                row.child(fuente.length ? fuente.html() : '').show();
+                tr.addClass('is-abierto');
+                boton.addClass('is-abierto').attr('aria-expanded', 'true');
+
+                // Misma clase que usaba el <tr> viejo del historial: conserva el
+                // estilo de hover ya definido para el panel.
+                var hijo = tr.next('tr.child').addClass('aud-historial');
+                // La transición de opacidad de .aud-historial__inner necesita
+                // ver el estado inicial (opacity 0) antes de añadir la clase
+                // que anima a 1; si no, entra ya visible de golpe, sin efecto.
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
-                        if (inner) inner.classList.add('is-abierto');
+                        hijo.find('.aud-historial__inner').addClass('is-abierto');
                     });
                 });
-            });
-        }
 
-        // ── Paginado del historial expandido ─────────────────────────────────
-        // Todas las corridas ya vienen cargadas del servidor; sólo se ocultan las
-        // filas fuera de la página actual. Estado por panel, no global.
-        var PAG_HISTORIAL = 5;
-        var estadoPagHistorial = {};
-
-        function paginarHistorial(panel) {
-            var filas = Array.prototype.slice.call(panel.querySelectorAll('.aud-historial__fila'));
-            var barra = panel.querySelector('[data-pag-historial]');
-            if (!filas.length || !barra) {
-                if (barra) barra.hidden = true;
-                return;
-            }
-
-            var totalPag = Math.ceil(filas.length / PAG_HISTORIAL);
-            if (totalPag <= 1) {
-                barra.hidden = true;
-                filas.forEach(function (f) { f.hidden = false; });
-                return;
-            }
-
-            var actual = estadoPagHistorial[panel.id] || 1;
-            actual = Math.min(Math.max(actual, 1), totalPag);
-            estadoPagHistorial[panel.id] = actual;
-
-            filas.forEach(function (fila, i) {
-                var pagDeFila = Math.floor(i / PAG_HISTORIAL) + 1;
-                fila.hidden = pagDeFila !== actual;
+                var panel = hijo.find('.aud-historial__panel')[0];
+                if (panel) paginarHistorial(panel);
             });
 
-            barra.hidden = false;
-            var info = barra.querySelector('[data-pag-info]');
-            if (info) info.textContent = 'Página ' + actual + ' de ' + totalPag;
-
-            var prev = barra.querySelector('[data-pag-prev]');
-            var next = barra.querySelector('[data-pag-next]');
-            if (prev) prev.disabled = actual <= 1;
-            if (next) next.disabled = actual >= totalPag;
-        }
-
-        if (tabla) {
-            tabla.addEventListener('click', function (e) {
-                var boton = e.target.closest('[data-pag-prev], [data-pag-next]');
-                if (!boton) return;
-
-                var panel = boton.closest('.aud-historial');
+            jQuery(tabla).on('click', '[data-pag-prev], [data-pag-next]', function () {
+                var panel = jQuery(this).closest('.aud-historial__panel')[0];
                 if (!panel) return;
 
                 var actual = estadoPagHistorial[panel.id] || 1;
-                estadoPagHistorial[panel.id] = actual + (boton.hasAttribute('data-pag-next') ? 1 : -1);
+                var esSiguiente = jQuery(this).is('[data-pag-next]');
+                estadoPagHistorial[panel.id] = actual + (esSiguiente ? 1 : -1);
                 paginarHistorial(panel);
-            });
-
-            // Se pagina al abrir, no antes: el panel nace oculto y calcular sobre
-            // filas con `hidden` heredado del padre no cambia nada, pero así el
-            // primer pintado ya sale correcto sin esperar un resize.
-            tabla.addEventListener('click', function (e) {
-                var boton = e.target.closest('[data-toggle-grupo]');
-                if (!boton) return;
-
-                var panel = document.getElementById(boton.dataset.toggleGrupo);
-                if (panel && boton.getAttribute('aria-expanded') === 'true') {
-                    paginarHistorial(panel);
-                }
             });
         }
 
@@ -608,23 +633,33 @@
             document.addEventListener('keydown', window.__audEqEscHandler);
         }
 
-        // Eliminar es irreversible: se confirma antes.
-        document.querySelectorAll('.form-borrar-auditoria').forEach(function (f) {
-            f.addEventListener('submit', function (event) {
-                event.preventDefault();
-                Swal.fire({
-                    icon: 'warning',
-                    title: '¿Eliminar ' + f.dataset.folio + '?',
-                    text: 'Se borra la corrida y todo su detalle. No se puede deshacer.',
-                    showCancelButton: true,
-                    confirmButtonText: 'Eliminar',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#B91C1C',
-                }).then(function (r) {
-                    if (r.isConfirmed) f.submit();
-                });
+        // Eliminar es irreversible: se confirma antes. Delegado en document: el
+        // formulario vive dentro del historial, que ahora se inyecta al abrir
+        // la fila-hija del DataTable, así que no existe todavía cuando este
+        // script corre.
+        if (window.__audBorrarHandler) {
+            document.removeEventListener('submit', window.__audBorrarHandler);
+        }
+
+        window.__audBorrarHandler = function (event) {
+            var f = event.target.closest('.form-borrar-auditoria');
+            if (!f) return;
+
+            event.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: '¿Eliminar ' + f.dataset.folio + '?',
+                text: 'Se borra la corrida y todo su detalle. No se puede deshacer.',
+                showCancelButton: true,
+                confirmButtonText: 'Eliminar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#B91C1C',
+            }).then(function (r) {
+                if (r.isConfirmed) f.submit();
             });
-        });
+        };
+
+        document.addEventListener('submit', window.__audBorrarHandler);
 
         // ── Modal de generación ──────────────────────────────────────────────
         var modal  = document.getElementById('modalGenerar');

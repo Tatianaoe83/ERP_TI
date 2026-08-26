@@ -109,6 +109,57 @@
         font-weight: 600;
     }
 
+    /* ── Filtros de la lista: Gerencia, Obra, Empleado ──
+       Independientes entre sí, sin cascada: cada uno filtra solo. */
+    .aud-filtros {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 0.85rem;
+        padding: 0.85rem 1.1rem;
+        margin-bottom: 1rem;
+        border: 1px solid var(--aud-border);
+        border-radius: var(--aud-radius);
+        background: var(--aud-surface);
+        box-shadow: var(--aud-shadow-sm);
+    }
+
+    .aud-filtros__campo {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        min-width: 10rem;
+    }
+
+    .aud-filtros__campo--busqueda {
+        flex: 1 1 14rem;
+    }
+
+    .aud-filtros__campo label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--aud-text-muted);
+    }
+
+    .aud-filtros__campo select,
+    .aud-filtros__campo input {
+        width: 100%;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid var(--aud-border);
+        border-radius: var(--aud-radius-sm);
+        background: var(--aud-surface);
+        color: var(--aud-text);
+        font-size: 0.85rem;
+    }
+
+    .aud-filtros__campo select:focus-visible,
+    .aud-filtros__campo input:focus-visible {
+        outline: 2px solid var(--aud-primary);
+        outline-offset: 1px;
+    }
+
     /* ── Encabezado de la corrida ──
        Una sola tarjeta: quién la generó, a quién se auditó y contra qué. El alcance
        de licencias salió de aquí porque el detalle ya trae una fila por licencia. */

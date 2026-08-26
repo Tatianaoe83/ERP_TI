@@ -10,7 +10,6 @@ use App\Models\Empleados;
 use App\Models\InventarioEquipo;
 use App\Models\InventarioInsumo;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -50,7 +49,7 @@ class AuditoriasController extends Controller
      * Agrupar es lectura, nunca escritura: aquí no se actualiza ni se colapsa nada
      * en la base, sólo se presenta distinto.
      */
-    public function index(Request $request)
+    public function index()
     {
         $equipos = $this->equiposAuditables();
 
@@ -63,10 +62,19 @@ class AuditoriasController extends Controller
             ->groupBy('EmpleadoID')
             ->pluck('total', 'EmpleadoID');
 
-        $grupos = $this->gruposDeAuditorias($equipos, $request);
+        // Sin paginar: la tabla es un DataTable y filtra/pagina del lado del
+        // cliente sobre TODAS las filas, no sólo sobre las 15 que mandaba el
+        // servidor antes.
+        $grupos = $this->gruposDeAuditorias($equipos);
 
         return view('auditorias.index', [
             'grupos'              => $grupos,
+            // Opciones de los filtros de la lista (Gerencia, Obra): salen del
+            // universo auditable completo, igual que el modal de generar —no
+            // sólo de quien ya tiene una corrida—, si no casi no habría nada
+            // que elegir.
+            'filtroGerencias'     => $this->opcionesDe($equipos, 'NombreGerencia', 'Sin gerencia'),
+            'filtroObras'         => $this->opcionesDe($equipos, 'NombreObra', 'Sin obra'),
             // Estado vigente por empleado: alimenta el semáforo del modal.
             'estadoLicencias'     => $this->estadoLicenciasPorEmpleado(),
             'ultima'              => Auditoria::with('empleado')->orderByDesc('created_at')->first(),
@@ -607,8 +615,14 @@ class AuditoriasController extends Controller
      *
      * Dentro de lo ya auditado se ordena por urgencia: lo caducado o sin revisar sube,
      * y lo más viejo encabeza su nivel.
+     *
+     * Regresa TODAS las filas, sin paginar ni filtrar: la tabla es un
+     * DataTable y hace ambas cosas del lado del cliente, sobre columnas
+     * ocultas de Gerencia/Obra y la celda de Empleado.
+     *
+     * @return \Illuminate\Support\Collection
      */
-    private function gruposDeAuditorias($equipos, Request $request): LengthAwarePaginator
+    private function gruposDeAuditorias($equipos)
     {
         // El universo es el historial: una agregada por empleado, no una por fila.
         $agregados = Auditoria::query()
@@ -618,9 +632,7 @@ class AuditoriasController extends Controller
             ->get();
 
         if ($agregados->isEmpty()) {
-            return new LengthAwarePaginator(collect(), 0, 15, 1, [
-                'path' => $request->url(), 'query' => $request->query(),
-            ]);
+            return collect();
         }
 
         $estados = $this->estadoLicenciasPorEmpleado();
@@ -628,7 +640,7 @@ class AuditoriasController extends Controller
         // empleado resguarda HOY, aunque su última corrida sea de hace meses.
         $porEmpleado = $equipos->groupBy('EmpleadoID');
 
-        $empleados = Empleados::with('puestos.departamentos.gerencia')
+        $empleados = Empleados::with(['puestos.departamentos.gerencia', 'obras'])
             ->whereIn('EmpleadoID', $agregados->pluck('EmpleadoID')->all())
             ->get()
             ->keyBy('EmpleadoID');
@@ -658,8 +670,9 @@ class AuditoriasController extends Controller
                 'EmpleadoID'     => (int) $empleadoID,
                 'NombreEmpleado' => $empleado?->NombreEmpleado ?: 'Sin asignar',
                 'tipo_persona'   => $empleado?->tipo_persona ?: '—',
-                'gerencia'       => $empleado?->puestos?->departamentos?->gerencia?->NombreGerencia ?: 'Sin gerencia',
-                'departamento'   => $empleado?->puestos?->departamentos?->NombreDepartamento ?: 'Sin departamento',
+                'gerencia'       => trim((string) $empleado?->puestos?->departamentos?->gerencia?->NombreGerencia) ?: 'Sin gerencia',
+                'obra'           => trim((string) $empleado?->obras?->NombreObra) ?: 'Sin obra',
+                'departamento'   => trim((string) $empleado?->puestos?->departamentos?->NombreDepartamento) ?: 'Sin departamento',
                 'equipos'        => $susEquipos->values(),
                 'estado'         => $estado,
                 'prioridad'      => $prioridad,
@@ -675,7 +688,8 @@ class AuditoriasController extends Controller
         })->values();
 
         // Dentro de cada nivel de urgencia, primero lo más viejo: el que lleva más sin
-        // revisarse encabeza.
+        // revisarse encabeza. DataTables puede reordenar en pantalla, pero éste es el
+        // orden con el que abre.
         $filas = $filas
             ->sortBy([
                 fn($a, $b) => $a->prioridad <=> $b->prioridad,
@@ -684,25 +698,15 @@ class AuditoriasController extends Controller
             ])
             ->values();
 
-        $pagina = LengthAwarePaginator::resolveCurrentPage();
-        $porPagina = 15;
-        $visibles = $filas->forPage($pagina, $porPagina)->values();
+        // El historial se arma para todas: ya no hay "página visible" que lo recorte.
+        $historial = $this->historialPorEmpleado($filas->pluck('EmpleadoID')->all());
 
-        // El historial sólo se arma para lo que se ve: es lo único que se despliega.
-        $historial = $this->historialPorEmpleado($visibles->pluck('EmpleadoID')->all());
-
-        $visibles->each(function ($fila) use ($historial) {
+        $filas->each(function ($fila) use ($historial) {
             $fila->corridas = $historial[$fila->EmpleadoID] ?? collect();
             $fila->ultima = $fila->corridas->last();
         });
 
-        return new LengthAwarePaginator(
-            $visibles,
-            $filas->count(),
-            $porPagina,
-            $pagina,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
+        return $filas;
     }
 
     /**
@@ -827,6 +831,7 @@ class AuditoriasController extends Controller
             ->leftJoin('puestos', 'puestos.PuestoID', '=', 'empleados.PuestoID')
             ->leftJoin('departamentos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
             ->leftJoin('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
+            ->leftJoin('obras', 'obras.ObraID', '=', 'empleados.ObraID')
             ->whereIn('empleados.tipo_persona', self::TIPOS_PERSONA_AUDITABLES)
             ->whereIn('inventarioequipo.CategoriaEquipo', [self::CATEGORIA_LAPTOP, self::CATEGORIA_PC])
             ->select(
@@ -834,7 +839,8 @@ class AuditoriasController extends Controller
                 'empleados.NombreEmpleado',
                 'empleados.tipo_persona',
                 'departamentos.NombreDepartamento',
-                'gerencia.NombreGerencia'
+                'gerencia.NombreGerencia',
+                'obras.NombreObra'
             )
             ->orderBy('gerencia.NombreGerencia')
             ->orderBy('empleados.NombreEmpleado')
