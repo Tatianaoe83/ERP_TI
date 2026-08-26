@@ -304,200 +304,275 @@
         font-size: 0.78rem;
     }
 
-    /* ── Alto fijo ──
-       #app-main ya tiene alto definido (el shell es h-screen). Se encadena height/flex
-       hasta la tabla para que la página no crezca y el único scroll sea el de la tabla.
-       Cualquier eslabón sin min-height:0 rompe la cadena. */
-    /* El shell (#app) ya es h-screen overflow-hidden, pero body sigue desplazable y
-       arrastra el header y el sidebar. Se bloquea sólo mientras esta vista está en
-       pantalla: con :has() el candado se suelta solo cuando AppNav cambia de página,
-       sin dejar clases pegadas en body. */
-    html:has(.aud--fijo),
-    body:has(.aud--fijo) {
-        height: 100%;
-        overflow: hidden;
-        overscroll-behavior: none;
+    /* ── Ancho y alto útiles ──
+       El header y el sidebar son fijos, pero el área de adentro no tiene por qué
+       respirar padding de sobra: en una tabla de auditoría cada centímetro es una
+       fila más a la vista. Se recorta sólo mientras esta vista está en pantalla,
+       con :has(), para no dejar clases pegadas cuando AppNav cambia de página. */
+    #app-main:has(.aud) {
+        padding: 0.6rem 0.75rem;
     }
 
-    .aud--fijo {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
-    }
+    .aud .index-page { padding: 0 0 0.5rem; }
 
-    .aud--fijo .index-page,
-    .aud--fijo .aud-tabla,
-    .aud--fijo .index-page__card {
-        display: flex;
-        flex-direction: column;
-        flex: 1 1 auto;
-        min-height: 0;
-    }
+    .aud .index-page__header { padding-bottom: 0.35rem; }
 
-    .aud--fijo .index-page__header,
-    .aud--fijo .aud-flash,
-    .aud--fijo .aud-meta { flex: 0 0 auto; }
+    .aud .index-page__card { padding: 1.1rem 1.25rem; }
+
+    /* Aire entre tarjetas (antes/ahora, equipos/licencias): pegadas se leían como
+       una sola tabla partida a la mitad. */
+    .aud .index-page__card + .index-page__card { margin-top: 1.1rem; }
+
+
+    @media (min-width: 1280px) {
+        #app-main:has(.aud) { padding: 0.75rem 1rem; }
+    }
 
     .aud-flash:empty { display: none; }
 
-    .aud--fijo .index-page__card { overflow: hidden; }
-
-    /* El único scroll de la vista. `contain` evita que la rueda siga hacia el shell
-       al llegar al final de la tabla. */
-    .aud--fijo .table-responsive {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: auto;
-        overscroll-behavior: contain;
+    /* ── Tarjetas de comparación (equipos/licencias) ──────────────────────────
+       Reemplazan la tabla: cada renglón es su propia tarjeta, así el estado
+       (se agregó / se quitó / cambió) se lee de un vistazo por color + icono +
+       texto, nunca sólo por color. */
+    .aud-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+        gap: 0.9rem;
     }
 
-    /* DataTables mete controles, tabla y paginación en su wrapper: debe estirarse
-       completo dentro del área desplazable. */
-    .aud--fijo .dataTables_wrapper {
+    .aud-card {
+        position: relative;
         display: flex;
         flex-direction: column;
-        min-height: 100%;
+        gap: 0.6rem;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--aud-border);
+        border-left: 4px solid var(--aud-border);
+        border-radius: 0.75rem;
+        background: var(--aud-surface);
+        animation: aud-card-entra 260ms ease-out both;
+        transition: transform 160ms ease-out, box-shadow 160ms ease-out, border-color 160ms ease-out;
     }
 
-    /* ── Controles de DataTables ──
-       Vienen con los estilos de Bootstrap: se reescriben con los tokens del módulo
-       para que el selector de cantidad y el buscador no desentonen. */
-    .aud-dt__barra {
+    @keyframes aud-card-entra {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    .aud-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    }
+
+    .aud-card:has(:focus-visible) {
+        border-color: var(--aud-primary);
+    }
+
+    .aud-card--nueva  { border-left-color: var(--aud-ok); }
+    .aud-card--cambio { border-left-color: var(--aud-accent); }
+    .aud-card--baja   { border-left-color: var(--aud-danger); }
+    .aud-card--igual  { border-left-color: var(--aud-border); }
+
+    /* Baja: ya no forma parte de esta corrida, se enseña como referencia. */
+    .aud-card--fantasma {
+        background: var(--aud-surface-2);
+        opacity: 0.72;
+    }
+
+    .aud-card--fantasma .aud-card__titulo {
+        text-decoration: line-through;
+        text-decoration-color: var(--aud-danger);
+    }
+
+    .aud-card__badge {
+        align-self: flex-start;
+    }
+
+    /* Aviso distinto del semáforo de comparación: no dice si cambió contra la
+       otra columna, dice que el registro ya no existe en `inventarioequipo` —
+       es del inventario en general, no de esta auditoría. */
+    .aud-card__badge--baja-inv {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        align-self: flex-start;
+        padding: 0.15rem 0.55rem;
+        border: 1px dashed var(--aud-danger);
+        border-radius: 999px;
+        background: var(--aud-danger-soft);
+        color: var(--aud-danger);
+        font-size: 0.68rem;
+        font-weight: 700;
+    }
+
+    .aud-card__cab {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    .aud-card__ico {
+        margin-top: 0.15rem;
+        color: var(--aud-text-muted);
+    }
+
+    .aud-card__titulo {
+        font-size: 0.92rem;
+        font-weight: 700;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
+    .aud-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem 1rem;
+    }
+
+    .aud-card__dato {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        font-size: 0.72rem;
+        color: var(--aud-text);
+    }
+
+    .aud-card__campo {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .aud-card__nota-vieja {
+        margin: 0;
+        padding: 0.4rem 0.6rem;
+        border-left: 2px solid var(--aud-border);
+        border-radius: 0 0.35rem 0.35rem 0;
+        background: var(--aud-surface);
+        color: var(--aud-text-muted);
+        font-size: 0.78rem;
+        font-style: italic;
+        line-height: 1.4;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .aud-card { animation: none; }
+        .aud-card:hover { transform: none; }
+    }
+
+    /* ── Comparación en dos columnas ───────────────────────────────────────
+       Izquierda = referencia elegible y de sólo lectura. Derecha = la corrida
+       abierta, fija y editable. Una franja de color en la cabecera basta para
+       distinguirlas sin depender del color como único indicador (llevan icono
+       + texto: "Comparando con" vs "Esta auditoría"). */
+    .aud-compare {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1.1rem;
+        align-items: start;
+    }
+
+    @media (max-width: 64rem) {
+        .aud-compare { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .aud-compare__col {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        min-width: 0;
+        padding: 1rem 1.1rem 1.2rem;
+        border: 1px solid var(--aud-border);
+        border-radius: 0.85rem;
+        background: var(--aud-surface);
+    }
+
+    .aud-compare__col--izq {
+        border-style: dashed;
+    }
+
+    .aud-compare__col--der {
+        border-color: var(--aud-primary);
+        box-shadow: 0 0 0 1px var(--aud-primary-soft);
+    }
+
+    .aud-compare__cabecera {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        justify-content: space-between;
         gap: 0.5rem 0.75rem;
-        padding: 0 0 0.6rem;
-        margin-bottom: 0.6rem;
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.15rem;
         border-bottom: 1px solid var(--aud-border);
     }
 
-    .aud-dt__pie {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.5rem 0.75rem;
-        margin-top: auto;          /* empuja la paginación al fondo del área */
-        padding-top: 0.6rem;
-        border-top: 1px solid var(--aud-border);
-    }
-
-    .aud .dataTables_wrapper .dataTables_length label,
-    .aud .dataTables_wrapper .dataTables_filter label {
+    .aud-compare__rotulo {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
-        margin: 0;
         font-size: 0.7rem;
         font-weight: 700;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         color: var(--aud-text-muted);
     }
 
-    .aud .dataTables_wrapper select,
-    .aud .dataTables_wrapper input[type="search"] {
-        height: 32px;
-        border: 1px solid var(--aud-border);
-        border-radius: 0.45rem;
-        padding: 0 0.55rem;
-        background: var(--aud-surface);
-        color: var(--aud-text);
-        font-size: 0.78rem;
-        font-weight: 500;
-        letter-spacing: 0;
-        text-transform: none;
-        transition: border-color .18s ease, box-shadow .18s ease;
+    .aud-compare__rotulo--actual { color: var(--aud-primary); }
+
+    .aud-compare__select {
+        margin-left: auto;
+        min-height: 38px;
+        max-width: 16rem;
+        font-size: 0.8rem;
     }
 
-    .aud .dataTables_wrapper select {
-        min-width: 4.25rem;
-        cursor: pointer;
-    }
-
-    /* Lupa dentro del campo: el rótulo "Buscar:" de la librería no se lee como campo. */
-    .aud .dataTables_wrapper input[type="search"] {
-        width: 15rem;
-        max-width: 100%;
-        padding-left: 1.9rem;
-        background-image: none;
-    }
-
-    .aud .dataTables_wrapper .dataTables_filter label {
-        position: relative;
-        font-size: 0;              /* oculta el texto "Buscar:" sin quitarlo del DOM */
-        letter-spacing: 0;
-    }
-
-    .aud .dataTables_wrapper .dataTables_filter label::before {
-        content: "\f002";
-        font-family: "Font Awesome 5 Free";
-        font-weight: 900;
-        font-size: 0.72rem;
-        position: absolute;
-        left: 0.65rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--aud-text-muted);
-        pointer-events: none;
-        z-index: 1;
-    }
-
-    .aud .dataTables_wrapper select:focus,
-    .aud .dataTables_wrapper input[type="search"]:focus {
-        border-color: var(--aud-primary);
-        box-shadow: 0 0 0 2px var(--aud-primary-soft);
-        outline: none;
-    }
-
-    .aud .dataTables_wrapper .dataTables_info {
-        font-size: 0.72rem;
-        color: var(--aud-text-muted);
-        font-variant-numeric: tabular-nums;
-    }
-
-    /* Paginación de la librería, con el mismo lenguaje que la del listado. */
-    .aud .dataTables_wrapper .pagination { gap: 0.25rem; margin: 0; }
-
-    .aud .dataTables_wrapper .page-link {
-        min-width: 32px;
-        height: 32px;
-        display: inline-flex;
+    /* Quién generó la corrida que muestra esta columna: una vez en la cabecera,
+       no repetido tarjeta por tarjeta. Ocupa el ancho completo para que el
+       select de arriba no lo empuje a competir por espacio en la misma línea. */
+    .aud-compare__autor {
+        display: flex;
         align-items: center;
-        justify-content: center;
-        border: 1px solid var(--aud-border);
-        border-radius: 0.45rem;
-        background: var(--aud-surface);
-        color: var(--aud-text);
-        font-size: 0.75rem;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .aud .dataTables_wrapper .page-link:hover {
-        background: var(--aud-surface-2);
-        color: var(--aud-text);
-    }
-
-    .aud .dataTables_wrapper .page-item.active .page-link {
-        border-color: var(--aud-primary);
-        background: var(--aud-primary-soft);
-        color: var(--aud-primary);
-    }
-
-    .aud .dataTables_wrapper .page-item.disabled .page-link {
-        opacity: 0.45;
-        background: var(--aud-surface);
+        gap: 0.35rem;
+        flex: 1 1 100%;
+        font-size: 0.72rem;
         color: var(--aud-text-muted);
     }
 
-    @media (max-width: 40rem) {
-        .aud .dataTables_wrapper .dataTables_filter { text-align: left; }
-        .aud .dataTables_wrapper input[type="search"] { width: 100%; }
+    .aud-compare__autor i { color: var(--aud-text-muted); }
+
+    .aud-compare__seccion {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin: 0.85rem 0 0.6rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--aud-text);
     }
+
+    .aud-compare__seccion i { color: var(--aud-text-muted); }
+
+    /* Tarjetas de referencia: mismo componente, atenuado y sin hover de acción
+       para que se lea como consulta, no como algo que se pueda tocar. */
+    .aud-card--ref {
+        background: var(--aud-surface-2);
+        cursor: default;
+    }
+
+    .aud-card--ref:hover {
+        transform: none;
+        box-shadow: none;
+        border-left-color: inherit;
+    }
+
+    /* "Se mantiene": el mismo lenguaje visual del badge de cambio, pero en gris
+       neutro — hay algo que reportar (existe en la corrida de referencia) sin
+       que compita con nueva/cambió/se quitó. */
+    .aud-card--igual { border-left-color: var(--aud-border); }
+
+    /* La licencia en la tarjeta de referencia no tiene <select>: el mismo chip
+       de estado que pinta el editable a la derecha, aquí estático. */
+    .aud-card--ref .aud-estado { align-self: flex-start; }
 
     /* ── Tabla ── */
     .aud .table-responsive {
@@ -512,17 +587,16 @@
         background: var(--aud-surface);
     }
 
-    /* Densidad: son celdas de una línea, no necesitan alto de formulario. */
     .aud .index-table th,
     .aud .index-table td {
-        padding: 0.3rem 0.55rem;
-        font-size: 0.8rem;
-        line-height: 1.3;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.85rem;
+        line-height: 1.4;
         vertical-align: middle;
     }
 
     .aud .index-table th {
-        font-size: 0.7rem;
+        font-size: 0.72rem;
         letter-spacing: 0.04em;
     }
 
@@ -781,49 +855,100 @@
 
     .aud-modal[hidden] { display: none; }
 
+    /* Velo sólido. Sin blur: sobre una tabla densa el desenfoque convierte el fondo
+       en una mancha sucia en vez de apagarlo. */
     .aud-modal__fondo {
         position: absolute;
         inset: 0;
-        background: rgba(15, 23, 42, 0.55);
+        background: rgba(15, 23, 42, 0.6);
     }
 
+    .dark .aud-modal__fondo { background: rgba(2, 6, 23, 0.72); }
+
+    /* Columna: cabecera y pie quietos, el cuerpo es lo único que se desplaza.
+       Antes el cuadro entero hacía scroll y el título se perdía al bajar. */
     .aud-modal__caja {
         position: relative;
+        display: flex;
+        flex-direction: column;
         width: min(64rem, 100%);
-        max-height: 88vh;
-        overflow: auto;
-        padding: 1.25rem;
+        max-height: min(88vh, 52rem);
+        overflow: hidden;
         border: 1px solid var(--aud-border);
         border-radius: 0.9rem;
         background: var(--aud-surface);
         color: var(--aud-text);
-        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+        animation: aud-modal-entra 200ms ease-out;
     }
 
-    /* El modal de equipos sólo lista fichas: a 64rem quedan estiradas y vacías. */
-    .aud-modal__caja--sm { width: min(34rem, 100%); }
+    /* Entra desde su punto de origen, no aparece de golpe: da continuidad
+       espacial entre el control que se tocó y lo que se abrió. */
+    @keyframes aud-modal-entra {
+        from { opacity: 0; transform: translateY(8px) scale(0.985); }
+        to   { opacity: 1; transform: none; }
+    }
 
+    /* El modal de equipos lista fichas en dos columnas: a 64rem quedan estiradas. */
+    .aud-modal__caja--sm { width: min(46rem, 100%); }
+
+    /* Cabecera: el icono va en su propia pastilla para que el título arranque en
+       una línea limpia y no compita con el glifo. */
     .aud-modal__cabecera {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        margin-bottom: 1rem;
+        flex: 0 0 auto;
+        padding: 0.9rem 1.15rem;
+        border-bottom: 1px solid var(--aud-border);
+        background: var(--aud-surface-2);
     }
 
     .aud-modal__titulo {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        margin: 0 0 0.3rem;
-        font-size: 1.05rem;
+        gap: 0.55rem;
+        margin: 0 0 0.15rem;
+        font-size: 1rem;
         font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .aud-modal__titulo i {
+        display: grid;
+        place-items: center;
+        width: 1.85rem;
+        height: 1.85rem;
+        flex: 0 0 auto;
+        border-radius: 0.5rem;
+        background: var(--aud-primary-soft);
+        color: var(--aud-primary);
+        font-size: 0.8rem;
     }
 
     .aud-modal__ayuda {
         margin: 0;
+        padding-left: 2.4rem;      /* alineado bajo el título, no bajo el icono */
         font-size: 0.8rem;
+        font-weight: 600;
         color: var(--aud-text-muted);
+    }
+
+    .aud-modal__ayuda:empty { display: none; }
+
+    /* Lo único desplazable del modal: un solo eje de scroll, sin regiones
+       anidadas que se peleen con la rueda. */
+    .aud-modal__cuerpo {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 1rem 1.15rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .aud-modal__caja { animation: none; }
     }
 
     .aud-modal__barra {
@@ -861,15 +986,25 @@
 
     .aud-modal__vacio-busqueda[hidden] { display: none; }
 
+    /* El formulario es quien manda dentro del cuadro: la cabecera y el pie viven
+       adentro de él, así que tiene que ser la columna. */
+    .aud-modal__caja > form {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
     .aud-modal__pie {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
         gap: 0.75rem;
-        margin-top: 1rem;
-        padding-top: 0.9rem;
+        flex: 0 0 auto;
+        padding: 0.8rem 1.15rem;
         border-top: 1px solid var(--aud-border);
+        background: var(--aud-surface-2);
     }
 
     /* ── Pasos del modal ──
@@ -879,7 +1014,12 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.75rem;
-        align-items: start;
+        align-items: stretch;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 1rem 1.15rem;
     }
 
     .aud-paso {
@@ -1475,14 +1615,21 @@
     /* Origen del modal: nunca se ve, sólo se clona. */
     .aud-eqdatos { display: none; }
 
-    /* Lista dentro del modal: scroll propio para que 60 equipos no crezcan la caja. */
-    .aud-eqlista {
+    /* Dos columnas: las fichas son angostas y en una sola columna dejan la mitad
+       del modal en blanco. El scroll lo pone .aud-modal__cuerpo, no ellas. */
+    #modalEquiposLista {
         display: grid;
-        gap: 0.5rem;
-        max-height: 60vh;
-        overflow-y: auto;
-        padding: 0.25rem;
+        grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+        gap: 0.6rem;
+        align-content: start;
     }
+
+    #modalEquiposLista .aud-eqficha {
+        padding: 0.6rem 0.75rem;
+        gap: 0.35rem;
+    }
+
+    #modalEquiposLista .aud-eqficha__modelo { font-size: 0.9rem; }
 
     @media (prefers-reduced-motion: reduce) {
         .aud-chip-eq { transition: none; }

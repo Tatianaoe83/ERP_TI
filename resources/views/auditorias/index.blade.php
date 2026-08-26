@@ -142,6 +142,7 @@
                                 <button type="button" class="aud-chip-eq"
                                         data-ver-equipos="{{ $g->clave }}"
                                         data-nombre="{{ $g->NombreEmpleado }}"
+                                        data-conteo="{{ $g->equipos->count() }}"
                                         aria-haspopup="dialog">
                                     <i class="fas fa-laptop" aria-hidden="true"></i>
                                     <span class="aud-num">{{ $g->equipos->count() }}</span>
@@ -407,7 +408,7 @@
 
 {{-- Equipos de un empleado. Uno solo para toda la tabla: se llena al abrirlo con
      el contenido que ya pintó Blade en su fila. --}}
-<div class="aud-modal" id="modalEquipos" hidden>
+<div class="aud aud-modal" id="modalEquipos" hidden>
     <div class="aud-modal__fondo" data-cerrar-equipos></div>
 
     <div class="aud-modal__caja aud-modal__caja--sm" role="dialog" aria-modal="true"
@@ -424,7 +425,7 @@
             </button>
         </div>
 
-        <div class="aud-eqlista" id="modalEquiposLista"></div>
+        <div class="aud-modal__cuerpo" id="modalEquiposLista"></div>
     </div>
 </div>
 
@@ -512,7 +513,12 @@
 
                 origenEq = badge;
                 if (listaEq) listaEq.innerHTML = datos.innerHTML;
-                if (subEq) subEq.textContent = badge.dataset.nombre || '';
+
+                if (subEq) {
+                    var n = parseInt(badge.dataset.conteo, 10) || 0;
+                    subEq.textContent = (badge.dataset.nombre || '') +
+                        ' · ' + n + (n === 1 ? ' equipo' : ' equipos');
+                }
 
                 modalEq.hidden = false;
                 document.body.style.overflow = 'hidden';

@@ -9,8 +9,11 @@ use Illuminate\Database\Eloquent\Model;
  * Detalle congelado de una corrida: una fila por EQUIPO que el empleado resguardaba
  * al generarla.
  *
- * Sólo guarda cuál equipo era y qué se encontró. Marca, modelo, serie y folio se leen
- * del inventario en vivo por relación, así que nunca se desfasan de la ficha actual.
+ * Marca, modelo, serie y folio se leen del inventario en vivo por relación mientras
+ * el equipo siga ahí (para no desfasarse si se corrige un dato); CategoriaEquipo,
+ * Marca, Modelo, NumSerie y Folio también se congelan en esta misma fila para que,
+ * si el equipo se borra alguna vez del inventario, la corrida no se quede sin forma
+ * de decir cuál era.
  */
 class AuditoriaEquipo extends Model
 {
@@ -21,14 +24,14 @@ class AuditoriaEquipo extends Model
     protected $fillable = [
         'auditoria_id',
         'InventarioID',
-        'presente',
+        'CategoriaEquipo',
+        'Marca',
+        'Modelo',
+        'NumSerie',
+        'Folio',
         'observaciones',
     ];
 
-    /**
-     * "presente" es tri-estado: true está, false no apareció, null sin revisar.
-     * Por eso no lleva cast a boolean, que convertiría el null en false.
-     */
     protected $casts = [
         'InventarioID' => 'integer',
     ];

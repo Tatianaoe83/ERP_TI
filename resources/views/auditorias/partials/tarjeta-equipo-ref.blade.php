@@ -1,9 +1,12 @@
 @php
+    // Tarjeta de sólo lectura: es el snapshot de OTRA corrida, nunca se captura
+    // desde aquí. Sólo se pinta si ya no aparece en la corrida de la derecha.
     $eq = $fila->equipo;
     $vivo = (bool) $eq;
 
-    // Mientras el equipo siga en el inventario se lee en vivo; si ya no existe,
-    // se cae a la ficha que se congeló al generar esta corrida.
+    // Mientras el equipo siga en el inventario se lee en vivo (por si se corrigió
+    // un dato); si ya no existe, se cae a la ficha que se congeló al generar esa
+    // corrida. Sólo cuando ni eso hay, es un registro viejo sin identidad.
     $categoria = $eq->CategoriaEquipo ?? $fila->CategoriaEquipo ?? null;
     $marcaEquipo = $eq->Marca ?? $fila->Marca ?? null;
     $modelo = $eq->Modelo ?? $fila->Modelo ?? null;
@@ -12,30 +15,24 @@
 
     $hayFicha = $categoria || $marcaEquipo || $modelo || $serie || $folio;
     $nombre = trim((string) $marcaEquipo) ?: ($categoria ?: ($hayFicha ? 'Equipo' : 'Equipo sin identificar'));
-    $etiqueta = $nombre . ($serie ? ' serie ' . $serie : '');
 
-    $marca = $fila->marca ?? 'nueva';
-
-    $marcas = [
-        'nueva' => ['icono' => 'fa-circle-plus', 'texto' => 'Se agregó',  'clase' => 'nueva'],
-        'igual' => ['icono' => 'fa-equals',      'texto' => 'Ya lo tenía', 'clase' => 'igual'],
-    ];
-    $m = $marcas[$marca] ?? $marcas['nueva'];
-
-    // Sólo se compara si la izquierda tiene una corrida elegida: sin eso, todo
-    // sería "nuevo" sin serlo, así que la tarjeta se pinta neutral y sin badge.
-    $comparando = $comparando ?? false;
+    $marca = $fila->marca ?? 'igual';
+    $esBaja = $marca === 'baja';
 
     $demora = min(($loop->index ?? 0) * 35, 350);
 @endphp
 
-<div class="aud-card {{ $comparando ? 'aud-card--' . $m['clase'] : '' }}"
-     style="animation-delay: {{ $demora }}ms"
-     data-fila="{{ $fila->id }}" data-marca="{{ $marca }}">
+<div class="aud-card aud-card--ref {{ $esBaja ? 'aud-card--baja aud-card--fantasma' : 'aud-card--igual' }}"
+     style="animation-delay: {{ $demora }}ms">
 
-    @if($comparando)
-        <span class="aud-card__badge aud-marca aud-marca--{{ $m['clase'] }}">
-            <i class="fas {{ $m['icono'] }}" aria-hidden="true"></i> {{ $m['texto'] }}
+    @if($esBaja)
+        <span class="aud-card__badge aud-marca aud-marca--baja"
+              title="Ya no aparece en el resguardo de este empleado; puede seguir en el inventario general, sólo asignado a alguien más o sin asignar.">
+            <i class="fas fa-right-left" aria-hidden="true"></i> Ya no lo tiene
+        </span>
+    @else
+        <span class="aud-card__badge aud-marca aud-marca--igual">
+            <i class="fas fa-check" aria-hidden="true"></i> Se mantiene
         </span>
     @endif
 
@@ -67,8 +64,7 @@
         </span>
     </div>
 
-    <label class="aud-sr" for="obs-eq-{{ $fila->id }}">Observaciones de {{ $etiqueta }}</label>
-    <textarea id="obs-eq-{{ $fila->id }}" class="aud-obs" rows="1" maxlength="2000"
-              placeholder="Anotar hallazgo…"
-              data-fila="{{ $fila->id }}" data-campo="observaciones" data-recurso="equipos">{{ $fila->observaciones }}</textarea>
+    @if($fila->observaciones)
+        <p class="aud-card__nota-vieja">{{ $fila->observaciones }}</p>
+    @endif
 </div>

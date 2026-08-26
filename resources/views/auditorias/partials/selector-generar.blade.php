@@ -1,6 +1,6 @@
 {{-- Alcance de la corrida: qué equipos entran y qué licencias se revisan.
      Sólo se ofrecen laptops y PC de escritorio de personal físico. --}}
-<div class="aud-modal" id="modalGenerar" hidden>
+<div class="aud aud-modal" id="modalGenerar" hidden>
     <div class="aud-modal__fondo" data-cerrar-modal></div>
 
     <div class="aud-modal__caja" role="dialog" aria-modal="true" aria-labelledby="modalGenerarTitulo">

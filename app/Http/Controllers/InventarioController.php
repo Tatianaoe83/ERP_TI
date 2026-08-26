@@ -1617,7 +1617,7 @@ class InventarioController extends AppBaseController
         return redirect(route('inventarios.index'));
     }
 
-    private function forzarPresupuestado(array $data, int $empleadoId): array
+    private function forzarPresupuestado(array $data, int $empleadoId, string $columna = PresupuestoAsignacion::COLUMNA_DEFAULT): array
     {
         $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
 

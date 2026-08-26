@@ -197,10 +197,18 @@ class AuditoriasController extends Controller
             // Arrastre: lo ya auditado conserva su último resultado conocido; lo que no
             // estaba en la corrida anterior nace sin revisar. Las observaciones NUNCA se
             // arrastran: son un hecho fechado de su corrida.
+            //
+            // La ficha (categoría, marca, modelo, serie, folio) se congela aquí además
+            // de leerse en vivo del inventario: si el equipo alguna vez se borra del
+            // inventario, esta copia es lo único que queda para saber cuál era.
             $filasEquipos = $equipos->map(fn($equipo) => $base + [
-                'InventarioID'  => $equipo->InventarioID,
-                'presente'      => $previasEq->get($equipo->InventarioID)->presente ?? null,
-                'observaciones' => null,
+                'InventarioID'    => $equipo->InventarioID,
+                'CategoriaEquipo' => $equipo->CategoriaEquipo,
+                'Marca'           => $equipo->Marca,
+                'Modelo'          => $equipo->Modelo,
+                'NumSerie'        => $equipo->NumSerie,
+                'Folio'           => $equipo->Folio,
+                'observaciones'   => null,
             ]);
 
             foreach ($filasEquipos->chunk(300) as $lote) {
@@ -246,71 +254,99 @@ class AuditoriasController extends Controller
     /**
      * Detalle de una corrida, armado sobre el snapshot congelado.
      */
-    public function show($id)
+    /**
+     * Detalle de una corrida: una sola vista, en dos columnas.
+     *
+     * Derecha = ESTA auditoría, siempre fija, siempre editable: es la que dice la
+     * URL. Izquierda = una corrida anterior del mismo empleado, elegible por
+     * `?comparar=ID` (por defecto la inmediatamente anterior); es sólo lectura,
+     * nunca se navega a su propia página desde aquí.
+     */
+    public function show($id, Request $request)
     {
         $auditoria = Auditoria::with(['empleado.puestos.departamentos.gerencia', 'empleado.obras'])
             ->findOrFail($id);
 
-        // Corrida anterior del mismo empleado: la referencia del historial. El diff
-        // se calcula al abrir, no se guarda, así corregir un dato viejo lo corrige.
-        $anterior = Auditoria::where('EmpleadoID', $auditoria->EmpleadoID)
+        // Todas las corridas previas del mismo empleado: universo del selector de
+        // la izquierda, de la más reciente a la más vieja.
+        $anteriores = Auditoria::where('EmpleadoID', $auditoria->EmpleadoID)
             ->where('created_at', '<', $auditoria->created_at)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->first();
+            ->get();
 
-        // ── Equipos ──────────────────────────────────────────────────────────
-        // La ficha (marca, modelo, serie, folio) se lee del inventario en vivo: la
-        // corrida sólo congeló cuál equipo era.
-        $equipos = $auditoria->equipos()->with('equipo')->get()
-            ->sortBy(fn($f) => ($f->equipo->CategoriaEquipo ?? '') . ' ' . ($f->equipo->Marca ?? ''), SORT_NATURAL | SORT_FLAG_CASE)
-            ->values();
+        // Lo pedido por query manda si es válido (pertenece a este empleado y es
+        // anterior a la corrida abierta); si no vino o no es válido, la más
+        // reciente de las anteriores es el default.
+        $comparaId = (int) $request->query('comparar', 0);
+        $compara = $comparaId ? $anteriores->firstWhere('id', $comparaId) : null;
+        $compara = $compara ?: $anteriores->first();
 
-        $previosEq = $anterior
-            ? AuditoriaEquipo::where('auditoria_id', $anterior->id)->get()->keyBy('InventarioID')
+        // Snapshot de la corrida elegida, en una sola consulta por recurso: evita
+        // una consulta por fila al calcular el "antes" de la derecha.
+        $equiposCompara = $compara ? $this->equiposDeCorrida($compara)->keyBy('InventarioID') : collect();
+        $licenciasCompara = $compara
+            ? $compara->licencias()->orderBy('NombreLicencia')->get()->keyBy('NombreLicencia')
             : collect();
 
-        $equipos = $equipos->map(function ($fila) use ($previosEq, $anterior) {
-            $previa = $previosEq->get($fila->InventarioID);
+        // ── Columna derecha: ESTA auditoría, editable ───────────────────────
+        $equiposDer = $this->equiposDeCorrida($auditoria)
+            ->map(function ($fila) use ($equiposCompara, $compara) {
+                $previa = $equiposCompara->get($fila->InventarioID);
 
-            $fila->previa = $previa;
-            $fila->marca = $this->marcaDeCambioEquipo($fila, $previa, (bool) $anterior);
+                $fila->previa = $previa;
+                $fila->marca = $this->marcaDeCambioEquipo($fila, $previa, (bool) $compara);
+
+                return $fila;
+            });
+
+        $licenciasDer = $auditoria->licencias()->orderBy('NombreLicencia')->get()
+            ->map(function ($fila) use ($licenciasCompara, $compara) {
+                $previa = $licenciasCompara->get($fila->NombreLicencia);
+
+                $fila->previa = $previa;
+                $fila->marca = $this->marcaDeCambio($fila, $previa, (bool) $compara);
+
+                return $fila;
+            });
+
+        // ── Columna izquierda: la corrida elegida, sólo lectura ─────────────
+        // Se marca "baja" lo que ella tenía y ya no aparece en la de la derecha:
+        // así el rojo vive junto al dato que desapareció, no como un hueco vacío
+        // del otro lado.
+        $idsEquiposDer = $equiposDer->pluck('InventarioID')->all();
+        $nombresLicDerActivos = $licenciasDer->where('tiene_licencia', true)->pluck('NombreLicencia')->all();
+
+        $equiposIzq = $equiposCompara->values()->map(function ($fila) use ($idsEquiposDer) {
+            $fila->marca = in_array($fila->InventarioID, $idsEquiposDer, true) ? 'igual' : 'baja';
 
             return $fila;
         });
 
-        // ── Licencias ────────────────────────────────────────────────────────
-        $licencias = $auditoria->licencias()->orderBy('NombreLicencia')->get();
-
-        $previasLic = $anterior
-            ? AuditoriaLicencia::where('auditoria_id', $anterior->id)->get()->keyBy('NombreLicencia')
-            : collect();
-
-        $licencias = $licencias->map(function ($fila) use ($previasLic, $anterior) {
-            $previa = $previasLic->get($fila->NombreLicencia);
-
-            $fila->previa = $previa;
-            $fila->marca = $this->marcaDeCambio($fila, $previa, (bool) $anterior);
+        $licenciasIzq = $licenciasCompara->values()->map(function ($fila) use ($nombresLicDerActivos) {
+            $sigueActiva = $fila->tiene_licencia && in_array($fila->NombreLicencia, $nombresLicDerActivos, true);
+            $fila->marca = $sigueActiva ? 'igual' : 'baja';
 
             return $fila;
         });
-
-        // El resumen suma las dos naturalezas: el auditor quiere saber qué cambió en
-        // la visita, no en cuál de las dos tablas cambió.
-        $todo = $equipos->concat($licencias);
 
         return view('auditorias.show', [
-            'auditoria' => $auditoria,
-            'equipos'   => $equipos,
-            'licencias' => $licencias,
-            'anterior'  => $anterior,
-            'resumen'   => [
-                'nueva'  => $todo->where('marca', 'nueva')->count(),
-                'baja'   => $todo->where('marca', 'baja')->count(),
-                'cambio' => $todo->where('marca', 'cambio')->count(),
-                'igual'  => $todo->where('marca', 'igual')->count(),
-            ],
+            'auditoria'    => $auditoria,
+            'anteriores'   => $anteriores,
+            'compara'      => $compara,
+            'equiposDer'   => $equiposDer,
+            'licenciasDer' => $licenciasDer,
+            'equiposIzq'   => $equiposIzq,
+            'licenciasIzq' => $licenciasIzq,
         ]);
+    }
+
+    /** Equipos de una corrida, con la ficha del inventario en vivo ya cargada. */
+    private function equiposDeCorrida(Auditoria $auditoria)
+    {
+        return $auditoria->equipos()->with('equipo')->get()
+            ->sortBy(fn($f) => ($f->equipo?->CategoriaEquipo ?? '') . ' ' . ($f->equipo?->Marca ?? ''), SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
     }
 
     /**
@@ -354,36 +390,26 @@ class AuditoriasController extends Controller
     }
 
     /**
-     * Captura sobre un equipo de la corrida: si apareció y la nota del auditor.
+     * Captura sobre un equipo de la corrida: sólo la nota del auditor.
      *
-     * "presente" es tri-estado igual que "original": acepta null explícito para volver
-     * a "sin revisar" sin tener que borrar la fila.
+     * Del equipo no se verifica presencia: entra para dejar constancia de qué
+     * resguardaba el empleado ese día, no para pasar lista máquina por máquina.
      */
     public function actualizarEquipo($fila, Request $request)
     {
         $registro = AuditoriaEquipo::findOrFail($fila);
 
         $datos = $request->validate([
-            'campo' => ['required', 'in:presente,observaciones'],
+            'campo' => ['required', 'in:observaciones'],
             'valor' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        if ($datos['campo'] === 'observaciones') {
-            $registro->observaciones = trim((string) ($datos['valor'] ?? '')) ?: null;
-            $registro->save();
-
-            return response()->json([
-                'success'       => true,
-                'observaciones' => $registro->observaciones,
-            ]);
-        }
-
-        $registro->presente = $datos['valor'] === null ? null : (bool) (int) $datos['valor'];
+        $registro->observaciones = trim((string) ($datos['valor'] ?? '')) ?: null;
         $registro->save();
 
         return response()->json([
-            'success'  => true,
-            'presente' => $registro->presente === null ? null : (bool) $registro->presente,
+            'success'       => true,
+            'observaciones' => $registro->observaciones,
         ]);
     }
 
@@ -439,23 +465,16 @@ class AuditoriasController extends Controller
     }
 
     /**
-     * Lo mismo para un equipo, con su propia captura:
-     *   nueva  → el empleado no lo resguardaba en la corrida anterior
-     *   baja   → antes apareció y ahora no
-     *   cambio → el resultado no coincide con el anterior
-     *   igual  → mismo resultado que la vez pasada
+     * Del equipo no se captura nada, así que el cambio es de pertenencia:
+     *   nueva → el empleado no lo resguardaba en la auditoría anterior
+     *   igual → ya lo tenía
+     *
+     * No hay "baja" porque la corrida sólo congela lo que resguarda hoy: una máquina
+     * que dejó de tener simplemente no genera fila.
      */
     private function marcaDeCambioEquipo($fila, $previa, bool $hayAnterior): string
     {
-        if (! $hayAnterior || ! $previa) {
-            return 'nueva';
-        }
-
-        if ($previa->presente === true && $fila->presente === false) {
-            return 'baja';
-        }
-
-        return $previa->presente === $fila->presente ? 'igual' : 'cambio';
+        return (! $hayAnterior || ! $previa) ? 'nueva' : 'igual';
     }
 
     /**

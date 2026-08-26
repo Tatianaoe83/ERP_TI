@@ -1,45 +1,6 @@
 <script>
     (function () {
         jQuery(function ($) {
-            var base = {
-                paging: true, pageLength: 10, lengthMenu: [10, 25, 50, 100],
-                searching: true, ordering: true, info: true,
-                destroy: true,
-                dom: "<'aud-dt__barra'lf>t<'aud-dt__pie'ip>",
-                language: {
-                    lengthMenu: "_MENU_ por página",
-                    search: "",
-                    searchPlaceholder: "Buscar licencia…",
-                    info: "_START_–_END_ de _TOTAL_",
-                    infoEmpty: "Sin registros",
-                    infoFiltered: "(filtrado de _MAX_)",
-                    zeroRecords: "Ninguna licencia coincide con la búsqueda",
-                    paginate: { first: '«', previous: '‹', next: '›', last: '»' }
-                }
-            };
-
-            function montar(selector, opciones) {
-                if (!$(selector + ' tbody tr').length) return;
-                if ($.fn.DataTable.isDataTable(selector)) {
-                    $(selector).DataTable().destroy();
-                }
-                $(selector).DataTable($.extend({}, base, opciones));
-            }
-
-            // 5 columnas: Licencia(0), TieneLic(1), Original(2), Obs(3), Anterior(4)
-            montar('#tablaGeneral', {
-                columnDefs: [{ orderable: false, targets: [1, 2, 3, 4] }]
-            });
-
-            // 6 columnas: Equipo(0), Serie(1), Folio(2), ¿Está?(3), Obs(4), Anterior(5)
-            montar('#tablaEquipos', {
-                language: $.extend({}, base.language, {
-                    searchPlaceholder: 'Buscar equipo…',
-                    zeroRecords: 'Ningún equipo coincide con la búsqueda'
-                }),
-                columnDefs: [{ orderable: false, targets: [3, 4, 5] }]
-            });
-
             // La corrida tiene dos detalles con endpoints distintos; cada control dice
             // a cuál pertenece para no cablear la URL en el script.
             function urlDe($el) {
@@ -48,8 +9,7 @@
             }
 
             // ── Color del select tri-estado ─────────────────────────────────────
-            // Vale igual para "original" y para "presente": sin revisar es neutro,
-            // sí es correcto, no es alerta.
+            // Sin revisar es neutro, sí es correcto, no es alerta.
             function pintar($select) {
                 var v = $select.val();
                 var clase = v === '' ? 'pendiente' : (v === '1' ? 'si' : 'alerta');
@@ -129,27 +89,6 @@
                         });
                     }
                 });
-            });
-
-            // ── Filtros por tipo de cambio ──────────────────────────────────────
-            $(document).off('click.audMarca').on('click.audMarca', '[data-filtro-marca]', function () {
-                var marca = $(this).data('filtro-marca');
-
-                $('[data-filtro-marca]').removeClass('is-activo');
-                $(this).addClass('is-activo');
-
-                var $filas = $('#tablaGeneral tbody tr');
-                if (marca === 'todas') {
-                    $filas.show();
-                } else {
-                    $filas.each(function () {
-                        var $tr = $(this);
-                        $tr.toggle($tr.data('marca') === marca);
-                    });
-                }
-
-                var dt = $('#tablaGeneral').DataTable();
-                if (dt) { dt.draw(false); }
             });
 
             // ── Estado inicial ──────────────────────────────────────────────────
