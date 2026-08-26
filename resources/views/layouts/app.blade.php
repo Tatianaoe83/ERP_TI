@@ -154,7 +154,13 @@
             color: #9ca3af;
         }
         .index-search .form-control,
-        .index-page__filters .index-search .form-control {
+        .index-page__filters .index-search .form-control,
+        .index-page .dataTables_filter input,
+        .index-page__card .dataTables_filter input,
+        html.dark .index-search .form-control,
+        html.dark .index-page .dataTables_filter input,
+        html.dark .index-page__card .dataTables_filter input,
+        html.dark .index-page .dataTables_wrapper .dataTables_filter input {
             padding-left: 2.35rem !important;
         }
 

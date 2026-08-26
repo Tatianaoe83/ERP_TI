@@ -102,6 +102,11 @@
     padding: 6px 12px;
 }
 
+.dark .index-page .dataTables_wrapper .dataTables_filter input,
+.dark .index-page__card .dataTables_filter input {
+    padding: 6px 12px 6px 2.35rem;
+}
+
 .dark .dataTables_wrapper .dataTables_filter input:focus {
     background-color: #374151;
     border-color: #3b82f6;
