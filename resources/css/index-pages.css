@@ -766,11 +766,17 @@ button.index-action--disabled:disabled {
 
 /* Dark mode */
 .dark .index-page {
-    --index-muted: #9ca3af;
+    --index-muted: #e5e7eb;
     --index-border: #374151;
     --index-bg: #111827;
     --index-card: #1f2937;
     --index-icon-bg: #1e3a5f;
+}
+
+.dark .index-page__filters label,
+.dark .index-page .form-group > label,
+.dark .index-page .form-group .control-label {
+    color: #e5e7eb !important;
 }
 
 .dark .index-page__title {

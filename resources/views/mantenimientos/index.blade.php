@@ -325,9 +325,18 @@
             options += '<option value="' + anio + '">' + anio + '</option>';
         });
 
+        function descargarExcelMantenimientos(anio) {
+            var url = '{{ route('mantenimientos.exportar-excel') }}?anio=' + encodeURIComponent(anio);
+            if (window.AppDownload) {
+                window.AppDownload.fromUrl(url, 'Excel');
+            } else {
+                window.location.href = url;
+            }
+        }
+
         if (typeof Swal === 'undefined') {
             var anio = prompt('Ingresa el año (o deja vacío para todos):') || 'todos';
-            window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + encodeURIComponent(anio);
+            descargarExcelMantenimientos(anio);
             return;
         }
 
@@ -349,7 +358,7 @@
             },
         }).then(function (result) {
             if (result.isConfirmed) {
-                window.location.href = '{{ route('mantenimientos.exportar-excel') }}?anio=' + encodeURIComponent(result.value);
+                descargarExcelMantenimientos(result.value);
             }
         });
     };

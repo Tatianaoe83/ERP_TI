@@ -24,10 +24,11 @@
         }
 
         #tabla-empleados td.dt-control {
-            width: 2.5rem;
+            width: 2.75rem;
             text-align: center;
             vertical-align: middle;
             cursor: pointer;
+            padding: 0.4rem !important;
         }
         #tabla-empleados td.dt-control::before,
         #tabla-empleados td.dt-control::after {
@@ -39,8 +40,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 1.85rem;
-            height: 1.85rem;
+            width: 2.35rem;
+            height: 2.35rem;
             padding: 0;
             border: 1px solid #d1d5db;
             border-radius: 0.45rem;
@@ -48,9 +49,14 @@
             color: #64748b;
             cursor: pointer;
             line-height: 1;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            z-index: 2;
         }
         .inv-row-toggle i {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
+            pointer-events: none;
             transition: transform 0.18s ease;
         }
         #tabla-empleados tbody tr.shown .inv-row-toggle {
@@ -71,10 +77,24 @@
             border-color: #3b82f6;
             color: #bfdbfe;
         }
+        .inv-empleados-wrap {
+            overflow: visible;
+        }
+        @media (max-width: 767px) {
+            .inv-empleados-wrap {
+                overflow-x: auto;
+                overflow-y: visible;
+                -webkit-overflow-scrolling: touch;
+            }
+            .inv-row-toggle {
+                width: 2.75rem;
+                height: 2.75rem;
+            }
+        }
     </style>
     @endpush
 
-    <div class="index-page__table-wrap table-responsive">
+    <div class="index-page__table-wrap inv-empleados-wrap">
         <table id="tabla-empleados" class="table index-table w-full">
             <thead>
                 <tr>
@@ -115,7 +135,10 @@
             var table = $('#tabla-empleados').DataTable({
                 serverSide: true,
                 processing: true,
-                responsive: true,
+                responsive: {
+                    details: false
+                },
+                autoWidth: false,
                 searching: false,
                 pageLength: 10,
                 dom: "t<'index-page__dt-footer'ip>",
@@ -265,32 +288,48 @@
             // =========================
             // EXPANDIR DETALLES
             // =========================
-            $('#tabla-empleados tbody').on('click', 'td.dt-control', function() {
+            // =========================
+            // EXPANDIR DETALLES
+            // En móvil DataTables Responsive interceptaba el mismo clic
+            // (td.dt-control) y abría/cerraba al instante. El chevron
+            // solo carga el inventario del empleado.
+            // =========================
+            $('#tabla-empleados tbody').on('click', '.inv-row-toggle', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
                 var tr = $(this).closest('tr');
+                if (tr.hasClass('child')) {
+                    tr = tr.prev();
+                }
                 var row = table.row(tr);
+                var data = row.data();
+                if (!data || !data.EmpleadoID) return;
+
                 var toggle = tr.find('.inv-row-toggle');
 
                 if (row.child.isShown()) {
-
                     row.child.hide();
                     tr.removeClass('shown');
                     toggle.attr('aria-expanded', 'false');
-
-                } else {
-
-                    row.child('<div class="text-center">Cargando...</div>').show();
-                    tr.addClass('shown');
-                    toggle.attr('aria-expanded', 'true');
-
-                    $.get(`/inventarios/${row.data().EmpleadoID}/inventario`, function(data) {
-
-                        row.child(data).show();
-
-                    });
-
+                    return;
                 }
 
+                row.child('<div class="text-center py-3">Cargando...</div>').show();
+                tr.addClass('shown');
+                toggle.attr('aria-expanded', 'true');
+
+                $.get('/inventarios/' + data.EmpleadoID + '/inventario')
+                    .done(function(html) {
+                        if (!row.child.isShown()) return;
+                        row.child(html).show();
+                    })
+                    .fail(function() {
+                        row.child.hide();
+                        tr.removeClass('shown');
+                        toggle.attr('aria-expanded', 'false');
+                    });
             });
 
         });

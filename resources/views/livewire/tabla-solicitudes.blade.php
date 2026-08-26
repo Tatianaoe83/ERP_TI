@@ -87,7 +87,18 @@
                                 <span class="text-sm text-slate-700 dark:text-slate-300">{{ Str::limit($solicitud->Motivo ?? 'N/A', 30) }}</span>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold {{ $solicitud->colorEstatus }}"
+                                @php
+                                    $solStatusMod = match($solicitud->estatusDisplay) {
+                                        'En revisión' => 'sol-status--revision',
+                                        'Cancelada' => 'sol-status--cancelada',
+                                        'Rechazada' => 'sol-status--rechazada',
+                                        'Aprobada' => 'sol-status--aprobada',
+                                        'Cotizaciones Enviadas' => 'sol-status--enviadas',
+                                        'Pendiente' => 'sol-status--pendiente',
+                                        default => 'sol-status--default',
+                                    };
+                                @endphp
+                                <span class="sol-status {{ $solStatusMod }} {{ $solicitud->colorEstatus }}"
                                     @if($solicitud->estatusDisplay === 'Re-cotizar' && !empty($solicitud->recotizarPropuestasText))
                                     title="Recotizar propuesta(s): {{ trim($solicitud->recotizarPropuestasText, ' ()') }}"
                                     @endif>
@@ -95,7 +106,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="flex items-center gap-2">
+                                <div class="sol-approvals">
                                     @if($solicitud->pasoSupervisor)
                                     @if($solicitud->pasoSupervisor->status === 'approved')
                                     <i class="fas fa-check-circle text-green-500" title="Supervisor: Aprobado"></i>

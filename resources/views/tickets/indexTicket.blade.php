@@ -186,33 +186,33 @@
         x-transition:leave-end="opacity-0 transform translate-y-[-10px]"
         x-cloak
         class="fixed top-4 right-4 left-4 md:left-auto md:max-w-md z-50">
-        <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-700 rounded-lg p-4 shadow-lg">
+        <div class="alert-exceso rounded-lg p-4 shadow-lg">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
-                    <i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400 text-xl"></i>
+                    <i class="fas fa-exclamation-triangle text-red-500 dark:text-red-200 text-xl"></i>
                 </div>
                 <div class="ml-3 flex-1">
-                    <h3 class="text-sm font-medium text-red-800 dark:text-red-300 mb-1">
+                    <h3 class="text-sm font-medium text-red-800 dark:text-red-100 mb-1">
                         <span x-text="ticketsExcedidos.length"></span>
                         <span x-text="ticketsExcedidos.length === 1 ? 'ticket excediendo tiempo' : 'tickets excediendo tiempo'"></span>
                     </h3>
-                    <div class="mt-2 text-sm text-red-700 space-y-1">
+                    <div class="mt-2 text-sm text-red-700 dark:text-red-100 space-y-1">
                         <template x-for="(ticket, index) in ticketsExcedidos.slice(0, 3)" :key="ticket.id">
                             <div
                                 @click="abrirTicketDesdePopup(ticket.id)"
-                                class="cursor-pointer hover:text-red-900 hover:underline">
+                                class="cursor-pointer hover:underline">
                                 <span class="font-semibold" x-text="'Ticket #' + ticket.id"></span>
                                 <span x-text="' - ' + ticket.descripcion"></span>
 
                             </div>
                         </template>
                         <template x-if="ticketsExcedidos.length > 3">
-                            <p class="text-xs text-red-600 dark:text-red-400 italic">
+                            <p class="text-xs text-red-600 dark:text-red-200 italic">
                                 y <span x-text="ticketsExcedidos.length - 3"></span> más...
                             </p>
                         </template>
                     </div>
-                    <div class="mt-2 text-xs text-red-600 dark:text-red-400">
+                    <div class="mt-2 text-xs text-red-600 dark:text-red-200">
                         <i class="fas fa-sync-alt mr-1" :class="{'animate-spin': cargandoExcedidos}"></i>
                         <span x-text="cargandoExcedidos ? 'Verificando...' : 'Actualización automática cada 5 min'"></span>
                         <span x-show="!cargandoExcedidos && mostrarPopupExcedidos" class="ml-2">
@@ -223,13 +223,13 @@
                 <div class="ml-4 flex-shrink-0 flex flex-col gap-2">
                     <button
                         @click="verificarTicketsExcedidos()"
-                        class="inline-flex text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 focus:outline-none transition"
+                        class="inline-flex text-red-400 dark:text-red-200 hover:text-red-200 focus:outline-none transition"
                         title="Actualizar ahora">
                         <i class="fas fa-sync-alt" :class="{'animate-spin': cargandoExcedidos}"></i>
                     </button>
                     <button
                         @click="cerrarPopupExcedidos()"
-                        class="inline-flex text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 focus:outline-none transition">
+                        class="inline-flex text-red-400 dark:text-red-200 hover:text-red-100 focus:outline-none transition">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -242,7 +242,7 @@
         @can('tickets.ajustar-metricas')
         <button
             @click="mostrarModalMetricas = true; cargarMetricas()"
-            class="px-3 sm:px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap">
+            class="index-page__btn-primary">
             <i class="fas fa-cog text-sm"></i>
             <span class="hidden sm:inline">Ajustar Métricas</span>
             <span class="sm:hidden">Métricas</span>
@@ -250,7 +250,7 @@
         @endcan
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-[#fffff] border border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
+            <div class="flex items-center gap-1 bg-gray-100 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
                 <button type="button"
                     data-vista-btn="kanban"
                     class="vista-switch__btn is-vista-active px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
@@ -1144,13 +1144,13 @@
                     <table class="min-w-full border-collapse">
                         <thead class="bg-gray-100 dark:bg-gray-900/50">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
                                     Tipo de Ticket
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
                                     Tiempo Estimado
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
                                     Equivalente
                                 </th>
                             </tr>
@@ -1192,7 +1192,7 @@
                                                    focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent">
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm text-gray-600 dark:text-gray-400"
+                                            <span class="text-sm text-gray-600 dark:text-gray-200"
                                                 x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
                                         </td>
                                     </tr>
@@ -1215,7 +1215,7 @@
             </div>
 
             <div class="px-6 py-4 flex justify-between items-center border-t bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
-                <div class="text-sm text-gray-600 dark:text-gray-400">
+                <div class="text-sm text-gray-600 dark:text-gray-200">
                     <span x-text="`${metricasTipos.filter(t => t.cambiado).length} cambios pendientes`"></span>
                 </div>
                 <div class="flex gap-3">

@@ -220,9 +220,13 @@
     color: #9ca3af;
 }
 
-/* Labels en modo oscuro */
-.dark label {
-    color: #f9fafb;
+/* Labels en modo oscuro (Stisla .form-group > label usa #34395e) */
+.dark label,
+.dark .form-group > label,
+.dark .form-group .control-label,
+.dark .index-page__filters label,
+.dark .modal-content label {
+    color: #e5e7eb !important;
     font-weight: 500;
     margin-bottom: 8px;
 }

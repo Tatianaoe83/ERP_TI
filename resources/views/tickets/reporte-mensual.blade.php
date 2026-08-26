@@ -31,7 +31,8 @@
             
             <!-- Botón de exportar a Excel -->
             <a href="{{ route('tickets.exportar-reporte-mensual-excel', ['mes' => $mes, 'anio' => $anio]) }}" 
-               class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+               class="js-excel-download px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+               data-download-label="Excel">
                 <i class="fas fa-file-excel mr-2"></i>Exportar a Excel
             </a>
         </div>

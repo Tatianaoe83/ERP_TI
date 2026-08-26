@@ -152,8 +152,9 @@ text-align: right;
                     class="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition-all flex items-center justify-center">
                     <i class="fas fa-undo text-xs"></i>
                 </button>
-                <a id="cmpBtnExportarExcel" href="{{ route('facturas.comparativa.exportar') }}" target="_blank" rel="noopener"
-                    class="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5">
+                <a id="cmpBtnExportarExcel" href="{{ route('facturas.comparativa.exportar') }}"
+                    class="js-excel-download h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5"
+                    data-download-label="Excel">
                     <i class="fas fa-file-excel text-xs"></i> Excel
                 </a>
             </div>
@@ -1054,9 +1055,9 @@ text-align: right;
     const cmpBtnExportarExcel = document.getElementById('cmpBtnExportarExcel');
     if (cmpBtnExportarExcel) {
         updateComparativaExportHref();
-        cmpBtnExportarExcel.addEventListener('click', () => {
+        cmpBtnExportarExcel.addEventListener('click', function () {
             updateComparativaExportHref();
-        });
+        }, true);
     }
 
     const cmpBtnReset = document.getElementById('cmpBtnReset');

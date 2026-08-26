@@ -198,7 +198,7 @@
                             <th>Gerencia Equipo</th>
                             <th>Comentarios</th>
                             @if($permitePresupuestado)
-                            <th>Stock / Extra</th>
+                            <th>Estatus</th>
                             <th>Mes de pago</th>
                             @endif
                         </tr>
@@ -399,7 +399,7 @@
                             <th>Num. Serie</th>
                             <th>Comentarios</th>
                             @if($permitePresupuestado)
-                            <th>Status</th>
+                            <th>Estatus</th>
                             @endif
                             <th>Mes de pago</th>
 
@@ -613,7 +613,7 @@
                             <th>Monto Renovación Fianza</th>
                             <th>Fecha Renovación</th>
                             @if($permitePresupuestado)
-                            <th>Status</th>
+                            <th>Estatus</th>
                             @endif
                             <th>Mes de pago</th>
 

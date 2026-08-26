@@ -26,7 +26,6 @@
         </div>
         @can('buscar-informe')
         <div class="index-page__filters-actions">
-            <button id="searchBtn" type="button" class="index-page__btn-primary">Buscar</button>
             <button id="clearInformesBtn" type="button" class="index-page__btn-secondary">Limpiar filtros</button>
         </div>
         @endcan
@@ -135,11 +134,6 @@
     if (!window.__informesSearchReady) {
         window.__informesSearchReady = true;
 
-        $(document).on('click', '#searchBtn', function (event) {
-            event.preventDefault();
-            window.recargarInformes();
-        });
-
         $(document).on('click', '#clearInformesBtn', function (event) {
             event.preventDefault();
             window.__informesSkipReload = true;
@@ -155,11 +149,12 @@
             window.recargarInformes();
         });
 
-        $(document).on('keydown', '#new_values', function (event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
+        var recargarValores = null;
+        $(document).on('keyup', '#new_values', function () {
+            clearTimeout(recargarValores);
+            recargarValores = setTimeout(function () {
                 window.recargarInformes();
-            }
+            }, 300);
         });
     }
 

@@ -8,7 +8,7 @@
 >
     <x-slot name="headerActions">
         @can('exportar-reportes-especificos')
-        <a href="{{ route('reportes-especificos.export-equipos-asignados-excel', $filtros) }}" class="index-page__btn-primary">
+        <a href="{{ route('reportes-especificos.export-equipos-asignados-excel', $filtros) }}" class="index-page__btn-primary js-excel-download" data-download-label="Excel">
             <i class="fas fa-file-excel"></i> Descargar Excel
         </a>
         @endcan

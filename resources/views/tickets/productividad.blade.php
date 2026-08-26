@@ -223,7 +223,8 @@
             </div>
 
             <a :href="getExportUrl()"
-                class="px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white">
+                class="js-excel-download px-4 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white"
+                data-download-label="Excel">
                 <i class="fas fa-file-excel"></i> Exportar
             </a>
         </div>

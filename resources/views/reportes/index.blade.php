@@ -109,6 +109,13 @@
     }
 
     function showDownloadModal(label) {
+        if (window.AppDownload) {
+            window.AppDownload.show(label || 'archivo');
+            return {
+                modal: { hide: function () { window.AppDownload.hide(); } },
+                msgEl: { set textContent(v) { window.AppDownload.setMessage(v); } }
+            };
+        }
         var modalEl = document.getElementById('modalDescargandoReporte');
         var msgEl = document.getElementById('modalDescMensajeReporte');
         if (!modalEl || typeof bootstrap === 'undefined' || !bootstrap.Modal) return null;
