@@ -11,6 +11,19 @@
             padding-top: 4px;
         }
 
+        .dark .select2-container .select2-selection--single {
+            border-color: #374151 !important;
+            background-color: #111827 !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 28px !important;
+        }
+
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #e5e7eb !important;
+        }
+
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             line-height: 28px !important;
         }

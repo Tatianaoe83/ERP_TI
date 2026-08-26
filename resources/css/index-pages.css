@@ -374,6 +374,31 @@
     min-height: 2.4rem;
 }
 
+.index-search {
+    position: relative;
+}
+
+.index-search__icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.75rem;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.index-search .form-control,
+.index-page__filters .index-search .form-control {
+    padding-left: 2.35rem !important;
+}
+
+.dark .index-search__icon {
+    color: #9ca3af;
+}
+
 .index-page__card {
     background: var(--index-card);
     border: 1px solid var(--index-border);
@@ -838,7 +863,9 @@ button.index-action--disabled:disabled {
 .dark .index-page__card .dt-buttons .btn,
 .dark .index-page__card .dt-button,
 .dark .index-page__filters .form-control,
-.dark .index-page .index-page__dt-toolbar .form-control {
+.dark .index-page .index-page__dt-toolbar .form-control,
+.dark .index-page__filters .select2-container--default .select2-selection--single,
+.dark .index-page__filters .select2-container--default .select2-selection--multiple {
     background-color: #111827;
     border-color: #374151;
     color: #f9fafb;

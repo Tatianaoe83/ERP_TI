@@ -21,16 +21,18 @@
     }
     .index-search__icon {
         position: absolute;
-        left: 0.75rem;
+        left: 0.7rem;
         top: 50%;
         transform: translateY(-50%);
         color: #94a3b8;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        line-height: 1;
         pointer-events: none;
-        z-index: 1;
+        z-index: 2;
     }
-    .index-search .form-control {
-        padding-left: 2.15rem;
+    .index-search .form-control,
+    .index-page__filters .index-search .form-control {
+        padding-left: 2.35rem !important;
     }
     .dark .index-search__icon {
         color: #9ca3af;

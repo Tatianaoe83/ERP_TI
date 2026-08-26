@@ -84,6 +84,80 @@
             color: #9ca3af !important;
         }
 
+        /* Select2 (el dropdown se pega a body, fuera de la página) */
+        html.dark .select2-container--default .select2-selection--single,
+        html.dark .select2-container--default .select2-selection--multiple {
+            background-color: #111827 !important;
+            border-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+        html.dark .select2-container--default .select2-selection--single .select2-selection__rendered,
+        html.dark .select2-container--default .select2-selection--single .select2-selection__placeholder,
+        html.dark .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            color: #e5e7eb !important;
+        }
+        html.dark .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #9ca3af transparent transparent transparent !important;
+        }
+        html.dark .select2-dropdown,
+        html.dark .select2-container--default .select2-dropdown {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+        html.dark .select2-search--dropdown .select2-search__field,
+        html.dark .select2-search__field,
+        html.dark .select2-container--default .select2-search--dropdown .select2-search__field,
+        html.dark .select2-container--default .select2-search--inline .select2-search__field {
+            background-color: #111827 !important;
+            color: #f9fafb !important;
+            border: 1px solid #374151 !important;
+            outline: none !important;
+        }
+        html.dark .select2-search--dropdown .select2-search__field::placeholder,
+        html.dark .select2-search__field::placeholder {
+            color: #9ca3af !important;
+        }
+        html.dark .select2-results__option {
+            color: #e5e7eb !important;
+            background-color: transparent !important;
+        }
+        html.dark .select2-results__option[aria-selected="true"] {
+            background-color: #374151 !important;
+            color: #fff !important;
+        }
+        html.dark .select2-container--default .select2-results__option--highlighted[aria-selected],
+        html.dark .select2-container--default .select2-results__option--highlighted,
+        html.dark .select2-results__option--highlighted {
+            background-color: #2563eb !important;
+            color: #fff !important;
+        }
+        html.dark .select2-results__message {
+            color: #9ca3af !important;
+        }
+
+        .index-search {
+            position: relative;
+        }
+        .index-search__icon {
+            position: absolute;
+            left: 0.7rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 2;
+            color: #94a3b8;
+        }
+        html.dark .index-search__icon {
+            color: #9ca3af;
+        }
+        .index-search .form-control,
+        .index-page__filters .index-search .form-control {
+            padding-left: 2.35rem !important;
+        }
+
         #app-download-overlay {
             position: fixed;
             inset: 0;
@@ -145,6 +219,156 @@
             overflow-wrap: break-word;
             hyphens: auto;
             max-width: 100%;
+        }
+
+        /* Modal Ajustar métricas — mismo patrón que catálogos / inventario */
+        .metricas-modal__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.72);
+        }
+        .metricas-modal__dialog {
+            background: #fff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.85rem !important;
+            overflow: hidden;
+        }
+        html.dark .metricas-modal__dialog {
+            background: #1C1F26 !important;
+            border-color: #2A2F3A !important;
+        }
+        .metricas-modal__header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 1rem;
+            width: 100%;
+            padding: 0.85rem 1.1rem !important;
+            background: #101D49 !important;
+            border-bottom: 1px solid #0c1638 !important;
+        }
+        html.dark .metricas-modal__header {
+            background: #161920 !important;
+            border-bottom-color: #2A2F3A !important;
+        }
+        .metricas-modal__title {
+            margin: 0 !important;
+            flex: 1 1 auto;
+            min-width: 0;
+            color: #fff !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+        }
+        .metricas-modal__close {
+            flex: 0 0 auto;
+            margin-left: auto !important;
+            width: 1.75rem;
+            height: 1.75rem;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: #fff !important;
+            opacity: 0.85;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .metricas-modal__close:hover,
+        .metricas-modal__close:focus {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .metricas-modal__body {
+            background: #fff !important;
+        }
+        html.dark .metricas-modal__body {
+            background: #1C1F26 !important;
+        }
+        .metricas-modal__footer {
+            background: #f9fafb !important;
+            border-top: 1px solid #e5e7eb !important;
+        }
+        html.dark .metricas-modal__footer {
+            background: #161920 !important;
+            border-top-color: #2A2F3A !important;
+            color: #d1d5db !important;
+        }
+        .metricas-modal__body .form-control {
+            background: #fff !important;
+            border: 1px solid #e5e7eb !important;
+            color: #111827 !important;
+            border-radius: 0.55rem !important;
+            min-height: 2.4rem;
+        }
+        html.dark .metricas-modal__body .form-control {
+            background: #111827 !important;
+            border-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+        html.dark .metricas-modal__body .form-control:focus {
+            border-color: #2563EB !important;
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25) !important;
+        }
+        html.dark .metricas-modal .index-page__note {
+            background: rgba(30, 58, 95, 0.35) !important;
+            border-color: #1e3a5f !important;
+        }
+        html.dark .metricas-modal .index-page__note p,
+        html.dark .metricas-modal .index-table tbody td {
+            color: #e5e7eb !important;
+        }
+        html.dark .metricas-modal .index-table thead th {
+            color: #9ca3af !important;
+            border-bottom-color: #374151 !important;
+        }
+        .metricas-modal .index-page__note {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            background: #eff6ff !important;
+            border: 1px solid #dbeafe !important;
+            border-radius: 0.85rem;
+        }
+        .metricas-modal .index-page__btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #101D49 !important;
+            color: #fff !important;
+            border: none !important;
+            border-radius: 0.6rem;
+            padding: 0.6rem 1.05rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .metricas-modal .index-page__btn-primary:hover {
+            background: #0c1638 !important;
+            color: #fff !important;
+        }
+        .metricas-modal .index-page__btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .metricas-modal .index-page__btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #fff !important;
+            color: #374151 !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.6rem;
+            padding: 0.6rem 1.05rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        html.dark .metricas-modal .index-page__btn-secondary {
+            background: #111827 !important;
+            border-color: #374151 !important;
+            color: #e5e7eb !important;
         }
 
         /* Estilos responsivos para el sidebar m?vil */
