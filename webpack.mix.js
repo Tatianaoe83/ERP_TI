@@ -15,7 +15,7 @@ mix.js("resources/js/app.js", "public/js").postCss(
     "resources/css/app.css",
     "public/css",
     [require("tailwindcss")]
-);
+).version();
 
 mix.js("resources/js/factura-pdf-ocr.js", "public/js/factura-pdf-ocr.js").version();
 
