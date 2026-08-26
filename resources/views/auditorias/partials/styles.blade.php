@@ -577,28 +577,95 @@
     /* ── Tabla ── */
     .aud .table-responsive {
         overflow-x: auto;
+        border: 1px solid var(--aud-border);
+        border-radius: 0.85rem;
     }
 
-    /* Encabezado fijo contra el scroll de la página. */
+    .aud .index-table.aud-grupos { border-collapse: separate; border-spacing: 0; }
+
+    /* Encabezado fijo contra el scroll de la página, con un poco más de peso
+       visual que antes: separaba mal de las filas y todo se leía plano. */
     .aud .index-table thead th {
         position: sticky;
         top: 0;
         z-index: 2;
-        background: var(--aud-surface);
+        background: var(--aud-surface-2);
+        border-bottom: 2px solid var(--aud-border);
     }
 
     .aud .index-table th,
     .aud .index-table td {
-        padding: 0.6rem 0.9rem;
+        padding: 0.7rem 0.9rem;
         font-size: 0.85rem;
         line-height: 1.4;
         vertical-align: middle;
     }
 
     .aud .index-table th {
-        font-size: 0.72rem;
-        letter-spacing: 0.04em;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: var(--aud-text-muted);
     }
+
+    /* Cebra + hover propios, con nuestros tokens: sin esto el listado principal
+       dependía del gris genérico de Bootstrap, que no respondía al tema oscuro
+       del módulo igual que el resto de la pantalla. */
+    .aud .index-table.aud-grupos tbody tr.aud-grupo:nth-child(4n+1) > td {
+        background: var(--aud-surface-2);
+    }
+
+    .aud .index-table.aud-grupos tbody tr.aud-grupo:hover > td {
+        background: var(--aud-primary-soft) !important;
+    }
+
+    .aud .index-table.aud-grupos tbody tr.aud-grupo > td {
+        border-bottom: 1px solid var(--aud-border);
+        transition: background 120ms ease-out;
+    }
+
+    .aud-col-acciones { text-align: right; }
+    .aud-col-acciones .aud-historial__acciones { justify-content: flex-end; }
+
+    /* ── Empleado: iniciales + nombre ──
+       Un círculo de color rompe la monotonía de puro texto y da un punto de
+       referencia visual rápido al escanear la columna hacia abajo. */
+    .aud-empleado {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        min-width: 0;
+    }
+
+    .aud-avatar {
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 2.15rem;
+        height: 2.15rem;
+        border-radius: 999px;
+        background: var(--aud-primary-soft);
+        color: var(--aud-primary);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .aud-empleado__datos { min-width: 0; }
+
+    /* ── Folio de la última auditoría: chip con icono en vez de texto plano,
+       igual que el resto del módulo lo hace con estados y alcances. ── */
+    .aud-folio {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.1rem;
+        font-weight: 700;
+        color: var(--aud-text);
+    }
+
+    .aud-folio i { color: var(--aud-primary); }
 
     /* ── Chips: color + icono/texto, nunca color solo ── */
     .aud-chip {
@@ -1586,20 +1653,20 @@
         align-items: center;
         gap: 0.35rem;
         padding: 0.25rem 0.65rem;
-        border: 1px solid var(--aud-border);
+        border: 1px solid transparent;
         border-radius: 999px;
-        background: var(--aud-surface-2);
-        color: var(--aud-text);
+        background: var(--aud-primary-soft);
+        color: var(--aud-primary);
         font-size: 0.78rem;
-        font-weight: 600;
+        font-weight: 700;
         white-space: nowrap;
         cursor: pointer;
-        transition: border-color 160ms ease-out, color 160ms ease-out;
+        transition: border-color 160ms ease-out, filter 160ms ease-out;
     }
 
     .aud-chip-eq:hover {
-        border-color: var(--aud-primary);
-        color: var(--aud-primary);
+        border-color: currentColor;
+        filter: brightness(0.96);
     }
 
     .aud-chip-eq:active { transform: scale(0.97); }
@@ -1609,8 +1676,19 @@
         outline-offset: 2px;
     }
 
-    .aud-chip-eq i { color: var(--aud-text-muted); }
-    .aud-chip-eq:hover i { color: var(--aud-primary); }
+    .aud-chip-eq i { color: var(--aud-primary); }
+
+    /* Igual que el chip de equipos, pero informativo: no abre nada, así que sin
+       cursor de clic ni hover que prometan una interacción que no existe. */
+    .aud-chip-eq--info {
+        cursor: default;
+        transition: none;
+    }
+
+    .aud-chip-eq--info:hover {
+        border-color: transparent;
+        filter: none;
+    }
 
     /* Origen del modal: nunca se ve, sólo se clona. */
     .aud-eqdatos { display: none; }
@@ -1697,11 +1775,22 @@
         border-top: 0;
     }
 
-    /* Denso a propósito: es una sub-tabla de referencia, no la vista principal.
-       El sangrado izquierdo la alinea bajo la columna del empleado, no bajo el
+    /* app.css pinta `.index-table tbody tr:hover td` con !important. Como esta
+       fila es un único <td colspan> que envuelve todo el panel, "hover la fila"
+       significa "el mouse en cualquier parte del panel" y esa regla global
+       repinta hasta las celdas de la sub-tabla anidada (se veía peor en la
+       celda "Alcance", que ya trae su propio fondo). Se anula aquí. */
+    .aud .index-table tbody tr.aud-historial:hover > td,
+    .aud .index-table tbody tr.aud-historial:hover td {
+        background: var(--aud-surface-2) !important;
+    }
+
+    /* La franja de color continúa el acento de la fila padre (chevron abierto):
+       da continuidad visual entre el disparador y lo que se desplegó. El
+       sangrado izquierdo alinea bajo la columna del empleado, no bajo el
        chevron, para que se lea como dependiente de la fila de arriba. */
     .aud-historial__inner {
-        padding: 0.3rem 0.6rem 0.4rem 2.6rem;
+        padding: 0.15rem 0.9rem 0.9rem 2.6rem;
         opacity: 0;
         transform: translateY(-4px);
         transition: opacity 200ms ease-out, transform 200ms ease-out;
@@ -1712,16 +1801,29 @@
         transform: none;
     }
 
+    /* Tarjeta propia, separada de la fila padre por aire real (no sólo un borde):
+       así el historial se lee como un panel que se despliega, no como una fila
+       de tabla más apretada entre las demás. */
+    .aud-historial__panel {
+        border: 1px solid var(--aud-border);
+        border-left: 3px solid var(--aud-primary);
+        border-radius: 0.65rem;
+        background: var(--aud-surface);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+    }
+
     .aud-historial__tabla {
         width: 100%;
         border-collapse: collapse;
     }
 
-    .aud-historial__tabla th {
-        padding: 0.2rem 0.45rem;
+    .aud-historial__tabla thead th {
+        padding: 0.5rem 0.75rem;
         border-bottom: 1px solid var(--aud-border);
+        background: var(--aud-surface-2);
         color: var(--aud-text-muted);
-        font-size: 0.62rem;
+        font-size: 0.65rem;
         font-weight: 700;
         text-align: left;
         text-transform: uppercase;
@@ -1730,36 +1832,71 @@
     }
 
     .aud-historial__tabla td {
-        padding: 0.28rem 0.45rem;
+        padding: 0.55rem 0.75rem;
         border-bottom: 1px solid var(--aud-border);
         color: var(--aud-text);
-        font-size: 0.76rem;
-        line-height: 1.35;
+        font-size: 0.78rem;
+        line-height: 1.4;
         vertical-align: middle;
+    }
+
+    /* Cebra sutil: con varias corridas, la vista sin líneas de fondo se volvía un
+       bloque de texto continuo y era fácil perder la fila a mitad de lectura. */
+    .aud-historial__tabla tbody tr:nth-child(even) td {
+        background: var(--aud-surface-2);
     }
 
     .aud-historial__tabla tr:last-child td { border-bottom: 0; }
 
+    /* Alcance de la corrida: dos chips con icono en vez de texto suelto "3 eq ·
+       2 lic" — así se lee de un vistazo y no queda como celda vacía sin estilo. */
+    .aud-alcance {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+
+    .aud-alcance__item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.15rem 0.5rem;
+        border: 1px solid var(--aud-border);
+        border-radius: 999px;
+        background: var(--aud-surface-2);
+        color: var(--aud-text-muted);
+        font-size: 0.72rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .aud-alcance__item i { font-size: 0.68rem; }
+
+    .aud-alcance__item .aud-num {
+        color: var(--aud-text);
+        font-weight: 700;
+    }
+
     /* Chips y botones bajan un escalón dentro del historial: compiten con la fila
        principal si conservan su tamaño. */
     .aud-historial .aud-marca {
-        padding: 0.05rem 0.4rem;
-        font-size: 0.66rem;
+        padding: 0.1rem 0.45rem;
+        font-size: 0.68rem;
         gap: 0.25rem;
     }
 
     .aud-historial .aud-btn--sm {
-        min-height: 26px;
-        padding: 0 0.5rem;
-        font-size: 0.7rem;
+        min-height: 28px;
+        padding: 0 0.55rem;
+        font-size: 0.72rem;
     }
 
-    .aud-historial .aud-semaforo { gap: 0.25rem; }
+    .aud-historial .aud-semaforo { gap: 0.3rem; }
 
     .aud-historial__acciones {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.25rem;
+        gap: 0.3rem;
     }
 
     /* El despliegue es información, no decoración: sin motion sigue funcionando,
@@ -1779,6 +1916,12 @@
 
     @media (max-width: 640px) {
         .aud-historial__inner { padding-left: 1rem; }
+
+        /* La sub-tabla no cabe angosta: se deja hacer scroll horizontal propio
+           en vez de aplastar columnas hasta volverlas ilegibles. */
+        .aud-historial__panel {
+            overflow-x: auto;
+        }
     }
 </style>
 

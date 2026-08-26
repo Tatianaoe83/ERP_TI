@@ -6,7 +6,7 @@
 
     $estados = [
         'pendiente' => ['clase' => 'cambio', 'icono' => 'fa-clock-rotate-left', 'texto' => 'Pendiente'],
-        'alDia'     => ['clase' => 'igual',  'icono' => 'fa-circle-check',      'texto' => 'Al día'],
+        'alDia'     => ['clase' => 'igual',  'icono' => 'fa-circle-check',      'texto' => 'Vigente'],
         'sinNada'   => ['clase' => 'todas',  'icono' => 'fa-minus',             'texto' => 'Nada que auditar'],
     ];
 @endphp
@@ -103,8 +103,8 @@
                         <th scope="col">Equipos</th>
                         <th scope="col">Estado</th>
                         <th scope="col">Última auditoría</th>
-                        <th scope="col">Licencias hoy</th>
-                        <th scope="col">Acciones</th>
+                        <th scope="col">Licencias</th>
+                        <th scope="col" class="aud-col-acciones">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -128,8 +128,17 @@
                         </td>
 
                         <td>
-                            <div class="aud-strong">{{ $g->NombreEmpleado }}</div>
-                            <div class="aud-mini aud-muted">{{ $g->gerencia }} · {{ $g->tipo_persona }}</div>
+                            <div class="aud-empleado">
+                                {{-- Iniciales en vez de foto: no hay avatar en el inventario y un
+                                     círculo vacío se ve peor que uno con las iniciales del nombre. --}}
+                                <span class="aud-avatar" aria-hidden="true">
+                                    {{ Str::of($g->NombreEmpleado)->explode(' ')->map(fn($p) => Str::substr($p, 0, 1))->take(2)->implode('') }}
+                                </span>
+                                <div class="aud-empleado__datos">
+                                    <div class="aud-strong">{{ $g->NombreEmpleado }}</div>
+                                    <div class="aud-mini aud-muted">{{ $g->gerencia }} · {{ $g->tipo_persona }}</div>
+                                </div>
+                            </div>
                         </td>
 
                         {{-- La corrida cubre todos sus equipos, pero la lista no los
@@ -194,7 +203,10 @@
 
                         <td>
                             @if($g->ultima)
-                                <div class="aud-strong">{{ $g->ultima->Folio }}</div>
+                                <div class="aud-folio">
+                                    <i class="fas fa-file-circle-check" aria-hidden="true"></i>
+                                    <span class="aud-num">{{ $g->ultima->Folio }}</span>
+                                </div>
                                 <div class="aud-mini aud-muted">
                                     {{ $g->ultima->created_at?->format('d/m/Y') ?: '—' }}
                                     · {{ $g->total }} {{ $g->total === 1 ? 'auditoría' : 'auditorías' }}
@@ -208,30 +220,15 @@
                             @if($g->licencias === 0)
                                 <span class="aud-muted">Sin licencias</span>
                             @else
-                                <div class="aud-semaforo">
-                                    @if($g->alDia)
-                                        <span class="aud-marca aud-marca--igual">
-                                            <i class="fas fa-circle-check" aria-hidden="true"></i>
-                                            Al día <span class="aud-num">{{ $g->alDia }}</span>
-                                        </span>
-                                    @endif
-                                    @if($g->caducadas)
-                                        <span class="aud-marca aud-marca--cambio">
-                                            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
-                                            Caducadas <span class="aud-num">{{ $g->caducadas }}</span>
-                                        </span>
-                                    @endif
-                                    @if($g->nunca)
-                                        <span class="aud-marca aud-marca--baja">
-                                            <i class="fas fa-circle-question" aria-hidden="true"></i>
-                                            Sin revisar <span class="aud-num">{{ $g->nunca }}</span>
-                                        </span>
-                                    @endif
-                                </div>
+                                <span class="aud-chip-eq aud-chip-eq--info">
+                                    <i class="fas fa-key" aria-hidden="true"></i>
+                                    <span class="aud-num">{{ $g->licencias }}</span>
+                                    {{ $g->licencias === 1 ? 'licencia' : 'licencias' }}
+                                </span>
                             @endif
                         </td>
 
-                        <td>
+                        <td class="aud-col-acciones">
                             <div class="aud-historial__acciones">
                                 {{-- Auditar desde la fila: el modal ya sabe a quién, así
                                      no hay que volver a buscarlo en el combo. --}}
@@ -257,6 +254,7 @@
                     <tr id="{{ $panelId }}" class="aud-historial" hidden>
                         <td colspan="7">
                             <div class="aud-historial__inner">
+                              <div class="aud-historial__panel">
                                 <table class="aud-historial__tabla">
                                     <thead>
                                         <tr>
@@ -264,7 +262,7 @@
                                             <th scope="col">Fecha</th>
                                             <th scope="col">Generada por</th>
                                             <th scope="col">Alcance</th>
-                                            <th scope="col">Contra la corrida anterior</th>
+                                            <th scope="col">Auditoría anterior</th>
                                             <th scope="col">Acciones</th>
                                         </tr>
                                     </thead>
@@ -275,8 +273,17 @@
                                             <td class="aud-strong">{{ $c->Folio }}</td>
                                             <td class="aud-num">{{ $c->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
                                             <td>{{ $c->generada_por_nombre ?: 'Sin usuario' }}</td>
-                                            <td class="aud-mini">
-                                                {{ $c->equipos }} eq · {{ $c->licencias }} lic
+                                            <td>
+                                                <div class="aud-alcance">
+                                                    <span class="aud-alcance__item">
+                                                        <i class="fas fa-laptop" aria-hidden="true"></i>
+                                                        <span class="aud-num">{{ $c->equipos }}</span> eq
+                                                    </span>
+                                                    <span class="aud-alcance__item">
+                                                        <i class="fas fa-key" aria-hidden="true"></i>
+                                                        <span class="aud-num">{{ $c->licencias }}</span> lic
+                                                    </span>
+                                                </div>
                                             </td>
 
                                             {{-- El delta se calcula al leer, nunca se guarda:
@@ -335,6 +342,7 @@
                                         @endforeach
                                     </tbody>
                                 </table>
+                              </div>
                             </div>
                         </td>
                     </tr>
