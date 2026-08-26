@@ -53,7 +53,21 @@ class InventarioController extends AppBaseController
      */
     public function index()
     {
-        return view('inventarios.index');
+        $obrasFiltro = DB::table('obras')
+            ->join('empleados', 'obras.ObraID', '=', 'empleados.ObraID')
+            ->whereNull('obras.deleted_at')
+            ->distinct()
+            ->orderBy('obras.NombreObra')
+            ->pluck('obras.NombreObra');
+
+        $puestosFiltro = DB::table('puestos')
+            ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+            ->whereNull('puestos.deleted_at')
+            ->distinct()
+            ->orderBy('puestos.NombrePuesto')
+            ->pluck('puestos.NombrePuesto');
+
+        return view('inventarios.index', compact('obrasFiltro', 'puestosFiltro'));
     }
 
     public function indexVista(Request $request)
@@ -97,8 +111,8 @@ class InventarioController extends AppBaseController
                     }
                 });
             })
-            ->when($request->obra, fn($q) => $q->where('obras.NombreObra', 'like', '%' . $request->obra . '%'))
-            ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', 'like', '%' . $request->puesto . '%'))
+            ->when($request->obra, fn($q) => $q->where('obras.NombreObra', $request->obra))
+            ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', $request->puesto))
             ->when($request->has('estatus'), function ($q) use ($request) {
                 // Treat '2' as "Todos": do not apply any Estado filter
                 if ($request->estatus !== '' && $request->estatus !== '2') {

@@ -35,9 +35,40 @@
     .dark .index-search__icon {
         color: #9ca3af;
     }
+    .inv-index-page .index-page__filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (min-width: 900px) {
+        .inv-index-page .index-page__filters {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+    @media (min-width: 1280px) {
+        .inv-index-page .index-page__filters {
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }
+    }
+    .inv-index-page .index-page__filters .form-group {
+        min-width: 0;
+        width: 100%;
+    }
+    .inv-index-page .index-page__filters .select2-container,
+    .inv-index-page .index-page__filters .form-control {
+        width: 100% !important;
+    }
+    .inv-index-page .index-page__filters label {
+        color: #64748b;
+    }
+    .dark .inv-index-page .index-page__filters label {
+        color: #e5e7eb;
+    }
+    body > .select2-container .select2-results__options {
+        max-height: 320px;
+    }
 </style>
 
 <x-index-page
+    class="inv-index-page"
     title="Inventario"
     icon="fa-clipboard-list"
     subtitle="0 registros"
@@ -73,12 +104,18 @@
             <label for="filtro-obra">Obra</label>
             <select id="filtro-obra" class="jz-inv form-control">
                 <option value="">Todas las obras</option>
+                @foreach($obrasFiltro as $obra)
+                    <option value="{{ $obra }}">{{ $obra }}</option>
+                @endforeach
             </select>
         </div>
         <div class="form-group">
             <label for="filtro-puesto">Puesto</label>
             <select id="filtro-puesto" class="jz-inv form-control">
                 <option value="">Todos los puestos</option>
+                @foreach($puestosFiltro as $puesto)
+                    <option value="{{ $puesto }}">{{ $puesto }}</option>
+                @endforeach
             </select>
         </div>
         <div class="form-group">

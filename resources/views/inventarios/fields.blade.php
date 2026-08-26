@@ -398,10 +398,10 @@
                             <th>Fecha de Asignacion</th>
                             <th>Num. Serie</th>
                             <th>Comentarios</th>
-                            <th>Meses de pago</th>
                             @if($permitePresupuestado)
-                            <th>Stock / Extra</th>
+                            <th>Status</th>
                             @endif
+                            <th>Mes de pago</th>
 
                         </tr>
                     </thead>
@@ -450,10 +450,10 @@
                             <td>{!! $fechaPendiente($insumosAsignado->FechaAsignacion, $esExtraInsumo) !!}</td>
                             <td>{!! $celdaPendiente($insumosAsignado->NumSerie, $esExtraInsumo) !!}</td>
                             <td>{!! $celdaPendiente($insumosAsignado->Comentarios, $esExtraInsumo) !!}</td>
-                            <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $insumosAsignado->MesDePago, 'mesesFrecuencia' => $insumosAsignado->FrecuenciaDePago])</td>
                             @if($permitePresupuestado)
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
                             @endif
+                            <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $insumosAsignado->MesDePago, 'mesesFrecuencia' => $insumosAsignado->FrecuenciaDePago])</td>
                         </tr>
                         @endforeach
 
@@ -613,9 +613,9 @@
                             <th>Monto Renovación Fianza</th>
                             <th>Fecha Renovación</th>
                             @if($permitePresupuestado)
-                            <th>Stock / Extra</th>
+                            <th>Status</th>
                             @endif
-                            <th>Meses de renta</th>
+                            <th>Mes de pago</th>
 
 
 
@@ -1143,8 +1143,36 @@
                 { visible: false, targets: [3, 6, 7] }
             ]
         });
-        initInvDt('#insumosAsignadosTable');
-        initInvDt('#lineasAsignadosTable');
+        initInvDt('#insumosAsignadosTable', {
+            columnDefs: (function () {
+                var defs = [
+                    { responsivePriority: 1, targets: 0 },
+                    { responsivePriority: 2, targets: [1, 2] },
+                    { responsivePriority: 10000, targets: [5, 6, 7, 8, 9] }
+                ];
+                if (typeof permitePresupuestado !== 'undefined' && permitePresupuestado) {
+                    defs.push({ responsivePriority: 3, targets: [10, 11] });
+                } else {
+                    defs.push({ responsivePriority: 3, targets: [10] });
+                }
+                return defs;
+            })()
+        });
+        initInvDt('#lineasAsignadosTable', {
+            columnDefs: (function () {
+                var defs = [
+                    { responsivePriority: 1, targets: 0 },
+                    { responsivePriority: 2, targets: [1, 2, 3] },
+                    { responsivePriority: 10000, targets: [5, 6, 9, 10, 12, 13, 14] }
+                ];
+                if (typeof permitePresupuestado !== 'undefined' && permitePresupuestado) {
+                    defs.push({ responsivePriority: 3, targets: [15, 16] });
+                } else {
+                    defs.push({ responsivePriority: 3, targets: [15] });
+                }
+                return defs;
+            })()
+        });
 
         inicializarFiltrosPresupuestado();
     });
@@ -1155,7 +1183,7 @@
     // La columna sólo se pinta para FISICA/EXTRAORDINARIO.
     var columnaPresupuestado = {
         equiposAsignadosTable: 12,
-        insumosAsignadosTable: 11,
+        insumosAsignadosTable: 10,
         lineasAsignadosTable: 15,
     };
 
@@ -1357,8 +1385,13 @@
 
     // La columna "Presupuestado" sólo aporta información en "Todos"; en las otras
     // pestañas el valor ya está implícito en el filtro, igual que en el Excel.
+    // En equipo el chip se oculta al filtrar (el tipo ya va implícito).
+    // En insumo y línea Status y Mes de pago se quedan siempre visibles.
     function aplicarVisibilidadPresupuestado(tablaId) {
         if (!permitePresupuestado) {
+            return;
+        }
+        if (tablaId === 'insumosAsignadosTable' || tablaId === 'lineasAsignadosTable') {
             return;
         }
 
@@ -1992,7 +2025,7 @@
         $('#editNumSerieInsu').val(textoDeCelda(row.find("td:eq(8)")));
         $('#editComentariosInsumo').val(textoDeCelda(row.find("td:eq(9)")));
         setPagoMeses('editMesDePago', row.attr('data-meses') || '');
-        setPresupuestado('#editPresupuestadoInsumo', row.find("td:eq(11)").text());
+        setPresupuestado('#editPresupuestadoInsumo', row.attr('data-presupuestado') || row.find("td:eq(10)").text());
 
         $('#editModalInsumo').modal('show');
     });
@@ -2170,7 +2203,6 @@
         row.find('td:eq(7)').html(celdaFechaPendiente(insumo.FechaAsignacion, extra));
         row.find('td:eq(8)').html(celdaPendiente(insumo.NumSerie, extra));
         row.find('td:eq(9)').html(celdaPendiente(insumo.Comentarios, extra));
-        row.find('td:eq(10)').html(htmlPillsMeses(insumo.MesDePago));
         row.attr('data-meses', insumo.MesDePago ?? '');
         row.attr('data-presupuestado', insumo.Presupuestado ?? 0);
         setAttrFila(row, 'categoria', insumo.CateogoriaInsumo);
@@ -2178,7 +2210,10 @@
         setAttrFila(row, 'costo-mensual', insumo.CostoMensual);
         setAttrFila(row, 'costo-anual', insumo.CostoAnual);
         if (permitePresupuestado) {
-            row.find('td:eq(11)').html(htmlChipPresupuestado(insumo.Presupuestado));
+            row.find('td:eq(10)').html(htmlChipPresupuestado(insumo.Presupuestado));
+            row.find('td:eq(11)').html(htmlPillsMeses(insumo.MesDePago));
+        } else {
+            row.find('td:eq(10)').html(htmlPillsMeses(insumo.MesDePago));
         }
         syncCheckFila(row, 'insumo', insumo.InventarioID, insumo.Presupuestado);
 
@@ -2212,8 +2247,8 @@
             <td>${celdaFechaPendiente(insumo.FechaAsignacion, extra)}</td>
             <td>${celdaPendiente(insumo.NumSerie, extra)}</td>
             <td>${celdaPendiente(insumo.Comentarios, extra)}</td>
-            <td>${htmlPillsMeses(insumo.MesDePago)}</td>
             ${permitePresupuestado ? `<td>${htmlChipPresupuestado(insumo.Presupuestado)}</td>` : ''}
+            <td>${htmlPillsMeses(insumo.MesDePago)}</td>
         </tr>
     `;
         $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);

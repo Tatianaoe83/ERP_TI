@@ -105,7 +105,8 @@
             $('.jz-inv').select2({
                 width: '100%',
                 placeholder: 'Seleccionar...',
-                allowClear: true
+                allowClear: true,
+                dropdownParent: $('body')
             });
 
             // =========================
@@ -208,55 +209,6 @@
                     if (window.IndexPage) {
                         window.IndexPage.init(api);
                     }
-
-                    // =========================
-                    // CARGAR OBRAS
-                    // =========================
-                    var obras = api.column(4).data().unique().sort();
-
-                    $('#filtro-obra')
-                        .empty()
-                        .append('<option value="">Todas las obras</option>');
-
-                    obras.each(function(d) {
-
-                        if (d && d.trim() !== '') {
-
-                            $('#filtro-obra').append(
-                                '<option value="' + d + '">' + d + '</option>'
-                            );
-
-                        }
-
-                    });
-
-                    // =========================
-                    // CARGAR PUESTOS
-                    // =========================
-                    var puestos = api.column(3).data().unique().sort();
-
-                    $('#filtro-puesto')
-                        .empty()
-                        .append('<option value="">Todos los puestos</option>');
-
-                    puestos.each(function(d) {
-
-                        if (d && d.trim() !== '') {
-
-                            $('#filtro-puesto').append(
-                                '<option value="' + d + '">' + d + '</option>'
-                            );
-
-                        }
-
-                    });
-
-                    // Reinicializar Select2
-                    $('.jz-inv').select2({
-                        width: '100%',
-                        placeholder: 'Seleccionar...',
-                        allowClear: true
-                    });
 
                 },
                 drawCallback: function() {

@@ -1017,10 +1017,16 @@
                         // AppNav reinyecta scripts: const/let globales no se pueden redeclarar
                         code = code.replace(/(^|\n)([ \t]*)(const|let) /g, '$1$2var ');
                         if (code.indexOf('function ticketsModal') !== -1 && typeof window.ticketsModal === 'function') {
+                            if (window.Alpine && typeof Alpine.data === 'function') {
+                                try { Alpine.data('ticketsModal', window.ticketsModal); } catch (e) {}
+                            }
                             old.remove();
                             return;
                         }
                         if (code.indexOf('function mantenimientoModal') !== -1 && typeof window.mantenimientoModal === 'function') {
+                            if (window.Alpine && typeof Alpine.data === 'function') {
+                                try { Alpine.data('mantenimientoModal', window.mantenimientoModal); } catch (e) {}
+                            }
                             old.remove();
                             return;
                         }
@@ -1118,6 +1124,19 @@
             return cur;
         }
 
+        function alpineDestroy(root) {
+            if (!root || !window.Alpine || typeof Alpine.destroyTree !== 'function') return;
+            try { Alpine.destroyTree(root); } catch (e) {}
+        }
+
+        function alpineMute(fn) {
+            if (window.Alpine && typeof Alpine.mutateDom === 'function') {
+                Alpine.mutateDom(fn);
+                return;
+            }
+            fn();
+        }
+
         function swapPage(html, href, push) {
             var doc = new DOMParser().parseFromString(html, 'text/html');
             var main = document.getElementById('app-main');
@@ -1133,10 +1152,22 @@
                 try { destruirGraficasMantenimiento(); } catch (e) {}
             }
 
-            main.innerHTML = nextMain.innerHTML;
-            copySection(doc, 'sidebar');
-            var extras = copySection(doc, 'app-shell-extras');
-            var pageScripts = copySection(doc, 'app-page-scripts');
+            var extrasEl = document.getElementById('app-shell-extras');
+            var scriptsEl = document.getElementById('app-page-scripts');
+            var sidebarEl = document.getElementById('sidebar');
+            alpineDestroy(main);
+            alpineDestroy(extrasEl);
+            alpineDestroy(scriptsEl);
+            alpineDestroy(sidebarEl);
+
+            var extras = null;
+            var pageScripts = null;
+            alpineMute(function () {
+                main.innerHTML = nextMain.innerHTML;
+                copySection(doc, 'sidebar');
+                extras = copySection(doc, 'app-shell-extras');
+                pageScripts = copySection(doc, 'app-page-scripts');
+            });
 
             var csrf = doc.querySelector('meta[name="csrf-token"]');
             var currentCsrf = document.querySelector('meta[name="csrf-token"]');
@@ -1147,7 +1178,7 @@
             var chain = runScripts(main);
             if (extras) chain = chain.then(function () { return runScripts(extras); });
             if (pageScripts) chain = chain.then(function () { return runScripts(pageScripts); });
-            return chain.then(function () { bootPage([main, extras]); });
+            return chain.then(function () { bootPage([main, extras, pageScripts]); });
         }
 
         function visit(href, push) {
