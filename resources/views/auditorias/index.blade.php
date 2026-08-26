@@ -60,23 +60,6 @@
         </div>
     </div>
 
-    {{-- Buscador: la lista ya viene ordenada por urgencia, esto sólo sirve para
-         saltar a alguien concreto. Es GET para que la búsqueda sea compartible. --}}
-    <form method="GET" action="{{ route('auditorias.index') }}" class="aud-buscador">
-        <label class="aud-sr" for="buscarEmpleadoLista">Buscar empleado o equipo</label>
-        <div class="aud-buscador__campo">
-            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-            <input type="search" name="q" id="buscarEmpleadoLista" class="aud-buscar"
-                   value="{{ $busqueda }}" autocomplete="off"
-                   placeholder="Empleado, área, marca, modelo, serie o folio…">
-        </div>
-        <button type="submit" class="aud-btn aud-btn--ghost aud-btn--sm">Buscar</button>
-        @if($busqueda !== '')
-            <a href="{{ route('auditorias.index') }}" class="aud-btn aud-btn--ghost aud-btn--sm">
-                <i class="fas fa-xmark" aria-hidden="true"></i> Limpiar
-            </a>
-        @endif
-    </form>
 
     {{-- Una fila por empleado YA auditado: la lista crece conforme se generan
          corridas. Dentro de eso, lo pendiente y más viejo sube solo. --}}
@@ -84,14 +67,8 @@
         @if($grupos->isEmpty())
             <div class="aud-vacio">
                 <span class="aud-vacio__ico"><i class="fas fa-clipboard-list" aria-hidden="true"></i></span>
-                <p class="aud-vacio__titulo">
-                    {{ $busqueda !== '' ? 'Nadie coincide con la búsqueda' : 'Aún no hay auditorías generadas' }}
-                </p>
-                <p>
-                    {{ $busqueda !== ''
-                        ? 'Prueba con otro nombre, área, serie o folio.'
-                        : 'Genera la primera para congelar lo que resguarda un empleado y poder compararlo después.' }}
-                </p>
+                <p class="aud-vacio__titulo">Aún no hay auditorías generadas</p>
+                <p>Genera la primera para congelar lo que resguarda un empleado y poder compararlo después.</p>
             </div>
         @else
         <div class="table-responsive">
@@ -100,9 +77,9 @@
                     <tr>
                         <th scope="col" class="aud-col-toggle"><span class="aud-sr">Desplegar historial</span></th>
                         <th scope="col">Empleado</th>
-                        <th scope="col">Equipos</th>
                         <th scope="col">Estado</th>
                         <th scope="col">Última auditoría</th>
+                        <th scope="col">Equipos</th>
                         <th scope="col">Licencias</th>
                         <th scope="col" class="aud-col-acciones">Acciones</th>
                     </tr>
@@ -129,16 +106,33 @@
 
                         <td>
                             <div class="aud-empleado">
-                                {{-- Iniciales en vez de foto: no hay avatar en el inventario y un
-                                     círculo vacío se ve peor que uno con las iniciales del nombre. --}}
-                                <span class="aud-avatar" aria-hidden="true">
-                                    {{ Str::of($g->NombreEmpleado)->explode(' ')->map(fn($p) => Str::substr($p, 0, 1))->take(2)->implode('') }}
-                                </span>
                                 <div class="aud-empleado__datos">
                                     <div class="aud-strong">{{ $g->NombreEmpleado }}</div>
                                     <div class="aud-mini aud-muted">{{ $g->gerencia }} · {{ $g->tipo_persona }}</div>
                                 </div>
                             </div>
+                        </td>
+
+                        {{-- El icono acompaña al color: el estado no se comunica sólo con color. --}}
+                        <td>
+                            <span class="aud-marca aud-marca--{{ $est['clase'] }}">
+                                <i class="fas {{ $est['icono'] }}" aria-hidden="true"></i> {{ $est['texto'] }}
+                            </span>
+                        </td>
+
+                        <td>
+                            @if($g->ultima)
+                                <div class="aud-folio">
+                                    <i class="fas fa-file-circle-check" aria-hidden="true"></i>
+                                    <span class="aud-num">{{ $g->ultima->Folio }}</span>
+                                </div>
+                                <div class="aud-mini aud-muted">
+                                    {{ $g->ultima->created_at?->format('d/m/Y') ?: '—' }}
+                                    · {{ $g->total }} {{ $g->total === 1 ? 'auditoría' : 'auditorías' }}
+                                </div>
+                            @else
+                                <span class="aud-muted">—</span>
+                            @endif
                         </td>
 
                         {{-- La corrida cubre todos sus equipos, pero la lista no los
@@ -191,28 +185,6 @@
                                         </div>
                                     @endforeach
                                 </div>
-                            @endif
-                        </td>
-
-                        {{-- El icono acompaña al color: el estado no se comunica sólo con color. --}}
-                        <td>
-                            <span class="aud-marca aud-marca--{{ $est['clase'] }}">
-                                <i class="fas {{ $est['icono'] }}" aria-hidden="true"></i> {{ $est['texto'] }}
-                            </span>
-                        </td>
-
-                        <td>
-                            @if($g->ultima)
-                                <div class="aud-folio">
-                                    <i class="fas fa-file-circle-check" aria-hidden="true"></i>
-                                    <span class="aud-num">{{ $g->ultima->Folio }}</span>
-                                </div>
-                                <div class="aud-mini aud-muted">
-                                    {{ $g->ultima->created_at?->format('d/m/Y') ?: '—' }}
-                                    · {{ $g->total }} {{ $g->total === 1 ? 'auditoría' : 'auditorías' }}
-                                </div>
-                            @else
-                                <span class="aud-muted">—</span>
                             @endif
                         </td>
 
@@ -269,7 +241,7 @@
                                     <tbody>
                                         {{-- Más reciente arriba: es la que se consulta. --}}
                                         @foreach($g->corridas->reverse() as $c)
-                                        <tr>
+                                        <tr class="aud-historial__fila">
                                             <td class="aud-strong">{{ $c->Folio }}</td>
                                             <td class="aud-num">{{ $c->created_at?->format('d/m/Y H:i') ?: '—' }}</td>
                                             <td>{{ $c->generada_por_nombre ?: 'Sin usuario' }}</td>
@@ -342,6 +314,17 @@
                                         @endforeach
                                     </tbody>
                                 </table>
+                                <div class="aud-historial__pag" data-pag-historial hidden>
+                                    <span class="aud-mini aud-muted" data-pag-info></span>
+                                    <div class="aud-pag__botones">
+                                        <button type="button" data-pag-prev>
+                                            <i class="fas fa-chevron-left" aria-hidden="true"></i> Anterior
+                                        </button>
+                                        <button type="button" data-pag-next>
+                                            Siguiente <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                </div>
                               </div>
                             </div>
                         </td>
@@ -490,6 +473,73 @@
                         if (inner) inner.classList.add('is-abierto');
                     });
                 });
+            });
+        }
+
+        // ── Paginado del historial expandido ─────────────────────────────────
+        // Todas las corridas ya vienen cargadas del servidor; sólo se ocultan las
+        // filas fuera de la página actual. Estado por panel, no global.
+        var PAG_HISTORIAL = 5;
+        var estadoPagHistorial = {};
+
+        function paginarHistorial(panel) {
+            var filas = Array.prototype.slice.call(panel.querySelectorAll('.aud-historial__fila'));
+            var barra = panel.querySelector('[data-pag-historial]');
+            if (!filas.length || !barra) {
+                if (barra) barra.hidden = true;
+                return;
+            }
+
+            var totalPag = Math.ceil(filas.length / PAG_HISTORIAL);
+            if (totalPag <= 1) {
+                barra.hidden = true;
+                filas.forEach(function (f) { f.hidden = false; });
+                return;
+            }
+
+            var actual = estadoPagHistorial[panel.id] || 1;
+            actual = Math.min(Math.max(actual, 1), totalPag);
+            estadoPagHistorial[panel.id] = actual;
+
+            filas.forEach(function (fila, i) {
+                var pagDeFila = Math.floor(i / PAG_HISTORIAL) + 1;
+                fila.hidden = pagDeFila !== actual;
+            });
+
+            barra.hidden = false;
+            var info = barra.querySelector('[data-pag-info]');
+            if (info) info.textContent = 'Página ' + actual + ' de ' + totalPag;
+
+            var prev = barra.querySelector('[data-pag-prev]');
+            var next = barra.querySelector('[data-pag-next]');
+            if (prev) prev.disabled = actual <= 1;
+            if (next) next.disabled = actual >= totalPag;
+        }
+
+        if (tabla) {
+            tabla.addEventListener('click', function (e) {
+                var boton = e.target.closest('[data-pag-prev], [data-pag-next]');
+                if (!boton) return;
+
+                var panel = boton.closest('.aud-historial');
+                if (!panel) return;
+
+                var actual = estadoPagHistorial[panel.id] || 1;
+                estadoPagHistorial[panel.id] = actual + (boton.hasAttribute('data-pag-next') ? 1 : -1);
+                paginarHistorial(panel);
+            });
+
+            // Se pagina al abrir, no antes: el panel nace oculto y calcular sobre
+            // filas con `hidden` heredado del padre no cambia nada, pero así el
+            // primer pintado ya sale correcto sin esperar un resize.
+            tabla.addEventListener('click', function (e) {
+                var boton = e.target.closest('[data-toggle-grupo]');
+                if (!boton) return;
+
+                var panel = document.getElementById(boton.dataset.toggleGrupo);
+                if (panel && boton.getAttribute('aria-expanded') === 'true') {
+                    paginarHistorial(panel);
+                }
             });
         }
 

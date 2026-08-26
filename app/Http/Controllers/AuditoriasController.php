@@ -61,9 +61,10 @@ class AuditoriasController extends Controller
             ->groupBy('EmpleadoID')
             ->pluck('total', 'EmpleadoID');
 
+        $grupos = $this->gruposDeAuditorias($equipos, $request);
+
         return view('auditorias.index', [
-            'grupos'              => $this->gruposDeAuditorias($equipos, $request),
-            'busqueda'            => trim((string) $request->query('q')),
+            'grupos'              => $grupos,
             // Estado vigente por empleado: alimenta el semáforo del modal.
             'estadoLicencias'     => $this->estadoLicenciasPorEmpleado(),
             'ultima'              => Auditoria::with('empleado')->orderByDesc('created_at')->first(),
@@ -655,8 +656,6 @@ class AuditoriasController extends Controller
             ];
         })->values();
 
-        $filas = $this->filtrarPorBusqueda($filas, trim((string) $request->query('q')));
-
         // Dentro de cada nivel de urgencia, primero lo más viejo: el que lleva más sin
         // revisarse encabeza.
         $filas = $filas
@@ -686,30 +685,6 @@ class AuditoriasController extends Controller
             $pagina,
             ['path' => $request->url(), 'query' => $request->query()]
         );
-    }
-
-    /** Busca por empleado, área o por cualquier dato de sus equipos. */
-    private function filtrarPorBusqueda($filas, string $busqueda)
-    {
-        if ($busqueda === '') {
-            return $filas;
-        }
-
-        $q = mb_strtolower($busqueda, 'UTF-8');
-
-        return $filas->filter(function ($fila) use ($q) {
-            $texto = mb_strtolower(implode(' ', array_filter([
-                $fila->NombreEmpleado,
-                $fila->gerencia,
-                $fila->departamento,
-                $fila->tipo_persona,
-                $fila->equipos->map(fn($e) => implode(' ', array_filter([
-                    $e->CategoriaEquipo, $e->Marca, $e->Modelo, $e->NumSerie, $e->Folio,
-                ])))->implode(' '),
-            ])), 'UTF-8');
-
-            return str_contains($texto, $q);
-        })->values();
     }
 
     /**

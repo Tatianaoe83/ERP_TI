@@ -2,27 +2,37 @@
     /* Paleta Analytics Dashboard: azul de datos + ámbar de atención.
        Tokens semánticos, nunca hex suelto en los componentes. */
     .aud {
-        --aud-primary: #1E40AF;
-        --aud-primary-soft: #DBEAFE;
+        --aud-primary: #4F46E5;
+        --aud-primary-2: #6366F1;
+        --aud-primary-soft: #EEF0FF;
         --aud-accent: #B45309;
         --aud-accent-soft: #FEF3C7;
-        --aud-danger: #B91C1C;
+        --aud-danger: #DC2626;
         --aud-danger-soft: #FEE2E2;
-        --aud-ok: #047857;
+        --aud-ok: #059669;
         --aud-ok-soft: #D1FAE5;
 
         --aud-surface: #FFFFFF;
         --aud-surface-2: #F8FAFC;
         --aud-text: #0F172A;
-        --aud-text-muted: #526077;
-        --aud-border: #E2E8F0;
+        --aud-text-muted: #64748B;
+        --aud-border: #E5E9F0;
+
+        --aud-radius-sm: 0.55rem;
+        --aud-radius: 0.9rem;
+        --aud-radius-lg: 1.15rem;
+
+        --aud-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+        --aud-shadow: 0 4px 14px rgba(30, 41, 59, 0.07), 0 1px 3px rgba(30, 41, 59, 0.05);
+        --aud-shadow-lg: 0 18px 38px rgba(30, 41, 59, 0.14), 0 4px 10px rgba(30, 41, 59, 0.06);
 
         color: var(--aud-text);
     }
 
     .dark .aud {
-        --aud-primary: #60A5FA;
-        --aud-primary-soft: rgba(59, 130, 246, 0.16);
+        --aud-primary: #818CF8;
+        --aud-primary-2: #A5B4FC;
+        --aud-primary-soft: rgba(99, 102, 241, 0.16);
         --aud-accent: #FBBF24;
         --aud-accent-soft: rgba(217, 119, 6, 0.18);
         --aud-danger: #FCA5A5;
@@ -30,11 +40,15 @@
         --aud-ok: #6EE7B7;
         --aud-ok-soft: rgba(5, 150, 105, 0.18);
 
-        --aud-surface: #0F172A;
-        --aud-surface-2: #131C31;
-        --aud-text: #E2E8F0;
-        --aud-text-muted: #9FB0C7;
-        --aud-border: #334155;
+        --aud-surface: #131B2E;
+        --aud-surface-2: #1B2540;
+        --aud-text: #E7ECF6;
+        --aud-text-muted: #98A6C2;
+        --aud-border: #2B3757;
+
+        --aud-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+        --aud-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+        --aud-shadow-lg: 0 20px 44px rgba(0, 0, 0, 0.45);
     }
 
     /* Etiqueta sólo para lector de pantalla (no depende de Bootstrap). */
@@ -67,9 +81,19 @@
         padding: 1rem 1.25rem;
         margin-bottom: 1rem;
         border: 1px solid var(--aud-border);
-        border-left: 4px solid var(--aud-primary);
-        border-radius: 0.75rem;
+        border-radius: var(--aud-radius);
         background: var(--aud-surface);
+        box-shadow: var(--aud-shadow-sm);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .aud-bar::before {
+        content: '';
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: linear-gradient(180deg, var(--aud-primary), var(--aud-primary-2));
     }
 
     .aud-bar__label {
@@ -102,8 +126,9 @@
         gap: 0.5rem 1.75rem;
         padding: 0.7rem 1rem;
         border: 1px solid var(--aud-border);
-        border-radius: 0.75rem;
+        border-radius: var(--aud-radius);
         background: var(--aud-surface);
+        box-shadow: var(--aud-shadow-sm);
     }
 
     .aud-meta__dato {
@@ -259,22 +284,30 @@
         min-height: 44px;          /* objetivo táctil mínimo */
         padding: 0 1.1rem;
         border: 1px solid transparent;
-        border-radius: 0.6rem;
+        border-radius: var(--aud-radius-sm);
         font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
         text-decoration: none;
-        transition: background .18s ease, border-color .18s ease, color .18s ease;
+        transition: background .18s ease, border-color .18s ease, color .18s ease,
+                    transform .12s ease, box-shadow .18s ease;
     }
 
     .aud-btn--primary {
-        background: var(--aud-primary);
+        background: #101D49;
+        color: #fff;
+        box-shadow: 0 1px 2px rgba(16, 29, 73, 0.15);
+    }
+
+    .aud-btn--primary:hover { background: #0C1638; }
+
+    .dark .aud-btn--primary,
+    .dark .aud-btn--primary:hover {
+        background: #101D49;
         color: #fff;
     }
 
-    .dark .aud-btn--primary { color: #0B1220; }
-
-    .aud-btn--primary:hover { filter: brightness(0.92); }
+    .dark .aud-btn--primary:hover { background: #0C1638; }
 
     .aud-btn--ghost {
         background: transparent;
@@ -282,7 +315,7 @@
         color: var(--aud-text);
     }
 
-    .aud-btn--ghost:hover { background: var(--aud-surface-2); }
+    .aud-btn--ghost:hover { background: var(--aud-surface-2); border-color: var(--aud-primary); }
 
     .aud-btn--danger {
         background: transparent;
@@ -291,6 +324,10 @@
     }
 
     .aud-btn--danger:hover { background: var(--aud-danger-soft); }
+
+    @media (prefers-reduced-motion: reduce) {
+        .aud-btn--primary:hover { transform: none; }
+    }
 
     .aud-btn[disabled] {
         opacity: 0.45;
@@ -317,7 +354,10 @@
 
     .aud .index-page__header { padding-bottom: 0.35rem; }
 
-    .aud .index-page__card { padding: 1.1rem 1.25rem; }
+    .aud .index-page__card {
+        padding: 1.1rem 1.25rem;
+        border-radius: var(--aud-radius-lg);
+    }
 
     /* Aire entre tarjetas (antes/ahora, equipos/licencias): pegadas se leían como
        una sola tabla partida a la mitad. */
@@ -348,8 +388,9 @@
         padding: 0.9rem 1rem;
         border: 1px solid var(--aud-border);
         border-left: 4px solid var(--aud-border);
-        border-radius: 0.75rem;
+        border-radius: var(--aud-radius);
         background: var(--aud-surface);
+        box-shadow: var(--aud-shadow-sm);
         animation: aud-card-entra 260ms ease-out both;
         transition: transform 160ms ease-out, box-shadow 160ms ease-out, border-color 160ms ease-out;
     }
@@ -361,7 +402,7 @@
 
     .aud-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+        box-shadow: var(--aud-shadow);
     }
 
     .aud-card:has(:focus-visible) {
@@ -483,8 +524,9 @@
         min-width: 0;
         padding: 1rem 1.1rem 1.2rem;
         border: 1px solid var(--aud-border);
-        border-radius: 0.85rem;
+        border-radius: var(--aud-radius-lg);
         background: var(--aud-surface);
+        box-shadow: var(--aud-shadow-sm);
     }
 
     .aud-compare__col--izq {
@@ -578,7 +620,8 @@
     .aud .table-responsive {
         overflow-x: auto;
         border: 1px solid var(--aud-border);
-        border-radius: 0.85rem;
+        border-radius: var(--aud-radius);
+        box-shadow: var(--aud-shadow-sm);
     }
 
     .aud .index-table.aud-grupos { border-collapse: separate; border-spacing: 0; }
@@ -616,7 +659,7 @@
     }
 
     .aud .index-table.aud-grupos tbody tr.aud-grupo:hover > td {
-        background: var(--aud-primary-soft) !important;
+        background: var(--aud-surface-2) !important;
     }
 
     .aud .index-table.aud-grupos tbody tr.aud-grupo > td {
@@ -644,12 +687,13 @@
         width: 2.15rem;
         height: 2.15rem;
         border-radius: 999px;
-        background: var(--aud-primary-soft);
-        color: var(--aud-primary);
+        background: linear-gradient(135deg, var(--aud-primary), var(--aud-primary-2));
+        color: #fff;
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.02em;
         text-transform: uppercase;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
     }
 
     .aud-empleado__datos { min-width: 0; }
@@ -828,7 +872,7 @@
         width: 3.5rem;
         height: 3.5rem;
         border-radius: 999px;
-        background: var(--aud-surface-2);
+        background: var(--aud-primary-soft);
         font-size: 1.4rem;
         color: var(--aud-primary);
     }
@@ -866,7 +910,7 @@
         min-height: 44px;
         padding: 0 0.7rem;
         border: 1px solid var(--aud-border);
-        border-radius: 0.55rem;
+        border-radius: var(--aud-radius-sm);
         background: var(--aud-surface);
         color: var(--aud-text);
         font-size: 0.8rem;
@@ -942,10 +986,10 @@
         max-height: min(88vh, 52rem);
         overflow: hidden;
         border: 1px solid var(--aud-border);
-        border-radius: 0.9rem;
+        border-radius: var(--aud-radius-lg);
         background: var(--aud-surface);
         color: var(--aud-text);
-        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+        box-shadow: var(--aud-shadow-lg);
         animation: aud-modal-entra 200ms ease-out;
     }
 
@@ -1246,9 +1290,9 @@
         padding: 0.25rem;
         list-style: none;
         border: 1px solid var(--aud-border);
-        border-radius: 0.7rem;
+        border-radius: var(--aud-radius);
         background: var(--aud-surface);
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+        box-shadow: var(--aud-shadow-lg);
     }
 
     .aud-combo__lista[hidden] { display: none; }
@@ -1807,9 +1851,9 @@
     .aud-historial__panel {
         border: 1px solid var(--aud-border);
         border-left: 3px solid var(--aud-primary);
-        border-radius: 0.65rem;
+        border-radius: var(--aud-radius);
         background: var(--aud-surface);
-        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+        box-shadow: var(--aud-shadow);
         overflow: hidden;
     }
 
@@ -1846,7 +1890,49 @@
         background: var(--aud-surface-2);
     }
 
+    .aud-historial__tabla tbody tr:hover td {
+        background: var(--aud-surface-2) !important;
+    }
+
     .aud-historial__tabla tr:last-child td { border-bottom: 0; }
+
+    .aud-historial__tabla tbody tr[hidden] { display: none; }
+
+    /* ── Paginado del historial expandido ── */
+    .aud-historial__pag {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.55rem 0.75rem;
+        border-top: 1px solid var(--aud-border);
+        background: var(--aud-surface-2);
+    }
+
+    .aud-historial__pag[hidden] { display: none; }
+
+    .aud-historial__pag button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        min-height: 30px;
+        padding: 0 0.6rem;
+        border: 1px solid var(--aud-border);
+        border-radius: var(--aud-radius-sm);
+        background: var(--aud-surface);
+        color: var(--aud-text);
+        font-size: 0.72rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .15s ease, border-color .15s ease;
+    }
+
+    .aud-historial__pag button:hover:not(:disabled) { background: var(--aud-surface-2); border-color: var(--aud-primary); }
+
+    .aud-historial__pag button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
 
     /* Alcance de la corrida: dos chips con icono en vez de texto suelto "3 eq ·
        2 lic" — así se lee de un vistazo y no queda como celda vacía sin estilo. */
