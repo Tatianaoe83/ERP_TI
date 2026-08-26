@@ -326,7 +326,7 @@ class InventarioController extends AppBaseController
         $Insumos = Insumos::select("*")->get();
 
         $LineasAsignados = InventarioLineas::with('lineastelefonicas.obras')->where('EmpleadoID', '=', $id)->get();
-        $Lineas = LineasTelefonicas::with(['planes', 'obras'])->where('Disponible', '=', 1)->get();
+        $Lineas = LineasTelefonicas::with(['planes.companiaslineastelefonicas', 'obras'])->where('Disponible', '=', 1)->get();
         $planesLinea = Planes::with('companiaslineastelefonicas')->orderBy('NombrePlan')->get();
         $obrasLinea = Obras::orderBy('NombreObra')->get(['ObraID', 'NombreObra']);
         $tiposLinea = collect(['VOZ', 'DATOS', 'GPS'])

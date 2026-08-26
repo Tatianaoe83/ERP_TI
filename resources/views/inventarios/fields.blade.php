@@ -744,7 +744,21 @@
                         </thead>
                         <tbody>
                             @foreach ($Lineas as $Linea)
-                            <tr>
+                            <tr
+                                data-linea-id="{{ $Linea->LineaID }}"
+                                data-plan-id="{{ $Linea->PlanID }}"
+                                data-tipo="{{ $Linea->TipoLinea }}"
+                                data-obra-id="{{ $Linea->ObraID }}"
+                                data-renta="{{ $Linea->planes->PrecioPlan ?? '' }}"
+                                data-compania="{{ $Linea->planes->companiaslineastelefonicas->Compania ?? '' }}"
+                                data-fianza="{{ $Linea->CostoFianza }}"
+                                data-num="{{ $Linea->NumTelefonico }}"
+                                data-cuenta-padre="{{ $Linea->CuentaPadre }}"
+                                data-cuenta-hija="{{ $Linea->CuentaHija }}"
+                                data-fecha-fianza="{{ $Linea->FechaFianza ? \Carbon\Carbon::parse($Linea->FechaFianza)->format('Y-m-d') : '' }}"
+                                data-monto-renov="{{ $Linea->MontoRenovacionFianza }}"
+                                data-fecha-renov="{{ (empty($Linea->FechaRenovacion) || in_array($Linea->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? '' : \Carbon\Carbon::parse($Linea->FechaRenovacion)->format('Y-m-d') }}"
+                            >
                                 <td>
 
 
@@ -933,6 +947,10 @@
         );
     }
 
+    function esAsignacionCatalogo() {
+        return !$('#editId_linea').val() && !!$('#editLineaCatalogoId').val() && $('#editEsProyeccion').val() !== '1';
+    }
+
     function syncLineaModalModo() {
         const $form = $('#editFormLinea');
         if (!$form.length) {
@@ -941,19 +959,27 @@
 
         const extra = esModoExtra('#editPresupuestadoLinea');
         const proyeccion = esProyeccionLinea();
+        const catalogo = esAsignacionCatalogo();
         const nuevaProyeccion = $('#editEsProyeccion').val() === '1' && !$('#editId_linea').val();
 
-        $form.find('.js-linea-plan').toggle(proyeccion);
+        $form.find('.js-linea-plan').toggle(proyeccion || catalogo);
         $form.find('.js-linea-real').toggle(!(extra && proyeccion));
-        $form.find('.js-linea-proyeccion-hint').toggle(proyeccion);
+        $form.find('.js-linea-proyeccion-hint').toggle(proyeccion && !catalogo);
 
         $form.find('#editPlanLinea, #editTipoLinea, #editObraLinea').each(function() {
-            if (proyeccion) {
+            if (proyeccion && !catalogo) {
                 this.setAttribute('required', 'required');
             } else {
                 this.removeAttribute('required');
             }
         });
+
+        $form.find('#editPlanLinea, #editTipoLinea, #editObraLinea')
+            .prop('disabled', catalogo)
+            .toggleClass('inv-locked', catalogo);
+        $form.find('#editNumTelLinea, #editCuentaPadreLinea, #editCuentaHijaLinea, #editFechaFianzaLinea, #editCostoFianzaLinea')
+            .prop('readonly', catalogo)
+            .toggleClass('inv-locked', catalogo);
 
         if (!presupuestadoForzado) {
             $form.find('.inv-modo-card').toggleClass('is-locked', nuevaProyeccion);
@@ -2387,35 +2413,37 @@
         }
 
         let id_E = '{{ $inventario->EmpleadoID }}';
+        let row = filaPadre(this);
+        let id = $(this).data('id') || attrFila(row, 'linea-id');
 
         $('#editFormLinea')[0].reset();
 
         document.getElementById('titulolinea').innerHTML = 'Asignar línea del catálogo';
-        let row = $(this).closest('tr');
-        
-        let boton = $(this);
-        let id = boton.data('id');
-
-        let monto = row.find("td:eq(10)").text();
-        let fecha = row.find("td:eq(11)").text().trim();
-
-        // Limpiar fecha si trae hora
-        if (fecha.length > 10) {
-            fecha = fecha.substring(0, 10);
-        }
-
-        // Si la fecha es un texto como 'Sin asignar', enviar vacío en vez del string
-        if (fecha === 'Sin asignar' || fecha === 'Sin asigna' || fecha === '0000-00-00') {
-            fecha = '';
-        }
 
         $('#editId_linea').val('');
         $('#editId_linea2').val(id);
         $('#editEmp_linea').val(id_E);
         $('#editLineaCatalogoId').val(id);
         $('#editEsProyeccion').val('0');
-        $('#editMontoRenovacionFianza').val(monto);
-        $('#editFechaRenovacion').val(fecha);
+        $('#editPlanLinea').val(attrFila(row, 'plan-id') || '');
+        aplicarPlanLineaSeleccionado();
+        if (!$('#editCompaniaLinea').val()) {
+            $('#editCompaniaLinea').val(attrFila(row, 'compania') || '');
+        }
+        if (!$('#editRentaLinea').val()) {
+            $('#editRentaLinea').val(attrFila(row, 'renta') || '');
+        }
+        $('#editTipoLinea').val(attrFila(row, 'tipo') || '');
+        $('#editObraLinea').val(attrFila(row, 'obra-id') || '');
+        $('#editCostoFianzaLinea').val(attrFila(row, 'fianza') || '');
+        $('#editNumTelLinea').val(attrFila(row, 'num') || '');
+        $('#editCuentaPadreLinea').val(attrFila(row, 'cuenta-padre') || '');
+        $('#editCuentaHijaLinea').val(attrFila(row, 'cuenta-hija') || '');
+        $('#editFechaFianzaLinea').val(attrFila(row, 'fecha-fianza') || '');
+        $('#editfechalinea').val('');
+        $('#editcomenl').val('');
+        $('#editMontoRenovacionFianza').val(attrFila(row, 'monto-renov') || '');
+        $('#editFechaRenovacion').val(attrFila(row, 'fecha-renov') || '');
         setPresupuestado('#editPresupuestadoLinea', 'No');
         setPagoMeses('editMesDePagoLinea', mesesPagoTodosStr);
         syncLineaModalModo();
