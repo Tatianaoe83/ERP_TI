@@ -24,6 +24,11 @@
     :card="false"
 >
     <x-slot name="headerActions">
+        <a href="{{ route('auditorias.exportar') }}" class="aud-btn aud-btn--ghost"
+           title="Detalle por empleado más las hojas filtrables de equipos y licencias">
+            <i class="fas fa-file-excel" aria-hidden="true"></i> Exportar
+        </a>
+
         @if($puedeGenerar)
         <button type="button" class="aud-btn aud-btn--primary" id="btnAbrirLicencias"
                 aria-haspopup="dialog" aria-controls="modalGenerar">

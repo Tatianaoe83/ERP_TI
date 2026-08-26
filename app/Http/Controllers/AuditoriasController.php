@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AuditoriasExport;
 use App\Models\Auditoria;
 use App\Models\AuditoriaEquipo;
 use App\Models\AuditoriaLicencia;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AuditoriasController extends Controller
 {
@@ -412,6 +414,22 @@ class AuditoriasController extends Controller
             'success'       => true,
             'observaciones' => $registro->observaciones,
         ]);
+    }
+
+    /**
+     * Exporta el libro de auditorías: el detalle agrupado por empleado y las dos
+     * hojas de conteo filtrables.
+     *
+     * El detalle sale de la corrida más reciente de cada quien, que es la que
+     * describe el presente; los conteos miden el inventario completo, incluido lo
+     * que todavía no se audita, porque ése es el trabajo pendiente.
+     */
+    public function exportar()
+    {
+        return Excel::download(
+            new AuditoriasExport(),
+            'auditorias-' . Carbon::now()->format('Y-m-d') . '.xlsx'
+        );
     }
 
     public function destroy($id)

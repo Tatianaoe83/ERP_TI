@@ -453,6 +453,12 @@ Route::get('/notificaciones-panel', function () {
 
 
     // Auditorías de equipos tecnológicos
+    // La exportación va ANTES del resource: si no, /auditorias/exportar entra por
+    // show y busca una corrida con id "exportar".
+    Route::get('/auditorias/exportar', [AuditoriasController::class, 'exportar'])
+        ->name('auditorias.exportar')
+        ->middleware('can:ver-auditorias');
+
     Route::resource('/auditorias', AuditoriasController::class)
         ->only(['index', 'show', 'store', 'destroy'])
         ->middleware('can:ver-auditorias');

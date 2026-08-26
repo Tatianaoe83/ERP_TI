@@ -240,6 +240,7 @@
         color: var(--aud-text);
     }
 
+
     .aud-eqficha__ids {
         display: flex;
         flex-wrap: wrap;
