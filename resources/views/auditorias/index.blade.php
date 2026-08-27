@@ -537,7 +537,10 @@
                 if (next) next.disabled = actual >= totalPag;
             }
 
-            jQuery(tabla).on('click', 'td.aud-col-toggle', function () {
+            // .off() + namespace: al entrar por navegación sin recarga el script
+            // se re-ejecuta y destroy() del DataTable no quita estos listeners,
+            // así que se acumulaban y un click abría mientras otro cerraba.
+            jQuery(tabla).off('click.audHist').on('click.audHist', 'td.aud-col-toggle', function () {
                 var tr = jQuery(this).closest('tr');
                 var row = table.row(tr);
                 var boton = tr.find('[data-toggle-fila]');
@@ -549,10 +552,14 @@
                     return;
                 }
 
-                var fuente = tr.find('.aud-historial-fuente');
-                // Clonar el nodo real (no re-parsear innerHTML): con la tabla
-                // anidada dentro del <td> algunos navegadores la pierden.
-                var contenido = fuente.length ? fuente.children().clone(true, true) : '';
+                // Limpia cualquier child previo que haya quedado colgando.
+                row.child(false);
+
+                // UN solo nodo clonado: si se pasa una colección con más de un
+                // elemento, DataTables crea una fila-hija por cada uno y la tabla
+                // aparece duplicada.
+                var $inner = tr.find('.aud-historial-fuente .aud-historial__inner').first();
+                var contenido = $inner.length ? $inner.clone(true, true) : '';
                 row.child(contenido).show();
                 tr.addClass('is-abierto');
                 boton.addClass('is-abierto').attr('aria-expanded', 'true');
@@ -564,8 +571,9 @@
                 paginarHistorial($hijo.find('.aud-historial__inner')[0] || $hijo[0]);
             });
 
-            jQuery(tabla).on('click', '[data-pag-prev], [data-pag-next]', function (e) {
+            jQuery(tabla).off('click.audPag').on('click.audPag', '[data-pag-prev], [data-pag-next]', function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 var cont = jQuery(this).closest('.aud-historial__inner')[0]
                         || jQuery(this).closest('tr.child')[0];
                 if (!cont) return;
