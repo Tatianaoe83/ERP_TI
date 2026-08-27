@@ -17,7 +17,7 @@ return new class extends Migration
         DB::statement("UPDATE inventarioequipo SET tipoEquipo = '3' WHERE tipoEquipo = '2'");
         DB::statement("ALTER TABLE inventarioequipo MODIFY tipoEquipo ENUM('0', '1', '2', '3') NOT NULL DEFAULT '0'");
 
-        if (Schema::hasTable('auditorias_equipos')) {
+        if (Schema::hasColumn('auditorias_equipos', 'tipoEquipo')) {
             DB::statement("UPDATE auditorias_equipos SET tipoEquipo = 3 WHERE tipoEquipo = 2");
         }
     }
@@ -33,7 +33,7 @@ return new class extends Migration
         DB::statement("UPDATE inventarioequipo SET tipoEquipo = '2' WHERE tipoEquipo = '3'");
         DB::statement("ALTER TABLE inventarioequipo MODIFY tipoEquipo ENUM('0', '1', '2') NOT NULL DEFAULT '0'");
 
-        if (Schema::hasTable('auditorias_equipos')) {
+        if (Schema::hasColumn('auditorias_equipos', 'tipoEquipo')) {
             DB::statement("UPDATE auditorias_equipos SET tipoEquipo = 0 WHERE tipoEquipo = 2");
             DB::statement("UPDATE auditorias_equipos SET tipoEquipo = 2 WHERE tipoEquipo = 3");
         }
