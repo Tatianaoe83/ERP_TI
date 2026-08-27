@@ -227,6 +227,18 @@
         display: inline-flex;
     }
 
+    /* Equipo propio: se ocultan Precio, Fechas, Folio y Meses de pago. Quedan en
+       grid de dos columnas Núm. serie + Gerencia; Comentarios pasa a ancho
+       completo porque su compañera (Meses de pago) desaparece. */
+    #editForm.is-modo-propio .equipo-solo-empresa {
+        display: none !important;
+    }
+
+    #editForm.is-modo-propio .equipo-comentarios {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
     .inv-linea-hint {
         margin: 0 0 1rem;
         padding: 0.65rem 0.85rem;

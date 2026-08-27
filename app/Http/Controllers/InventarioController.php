@@ -429,23 +429,32 @@ class InventarioController extends AppBaseController
      */
     private function validarEquipo(Request $request)
     {
-        $esPropio = (int) $request->input('tipoEquipo', 0) === InventarioEquipo::TIPO_PROPIO;
-        $obligatorioSalvoPropio = $esPropio ? 'nullable' : 'required';
+        $modo = (int) $request->input('tipoEquipo', 0);
+        $esPropio = $modo === InventarioEquipo::TIPO_PROPIO;
+        $esExtra  = $modo === InventarioEquipo::TIPO_PRESUPUESTADO;
+
+        // Propio: es del empleado, no entra al presupuesto; sólo se le exige la
+        // gerencia. Extra: proyección sin datos de catálogo todavía, tampoco pide
+        // gerencia. En ambos, folio/precio/serie/fechas son opcionales. El front
+        // hace lo mismo vía data-req-stock.
+        $salvoPropioOExtra = ($esPropio || $esExtra) ? 'nullable' : 'required';
+        $salvoExtra        = $esExtra ? 'nullable' : 'required';
 
         $validador = Validator::make($request->all(), [
             'CategoriaEquipo'  => ['required', 'string', 'max:150'],
             'Marca'            => ['required', 'string', 'max:150'],
             'Caracteristicas'  => ['required', 'string', 'max:255'],
             'Modelo'           => ['required', 'string', 'max:100'],
-            'NumSerie'         => ['required', 'string', 'max:100'],
-            'FechaAsignacion'  => ['required', 'date'],
-            'GerenciaEquipoID' => ['required', 'integer'],
             'Comentarios'      => ['nullable', 'string', 'max:400'],
             'tipoEquipo'       => ['nullable', 'integer', 'in:0,1,2,3'],
 
-            'Precio'           => [$obligatorioSalvoPropio, 'numeric', 'min:0'],
-            'Folio'            => [$obligatorioSalvoPropio, 'string', 'max:50'],
-            'FechaDeCompra'    => [$obligatorioSalvoPropio, 'date'],
+            'GerenciaEquipoID' => [$salvoExtra, 'integer'],
+
+            'NumSerie'         => [$salvoPropioOExtra, 'string', 'max:100'],
+            'FechaAsignacion'  => [$salvoPropioOExtra, 'date'],
+            'Precio'           => [$salvoPropioOExtra, 'numeric', 'min:0'],
+            'Folio'            => [$salvoPropioOExtra, 'string', 'max:50'],
+            'FechaDeCompra'    => [$salvoPropioOExtra, 'date'],
             'MesDePago'        => ['nullable', 'string', 'max:20'],
         ], [
             'required' => 'Este campo es requerido',
@@ -464,19 +473,21 @@ class InventarioController extends AppBaseController
     }
 
     /**
-     * Rellena lo que el equipo propio deja vacío: Precio y Folio son NOT NULL en BD,
-     * y las fechas/mes vacíos deben guardarse como NULL, no como cadena vacía.
+     * El equipo propio guarda Precio en 0 y Folio en cadena; el extra y el propio
+     * dejan vacíos los datos de catálogo (serie, fechas, gerencia, folio, precio),
+     * y esos vacíos deben entrar como NULL (las columnas ya son nullable), no como ''.
      */
     private function normalizarDatosEquipo(array $data): array
     {
         if ((int) ($data['tipoEquipo'] ?? 0) === InventarioEquipo::TIPO_PROPIO) {
-            // Laravel convierte los campos vacíos del formulario en null, así que hay
-            // que cubrir ambos casos: Precio y Folio son NOT NULL en la tabla.
             $data['Precio'] = in_array($data['Precio'] ?? null, [null, ''], true) ? 0 : $data['Precio'];
             $data['Folio']  = trim((string) ($data['Folio'] ?? ''));
         }
 
-        foreach (['FechaDeCompra', 'MesDePago', 'FechaAsignacion'] as $campo) {
+        foreach ([
+            'FechaDeCompra', 'MesDePago', 'FechaAsignacion',
+            'Folio', 'NumSerie', 'GerenciaEquipoID', 'Precio',
+        ] as $campo) {
             if (array_key_exists($campo, $data) && $data[$campo] === '') {
                 $data[$campo] = null;
             }
@@ -1061,7 +1072,7 @@ class InventarioController extends AppBaseController
 
         $EquiposAsignados = InventarioEquipo::query()
             ->where('EmpleadoID', $id);
-        PresupuestoAsignacion::aplicarWhere($EquiposAsignados, 'inventario');
+        PresupuestoAsignacion::aplicarWhere($EquiposAsignados, 'inventario', PresupuestoAsignacion::COLUMNA_EQUIPOS);
         $EquiposAsignados = $EquiposAsignados->get();
 
         $InsumosAsignados = InventarioInsumo::query()
@@ -1124,7 +1135,7 @@ class InventarioController extends AppBaseController
             $equipos = InventarioEquipo::query()
                 ->where('EmpleadoID', $origenId)
                 ->whereIn('InventarioID', $equiposSeleccionados);
-            PresupuestoAsignacion::aplicarWhere($equipos, 'inventario');
+            PresupuestoAsignacion::aplicarWhere($equipos, 'inventario', PresupuestoAsignacion::COLUMNA_EQUIPOS);
             $equipos = $equipos->get();
 
             foreach ($equipos as $equipo) {
@@ -1210,7 +1221,7 @@ class InventarioController extends AppBaseController
             DB::raw('"EQUIPO" as tipo')
         )
             ->where('EmpleadoID', '=', $id);
-        PresupuestoAsignacion::aplicarWhere($data, 'inventario');
+        PresupuestoAsignacion::aplicarWhere($data, 'inventario', PresupuestoAsignacion::COLUMNA_EQUIPOS);
         $data = $data->get();
 
         $insumos = InventarioInsumo::select(

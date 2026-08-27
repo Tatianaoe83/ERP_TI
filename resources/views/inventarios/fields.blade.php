@@ -936,15 +936,15 @@
     }
 
     // Un equipo propio es del empleado: la empresa no le pone precio, folio, fecha de
-    // compra ni mes de pago. Esos cuatro campos se ocultan por completo y se guardan
-    // vacíos (ver guardarEquipo), no sólo dejan de ser obligatorios.
-    const camposOpcionalesEquipoPropio = ['#editPrecio', '#editFolio', '#editFechaDeCompra', '#editMesDePagoEquipo'];
+    // compra, fecha de asignación ni mes de pago. Esos campos (.equipo-solo-empresa)
+    // se ocultan por completo y se envían vacíos; sólo queda Núm. de serie y Gerencia.
+    const camposOpcionalesEquipoPropio = ['#editPrecio', '#editFolio', '#editFechaDeCompra', '#editFechaAsignacion', '#editMesDePagoEquipo'];
 
     function aplicarRequeridosEquipo(esPropio) {
-        // Los contenedores marcados en el modal desaparecen; el required se quita
-        // igual porque un input oculto y obligatorio bloquea la validación nativa.
-        $('.equipo-solo-empresa').toggle(!esPropio);
-
+        // El ocultar/mostrar de .equipo-solo-empresa y el reflow a ancho completo
+        // lo maneja el CSS con la clase #editForm.is-modo-propio (ver syncRequeridosModo).
+        // Aquí sólo se limpia el required de los inputs ocultos: uno oculto y
+        // obligatorio bloquea la validación nativa.
         camposOpcionalesEquipoPropio.forEach(function(sel) {
             const $campo = $(sel);
             if (!$campo.length) return;
@@ -1123,13 +1123,27 @@
     }
 
     function syncRequeridosModo($form, selectorModo) {
-        const extra = esModoExtra(selectorModo);
+        const modo = getModo(selectorModo);          // 0 stock, 1 extra, 2 compartido, 3 propio
+        const extra = modo === MODO_EXTRA;
+        const propio = modo === MODO_PROPIO;
         $form.toggleClass('is-modo-extra', extra);
+        $form.toggleClass('is-modo-propio', propio);
+        // Extra: nada de catálogo es obligatorio. Propio: sólo la gerencia (no
+        // entra al presupuesto). Stock / compartido: todo obligatorio.
         $form.find('[data-req-stock]').each(function() {
+            let requerido;
             if (extra) {
-                this.removeAttribute('required');
+                requerido = false;
+            } else if (propio) {
+                requerido = this.id === 'editGerenciaEquipo';
             } else {
+                requerido = true;
+            }
+            if (requerido) {
                 this.setAttribute('required', 'required');
+            } else {
+                this.removeAttribute('required');
+                $(this).removeClass('is-invalid');
             }
         });
         if ($form.is('#editFormLinea')) {
@@ -1759,8 +1773,9 @@
 
         let id = $('#editId').val();
         let id_E = $('#editEmp').val();
-        // En equipo propio el folio está oculto: se ignora lo que traiga el input.
-        let folio = getModo('#editPresupuestadoEquipo') === MODO_PROPIO ? '' : $('#editFolio').val().trim();
+        // En equipo propio esos campos están ocultos: se ignora lo que traigan.
+        const esPropioEquipo = getModo('#editPresupuestadoEquipo') === MODO_PROPIO;
+        let folio = esPropioEquipo ? '' : $('#editFolio').val().trim();
         let excluirId = id || null;
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -1773,15 +1788,15 @@
                 Marca: $('#editMarca').val(),
                 Caracteristicas: $('#editCaracteristicas').val(),
                 Modelo: $('#editModelo').val(),
-                Precio: $('#editPrecio').val(),
-                FechaAsignacion: $('#editFechaAsignacion').val(),
+                Precio: esPropioEquipo ? '' : $('#editPrecio').val(),
+                FechaAsignacion: esPropioEquipo ? '' : $('#editFechaAsignacion').val(),
                 NumSerie: $('#editNumSerie').val(),
                 Folio: folio,
-                FechaDeCompra: $('#editFechaDeCompra').val(),
+                FechaDeCompra: esPropioEquipo ? '' : $('#editFechaDeCompra').val(),
                 Comentarios: $('#editComentarios').val(),
                 FechaRenovacion: $('#editFechaDeRenovacion').val(),
                 tipoEquipo: getModo('#editPresupuestadoEquipo'),
-                MesDePago: $('#editMesDePagoEquipo').val(),
+                MesDePago: esPropioEquipo ? '' : $('#editMesDePagoEquipo').val(),
             };
 
             $.ajax({
@@ -1934,7 +1949,7 @@
             Caracteristicas: $('#editCaracteristicas').val(),
             Modelo: $('#editModelo').val(),
             Precio: soloEmpresa($('#editPrecio').val()),
-            FechaAsignacion: $('#editFechaAsignacion').val(),
+            FechaAsignacion: soloEmpresa($('#editFechaAsignacion').val()),
             NumSerie: $('#editNumSerie').val(),
             Folio: folio,
             FechaDeCompra: soloEmpresa($('#editFechaDeCompra').val()),

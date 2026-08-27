@@ -64,7 +64,7 @@
                     App\Models\InventarioEquipo::select(DB::raw("CONCAT(IFNULL(Folio, 'Sin folio'),' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
                         ->where('EmpleadoID', '=', $empleadoId)
                         ->where(function ($q) {
-                            \App\Helpers\PresupuestoAsignacion::aplicarWhere($q, 'inventario');
+                            \App\Helpers\PresupuestoAsignacion::aplicarWhere($q, 'inventario', \App\Helpers\PresupuestoAsignacion::COLUMNA_EQUIPOS);
                         })
                         ->pluck('NombreEq', 'InventarioID'),
                     null,
@@ -106,6 +106,7 @@
                         <tr>
                             <th class="xfer-check-col"><input type="checkbox" class="selectAll xfer-check" data-table="equiposAsignadosTable" title="Seleccionar todos"></th>
                             <th>Categoría</th>
+                            <th>Tipo</th>
                             <th>Marca</th>
                             <th>Características</th>
                             <th>Modelo</th>
@@ -123,6 +124,7 @@
                         <tr data-id="{{ $equiposAsignado->InventarioID }}">
                             <td><input type="checkbox" class="selectItem xfer-check" name="equipos[]" value="{{ $equiposAsignado->InventarioID }}"></td>
                             <td>{{ $equiposAsignado->CategoriaEquipo }}</td>
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->tipoEquipo) !!}</td>
                             <td>{{ $equiposAsignado->Marca }}</td>
                             <td>{{ $equiposAsignado->Caracteristicas }}</td>
                             <td>{{ $equiposAsignado->Modelo }}</td>
@@ -154,6 +156,7 @@
                             <th class="xfer-check-col"><input type="checkbox" class="selectAll xfer-check" data-table="insumosAsignadosTable" title="Seleccionar todos"></th>
                             <th>Categoría</th>
                             <th>Nombre</th>
+                            <th>Tipo</th>
                             <th>Costo mensual</th>
                             <th>Costo anual</th>
                             <th>Observaciones</th>
@@ -169,6 +172,7 @@
                             <td><input type="checkbox" class="selectItem xfer-check" name="insumos[]" value="{{ $insumosAsignado->InventarioID }}"></td>
                             <td>{{ $insumosAsignado->CateogoriaInsumo }}</td>
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
                             <td>{{ $insumosAsignado->CostoAnual }}</td>
                             <td>{{ $insumosAsignado->Observaciones }}</td>
@@ -196,12 +200,13 @@
                         <tr>
                             <th class="xfer-check-col"><input type="checkbox" class="selectAll xfer-check" data-table="lineasAsignadosTable" title="Seleccionar todos"></th>
                             <th>Teléfono</th>
+                            <th>Tipo</th>
                             <th>Compañía</th>
                             <th>Plan</th>
                             <th>Renta mensual</th>
                             <th>Cuenta padre</th>
                             <th>Cuenta hija</th>
-                            <th>Tipo</th>
+                            <th>Tipo línea</th>
                             <th>Obra</th>
                             <th>Fecha fianza</th>
                             <th>Costo fianza</th>
@@ -209,7 +214,6 @@
                             <th>Estado</th>
                             <th>Comentarios</th>
                             <th>Monto renovación</th>
-                            <th>ID línea</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -217,6 +221,7 @@
                         <tr data-id="{{ $LineasAsignado->InventarioID }}">
                             <td><input type="checkbox" class="selectItem xfer-check" name="lineas[]" value="{{ $LineasAsignado->InventarioID }}"></td>
                             <td>{{ $LineasAsignado->NumTelefonico }}</td>
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($LineasAsignado->Presupuestado) !!}</td>
                             <td>{{ $LineasAsignado->Compania }}</td>
                             <td>{{ $LineasAsignado->PlanTel }}</td>
                             <td>{{ $LineasAsignado->CostoRentaMensual }}</td>
@@ -230,7 +235,6 @@
                             <td>{{ $LineasAsignado->Estado }}</td>
                             <td>{{ $LineasAsignado->Comentarios }}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza }}</td>
-                            <td>{{ $LineasAsignado->LineaID }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -343,6 +347,58 @@
             text-align: left;
         }
         .dark .xfer-swal-label { color: #9ca3af; }
+
+        /* Tablas muy anchas (equipos/insumos/líneas): DataTables scrollX se
+           encarga del scroll horizontal; sólo hay que evitar el clip de la
+           tarjeta y que las celdas no envuelvan. */
+        .xfer-card,
+        .xfer-card .index-page__table-wrap,
+        .xfer-card .table-responsive {
+            overflow: visible !important;
+        }
+        .xfer-card .dataTables_wrapper .dataTables_scroll,
+        .xfer-card .dataTables_wrapper .dataTables_scrollBody {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .xfer-card table.index-table th,
+        .xfer-card table.index-table td {
+            white-space: nowrap;
+        }
+
+        /* Badges de modalidad (Tipo) y de meses de pago. */
+        .inv-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.22rem 0.55rem;
+            border-radius: 0.4rem;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .inv-chip-stock  { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .inv-chip-extra  { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
+        .inv-chip-share  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .inv-chip-propio { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+
+        .inv-meses-pills {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 0.2rem;
+            max-width: 260px;
+            white-space: normal;
+        }
+        .inv-mes-pill {
+            display: inline-flex;
+            padding: 0.12rem 0.45rem;
+            border-radius: 999px;
+            background: #fff7ed;
+            color: #c2410c;
+            font-size: 0.68rem;
+            font-weight: 700;
+        }
     </style>
 @endpush
 
@@ -371,7 +427,8 @@
             function bindTable(selector, emptyLabel) {
                 return $(selector).DataTable({
                     destroy: true,
-                    responsive: true,
+                    responsive: false,
+                    scrollX: true,
                     paging: true,
                     pageLength: 10,
                     searching: true,

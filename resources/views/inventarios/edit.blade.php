@@ -124,7 +124,7 @@
               </div>
             </div>
 
-            <div class="row">
+            <div class="row equipo-solo-empresa">
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Precio <span class="inv-opt-tag">Opcional en extra</span></label>
@@ -139,7 +139,7 @@
               </div>
             </div>
 
-            <div class="row">
+            <div class="row equipo-solo-empresa">
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Fecha de Compra <span class="inv-opt-tag">Opcional en extra</span></label>
@@ -148,8 +148,12 @@
               </div>
               <div class="col-md-6">
                 <div class="dark:text-white">
-                  <label>Num. Serie <span class="inv-opt-tag">Opcional en extra</span></label>
-                  <input type="text" class="form-control" id="editNumSerie" data-req-stock="1">
+                  <label>Folio <span class="inv-opt-tag">Opcional en extra</span></label>
+                  <input type="text" class="form-control" id="editFolio" data-req-stock="1">
+                  <div class="invalid-feedback rounded ">Este folio ya está registrado. Debe ser único e irrepetible.</div>
+                  <div id="folio-Info" class="mt-2 px-2 py-2 bg-gray-100 text-gray-900 dark:bg-[#101010] dark:text-white border-gray-300 dark:border-gray-700 rounded" style="display:none;">
+                    Últimos 3 folios registrados: <strong id="ultimos-folios-lista">Cargando...</strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -157,12 +161,8 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="dark:text-white">
-                  <label>Folio <span class="inv-opt-tag">Opcional en extra</span></label>
-                  <input type="text" class="form-control" id="editFolio" data-req-stock="1">
-                  <div class="invalid-feedback rounded ">Este folio ya está registrado. Debe ser único e irrepetible.</div>
-                  <div id="folio-Info" class="mt-2 px-2 py-2 bg-gray-100 text-gray-900 dark:bg-[#101010] dark:text-white border-gray-300 dark:border-gray-700 rounded" style="display:none;">
-                    Últimos 3 folios registrados: <strong id="ultimos-folios-lista">Cargando...</strong>
-                  </div>
+                  <label>Num. Serie <span class="inv-opt-tag">Opcional en extra</span></label>
+                  <input type="text" class="form-control" id="editNumSerie" data-req-stock="1">
                 </div>
               </div>
               <div class="col-md-6">
@@ -180,7 +180,7 @@
             </div>
 
             <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-6 equipo-comentarios">
                 <div class="dark:text-white">
                   <label>Comentarios</label>
                   <div class="form-floating">
@@ -188,7 +188,7 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-6 equipo-solo-empresa">
                 @include('inventarios.partials.meses-pago', [
                     'mesesPagoId' => 'editMesDePagoEquipo',
                     'mesesPagoLabel' => 'Meses de pago',
