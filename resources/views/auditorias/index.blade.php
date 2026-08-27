@@ -495,13 +495,21 @@
             var PAG_HISTORIAL = 5;
             var estadoPagHistorial = {};
 
-            function paginarHistorial(panel) {
-                var filas = Array.prototype.slice.call(panel.querySelectorAll('.aud-historial__fila'));
-                var barra = panel.querySelector('[data-pag-historial]');
+            // `cont` es el contenedor de la fila-hija completa (el <tr class="child">
+            // o el nodo clonado): se busca desde ahí, no desde .aud-historial__panel,
+            // porque al clonar la tabla anidada el navegador puede dejar la barra
+            // fuera del panel y panel.querySelector no la encontraría.
+            function paginarHistorial(cont) {
+                if (!cont) return;
+                var filas = Array.prototype.slice.call(cont.querySelectorAll('.aud-historial__fila'));
+                var barra = cont.querySelector('[data-pag-historial]');
                 if (!filas.length || !barra) {
                     if (barra) barra.hidden = true;
                     return;
                 }
+
+                var panel = cont.querySelector('.aud-historial__panel');
+                var clave = panel && panel.id ? panel.id : 'hist';
 
                 var totalPag = Math.ceil(filas.length / PAG_HISTORIAL);
                 if (totalPag <= 1) {
@@ -510,9 +518,9 @@
                     return;
                 }
 
-                var actual = estadoPagHistorial[panel.id] || 1;
+                var actual = estadoPagHistorial[clave] || 1;
                 actual = Math.min(Math.max(actual, 1), totalPag);
-                estadoPagHistorial[panel.id] = actual;
+                estadoPagHistorial[clave] = actual;
 
                 filas.forEach(function (fila, i) {
                     var pagDeFila = Math.floor(i / PAG_HISTORIAL) + 1;
@@ -542,34 +550,31 @@
                 }
 
                 var fuente = tr.find('.aud-historial-fuente');
-                row.child(fuente.length ? fuente.html() : '').show();
+                // Clonar el nodo real (no re-parsear innerHTML): con la tabla
+                // anidada dentro del <td> algunos navegadores la pierden.
+                var contenido = fuente.length ? fuente.children().clone(true, true) : '';
+                row.child(contenido).show();
                 tr.addClass('is-abierto');
                 boton.addClass('is-abierto').attr('aria-expanded', 'true');
 
-                // Misma clase que usaba el <tr> viejo del historial: conserva el
-                // estilo de hover ya definido para el panel.
-                var hijo = tr.next('tr.child').addClass('aud-historial');
-                // La transición de opacidad de .aud-historial__inner necesita
-                // ver el estado inicial (opacity 0) antes de añadir la clase
-                // que anima a 1; si no, entra ya visible de golpe, sin efecto.
-                requestAnimationFrame(function () {
-                    requestAnimationFrame(function () {
-                        hijo.find('.aud-historial__inner').addClass('is-abierto');
-                    });
-                });
-
-                var panel = hijo.find('.aud-historial__panel')[0];
-                if (panel) paginarHistorial(panel);
+                // La fila-hija se agarra con la API de DataTables (row.child()),
+                // no con tr.next(): según la versión no siempre es el hermano
+                // inmediato. La animación de entrada la hace el CSS (@keyframes).
+                var $hijo = jQuery(row.child()).addClass('aud-historial');
+                paginarHistorial($hijo.find('.aud-historial__inner')[0] || $hijo[0]);
             });
 
-            jQuery(tabla).on('click', '[data-pag-prev], [data-pag-next]', function () {
-                var panel = jQuery(this).closest('.aud-historial__panel')[0];
-                if (!panel) return;
+            jQuery(tabla).on('click', '[data-pag-prev], [data-pag-next]', function (e) {
+                e.preventDefault();
+                var cont = jQuery(this).closest('.aud-historial__inner')[0]
+                        || jQuery(this).closest('tr.child')[0];
+                if (!cont) return;
 
-                var actual = estadoPagHistorial[panel.id] || 1;
-                var esSiguiente = jQuery(this).is('[data-pag-next]');
-                estadoPagHistorial[panel.id] = actual + (esSiguiente ? 1 : -1);
-                paginarHistorial(panel);
+                var panel = cont.querySelector('.aud-historial__panel');
+                var clave = panel && panel.id ? panel.id : 'hist';
+                var actual = estadoPagHistorial[clave] || 1;
+                estadoPagHistorial[clave] = actual + (jQuery(this).is('[data-pag-next]') ? 1 : -1);
+                paginarHistorial(cont);
             });
         }
 

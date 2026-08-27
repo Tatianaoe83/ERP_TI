@@ -1885,16 +1885,21 @@
        da continuidad visual entre el disparador y lo que se desplegó. El
        sangrado izquierdo alinea bajo la columna del empleado, no bajo el
        chevron, para que se lea como dependiente de la fila de arriba. */
+    /* La animación de entrada va por @keyframes: corre sola cuando la fila-hija
+       se inserta en el DOM, sin depender de que el JS ponga una clase. Termina
+       siempre en opacity:1, así que nunca puede quedar invisible. */
     .aud-historial__inner {
         padding: 0.15rem 0.9rem 0.9rem 2.6rem;
-        opacity: 0;
-        transform: translateY(-4px);
-        transition: opacity 200ms ease-out, transform 200ms ease-out;
+        animation: aud-historial-in 200ms ease-out both;
     }
 
-    .aud-historial__inner.is-abierto {
-        opacity: 1;
-        transform: none;
+    @keyframes aud-historial-in {
+        from { opacity: 0; transform: translateY(-4px); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .aud-historial__inner { animation: none; }
     }
 
     /* Tarjeta propia, separada de la fila padre por aire real (no sólo un borde):
