@@ -146,6 +146,7 @@
             // DATATABLE
             // =========================
             var table = $('#tabla-empleados').DataTable({
+                retrieve: true,
                 serverSide: true,
                 processing: true,
                 responsive: {

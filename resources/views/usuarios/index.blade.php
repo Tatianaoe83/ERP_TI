@@ -59,6 +59,7 @@
     <script>
         $(document).ready(function() {
             $('#tableUsu').DataTable({
+                retrieve: true,
                 responsive: true,
                 paging: true,
                 pageLength: 10,
