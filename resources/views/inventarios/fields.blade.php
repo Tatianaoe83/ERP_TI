@@ -199,17 +199,17 @@
                             <th>Gerencia Equipo</th>
                             <th>Comentarios</th>
                             @if($permitePresupuestado)
-                            <th>Stock / Extra</th>
+                            <th>Tipo Equipo</th>
                             <th>Mes de pago</th>
                             @endif
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($equiposAsignados as $equiposAsignado)
-                        @php $esExtraEquipo = (int) $equiposAsignado->Presupuestado === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
+                        @php $esExtraEquipo = (int) $equiposAsignado->tipoEquipo === \App\Helpers\PresupuestoAsignacion::EXTRA; @endphp
                         <tr data-id="{{ $equiposAsignado->InventarioID }}"
                             data-meses="{{ $equiposAsignado->MesDePago }}"
-                            data-presupuestado="{{ $equiposAsignado->Presupuestado }}"
+                            data-presupuestado="{{ $equiposAsignado->tipoEquipo }}"
                             data-categoria="{{ $equiposAsignado->CategoriaEquipo }}"
                             data-marca="{{ $equiposAsignado->Marca }}"
                             data-caracteristicas="{{ $equiposAsignado->Caracteristicas }}"
@@ -225,11 +225,11 @@
                                 @if($empleadoActivo)
                                 <div class="index-actions">
                                     @if($permitePresupuestado && !$presupuestadoForzado)
-                                        @if((int) $equiposAsignado->Presupuestado === 1)
+                                        @if((int) $equiposAsignado->tipoEquipo === 1)
                                         <span class="inv-check inv-check--off" title="Extra: ábralo para cambiar el tipo"></span>
                                         @else
                                         <label class="inv-check" title="Seleccionar">
-                                            <input type="checkbox" class="inv-bulk-check" data-tipo="equipo" data-id="{{ $equiposAsignado->InventarioID }}" data-modo="{{ (int) $equiposAsignado->Presupuestado }}">
+                                            <input type="checkbox" class="inv-bulk-check" data-tipo="equipo" data-id="{{ $equiposAsignado->InventarioID }}" data-modo="{{ (int) $equiposAsignado->tipoEquipo }}">
                                         </label>
                                         @endif
                                     @endif
@@ -401,7 +401,7 @@
                             <th>Comentarios</th>
                             <th>Meses de pago</th>
                             @if($permitePresupuestado)
-                            <th>Stock / Extra</th>
+                            <th>Tipo Equipo</th>
                             @endif
 
                         </tr>
@@ -614,7 +614,7 @@
                             <th>Monto Renovación Fianza</th>
                             <th>Fecha Renovación</th>
                             @if($permitePresupuestado)
-                            <th>Stock / Extra</th>
+                            <th>Tipo Equipo</th>
                             @endif
                             <th>Meses de renta</th>
 
@@ -965,11 +965,15 @@
         }
     }
 
+    // Sólo para saber si el modo elegido es "Extra" (1); NO uses esto para
+    // armar el payload que se envía al servidor, aplana Compartido y Propio
+    // a 0 (Stock). Para eso usa getModo, que regresa el valor real 0-3.
     function getPresupuestado(selector) {
         return getModo(selector) === 1 ? 1 : 0;
     }
 
-    // Valor completo (0/1/2) para equipos; insumos y líneas siguen usando getPresupuestado.
+    // Valor real 0/1/2/3 (Stock/Extra/Compartido/Propio): el que se manda al
+    // servidor en equipos, insumos y líneas.
     function getModo(selector) {
         if (presupuestadoForzado) {
             return 1;
@@ -1196,13 +1200,17 @@
         initInvDt('#equiposTable');
         initInvDt('#insumosTable');
         initInvDt('#lineasTable');
+        // Sin responsive en las tablas de asignados: se muestran todas las
+        // columnas y el scroll horizontal lo da el wrapper .table-responsive.
+        // Nada de fila hija colapsable.
         initInvDt('#equiposAsignadosTable', {
+            responsive: false,
             columnDefs: [
                 { visible: false, targets: [3, 6, 7] }
             ]
         });
-        initInvDt('#insumosAsignadosTable');
-        initInvDt('#lineasAsignadosTable');
+        initInvDt('#insumosAsignadosTable', { responsive: false });
+        initInvDt('#lineasAsignadosTable', { responsive: false });
 
         inicializarFiltrosPresupuestado();
     });
@@ -1741,7 +1749,7 @@
                 FechaDeCompra: $('#editFechaDeCompra').val(),
                 Comentarios: $('#editComentarios').val(),
                 FechaRenovacion: $('#editFechaDeRenovacion').val(),
-                Presupuestado: getPresupuestado('#editPresupuestadoEquipo'),
+                tipoEquipo: getModo('#editPresupuestadoEquipo'),
                 MesDePago: $('#editMesDePagoEquipo').val(),
             };
 
@@ -1994,7 +2002,7 @@
     // Actualizar una fila en la tabla después de editar
     function updateTableRow(equipo) {
         let row = $(`tr[data-id=${equipo.InventarioID}]`);
-        const extra = esExtraAsignacion(equipo.Presupuestado);
+        const extra = esExtraAsignacion(equipo.tipoEquipo);
         row.find('td:eq(1)').text(equipo.CategoriaEquipo);
         row.find('td:eq(2)').text(equipo.Marca);
         row.find('td:eq(3)').text(equipo.Caracteristicas);
@@ -2007,7 +2015,7 @@
         row.find('td:eq(10)').attr('data-id', equipo.GerenciaEquipoID || '').html(celdaPendiente(equipo.GerenciaEquipo, extra));
         row.find('td:eq(11)').html(celdaPendiente(equipo.Comentarios, extra));
         if (permitePresupuestado) {
-            row.find('td:eq(12)').html(htmlChipPresupuestado(equipo.Presupuestado));
+            row.find('td:eq(12)').html(htmlChipPresupuestado(equipo.tipoEquipo));
             row.find('td:eq(13)').html(htmlPillsMeses(equipo.MesDePago ?? ''));
         }
         row.attr('data-meses', equipo.MesDePago ?? '');
@@ -2023,8 +2031,8 @@
         setAttrFila(row, 'folio', equipo.Folio);
         setAttrFila(row, 'gerencia-id', equipo.GerenciaEquipoID);
         setAttrFila(row, 'comentarios', equipo.Comentarios);
-        setAttrFila(row, 'presupuestado', equipo.Presupuestado);
-        syncCheckFila(row, 'equipo', equipo.InventarioID, equipo.Presupuestado);
+        setAttrFila(row, 'presupuestado', equipo.tipoEquipo);
+        syncCheckFila(row, 'equipo', equipo.InventarioID, equipo.tipoEquipo);
 
         // Refrescar la caché de DataTables para que el filtro y los conteos vean el cambio.
         $('#equiposAsignadosTable').DataTable().row(row).invalidate().draw(false);
@@ -2032,9 +2040,9 @@
 
     // Agregar una nueva fila en la tabla (para equipo creado)
     function addNewRow(equipo) {
-        const extra = esExtraAsignacion(equipo.Presupuestado);
+        const extra = esExtraAsignacion(equipo.tipoEquipo);
         let newRow = `
-        <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}" data-presupuestado="${equipo.Presupuestado ?? 0}"
+        <tr data-id="${equipo.InventarioID}" data-meses="${equipo.MesDePago ?? ''}" data-presupuestado="${equipo.tipoEquipo ?? 0}"
             data-categoria="${escAttr(equipo.CategoriaEquipo)}" data-marca="${escAttr(equipo.Marca)}"
             data-caracteristicas="${escAttr(equipo.Caracteristicas)}" data-modelo="${escAttr(equipo.Modelo)}"
             data-precio="${escAttr(equipo.Precio)}" data-fecha-asignacion="${escAttr(equipo.FechaAsignacion ? String(equipo.FechaAsignacion).substring(0, 10) : '')}"
@@ -2043,7 +2051,7 @@
             data-gerencia-id="${escAttr(equipo.GerenciaEquipoID)}" data-comentarios="${escAttr(equipo.Comentarios)}">
             <td>
                 <div class="index-actions">
-                    ${htmlCheckBulk('equipo', equipo.InventarioID, equipo.Presupuestado)}
+                    ${htmlCheckBulk('equipo', equipo.InventarioID, equipo.tipoEquipo)}
                     <button type="button" class="index-action index-action--edit edit-btn" data-id="${equipo.InventarioID}" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -2065,7 +2073,7 @@
             <td>${celdaPendiente(equipo.Folio, extra)}</td>
             <td data-id="${equipo.GerenciaEquipoID || ''}">${celdaPendiente(equipo.GerenciaEquipo, extra)}</td>
             <td>${celdaPendiente(equipo.Comentarios, extra)}</td>
-            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.Presupuestado)}</td><td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
+            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.tipoEquipo)}</td><td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
         </tr>
     `;
         $('#equiposAsignadosTable').DataTable().row.add($(newRow)).draw(false);
@@ -2277,7 +2285,7 @@
             NumSerie: $('#editNumSerieInsu').val(),
             Comentarios: $('#editComentariosInsumo').val(),
             MesDePago: $('#editMesDePago').val(),
-            Presupuestado: getPresupuestado('#editPresupuestadoInsumo'),
+            Presupuestado: getModo('#editPresupuestadoInsumo'),
         };
 
         let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -2651,7 +2659,7 @@
             Comentarios: $('#editcomenl').val(),
             MontoRenovacionFianza: $('#editMontoRenovacionFianza').val(),
             FechaRenovacion: fechaRenov,
-            Presupuestado: getPresupuestado('#editPresupuestadoLinea'),
+            Presupuestado: getModo('#editPresupuestadoLinea'),
             MesDePago: $('#editMesDePagoLinea').val(),
             PlanID: $('#editPlanLinea').val(),
             TipoLinea: $('#editTipoLinea').val(),
@@ -2962,6 +2970,8 @@
         }
 
         var etiqueta = modo === 2 ? 'Compartido' : 'Stock';
+        // Equipos guardan la modalidad en "tipoEquipo"; insumos y líneas en "Presupuestado".
+        var campoModo = tipo === 'equipo' ? 'tipoEquipo' : 'Presupuestado';
         Swal.fire({
             title: 'Cambiar tipo',
             text: 'Pasar ' + ids.length + ' registro(s) a ' + etiqueta + '.',
@@ -2980,26 +2990,50 @@
             $.ajax({
                 url: '/inventarios/cambiar-asignacion-masiva',
                 method: 'PUT',
-                data: {
-                    tipo: tipo,
-                    ids: ids,
-                    Presupuestado: modo,
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
+                data: (function () {
+                    var payload = {
+                        tipo: tipo,
+                        ids: ids,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    };
+                    payload[campoModo] = modo;
+                    return payload;
+                })(),
                 success: function(response) {
-                    (response.actualizados || []).forEach(function(id) {
-                        var $row = $('#' + tablaId + ' tr[data-id="' + id + '"]');
-                        if (permitePresupuestado) {
-                            $row.find('td:eq(' + columnaPresupuestado[tablaId] + ')').html(htmlChipPresupuestado(modo));
-                        }
-                        syncCheckFila($row, tipo, id, modo);
-                        if ($.fn.DataTable.isDataTable('#' + tablaId)) {
-                            $('#' + tablaId).DataTable().row($row).invalidate();
-                        }
-                    });
-                    if ($.fn.DataTable.isDataTable('#' + tablaId)) {
-                        $('#' + tablaId).DataTable().draw(false);
+                    var dt = $.fn.DataTable.isDataTable('#' + tablaId) ? $('#' + tablaId).DataTable() : null;
+                    var col = columnaPresupuestado[tablaId];
+                    var idsSet = {};
+                    (response.actualizados || []).forEach(function(id) { idsSet[String(id)] = true; });
+
+                    if (dt) {
+                        // Escribir en la CACHÉ de DataTables (dt.cell().data), no en el
+                        // <td>: draw() re-pinta cada fila desde su caché y borraba el
+                        // cambio hecho a mano. La API además ve las filas que el
+                        // paginado tiene fuera de la página activa.
+                        dt.rows(function(idx, data, node) {
+                            return idsSet[String($(node).attr('data-id'))] === true;
+                        }).every(function() {
+                            var idx = this.index();
+                            var $node = $(this.node());
+                            var id = $node.attr('data-id');
+                            $node.attr('data-presupuestado', modo);
+                            syncCheckFila($node, tipo, id, modo);
+                            if (permitePresupuestado && col !== undefined) {
+                                dt.cell(idx, col).data(htmlChipPresupuestado(modo));
+                            }
+                        });
+                        dt.draw(false);
+                    } else {
+                        (response.actualizados || []).forEach(function(id) {
+                            var $row = $('#' + tablaId + ' tr[data-id="' + id + '"]');
+                            if (permitePresupuestado && col !== undefined) {
+                                $row.find('td').eq(col).html(htmlChipPresupuestado(modo));
+                            }
+                            syncCheckFila($row, tipo, id, modo);
+                        });
                     }
+
+                    actualizarConteos(tablaId);
                     $bar.find('.inv-bulk-all').prop('checked', false);
                     actualizarConteoBulk($bar);
 

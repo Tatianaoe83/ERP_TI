@@ -883,7 +883,10 @@ class InventarioController extends AppBaseController
     {
         $tipo = $request->input('tipo');
         $ids = array_values(array_unique(array_map('intval', (array) $request->input('ids', []))));
-        $modo = PresupuestoAsignacion::normalizar($request->input('Presupuestado'));
+        // Equipos mandan la modalidad en "tipoEquipo"; insumos y líneas en "Presupuestado".
+        $modo = PresupuestoAsignacion::normalizar(
+            $request->input($tipo === 'equipo' ? 'tipoEquipo' : 'Presupuestado')
+        );
 
         if (! in_array($tipo, ['equipo', 'insumo', 'linea'], true) || $ids === []) {
             return response()->json(['success' => false, 'message' => 'Seleccione al menos un registro.'], 422);
@@ -922,11 +925,16 @@ class InventarioController extends AppBaseController
             return response()->json(['success' => false, 'message' => 'El referenciado solo maneja stock.'], 422);
         }
 
+        // Los equipos guardan la modalidad en "tipoEquipo", no en "Presupuestado"
+        // (esa columna ni existe en su tabla): usar el nombre fijo aquí habría
+        // fallado el UPDATE en silencio o tronado la consulta.
+        $columna = $tipo === 'equipo' ? PresupuestoAsignacion::COLUMNA_EQUIPOS : PresupuestoAsignacion::COLUMNA_DEFAULT;
+
         $actualizados = [];
         $omitidos = 0;
 
         foreach ($registros as $registro) {
-            $actual = PresupuestoAsignacion::normalizar($registro->Presupuestado);
+            $actual = PresupuestoAsignacion::normalizar($registro->{$columna});
             if ($actual === PresupuestoAsignacion::EXTRA) {
                 $omitidos++;
                 continue;
@@ -937,14 +945,15 @@ class InventarioController extends AppBaseController
                 continue;
             }
 
-            $registro->Presupuestado = $modo;
+            // Texto, no entero: tipoEquipo es ENUM, un int lo lee como índice.
+            $registro->{$columna} = (string) $modo;
             $registro->save();
             $actualizados[] = (int) $registro->InventarioID;
         }
 
         return response()->json([
             'success' => true,
-            'Presupuestado' => $modo,
+            'modo' => $modo,
             'actualizados' => $actualizados,
             'omitidos' => $omitidos,
         ]);
@@ -1090,7 +1099,7 @@ class InventarioController extends AppBaseController
                 $equipo->EmpleadoID = $empleadoSeleccionado;
                 $equipo->FechaAsignacion = $hoy;
                 if ($destinoExtraordinario) {
-                    $equipo->Presupuestado = PresupuestoAsignacion::EXTRA;
+                    $equipo->tipoEquipo = (string) PresupuestoAsignacion::EXTRA;
                 }
                 $equipo->save();
                 $movidos++;
@@ -1621,10 +1630,14 @@ class InventarioController extends AppBaseController
     {
         $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
 
+        // tipoEquipo es un ENUM('0','1','2','3') en MySQL: si se manda como entero
+        // nativo, el motor lo toma como ÍNDICE del enum (1-based), no como el valor,
+        // y truena o guarda otra cosa. Por eso siempre en texto, aunque a insumos y
+        // líneas (TINYINT) el string no les afecta en nada.
         if ($tipoPersona === 'EXTRAORDINARIO') {
-            $data[$columna] = PresupuestoAsignacion::EXTRA;
+            $data[$columna] = (string) PresupuestoAsignacion::EXTRA;
         } elseif (array_key_exists($columna, $data)) {
-            $data[$columna] = PresupuestoAsignacion::normalizar($data[$columna]);
+            $data[$columna] = (string) PresupuestoAsignacion::normalizar($data[$columna]);
         }
 
         return $data;
