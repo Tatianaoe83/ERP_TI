@@ -27,6 +27,7 @@ use App\Helpers\PagoMeses;
 use App\Helpers\PresupuestoAsignacion;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use DB;
 use PDF;
 use Carbon\Carbon;
@@ -661,7 +662,7 @@ class InventarioController extends AppBaseController
                 $data['FechaRenovacion'] = $catalogo->FechaRenovacion;
             }
 
-            $inventariotelf->update($data);
+            $inventariotelf->update($this->datosParaInventarioLineas($data));
             $inventariotelf->refresh();
             $inventariotelf->load('lineastelefonicas.obras');
 
@@ -681,65 +682,69 @@ class InventarioController extends AppBaseController
 
     public function crearlinea($id, $telf, Request $request)
     {
-        if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $id)) {
-            return $respuesta;
-        }
+        try {
+            if ($respuesta = $this->respuestaSiEmpleadoInactivo((int) $id)) {
+                return $respuesta;
+            }
 
-        $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.FechaRenovacion', 'lineastelefonicas.LineaID', 'lineastelefonicas.PlanID', 'lineastelefonicas.ObraID', 'planes.NombrePlan AS PlanTel')
-                ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
-                ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
-                ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
-            ->where('lineastelefonicas.LineaID', $telf)->get();
+            $linea = LineasTelefonicas::select('obras.NombreObra AS Obra', 'lineastelefonicas.NumTelefonico', 'companiaslineastelefonicas.Compania', 'planes.NombrePlan', 'planes.PrecioPlan AS CostoRentaMensual', 'lineastelefonicas.CuentaPadre', 'lineastelefonicas.CuentaHija', 'lineastelefonicas.TipoLinea', 'lineastelefonicas.FechaFianza', 'lineastelefonicas.CostoFianza', 'lineastelefonicas.MontoRenovacionFianza', 'lineastelefonicas.FechaRenovacion', 'lineastelefonicas.LineaID', 'lineastelefonicas.PlanID', 'lineastelefonicas.ObraID', 'planes.NombrePlan AS PlanTel')
+                    ->join('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
+                    ->join('companiaslineastelefonicas', 'companiaslineastelefonicas.ID', '=', 'planes.CompaniaID')
+                    ->join('obras', 'obras.ObraID', '=', 'lineastelefonicas.ObraID')
+                ->where('lineastelefonicas.LineaID', $telf)->get();
 
 
-        $lineaData = $linea->first();
-        $data = $request->all();
-        $data['EmpleadoID'] = $id;
-        $data['Estado'] = 'True';
+            $lineaData = $linea->first();
+            if (!$lineaData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró la línea en el catálogo.',
+                ], 404);
+            }
 
-        $data = array_merge($data, $lineaData->toArray());
+            $data = $request->all();
+            $data['EmpleadoID'] = $id;
+            $data['Estado'] = 'True';
+
+            $data = array_merge($data, $lineaData->toArray());
 
             $empleado = Empleados::select('obras.ObraID', 'obras.NombreObra AS NombreObra')
-                ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-            ->where('EmpleadoID', $id)->get();
+                    ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+                ->where('EmpleadoID', $id)->get();
 
-        $empleadoData = $empleado->first();
-
-        $data = array_merge($data, $empleadoData->toArray());
-        $fechaRenovRaw = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
-        
-        if ($fechaRenovRaw == 'Sin asignar' || $fechaRenovRaw == 'Sin asigna' || empty($fechaRenovRaw)) {
-            $data['FechaRenovacion'] = null;
-        } else {
-            // Intentamos convertir DD/MM/YYYY a YYYY-MM-DD para SQL
-            try {
-                $data['FechaRenovacion'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaRenovRaw))->format('Y-m-d');
-            } catch (\Exception $e) {
-                $data['FechaRenovacion'] = null; 
+            $empleadoData = $empleado->first();
+            if ($empleadoData) {
+                $data = array_merge($data, $empleadoData->toArray());
+                $data['EmpleadoID'] = $id;
             }
-        }
 
-        // 2. Limpieza y Formateo de Fecha de Fianza (Evita el error de fianza vacía)
-        $fechaFianzaRaw = $request->input('FechaFianza', $lineaData->FechaFianza);
-        
-        if ($fechaFianzaRaw == 'Sin asignar' || $fechaFianzaRaw == 'Sin asigna' || empty($fechaFianzaRaw)) {
-            $data['FechaFianza'] = null;
-        } else {
-            try {
-                $data['FechaFianza'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaFianzaRaw))->format('Y-m-d');
-            } catch (\Exception $e) {
-                $data['FechaFianza'] = null;
-            }
-        }
+            $fechaRenovRaw = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
             
-        // Asegurar que los campos de fecha se transfieran correctamente (Prioridad al modal si tiene datos)
-        if ($lineaData) {
-            // Obtener valores crudos
+            if ($fechaRenovRaw == 'Sin asignar' || $fechaRenovRaw == 'Sin asigna' || empty($fechaRenovRaw)) {
+                $data['FechaRenovacion'] = null;
+            } else {
+                try {
+                    $data['FechaRenovacion'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaRenovRaw))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $data['FechaRenovacion'] = null; 
+                }
+            }
+
+            $fechaFianzaRaw = $request->input('FechaFianza', $lineaData->FechaFianza);
+            
+            if ($fechaFianzaRaw == 'Sin asignar' || $fechaFianzaRaw == 'Sin asigna' || empty($fechaFianzaRaw)) {
+                $data['FechaFianza'] = null;
+            } else {
+                try {
+                    $data['FechaFianza'] = \Carbon\Carbon::parse(str_replace('/', '-', $fechaFianzaRaw))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $data['FechaFianza'] = null;
+                }
+            }
+                
+            $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
             $rawFechaFianza = $request->input('FechaFianza', $lineaData->FechaFianza);
             $rawFechaRenov = $request->input('FechaRenovacion', $lineaData->FechaRenovacion);
-            
-            // Limpiar: si es un string no-fecha, convertir a null
-            $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
             
             if (in_array($rawFechaFianza, $invalidValues) || empty($rawFechaFianza)) {
                 $data['FechaFianza'] = null;
@@ -763,26 +768,30 @@ class InventarioController extends AppBaseController
             
             $data['MontoRenovacionFianza'] = $request->input('MontoRenovacionFianza', $lineaData->MontoRenovacionFianza);
             $data['CostoFianza'] = $lineaData->CostoFianza;
-        }
 
-        $data = $this->forzarPresupuestado($data, (int) $id);
-        $data['MesDePago'] = $request->input('MesDePago');
-        $data = $this->aplicarMesesDePago($data, false);
-        $data = $this->vaciarCamposEstimacion($data);
+            $data = $this->forzarPresupuestado($data, (int) $id);
+            $data['MesDePago'] = $request->input('MesDePago');
+            $data = $this->aplicarMesesDePago($data, false);
+            $data = $this->vaciarCamposEstimacion($data);
 
-        $inventariotelf = InventarioLineas::create($data);
-        $inventariotelf->load('lineastelefonicas.obras');
+            $inventariotelf = InventarioLineas::create($this->datosParaInventarioLineas($data));
+            $inventariotelf->load('lineastelefonicas.obras');
 
-        $Lineas = DB::table('lineastelefonicas')
-            ->where('LineaID', $telf)
-            ->update(['Disponible' => 0]);
-
-        $inventarioinsumo = InventarioInsumo::where('InventarioID', $id)->first();
+            DB::table('lineastelefonicas')
+                ->where('LineaID', $telf)
+                ->update(['Disponible' => 0]);
 
             return response()->json([
                 'telefono' => $inventariotelf,
                 'success' => true
             ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al asignar línea del catálogo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Ocurrió un error al guardar los datos: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function crearlineaextra($id, Request $request)
@@ -818,7 +827,7 @@ class InventarioController extends AppBaseController
             $data['CostoFianza'] = 0;
         }
 
-        $inventariotelf = InventarioLineas::create($data);
+        $inventariotelf = InventarioLineas::create($this->datosParaInventarioLineas($data));
         $inventariotelf->load('lineastelefonicas.obras');
 
         return response()->json([
@@ -1634,6 +1643,22 @@ class InventarioController extends AppBaseController
         }
 
         return $fallback !== null ? (string) $fallback : null;
+    }
+
+    /**
+     * Producción puede no tener migraciones recientes (PlanID, etc.).
+     * Solo envía a INSERT/UPDATE columnas que existan en inventariolineas.
+     */
+    private function datosParaInventarioLineas(array $data): array
+    {
+        static $columnas = null;
+        if ($columnas === null) {
+            $columnas = array_flip(Schema::getColumnListing('inventariolineas'));
+        }
+
+        unset($data['_token'], $data['_method']);
+
+        return array_intersect_key($data, $columnas);
     }
 
     private function datosLineaDesdePlan(array $data, Request $request): array
