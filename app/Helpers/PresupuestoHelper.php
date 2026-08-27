@@ -182,7 +182,7 @@ class PresupuestoHelper
             ->where(function ($q) use ($modo) {
                 $q->whereHas('inventarioequipo', function($query) use ($modo) {
                     PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
-                    self::soloPresupuestados($query, $modo);
+                    self::soloPresupuestadosEquipo($query, $modo);
                 })->orWhereHas('inventarioinsumo', function($query) use ($modo) {
                     self::aplicarFiltroInsumoInversion($query);
                     self::soloPresupuestados($query, $modo);
@@ -193,7 +193,7 @@ class PresupuestoHelper
                 'inventarioequipo' => function($query) use ($modo) {
                     $query->select('InventarioID', 'EmpleadoID', 'CategoriaEquipo', 'Precio', 'MesDePago');
                     PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
-                    self::soloPresupuestados($query, $modo);
+                    self::soloPresupuestadosEquipo($query, $modo);
                 },
                 'inventarioinsumo' => function($query) use ($modo) {
                     $query->select('InventarioID', 'EmpleadoID', 'CateogoriaInsumo', 'NombreInsumo',
