@@ -93,6 +93,7 @@ class InventarioDataTable extends DataTable
                 'processing' => true,
                 'serverSide' => true,
                 'responsive' => true,
+                'retrieve' => true,
                 'pageLength' => 7,
                 'searching' => true,
                 'language' => [

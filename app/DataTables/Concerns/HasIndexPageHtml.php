@@ -35,6 +35,10 @@ trait HasIndexPageHtml
             'processing' => true,
             'serverSide' => true,
             'responsive' => true,
+            // Si el script de init corre dos veces (pushes duplicados, navegación
+            // sin recarga, etc.) DataTables lanza "Cannot reinitialise". Con
+            // retrieve devuelve la instancia existente en vez de tronar.
+            'retrieve' => true,
             'pageLength' => 10,
             'searching' => true,
             'language' => [
