@@ -22,9 +22,40 @@
         <a href="{{ route('inventarios.index') }}" class="index-page__btn-secondary">Regresar</a>
     </x-slot>
 
-    <p class="text-sm text-gray-500 dark:text-gray-400" style="margin: -0.35rem 0 1.1rem;">
+    <p class="xfer-lede">
         Solo se transfieren asignaciones de <strong>stock</strong> y <strong>compartido</strong>. El destino debe ser persona física o extraordinaria. El mantenimiento preventivo se genera desde esta misma pantalla.
     </p>
+
+    <div class="xfer-stats">
+        <div class="xfer-stat">
+            <span class="xfer-stat__icon xfer-stat__icon--equipos"><i class="fas fa-laptop"></i></span>
+            <span class="xfer-stat__body">
+                <span class="xfer-stat__value">{{ $nEquipos }}</span>
+                <span class="xfer-stat__label">Equipos</span>
+            </span>
+        </div>
+        <div class="xfer-stat">
+            <span class="xfer-stat__icon xfer-stat__icon--insumos"><i class="fas fa-box-open"></i></span>
+            <span class="xfer-stat__body">
+                <span class="xfer-stat__value">{{ $nInsumos }}</span>
+                <span class="xfer-stat__label">Insumos</span>
+            </span>
+        </div>
+        <div class="xfer-stat">
+            <span class="xfer-stat__icon xfer-stat__icon--lineas"><i class="fas fa-sim-card"></i></span>
+            <span class="xfer-stat__body">
+                <span class="xfer-stat__value">{{ $nLineas }}</span>
+                <span class="xfer-stat__label">Líneas</span>
+            </span>
+        </div>
+        <div class="xfer-stat xfer-stat--sel">
+            <span class="xfer-stat__icon xfer-stat__icon--sel"><i class="fas fa-check-double"></i></span>
+            <span class="xfer-stat__body">
+                <span class="xfer-stat__value" data-xfer-selcount>0</span>
+                <span class="xfer-stat__label">Seleccionados</span>
+            </span>
+        </div>
+    </div>
 
     @php
         $tareasPreven = [
@@ -49,6 +80,7 @@
 
     <div class="index-page__card crud-page__card xfer-card xfer-preven" style="margin-bottom: 1.5rem;">
         <div class="xfer-card-head">
+            <span class="xfer-card-head__icon xfer-card-head__icon--preven"><i class="fas fa-tools"></i></span>
             <div>
                 <h2>Mantenimiento preventivo</h2>
                 <span class="index-page__count">Selecciona el equipo y las actividades realizadas</span>
@@ -95,6 +127,7 @@
         <div class="index-page__stack">
         <div class="index-page__card overflow-hidden xfer-card">
             <div class="xfer-card-head">
+                <span class="xfer-card-head__icon xfer-card-head__icon--equipos"><i class="fas fa-laptop"></i></span>
                 <div>
                     <h2>Equipos asignados</h2>
                     <span class="index-page__count xfer-card-count">{{ $nEquipos === 1 ? '1 registro' : $nEquipos . ' registros' }}</span>
@@ -144,6 +177,7 @@
 
         <div class="index-page__card overflow-hidden xfer-card">
             <div class="xfer-card-head">
+                <span class="xfer-card-head__icon xfer-card-head__icon--insumos"><i class="fas fa-box-open"></i></span>
                 <div>
                     <h2>Insumos asignados</h2>
                     <span class="index-page__count xfer-card-count">{{ $nInsumos === 1 ? '1 registro' : $nInsumos . ' registros' }}</span>
@@ -189,6 +223,7 @@
 
         <div class="index-page__card overflow-hidden xfer-card">
             <div class="xfer-card-head">
+                <span class="xfer-card-head__icon xfer-card-head__icon--lineas"><i class="fas fa-sim-card"></i></span>
                 <div>
                     <h2>Líneas asignadas</h2>
                     <span class="index-page__count xfer-card-count">{{ $nLineas === 1 ? '1 registro' : $nLineas . ' registros' }}</span>
@@ -243,9 +278,17 @@
         </div>
         </div>
 
-        <div class="crud-page__actions xfer-actions">
-            <button type="submit" class="index-page__btn-primary show_confirm">Transferir</button>
-            <a href="{{ route('inventarios.index') }}" class="index-page__btn-secondary">Regresar</a>
+        <div class="xfer-actions">
+            <div class="xfer-actions__info">
+                <span class="xfer-actions__count" data-xfer-selcount>0</span>
+                <span class="xfer-actions__text">elemento(s) seleccionado(s) para transferir</span>
+            </div>
+            <div class="xfer-actions__buttons">
+                <a href="{{ route('inventarios.index') }}" class="index-page__btn-secondary">Regresar</a>
+                <button type="submit" class="index-page__btn-primary show_confirm">
+                    <i class="fas fa-exchange-alt"></i> Transferir
+                </button>
+            </div>
         </div>
     </form>
 </x-index-page>
@@ -254,134 +297,332 @@
 @push('third_party_stylesheets')
     @include('layouts.datatables_css')
     <style>
-        .xfer-card { margin-bottom: 0; }
+        /* ============================================================
+           Transferir inventario · estilo "data-dense dashboard"
+           slate + verde stock · light/dark · transiciones 150-200ms
+           ============================================================ */
+        :root {
+            --xf-surface: #ffffff;
+            --xf-surface-2: #f8fafc;
+            --xf-border: #e6e8ea;
+            --xf-ink: #0f172a;
+            --xf-muted: #64748b;
+            --xf-navy: var(--index-navy, #101d49);
+            --xf-accent: #059669;
+            --xf-accent-soft: #ecfdf5;
+            --xf-ring: rgba(5, 150, 105, 0.35);
+        }
+        .dark, .dark .crud-page {
+            --xf-surface: #0f1729;
+            --xf-surface-2: #131c30;
+            --xf-border: #26304a;
+            --xf-ink: #e2e8f0;
+            --xf-muted: #94a3b8;
+            --xf-navy: #e2e8f0;
+            --xf-accent: #34d399;
+            --xf-accent-soft: rgba(52, 211, 153, 0.12);
+            --xf-ring: rgba(52, 211, 153, 0.4);
+        }
+
+        .xfer-lede {
+            font-size: 0.85rem;
+            line-height: 1.55;
+            color: var(--xf-muted);
+            margin: -0.15rem 0 1.15rem;
+            max-width: 70ch;
+        }
+        .xfer-lede strong { color: var(--xf-ink); font-weight: 600; }
+
+        /* ---- KPI strip -------------------------------------------------- */
+        .xfer-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 720px) {
+            .xfer-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        .xfer-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.8rem 0.9rem;
+            background: var(--xf-surface);
+            border: 1px solid var(--xf-border);
+            border-radius: 0.85rem;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .xfer-stat--sel { background: var(--xf-accent-soft); border-color: transparent; }
+        .xfer-stat__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.35rem;
+            height: 2.35rem;
+            border-radius: 0.6rem;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+        .xfer-stat__icon--equipos { background: #eef2ff; color: #4338ca; }
+        .xfer-stat__icon--insumos { background: #fff7ed; color: #c2410c; }
+        .xfer-stat__icon--lineas  { background: #ecfeff; color: #0e7490; }
+        .xfer-stat__icon--sel     { background: var(--xf-accent); color: #fff; }
+        .dark .xfer-stat__icon--equipos { background: rgba(99,102,241,.18); color: #a5b4fc; }
+        .dark .xfer-stat__icon--insumos { background: rgba(249,115,22,.18); color: #fdba74; }
+        .dark .xfer-stat__icon--lineas  { background: rgba(6,182,212,.18);  color: #67e8f9; }
+        .xfer-stat__body { display: flex; flex-direction: column; line-height: 1.15; }
+        .xfer-stat__value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--xf-navy);
+            font-variant-numeric: tabular-nums;
+        }
+        .xfer-stat__label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--xf-muted);
+        }
+
+        /* ---- Cards ---------------------------------------------------- */
+        .xfer-card { margin-bottom: 0; border-radius: 0.9rem; }
         .xfer-preven { margin-bottom: 1.5rem !important; }
+        .index-page__stack .xfer-card + .xfer-card { margin-top: 1.25rem; }
+
+        .xfer-card-head {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1rem 1.1rem 0.85rem;
+            border-bottom: 1px solid var(--xf-border);
+        }
+        .xfer-card-head__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 0.6rem;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .xfer-card-head__icon--preven  { background: #f1f5f9; color: #334155; }
+        .xfer-card-head__icon--equipos { background: #eef2ff; color: #4338ca; }
+        .xfer-card-head__icon--insumos { background: #fff7ed; color: #c2410c; }
+        .xfer-card-head__icon--lineas  { background: #ecfeff; color: #0e7490; }
+        .dark .xfer-card-head__icon--preven  { background: #1e293b; color: #cbd5e1; }
+        .dark .xfer-card-head__icon--equipos { background: rgba(99,102,241,.18); color: #a5b4fc; }
+        .dark .xfer-card-head__icon--insumos { background: rgba(249,115,22,.18); color: #fdba74; }
+        .dark .xfer-card-head__icon--lineas  { background: rgba(6,182,212,.18);  color: #67e8f9; }
+        .xfer-card-head h2 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--xf-navy);
+            letter-spacing: -0.01em;
+        }
+        .xfer-card-head .index-page__count {
+            font-size: 0.72rem;
+            color: var(--xf-muted);
+        }
+
+        /* ---- Preventivo form --------------------------------------- */
         .xfer-preven .form-group,
         .xfer-preven .crud-select-all,
-        .xfer-preven .crud-perms {
-            margin-left: 1.25rem;
-            margin-right: 1.25rem;
-        }
-        .xfer-preven .form-group {
-            margin-top: 0.75rem;
-            margin-bottom: 0.35rem;
-        }
+        .xfer-preven .crud-perms { margin-left: 1.1rem; margin-right: 1.1rem; }
+        .xfer-preven .form-group { margin-top: 0.9rem; margin-bottom: 0.35rem; }
         .xfer-preven .form-group label {
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 600;
-            color: var(--index-muted, #6b7280);
+            color: var(--xf-muted);
             margin-bottom: 0.3rem;
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
         .xfer-preven .select2-container { width: 100% !important; }
         .xfer-preven .select2-container .select2-selection--single {
-            height: 2.5rem !important;
-            border-radius: 0.6rem !important;
-            border: 1px solid var(--index-border, #e5e7eb) !important;
-            background: #fff !important;
+            height: 2.6rem !important;
+            border-radius: 0.65rem !important;
+            border: 1px solid var(--xf-border) !important;
+            background: var(--xf-surface) !important;
             display: flex;
             align-items: center;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .xfer-preven .select2-container--open .select2-selection--single,
+        .xfer-preven .select2-container--focus .select2-selection--single {
+            border-color: var(--xf-accent) !important;
+            box-shadow: 0 0 0 3px var(--xf-ring) !important;
         }
         .xfer-preven .select2-container--default .select2-selection--single .select2-selection__rendered {
             line-height: 1.4 !important;
-            padding-left: 0.75rem;
-            color: #111827;
+            padding-left: 0.8rem;
+            color: var(--xf-ink);
         }
-        .xfer-preven .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 100% !important;
+        .xfer-preven .select2-container--default .select2-selection--single .select2-selection__arrow { height: 100% !important; }
+        .dark .xfer-preven .select2-container--default .select2-selection--single .select2-selection__rendered { color: #f1f5f9 !important; }
+        .dark .xfer-preven .select2-container--default .select2-selection--single .select2-selection__placeholder { color: #94a3b8 !important; }
+
+        .xfer-preven .crud-select-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.9rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--xf-accent);
+            cursor: pointer;
+            user-select: none;
         }
-        .dark .xfer-preven .form-group label { color: #9ca3af; }
-        .dark .xfer-preven .select2-container .select2-selection--single {
-            background: #111827 !important;
-            border-color: #374151 !important;
+        .xfer-preven .crud-select-all:hover { text-decoration: underline; }
+        .xfer-preven .crud-perms {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 0.4rem 0.9rem;
+            margin-top: 0.6rem;
         }
-        .dark .xfer-preven .select2-container--default .select2-selection--single .select2-selection__rendered {
-            color: #f9fafb !important;
-        }
-        .dark .xfer-preven .select2-container--default .select2-selection--single .select2-selection__placeholder {
-            color: #9ca3af !important;
-        }
-        .xfer-preven .crud-page__actions {
-            margin-left: 1.25rem;
-            margin-right: 1.25rem;
-            padding-bottom: 0.25rem;
-        }
-        .xfer-card-head {
+        .xfer-preven .crud-perms label {
             display: flex;
             align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 0.95rem 1rem 0;
-        }
-        .xfer-card-head h2 {
-            margin: 0;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--index-navy, #101d49);
-            letter-spacing: -0.02em;
-        }
-        .xfer-card .index-page__dt-toolbar { padding-top: 0.5rem; }
-        .xfer-check-col { width: 2.5rem; }
-        .xfer-check {
-            width: 1.05rem;
-            height: 1.05rem;
-            accent-color: #101d49;
+            gap: 0.5rem;
+            padding: 0.5rem 0.65rem;
+            border: 1px solid var(--xf-border);
+            border-radius: 0.6rem;
+            font-size: 0.82rem;
+            color: var(--xf-ink);
             cursor: pointer;
+            transition: background .15s ease, border-color .15s ease;
         }
-        .xfer-actions {
-            margin-top: 1.5rem;
-            padding-top: 0;
-            border-top: 0;
+        .xfer-preven .crud-perms label:hover { border-color: var(--xf-accent); background: var(--xf-accent-soft); }
+        .xfer-preven .crud-perms input[type="checkbox"] { margin-top: 0.15rem; accent-color: var(--xf-accent); cursor: pointer; }
+        .xfer-preven .crud-page__actions {
+            margin: 1rem 1.1rem 0;
+            padding: 0.85rem 0 0.25rem;
+            border-top: 1px solid var(--xf-border);
         }
-        .dark .xfer-card-head h2 { color: #fff; }
-        .xfer-swal-label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--index-muted, #6b7280);
-            margin: 0 0 0.35rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            text-align: left;
-        }
-        .dark .xfer-swal-label { color: #9ca3af; }
 
-        /* Tablas muy anchas (equipos/insumos/líneas): DataTables scrollX se
-           encarga del scroll horizontal; sólo hay que evitar el clip de la
-           tarjeta y que las celdas no envuelvan. */
+        /* ---- Table polish ----------------------------------------- */
         .xfer-card,
         .xfer-card .index-page__table-wrap,
-        .xfer-card .table-responsive {
-            overflow: visible !important;
-        }
+        .xfer-card .table-responsive { overflow: visible !important; }
         .xfer-card .dataTables_wrapper .dataTables_scroll,
         .xfer-card .dataTables_wrapper .dataTables_scrollBody {
             overflow-x: auto !important;
             -webkit-overflow-scrolling: touch;
         }
+        .xfer-card .index-page__dt-toolbar { padding: 0.75rem 1.1rem 0.5rem; }
+
+        .xfer-card table.index-table { border-collapse: separate; border-spacing: 0; }
         .xfer-card table.index-table th,
         .xfer-card table.index-table td {
             white-space: nowrap;
+            padding: 0.6rem 0.85rem;
+            border-bottom: 1px solid var(--xf-border);
+        }
+        .xfer-card table.index-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--xf-surface-2);
+            color: var(--xf-muted);
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border-bottom: 1px solid var(--xf-border);
+        }
+        .xfer-card table.index-table tbody tr {
+            transition: background .12s ease;
+        }
+        .xfer-card table.index-table tbody tr:hover { background: var(--xf-surface-2); }
+        .xfer-card table.index-table tbody tr.xfer-row-selected { background: var(--xf-accent-soft); }
+        .xfer-card table.index-table tbody tr:last-child td { border-bottom: 0; }
+        /* números legibles y alineados */
+        .xfer-card table.index-table td:nth-child(n) { font-variant-numeric: tabular-nums; }
+
+        /* sticky checkbox column */
+        .xfer-card table.index-table th.xfer-check-col,
+        .xfer-card table.index-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background: var(--xf-surface);
+        }
+        .xfer-card table.index-table thead th.xfer-check-col { z-index: 3; background: var(--xf-surface-2); }
+        .xfer-card table.index-table tbody tr:hover td:first-child { background: var(--xf-surface-2); }
+        .xfer-card table.index-table tbody tr.xfer-row-selected td:first-child { background: var(--xf-accent-soft); }
+
+        .xfer-check-col { width: 2.75rem; }
+        .xfer-check {
+            width: 1.05rem;
+            height: 1.05rem;
+            accent-color: var(--xf-accent);
+            cursor: pointer;
+        }
+        .xfer-check:focus-visible { outline: 2px solid var(--xf-accent); outline-offset: 2px; }
+
+        /* ---- Sticky action bar ------------------------------------ */
+        .xfer-actions {
+            position: sticky;
+            bottom: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+            padding: 0.85rem 1.1rem;
+            background: var(--xf-surface);
+            border: 1px solid var(--xf-border);
+            border-radius: 0.85rem;
+            box-shadow: 0 -2px 14px rgba(15, 23, 42, 0.06);
+        }
+        .xfer-actions__info { display: flex; align-items: baseline; gap: 0.45rem; font-size: 0.85rem; color: var(--xf-muted); }
+        .xfer-actions__count {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--xf-accent);
+            font-variant-numeric: tabular-nums;
+        }
+        .xfer-actions__buttons { display: flex; align-items: center; gap: 0.6rem; }
+        .xfer-actions .index-page__btn-primary { display: inline-flex; align-items: center; gap: 0.4rem; }
+
+        .xfer-swal-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--xf-muted);
+            margin: 0 0 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            text-align: left;
         }
 
-        /* Badges de modalidad (Tipo) y de meses de pago. */
+        /* ---- Badges (Tipo + meses de pago) ----------------------- */
         .inv-chip {
             display: inline-flex;
             align-items: center;
             gap: 0.3rem;
-            padding: 0.22rem 0.55rem;
+            padding: 0.2rem 0.5rem;
             border-radius: 0.4rem;
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 700;
             letter-spacing: 0.02em;
+            text-transform: uppercase;
             white-space: nowrap;
         }
         .inv-chip-stock  { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
         .inv-chip-extra  { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; }
         .inv-chip-share  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
         .inv-chip-propio { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+        .dark .inv-chip-stock  { background: rgba(16,185,129,.14); color: #6ee7b7; border-color: rgba(16,185,129,.35); }
+        .dark .inv-chip-extra  { background: rgba(249,115,22,.14); color: #fdba74; border-color: rgba(249,115,22,.35); }
+        .dark .inv-chip-share  { background: rgba(59,130,246,.14); color: #93c5fd; border-color: rgba(59,130,246,.35); }
+        .dark .inv-chip-propio { background: rgba(139,92,246,.16); color: #c4b5fd; border-color: rgba(139,92,246,.35); }
 
         .inv-meses-pills {
             display: inline-flex;
@@ -392,12 +633,17 @@
         }
         .inv-mes-pill {
             display: inline-flex;
-            padding: 0.12rem 0.45rem;
+            padding: 0.1rem 0.42rem;
             border-radius: 999px;
-            background: #fff7ed;
-            color: #c2410c;
-            font-size: 0.68rem;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 0.66rem;
             font-weight: 700;
+        }
+        .dark .inv-mes-pill { background: #1e293b; color: #cbd5e1; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .crud-page * { transition: none !important; }
         }
     </style>
 @endpush
@@ -464,6 +710,22 @@
             var table = bindTable('#equiposAsignadosTable', 'No hay equipos asignados');
             var table2 = bindTable('#insumosAsignadosTable', 'No hay insumos asignados');
             var table3 = bindTable('#lineasAsignadosTable', 'No hay líneas asignadas');
+            var tables = [table, table2, table3];
+
+            function recomputarSeleccion() {
+                var total = 0;
+                tables.forEach(function (t) {
+                    t.$('input.selectItem').each(function () {
+                        var sel = this.checked;
+                        if (sel) total++;
+                        $(this).closest('tr').toggleClass('xfer-row-selected', sel);
+                    });
+                });
+                $('[data-xfer-selcount]').text(total);
+                return total;
+            }
+
+            $(document).on('change', 'input.selectItem', recomputarSeleccion);
 
             $('.selectAll').on('click', function (e) {
                 e.stopPropagation();
@@ -476,7 +738,13 @@
                 if (dataTableInstance) {
                     dataTableInstance.$('input.selectItem').prop('checked', checked);
                 }
+                recomputarSeleccion();
             });
+
+            tables.forEach(function (t) {
+                t.on('draw', recomputarSeleccion);
+            });
+            recomputarSeleccion();
 
             $('.show_confirm').on('click', function (event) {
                 var form = $(this).closest('form');
