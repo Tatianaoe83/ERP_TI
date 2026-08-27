@@ -6,27 +6,27 @@
 <x-index-page
     title="Informes"
     icon="fa-clipboard"
-    subtitle="Auditoría de cambios"
+    subtitle="0 registros"
     :show-count="true"
 >
     <x-slot name="filters">
         <div class="form-group">
             <label for="user_type">Responsable del cambio</label>
             {!! Form::select('user_type', App\Models\User::whereIn('id',$usuarios)
-            ->pluck('name','id'), null, ['placeholder' => 'Seleccionar', 'class'=>'jz form-control', 'id' => 'user_type']) !!}
+            ->pluck('name','id'), null, ['placeholder' => 'Seleccionar...', 'class'=>'jz form-control', 'id' => 'user_type']) !!}
         </div>
         <div class="form-group">
             <label for="auditable_type">Tabla</label>
             {!! Form::select('auditable_type', App\Models\Audit::whereIn('auditable_type',$tablas)
-            ->pluck('auditable_type','auditable_type'), null, ['placeholder' => 'Seleccionar', 'class'=>'jz form-control', 'id' => 'auditable_type']) !!}
+            ->pluck('auditable_type','auditable_type'), null, ['placeholder' => 'Seleccionar...', 'class'=>'jz form-control', 'id' => 'auditable_type']) !!}
         </div>
         <div class="form-group">
             <label for="new_values">Valores</label>
-            <input type="text" id="new_values" class="form-control">
+            <input type="text" id="new_values" class="form-control" placeholder="Buscar valores..." autocomplete="off">
         </div>
         @can('buscar-informe')
-        <div class="form-group d-flex align-items-end">
-            <button id="searchBtn" type="button" class="index-page__btn-primary">Buscar</button>
+        <div class="index-page__filters-actions">
+            <button id="clearInformesBtn" type="button" class="index-page__btn-secondary">Limpiar filtros</button>
         </div>
         @endcan
     </x-slot>
@@ -50,16 +50,28 @@
 </x-index-page>
 @endsection
 
+@push('third_party_stylesheets')
+    @include('layouts.datatables_css')
+@endpush
+
 @push('third_party_scripts')
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+@include('layouts.datatables_js')
 @include('layouts.partials.index-page-js')
 
 <script>
-    let table;
+    window.initInformesTable = function () {
+        if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.DataTable !== 'function') {
+            return;
+        }
+        if (!document.getElementById('auditsTable')) {
+            return;
+        }
 
-    $(document).ready(function() {
-        table = $('#auditsTable').DataTable({
+        if ($.fn.DataTable.isDataTable('#auditsTable')) {
+            $('#auditsTable').DataTable().destroy();
+        }
+
+        window.informesTable = $('#auditsTable').DataTable({
             responsive: true,
             processing: true,
             serverSide: true,
@@ -67,7 +79,7 @@
             paging: true,
             ajax: {
                 url: "{{ route('audits.data') }}",
-                data: function(d) {
+                data: function (d) {
                     d.user_type = $('#user_type').val();
                     d.auditable_type = $('#auditable_type').val();
                     d.new_values = $('#new_values').val();
@@ -109,10 +121,43 @@
                 }
             }
         });
+    };
 
-        $('#searchBtn').on('click', function() {
-            table.ajax.reload();
+    window.recargarInformes = function () {
+        if (window.informesTable && typeof window.informesTable.ajax.reload === 'function') {
+            window.informesTable.ajax.reload();
+        } else {
+            window.initInformesTable();
+        }
+    };
+
+    if (!window.__informesSearchReady) {
+        window.__informesSearchReady = true;
+
+        $(document).on('click', '#clearInformesBtn', function (event) {
+            event.preventDefault();
+            window.__informesSkipReload = true;
+            $('#new_values').val('');
+            $('#user_type').val('').trigger('change');
+            $('#auditable_type').val('').trigger('change');
+            window.__informesSkipReload = false;
+            window.recargarInformes();
         });
-    });
+
+        $(document).on('change', '#user_type, #auditable_type', function () {
+            if (window.__informesSkipReload) return;
+            window.recargarInformes();
+        });
+
+        var recargarValores = null;
+        $(document).on('keyup', '#new_values', function () {
+            clearTimeout(recargarValores);
+            recargarValores = setTimeout(function () {
+                window.recargarInformes();
+            }, 300);
+        });
+    }
+
+    window.initInformesTable();
 </script>
 @endpush

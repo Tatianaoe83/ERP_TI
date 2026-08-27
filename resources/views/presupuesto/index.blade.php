@@ -252,7 +252,11 @@
                 mostrarModalFaltantes();
             } else {
                 submitButtonInput.value = tipoBoton;
-                form.submit();
+                if (tipoBoton === 'excel' && window.AppDownload) {
+                    window.AppDownload.fromForm(form, 'Excel');
+                } else {
+                    form.submit();
+                }
             }
         })
         .catch(function (error) {
@@ -274,7 +278,11 @@
             return;
         }
         submitInv.value = tipoBoton;
-        inventarioForm.submit();
+        if (tipoBoton === 'excel' && window.AppDownload) {
+            window.AppDownload.fromForm(inventarioForm, 'Excel');
+        } else {
+            inventarioForm.submit();
+        }
     }
 
     function bindOnce(el, event, handler) {

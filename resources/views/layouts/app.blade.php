@@ -18,13 +18,13 @@
     <title>ERP TI Proser</title>
     <link rel="icon" href="{!! asset('img/mantenimiento.ico') !!}" />
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <link href="{{ mix('css/app.css') }}" rel="stylesheet">
     <!-- Bootstrap 4.1.1 -->
-    <link href="{{ asset('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/@fortawesome/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" href="{{ asset('assets/css/iziToast.min.css') }}">
-    <link href="{{ asset('assets/css/sweetalert.css') }}" rel="stylesheet" type="text/css" />
-    <link href="{{ asset('assets/css/select2.min.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ mix('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ mix('assets/css/@fortawesome/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="{{ mix('assets/css/iziToast.min.css') }}">
+    <link href="{{ mix('assets/css/sweetalert.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ mix('assets/css/select2.min.css') }}" rel="stylesheet" type="text/css" />
 
     <!-- Alpine.js x-cloak styles -->
     <style>
@@ -68,6 +68,156 @@
 
         /* SweetAlert siempre por encima de los modales (z-[9999]) */
         .swal2-container { z-index: 100000 !important; }
+
+        /* Labels de formularios: Stisla usa #34395e y no se ve en modo oscuro */
+        html.dark .form-group > label,
+        html.dark .form-group .control-label,
+        html.dark .index-page__filters label,
+        html.dark .mant-filters label,
+        html.dark .modal-content label,
+        html.dark .modal-body label,
+        html.dark .mant-modal-card label {
+            color: #e5e7eb !important;
+        }
+        html.dark .text-muted,
+        html.dark .small.text-muted {
+            color: #9ca3af !important;
+        }
+
+        /* Select2 (el dropdown se pega a body, fuera de la página) */
+        html.dark .select2-container--default .select2-selection--single,
+        html.dark .select2-container--default .select2-selection--multiple {
+            background-color: #111827 !important;
+            border-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+        html.dark .select2-container--default .select2-selection--single .select2-selection__rendered,
+        html.dark .select2-container--default .select2-selection--single .select2-selection__placeholder,
+        html.dark .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            color: #e5e7eb !important;
+        }
+        html.dark .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            border-color: #9ca3af transparent transparent transparent !important;
+        }
+        html.dark .select2-dropdown,
+        html.dark .select2-container--default .select2-dropdown {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+        html.dark .select2-search--dropdown .select2-search__field,
+        html.dark .select2-search__field,
+        html.dark .select2-container--default .select2-search--dropdown .select2-search__field,
+        html.dark .select2-container--default .select2-search--inline .select2-search__field {
+            background-color: #111827 !important;
+            color: #f9fafb !important;
+            border: 1px solid #374151 !important;
+            outline: none !important;
+        }
+        html.dark .select2-search--dropdown .select2-search__field::placeholder,
+        html.dark .select2-search__field::placeholder {
+            color: #9ca3af !important;
+        }
+        html.dark .select2-results__option {
+            color: #e5e7eb !important;
+            background-color: transparent !important;
+        }
+        html.dark .select2-results__option[aria-selected="true"] {
+            background-color: #374151 !important;
+            color: #fff !important;
+        }
+        html.dark .select2-container--default .select2-results__option--highlighted[aria-selected],
+        html.dark .select2-container--default .select2-results__option--highlighted,
+        html.dark .select2-results__option--highlighted {
+            background-color: #2563eb !important;
+            color: #fff !important;
+        }
+        html.dark .select2-results__message {
+            color: #9ca3af !important;
+        }
+
+        .index-search {
+            position: relative;
+        }
+        .index-search__icon {
+            position: absolute;
+            left: 0.7rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 2;
+            color: #94a3b8;
+        }
+        html.dark .index-search__icon {
+            color: #9ca3af;
+        }
+        .index-search .form-control,
+        .index-page__filters .index-search .form-control,
+        .index-page .dataTables_filter input,
+        .index-page__card .dataTables_filter input,
+        html.dark .index-search .form-control,
+        html.dark .index-page .dataTables_filter input,
+        html.dark .index-page__card .dataTables_filter input,
+        html.dark .index-page .dataTables_wrapper .dataTables_filter input {
+            padding-left: 2.35rem !important;
+        }
+
+        #app-download-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.55);
+            padding: 1.25rem;
+        }
+        #app-download-overlay[hidden] {
+            display: none !important;
+        }
+        .app-download-card {
+            background: #fff;
+            color: #111827;
+            border-radius: 1rem;
+            padding: 1.75rem 1.6rem 1.5rem;
+            text-align: center;
+            min-width: 260px;
+            max-width: 22rem;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+        }
+        .dark .app-download-card {
+            background: #1f2937;
+            color: #f9fafb;
+        }
+        .app-download-spinner {
+            width: 3rem;
+            height: 3rem;
+            margin: 0 auto 1rem;
+            border: 4px solid #e5e7eb;
+            border-top-color: #2563EB;
+            border-radius: 50%;
+            animation: app-download-spin 0.75s linear infinite;
+        }
+        .dark .app-download-spinner {
+            border-color: #374151;
+            border-top-color: #60a5fa;
+        }
+        .app-download-card p {
+            margin: 0;
+        }
+        .app-download-card .app-download-hint {
+            margin-top: 0.4rem;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        .dark .app-download-card .app-download-hint {
+            color: #9ca3af;
+        }
+        @keyframes app-download-spin {
+            to { transform: rotate(360deg); }
+        }
         
         /* Estilos para el modal de tickets */
         .ticket-description {
@@ -75,6 +225,156 @@
             overflow-wrap: break-word;
             hyphens: auto;
             max-width: 100%;
+        }
+
+        /* Modal Ajustar métricas — mismo patrón que catálogos / inventario */
+        .metricas-modal__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.72);
+        }
+        .metricas-modal__dialog {
+            background: #fff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.85rem !important;
+            overflow: hidden;
+        }
+        html.dark .metricas-modal__dialog {
+            background: #1C1F26 !important;
+            border-color: #2A2F3A !important;
+        }
+        .metricas-modal__header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 1rem;
+            width: 100%;
+            padding: 0.85rem 1.1rem !important;
+            background: #101D49 !important;
+            border-bottom: 1px solid #0c1638 !important;
+        }
+        html.dark .metricas-modal__header {
+            background: #161920 !important;
+            border-bottom-color: #2A2F3A !important;
+        }
+        .metricas-modal__title {
+            margin: 0 !important;
+            flex: 1 1 auto;
+            min-width: 0;
+            color: #fff !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+        }
+        .metricas-modal__close {
+            flex: 0 0 auto;
+            margin-left: auto !important;
+            width: 1.75rem;
+            height: 1.75rem;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: #fff !important;
+            opacity: 0.85;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .metricas-modal__close:hover,
+        .metricas-modal__close:focus {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .metricas-modal__body {
+            background: #fff !important;
+        }
+        html.dark .metricas-modal__body {
+            background: #1C1F26 !important;
+        }
+        .metricas-modal__footer {
+            background: #f9fafb !important;
+            border-top: 1px solid #e5e7eb !important;
+        }
+        html.dark .metricas-modal__footer {
+            background: #161920 !important;
+            border-top-color: #2A2F3A !important;
+            color: #d1d5db !important;
+        }
+        .metricas-modal__body .form-control {
+            background: #fff !important;
+            border: 1px solid #e5e7eb !important;
+            color: #111827 !important;
+            border-radius: 0.55rem !important;
+            min-height: 2.4rem;
+        }
+        html.dark .metricas-modal__body .form-control {
+            background: #111827 !important;
+            border-color: #374151 !important;
+            color: #f9fafb !important;
+        }
+        html.dark .metricas-modal__body .form-control:focus {
+            border-color: #2563EB !important;
+            box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25) !important;
+        }
+        html.dark .metricas-modal .index-page__note {
+            background: rgba(30, 58, 95, 0.35) !important;
+            border-color: #1e3a5f !important;
+        }
+        html.dark .metricas-modal .index-page__note p,
+        html.dark .metricas-modal .index-table tbody td {
+            color: #e5e7eb !important;
+        }
+        html.dark .metricas-modal .index-table thead th {
+            color: #9ca3af !important;
+            border-bottom-color: #374151 !important;
+        }
+        .metricas-modal .index-page__note {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            background: #eff6ff !important;
+            border: 1px solid #dbeafe !important;
+            border-radius: 0.85rem;
+        }
+        .metricas-modal .index-page__btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #101D49 !important;
+            color: #fff !important;
+            border: none !important;
+            border-radius: 0.6rem;
+            padding: 0.6rem 1.05rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .metricas-modal .index-page__btn-primary:hover {
+            background: #0c1638 !important;
+            color: #fff !important;
+        }
+        .metricas-modal .index-page__btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .metricas-modal .index-page__btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #fff !important;
+            color: #374151 !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.6rem;
+            padding: 0.6rem 1.05rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        html.dark .metricas-modal .index-page__btn-secondary {
+            background: #111827 !important;
+            border-color: #374151 !important;
+            color: #e5e7eb !important;
         }
 
         /* Estilos responsivos para el sidebar m?vil */
@@ -430,21 +730,183 @@
             }
         }
 
-        /* 🔒 Blindaje total para Kanban en DARK */
+        /* Kanban dark: tarjetas oscuras, chips de tiempo sin tocar */
         .dark .kanban-root {
             background-color: #0F1116 !important;
         }
 
-        .dark .kanban-root .bg-white {
+        html.dark .kanban-root .bg-gray-100\/80,
+        html.dark .kanban-root .bg-gray-100 {
+            background-color: #161920 !important;
+        }
+
+        html.dark .kanban-root .bg-white\/70 {
             background-color: #1C1F26 !important;
         }
 
-        .dark .kanban-root .bg-gray-100 {
-            background-color: #0F1116 !important;
+        html.dark .kanban-root .ticket-kanban-card,
+        html.dark .kanban-root .group.bg-white {
+            background-color: #1C1F26 !important;
+            border-color: #2A2F3A !important;
         }
 
-        .dark .kanban-root .bg-gray-900 {
-            background-color: #161A22 !important;
+        html.dark .kanban-root .ticket-kanban-card > p,
+        html.dark .kanban-root .ticket-kanban-card .text-gray-900 {
+            color: #f3f4f6 !important;
+        }
+
+        html.dark .kanban-root .ticket-kanban-card .text-gray-700,
+        html.dark .kanban-root .ticket-kanban-card .text-gray-500,
+        html.dark .kanban-root .ticket-kanban-card .text-gray-400,
+        html.dark .kanban-root .ticket-kanban-card .text-gray-600 {
+            color: #d1d5db !important;
+        }
+
+        /* Chips de tiempo / SLA en tarjetas (Tailwind no ve las clases dark: del PHP) */
+        .kpi-chip {
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.65rem;
+            border: 1px solid;
+        }
+        .kpi-chip--normal,
+        .kpi-chip--cumplido {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #bbf7d0;
+        }
+        .kpi-chip--por_vencer,
+        .kpi-chip--en_riesgo {
+            background: #fefce8;
+            color: #a16207;
+            border-color: #fde68a;
+        }
+        .kpi-chip--agotado,
+        .kpi-chip--vencido,
+        .kpi-chip--incumplido {
+            background: #fef2f2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+        .kpi-chip--en_tiempo {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+        html.dark .kpi-chip--normal,
+        html.dark .kpi-chip--cumplido {
+            background: rgba(22, 163, 74, 0.18) !important;
+            border-color: rgba(74, 222, 128, 0.35) !important;
+            color: #86efac !important;
+        }
+        html.dark .kpi-chip--normal *,
+        html.dark .kpi-chip--cumplido * {
+            color: #86efac !important;
+        }
+        html.dark .kpi-chip--por_vencer,
+        html.dark .kpi-chip--en_riesgo {
+            background: rgba(202, 138, 4, 0.18) !important;
+            border-color: rgba(250, 204, 21, 0.35) !important;
+            color: #fde68a !important;
+        }
+        html.dark .kpi-chip--por_vencer *,
+        html.dark .kpi-chip--en_riesgo * {
+            color: #fde68a !important;
+        }
+        html.dark .kpi-chip--agotado,
+        html.dark .kpi-chip--vencido,
+        html.dark .kpi-chip--incumplido {
+            background: rgba(185, 28, 28, 0.28) !important;
+            border-color: rgba(248, 113, 113, 0.4) !important;
+            color: #fecaca !important;
+        }
+        html.dark .kpi-chip--agotado *,
+        html.dark .kpi-chip--vencido *,
+        html.dark .kpi-chip--incumplido * {
+            color: #fecaca !important;
+        }
+        html.dark .kpi-chip--en_tiempo {
+            background: rgba(37, 99, 235, 0.18) !important;
+            border-color: rgba(96, 165, 250, 0.4) !important;
+            color: #93c5fd !important;
+        }
+        html.dark .kpi-chip--en_tiempo * {
+            color: #93c5fd !important;
+        }
+        html.dark .sol-status.bg-white {
+            background: rgba(88, 28, 135, 0.4) !important;
+            color: #e9d5ff !important;
+            border-color: rgba(168, 85, 247, 0.45) !important;
+        }
+
+        .sol-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1.2;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+        html.dark .sol-status--revision {
+            background: rgba(88, 28, 135, 0.4) !important;
+            color: #e9d5ff !important;
+            border-color: rgba(168, 85, 247, 0.45) !important;
+        }
+        html.dark .sol-status--cancelada,
+        html.dark .sol-status--rechazada {
+            background: rgba(127, 29, 29, 0.45) !important;
+            color: #fecaca !important;
+            border-color: rgba(248, 113, 113, 0.4) !important;
+        }
+        html.dark .sol-status--pendiente,
+        html.dark .sol-status--default {
+            background: rgba(55, 65, 81, 0.7) !important;
+            color: #e5e7eb !important;
+            border-color: rgba(156, 163, 175, 0.35) !important;
+        }
+        html.dark .sol-status--aprobada {
+            background: rgba(6, 95, 70, 0.4) !important;
+            color: #6ee7b7 !important;
+            border-color: rgba(52, 211, 153, 0.35) !important;
+        }
+        html.dark .sol-status--enviadas {
+            background: rgba(30, 64, 175, 0.4) !important;
+            color: #93c5fd !important;
+            border-color: rgba(96, 165, 250, 0.4) !important;
+        }
+        .sol-approvals {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 1.5rem;
+        }
+        .sol-approvals i {
+            font-size: 0.95rem;
+            line-height: 1;
+        }
+
+        .alert-exceso {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+        }
+        html.dark .alert-exceso {
+            background: #7f1d1d !important;
+            border-left-color: #f87171 !important;
+            color: #fee2e2 !important;
+        }
+        html.dark .alert-exceso h3,
+        html.dark .alert-exceso p,
+        html.dark .alert-exceso span,
+        html.dark .alert-exceso div {
+            color: #fee2e2 !important;
+        }
+        html.dark .alert-exceso .text-red-600,
+        html.dark .alert-exceso .text-red-700,
+        html.dark .alert-exceso .text-red-800 {
+            color: #fecaca !important;
         }
 
         :root {
@@ -546,6 +1008,13 @@
 
 <body class="bg-gray-100 dark:bg-[#0F1116] text-gray-800 dark:text-gray-200 transition-colors duration-500 ease-in-out">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
+    <div id="app-download-overlay" hidden>
+        <div class="app-download-card" role="status" aria-live="polite">
+            <div class="app-download-spinner" aria-hidden="true"></div>
+            <p id="app-download-msg" class="fw-semibold">Generando Excel...</p>
+            <p class="app-download-hint">La descarga iniciará automáticamente.</p>
+        </div>
+    </div>
     @livewireScripts
     <div id="app" class="h-screen flex flex-col overflow-hidden">
         <nav class="shrink-0 bg-white dark:bg-[#1C1F26] h-[60px] md:h-[60px] dark:text-gray-200 border-b border-b-gray-300 dark:border-b-[#2A2F3A] rounded-md transition-colors">            @include('layouts.header')
@@ -594,13 +1063,13 @@
     @endunless
 </div>
 
-<script src="{{ asset('assets/js/jquery.min.js') }}"></script>
-<script src="{{ asset('assets/js/jquery.nicescroll.js') }}"></script>
-<script src="{{ asset('assets/js/popper.min.js') }}"></script>
-<script src="{{ asset('assets/js/bootstrap.min.js') }}"></script>
-<script src="{{ asset('assets/js/sweetalert.min.js') }}"></script>
-<script src="{{ asset('assets/js/iziToast.min.js') }}"></script>
-<script src="{{ asset('assets/js/select2.min.js') }}"></script>
+<script src="{{ mix('assets/js/jquery.min.js') }}"></script>
+<script src="{{ mix('assets/js/jquery.nicescroll.js') }}"></script>
+<script src="{{ mix('assets/js/popper.min.js') }}"></script>
+<script src="{{ mix('assets/js/bootstrap.min.js') }}"></script>
+<script src="{{ mix('assets/js/sweetalert.min.js') }}"></script>
+<script src="{{ mix('assets/js/iziToast.min.js') }}"></script>
+<script src="{{ mix('assets/js/select2.min.js') }}"></script>
 <script src="{{ asset('web/js/stisla.js') }}"></script>
 <script src="{{ asset('web/js/scripts.js') }}"></script>
 <script src="{{ mix('assets/js/profile.js') }}"></script>
@@ -936,6 +1405,150 @@
         };
     })();
 
+    window.AppDownload = (function () {
+        var overlay = document.getElementById('app-download-overlay');
+        var msgEl = document.getElementById('app-download-msg');
+        var busy = false;
+        var objectUrl = null;
+
+        function isFileUrl(href) {
+            if (!href) return false;
+            if (/\.(pdf|xlsx|xls|csv|zip|docx?)(\?|$)/i.test(href)) return true;
+            return /(export[-_]?pdf|export[-_]?excel|exportPdf|exportExcel|exportar-excel|exportarAsignados|comparativa\/exportar|inventarios\/[^/]+\/exportar\/|exportar-reporte)/i.test(href);
+        }
+
+        function isExcelUrl(href) {
+            if (!href) return false;
+            if (/\.xlsx(\?|$)/i.test(href)) return true;
+            return /(export[-_]?excel|exportExcel|exportar-excel|exportarAsignados|comparativa\/exportar|inventarios\/[^/]+\/exportar\/|exportar-reporte-mensual-excel|export-estatus-licencias-excel|export-equipos-asignados-excel|export-lineas-asignadas-excel)/i.test(href);
+        }
+
+        function show(label) {
+            if (msgEl) msgEl.textContent = 'Generando ' + (label || 'Excel') + '...';
+            if (overlay) overlay.hidden = false;
+        }
+
+        function hide() {
+            if (overlay) overlay.hidden = true;
+        }
+
+        function setMessage(text) {
+            if (msgEl) msgEl.textContent = text;
+        }
+
+        function filenameFromHeader(header, fallback) {
+            if (!header) return fallback;
+            var star = header.match(/filename\*=UTF-8''([^;]+)/i);
+            if (star && star[1]) {
+                try { return decodeURIComponent(star[1].trim()); } catch (e) { return star[1].trim(); }
+            }
+            var quoted = header.match(/filename="([^"]+)"/i);
+            if (quoted && quoted[1]) return quoted[1];
+            var plain = header.match(/filename=([^;]+)/i);
+            return plain && plain[1] ? plain[1].trim() : fallback;
+        }
+
+        function saveBlob(blob, filename) {
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            objectUrl = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = objectUrl;
+            a.download = filename || 'reporte.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(function () {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+            }, 60000);
+        }
+
+        function fail() {
+            hide();
+            if (window.Swal) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No se pudo generar el archivo',
+                    text: 'Inténtalo de nuevo o recarga la página.'
+                });
+            } else {
+                alert('No se pudo generar el archivo.');
+            }
+        }
+
+        function downloadResponse(res, fallbackName) {
+            var type = res.headers.get('Content-Type') || '';
+            var name = filenameFromHeader(res.headers.get('Content-Disposition'), fallbackName);
+            if (!res.ok) throw new Error('http');
+            return res.blob().then(function (blob) {
+                if (/text\/html/i.test(type)) throw new Error('html');
+                saveBlob(blob, name);
+                hide();
+            });
+        }
+
+        function fromUrl(url, label) {
+            if (!url || busy) return Promise.resolve();
+            busy = true;
+            show(label || 'Excel');
+            return fetch(url, {
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (res) {
+                return downloadResponse(res, 'reporte.xlsx');
+            }).catch(fail).then(function () {
+                busy = false;
+            });
+        }
+
+        function fromForm(form, label) {
+            if (!form || busy) return Promise.resolve();
+            busy = true;
+            show(label || form.getAttribute('data-label') || 'Excel');
+            var method = (form.getAttribute('method') || 'POST').toUpperCase();
+            var opts = {
+                method: method,
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            };
+            if (method !== 'GET') {
+                opts.body = new FormData(form);
+            }
+            return fetch(form.action, opts).then(function (res) {
+                return downloadResponse(res, 'reporte.xlsx');
+            }).catch(fail).then(function () {
+                busy = false;
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            if (event.button && event.button !== 0) return;
+            var anchor = event.target.closest('a[href]');
+            if (!anchor || anchor.dataset.skipExcelSpinner === '1') return;
+            if (anchor.classList.contains('export-direct')) return;
+            var href = anchor.getAttribute('href') || anchor.href || '';
+            var match = anchor.classList.contains('js-excel-download') || isExcelUrl(href);
+            if (!match) return;
+            event.preventDefault();
+            event.stopPropagation();
+            var label = anchor.getAttribute('data-download-label') || anchor.getAttribute('title') || 'Excel';
+            fromUrl(anchor.href, label);
+        });
+
+        return {
+            show: show,
+            hide: hide,
+            setMessage: setMessage,
+            fromUrl: fromUrl,
+            fromForm: fromForm,
+            isFileUrl: isFileUrl,
+            isExcelUrl: isExcelUrl
+        };
+    })();
+
     window.AppNav = (function () {
         var loading = false;
 
@@ -955,6 +1568,8 @@
             var href = anchor.getAttribute('href');
             if (href.charAt(0) === '#' || href.indexOf('javascript:') === 0 || href.indexOf('mailto:') === 0 || href.indexOf('tel:') === 0) return true;
             if (/\.(pdf|xlsx|xls|csv|zip|docx?|png|jpe?g|gif)(\?|$)/i.test(href)) return true;
+            if (anchor.classList.contains('js-excel-download') || anchor.classList.contains('export-direct')) return true;
+            if (window.AppDownload && window.AppDownload.isFileUrl(href)) return true;
             return false;
         }
 
@@ -1017,10 +1632,16 @@
                         // AppNav reinyecta scripts: const/let globales no se pueden redeclarar
                         code = code.replace(/(^|\n)([ \t]*)(const|let) /g, '$1$2var ');
                         if (code.indexOf('function ticketsModal') !== -1 && typeof window.ticketsModal === 'function') {
+                            if (window.Alpine && typeof Alpine.data === 'function') {
+                                try { Alpine.data('ticketsModal', window.ticketsModal); } catch (e) {}
+                            }
                             old.remove();
                             return;
                         }
                         if (code.indexOf('function mantenimientoModal') !== -1 && typeof window.mantenimientoModal === 'function') {
+                            if (window.Alpine && typeof Alpine.data === 'function') {
+                                try { Alpine.data('mantenimientoModal', window.mantenimientoModal); } catch (e) {}
+                            }
                             old.remove();
                             return;
                         }
@@ -1118,6 +1739,19 @@
             return cur;
         }
 
+        function alpineDestroy(root) {
+            if (!root || !window.Alpine || typeof Alpine.destroyTree !== 'function') return;
+            try { Alpine.destroyTree(root); } catch (e) {}
+        }
+
+        function alpineMute(fn) {
+            if (window.Alpine && typeof Alpine.mutateDom === 'function') {
+                Alpine.mutateDom(fn);
+                return;
+            }
+            fn();
+        }
+
         function swapPage(html, href, push) {
             var doc = new DOMParser().parseFromString(html, 'text/html');
             var main = document.getElementById('app-main');
@@ -1133,10 +1767,22 @@
                 try { destruirGraficasMantenimiento(); } catch (e) {}
             }
 
-            main.innerHTML = nextMain.innerHTML;
-            copySection(doc, 'sidebar');
-            var extras = copySection(doc, 'app-shell-extras');
-            var pageScripts = copySection(doc, 'app-page-scripts');
+            var extrasEl = document.getElementById('app-shell-extras');
+            var scriptsEl = document.getElementById('app-page-scripts');
+            var sidebarEl = document.getElementById('sidebar');
+            alpineDestroy(main);
+            alpineDestroy(extrasEl);
+            alpineDestroy(scriptsEl);
+            alpineDestroy(sidebarEl);
+
+            var extras = null;
+            var pageScripts = null;
+            alpineMute(function () {
+                main.innerHTML = nextMain.innerHTML;
+                copySection(doc, 'sidebar');
+                extras = copySection(doc, 'app-shell-extras');
+                pageScripts = copySection(doc, 'app-page-scripts');
+            });
 
             var csrf = doc.querySelector('meta[name="csrf-token"]');
             var currentCsrf = document.querySelector('meta[name="csrf-token"]');
@@ -1147,7 +1793,7 @@
             var chain = runScripts(main);
             if (extras) chain = chain.then(function () { return runScripts(extras); });
             if (pageScripts) chain = chain.then(function () { return runScripts(pageScripts); });
-            return chain.then(function () { bootPage([main, extras]); });
+            return chain.then(function () { bootPage([main, extras, pageScripts]); });
         }
 
         function visit(href, push) {

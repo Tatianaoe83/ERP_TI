@@ -57,8 +57,8 @@
 
         <form id="formulario2" action="{{ route('inventarios.mantenimiento', $empleadoId) }}" method="POST" target="_blank">
             @csrf
-            <div class="crud-form">
-                {!! Form::label('IdEquipo', 'Equipo') !!}
+            <div class="form-group">
+                <label for="IdEquipo">Equipo</label>
                 {!! Form::select(
                     'IdEquipo',
                     App\Models\InventarioEquipo::select(DB::raw("CONCAT(IFNULL(Folio, 'Sin folio'),' - ', CategoriaEquipo) AS NombreEq, InventarioID"))
@@ -68,7 +68,7 @@
                         })
                         ->pluck('NombreEq', 'InventarioID'),
                     null,
-                    ['placeholder' => 'Seleccionar', 'class' => 'jz form-control', 'style' => 'width: 100%', 'required' => true]
+                    ['placeholder' => 'Seleccionar...', 'class' => 'jz form-control', 'id' => 'IdEquipo', 'required' => true]
                 ) !!}
             </div>
 
@@ -110,11 +110,11 @@
                             <th>Características</th>
                             <th>Modelo</th>
                             <th>Precio</th>
-                            <th>Fecha asignación</th>
+                            <th>Fecha de asignación</th>
                             <th>Fecha de compra</th>
                             <th>Núm. serie</th>
                             <th>Folio</th>
-                            <th>Gerencia equipo</th>
+                            <th>Gerencia</th>
                             <th>Comentarios</th>
                         </tr>
                     </thead>
@@ -152,8 +152,8 @@
                     <thead>
                         <tr>
                             <th class="xfer-check-col"><input type="checkbox" class="selectAll xfer-check" data-table="insumosAsignadosTable" title="Seleccionar todos"></th>
-                            <th>Categoría insumo</th>
-                            <th>Nombre insumo</th>
+                            <th>Categoría</th>
+                            <th>Nombre</th>
                             <th>Costo mensual</th>
                             <th>Costo anual</th>
                             <th>Observaciones</th>
@@ -195,21 +195,21 @@
                     <thead>
                         <tr>
                             <th class="xfer-check-col"><input type="checkbox" class="selectAll xfer-check" data-table="lineasAsignadosTable" title="Seleccionar todos"></th>
-                            <th>Núm. telefónico</th>
+                            <th>Teléfono</th>
                             <th>Compañía</th>
-                            <th>Plan tel</th>
-                            <th>Costo renta mensual</th>
+                            <th>Plan</th>
+                            <th>Renta mensual</th>
                             <th>Cuenta padre</th>
                             <th>Cuenta hija</th>
-                            <th>Tipo línea</th>
+                            <th>Tipo</th>
                             <th>Obra</th>
                             <th>Fecha fianza</th>
                             <th>Costo fianza</th>
-                            <th>Fecha asignación</th>
+                            <th>Fecha de asignación</th>
                             <th>Estado</th>
                             <th>Comentarios</th>
-                            <th>Monto renovación fianza</th>
-                            <th>Línea ID</th>
+                            <th>Monto renovación</th>
+                            <th>ID línea</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -252,13 +252,53 @@
     <style>
         .xfer-card { margin-bottom: 0; }
         .xfer-preven { margin-bottom: 1.5rem !important; }
-        .xfer-preven .crud-form,
+        .xfer-preven .form-group,
         .xfer-preven .crud-select-all,
         .xfer-preven .crud-perms {
             margin-left: 1.25rem;
             margin-right: 1.25rem;
         }
-        .xfer-preven .crud-form { margin-top: 0.75rem; }
+        .xfer-preven .form-group {
+            margin-top: 0.75rem;
+            margin-bottom: 0.35rem;
+        }
+        .xfer-preven .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--index-muted, #6b7280);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .xfer-preven .select2-container { width: 100% !important; }
+        .xfer-preven .select2-container .select2-selection--single {
+            height: 2.5rem !important;
+            border-radius: 0.6rem !important;
+            border: 1px solid var(--index-border, #e5e7eb) !important;
+            background: #fff !important;
+            display: flex;
+            align-items: center;
+        }
+        .xfer-preven .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 1.4 !important;
+            padding-left: 0.75rem;
+            color: #111827;
+        }
+        .xfer-preven .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 100% !important;
+        }
+        .dark .xfer-preven .form-group label { color: #9ca3af; }
+        .dark .xfer-preven .select2-container .select2-selection--single {
+            background: #111827 !important;
+            border-color: #374151 !important;
+        }
+        .dark .xfer-preven .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #f9fafb !important;
+        }
+        .dark .xfer-preven .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: #9ca3af !important;
+        }
         .xfer-preven .crud-page__actions {
             margin-left: 1.25rem;
             margin-right: 1.25rem;
@@ -292,6 +332,17 @@
             border-top: 0;
         }
         .dark .xfer-card-head h2 { color: #fff; }
+        .xfer-swal-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--index-muted, #6b7280);
+            margin: 0 0 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            text-align: left;
+        }
+        .dark .xfer-swal-label { color: #9ca3af; }
     </style>
 @endpush
 
@@ -403,9 +454,9 @@
                     title: '¿Está seguro de que desea realizar esta acción?',
                     icon: 'warning',
                     html: `
-                        <label for="empleado" class="dark:text-white">Selecciona un empleado:</label>
-                        <select id="empleado" class="dark:bg-[#101010] dark:text-white">
-                            <option value="">--Seleccione un empleado--</option>
+                        <label for="empleado" class="xfer-swal-label">Empleado destino</label>
+                        <select id="empleado" class="form-control">
+                            <option value="">Seleccionar...</option>
                             ${empleadosOptions}
                         </select>
                     `,
@@ -414,6 +465,7 @@
                         $('#empleado').select2({
                             dropdownParent: $('.swal2-popup'),
                             width: '100%',
+                            placeholder: 'Seleccionar...',
                         });
                         $('.swal2-popup').addClass('dark:bg-[#101010]');
                         setTimeout(function () {

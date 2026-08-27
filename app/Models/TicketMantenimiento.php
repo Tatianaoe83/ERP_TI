@@ -492,6 +492,7 @@ class TicketMantenimiento extends Model
             'texto_transcurrido' => self::formatearDuracionSlaLaboral($sla['dias_laborales_transcurridos']) . ' de ' . $sla['max_dias'] . ' días',
             'texto_restante'    => $textoRestante,
             'estilo'            => $style,
+            'estado'            => $estado,
         ];
     }
 

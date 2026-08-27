@@ -374,6 +374,31 @@
     min-height: 2.4rem;
 }
 
+.index-search {
+    position: relative;
+}
+
+.index-search__icon {
+    position: absolute;
+    left: 0.7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 0.75rem;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.index-search .form-control,
+.index-page__filters .index-search .form-control {
+    padding-left: 2.35rem !important;
+}
+
+.dark .index-search__icon {
+    color: #9ca3af;
+}
+
 .index-page__card {
     background: var(--index-card);
     border: 1px solid var(--index-border);
@@ -437,7 +462,7 @@
     width: 100% !important;
     margin: 0 !important;
     height: 2.5rem;
-    padding: 0.45rem 0.9rem 0.45rem 2.35rem;
+    padding: 0.45rem 0.9rem 0.45rem 2.35rem !important;
     border: 1px solid var(--index-border);
     border-radius: 0.6rem;
     background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%239ca3af' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3-3'/%3E%3C/svg%3E") no-repeat 0.8rem 50%;
@@ -681,6 +706,29 @@
     color: #d97706;
 }
 
+.export-reporte-menu {
+    display: none;
+}
+
+.export-reporte-menu.is-open,
+.export-reporte-menu.show {
+    display: block;
+}
+
+.dark .export-reporte-menu {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+.dark .export-reporte-menu .dropdown-item {
+    color: #e5e7eb;
+}
+
+.dark .export-reporte-menu .dropdown-item:hover {
+    background: #374151;
+    color: #fff;
+}
+
 .index-action--disabled,
 .index-action--disabled:hover,
 a.index-action--disabled,
@@ -743,11 +791,17 @@ button.index-action--disabled:disabled {
 
 /* Dark mode */
 .dark .index-page {
-    --index-muted: #9ca3af;
+    --index-muted: #e5e7eb;
     --index-border: #374151;
     --index-bg: #111827;
     --index-card: #1f2937;
     --index-icon-bg: #1e3a5f;
+}
+
+.dark .index-page__filters label,
+.dark .index-page .form-group > label,
+.dark .index-page .form-group .control-label {
+    color: #e5e7eb !important;
 }
 
 .dark .index-page__title {
@@ -809,10 +863,18 @@ button.index-action--disabled:disabled {
 .dark .index-page__card .dt-buttons .btn,
 .dark .index-page__card .dt-button,
 .dark .index-page__filters .form-control,
-.dark .index-page .index-page__dt-toolbar .form-control {
+.dark .index-page .index-page__dt-toolbar .form-control,
+.dark .index-page__filters .select2-container--default .select2-selection--single,
+.dark .index-page__filters .select2-container--default .select2-selection--multiple {
     background-color: #111827;
     border-color: #374151;
     color: #f9fafb;
+}
+
+.dark .index-page .dataTables_filter input,
+.dark .index-page__card .dataTables_filter input,
+.dark .index-page .dataTables_wrapper .dataTables_filter input {
+    padding-left: 2.35rem !important;
 }
 
 .dark .index-table thead th {
@@ -962,13 +1024,52 @@ button.index-action--disabled:disabled {
     border-top-color: #374151;
 }
 
-.dark .crud-page .form-control,
-.dark .crud-page select.form-control,
-.dark .crud-page textarea.form-control {
-    background: #111827;
-    border-color: #374151;
-    color: #f9fafb;
+.dark .crud-page label,
+.dark .crud-page .control-label,
+.dark .crud-page abbr {
+    color: #d1d5db;
 }
+
+    .dark .crud-page .form-control,
+    .dark .crud-page .form-select,
+    .dark .crud-page select.form-control,
+    .dark .crud-page textarea.form-control,
+    .dark .crud-page input.form-control {
+        background-color: #111827 !important;
+        border-color: #374151 !important;
+        color: #f9fafb !important;
+        caret-color: #f9fafb;
+    }
+
+    .dark .crud-page .form-control::placeholder {
+        color: #9ca3af !important;
+    }
+
+    .dark .crud-page .form-control option,
+    .dark .crud-page select option {
+        background-color: #111827;
+        color: #f9fafb;
+    }
+
+    .dark .crud-page .select2-container--default .select2-selection--single,
+    .dark .crud-page .select2-container--default .select2-selection--multiple {
+        background-color: #111827 !important;
+        border-color: #374151 !important;
+        color: #f9fafb !important;
+        min-height: 2.5rem;
+    }
+
+    .dark .crud-page .select2-container--default .select2-selection--single .select2-selection__rendered,
+    .dark .crud-page .select2-container--default .select2-selection--multiple .select2-selection__rendered,
+    .dark .crud-page .select2-container--default .select2-search--inline .select2-search__field {
+        color: #f9fafb !important;
+    }
+
+    .dark .crud-page .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #1e3a8a !important;
+        border-color: #3b82f6 !important;
+        color: #eff6ff !important;
+    }
 
 .dark .crud-show p {
     color: #e5e7eb;

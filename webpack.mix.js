@@ -15,7 +15,7 @@ mix.js("resources/js/app.js", "public/js").postCss(
     "resources/css/app.css",
     "public/css",
     [require("tailwindcss")]
-);
+).version();
 
 mix.js("resources/js/factura-pdf-ocr.js", "public/js/factura-pdf-ocr.js").version();
 
@@ -129,4 +129,5 @@ mix.babel(
     "public/assets/js/iziToast.min.js"
 );
 
-// Alpine y SweetAlert2 viven en public/assets/js (no en public/vendor, que Git ignora).
+// Alpine, SweetAlert2, Chart.js y DataTables extras viven en public/assets
+// (no en public/vendor, que Git ignora y Laravel acaba sirviendo como HTML).

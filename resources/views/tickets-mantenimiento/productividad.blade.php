@@ -323,7 +323,7 @@
     @endif
 </div>
 
-<script src="{{ asset('vendor/chartjs/chart.min.js') }}"></script>
+<script src="{{ asset('assets/js/chart.min.js') }}"></script>
 <script>
 let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos;
 
@@ -344,9 +344,16 @@ function destruirGraficasMantenimiento() {
     chartMantEstado = chartMantPrioridad = chartMantCategoria = chartMantTendencia = chartMantSlaCumplimiento = chartMantSlaAbiertos = null;
 }
 
-function inicializarGraficasMantenimiento() {
+function inicializarGraficasMantenimiento(intento) {
+    intento = intento || 0;
+    if (typeof Chart === 'undefined') {
+        if (intento < 25) {
+            setTimeout(function () { inicializarGraficasMantenimiento(intento + 1); }, 80);
+        }
+        return;
+    }
     const data = obtenerDatosMantenimiento();
-    if (!data || !document.getElementById('chartMantEstado') || typeof Chart === 'undefined') return;
+    if (!data || !document.getElementById('chartMantEstado')) return;
 
     destruirGraficasMantenimiento();
     const dark = isDarkMant();

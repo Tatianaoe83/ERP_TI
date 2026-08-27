@@ -11,6 +11,19 @@
             padding-top: 4px;
         }
 
+        .dark .select2-container .select2-selection--single {
+            border-color: #374151 !important;
+            background-color: #111827 !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 28px !important;
+        }
+
+        .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #e5e7eb !important;
+        }
+
         .select2-container--default .select2-selection--single .select2-selection__rendered {
             line-height: 28px !important;
         }
@@ -22,14 +35,83 @@
         .select2-container {
             width: 100% !important;
         }
+
+        #tabla-empleados td.dt-control {
+            width: 2.75rem;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 0.4rem !important;
+        }
+        #tabla-empleados td.dt-control::before,
+        #tabla-empleados td.dt-control::after {
+            display: none !important;
+            content: none !important;
+            background: none !important;
+        }
+        .inv-row-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.35rem;
+            height: 2.35rem;
+            padding: 0;
+            border: 1px solid #d1d5db;
+            border-radius: 0.45rem;
+            background: #f8fafc;
+            color: #64748b;
+            cursor: pointer;
+            line-height: 1;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            z-index: 2;
+        }
+        .inv-row-toggle i {
+            font-size: 0.75rem;
+            pointer-events: none;
+            transition: transform 0.18s ease;
+        }
+        #tabla-empleados tbody tr.shown .inv-row-toggle {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1d4ed8;
+        }
+        #tabla-empleados tbody tr.shown .inv-row-toggle i {
+            transform: rotate(90deg);
+        }
+        .dark .inv-row-toggle {
+            background: #1f2937;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
+        .dark #tabla-empleados tbody tr.shown .inv-row-toggle {
+            background: #1e3a8a;
+            border-color: #3b82f6;
+            color: #bfdbfe;
+        }
+        .inv-empleados-wrap {
+            overflow: visible;
+        }
+        @media (max-width: 767px) {
+            .inv-empleados-wrap {
+                overflow-x: auto;
+                overflow-y: visible;
+                -webkit-overflow-scrolling: touch;
+            }
+            .inv-row-toggle {
+                width: 2.75rem;
+                height: 2.75rem;
+            }
+        }
     </style>
     @endpush
 
-    <div class="index-page__table-wrap table-responsive">
+    <div class="index-page__table-wrap inv-empleados-wrap">
         <table id="tabla-empleados" class="table index-table w-full">
             <thead>
                 <tr>
-                    <th></th>
+                    <th aria-label="Inventario"></th>
                     <th>Nombre</th>
                     <th>Tipo</th>
                     <th>Puesto</th>
@@ -56,14 +138,20 @@
             $('.jz-inv').select2({
                 width: '100%',
                 placeholder: 'Seleccionar...',
-                allowClear: true
+                allowClear: true,
+                dropdownParent: $('body')
             });
 
             // =========================
             // DATATABLE
             // =========================
             var table = $('#tabla-empleados').DataTable({
-                responsive: true,
+                serverSide: true,
+                processing: true,
+                responsive: {
+                    details: false
+                },
+                autoWidth: false,
                 searching: false,
                 pageLength: 10,
                 dom: "t<'index-page__dt-footer'ip>",
@@ -101,8 +189,10 @@
                 columns: [{
                         className: 'dt-control dark:bg-[#101010] dark:text-white',
                         orderable: false,
+                        searchable: false,
                         data: null,
-                        defaultContent: '',
+                        width: '42px',
+                        defaultContent: '<button type="button" class="inv-row-toggle" title="Ver inventario" aria-label="Ver inventario del empleado" aria-expanded="false"><i class="fas fa-chevron-right" aria-hidden="true"></i></button>',
                     },
 
                     {
@@ -156,55 +246,6 @@
                         window.IndexPage.init(api);
                     }
 
-                    // =========================
-                    // CARGAR OBRAS
-                    // =========================
-                    var obras = api.column(4).data().unique().sort();
-
-                    $('#filtro-obra')
-                        .empty()
-                        .append('<option value="">Todas las obras</option>');
-
-                    obras.each(function(d) {
-
-                        if (d && d.trim() !== '') {
-
-                            $('#filtro-obra').append(
-                                '<option value="' + d + '">' + d + '</option>'
-                            );
-
-                        }
-
-                    });
-
-                    // =========================
-                    // CARGAR PUESTOS
-                    // =========================
-                    var puestos = api.column(3).data().unique().sort();
-
-                    $('#filtro-puesto')
-                        .empty()
-                        .append('<option value="">Todos los puestos</option>');
-
-                    puestos.each(function(d) {
-
-                        if (d && d.trim() !== '') {
-
-                            $('#filtro-puesto').append(
-                                '<option value="' + d + '">' + d + '</option>'
-                            );
-
-                        }
-
-                    });
-
-                    // Reinicializar Select2
-                    $('.jz-inv').select2({
-                        width: '100%',
-                        placeholder: 'Seleccionar...',
-                        allowClear: true
-                    });
-
                 },
                 drawCallback: function() {
                     if (window.IndexPage) {
@@ -216,11 +257,13 @@
             // =========================
             // FILTROS
             // =========================
+            var recargarFiltrosTexto = null;
             $('#filtro-nombre, #filtro-inventario')
                 .on('keyup', function() {
-
-                    table.ajax.reload();
-
+                    clearTimeout(recargarFiltrosTexto);
+                    recargarFiltrosTexto = setTimeout(function() {
+                        table.ajax.reload();
+                    }, 300);
                 });
 
             $('#filtro-obra, #filtro-puesto, #filtro-persona, #filtro-estatus')
@@ -258,29 +301,48 @@
             // =========================
             // EXPANDIR DETALLES
             // =========================
-            $('#tabla-empleados tbody').on('click', 'td.dt-control', function() {
+            // =========================
+            // EXPANDIR DETALLES
+            // En móvil DataTables Responsive interceptaba el mismo clic
+            // (td.dt-control) y abría/cerraba al instante. El chevron
+            // solo carga el inventario del empleado.
+            // =========================
+            $('#tabla-empleados tbody').on('click', '.inv-row-toggle', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
                 var tr = $(this).closest('tr');
+                if (tr.hasClass('child')) {
+                    tr = tr.prev();
+                }
                 var row = table.row(tr);
+                var data = row.data();
+                if (!data || !data.EmpleadoID) return;
+
+                var toggle = tr.find('.inv-row-toggle');
 
                 if (row.child.isShown()) {
-
                     row.child.hide();
                     tr.removeClass('shown');
-
-                } else {
-
-                    row.child('<div class="text-center">Cargando...</div>').show();
-                    tr.addClass('shown');
-
-                    $.get(`/inventarios/${row.data().EmpleadoID}/inventario`, function(data) {
-
-                        row.child(data).show();
-
-                    });
-
+                    toggle.attr('aria-expanded', 'false');
+                    return;
                 }
 
+                row.child('<div class="text-center py-3">Cargando...</div>').show();
+                tr.addClass('shown');
+                toggle.attr('aria-expanded', 'true');
+
+                $.get('/inventarios/' + data.EmpleadoID + '/inventario')
+                    .done(function(html) {
+                        if (!row.child.isShown()) return;
+                        row.child(html).show();
+                    })
+                    .fail(function() {
+                        row.child.hide();
+                        tr.removeClass('shown');
+                        toggle.attr('aria-expanded', 'false');
+                    });
             });
 
         });

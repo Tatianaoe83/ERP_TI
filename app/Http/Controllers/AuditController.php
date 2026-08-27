@@ -12,8 +12,7 @@ class AuditController extends Controller
 
     public function __construct()
     {
-        $this->middleware('permission:ver-informe|buscar-informe')->only('index');
-      
+        $this->middleware('permission:ver-informe|buscar-informe')->only(['index', 'getAudits']);
     }
 
     public function index()
@@ -55,8 +54,14 @@ class AuditController extends Controller
         }
 
         if ($request->filled('new_values')) {
-            $query->where('audits.new_values', 'LIKE', '%' . $request->input('new_values') . '%')
-            ->orWhere('audits.old_values', 'LIKE', '%' . $request->input('new_values') . '%');
+            $term = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim((string) $request->input('new_values')));
+            $like = '%' . $term . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('audits.new_values', 'like', $like)
+                    ->orWhere('audits.old_values', 'like', $like)
+                    ->orWhere('users.name', 'like', $like)
+                    ->orWhere('audits.auditable_id', 'like', $like);
+            });
         }
 
         return datatables()->of($query)->make(true);

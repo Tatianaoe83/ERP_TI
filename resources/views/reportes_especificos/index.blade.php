@@ -29,7 +29,7 @@
                     <i class="fas fa-eye"></i> Ver reporte
                 </a>
                 @can('exportar-reportes-especificos')
-                <a href="{{ route('reportes-especificos.export-estatus-licencias-excel') }}" class="index-page__btn-secondary" title="Descargar Excel">
+                <a href="{{ route('reportes-especificos.export-estatus-licencias-excel') }}" class="index-page__btn-secondary js-excel-download" title="Descargar Excel" data-download-label="Excel">
                     <i class="fas fa-file-excel"></i>
                 </a>
                 @endcan
@@ -50,7 +50,7 @@
                     <i class="fas fa-eye"></i> Ver reporte
                 </a>
                 @can('exportar-reportes-especificos')
-                <a href="{{ route('reportes-especificos.export-equipos-asignados-excel') }}" class="index-page__btn-secondary" title="Descargar Excel">
+                <a href="{{ route('reportes-especificos.export-equipos-asignados-excel') }}" class="index-page__btn-secondary js-excel-download" title="Descargar Excel" data-download-label="Excel">
                     <i class="fas fa-file-excel"></i>
                 </a>
                 @endcan
@@ -71,7 +71,7 @@
                     <i class="fas fa-eye"></i> Ver reporte
                 </a>
                 @can('exportar-reportes-especificos')
-                <a href="{{ route('reportes-especificos.export-lineas-asignadas-excel') }}" class="index-page__btn-secondary" title="Descargar Excel">
+                <a href="{{ route('reportes-especificos.export-lineas-asignadas-excel') }}" class="index-page__btn-secondary js-excel-download" title="Descargar Excel" data-download-label="Excel">
                     <i class="fas fa-file-excel"></i>
                 </a>
                 @endcan

@@ -417,16 +417,16 @@ class TablaSolicitudes extends Component
     {
         return match($estatusReal) {
             'Cancelada'  => ['Cancelada',   'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-700'],
-            'Rechazada'  => ['Rechazada',   'bg-red-50 text-red-800 border border-red-200'],
-            'Aprobado'   => ['Aprobada',    'bg-emerald-50 text-emerald-800 border border-emerald-200'],
-            'Cotizaciones Enviadas' => ['Cotizaciones Enviadas', 'bg-blue-50 text-blue-800 border border-blue-200'],
+            'Rechazada'  => ['Rechazada',   'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'],
+            'Aprobado'   => ['Aprobada',    'bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700'],
+            'Cotizaciones Enviadas' => ['Cotizaciones Enviadas', 'bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'],
             'Re-cotizar' => ['Re-cotizar',  'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700'],
             'Completada' => ['En revisión', 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700'],
-            'Pendiente Cotización TI' => ['Pendiente', 'bg-amber-50 text-amber-800 border border-amber-200'],
+            'Pendiente Cotización TI' => ['Pendiente', 'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700'],
             'Listo'      => ['Listo',       'bg-teal-50 text-teal-800 border border-teal-300 dark:bg-teal-900/30 dark:text-teal-200 dark:border-teal-700'],
             'Pendiente Aprobación Supervisor','Pendiente Aprobación Gerencia','Pendiente Aprobación Administración'
-                         => ['En revisión', 'bg-white text-purple-700 border border-purple-200 dark:text-purple-700 dark:border-purple-700'],
-            default      => ['Pendiente',   'bg-gray-50 text-gray-700 border border-gray-200'],
+                         => ['En revisión', 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/40 dark:text-purple-200 dark:border-purple-600'],
+            default      => ['Pendiente',   'bg-gray-50 text-gray-700 border border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600'],
         };
     }
 

@@ -3229,7 +3229,11 @@
         }
     }
 
-   
+    window.ticketsModal = ticketsModal;
+    if (window.Alpine && typeof Alpine.data === 'function') {
+        Alpine.data('ticketsModal', ticketsModal);
+    }
+
     // Hacer las funciones accesibles globalmente para que puedan ser llamadas desde Alpine.js
     window.loadSubtipos = null;
     

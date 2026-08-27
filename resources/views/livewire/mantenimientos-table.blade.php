@@ -1,5 +1,102 @@
 <div>
-    <div class="index-page__filters" style="padding: 0.9rem 1rem 0; margin-bottom: 0;">
+    <style>
+        .mant-modal-header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 1rem;
+            width: 100%;
+        }
+        .mant-modal-header .modal-title {
+            margin: 0;
+            flex: 1 1 auto;
+            min-width: 0;
+            padding-right: 1.5rem;
+        }
+        .mant-modal-close {
+            flex: 0 0 auto;
+            margin-left: auto !important;
+        }
+        .mant-modal-btn {
+            border: 0;
+            border-radius: 10px;
+            font-weight: 700;
+            padding: 10px 18px;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+        .mant-modal-btn-secondary {
+            background: #e2e8f0 !important;
+            color: #1e293b !important;
+        }
+        .dark .mant-modal-btn-secondary {
+            background: #64748b !important;
+            color: #fff !important;
+        }
+        .dark .mant-modal-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        .modal-content .form-group > label,
+        .modal-content .form-group .control-label {
+            color: #334155;
+        }
+        .dark .modal-content .form-group > label,
+        .dark .modal-content .form-group .control-label {
+            color: #e5e7eb !important;
+        }
+        .mant-modal-btn-primary {
+            background: #2563eb !important;
+            color: #fff !important;
+        }
+        .mant-filters {
+            display: grid !important;
+            grid-template-columns: minmax(200px, 2.2fr) repeat(3, minmax(110px, 1fr));
+            gap: 0.75rem 1rem;
+            align-items: start;
+            padding: 0.9rem 1rem 0.35rem;
+            margin-bottom: 0;
+        }
+        .mant-filters .form-group {
+            display: flex !important;
+            flex-direction: column;
+            float: none !important;
+            width: 100%;
+            min-width: 0;
+            margin-bottom: 0.65rem;
+        }
+        .mant-filters label {
+            display: block !important;
+            float: none !important;
+            position: static !important;
+            width: auto !important;
+            margin: 0 0 0.3rem !important;
+            color: #64748b !important;
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        html.dark .mant-filters label,
+        .dark .mant-filters label {
+            color: #f3f4f6 !important;
+        }
+        html.dark .mant-filters .form-control,
+        .dark .mant-filters .form-control {
+            background-color: #111827;
+            border-color: #374151;
+            color: #f9fafb;
+        }
+        html.dark #mantenimientos-page .index-table thead th,
+        .dark #mantenimientos-page .index-table thead th {
+            color: #e5e7eb !important;
+        }
+        @media (max-width: 768px) {
+            .mant-filters {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <div class="mant-filters">
         <div class="form-group">
             <label for="buscar-mantenimientos">Buscar</label>
             <input
@@ -146,11 +243,9 @@
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);" wire:click.self="cerrarReprogramar">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header mant-modal-header">
                         <h5 class="modal-title">Reprogramar mantenimiento</h5>
-                        <button type="button" class="close" wire:click="cerrarReprogramar" aria-label="Cerrar">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close mant-modal-close" wire:click="cerrarReprogramar" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
@@ -181,8 +276,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn mant-modal-btn mant-modal-btn-secondary" wire:click="cerrarReprogramar">Cancelar</button>
-                        <button type="button" class="btn mant-modal-btn mant-modal-btn-primary" wire:click="guardarReprogramacion" wire:loading.attr="disabled">
+                        <button type="button" class="mant-modal-btn mant-modal-btn-secondary" wire:click="cerrarReprogramar">Cancelar</button>
+                        <button type="button" class="mant-modal-btn mant-modal-btn-primary" wire:click="guardarReprogramacion" wire:loading.attr="disabled">
                             Guardar reprogramación
                         </button>
                     </div>
@@ -195,11 +290,9 @@
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, .45);" wire:click.self="cerrarDetalle">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header mant-modal-header">
                         <h5 class="modal-title">Detalle del mantenimiento</h5>
-                        <button type="button" class="close" wire:click="cerrarDetalle" aria-label="Cerrar">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close mant-modal-close" wire:click="cerrarDetalle" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row">
@@ -212,7 +305,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn mant-modal-btn mant-modal-btn-secondary" wire:click="cerrarDetalle">Cerrar</button>
+                        <button type="button" class="mant-modal-btn mant-modal-btn-secondary" wire:click="cerrarDetalle">Cerrar</button>
                     </div>
                 </div>
             </div>
@@ -382,11 +475,39 @@
                 font-size: 15px;
             }
 
+            .mant-modal-header {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 1rem;
+                width: 100%;
+            }
+
+            .mant-modal-header .modal-title {
+                margin: 0;
+                flex: 1 1 auto;
+                min-width: 0;
+                padding-right: 1.5rem;
+            }
+
+            .mant-modal-close {
+                flex: 0 0 auto;
+                margin-left: auto !important;
+                opacity: 0.75;
+            }
+
+            .mant-modal-close:hover,
+            .mant-modal-close:focus {
+                opacity: 1;
+            }
+
             .mant-modal-btn {
                 border: 0;
                 border-radius: 10px;
                 font-weight: 700;
                 padding: 10px 18px;
+                line-height: 1.2;
+                cursor: pointer;
                 transition: background-color .15s ease, box-shadow .15s ease, transform .15s ease;
             }
 
@@ -399,19 +520,19 @@
             }
 
             .mant-modal-btn-secondary {
-                background: #e2e8f0;
-                color: #334155;
+                background: #e2e8f0 !important;
+                color: #1e293b !important;
             }
 
             .mant-modal-btn-secondary:hover,
             .mant-modal-btn-secondary:focus {
-                background: #cbd5e1;
-                color: #1e293b;
+                background: #cbd5e1 !important;
+                color: #0f172a !important;
             }
 
             .mant-modal-btn-primary {
-                background: #2563eb;
-                color: #fff;
+                background: #2563eb !important;
+                color: #fff !important;
                 box-shadow: 0 8px 18px rgba(37, 99, 235, .24);
             }
 
@@ -446,15 +567,19 @@
                 color: #cbd5e1;
             }
 
+            .dark .mant-modal-close {
+                filter: invert(1) grayscale(100%) brightness(200%);
+            }
+
             .dark .mant-modal-btn-secondary {
-                background: #334155;
-                color: #e2e8f0;
+                background: #64748b !important;
+                color: #fff !important;
             }
 
             .dark .mant-modal-btn-secondary:hover,
             .dark .mant-modal-btn-secondary:focus {
-                background: #475569;
-                color: #fff;
+                background: #94a3b8 !important;
+                color: #0f172a !important;
             }
 
             .dark .mant-modal-btn-primary {

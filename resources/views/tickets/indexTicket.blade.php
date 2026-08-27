@@ -161,6 +161,121 @@
             box-sizing: border-box !important;
         }
     }
+
+    /* Modal Ajustar métricas: fondo opaco (el blur va en el backdrop, no en la caja) */
+    .metricas-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    .metricas-modal__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(17, 24, 39, 0.72);
+    }
+    .metricas-modal__dialog {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        max-width: 48rem;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 0.85rem;
+        background-color: #ffffff !important;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+        opacity: 1 !important;
+        isolation: isolate;
+    }
+    .dark .metricas-modal__dialog {
+        background-color: #1C1F26 !important;
+        border-color: #2A2F3A;
+    }
+    .metricas-modal__header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 1rem;
+        flex-shrink: 0;
+        padding: 0.85rem 1.1rem !important;
+        background-color: #101D49 !important;
+        border-bottom: 1px solid #0c1638 !important;
+    }
+    .dark .metricas-modal__header {
+        background-color: #161920 !important;
+        border-bottom-color: #2A2F3A !important;
+    }
+    .metricas-modal__title {
+        margin: 0 !important;
+        color: #fff !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+    }
+    .metricas-modal__close {
+        flex: 0 0 auto;
+        width: 1.75rem;
+        height: 1.75rem;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #fff !important;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .metricas-modal__body {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 1.25rem;
+        background-color: #ffffff !important;
+    }
+    .dark .metricas-modal__body {
+        background-color: #1C1F26 !important;
+    }
+    .metricas-modal__footer {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.85rem 1.25rem;
+        background-color: #f9fafb !important;
+        border-top: 1px solid #e5e7eb !important;
+    }
+    .dark .metricas-modal__footer {
+        background-color: #161920 !important;
+        border-top-color: #2A2F3A !important;
+        color: #d1d5db !important;
+    }
+    .metricas-modal__body .form-control {
+        background-color: #fff !important;
+        border: 1px solid #e5e7eb !important;
+        color: #111827 !important;
+        border-radius: 0.55rem !important;
+        min-height: 2.4rem;
+        width: 8rem;
+    }
+    .dark .metricas-modal__body .form-control {
+        background-color: #111827 !important;
+        border-color: #374151 !important;
+        color: #f9fafb !important;
+    }
+    .metricas-modal .index-table thead th,
+    .metricas-modal .index-table tbody td {
+        background-color: #ffffff !important;
+    }
+    .dark .metricas-modal .index-table thead th,
+    .dark .metricas-modal .index-table tbody td {
+        background-color: #1C1F26 !important;
+    }
 </style>
 <div
     x-data="ticketsModal()"
@@ -186,33 +301,33 @@
         x-transition:leave-end="opacity-0 transform translate-y-[-10px]"
         x-cloak
         class="fixed top-4 right-4 left-4 md:left-auto md:max-w-md z-50">
-        <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-700 rounded-lg p-4 shadow-lg">
+        <div class="alert-exceso rounded-lg p-4 shadow-lg">
             <div class="flex items-start">
                 <div class="flex-shrink-0">
-                    <i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400 text-xl"></i>
+                    <i class="fas fa-exclamation-triangle text-red-500 dark:text-red-200 text-xl"></i>
                 </div>
                 <div class="ml-3 flex-1">
-                    <h3 class="text-sm font-medium text-red-800 dark:text-red-300 mb-1">
+                    <h3 class="text-sm font-medium text-red-800 dark:text-red-100 mb-1">
                         <span x-text="ticketsExcedidos.length"></span>
                         <span x-text="ticketsExcedidos.length === 1 ? 'ticket excediendo tiempo' : 'tickets excediendo tiempo'"></span>
                     </h3>
-                    <div class="mt-2 text-sm text-red-700 space-y-1">
+                    <div class="mt-2 text-sm text-red-700 dark:text-red-100 space-y-1">
                         <template x-for="(ticket, index) in ticketsExcedidos.slice(0, 3)" :key="ticket.id">
                             <div
                                 @click="abrirTicketDesdePopup(ticket.id)"
-                                class="cursor-pointer hover:text-red-900 hover:underline">
+                                class="cursor-pointer hover:underline">
                                 <span class="font-semibold" x-text="'Ticket #' + ticket.id"></span>
                                 <span x-text="' - ' + ticket.descripcion"></span>
 
                             </div>
                         </template>
                         <template x-if="ticketsExcedidos.length > 3">
-                            <p class="text-xs text-red-600 dark:text-red-400 italic">
+                            <p class="text-xs text-red-600 dark:text-red-200 italic">
                                 y <span x-text="ticketsExcedidos.length - 3"></span> más...
                             </p>
                         </template>
                     </div>
-                    <div class="mt-2 text-xs text-red-600 dark:text-red-400">
+                    <div class="mt-2 text-xs text-red-600 dark:text-red-200">
                         <i class="fas fa-sync-alt mr-1" :class="{'animate-spin': cargandoExcedidos}"></i>
                         <span x-text="cargandoExcedidos ? 'Verificando...' : 'Actualización automática cada 5 min'"></span>
                         <span x-show="!cargandoExcedidos && mostrarPopupExcedidos" class="ml-2">
@@ -223,13 +338,13 @@
                 <div class="ml-4 flex-shrink-0 flex flex-col gap-2">
                     <button
                         @click="verificarTicketsExcedidos()"
-                        class="inline-flex text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 focus:outline-none transition"
+                        class="inline-flex text-red-400 dark:text-red-200 hover:text-red-200 focus:outline-none transition"
                         title="Actualizar ahora">
                         <i class="fas fa-sync-alt" :class="{'animate-spin': cargandoExcedidos}"></i>
                     </button>
                     <button
                         @click="cerrarPopupExcedidos()"
-                        class="inline-flex text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 focus:outline-none transition">
+                        class="inline-flex text-red-400 dark:text-red-200 hover:text-red-100 focus:outline-none transition">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -242,7 +357,7 @@
         @can('tickets.ajustar-metricas')
         <button
             @click="mostrarModalMetricas = true; cargarMetricas()"
-            class="px-3 sm:px-4 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap">
+            class="index-page__btn-primary">
             <i class="fas fa-cog text-sm"></i>
             <span class="hidden sm:inline">Ajustar Métricas</span>
             <span class="sm:hidden">Métricas</span>
@@ -250,7 +365,7 @@
         @endcan
         <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-[#fffff] border border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
+            <div class="flex items-center gap-1 bg-gray-100 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
                 <button type="button"
                     data-vista-btn="kanban"
                     class="vista-switch__btn is-vista-active px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
@@ -1114,49 +1229,48 @@
     <div
         x-show="mostrarModalMetricas"
         x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/50"
-        @click.self="mostrarModalMetricas = false">
+        class="metricas-modal"
+        @keydown.escape.window="mostrarModalMetricas = false">
 
-        <div
-            class="rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border shadow-xl bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-            @click.stop>
+        <div class="metricas-modal__backdrop" @click="mostrarModalMetricas = false"></div>
 
-            <div class="px-6 py-4 flex justify-between items-center bg-gradient-to-r from-purple-600 to-purple-700">
-                <h2 class="text-white text-xl font-semibold flex items-center gap-2">
+        <div class="metricas-modal__dialog" @click.stop>
+
+            <div class="metricas-modal__header">
+                <h2 class="metricas-modal__title flex items-center gap-2">
                     <i class="fas fa-chart-line"></i>
-                    Ajustar Métricas
+                    Ajustar métricas
                 </h2>
                 <button
+                    type="button"
                     @click="mostrarModalMetricas = false"
-                    class="text-white/80 hover:text-white transition">
-                    <i class="fas fa-times text-xl"></i>
+                    class="metricas-modal__close"
+                    aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-800">
+            <div class="metricas-modal__body flex-1 overflow-y-auto p-5">
 
-                <div class="mb-4 text-sm rounded-lg p-3 border bg-blue-100/50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Configure el tiempo estimado en minutos para cada tipo de ticket.
+                <div class="index-page__note mb-4" style="padding: 0.85rem 1rem;">
+                    <span class="index-page__note-icon" aria-hidden="true">
+                        <i class="fas fa-info-circle"></i>
+                    </span>
+                    <p class="mb-0 text-sm text-gray-700 dark:text-gray-200">
+                        Configure el tiempo estimado en minutos para cada tipo de ticket.
+                    </p>
                 </div>
 
-                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                    <table class="min-w-full border-collapse">
-                        <thead class="bg-gray-100 dark:bg-gray-900/50">
+                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-[#2A2F3A]">
+                    <table class="min-w-full index-table">
+                        <thead>
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-                                    Tipo de Ticket
-                                </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-                                    Tiempo Estimado
-                                </th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-                                    Equivalente
-                                </th>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Tipo de ticket</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Tiempo estimado</th>
+                                <th class="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider">Equivalente</th>
                             </tr>
                         </thead>
-
-                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody>
 
                             <template x-if="cargandoMetricas">
                                 <tr>
@@ -1171,12 +1285,12 @@
 
                             <template x-if="!cargandoMetricas && metricasTipos && metricasTipos.length > 0">
                                 <template x-for="(tipo, index) in metricasTipos" :key="tipo.TipoID">
-                                    <tr class="transition hover:bg-gray-100 dark:hover:bg-gray-700/50">
-                                        <td class="px-4 py-3 whitespace-nowrap">
+                                    <tr>
+                                        <td class="px-4 py-2.5 whitespace-nowrap">
                                             <span class="text-sm font-medium text-gray-900 dark:text-gray-100"
                                                 x-text="tipo.NombreTipo"></span>
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap">
+                                        <td class="px-4 py-2.5 whitespace-nowrap">
                                             <input
                                                 type="number"
                                                 min="0"
@@ -1184,15 +1298,10 @@
                                                 :value="tipo.TiempoEstimadoMinutos || ''"
                                                 @input="tipo.TiempoEstimadoMinutos = $event.target.value ? parseInt($event.target.value) : null; tipo.cambiado = true"
                                                 placeholder="0"
-                                                class="w-32 px-3 py-2 rounded-md text-sm border transition
-                                                   bg-[#ffffff] dark:bg-gray-900
-                                                   border-gray-300 dark:border-gray-600
-                                                   text-gray-900 dark:text-white
-                                                   placeholder-gray-400 dark:placeholder-gray-500
-                                                   focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent">
+                                                class="form-control w-32">
                                         </td>
-                                        <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="text-sm text-gray-600 dark:text-gray-400"
+                                        <td class="px-4 py-2.5 whitespace-nowrap">
+                                            <span class="text-sm text-gray-600 dark:text-gray-300"
                                                 x-text="formatearTiempo(tipo.TiempoEstimadoMinutos)"></span>
                                         </td>
                                     </tr>
@@ -1214,28 +1323,24 @@
                 </div>
             </div>
 
-            <div class="px-6 py-4 flex justify-between items-center border-t bg-gray-100 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
-                <div class="text-sm text-gray-600 dark:text-gray-400">
+            <div class="metricas-modal__footer px-5 py-3.5 flex justify-between items-center gap-3">
+                <div class="text-sm text-gray-500 dark:text-gray-300">
                     <span x-text="`${metricasTipos.filter(t => t.cambiado).length} cambios pendientes`"></span>
                 </div>
-                <div class="flex gap-3">
+                <div class="flex gap-2">
                     <button
+                        type="button"
                         @click="mostrarModalMetricas = false"
-                        class="px-4 py-2 font-medium rounded-lg transition border
-                           bg-transparent
-                           text-gray-700 dark:text-gray-300
-                           border-gray-300 dark:border-gray-600
-                           hover:bg-gray-200 dark:hover:bg-gray-700">
+                        class="index-page__btn-secondary">
                         Cancelar
                     </button>
                     <button
+                        type="button"
                         @click="guardarMetricas()"
                         :disabled="guardandoMetricas || metricasTipos.filter(t => t.cambiado).length === 0"
-                        class="px-4 py-2 font-medium rounded-lg transition flex items-center gap-2 shadow-sm
-                           text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800
-                           disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="index-page__btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fas fa-save" :class="{'fa-spin': guardandoMetricas}"></i>
-                        <span x-text="guardandoMetricas ? 'Guardando...' : 'Guardar Cambios'"></span>
+                        <span x-text="guardandoMetricas ? 'Guardando...' : 'Guardar cambios'"></span>
                     </button>
                 </div>
             </div>

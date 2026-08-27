@@ -102,6 +102,11 @@
     padding: 6px 12px;
 }
 
+.dark .index-page .dataTables_wrapper .dataTables_filter input,
+.dark .index-page__card .dataTables_filter input {
+    padding: 6px 12px 6px 2.35rem;
+}
+
 .dark .dataTables_wrapper .dataTables_filter input:focus {
     background-color: #374151;
     border-color: #3b82f6;
@@ -220,9 +225,13 @@
     color: #9ca3af;
 }
 
-/* Labels en modo oscuro */
-.dark label {
-    color: #f9fafb;
+/* Labels en modo oscuro (Stisla .form-group > label usa #34395e) */
+.dark label,
+.dark .form-group > label,
+.dark .form-group .control-label,
+.dark .index-page__filters label,
+.dark .modal-content label {
+    color: #e5e7eb !important;
     font-weight: 500;
     margin-bottom: 8px;
 }
@@ -416,20 +425,30 @@
     border: 1px solid #4b5563 !important;
 }
 
-/* Select2 en modo oscuro */
-.dark .select2-container--default .select2-selection--single {
-    background-color: #374151 !important;
-    border: 1px solid #4b5563 !important;
+/* Select2 en modo oscuro (incluye el buscador del dropdown, que se pega a body) */
+.dark .select2-container--default .select2-selection--single,
+.dark .select2-container--default .select2-selection--multiple {
+    background-color: #111827 !important;
+    border: 1px solid #374151 !important;
     color: #f9fafb !important;
 }
 
-.dark .select2-container--default .select2-selection--single .select2-selection__rendered {
-    color: #f9fafb !important;
+.dark .select2-container--default .select2-selection--single .select2-selection__rendered,
+.dark .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #e5e7eb !important;
 }
 
-.dark .select2-container--default .select2-dropdown {
-    background-color: #374151 !important;
-    border: 1px solid #4b5563 !important;
+.dark .select2-container--default .select2-dropdown,
+.dark .select2-dropdown {
+    background-color: #1f2937 !important;
+    border: 1px solid #374151 !important;
+}
+
+.dark .select2-search--dropdown .select2-search__field,
+.dark .select2-search__field {
+    background-color: #111827 !important;
+    color: #f9fafb !important;
+    border: 1px solid #374151 !important;
 }
 
 .dark .select2-container--default .select2-results__option {
@@ -437,7 +456,7 @@
 }
 
 .dark .select2-container--default .select2-results__option--highlighted[aria-selected] {
-    background-color: #3b82f6 !important;
+    background-color: #2563eb !important;
     color: #ffffff !important;
 }
 
