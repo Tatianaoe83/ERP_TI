@@ -318,15 +318,15 @@ class AuditoriasExport implements WithMultipleSheets
             return $this->corridas;
         }
 
-        $ultimas = DB::table('auditorias')
+        // Sin ROW_NUMBER()/OVER: no lo soporta MySQL < 8.0 / MariaDB < 10.2.
+        // Las corridas se generan en vivo, así que el id mayor por empleado es
+        // la más reciente.
+        $ids = DB::table('auditorias')
             ->whereNotNull('EmpleadoID')
-            ->selectRaw(
-                'id, ROW_NUMBER() OVER ('
-                . '   PARTITION BY EmpleadoID ORDER BY created_at DESC, id DESC'
-                . ' ) AS rn'
-            );
-
-        $ids = DB::query()->fromSub($ultimas, 't')->where('rn', 1)->pluck('id')->all();
+            ->groupBy('EmpleadoID')
+            ->selectRaw('MAX(id) AS id')
+            ->pluck('id')
+            ->all();
 
         if (empty($ids)) {
             return $this->corridas = collect();

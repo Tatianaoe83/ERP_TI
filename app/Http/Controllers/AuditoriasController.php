@@ -541,28 +541,28 @@ class AuditoriasController extends Controller
      * corrida se capturó. Es la fuente del semáforo: lo que no aparece aquí nunca se
      * ha revisado, y lo que aparece con fecha vieja ya no representa al presente.
      *
-     * Una sola consulta con ventana en vez de una corrida por empleado.
+     * Sin funciones de ventana (ROW_NUMBER/OVER): MySQL < 8.0 y MariaDB < 10.2 no
+     * las soportan y tronaban en producción. Se traen las filas ordenadas de más
+     * vieja a más nueva y keyBy deja como valor final la última (la más reciente)
+     * de cada par (empleado, licencia).
      *
      * @return \Illuminate\Support\Collection keyBy "EmpleadoID|NombreLicencia"
      */
     private function estadoVigente()
     {
-        $ultimas = DB::table('auditorias_licencias as ae')
+        return DB::table('auditorias_licencias as ae')
             ->join('auditorias as a', 'a.id', '=', 'ae.auditoria_id')
             ->whereNotNull('a.EmpleadoID')
-            ->selectRaw(
-                'a.EmpleadoID, a.Folio, a.created_at AS fecha, ae.NombreLicencia,'
-                . ' ae.tiene_licencia, ae.original,'
-                . ' ROW_NUMBER() OVER ('
-                . '   PARTITION BY a.EmpleadoID, ae.NombreLicencia'
-                . '   ORDER BY a.created_at DESC, a.id DESC'
-                . ' ) AS rn'
-            );
-
-        return DB::query()
-            ->fromSub($ultimas, 't')
-            ->where('rn', 1)
-            ->get()
+            ->orderBy('a.created_at')
+            ->orderBy('a.id')
+            ->get([
+                'a.EmpleadoID',
+                'a.Folio',
+                'a.created_at as fecha',
+                'ae.NombreLicencia',
+                'ae.tiene_licencia',
+                'ae.original',
+            ])
             ->keyBy(fn($fila) => $fila->EmpleadoID . '|' . $fila->NombreLicencia);
     }
 
