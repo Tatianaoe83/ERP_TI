@@ -156,6 +156,7 @@ class AuditoriasExport implements WithMultipleSheets
             ->leftJoin('puestos as p', 'p.PuestoID', '=', 'e.PuestoID')
             ->leftJoin('departamentos as d', 'd.DepartamentoID', '=', 'p.DepartamentoID')
             ->leftJoin('gerencia as g', 'g.GerenciaID', '=', 'd.GerenciaID')
+            ->where('e.Estado', 1)
             ->whereIn('e.tipo_persona', self::TIPOS_PERSONA_AUDITABLES)
             ->selectRaw(
                 'e.EmpleadoID,'
@@ -321,10 +322,13 @@ class AuditoriasExport implements WithMultipleSheets
         // Sin ROW_NUMBER()/OVER: no lo soporta MySQL < 8.0 / MariaDB < 10.2.
         // Las corridas se generan en vivo, así que el id mayor por empleado es
         // la más reciente.
-        $ids = DB::table('auditorias')
-            ->whereNotNull('EmpleadoID')
-            ->groupBy('EmpleadoID')
-            ->selectRaw('MAX(id) AS id')
+        // Sólo corridas de personal activo: una baja ya no describe el presente.
+        $ids = DB::table('auditorias as a')
+            ->join('empleados as e', 'e.EmpleadoID', '=', 'a.EmpleadoID')
+            ->where('e.Estado', 1)
+            ->whereIn('e.tipo_persona', self::TIPOS_PERSONA_AUDITABLES)
+            ->groupBy('a.EmpleadoID')
+            ->selectRaw('MAX(a.id) AS id')
             ->pluck('id')
             ->all();
 

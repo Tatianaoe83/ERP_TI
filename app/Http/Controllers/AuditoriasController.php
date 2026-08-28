@@ -641,9 +641,13 @@ class AuditoriasController extends Controller
         $porEmpleado = $equipos->groupBy('EmpleadoID');
 
         $empleados = Empleados::with(['puestos.departamentos.gerencia', 'obras'])
+            ->where('Estado', 1)
             ->whereIn('EmpleadoID', $agregados->pluck('EmpleadoID')->all())
             ->get()
             ->keyBy('EmpleadoID');
+
+        // Los dados de baja no se muestran en la lista aunque tengan corridas viejas.
+        $agregados = $agregados->filter(fn($r) => $empleados->has($r->EmpleadoID))->values();
 
         $filas = $agregados->map(function ($resumen) use ($estados, $porEmpleado, $empleados) {
             $empleadoID = $resumen->EmpleadoID;
@@ -832,6 +836,7 @@ class AuditoriasController extends Controller
             ->leftJoin('departamentos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
             ->leftJoin('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
             ->leftJoin('obras', 'obras.ObraID', '=', 'empleados.ObraID')
+            ->where('empleados.Estado', 1)
             ->whereIn('empleados.tipo_persona', self::TIPOS_PERSONA_AUDITABLES)
             ->whereIn('inventarioequipo.CategoriaEquipo', [self::CATEGORIA_LAPTOP, self::CATEGORIA_PC])
             ->select(
