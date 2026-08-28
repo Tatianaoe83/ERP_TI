@@ -1070,24 +1070,25 @@ class InventarioController extends AppBaseController
             return $redir;
         }
 
+        // Sólo se listan modalidades transferibles (stock/compartido/extra). PROPIO nunca.
         $EquiposAsignados = InventarioEquipo::query()
             ->where('EmpleadoID', $id);
-        PresupuestoAsignacion::aplicarWhere($EquiposAsignados, 'inventario', PresupuestoAsignacion::COLUMNA_EQUIPOS);
+        PresupuestoAsignacion::aplicarWhere($EquiposAsignados, 'transferible', PresupuestoAsignacion::COLUMNA_EQUIPOS);
         $EquiposAsignados = $EquiposAsignados->get();
 
         $InsumosAsignados = InventarioInsumo::query()
             ->where('EmpleadoID', $id);
-        PresupuestoAsignacion::aplicarWhere($InsumosAsignados, 'inventario');
+        PresupuestoAsignacion::aplicarWhere($InsumosAsignados, 'transferible');
         $InsumosAsignados = $InsumosAsignados->get();
 
         $LineasAsignados = InventarioLineas::query()
             ->where('EmpleadoID', $id);
-        PresupuestoAsignacion::aplicarWhere($LineasAsignados, 'inventario');
+        PresupuestoAsignacion::aplicarWhere($LineasAsignados, 'transferible');
         $LineasAsignados = $LineasAsignados->get();
 
         $Empleados = Empleados::query()
             ->where('Estado', 1)
-            ->whereIn('tipo_persona', ['FISICA', 'EXTRAORDINARIO'])
+            ->whereIn('tipo_persona', ['FISICA', 'REFERENCIADO', 'EXTRAORDINARIO'])
             ->where('EmpleadoID', '!=', $id)
             ->orderBy('NombreEmpleado')
             ->get();
@@ -1122,34 +1123,43 @@ class InventarioController extends AppBaseController
         $destino = Empleados::where('EmpleadoID', $empleadoSeleccionado)->first();
         $tipoDestino = strtoupper((string) ($destino->tipo_persona ?? ''));
 
-        if (! $destino || ! $destino->Estado || ! in_array($tipoDestino, ['FISICA', 'EXTRAORDINARIO'], true)) {
-            Flash::error('El destino debe ser una persona física o extraordinaria activa.');
+        if (! $destino || ! $destino->Estado || ! in_array($tipoDestino, ['FISICA', 'REFERENCIADO', 'EXTRAORDINARIO'], true)) {
+            Flash::error('El destino debe ser una persona física, referenciada o extraordinaria activa.');
             return back();
         }
 
+        // Modalidades que acepta el destino:
+        //  FISICA → stock/compartido · REFERENCIADO → stock · EXTRAORDINARIO → extra.
+        //  PROPIO nunca. El tipo NO se convierte: se mueve tal cual.
+        $permitidos = PresupuestoAsignacion::transferiblesA($tipoDestino);
+
         $hoy = Carbon::now()->toDateString();
-        $destinoExtraordinario = $tipoDestino === 'EXTRAORDINARIO';
         $movidos = 0;
+        $omitidos = 0;
 
         if ($equiposSeleccionados) {
             $equipos = InventarioEquipo::query()
                 ->where('EmpleadoID', $origenId)
                 ->whereIn('InventarioID', $equiposSeleccionados);
-            PresupuestoAsignacion::aplicarWhere($equipos, 'inventario', PresupuestoAsignacion::COLUMNA_EQUIPOS);
+            PresupuestoAsignacion::aplicarWhere($equipos, 'transferible', PresupuestoAsignacion::COLUMNA_EQUIPOS);
             $equipos = $equipos->get();
 
+            $equiposMovidos = [];
             foreach ($equipos as $equipo) {
+                $tipoActual = PresupuestoAsignacion::normalizar($equipo->{PresupuestoAsignacion::COLUMNA_EQUIPOS});
+                if (! in_array($tipoActual, $permitidos, true)) {
+                    $omitidos++;
+                    continue;
+                }
                 $equipo->EmpleadoID = $empleadoSeleccionado;
                 $equipo->FechaAsignacion = $hoy;
-                if ($destinoExtraordinario) {
-                    $equipo->tipoEquipo = (string) PresupuestoAsignacion::EXTRA;
-                }
                 $equipo->save();
+                $equiposMovidos[] = $equipo->InventarioID;
                 $movidos++;
             }
 
-            if ($equipos->isNotEmpty()) {
-                Mantenimiento::whereIn('InventarioID', $equipos->pluck('InventarioID'))
+            if ($equiposMovidos) {
+                Mantenimiento::whereIn('InventarioID', $equiposMovidos)
                     ->where('Estatus', 'Pendiente')
                     ->update(['EmpleadoID' => $empleadoSeleccionado]);
             }
@@ -1159,14 +1169,16 @@ class InventarioController extends AppBaseController
             $insumos = InventarioInsumo::query()
                 ->where('EmpleadoID', $origenId)
                 ->whereIn('InventarioID', $insumosSeleccionados);
-            PresupuestoAsignacion::aplicarWhere($insumos, 'inventario');
+            PresupuestoAsignacion::aplicarWhere($insumos, 'transferible');
 
             foreach ($insumos->get() as $insumo) {
+                $tipoActual = PresupuestoAsignacion::normalizar($insumo->Presupuestado);
+                if (! in_array($tipoActual, $permitidos, true)) {
+                    $omitidos++;
+                    continue;
+                }
                 $insumo->EmpleadoID = $empleadoSeleccionado;
                 $insumo->FechaAsignacion = $hoy;
-                if ($destinoExtraordinario) {
-                    $insumo->Presupuestado = PresupuestoAsignacion::EXTRA;
-                }
                 $insumo->save();
                 $movidos++;
             }
@@ -1176,25 +1188,39 @@ class InventarioController extends AppBaseController
             $lineas = InventarioLineas::query()
                 ->where('EmpleadoID', $origenId)
                 ->whereIn('InventarioID', $lineasSeleccionadas);
-            PresupuestoAsignacion::aplicarWhere($lineas, 'inventario');
+            PresupuestoAsignacion::aplicarWhere($lineas, 'transferible');
 
             foreach ($lineas->get() as $linea) {
+                $tipoActual = PresupuestoAsignacion::normalizar($linea->Presupuestado);
+                if (! in_array($tipoActual, $permitidos, true)) {
+                    $omitidos++;
+                    continue;
+                }
                 $linea->EmpleadoID = $empleadoSeleccionado;
                 $linea->FechaAsignacion = $hoy;
-                if ($destinoExtraordinario) {
-                    $linea->Presupuestado = PresupuestoAsignacion::EXTRA;
-                }
                 $linea->save();
                 $movidos++;
             }
         }
 
         if ($movidos === 0) {
-            Flash::error('No hay elementos de stock o compartido para transferir.');
+            $reglas = [
+                'FISICA' => 'stock y compartido',
+                'REFERENCIADO' => 'sólo stock',
+                'EXTRAORDINARIO' => 'sólo extra',
+            ];
+            Flash::error(
+                'No se transfirió nada. A una persona ' . ucfirst(strtolower($tipoDestino))
+                . ' se le transfiere ' . ($reglas[$tipoDestino] ?? 'nada') . '.'
+            );
             return back();
         }
 
-        Flash::success('Se transfirieron ' . $movidos . ' registro(s) de inventario.');
+        $mensaje = 'Se transfirieron ' . $movidos . ' registro(s) de inventario.';
+        if ($omitidos > 0) {
+            $mensaje .= ' Se omitieron ' . $omitidos . ' que no aplican para ese tipo de destino.';
+        }
+        Flash::success($mensaje);
 
         return redirect(route('inventarios.index'));
     }

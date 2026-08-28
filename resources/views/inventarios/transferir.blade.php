@@ -23,7 +23,10 @@
     </x-slot>
 
     <p class="xfer-lede">
-        Solo se transfieren asignaciones de <strong>stock</strong> y <strong>compartido</strong>. El destino debe ser persona física o extraordinaria. El mantenimiento preventivo se genera desde esta misma pantalla.
+        El destino puede ser persona <strong>física</strong>, <strong>referenciada</strong> o <strong>extraordinaria</strong>.
+        A física se le transfiere <strong>stock</strong> y <strong>compartido</strong>; a referenciada <strong>sólo stock</strong>;
+        a extraordinaria <strong>sólo extra</strong>. Lo <strong>propio</strong> nunca se transfiere.
+        El mantenimiento preventivo se genera desde esta misma pantalla.
     </p>
 
     <div class="xfer-stats">
@@ -155,7 +158,7 @@
                     <tbody>
                         @foreach ($equiposAsignados as $equiposAsignado)
                         <tr data-id="{{ $equiposAsignado->InventarioID }}">
-                            <td><input type="checkbox" class="selectItem xfer-check" name="equipos[]" value="{{ $equiposAsignado->InventarioID }}"></td>
+                            <td><input type="checkbox" class="selectItem xfer-check" name="equipos[]" value="{{ $equiposAsignado->InventarioID }}" data-tipo="{{ \App\Helpers\PresupuestoAsignacion::normalizar($equiposAsignado->tipoEquipo) }}"></td>
                             <td>{{ $equiposAsignado->CategoriaEquipo }}</td>
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->tipoEquipo) !!}</td>
                             <td>{{ $equiposAsignado->Marca }}</td>
@@ -203,7 +206,7 @@
                     <tbody>
                         @foreach ($insumosAsignados as $insumosAsignado)
                         <tr data-id="{{ $insumosAsignado->InventarioID }}">
-                            <td><input type="checkbox" class="selectItem xfer-check" name="insumos[]" value="{{ $insumosAsignado->InventarioID }}"></td>
+                            <td><input type="checkbox" class="selectItem xfer-check" name="insumos[]" value="{{ $insumosAsignado->InventarioID }}" data-tipo="{{ \App\Helpers\PresupuestoAsignacion::normalizar($insumosAsignado->Presupuestado) }}"></td>
                             <td>{{ $insumosAsignado->CateogoriaInsumo }}</td>
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
@@ -254,7 +257,7 @@
                     <tbody>
                         @foreach ($LineasAsignados as $LineasAsignado)
                         <tr data-id="{{ $LineasAsignado->InventarioID }}">
-                            <td><input type="checkbox" class="selectItem xfer-check" name="lineas[]" value="{{ $LineasAsignado->InventarioID }}"></td>
+                            <td><input type="checkbox" class="selectItem xfer-check" name="lineas[]" value="{{ $LineasAsignado->InventarioID }}" data-tipo="{{ \App\Helpers\PresupuestoAsignacion::normalizar($LineasAsignado->Presupuestado) }}"></td>
                             <td>{{ $LineasAsignado->NumTelefonico }}</td>
                             <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($LineasAsignado->Presupuestado) !!}</td>
                             <td>{{ $LineasAsignado->Compania }}</td>
@@ -771,9 +774,33 @@
                 }
 
                 var empleadosOptions = '';
+                @php
+                    $tipoPersonaLabels = [
+                        'FISICA' => 'Física',
+                        'REFERENCIADO' => 'Referenciado',
+                        'EXTRAORDINARIO' => 'Extraordinario',
+                    ];
+                @endphp
                 @foreach($Empleados as $empleado)
-                empleadosOptions += `<option value="{{ $empleado->EmpleadoID }}">{{ $empleado->NombreEmpleado }} ({{ strtoupper((string) $empleado->tipo_persona) === 'EXTRAORDINARIO' ? 'Extraordinario' : 'Física' }})</option>`;
+                empleadosOptions += `<option value="{{ $empleado->EmpleadoID }}" data-tp="{{ strtoupper((string) $empleado->tipo_persona) }}">{{ $empleado->NombreEmpleado }} ({{ $tipoPersonaLabels[strtoupper((string) $empleado->tipo_persona)] ?? ucfirst(strtolower((string) $empleado->tipo_persona)) }})</option>`;
                 @endforeach
+
+                // Reglas por tipo de destino (0=stock, 1=extra, 2=compartido, 3=propio).
+                var REGLAS_TRANSFER = {
+                    FISICA: [0, 2],
+                    REFERENCIADO: [0],
+                    EXTRAORDINARIO: [1]
+                };
+                var TXT_REGLA = {
+                    FISICA: 'sólo recibe stock y compartido',
+                    REFERENCIADO: 'sólo recibe stock',
+                    EXTRAORDINARIO: 'sólo recibe extra'
+                };
+                var LABEL_TP = {
+                    FISICA: 'Física',
+                    REFERENCIADO: 'Referenciado',
+                    EXTRAORDINARIO: 'Extraordinario'
+                };
 
                 swal.fire({
                     title: '¿Está seguro de que desea realizar esta acción?',
@@ -804,53 +831,105 @@
                     denyButtonText: 'Cerrar',
                     dangerMode: true,
                 }).then(function (result) {
-                    var selectedEmpleado = $('#empleado').val();
-                    if (result.isConfirmed) {
-                        if (!selectedEmpleado) {
-                            swal.fire({
-                                title: '¡Debes seleccionar un empleado!',
-                                icon: 'error',
-                                confirmButtonColor: '#101D49',
-                                didOpen: function () {
-                                    $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
-                                    $('.swal2-title').addClass('dark:text-white');
-                                }
-                            });
-                        } else {
-                            swal.fire({
-                                title: 'Acción completada exitosamente',
-                                icon: 'success',
-                                showConfirmButton: false,
-                                timer: 2000,
-                                didOpen: function () {
-                                    $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
-                                    $('.swal2-title').addClass('dark:text-white');
-                                }
-                            }).then(function () {
-                                tables.forEach(function (t) {
-                                    t.$('input.selectItem:checked').each(function () {
-                                        var name = $(this).attr('name');
-                                        form.append('<input type="hidden" name="' + name + '" value="' + this.value + '">');
-                                    });
-                                });
-                                $('input.selectItem').prop('disabled', true);
-                                form.append('<input type="hidden" name="empleado_id" value="' + selectedEmpleado + '">');
-                                form.submit();
-                            });
-                        }
-                    } else if (result.isDenied) {
-                        swal.fire({
+                    var $sel = $('#empleado');
+                    var selectedEmpleado = $sel.val();
+
+                    if (result.isDenied) {
+                        Swal.fire({
                             title: 'Cambios no realizados',
                             icon: 'error',
                             showConfirmButton: false,
                             timer: 2000,
-                            didOpen: function () {
-                                $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
-                                $('.swal2-title').addClass('dark:text-white');
-                            }
+                            didOpen: darkSwal
                         });
+                        return;
                     }
+                    if (!result.isConfirmed) {
+                        return;
+                    }
+                    if (!selectedEmpleado) {
+                        Swal.fire({
+                            title: '¡Debes seleccionar un empleado!',
+                            icon: 'error',
+                            confirmButtonColor: '#101D49',
+                            didOpen: darkSwal
+                        });
+                        return;
+                    }
+
+                    // ── Validación de reglas ANTES de enviar ──────────────────
+                    var tipoDestino = ($sel.find('option:selected').data('tp') || '').toString().toUpperCase();
+                    var permitidos = REGLAS_TRANSFER[tipoDestino] || [];
+
+                    var tiposSeleccionados = [];
+                    tables.forEach(function (t) {
+                        t.$('input.selectItem:checked').each(function () {
+                            tiposSeleccionados.push(parseInt(this.getAttribute('data-tipo'), 10));
+                        });
+                    });
+
+                    var compatibles = tiposSeleccionados.filter(function (tp) {
+                        return permitidos.indexOf(tp) !== -1;
+                    }).length;
+                    var incompatibles = tiposSeleccionados.length - compatibles;
+
+                    if (compatibles === 0) {
+                        Swal.fire({
+                            title: 'No se puede transferir',
+                            icon: 'error',
+                            html: 'Una persona <b>' + (LABEL_TP[tipoDestino] || tipoDestino) + '</b> '
+                                + (TXT_REGLA[tipoDestino] || 'no admite estos elementos')
+                                + '.<br>Ninguno de los elementos seleccionados aplica.',
+                            confirmButtonColor: '#101D49',
+                            didOpen: darkSwal
+                        });
+                        return;
+                    }
+
+                    if (incompatibles > 0) {
+                        Swal.fire({
+                            title: 'Transferencia parcial',
+                            icon: 'warning',
+                            html: 'Se transferirán <b>' + compatibles + '</b>. Se omitirán <b>' + incompatibles
+                                + '</b> que no aplican para <b>' + (LABEL_TP[tipoDestino] || tipoDestino) + '</b>.',
+                            showCancelButton: true,
+                            confirmButtonText: 'Continuar',
+                            cancelButtonText: 'Cancelar',
+                            confirmButtonColor: '#101D49',
+                            didOpen: darkSwal
+                        }).then(function (r) {
+                            if (r.isConfirmed) enviarTransferencia(selectedEmpleado);
+                        });
+                        return;
+                    }
+
+                    enviarTransferencia(selectedEmpleado);
                 });
+
+                function darkSwal() {
+                    $('.swal2-popup').addClass('dark:bg-[#101010] dark:text-white');
+                    $('.swal2-title').addClass('dark:text-white');
+                }
+
+                function enviarTransferencia(empleadoId) {
+                    Swal.fire({
+                        title: 'Transfiriendo...',
+                        icon: 'success',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        didOpen: darkSwal
+                    }).then(function () {
+                        tables.forEach(function (t) {
+                            t.$('input.selectItem:checked').each(function () {
+                                var name = $(this).attr('name');
+                                form.append('<input type="hidden" name="' + name + '" value="' + this.value + '">');
+                            });
+                        });
+                        $('input.selectItem').prop('disabled', true);
+                        form.append('<input type="hidden" name="empleado_id" value="' + empleadoId + '">');
+                        form.submit();
+                    });
+                }
             });
         });
         var selectAllPreven = document.getElementById('selectAllPreven');

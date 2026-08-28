@@ -69,6 +69,29 @@ class PresupuestoAsignacion
         return [self::STOCK, self::COMPARTIDO, self::PROPIO];
     }
 
+    /** Modalidades que se pueden llegar a transferir. PROPIO nunca se transfiere. */
+    public static function valoresTransferibles(): array
+    {
+        return [self::STOCK, self::EXTRA, self::COMPARTIDO];
+    }
+
+    /**
+     * Modalidades que se pueden transferir a un destino según su tipo_persona.
+     *  - FISICA        → stock y compartido
+     *  - REFERENCIADO  → sólo stock
+     *  - EXTRAORDINARIO → sólo extra
+     * PROPIO nunca entra a ninguna lista.
+     */
+    public static function transferiblesA(?string $tipoDestino): array
+    {
+        return match (strtoupper((string) $tipoDestino)) {
+            'FISICA' => [self::STOCK, self::COMPARTIDO],
+            'REFERENCIADO' => [self::STOCK],
+            'EXTRAORDINARIO' => [self::EXTRA],
+            default => [],
+        };
+    }
+
     /**
      * Los equipos guardan la modalidad en un ENUM('0','1','2','3'): comparar contra
      * un entero haría que MySQL use el *índice* del ENUM (1 = '0', 2 = '1'...) y
@@ -84,6 +107,13 @@ class PresupuestoAsignacion
     {
         if ($modo === 'presupuesto') {
             return $query->whereIn($columna, self::comoTexto(self::valoresPresupuesto()));
+        }
+
+        if ($modo === 'transferible') {
+            return $query->where(function ($q) use ($columna) {
+                $q->whereIn($columna, self::comoTexto(self::valoresTransferibles()))
+                    ->orWhereNull($columna);
+            });
         }
 
         return $query->where(function ($q) use ($columna) {
