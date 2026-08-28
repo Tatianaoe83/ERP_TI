@@ -994,20 +994,22 @@
     
     </style>
 
-    @stack('styles')
-
-    @yield('page_css')
     <!-- Template CSS -->
     <link rel="stylesheet" href="{{ asset('web/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('web/css/components.css')}}">
 
-    @yield('css')
-    @stack('third_party_stylesheets')
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
 </head>
 
 <body class="bg-gray-100 dark:bg-[#0F1116] text-gray-800 dark:text-gray-200 transition-colors duration-500 ease-in-out">
+    {{-- CSS por página: se re-inyecta en cada navegación SPA (AppNav.swapPage) --}}
+    <div id="app-page-styles">
+        @stack('styles')
+        @yield('page_css')
+        @yield('css')
+        @stack('third_party_stylesheets')
+    </div>
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1753,6 +1755,72 @@
             fn();
         }
 
+        // CSS por página vive en <head> con [data-appnav-style]. En cada navegación
+        // SPA se diffea contra el <head> del documento nuevo: se quitan los que
+        // sobran y se agregan los que faltan (los compartidos no se recargan → sin flash).
+        function styleKey(n) {
+            if (n.tagName === 'LINK') return 'L:' + (n.getAttribute('href') || '');
+            return 'S:' + (n.textContent || '').length + ':' + (n.textContent || '').slice(0, 120);
+        }
+        function collectPageStyleNodes(rootDoc) {
+            var box = rootDoc.getElementById('app-page-styles');
+            if (!box) return [];
+            return Array.prototype.slice.call(box.querySelectorAll('link[rel="stylesheet"], style'));
+        }
+        function syncPageStyles(doc) {
+            var desired = collectPageStyleNodes(doc);
+            var desiredKeys = {};
+            desired.forEach(function (n) { desiredKeys[styleKey(n)] = true; });
+
+            var current = Array.prototype.slice.call(
+                document.head.querySelectorAll('[data-appnav-style]')
+            );
+            var currentKeys = {};
+            current.forEach(function (el) {
+                var k = styleKey(el);
+                if (desiredKeys[k]) { currentKeys[k] = true; }
+                else { el.parentNode.removeChild(el); }
+            });
+
+            desired.forEach(function (n) {
+                var k = styleKey(n);
+                if (currentKeys[k]) return;
+                var el;
+                if (n.tagName === 'LINK') {
+                    var href = n.getAttribute('href');
+                    if (!href) return;
+                    el = document.createElement('link');
+                    el.rel = 'stylesheet';
+                    el.href = href;
+                } else {
+                    el = document.createElement('style');
+                    el.textContent = n.textContent || '';
+                }
+                el.setAttribute('data-appnav-style', '1');
+                document.head.appendChild(el);
+            });
+        }
+        // Hoist inicial: mueve el CSS de la primera carga (en #app-page-styles del body)
+        // al <head> con el mismo tag, para que las navegaciones siguientes diffeen bien.
+        (function initHoistPageStyles() {
+            var box = document.getElementById('app-page-styles');
+            if (!box) return;
+            collectPageStyleNodes(document).forEach(function (n) {
+                var el;
+                if (n.tagName === 'LINK') {
+                    el = document.createElement('link');
+                    el.rel = 'stylesheet';
+                    el.href = n.getAttribute('href') || '';
+                } else {
+                    el = document.createElement('style');
+                    el.textContent = n.textContent || '';
+                }
+                el.setAttribute('data-appnav-style', '1');
+                document.head.appendChild(el);
+            });
+            box.parentNode.removeChild(box);
+        })();
+
         function swapPage(html, href, push) {
             var doc = new DOMParser().parseFromString(html, 'text/html');
             var main = document.getElementById('app-main');
@@ -1778,6 +1846,8 @@
 
             var extras = null;
             var pageScripts = null;
+            // CSS de la página primero, para que el contenido nuevo ya renderice con estilos
+            syncPageStyles(doc);
             alpineMute(function () {
                 main.innerHTML = nextMain.innerHTML;
                 copySection(doc, 'sidebar');
