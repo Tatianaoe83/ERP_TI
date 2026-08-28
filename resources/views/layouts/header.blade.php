@@ -90,8 +90,9 @@
                 </button>
             </div>
 
-            <a href="{{ url('logout') }}"
-                onclick="event.preventDefault(); localStorage.clear(); document.getElementById('logout-form').submit();"
+            <a href="{{ route('logout') }}"
+                data-full-load="1"
+                onclick="event.preventDefault(); event.stopImmediatePropagation(); this.style.pointerEvents='none'; try { if (window.Livewire && typeof Livewire.stop === 'function') Livewire.stop(); } catch (e) {} try { localStorage.clear(); } catch (e) {} document.getElementById('logout-form').submit();"
                 class="header-user-menu__logout no-underline">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Cerrar sesión</span>
