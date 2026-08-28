@@ -1,13 +1,13 @@
-@php
-    $coloresColumna = [
-        'pendiente'  => 'bg-yellow-500',
-        'en_proceso' => 'bg-blue-500',
-        'pausado'    => 'bg-orange-500',
-        'atendido'   => 'bg-green-500',
-        'cancelado'  => 'bg-gray-500',
-    ];
-@endphp
 <div @if ($activo) wire:poll.5s.visible="actualizarDatos" @endif>
+    @php
+        $coloresColumna = [
+            'pendiente'  => 'bg-yellow-500',
+            'en_proceso' => 'bg-blue-500',
+            'pausado'    => 'bg-orange-500',
+            'atendido'   => 'bg-green-500',
+            'cancelado'  => 'bg-gray-500',
+        ];
+    @endphp
     @if (!$activo)
     <div class="p-10 text-center text-gray-400 dark:text-gray-500">
         <i class="fas fa-circle-notch fa-spin text-2xl mb-2 opacity-40"></i>

@@ -1003,6 +1003,7 @@
 
     @yield('css')
     @stack('third_party_stylesheets')
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
 </head>
 

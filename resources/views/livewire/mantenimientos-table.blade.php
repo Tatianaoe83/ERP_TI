@@ -1,4 +1,6 @@
 <div>
+    @once
+    @push('third_party_stylesheets')
     <style>
         .mant-modal-header {
             display: flex !important;
@@ -96,6 +98,8 @@
             }
         }
     </style>
+    @endpush
+    @endonce
     <div class="mant-filters">
         <div class="form-group">
             <label for="buscar-mantenimientos">Buscar</label>

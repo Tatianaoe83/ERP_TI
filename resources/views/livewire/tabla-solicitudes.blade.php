@@ -927,7 +927,10 @@
         </div>
     </div>
     @endif
+</div>
 
+@once
+@push('third_party_scripts')
 <script>
     /* ── Dropdown de Insumos: vanilla JS, un solo panel flotante compartido ── */
     window.__insumoDD = (function() {
@@ -1183,3 +1186,5 @@
         });
     });
 </script>
+@endpush
+@endonce

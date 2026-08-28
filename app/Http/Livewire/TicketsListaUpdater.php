@@ -22,7 +22,6 @@ class TicketsListaUpdater extends Component
         return [
             'ticket-estatus-actualizado'               => '$refresh',
             'soporte-vista-activa'                     => 'activarSiCorresponde',
-            "echo:tickets-channel,TicketUpdatedEvent"  => '$refresh',
         ];
     }
 

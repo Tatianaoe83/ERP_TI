@@ -1,6 +1,4 @@
 <div wire:poll.5s.visible="actualizarDatos">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
-
     <div class="space-y-4 w-full max-w-full overflow-x-hidden pb-6">
 
         @foreach (\App\Models\Tickets::COLUMNAS_VISTA as $key => $titulo)
