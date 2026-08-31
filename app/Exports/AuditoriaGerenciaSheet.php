@@ -18,7 +18,9 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
  * Dos tablas de conteo:
  *
  *   1. Equipos y licencias por gerencia — filtros propios e independientes:
- *      Obra y Tipo de equipo.
+ *      Obra y Tipo de equipo (pegan a las dos columnas), Categoría de equipo
+ *      —PC / laptop, tal cual está en la BD— (sólo al conteo de equipos) y
+ *      Licencia, con todo el catálogo (sólo al conteo de licencias).
  *   2. Catálogo de licencias del sistema — filtros en cascada: Gerencia
  *      acota Obra, Obra acota Empleado, Empleado acota Tipo de equipo. Cada
  *      uno sólo ofrece valores que de verdad existen bajo lo ya elegido. La
@@ -86,9 +88,10 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
     private array $conteoListas = [];
 
     /**
-     * @param array $rawEquipos   [[gerencia, obra, tipoEquipo], …] un renglón
-     *                            por equipo real (laptop/PC) del personal de
-     *                            planta.
+     * @param array $rawEquipos   [[gerencia, obra, tipoEquipo, categoria], …]
+     *                            un renglón por equipo real (laptop/PC) del
+     *                            personal de planta; categoria es el
+     *                            CategoriaEquipo crudo de la BD.
      * @param array $rawLicencias [[gerencia, obra, empleado, modalidadesCSV,
      *                            licencia], …] un renglón por licencia real;
      *                            modalidadesCSV es la lista ("Stock, Propio")
@@ -137,33 +140,37 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
         return Coordinate::stringFromColumnIndex($this->inicioOcultos() + $offset + 1);
     }
 
-    // Bloque A: equipos crudos — Gerencia, Obra, TipoEquipo, Coincide.
+    // Bloque A: equipos crudos — Gerencia, Obra, TipoEquipo, Categoría, Coincide.
     private function letraGerenciaA(): string { return $this->letraOculta(0); }
     private function letraObraA(): string { return $this->letraOculta(1); }
     private function letraTipoA(): string { return $this->letraOculta(2); }
-    private function letraCoincideA(): string { return $this->letraOculta(3); }
+    private function letraCategoriaA(): string { return $this->letraOculta(3); }
+    private function letraCoincideA(): string { return $this->letraOculta(4); }
 
     // Bloque B: licencias crudas — Gerencia, Obra, Empleado, ModalidadesCSV,
     // Licencia, CoincideT1 (filtros de la tabla 1), CoincideT2 (tabla 2).
-    private function letraGerenciaB(): string { return $this->letraOculta(4); }
-    private function letraObraB(): string { return $this->letraOculta(5); }
-    private function letraEmpleadoB(): string { return $this->letraOculta(6); }
-    private function letraModalidadesB(): string { return $this->letraOculta(7); }
-    private function letraLicenciaB(): string { return $this->letraOculta(8); }
-    private function letraCoincideT1(): string { return $this->letraOculta(9); }
-    private function letraCoincideT2(): string { return $this->letraOculta(10); }
+    private function letraGerenciaB(): string { return $this->letraOculta(5); }
+    private function letraObraB(): string { return $this->letraOculta(6); }
+    private function letraEmpleadoB(): string { return $this->letraOculta(7); }
+    private function letraModalidadesB(): string { return $this->letraOculta(8); }
+    private function letraLicenciaB(): string { return $this->letraOculta(9); }
+    private function letraCoincideT1(): string { return $this->letraOculta(10); }
+    private function letraCoincideT2(): string { return $this->letraOculta(11); }
 
-    // Listas fijas: tabla 1 completa, y la Gerencia de la tabla 2 (raíz de su
-    // cascada). Obra/Empleado/Tipo de equipo de la tabla 2 no son listas
-    // fijas: son combos en cascada, ver construirCascada().
-    private function letraListaObraA(): string { return $this->letraOculta(11); }
-    private function letraListaTipoA(): string { return $this->letraOculta(12); }
-    private function letraListaGerenciaT2(): string { return $this->letraOculta(13); }
+    // Listas fijas: tabla 1 completa (Obra, Tipo, Categoría de equipo y
+    // Licencia), y la Gerencia de la tabla 2 (raíz de su cascada).
+    // Obra/Empleado/Tipo de equipo de la tabla 2 no son listas fijas: son
+    // combos en cascada, ver construirCascada().
+    private function letraListaObraA(): string { return $this->letraOculta(12); }
+    private function letraListaTipoA(): string { return $this->letraOculta(13); }
+    private function letraListaCategoriaA(): string { return $this->letraOculta(14); }
+    private function letraListaLicenciaT1(): string { return $this->letraOculta(15); }
+    private function letraListaGerenciaT2(): string { return $this->letraOculta(16); }
 
     /** Primera columna absoluta (1-based) libre para escribir los combos en cascada. */
     private function colBaseCascada(): int
     {
-        return $this->inicioOcultos() + 15;
+        return $this->inicioOcultos() + 18;
     }
 
     private function ultimaFilaOculta(int $filas): int
@@ -184,14 +191,19 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
     {
         $listaObraA = array_merge([self::TODAS], $this->valoresUnicos($this->rawEquipos, 1));
         $listaTipoA = array_merge([self::TODAS], self::MODALIDADES);
+        $listaCategoriaA = array_merge([self::TODAS], $this->valoresUnicos($this->rawEquipos, 3));
+        $listaLicenciaT1 = array_merge([self::TODAS], $this->licenciasCatalogo);
         $listaGerenciaT2 = array_merge([self::TODAS], $this->gerencias);
 
-        $anchoOculto = $this->inicioOcultos() + 14;
+        $anchoOculto = $this->inicioOcultos() + 18;
         $filasNecesarias = max(
             $this->filaTotalT2,
             $this->ultimaFilaOculta(count($this->rawEquipos)),
             $this->ultimaFilaOculta(count($this->rawLicencias)),
-            $this->ultimaFilaOculta(max(count($listaObraA), count($listaTipoA), count($listaGerenciaT2)))
+            $this->ultimaFilaOculta(max(
+                count($listaObraA), count($listaTipoA), count($listaCategoriaA),
+                count($listaLicenciaT1), count($listaGerenciaT2)
+            ))
         );
 
         $hoja = array_fill(0, $filasNecesarias, array_fill(0, $anchoOculto, null));
@@ -200,11 +212,16 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
         $hoja[self::FILA_SUBTITULO - 1][0] = $this->subtitulo;
 
         // ── Tabla 1: filtros + cabecera + renglones ────────────────────────
-        $hoja[self::FILA_ROTULO_T1 - 1][0] = 'EQUIPOS Y LICENCIAS POR GERENCIA · filtros propios abajo';
+        $hoja[self::FILA_ROTULO_T1 - 1][0] = 'EQUIPOS Y LICENCIAS POR GERENCIA · filtros propios abajo '
+            . '(Obra, Tipo y Categoría de equipo → Equipos; Obra, Tipo y Licencia → Licencias)';
         $hoja[self::FILA_FETQ_T1 - 1][0] = 'Obra';
         $hoja[self::FILA_FETQ_T1 - 1][1] = 'Tipo de equipo';
+        $hoja[self::FILA_FETQ_T1 - 1][2] = 'Categoría de equipo';
+        $hoja[self::FILA_FETQ_T1 - 1][3] = 'Licencia';
         $hoja[self::FILA_FILTRO_T1 - 1][0] = self::TODAS;
         $hoja[self::FILA_FILTRO_T1 - 1][1] = self::TODAS;
+        $hoja[self::FILA_FILTRO_T1 - 1][2] = self::TODAS;
+        $hoja[self::FILA_FILTRO_T1 - 1][3] = self::TODAS;
 
         $hoja[self::FILA_CAB_T1 - 1][0] = 'Gerencia';
         $hoja[self::FILA_CAB_T1 - 1][1] = 'Equipos';
@@ -245,7 +262,7 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
 
         // ── Datos crudos ocultos ────────────────────────────────────────────
         $this->escribirCrudos($hoja, $this->rawEquipos, [
-            $this->letraGerenciaA(), $this->letraObraA(), $this->letraTipoA(),
+            $this->letraGerenciaA(), $this->letraObraA(), $this->letraTipoA(), $this->letraCategoriaA(),
         ]);
         foreach ($this->rawEquipos as $i => $fila) {
             $filaHoja = self::FILA_OCULTA_DATOS + $i;
@@ -264,6 +281,8 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
 
         $this->escribirLista($hoja, $this->letraListaObraA(), $listaObraA);
         $this->escribirLista($hoja, $this->letraListaTipoA(), $listaTipoA);
+        $this->escribirLista($hoja, $this->letraListaCategoriaA(), $listaCategoriaA);
+        $this->escribirLista($hoja, $this->letraListaLicenciaT1(), $listaLicenciaT1);
         $this->escribirLista($hoja, $this->letraListaGerenciaT2(), $listaGerenciaT2);
 
         return $hoja;
@@ -300,33 +319,39 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
             ->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
     }
 
-    /** 1 si el renglón crudo pasa los 2 filtros de la tabla 1 (Obra, Tipo). */
+    /** 1 si el renglón de equipo pasa los 3 filtros de la tabla 1 (Obra, Tipo, Categoría). */
     private function formulaCoincideA(int $fila): string
     {
         $celdaObra = '$A$' . self::FILA_FILTRO_T1;
         $celdaTipo = '$B$' . self::FILA_FILTRO_T1;
+        $celdaCat  = '$C$' . self::FILA_FILTRO_T1;
 
         return sprintf(
-            '=IF(AND(OR(%s="%s",%s=$%s%d),OR(%s="%s",%s=$%s%d)),1,0)',
+            '=IF(AND(OR(%s="%s",%s=$%s%d),OR(%s="%s",%s=$%s%d),OR(%s="%s",%s=$%s%d)),1,0)',
             $celdaObra, self::TODAS, $celdaObra, $this->letraObraA(), $fila,
-            $celdaTipo, self::TODAS, $celdaTipo, $this->letraTipoA(), $fila
+            $celdaTipo, self::TODAS, $celdaTipo, $this->letraTipoA(), $fila,
+            $celdaCat, self::TODAS, $celdaCat, $this->letraCategoriaA(), $fila
         );
     }
 
     /**
-     * 1 si el renglón de licencia pasa los filtros de la tabla 1 —Obra y
-     * Tipo de equipo—. La licencia no tiene modalidad propia: Tipo se prueba
-     * contra la lista de modalidades del empleado con SEARCH, no con "=".
+     * 1 si el renglón de licencia pasa los filtros de la tabla 1 —Obra, Tipo
+     * de equipo y Licencia—. La licencia no tiene modalidad propia: Tipo se
+     * prueba contra la lista de modalidades del empleado con SEARCH, no con
+     * "=". La Categoría de equipo (PC/laptop) sólo afecta al conteo de
+     * equipos, no al de licencias.
      */
     private function formulaCoincideT1(int $fila): string
     {
         $celdaObra = '$A$' . self::FILA_FILTRO_T1;
         $celdaTipo = '$B$' . self::FILA_FILTRO_T1;
+        $celdaLic  = '$D$' . self::FILA_FILTRO_T1;
 
         return sprintf(
-            '=IF(AND(OR(%s="%s",%s=$%s%d),OR(%s="%s",ISNUMBER(SEARCH(%s,$%s%d)))),1,0)',
+            '=IF(AND(OR(%s="%s",%s=$%s%d),OR(%s="%s",ISNUMBER(SEARCH(%s,$%s%d))),OR(%s="%s",%s=$%s%d)),1,0)',
             $celdaObra, self::TODAS, $celdaObra, $this->letraObraB(), $fila,
-            $celdaTipo, self::TODAS, $celdaTipo, $this->letraModalidadesB(), $fila
+            $celdaTipo, self::TODAS, $celdaTipo, $this->letraModalidadesB(), $fila,
+            $celdaLic, self::TODAS, $celdaLic, $this->letraLicenciaB(), $fila
         );
     }
 
@@ -391,9 +416,13 @@ class AuditoriaGerenciaSheet implements FromArray, WithTitle, WithEvents, WithSt
                 $this->pintarTabla1($hoja, $ultimaVisible);
                 $this->pintarTabla2($hoja, $ultimaVisible);
 
-                // Tabla 1: filtros propios, independientes.
+                // Tabla 1: filtros propios, independientes. Obra y Tipo pegan
+                // a las dos columnas; Categoría de equipo sólo a Equipos y
+                // Licencia sólo a Licencias.
                 $this->pintarFiltro($hoja, 'A', self::FILA_FILTRO_T1, 'Obra', $this->letraListaObraA());
                 $this->pintarFiltro($hoja, 'B', self::FILA_FILTRO_T1, 'Tipo de equipo', $this->letraListaTipoA());
+                $this->pintarFiltro($hoja, 'C', self::FILA_FILTRO_T1, 'Categoría de equipo', $this->letraListaCategoriaA());
+                $this->pintarFiltro($hoja, 'D', self::FILA_FILTRO_T1, 'Licencia', $this->letraListaLicenciaT1());
 
                 // Tabla 2: Gerencia es la raíz (lista fija); Obra, Empleado y
                 // Tipo de equipo son cascada —cada uno sólo ofrece lo que

@@ -206,7 +206,7 @@ class AuditoriasExport implements WithMultipleSheets
                 ->implode(', ');
 
             foreach ($equipos as $equipo) {
-                $rawEquipos[] = [$emp->gerencia, $emp->obra, PresupuestoAsignacion::etiqueta($equipo->tipoEquipo)];
+                $rawEquipos[] = [$emp->gerencia, $emp->obra, PresupuestoAsignacion::etiqueta($equipo->tipoEquipo), $equipo->CategoriaEquipo ?: '—'];
             }
 
             foreach ($licencias as $licencia) {
