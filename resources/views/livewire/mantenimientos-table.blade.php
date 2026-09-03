@@ -162,6 +162,7 @@
                     <tr>
                         <th>Empleado</th>
                         <th>Gerencia</th>
+                        <th>Folio</th>
                         <th>Estatus</th>
                         <th>Tipo</th>
                         <th>Fecha de mantenimiento</th>
@@ -179,6 +180,8 @@
                                 <div class="mant-employee-name">{{ $item->NombreEmpleado }}</div>
                             </td>
                             <td>{{ $item->NombreGerencia ?? '-' }}</td>
+                            {{-- Folio guardado al generar; si viene vacío, el actual del inventario --}}
+                            <td>{{ $item->Folio ?: (optional($item->inventarioEquipo)->Folio ?: '-') }}</td>
                             <td>
                                 <span class="mant-status-badge {{ $estatusClase }}">
                                     {{ $estatusVisual }}
