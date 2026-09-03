@@ -50,10 +50,13 @@ class TicketsController extends Controller
         if ($request->filled('solicitud_id') || $request->filled('asignacion_id')) {
             $tab = 'solicitudes';
         }
-        if (! in_array($tab, ['tickets', 'productividad', 'solicitudes'], true)) {
+        if (! in_array($tab, ['tickets', 'productividad', 'solicitudes', 'tareas'], true)) {
             $tab = 'tickets';
         }
         if ($tab === 'productividad' && ! auth()->user()->can('tickets.ver-productividad')) {
+            $tab = 'tickets';
+        }
+        if ($tab === 'tareas' && ! auth()->user()->can('tickets.ver-tareas')) {
             $tab = 'tickets';
         }
 
@@ -65,7 +68,7 @@ class TicketsController extends Controller
         $metricasProductividad = [];
         $solicitudesStatus     = [[]];
         $metricasSolicitudes   = [];
-        $responsablesTI        = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
+        $responsablesTI        = Empleados::tiActivos()->get();
 
         if ($tab === 'productividad' && auth()->user()->can('tickets.ver-productividad')) {
             $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {

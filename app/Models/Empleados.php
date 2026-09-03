@@ -135,6 +135,13 @@ class Empleados extends Model implements Auditable
         return [true, ''];
     }
 
+    public function scopeTiActivos($query)
+    {
+        return $query->where('ObraID', 46)
+            ->where('tipo_persona', 'FISICA')
+            ->where('Estado', 1);
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/

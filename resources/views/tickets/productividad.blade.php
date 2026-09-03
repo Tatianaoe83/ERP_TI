@@ -142,6 +142,13 @@
                                         console.warn('Alpine.initTree productividad:', e);
                                     }
                                 }
+                                if (window.livewire && typeof window.livewire.rescan === 'function') {
+                                    try {
+                                        window.livewire.rescan();
+                                    } catch (e) {
+                                        console.warn('Livewire.rescan productividad:', e);
+                                    }
+                                }
                                 setTimeout(function() {
                                     const filtro = document.querySelector('#productividad-container [x-data*=mesInicio]');
                                     if (filtro && window.Alpine && typeof Alpine.$data === 'function') {
@@ -243,6 +250,12 @@
                 :class="activeTab === 'solicitudes' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
                 class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
                 <i class="fas fa-stopwatch"></i> Métricas de solicitudes
+            </button>
+
+            <button @click="activeTab = 'tareas'"
+                :class="activeTab === 'tareas' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors">
+                <i class="fas fa-tasks"></i> Rendimiento de tareas
             </button>
         </nav>
     </div>
@@ -1287,6 +1300,12 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <div x-show="activeTab === 'tareas'" x-cloak x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 transform translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0">
+            @livewire('productividad-tareas')
         </div>
 
         {{-- Modal de Información Rápida SLA (Alpine.js) --}}

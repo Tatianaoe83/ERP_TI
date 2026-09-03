@@ -43,8 +43,7 @@ class AppServiceProvider extends ServiceProvider
         // donde no llega $responsablesTI del controlador. Se lo proveemos aquí (misma fuente que el controlador).
         view()->composer('partials.modal-ticket', function ($view) {
             if (!array_key_exists('responsablesTI', $view->getData())) {
-                $view->with('responsablesTI', \App\Models\Empleados::where('ObraID', 46)
-                    ->where('tipo_persona', 'FISICA')->get());
+                $view->with('responsablesTI', \App\Models\Empleados::tiActivos()->get());
             }
         });
     }
