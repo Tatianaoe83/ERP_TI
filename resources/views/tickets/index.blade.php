@@ -3,11 +3,15 @@
 @section('content')
 @php
     $tienePermisoProductividad = auth()->user()->can('tickets.ver-productividad');
+    $tienePermisoTareas = auth()->user()->can('tickets.ver-tareas');
     $tabActiva = $tab ?? request('tab', 'tickets');
-    if (! in_array($tabActiva, ['tickets', 'productividad', 'solicitudes'], true)) {
+    if (! in_array($tabActiva, ['tickets', 'productividad', 'solicitudes', 'tareas'], true)) {
         $tabActiva = 'tickets';
     }
     if ($tabActiva === 'productividad' && ! $tienePermisoProductividad) {
+        $tabActiva = 'tickets';
+    }
+    if ($tabActiva === 'tareas' && ! $tienePermisoTareas) {
         $tabActiva = 'tickets';
     }
 @endphp
@@ -16,18 +20,36 @@
 <x-index-page
     title="Soporte"
     icon="fa-desktop"
-    subtitle="Tickets y solicitudes"
+    subtitle="Tareas, tickets y solicitudes"
     :show-count="false"
     :card="false"
 >
     <x-slot name="tabs">
         <div class="app-tabs" role="tablist">
+            @can('tickets.ver-tareas')
+            <a
+                href="{{ route('tickets.index', ['tab' => 'tareas']) }}"
+                data-app-tab="tareas"
+                class="app-tabs__btn {{ $tabActiva === 'tareas' ? 'is-active' : '' }}">
+                <i class="fas fa-tasks"></i>
+                <span>Tareas</span>
+            </a>
+            @endcan
+
             <a
                 href="{{ route('tickets.index') }}"
                 data-app-tab="tickets"
                 class="app-tabs__btn {{ $tabActiva === 'tickets' ? 'is-active' : '' }}">
                 <i class="fas fa-ticket-alt"></i>
                 <span>Tickets</span>
+            </a>
+
+            <a
+                href="{{ route('tickets.index', ['tab' => 'solicitudes']) }}"
+                data-app-tab="solicitudes"
+                class="app-tabs__btn {{ $tabActiva === 'solicitudes' ? 'is-active' : '' }}">
+                <i class="fas fa-file-alt"></i>
+                <span>Solicitudes</span>
             </a>
 
             @can('tickets.ver-productividad')
@@ -39,14 +61,6 @@
                 <span>Productividad</span>
             </a>
             @endcan
-
-            <a
-                href="{{ route('tickets.index', ['tab' => 'solicitudes']) }}"
-                data-app-tab="solicitudes"
-                class="app-tabs__btn {{ $tabActiva === 'solicitudes' ? 'is-active' : '' }}">
-                <i class="fas fa-file-alt"></i>
-                <span>Solicitudes</span>
-            </a>
         </div>
     </x-slot>
 
@@ -61,6 +75,10 @@
     @elseif($tabActiva === 'solicitudes')
     <div data-app-panel="solicitudes" class="w-full max-w-full">
         @include('tickets.indexSolicitudes', ['solicitudesStatus' => $solicitudesStatus ?? []])
+    </div>
+    @elseif($tabActiva === 'tareas')
+    <div data-app-panel="tareas" class="w-full max-w-full">
+        @include('tickets.indexTareas')
     </div>
     @endif
 </x-index-page>
