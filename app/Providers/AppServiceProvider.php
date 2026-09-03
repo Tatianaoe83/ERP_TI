@@ -47,6 +47,15 @@ class AppServiceProvider extends ServiceProvider
                     ->where('tipo_persona', 'FISICA')->get());
             }
         });
+
+        // Catálogo de la cascada Categoría > Grupo > Subgrupo. Lo consumen los dos modales
+        // de ticket que existen (el del tablero y el global del layout), así ninguno depende
+        // de que su controlador se acuerde de mandarlo.
+        view()->composer('partials.ticket-cascada', function ($view) {
+            if (!array_key_exists('catalogoTickets', $view->getData())) {
+                $view->with('catalogoTickets', \App\Helpers\CatalogoTickets::todo());
+            }
+        });
     }
     
     

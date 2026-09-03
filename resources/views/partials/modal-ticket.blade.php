@@ -266,57 +266,7 @@
                                 </select>
                             </div>
 
-                            <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    Categoría <span class="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="tipo-select"
-                                    x-model="ticketTipoID"
-                                    :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-gray-50 text-gray-900 
-                   focus:border-blue-500 focus:ring-blue-500 
-                   dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
-                   disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-                   dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    Grupo <span class="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="subtipo-select"
-                                    x-model="ticketSubtipoID"
-                                    :disabled="!ticketTipoID || selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-gray-50 text-gray-900 
-                   focus:border-blue-500 focus:ring-blue-500 
-                   dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
-                   disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-                   dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Subgrupo</label>
-                                <select
-                                    id="tertipo-select"
-                                    x-model="ticketTertipoID"
-                                    :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-gray-50 text-gray-900 
-                   focus:border-blue-500 focus:ring-blue-500 
-                   dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
-                   disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-                   dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
+                            @include('partials.ticket-cascada-selects')
 
                             <button
                                 @click="guardarCambiosTicket()"

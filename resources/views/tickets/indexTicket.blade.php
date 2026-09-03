@@ -595,6 +595,14 @@
                                 Detalles del Ticket
                             </h3>
 
+                            <div x-show="cargandoTicket" class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                <span>Cargando datos del ticket...</span>
+                            </div>
+
                             <div>
                                 <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Prioridad</label>
                                 <select
@@ -677,57 +685,7 @@
                                 </select>
                             </div>
 
-                            <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    Categoría <span class="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="tipo-select"
-                                    x-model="ticketTipoID"
-                                    :disabled="selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-gray-50 text-gray-900 
-                   focus:border-blue-500 focus:ring-blue-500 
-                   dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
-                   disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-                   dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                    Grupo <span class="text-red-500">*</span>
-                                </label>
-                                <select
-                                    id="subtipo-select"
-                                    x-model="ticketSubtipoID"
-                                    :disabled="!ticketTipoID || selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-gray-50 text-gray-900 
-                   focus:border-blue-500 focus:ring-blue-500 
-                   dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
-                   disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-                   dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Subgrupo</label>
-                                <select
-                                    id="tertipo-select"
-                                    x-model="ticketTertipoID"
-                                    :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
-                                    class="w-full mt-1 rounded-md text-sm border shadow-sm transition-colors duration-200
-                   border-gray-300 bg-gray-50 text-gray-900 
-                   focus:border-blue-500 focus:ring-blue-500 
-                   dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100
-                   disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-                   dark:disabled:bg-gray-800 dark:disabled:text-gray-500">
-                                    <option value="">Seleccione</option>
-                                </select>
-                            </div>
+                            @include('partials.ticket-cascada-selects')
 
                             <button
                                 @click="guardarCambiosTicket()"
@@ -1470,9 +1428,14 @@
     });
 </script>
 
+{{-- Cascada Categoría > Grupo > Subgrupo: debe cargar antes de ticketsModal() --}}
+@include('partials.ticket-cascada')
+
 <script>
     function ticketsModal() {
-        return {
+        // aplicarCascadaTickets monta la cascada Categoría > Grupo > Subgrupo
+        // (ver partials/ticket-cascada.blade.php). Es la misma que usa el modal global.
+        return window.aplicarCascadaTickets({
             vista: 'kanban',
             // Lazy por pestaña: cambia la vista y avisa al componente Livewire destino
             // para que recién ahí ejecute su consulta (evita cargar las 3 al entrar).
@@ -1515,6 +1478,7 @@
             ticketTipoID: '',
             ticketSubtipoID: '',
             ticketTertipoID: '',
+            cargandoTicket: false,
             guardandoTicket: false,
             // Variables de paginación
             paginaLista: {
@@ -1570,7 +1534,9 @@
                 this.mensajes = [];
                 this.nuevoMensaje = '';
                 this.asuntoCorreo = '';
-                
+
+                this.iniciarCascada();
+
                 // Escuchar eventos de Livewire para actualizaciones automáticas
                 // Siempre actualizar el DOM de la vista que emitió el evento (pasamos 'kanban'/'lista'/'tabla')
                 // para que el movimiento de tarjetas ocurra aunque this.vista haya cambiado antes del rAF
@@ -3010,6 +2976,16 @@
             // },
 
             abrirModal(datos) {
+                // Reset SÍNCRONO antes de mostrar: evita que se vea el ticket anterior
+                // (categoría / estatus / mensajes) mientras llega el fetch del nuevo.
+                this.limpiarCascada();
+                this.ticketPrioridad = '';
+                this.ticketEstatus = '';
+                this.ticketClasificacion = '';
+                this.ticketResponsableTI = '';
+                this.mensajes = [];
+                this.cargandoTicket = true;
+
                 this.selected = datos;
                 this.mostrar = true;
                 document.querySelectorAll(`[data-ticket-id="${datos.id}"]`).forEach(card => {
@@ -3083,36 +3059,19 @@
                             }
                             
                             this.$nextTick(() => { this.actualizarEstadoEditor(); });
-                            
-                            // Restaurar selects anidados de forma determinista (await, sin carreras de setTimeout)
-                            this.$nextTick(async () => {
-                                if (!this.ticketTipoID) return;
 
-                                const tipoSelect = document.getElementById('tipo-select');
-                                if (tipoSelect) tipoSelect.value = this.ticketTipoID;
-
-                                // Cargar grupos (subtipos) del tipo y restaurar selección
-                                if (typeof loadSubtipos === 'function') {
-                                    await loadSubtipos(this.ticketTipoID);
-                                }
-                                if (!this.ticketSubtipoID) return;
-
-                                const subtipoSelect = document.getElementById('subtipo-select');
-                                if (subtipoSelect) subtipoSelect.value = this.ticketSubtipoID;
-
-                                // Cargar subgrupos (tertipos) del grupo y restaurar selección
-                                if (typeof loadTertipos === 'function') {
-                                    await loadTertipos(this.ticketSubtipoID);
-                                }
-                                if (!this.ticketTertipoID) return;
-
-                                const tertipoSelect = document.getElementById('tertipo-select');
-                                if (tertipoSelect) tertipoSelect.value = this.ticketTertipoID;
-                            });
+                            // Reasienta los <select> ya que x-for renderizó y libera la cascada.
+                            this.restaurarCascada();
                         }
                     }
                 } catch (error) {
                     console.error('Error cargando datos:', error);
+                } finally {
+                    // Si algo falló antes de restaurarCascada(), no dejar la cascada trabada.
+                    this.$nextTick(() => {
+                        this._cascadaCargando = false;
+                        this.cargandoTicket = false;
+                    });
                 }
             },
 
@@ -4674,13 +4633,10 @@
                     return '0m';
                 }
             }
-        }
+        });
     }
 
-   
-    // Hacer las funciones accesibles globalmente para que puedan ser llamadas desde Alpine.js
-    window.loadSubtipos = null;
-    
+
     // Función global para formatear horas decimales a horas y minutos
     window.formatearHorasDecimales = function(horasDecimales) {
         if (!horasDecimales || horasDecimales === 0 || horasDecimales === '') return '-';
@@ -4701,131 +4657,9 @@
             return '0m';
         }
     };
-    window.loadTertipos = null;
-   
-    function appOnReadyTicket(fn) {
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
-        else fn();
-    }
-    appOnReadyTicket(function() {
-        const tipoSelect = document.getElementById('tipo-select');
-        const subtipoSelect = document.getElementById('subtipo-select');
-        const tertipoSelect = document.getElementById('tertipo-select');
 
-        loadTipos();
-
-        tipoSelect.addEventListener('change', function() {
-            const tipoId = this.value;
-            
-            clearSelect(subtipoSelect);
-            clearSelect(tertipoSelect);
-            subtipoSelect.disabled = true;
-            tertipoSelect.disabled = true;
-
-            if (tipoId) {
-                loadSubtipos(tipoId);
-            }
-        });
-
-        subtipoSelect.addEventListener('change', function() {
-            const subtipoId = this.value;
-            
-            clearSelect(tertipoSelect);
-            tertipoSelect.disabled = true;
-
-            if (subtipoId) {
-                loadTertipos(subtipoId);
-            }
-        });
-
-        async function loadTipos() {
-            try {
-                const response = await fetch('/tickets/tipos');
-                const data = await response.json();
-                
-                if (data.success) {
-                    data.tipos.forEach(tipo => {
-                        const option = document.createElement('option');
-                        option.value = tipo.TipoID;
-                        option.textContent = tipo.NombreTipo;
-                        tipoSelect.appendChild(option);
-                    });
-                } else {
-                }
-            } catch (error) {
-            }
-        }
-
-        window.loadSubtipos = async function loadSubtipos(tipoId) {
-            try {
-                // Verificar si el ticket está cerrado consultando Alpine.js
-                const alpineData = Alpine.$data(document.querySelector('[x-data]'));
-                const estaCerrado = alpineData && (alpineData.selected?.estatus === 'Cerrado' || alpineData.ticketEstatus === 'Cerrado');
-                
-                subtipoSelect.innerHTML = '<option value="">Seleccione un subtipo</option>';
-                subtipoSelect.disabled = true;
-                
-                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
-                tertipoSelect.disabled = true;
-                
-                if (!tipoId) {
-                    return;
-                }
-                
-                const response = await fetch(`/tickets/subtipos?tipo_id=${tipoId}`);
-                const data = await response.json();
-                
-                if (data.success && data.subtipos.length > 0) {
-                    data.subtipos.forEach(subtipo => {
-                        const option = document.createElement('option');
-                        option.value = subtipo.SubtipoID;
-                        option.textContent = subtipo.NombreSubtipo;
-                        subtipoSelect.appendChild(option);
-                    });
-                    // Solo habilitar si el ticket NO está cerrado
-                    // Alpine.js manejará el disabled basado en su lógica (:disabled="!ticketTipoID || selected.estatus === 'Cerrado'")
-                    if (!estaCerrado) {
-                    subtipoSelect.disabled = false;
-                    }
-                } 
-            } catch (error) {
-            }
-        }
-
-        window.loadTertipos = async function loadTertipos(subtipoId) {
-            try {
-                tertipoSelect.innerHTML = '<option value="">Seleccione un tertipo</option>';
-                tertipoSelect.disabled = true;
-                
-                if (!subtipoId) {
-                    return;
-                }
-                
-                const response = await fetch(`/tickets/tertipos?subtipo_id=${subtipoId}`);
-                const data = await response.json();
-                
-                if (data.success && data.tertipos.length > 0) {
-                    data.tertipos.forEach(tertipo => {
-                        const option = document.createElement('option');
-                        option.value = tertipo.TertipoID;
-                        option.textContent = tertipo.NombreTertipo;
-                        tertipoSelect.appendChild(option);
-                    });
-                    // Habilitar el campo - Alpine.js lo deshabilitará automáticamente si el ticket está cerrado
-                    // mediante su directiva :disabled="!ticketSubtipoID || selected.estatus === 'Cerrado'"
-                    tertipoSelect.disabled = false;
-                } else {
-                }
-            } catch (error) {
-            }
-        }
-
-        function clearSelect(selectElement) {
-            while (selectElement.children.length > 1) {
-                selectElement.removeChild(selectElement.lastChild);
-            }
-        }
-    });
+    // La cascada Categoría > Grupo > Subgrupo ahora vive dentro de ticketsModal()
+    // (tiposList / subtiposList / tertiposList + $watch). Ver init() y cargarDatosTicket().
 
     // =====================================================================
     // POLLING EN TIEMPO REAL DE NOTIFICACIONES PENDIENTES
