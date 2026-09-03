@@ -13,6 +13,19 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class MantenimientosController extends Controller
 {
+    private const CATEGORIAS_MANTENIMIENTO = [
+        'LAPTOP',
+        'PC',
+        'PC ESCRITORIO',
+        'COMPUTADORA',
+        'COMPUTADOR',
+    ];
+
+    private const TIPOS_SIN_MANTENIMIENTO = [
+        '1',   // InventarioEquipo::TIPO_PRESUPUESTADO (Extra)
+        '3',   // InventarioEquipo::TIPO_PROPIO
+    ];
+
     public function __construct()
     {
         $this->middleware('permission:ver-mantenimientos')->only('index');
@@ -35,7 +48,8 @@ class MantenimientosController extends Controller
             ->where('e.tipo_persona', 'FISICA')
             ->whereNull('e.deleted_at')
             ->whereNull('g.deleted_at')
-            ->whereIn(DB::raw('UPPER(TRIM(ie.CategoriaEquipo))'), ['LAPTOP', 'PC', 'COMPUTADORA', 'COMPUTADOR'])
+            ->whereIn(DB::raw('UPPER(TRIM(ie.CategoriaEquipo))'), self::CATEGORIAS_MANTENIMIENTO)
+            ->whereNotIn('ie.tipoEquipo', self::TIPOS_SIN_MANTENIMIENTO)
             ->select([
                 'g.GerenciaID',
                 'g.NombreGerencia',
@@ -102,7 +116,8 @@ class MantenimientosController extends Controller
             ->where('e.tipo_persona', 'FISICA')
             ->whereNull('e.deleted_at')
             ->whereNull('g.deleted_at')
-            ->whereIn(DB::raw('UPPER(TRIM(ie.CategoriaEquipo))'), ['LAPTOP', 'PC', 'COMPUTADORA', 'COMPUTADOR'])
+            ->whereIn(DB::raw('UPPER(TRIM(ie.CategoriaEquipo))'), self::CATEGORIAS_MANTENIMIENTO)
+            ->whereNotIn('ie.tipoEquipo', self::TIPOS_SIN_MANTENIMIENTO)
             ->select([
                 'e.EmpleadoID',
                 'e.NombreEmpleado',
