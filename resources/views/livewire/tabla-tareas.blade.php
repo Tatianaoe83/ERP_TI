@@ -1,9 +1,6 @@
 <div class="tareas-module" wire:poll.60s>
-    @if (session('tareas_mensaje'))
-    <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-        <i class="fas fa-check-circle mr-1"></i> {{ session('tareas_mensaje') }}
-    </div>
-    @endif
+    @include('partials.tareas-alerta', ['mensaje' => session('tareas_mensaje')])
+    @include('partials.tareas-alerta', ['mensaje' => session('tareas_error'), 'tipo' => 'error'])
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <button type="button" wire:click="filtrarKpi('hoy')" class="tareas-kpi {{ $filtroEstatus === 'hoy' ? 'is-active' : '' }}">
@@ -24,7 +21,7 @@
         {{-- Nivel 1: sección principal (Tareas vs Métricas) --}}
         <div class="tareas-section-bar">
             <div class="tareas-section-bar__tabs">
-                <span class="tareas-section-title"><i class="fas fa-tasks"></i> Mis tareas</span>
+                <span class="tareas-section-title"><i class="fas fa-tasks"></i> Mis tareas de hoy</span>
             </div>
             <div class="tareas-section-bar__actions">
                 @can('tickets.gestionar-tareas')
@@ -117,13 +114,19 @@
                             <strong>{{ $tarea->titulo }}</strong>
                             <div class="text-xs opacity-75">
                                 {{ $tarea->tipo === 'metrica' ? 'Métrica mensual' : 'Evento' }}
-                                @if($tarea->asignado) · {{ $tarea->asignado->NombreEmpleado }} @endif
+                                · {{ optional($tarea->asignado)->NombreEmpleado ?: 'Por asignar' }}
                             </div>
                         </div>
                         <div class="flex gap-1">
                             @can('tickets.gestionar-tareas')
                             @if($tarea->estatus === 'pendiente')
-                            <button type="button" wire:click.stop="completarTarea({{ $tarea->id }})" class="tarea-btn tarea-btn--ok" title="Completar"><i class="fas fa-check"></i></button>
+                            <button type="button" wire:click.stop="completarTarea({{ $tarea->id }})"
+                                    wire:target="completarTarea({{ $tarea->id }})"
+                                    wire:loading.attr="disabled"
+                                    class="tarea-btn tarea-btn--ok" title="Completar">
+                                <i class="fas fa-check" wire:loading.remove wire:target="completarTarea({{ $tarea->id }})"></i>
+                                <i class="fas fa-spinner fa-spin" wire:loading wire:target="completarTarea({{ $tarea->id }})"></i>
+                            </button>
                             @endif
                             @endcan
                             <button type="button" wire:click.stop="abrirHistorial({{ $tarea->id }})" class="tarea-btn" title="Historial"><i class="fas fa-history"></i></button>
@@ -149,14 +152,20 @@
                             <strong>{{ $tarea->titulo }}</strong>
                             <div class="text-xs opacity-75">
                                 {{ $tarea->tipo === 'metrica' ? 'Métrica mensual' : 'Evento' }}
-                                @if($tarea->asignado) · {{ $tarea->asignado->NombreEmpleado }} @endif
+                                · {{ optional($tarea->asignado)->NombreEmpleado ?: 'Por asignar' }}
                                 @if($tarea->estatus === 'completada') · Completada @endif
                             </div>
                         </div>
                         <div class="flex gap-1">
                             @can('tickets.gestionar-tareas')
                             @if($tarea->estatus === 'pendiente')
-                            <button type="button" wire:click.stop="completarTarea({{ $tarea->id }})" class="tarea-btn tarea-btn--ok" title="Completar"><i class="fas fa-check"></i></button>
+                            <button type="button" wire:click.stop="completarTarea({{ $tarea->id }})"
+                                    wire:target="completarTarea({{ $tarea->id }})"
+                                    wire:loading.attr="disabled"
+                                    class="tarea-btn tarea-btn--ok" title="Completar">
+                                <i class="fas fa-check" wire:loading.remove wire:target="completarTarea({{ $tarea->id }})"></i>
+                                <i class="fas fa-spinner fa-spin" wire:loading wire:target="completarTarea({{ $tarea->id }})"></i>
+                            </button>
                             @endif
                             @endcan
                             <button type="button" wire:click.stop="abrirHistorial({{ $tarea->id }})" class="tarea-btn" title="Historial"><i class="fas fa-history"></i></button>
@@ -194,7 +203,10 @@
             @php
                 $esCritica = $tarea->prioridad === 'critica';
                 $esVencida = $tarea->estaVencida();
-                $cardClass = $esCritica ? 'tarea-card--critica' : ($esVencida ? 'tarea-card--vencida' : 'tarea-card--normal');
+                $esCompletada = $tarea->estatus === 'completada';
+                $cardClass = $esCompletada
+                    ? 'tarea-card--completada'
+                    : ($esCritica ? 'tarea-card--critica' : ($esVencida ? 'tarea-card--vencida' : 'tarea-card--normal'));
             @endphp
             <article wire:key="tarea-{{ $tarea->id }}" class="tarea-card {{ $cardClass }}">
                 <div class="tarea-card__head">
@@ -218,9 +230,10 @@
                 @endif
 
                 <div class="tarea-card__meta">
-                    @if($tarea->asignado)
-                    <div><i class="fas fa-user"></i> {{ $tarea->asignado->NombreEmpleado }}</div>
-                    @endif
+                    @php $asignadoNombre = optional($tarea->asignado)->NombreEmpleado; @endphp
+                    <div class="{{ $asignadoNombre ? '' : 'tarea-card__sin-asignar' }}">
+                        <i class="fas fa-user"></i> {{ $asignadoNombre ?: 'Por asignar' }}
+                    </div>
                     <div><i class="fas fa-calendar-day"></i> {{ optional($tarea->fecha_compromiso)->format('d/m/Y') ?? 'Sin fecha' }}</div>
                 </div>
 
@@ -233,13 +246,18 @@
                     <button type="button" wire:click="abrirReagendar({{ $tarea->id }})" class="tarea-btn" title="Reagendar">
                         <i class="fas fa-calendar-alt"></i>
                     </button>
-                    @if($tarea->tipo === 'evento')
-                    <button type="button" wire:click="abrirModalEditarTarea({{ $tarea->id }})" class="tarea-btn" title="Editar">
+                    {{-- En métricas el modal solo deja cambiar el responsable --}}
+                    <button type="button" wire:click="abrirModalEditarTarea({{ $tarea->id }})"
+                            class="tarea-btn {{ $asignadoNombre ? '' : 'tarea-btn--alerta' }}"
+                            title="{{ $tarea->tipo === 'metrica' ? 'Cambiar responsable' : 'Editar' }}">
                         <i class="fas fa-edit"></i>
                     </button>
-                    @endif
-                    <button type="button" wire:click="completarTarea({{ $tarea->id }})" class="tarea-btn tarea-btn--ok" title="Completar">
-                        <i class="fas fa-check"></i>
+                    <button type="button" wire:click="completarTarea({{ $tarea->id }})"
+                            wire:target="completarTarea({{ $tarea->id }})"
+                            wire:loading.attr="disabled"
+                            class="tarea-btn tarea-btn--ok" title="Completar">
+                        <i class="fas fa-check" wire:loading.remove wire:target="completarTarea({{ $tarea->id }})"></i>
+                        <i class="fas fa-spinner fa-spin" wire:loading wire:target="completarTarea({{ $tarea->id }})"></i>
                     </button>
                     @endif
                     @endcan
@@ -264,27 +282,47 @@
 
     {{-- Modal tarea --}}
     @if($modalTareaAbierto)
-    <div class="tareas-modal-backdrop" wire:click.self="$set('modalTareaAbierto', false)">
+    <div class="tareas-modal-backdrop"
+         x-data="tareasModalCerrable('modalTareaAbierto')"
+         :class="{ 'is-closing': !abierto }"
+         @click.self="cerrar()"
+         @keydown.escape.window="cerrar()">
         <div class="tareas-modal">
             <div class="tareas-modal__head">
-                <h3>{{ $tareaEditId ? 'Editar tarea' : 'Nueva tarea / evento' }}</h3>
-                <button type="button" wire:click="$set('modalTareaAbierto', false)" class="tareas-modal__close">&times;</button>
+                <h3>
+                    @if($editandoMetrica) Cambiar responsable
+                    @elseif($tareaEditId) Editar tarea
+                    @else Nueva tarea / evento @endif
+                </h3>
+                <button type="button" @click="cerrar()" class="tareas-modal__close" aria-label="Cerrar">&times;</button>
             </div>
             <form wire:submit.prevent="guardarTarea" class="tareas-modal__body">
+                @if($editandoMetrica)
+                <p class="tareas-nota">
+                    <i class="fas fa-info-circle"></i>
+                    Es una <strong>métrica mensual</strong>: su título y razón los vuelve a generar la
+                    plantilla cada mes, por eso aquí solo se cambia el responsable.
+                    Para mover la fecha usa <strong>Reagendar</strong>.
+                </p>
+                @endif
+
                 <div class="form-group mb-3">
                     <label>Título</label>
-                    <input type="text" wire:model.defer="titulo" class="form-control" required>
+                    <input type="text" wire:model.defer="titulo" class="form-control" required
+                           @if($editandoMetrica) readonly @endif>
                     @error('titulo') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group mb-3">
                     <label>Razón / descripción</label>
-                    <textarea wire:model.defer="razon" class="form-control" rows="3" placeholder="¿Para qué es esta tarea?"></textarea>
+                    <textarea wire:model.defer="razon" class="form-control" rows="3"
+                              placeholder="¿Para qué es esta tarea?"
+                              @if($editandoMetrica) readonly @endif></textarea>
                     @error('razon') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div class="form-group">
                         <label>Asignar a (personal TI activo)</label>
-                        <select wire:model.defer="asignado_id" class="form-control" required>
+                        <select wire:model.defer="asignado_id" class="form-control" required autofocus>
                             <option value="">Seleccione responsable de TI</option>
                             @foreach($responsables as $emp)
                             <option value="{{ $emp->EmpleadoID }}">{{ $emp->NombreEmpleado }}</option>
@@ -294,12 +332,13 @@
                     </div>
                     <div class="form-group">
                         <label>Fecha compromiso <span class="text-xs opacity-60 font-normal">(opcional)</span></label>
-                        <input type="date" wire:model.defer="fecha_compromiso" class="form-control">
+                        <input type="date" wire:model.defer="fecha_compromiso" class="form-control"
+                               @if($editandoMetrica) readonly @endif>
                         @error('fecha_compromiso') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                 </div>
                 <div class="tareas-modal__foot">
-                    <button type="button" wire:click="$set('modalTareaAbierto', false)" class="index-page__btn-secondary">Cancelar</button>
+                    <button type="button" @click="cerrar()" class="index-page__btn-secondary">Cancelar</button>
                     <button type="submit" class="index-page__btn-primary">Guardar</button>
                 </div>
             </form>
@@ -309,11 +348,15 @@
 
     {{-- Modal reagendar --}}
     @if($modalReagendarAbierto)
-    <div class="tareas-modal-backdrop" wire:click.self="$set('modalReagendarAbierto', false)">
+    <div class="tareas-modal-backdrop"
+         x-data="tareasModalCerrable('modalReagendarAbierto')"
+         :class="{ 'is-closing': !abierto }"
+         @click.self="cerrar()"
+         @keydown.escape.window="cerrar()">
         <div class="tareas-modal">
             <div class="tareas-modal__head">
                 <h3>Reagendar tarea</h3>
-                <button type="button" wire:click="$set('modalReagendarAbierto', false)" class="tareas-modal__close">&times;</button>
+                <button type="button" @click="cerrar()" class="tareas-modal__close">&times;</button>
             </div>
             <form wire:submit.prevent="guardarReagendar" class="tareas-modal__body">
                 <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">Indique la nueva fecha y el motivo del cambio. Quedará registrado en el historial.</p>
@@ -328,7 +371,7 @@
                     @error('reagendar_motivo') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div class="tareas-modal__foot">
-                    <button type="button" wire:click="$set('modalReagendarAbierto', false)" class="index-page__btn-secondary">Cancelar</button>
+                    <button type="button" @click="cerrar()" class="index-page__btn-secondary">Cancelar</button>
                     <button type="submit" class="index-page__btn-primary">Reagendar</button>
                 </div>
             </form>
@@ -338,11 +381,15 @@
 
     {{-- Modal historial --}}
     @if($modalHistorialAbierto && $historialTarea)
-    <div class="tareas-modal-backdrop" wire:click.self="$set('modalHistorialAbierto', false)">
+    <div class="tareas-modal-backdrop"
+         x-data="tareasModalCerrable('modalHistorialAbierto')"
+         :class="{ 'is-closing': !abierto }"
+         @click.self="cerrar()"
+         @keydown.escape.window="cerrar()">
         <div class="tareas-modal tareas-modal--wide">
             <div class="tareas-modal__head">
                 <h3>Historial — {{ $historialTarea->titulo }}</h3>
-                <button type="button" wire:click="$set('modalHistorialAbierto', false)" class="tareas-modal__close">&times;</button>
+                <button type="button" @click="cerrar()" class="tareas-modal__close">&times;</button>
             </div>
             <div class="tareas-modal__body">
                 <div class="tareas-timeline">
@@ -403,22 +450,127 @@
         .tareas-cal-toolbar__label { font-size:.78rem; opacity:.65; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
         .tareas-view-bar { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:space-between; align-items:center; padding:.75rem 1.25rem; border-bottom:1px solid rgba(148,163,184,.2); background:rgba(148,163,184,.05); }
         .dark .tareas-view-bar { background:rgba(30,41,59,.35); }
-        .tareas-view-bar__filters { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
-        .tareas-search { min-width:220px; }
-        .tareas-select { min-width:150px; }
+        .tareas-view-bar__filters { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; flex:1 1 auto; }
+        /* Bootstrap pone .form-control en display:block y width:100%, y dentro del
+           flex eso hacía que cada filtro ocupara su propia fila (se veían apilados). */
+        .tareas-view-bar__filters .form-control { width:auto; display:inline-block; }
+        .tareas-select { flex:0 0 auto; width:auto; min-width:170px; }
+        .tareas-search { flex:1 1 240px; width:auto; min-width:200px; max-width:380px; }
+
+        @media (max-width: 640px) {
+            .tareas-view-bar { flex-direction:column; align-items:stretch; }
+            .tareas-view-bar__filters .form-control { width:100%; }
+            .tareas-select, .tareas-search { flex:1 1 100%; max-width:none; }
+        }
         .tareas-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; }
-        .tarea-card { border:1px solid rgba(148,163,184,.35); border-radius:16px; padding:1rem; background:#fff; display:flex; flex-direction:column; gap:.65rem; }
-        .dark .tarea-card { background:#0f172a; border-color:#334155; }
-        .tarea-card--critica { border-color:#ef4444; background:linear-gradient(180deg,rgba(239,68,68,.08),transparent); }
-        .tarea-card--vencida { border-color:#f59e0b; }
-        .tarea-card__head { display:flex; justify-content:space-between; gap:.5rem; align-items:flex-start; }
-        .tarea-card__tipo { font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; opacity:.65; }
-        .tarea-card__title { font-size:1rem; font-weight:700; margin:.15rem 0 0; }
-        .tarea-card__razon { font-size:.875rem; opacity:.85; margin:0; }
-        .tarea-card__meta { display:grid; gap:.35rem; font-size:.82rem; opacity:.9; }
-        .tarea-card__actions { display:flex; gap:.35rem; margin-top:auto; }
-        .tarea-btn { width:34px; height:34px; border-radius:10px; border:1px solid rgba(148,163,184,.35); background:transparent; display:inline-flex; align-items:center; justify-content:center; }
+        /* ── Tarjeta de tarea ─────────────────────────────────────────────
+           Franja lateral de color = estado (se lee de un vistazo, y no depende
+           solo del color: el badge de arriba lo repite en texto).
+           Hover/press solo con transform+opacity para no provocar reflow.     */
+        .tarea-card {
+            position:relative;
+            border:1px solid rgba(148,163,184,.3);
+            border-radius:14px;
+            padding:1rem 1rem 1rem 1.15rem;
+            background:#fff;
+            display:flex; flex-direction:column; gap:.6rem;
+            box-shadow:0 1px 2px rgba(15,23,42,.05);
+            transition:transform .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out;
+        }
+        .tarea-card::before {
+            content:''; position:absolute; left:0; top:0; bottom:0;
+            width:3px; border-radius:14px 0 0 14px;
+            background:#cbd5e1;
+        }
+        .tarea-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(15,23,42,.1); }
+        .dark .tarea-card { background:#0f172a; border-color:#334155; box-shadow:none; }
+        .dark .tarea-card:hover { box-shadow:0 8px 20px rgba(0,0,0,.45); }
+
+        .tarea-card--critica { border-color:rgba(239,68,68,.5); }
+        .tarea-card--critica::before { background:#ef4444; }
+        .tarea-card--vencida { border-color:rgba(245,158,11,.5); }
+        .tarea-card--vencida::before { background:#f59e0b; }
+        .tarea-card--normal::before { background:#3b82f6; }
+        /* Completada: se atenúa y el título va tachado, para que no compita
+           visualmente con lo que sigue pendiente. */
+        .tarea-card--completada { opacity:.72; }
+        .tarea-card--completada::before { background:#10b981; }
+        .tarea-card--completada .tarea-card__title { text-decoration:line-through; text-decoration-thickness:1px; }
+        .tarea-card--completada:hover { opacity:1; }
+
+        .tarea-card__head { display:flex; justify-content:space-between; gap:.6rem; align-items:flex-start; }
+        .tarea-card__tipo {
+            display:inline-block; font-size:.65rem; font-weight:700;
+            text-transform:uppercase; letter-spacing:.06em;
+            color:#64748b; background:rgba(148,163,184,.16);
+            padding:.15rem .45rem; border-radius:5px;
+        }
+        .dark .tarea-card__tipo { color:#94a3b8; background:rgba(148,163,184,.14); }
+        .tarea-card__title {
+            font-size:.98rem; font-weight:650; line-height:1.35;
+            margin:.4rem 0 0; color:#0f172a;
+            /* wrap antes que truncar: el título trae el mes y se pierde al cortar */
+            overflow-wrap:anywhere;
+        }
+        .dark .tarea-card__title { color:#f1f5f9; }
+        .tarea-card__razon {
+            font-size:.83rem; line-height:1.5; margin:0; color:#475569;
+            padding-left:.7rem; border-left:2px solid rgba(148,163,184,.3);
+        }
+        .dark .tarea-card__razon { color:#94a3b8; border-left-color:#334155; }
+        .tarea-card__meta {
+            display:grid; gap:.3rem; font-size:.8rem; color:#475569;
+            padding-top:.55rem; border-top:1px dashed rgba(148,163,184,.3);
+        }
+        .dark .tarea-card__meta { color:#94a3b8; border-top-color:#334155; }
+        .tarea-card__meta > div { display:flex; align-items:center; gap:.45rem; }
+        .tarea-card__meta i { width:13px; text-align:center; opacity:.6; flex:0 0 auto; }
+        .tarea-card__actions {
+            display:flex; gap:.35rem; margin-top:auto;
+            padding-top:.6rem; border-top:1px solid rgba(148,163,184,.18);
+            justify-content:flex-end;
+        }
+        .dark .tarea-card__actions { border-top-color:rgba(51,65,85,.7); }
+        /* 36px visuales, pero el ::after extiende el área táctil a 44px (regla de
+           touch target) sin alterar el layout de la fila de acciones. */
+        .tarea-btn {
+            position:relative;
+            width:36px; height:36px; border-radius:9px;
+            border:1px solid rgba(148,163,184,.35); background:transparent;
+            display:inline-flex; align-items:center; justify-content:center;
+            color:#475569; font-size:.82rem; cursor:pointer;
+            transition:background .15s ease-out, color .15s ease-out, border-color .15s ease-out, transform .1s ease-out;
+        }
+        .tarea-btn::after { content:''; position:absolute; inset:-4px; }
+        .tarea-btn:hover { background:rgba(148,163,184,.14); color:#0f172a; }
+        .tarea-btn:active { transform:scale(.94); }
+        .tarea-btn:focus-visible { outline:2px solid #3b82f6; outline-offset:2px; }
+        .dark .tarea-btn { color:#94a3b8; border-color:#334155; }
+        .dark .tarea-btn:hover { background:rgba(148,163,184,.16); color:#f1f5f9; }
+        /* Mientras Livewire procesa: sin hover ni click, y se nota que está ocupado */
+        .tarea-btn:disabled { opacity:.55; cursor:progress; pointer-events:none; }
         .tarea-btn--ok { color:#10b981; border-color:rgba(16,185,129,.45); }
+        .tarea-btn--ok:hover { background:rgba(16,185,129,.14); color:#059669; }
+        .dark .tarea-btn--ok { color:#34d399; border-color:rgba(16,185,129,.4); }
+        /* Resalta el botón de asignar cuando la tarea todavía no tiene dueño */
+        .tarea-btn--alerta { color:#6366f1; border-color:rgba(99,102,241,.45); background:rgba(99,102,241,.08); }
+        .tarea-btn--alerta:hover { background:rgba(99,102,241,.18); color:#4f46e5; }
+        .dark .tarea-btn--alerta { color:#a5b4fc; border-color:rgba(99,102,241,.4); background:rgba(99,102,241,.12); }
+
+        /* Nota informativa dentro del modal (por qué una métrica no se edita entera) */
+        .tareas-nota {
+            display:flex; gap:.6rem; align-items:flex-start;
+            margin:0 0 1.1rem; padding:.75rem .9rem; border-radius:10px;
+            background:rgba(99,102,241,.08); border:1px solid rgba(99,102,241,.25);
+            color:#4338ca; font-size:.8rem; line-height:1.5;
+        }
+        .tareas-nota i { margin-top:.15rem; flex:0 0 auto; }
+        .dark .tareas-nota { background:rgba(99,102,241,.12); border-color:rgba(99,102,241,.35); color:#c7d2fe; }
+        /* Campos bloqueados en modo métrica */
+        .tareas-modal__body .form-control[readonly] {
+            background:rgba(148,163,184,.12); cursor:not-allowed; opacity:.75;
+        }
+        .dark .tareas-modal__body .form-control[readonly] { background:rgba(148,163,184,.08); }
         .tarea-badge { display:inline-flex; align-items:center; align-self:flex-start; gap:.25rem; border-radius:999px; padding:.1rem .5rem; font-size:.68rem; line-height:1.4; font-weight:600; white-space:nowrap; flex:0 0 auto; }
         .tarea-badge i { font-size:.62rem; }
         .tarea-badge--critica { background:#fee2e2; color:#b91c1c; }
@@ -426,17 +578,87 @@
         .tarea-badge--ok { background:#d1fae5; color:#047857; }
         .tarea-badge--pendiente { background:#dbeafe; color:#1d4ed8; }
         .tarea-badge--muted { background:#e2e8f0; color:#475569; }
+
+        /* Sin responsable asignado: se atenúa para distinguirlo de una tarea con dueño */
+        .tarea-card__sin-asignar { opacity:.6; font-style:italic; }
+
         .tareas-empty { text-align:center; padding:3rem 1rem; color:#64748b; }
         .tareas-empty i { font-size:2rem; margin-bottom:.5rem; display:block; }
-        .tareas-modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:1050; display:flex; align-items:center; justify-content:center; padding:1rem; }
-        .tareas-modal { width:100%; max-width:520px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.25); }
-        .dark .tareas-modal { background:#101010; color:#f8fafc; }
+        /* ── Modales ──────────────────────────────────────────────────────
+           Entrada: backdrop en fade y caja con scale+translate (200ms ease-out).
+           Solo transform/opacity, nada que provoque reflow.                   */
+        @keyframes tareasBackdropIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes tareasModalIn {
+            from { opacity:0; transform:translateY(10px) scale(.97); }
+            to   { opacity:1; transform:translateY(0)    scale(1);   }
+        }
+
+        .tareas-modal-backdrop {
+            position:fixed; inset:0; z-index:1050;
+            background:rgba(15,23,42,.55);
+            backdrop-filter:blur(2px);
+            display:flex; align-items:center; justify-content:center; padding:1rem;
+            animation:tareasBackdropIn .18s ease-out;
+        }
+        .tareas-modal {
+            width:100%; max-width:520px;
+            background:#fff; border-radius:16px; overflow:hidden;
+            box-shadow:0 20px 50px rgba(0,0,0,.25);
+            animation:tareasModalIn .2s cubic-bezier(.2,.8,.3,1);
+        }
+        .dark .tareas-modal { background:#101010; color:#f8fafc; box-shadow:0 20px 50px rgba(0,0,0,.6); }
         .tareas-modal--wide { max-width:680px; }
-        .tareas-modal__head { display:flex; justify-content:space-between; align-items:center; padding:1rem 1.1rem; border-bottom:1px solid rgba(148,163,184,.25); }
+
+        .tareas-modal__head {
+            display:flex; justify-content:space-between; align-items:center;
+            gap:1rem; padding:1.1rem 1.25rem;
+            border-bottom:1px solid rgba(148,163,184,.25);
+        }
+        .dark .tareas-modal__head { border-bottom-color:#334155; }
         .tareas-modal__head h3 { margin:0; font-size:1.05rem; font-weight:700; }
-        .tareas-modal__close { border:none; background:transparent; font-size:1.5rem; line-height:1; opacity:.7; }
-        .tareas-modal__body { padding:1rem 1.1rem; max-height:70vh; overflow:auto; }
-        .tareas-modal__foot { display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem; }
+        .tareas-modal__close {
+            border:none; background:transparent; font-size:1.5rem; line-height:1;
+            opacity:.6; cursor:pointer; color:inherit;
+            width:34px; height:34px; border-radius:8px; flex:0 0 auto;
+            display:inline-flex; align-items:center; justify-content:center;
+            transition:opacity .15s ease-out, background .15s ease-out;
+        }
+        .tareas-modal__close:hover { opacity:1; background:rgba(148,163,184,.16); }
+        .tareas-modal__close:focus-visible { outline:2px solid #3b82f6; outline-offset:2px; }
+
+        .tareas-modal__body { padding:1.25rem; max-height:70vh; overflow:auto; }
+        .tareas-modal__body label {
+            display:block; font-size:.8rem; font-weight:600;
+            margin-bottom:.35rem; color:#334155;
+        }
+        .dark .tareas-modal__body label { color:#cbd5e1; }
+        /* 44px de alto: entra cómodo al tacto y evita el auto-zoom de iOS */
+        .tareas-modal__body .form-control { min-height:44px; font-size:.9rem; }
+        .tareas-modal__body textarea.form-control { min-height:auto; }
+
+        .tareas-modal__foot {
+            display:flex; justify-content:flex-end; gap:.5rem;
+            margin-top:1.25rem; padding-top:1rem;
+            border-top:1px solid rgba(148,163,184,.2);
+        }
+        .dark .tareas-modal__foot { border-top-color:#334155; }
+
+        /* Salida: más corta que la entrada (140 vs 200ms) para que se sienta ágil */
+        @keyframes tareasBackdropOut { from { opacity:1; } to { opacity:0; } }
+        @keyframes tareasModalOut {
+            from { opacity:1; transform:translateY(0)   scale(1);   }
+            to   { opacity:0; transform:translateY(6px) scale(.98); }
+        }
+        .tareas-modal-backdrop.is-closing { animation:tareasBackdropOut .14s ease-in forwards; }
+        .tareas-modal-backdrop.is-closing .tareas-modal { animation:tareasModalOut .14s ease-in forwards; }
+
+        /* Accesibilidad: si el sistema pide menos movimiento, se quita la animación */
+        @media (prefers-reduced-motion: reduce) {
+            .tareas-modal-backdrop, .tareas-modal,
+            .tareas-modal-backdrop.is-closing, .tareas-modal-backdrop.is-closing .tareas-modal { animation:none; }
+            .tarea-card, .tarea-btn { transition:none; }
+            .tarea-card:hover { transform:none; }
+        }
         .tareas-timeline { position:relative; padding-left:1rem; }
         .tareas-timeline__item { position:relative; padding-left:1.25rem; padding-bottom:1rem; border-left:2px solid rgba(148,163,184,.35); }
         .tareas-timeline__item:last-child { border-left-color:transparent; padding-bottom:0; }
@@ -485,4 +707,6 @@
         .tareas-dia-item.is-programada { border-style:dashed; opacity:.85; }
         .tareas-dia-item.is-done { opacity:.6; }
     </style>
+
+    @include('partials.tareas-modal-js')
 </div>

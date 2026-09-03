@@ -112,7 +112,7 @@ class TicketTareaService
             }
 
             $dia = min(max((int) $metrica->dia_compromiso, 1), 28);
-            $fechaCompromiso = Carbon::create($anio, $mes, 1)->day($dia);
+            $fechaCompromiso = $this->ajustarADiaHabil(Carbon::create($anio, $mes, 1)->day($dia));
 
             // Solo genera cuando ya llegó el día programado del mes
             if ($fecha->copy()->startOfDay()->lt($fechaCompromiso->copy()->startOfDay())) {
@@ -146,6 +146,22 @@ class TicketTareaService
         $this->actualizarPrioridades();
 
         return $creadas;
+    }
+
+    /**
+     * Si el día programado cae en sábado o domingo, recorre al siguiente día hábil.
+     * Sin esto una métrica del día 1 caía en domingo cuando el mes empezaba en fin
+     * de semana (p. ej. 2026-11-01). Solo contempla fin de semana, no días festivos.
+     */
+    private function ajustarADiaHabil(Carbon $fecha): Carbon
+    {
+        $cursor = $fecha->copy();
+
+        while ($cursor->isWeekend()) {
+            $cursor->addDay();
+        }
+
+        return $cursor;
     }
 
     public function actualizarPrioridades(): int

@@ -1,9 +1,5 @@
 <div class="prod-tareas space-y-4 pt-3">
-    @if (session('prod_tareas_mensaje'))
-    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-        <i class="fas fa-check-circle mr-1"></i> {{ session('prod_tareas_mensaje') }}
-    </div>
-    @endif
+    @include('partials.tareas-alerta', ['mensaje' => session('prod_tareas_mensaje')])
 
     <div class="grid grid-cols-2 lg:grid-cols-6 gap-2.5">
         <div class="tareas-kpi">
@@ -136,11 +132,15 @@
     </div>
 
     @if($modalMetricaAbierto)
-    <div class="tareas-modal-backdrop" wire:click.self="$set('modalMetricaAbierto', false)">
+    <div class="tareas-modal-backdrop"
+         x-data="tareasModalCerrable('modalMetricaAbierto')"
+         :class="{ 'is-closing': !abierto }"
+         @click.self="cerrar()"
+         @keydown.escape.window="cerrar()">
         <div class="tareas-modal">
             <div class="tareas-modal__head">
                 <h3>{{ $metricaEditId ? 'Editar métrica mensual' : 'Nueva métrica mensual' }}</h3>
-                <button type="button" wire:click="$set('modalMetricaAbierto', false)" class="tareas-modal__close">&times;</button>
+                <button type="button" @click="cerrar()" class="tareas-modal__close">&times;</button>
             </div>
             <form wire:submit.prevent="guardarMetrica" class="tareas-modal__body">
                 <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">
@@ -166,7 +166,7 @@
                     <span>Métrica activa (generar tareas automáticamente)</span>
                 </label>
                 <div class="tareas-modal__foot">
-                    <button type="button" wire:click="$set('modalMetricaAbierto', false)" class="index-page__btn-secondary">Cancelar</button>
+                    <button type="button" @click="cerrar()" class="index-page__btn-secondary">Cancelar</button>
                     <button type="submit" class="index-page__btn-primary">Guardar métrica</button>
                 </div>
             </form>
@@ -186,13 +186,37 @@
         .prod-tareas .tarea-badge--ok { background:#d1fae5; color:#047857; }
         .prod-tareas .tarea-badge--muted { background:#e2e8f0; color:#475569; }
         .prod-tareas .tarea-btn { width:34px; height:34px; border-radius:10px; border:1px solid rgba(148,163,184,.35); background:transparent; display:inline-flex; align-items:center; justify-content:center; }
-        .prod-tareas .tareas-modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:1050; display:flex; align-items:center; justify-content:center; padding:1rem; }
-        .prod-tareas .tareas-modal { width:100%; max-width:520px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.25); }
-        .dark .prod-tareas .tareas-modal { background:#101010; color:#f8fafc; }
+        /* Misma entrada que los modales de tabla-tareas: backdrop en fade y caja
+           con scale+translate. Solo transform/opacity. */
+        @keyframes prodBackdropIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes prodModalIn {
+            from { opacity:0; transform:translateY(10px) scale(.97); }
+            to   { opacity:1; transform:translateY(0)    scale(1);   }
+        }
+        .prod-tareas .tareas-modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.55); backdrop-filter:blur(2px); z-index:1050; display:flex; align-items:center; justify-content:center; padding:1rem; animation:prodBackdropIn .18s ease-out; }
+        .prod-tareas .tareas-modal { width:100%; max-width:520px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.25); animation:prodModalIn .2s cubic-bezier(.2,.8,.3,1); }
+        .dark .prod-tareas .tareas-modal { background:#101010; color:#f8fafc; box-shadow:0 20px 50px rgba(0,0,0,.6); }
+        .prod-tareas .tareas-modal__body .form-control { min-height:44px; font-size:.9rem; }
+        .prod-tareas .tareas-modal__body textarea.form-control { min-height:auto; }
+        /* Salida más corta que la entrada (140 vs 200ms) */
+        @keyframes prodBackdropOut { from { opacity:1; } to { opacity:0; } }
+        @keyframes prodModalOut {
+            from { opacity:1; transform:translateY(0)   scale(1);   }
+            to   { opacity:0; transform:translateY(6px) scale(.98); }
+        }
+        .prod-tareas .tareas-modal-backdrop.is-closing { animation:prodBackdropOut .14s ease-in forwards; }
+        .prod-tareas .tareas-modal-backdrop.is-closing .tareas-modal { animation:prodModalOut .14s ease-in forwards; }
+        @media (prefers-reduced-motion: reduce) {
+            .prod-tareas .tareas-modal-backdrop, .prod-tareas .tareas-modal,
+            .prod-tareas .tareas-modal-backdrop.is-closing,
+            .prod-tareas .tareas-modal-backdrop.is-closing .tareas-modal { animation:none; }
+        }
         .prod-tareas .tareas-modal__head { display:flex; justify-content:space-between; align-items:center; padding:1rem 1.1rem; border-bottom:1px solid rgba(148,163,184,.25); }
         .prod-tareas .tareas-modal__head h3 { margin:0; font-size:1.05rem; font-weight:700; }
         .prod-tareas .tareas-modal__close { border:none; background:transparent; font-size:1.5rem; line-height:1; opacity:.7; }
         .prod-tareas .tareas-modal__body { padding:1rem 1.1rem; max-height:70vh; overflow:auto; }
         .prod-tareas .tareas-modal__foot { display:flex; justify-content:flex-end; gap:.5rem; margin-top:1rem; }
     </style>
+
+    @include('partials.tareas-modal-js')
 </div>

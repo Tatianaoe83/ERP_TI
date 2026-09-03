@@ -8,7 +8,6 @@ use App\Services\TicketTareaService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -35,6 +34,9 @@ class TablaTareas extends Component
     public ?int $tareaEditId = null;
     public ?int $tareaReagendarId = null;
     public ?int $tareaHistorialId = null;
+
+    /** La tarea abierta en el modal es de métrica: solo se le cambia el responsable. */
+    public bool $editandoMetrica = false;
 
     public string $titulo = '';
     public string $razon = '';
@@ -137,6 +139,8 @@ class TablaTareas extends Component
         $this->razon = (string) ($tarea->razon ?? '');
         $this->asignado_id = $tarea->asignado_id ? (string) $tarea->asignado_id : '';
         $this->fecha_compromiso = optional($tarea->fecha_compromiso)->format('Y-m-d') ?? '';
+        $this->editandoMetrica = $tarea->tipo === TicketTarea::TIPO_METRICA;
+        $this->resetErrorBag();
         $this->modalTareaAbierto = true;
     }
 
@@ -170,10 +174,27 @@ class TablaTareas extends Component
 
         if ($this->tareaEditId) {
             $tarea = TicketTarea::findOrFail($this->tareaEditId);
+
+            // En una métrica el título y la razón los regenera la plantilla cada mes,
+            // así que editarlos no tendría efecto duradero: solo se cambia el responsable.
             if ($tarea->tipo === TicketTarea::TIPO_METRICA) {
-                throw ValidationException::withMessages([
-                    'titulo' => 'Las tareas de métrica mensual no se editan aquí; reagéndela o complétela.',
-                ]);
+                $anterior = $tarea->asignado_id;
+                $nuevo = (int) $this->asignado_id;
+
+                if ((int) $anterior !== $nuevo) {
+                    $tarea->update(['asignado_id' => $nuevo]);
+                    $service->registrarHistorial($tarea, 'asignada', null, [
+                        'asignado_anterior_id' => $anterior,
+                        'asignado_nuevo_id' => $nuevo,
+                        'notas' => $anterior ? 'Cambio de responsable.' : 'Se asignó responsable.',
+                    ]);
+                }
+
+                $this->modalTareaAbierto = false;
+                $this->resetFormTarea();
+                session()->flash('tareas_mensaje', 'Responsable actualizado.');
+
+                return;
             }
 
             $anteriorAsignado = $tarea->asignado_id;
@@ -246,6 +267,21 @@ class TablaTareas extends Component
     {
         $this->authorizeGestion();
         $tarea = TicketTarea::findOrFail($id);
+
+        // Sin responsable no se completa: si no, no queda registro de quién la hizo.
+        if (! $tarea->asignado_id) {
+            session()->flash('tareas_error', 'Asigna un responsable antes de completar la tarea.');
+
+            return;
+        }
+
+        // Evita repetir la acción (pisaría completada_at y duplicaría el historial).
+        if ($tarea->estatus === TicketTarea::ESTATUS_COMPLETADA) {
+            session()->flash('tareas_error', 'Esa tarea ya estaba completada.');
+
+            return;
+        }
+
         $service->completar($tarea);
         session()->flash('tareas_mensaje', 'Tarea completada.');
     }
@@ -397,6 +433,7 @@ class TablaTareas extends Component
         $this->razon = '';
         $this->asignado_id = '';
         $this->fecha_compromiso = '';
+        $this->editandoMetrica = false;
     }
 
     private function authorizeTab(): void
