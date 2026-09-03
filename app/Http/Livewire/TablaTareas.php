@@ -25,7 +25,7 @@ class TablaTareas extends Component
     public int $perPage = 12;
     public int $calMes = 1;
     public int $calAnio = 2026;
-    public string $modoLista = 'calendario';
+    public string $modoLista = 'tarjetas';
     public string $fechaSeleccionada = '';
 
     public bool $modalTareaAbierto = false;
@@ -44,12 +44,13 @@ class TablaTareas extends Component
     public string $reagendar_fecha = '';
     public string $reagendar_motivo = '';
 
+    // modoLista NO va en el queryString: al entrar a la vista siempre debe arrancar
+    // en 'tarjetas'. Si se guarda en la URL, la última elección pisa el valor por defecto.
     protected $queryString = [
         'vista' => ['except' => 'tareas'],
         'filtroEstatus' => ['except' => 'hoy'],
         'filtroTipo' => ['except' => ''],
         'search' => ['except' => ''],
-        'modoLista' => ['except' => 'calendario'],
     ];
 
     public function mount(): void

@@ -411,7 +411,7 @@
         .dark .tarea-card { background:#0f172a; border-color:#334155; }
         .tarea-card--critica { border-color:#ef4444; background:linear-gradient(180deg,rgba(239,68,68,.08),transparent); }
         .tarea-card--vencida { border-color:#f59e0b; }
-        .tarea-card__head { display:flex; justify-content:space-between; gap:.5rem; }
+        .tarea-card__head { display:flex; justify-content:space-between; gap:.5rem; align-items:flex-start; }
         .tarea-card__tipo { font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; opacity:.65; }
         .tarea-card__title { font-size:1rem; font-weight:700; margin:.15rem 0 0; }
         .tarea-card__razon { font-size:.875rem; opacity:.85; margin:0; }
@@ -419,7 +419,8 @@
         .tarea-card__actions { display:flex; gap:.35rem; margin-top:auto; }
         .tarea-btn { width:34px; height:34px; border-radius:10px; border:1px solid rgba(148,163,184,.35); background:transparent; display:inline-flex; align-items:center; justify-content:center; }
         .tarea-btn--ok { color:#10b981; border-color:rgba(16,185,129,.45); }
-        .tarea-badge { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.2rem .55rem; font-size:.72rem; font-weight:600; white-space:nowrap; }
+        .tarea-badge { display:inline-flex; align-items:center; align-self:flex-start; gap:.25rem; border-radius:999px; padding:.1rem .5rem; font-size:.68rem; line-height:1.4; font-weight:600; white-space:nowrap; flex:0 0 auto; }
+        .tarea-badge i { font-size:.62rem; }
         .tarea-badge--critica { background:#fee2e2; color:#b91c1c; }
         .tarea-badge--warn { background:#fef3c7; color:#b45309; }
         .tarea-badge--ok { background:#d1fae5; color:#047857; }
