@@ -48,12 +48,13 @@ trait MetricasSolicitudesTrait
     }
 
     // Calcula los tiempos de cotización, compra y configuración de las Solicitudes
-    public function calcularMetricasSolicitudes($mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null)
+    public function calcularMetricasSolicitudes($mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null, $unidades = [])
     {
         $mesInicio = $mesInicio ?? now()->month;
         $anioInicio = $anioInicio ?? now()->year;
         $mesFin = $mesFin ?? $mesInicio;
         $anioFin = $anioFin ?? $anioInicio;
+        $unidades = array_values(array_filter(array_map('intval', (array) $unidades)));
 
         $fechaInicioMes = Carbon::create($anioInicio, $mesInicio, 1)->startOfMonth();
         $fechaFinMes    = Carbon::create($anioFin, $mesFin, 1)->endOfMonth();
@@ -86,6 +87,11 @@ trait MetricasSolicitudesTrait
                             ->whereNull('fecha_cancelacion')
                             ->whereBetween('updated_at', [$fechaInicioMes, $fechaFinMes]);
                     });
+            })
+            ->when(!empty($unidades), function ($query) use ($unidades) {
+                $query->whereHas('gerenciaid', function ($g) use ($unidades) {
+                    $g->whereIn('UnidadNegocioID', $unidades);
+                });
             })
             ->get();
 

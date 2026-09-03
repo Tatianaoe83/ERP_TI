@@ -6,6 +6,16 @@
         min-height: 0;
         padding: 0;
     }
+    /* Los controles nativos (select/option, date input) no siguen las clases dark: de Tailwind,
+       siguen color-scheme. Sin esto el popup de opciones sale blanco en modo oscuro. */
+    .dark #productividad-container select,
+    .dark #productividad-container input {
+        color-scheme: dark;
+    }
+    .dark #productividad-container select option {
+        background-color: #1F2937;
+        color: #E5E7EB;
+    }
     #productividad-container.prod-page > .prod-page__toolbar {
         margin-bottom: 0.65rem;
     }
@@ -73,13 +83,41 @@
             $anioFinInit = $anioFin ?? ($anio ?? now()->year);
             $mesActual = now()->month;
             $anioActual = now()->year;
+            $unidadesNegocioLista = $unidadesNegocio ?? collect();
+            $unidadesSeleccionadasInit = array_map('intval', (array) ($unidadesSeleccionadas ?? []));
         @endphp
         <div class="flex items-center gap-4 flex-wrap" x-data="{
                 mesInicio:  {{ $mesInicioInit }},
                 anioInicio: {{ $anioInicioInit }},
                 mesFin:     {{ $mesFinInit }},
                 anioFin:    {{ $anioFinInit }},
+                unidades:        @json($unidadesSeleccionadasInit),
+                unidadesDraft:   @json($unidadesSeleccionadasInit),
+                unidadesAbierto: false,
+                unidadBusqueda:  '',
                 cargando:   false,
+                abrirUnidades() {
+                    this.unidadesDraft = [...this.unidades];
+                    this.unidadBusqueda = '';
+                    this.unidadesAbierto = true;
+                },
+                toggleUnidad(id) {
+                    id = parseInt(id);
+                    const i = this.unidadesDraft.indexOf(id);
+                    if (i === -1) this.unidadesDraft.push(id);
+                    else this.unidadesDraft.splice(i, 1);
+                },
+                aplicarUnidades() {
+                    this.unidades = [...this.unidadesDraft];
+                    this.unidadesAbierto = false;
+                    this.cargarProductividad();
+                },
+                limpiarUnidades() {
+                    this.unidadesDraft = [];
+                    this.unidades = [];
+                    this.unidadesAbierto = false;
+                    this.cargarProductividad();
+                },
                 validarRango() {
                     this.mesInicio = parseInt(this.mesInicio);
                     this.anioInicio = parseInt(this.anioInicio);
@@ -123,6 +161,7 @@
                     params.append('anio_inicio', this.anioInicio);
                     params.append('mes_fin',     this.mesFin);
                     params.append('anio_fin',    this.anioFin);
+                    this.unidades.forEach(u => params.append('unidades[]', u));
                     fetch(`{{ route('tickets.productividad-ajax') }}?${params.toString()}`)
                         .then(response => response.json())
                         .then(data => {
@@ -219,6 +258,65 @@
                 </select>
                 <div x-show="cargando" class="pr-3">
                     <i class="fas fa-spinner fa-spin text-[#2563EB]"></i>
+                </div>
+            </div>
+
+            {{-- Filtro por Unidad de Negocio --}}
+            <div class="relative" @click.outside="unidadesAbierto = false"
+                @keydown.escape.window="unidadesAbierto = false">
+                <button type="button" @click="unidadesAbierto ? unidadesAbierto = false : abrirUnidades()" :disabled="cargando"
+                    class="flex items-center gap-2.5 h-12 px-4 rounded-xl border text-sm font-semibold shadow-sm transition-colors disabled:opacity-50"
+                    :class="unidades.length
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-200'
+                        : 'bg-gray-100 border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200'">
+                    <i class="fas fa-building text-sm opacity-70"></i>
+                    <span x-text="unidades.length ? unidades.length + ' unidad' + (unidades.length > 1 ? 'es' : '') : 'Todas las unidades'"></span>
+                    <i class="fas fa-chevron-down text-xs opacity-60 transition-transform"
+                        :class="unidadesAbierto && 'rotate-180'"></i>
+                </button>
+
+                <div x-show="unidadesAbierto" x-cloak
+                    x-transition:enter="transition ease-out duration-150"
+                    x-transition:enter-start="opacity-0 -translate-y-1 scale-95"
+                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                    x-transition:leave="transition ease-in duration-75"
+                    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                    class="absolute right-0 z-50 mt-2 w-72 origin-top-right rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shadow-xl shadow-black/10 dark:shadow-black/50">
+
+                    <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400"></i>
+                            <input type="text" x-model="unidadBusqueda" placeholder="Buscar unidad..."
+                                class="w-full pl-7 pr-2 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="max-h-64 overflow-y-auto p-1.5">
+                        @forelse($unidadesNegocioLista as $u)
+                            <label
+                                x-show="!unidadBusqueda || {{ \Illuminate\Support\Js::from(\Illuminate\Support\Str::lower($u->NombreEmpresa)) }}.includes(unidadBusqueda.toLowerCase())"
+                                class="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-700 cursor-pointer">
+                                <input type="checkbox" value="{{ $u->UnidadNegocioID }}"
+                                    :checked="unidadesDraft.includes({{ $u->UnidadNegocioID }})"
+                                    @change="toggleUnidad({{ $u->UnidadNegocioID }})"
+                                    class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-0">
+                                <span class="truncate">{{ $u->NombreEmpresa }}</span>
+                            </label>
+                        @empty
+                            <p class="px-2 py-3 text-xs text-center text-gray-400">Sin unidades de negocio</p>
+                        @endforelse
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 p-2 border-t border-gray-200 dark:border-gray-700">
+                        <button type="button" @click="limpiarUnidades()"
+                            class="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            Limpiar
+                        </button>
+                        <button type="button" @click="aplicarUnidades()"
+                            class="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors">
+                            Aplicar<span x-show="unidadesDraft.length" x-text="' (' + unidadesDraft.length + ')'"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
 

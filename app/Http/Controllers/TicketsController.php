@@ -9,6 +9,7 @@ use App\Models\TicketChat;
 use App\Models\Tertipos;
 use App\Models\Subtipos;
 use App\Models\Tipoticket;
+use App\Models\UnidadesDeNegocio;
 use App\Services\SimpleEmailService;
 use App\Services\TicketNotificationService;
 use App\Services\TicketInProgressNotificationService;
@@ -46,6 +47,8 @@ class TicketsController extends Controller
         $mesFin     = $esRango ? (int)$request->input('mes_fin')     : null;
         $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
         $modoRango  = $esRango;
+        $unidadesSeleccionadas = array_values(array_filter(array_map('intval', (array) $request->input('unidades', []))));
+        $unidadesNegocio = UnidadesDeNegocio::orderBy('NombreEmpresa')->get();
         $tab        = $request->input('tab', 'tickets');
         if ($request->filled('solicitud_id') || $request->filled('asignacion_id')) {
             $tab = 'solicitudes';
@@ -68,9 +71,13 @@ class TicketsController extends Controller
         $responsablesTI        = Empleados::where('ObraID', 46)->where('tipo_persona', 'FISICA')->get();
 
         if ($tab === 'productividad' && auth()->user()->can('tickets.ver-productividad')) {
-            $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
+            // Solo se traen los tickets del periodo (mes o rango). Antes se cargaba TODO el historial y se
+            // filtraba en memoria, lo que hacía lento el reporte al no filtrar por mes.
+            [$prodDesde, $prodHasta] = $this->rangoFechasProductividad($mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
+
+            $tickets = Tickets::with(['empleado.puestos.departamentos.gerencia', 'empleado.gerencia', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
                 $query->orderBy('created_at', 'desc')->limit(1);
-            }])->orderBy('created_at', 'desc')->get();
+            }])->whereBetween('created_at', [$prodDesde, $prodHasta])->orderBy('created_at', 'desc')->get();
 
             $tickets = $tickets->map(function ($ticket) {
                 $ultimoMensaje = $ticket->chat->first();
@@ -84,8 +91,8 @@ class TicketsController extends Controller
                 'proceso'   => $tickets->where('Estatus', 'En progreso'),
                 'resueltos' => $tickets->where('Estatus', 'Cerrado'),
             ];
-            $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
-            $metricasSolicitudes   = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
+            $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin, $unidadesSeleccionadas);
+            $metricasSolicitudes   = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin, $unidadesSeleccionadas);
         }
 
         return view('tickets.index', compact(
@@ -101,26 +108,66 @@ class TicketsController extends Controller
             'anioInicio',
             'mesFin',
             'anioFin',
+            'unidadesNegocio',
+            'unidadesSeleccionadas',
             'tab'
         ));
     }
 
-    // Calcula métricas de productividad para el dashboard filtradas por mes/año o rango
-    private function obtenerMetricasProductividad($tickets, $mes = null, $anio = null, $mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null)
+    // Resuelve la UnidadNegocioID del solicitante de un ticket (via puesto->departamento->gerencia o gerencia directa)
+    private function resolverUnidadNegocioTicket($ticket)
+    {
+        $empleado = $ticket->empleado;
+        if (!$empleado) {
+            return null;
+        }
+
+        $gerencia = null;
+        if ($empleado->puestos && $empleado->puestos->departamentos && $empleado->puestos->departamentos->gerencia) {
+            $gerencia = $empleado->puestos->departamentos->gerencia;
+        } elseif ($empleado->gerencia) {
+            $gerencia = $empleado->gerencia;
+        }
+
+        if (!$gerencia || $gerencia->UnidadNegocioID === null) {
+            return null;
+        }
+
+        return (int) $gerencia->UnidadNegocioID;
+    }
+
+    // Rango [desde, hasta] del periodo de productividad. $esRango = modo rango explícito (mes_inicio/mes_fin).
+    // Se usa tanto para acotar el query SQL como para los cálculos internos, para no duplicar la lógica de fechas.
+    private function rangoFechasProductividad($mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin): array
     {
         $esRango = $mesInicio !== null && $anioInicio !== null && $mesFin !== null && $anioFin !== null;
 
         if ($esRango) {
-            $fechaInicioMes = \Carbon\Carbon::create($anioInicio, $mesInicio, 1)->startOfMonth();
-            $fechaFinMes    = \Carbon\Carbon::create($anioFin, $mesFin, 1)->endOfMonth();
-            $mes            = $mesInicio;
-            $anio           = $anioInicio;
+            $desde = \Carbon\Carbon::create($anioInicio, $mesInicio, 1)->startOfMonth();
+            $hasta = \Carbon\Carbon::create($anioFin, $mesFin, 1)->endOfMonth();
         } else {
             $mes  = $mes  ?? now()->month;
             $anio = $anio ?? now()->year;
-            $fechaInicioMes = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
-            $fechaFinMes    = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
+            $desde = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
+            $hasta = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
         }
+
+        return [$desde, $hasta, $esRango];
+    }
+
+    // Calcula métricas de productividad para el dashboard filtradas por mes/año o rango
+    private function obtenerMetricasProductividad($tickets, $mes = null, $anio = null, $mesInicio = null, $anioInicio = null, $mesFin = null, $anioFin = null, $unidades = [])
+    {
+        // Filtro por unidad(es) de negocio del solicitante (gerencia -> unidad de negocio)
+        $unidades = array_values(array_filter(array_map('intval', (array) $unidades)));
+        if (!empty($unidades)) {
+            $tickets = $tickets->filter(function ($t) use ($unidades) {
+                $uni = $this->resolverUnidadNegocioTicket($t);
+                return $uni !== null && in_array($uni, $unidades, true);
+            })->values();
+        }
+
+        [$fechaInicioMes, $fechaFinMes, $esRango] = $this->rangoFechasProductividad($mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
 
         $ticketsDelMes = $tickets->filter(
             fn($t) => \Carbon\Carbon::parse($t->created_at)->between($fechaInicioMes, $fechaFinMes)
@@ -1457,13 +1504,19 @@ class TicketsController extends Controller
         $mesFin     = $esRango ? (int)$request->input('mes_fin')     : null;
         $anioFin    = $esRango ? (int)$request->input('anio_fin')    : null;
         $modoRango  = $esRango;
+        $unidadesSeleccionadas = array_values(array_filter(array_map('intval', (array) $request->input('unidades', []))));
 
-        $tickets = Tickets::with(['empleado', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
+        // Solo los tickets del periodo seleccionado (evita cargar todo el historial en memoria).
+        [$prodDesde, $prodHasta] = $this->rangoFechasProductividad($mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
+
+        $tickets = Tickets::with(['empleado.puestos.departamentos.gerencia', 'empleado.gerencia', 'responsableTI', 'tipoticket', 'subtipo', 'tertipo', 'calificacion', 'chat' => function ($query) {
             $query->orderBy('created_at', 'desc')->limit(1);
-        }])->orderBy('created_at', 'desc')->get();
+        }])->whereBetween('created_at', [$prodDesde, $prodHasta])->orderBy('created_at', 'desc')->get();
 
-        $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin);
-        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin);
+        $metricasProductividad = $this->obtenerMetricasProductividad($tickets, $mes, $anio, $mesInicio, $anioInicio, $mesFin, $anioFin, $unidadesSeleccionadas);
+        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mesInicio, $anioInicio, $mesFin, $anioFin, $unidadesSeleccionadas);
+
+        $unidadesNegocio = UnidadesDeNegocio::orderBy('NombreEmpresa')->get();
 
         $html = view('tickets.productividad', [
             'metricasProductividad' => $metricasProductividad,
@@ -1475,6 +1528,8 @@ class TicketsController extends Controller
             'anioInicio'            => $anioInicio ?? $anio,
             'mesFin'                => $mesFin ?? $mes,
             'anioFin'               => $anioFin ?? $anio,
+            'unidadesNegocio'       => $unidadesNegocio,
+            'unidadesSeleccionadas' => $unidadesSeleccionadas,
         ])->render();
 
         return response()->json(['success' => true, 'html' => $html, 'mes' => $mes, 'anio' => $anio]);
