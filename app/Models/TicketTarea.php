@@ -32,11 +32,15 @@ class TicketTarea extends Model
         'periodo_anio',
         'prioridad',
         'completada_at',
+        'notificado_creacion_at',
+        'notificado_critica_at',
     ];
 
     protected $casts = [
         'fecha_compromiso' => 'date',
         'completada_at' => 'datetime',
+        'notificado_creacion_at' => 'datetime',
+        'notificado_critica_at' => 'datetime',
         'periodo_mes' => 'integer',
         'periodo_anio' => 'integer',
     ];

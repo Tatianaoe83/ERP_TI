@@ -50,6 +50,12 @@ class Kernel extends ConsoleKernel
             ->dailyAt('06:30')
             ->withoutOverlapping()
             ->runInBackground();
+
+        // Notificación de tareas vencidas y críticas
+        $schedule->command('tickets:notificar-tareas')
+            ->dailyAt('09:30')
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
