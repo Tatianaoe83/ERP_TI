@@ -88,8 +88,12 @@ class TablaTareas extends Component
         $this->resetPage();
 
         if ($this->filtroEstatus === 'hoy') {
+            // Desde tarjetas basta con volver al día de hoy: mandarlo al calendario
+            // le quitaría la vista en la que está trabajando.
             $this->irHoy();
-            $this->modoLista = 'calendario';
+            if ($this->modoLista !== 'tarjetas') {
+                $this->modoLista = 'calendario';
+            }
         } else {
             $this->modoLista = 'tarjetas';
         }
@@ -114,6 +118,23 @@ class TablaTareas extends Component
         $this->calMes = (int) now()->month;
         $this->calAnio = (int) now()->year;
         $this->fechaSeleccionada = now()->format('Y-m-d');
+        $this->resetPage();
+    }
+
+    public function diaAnterior(): void
+    {
+        $this->seleccionarDia(Carbon::parse($this->fechaSeleccionada ?: now())->subDay()->format('Y-m-d'));
+    }
+
+    public function diaSiguiente(): void
+    {
+        $this->seleccionarDia(Carbon::parse($this->fechaSeleccionada ?: now())->addDay()->format('Y-m-d'));
+    }
+
+    /** El día que se ve en tarjetas es el mismo del calendario, así que al cambiarlo se reinicia la paginación. */
+    public function updatedFechaSeleccionada($valor): void
+    {
+        $this->seleccionarDia(trim((string) $valor) !== '' ? $valor : now()->format('Y-m-d'));
     }
 
     public function seleccionarDia(string $fecha): void
@@ -122,6 +143,7 @@ class TablaTareas extends Component
         $this->fechaSeleccionada = $carbon->format('Y-m-d');
         $this->calMes = (int) $carbon->month;
         $this->calAnio = (int) $carbon->year;
+        $this->resetPage();
     }
 
     public function abrirModalNuevaTarea(): void
@@ -320,6 +342,8 @@ class TablaTareas extends Component
                 ->count(),
         ];
 
+        $diaTarjetas = $this->fechaSeleccionada ?: $hoy;
+
         $inicioMes = Carbon::create($this->calAnio, $this->calMes, 1)->startOfDay();
         $finMes = $inicioMes->copy()->endOfMonth();
 
@@ -336,10 +360,15 @@ class TablaTareas extends Component
 
         $tareas = TicketTarea::query()
             ->with(['asignado', 'metrica'])
-            ->when($this->filtroEstatus === 'hoy', function ($q) use ($hoy) {
-                $q->pendientes()->where(function ($inner) use ($hoy) {
-                    $inner->whereDate('fecha_compromiso', $hoy)
-                        ->orWhereNull('fecha_compromiso');
+            ->when($this->filtroEstatus === 'hoy', function ($q) use ($diaTarjetas, $hoy) {
+                $q->pendientes()->where(function ($inner) use ($diaTarjetas, $hoy) {
+                    $inner->whereDate('fecha_compromiso', $diaTarjetas);
+
+                    // Las tareas sin fecha solo se arrastran al día de hoy: en otro día
+                    // ensuciarían la lista sin pertenecer a esa fecha.
+                    if ($diaTarjetas === $hoy) {
+                        $inner->orWhereNull('fecha_compromiso');
+                    }
                 });
             })
             ->when($this->filtroEstatus === 'pendientes', fn ($q) => $q->where('estatus', TicketTarea::ESTATUS_PENDIENTE))
@@ -398,7 +427,8 @@ class TablaTareas extends Component
             'fechaSel',
             'tareasDiaSeleccionado',
             'tareasSinFecha',
-            'etiquetaDiaSeleccionado'
+            'etiquetaDiaSeleccionado',
+            'diaTarjetas'
         ));
     }
 

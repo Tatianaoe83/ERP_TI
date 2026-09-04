@@ -21,7 +21,14 @@
         {{-- Nivel 1: sección principal (Tareas vs Métricas) --}}
         <div class="tareas-section-bar">
             <div class="tareas-section-bar__tabs">
-                <span class="tareas-section-title"><i class="fas fa-tasks"></i> Mis tareas de hoy</span>
+                <span class="tareas-section-title">
+                    <i class="fas fa-tasks"></i>
+                    @if($modoLista === 'tarjetas' && $filtroEstatus === 'hoy' && $diaTarjetas !== $hoy)
+                        Tareas del {{ $etiquetaDiaSeleccionado }}
+                    @else
+                        Mis tareas de hoy
+                    @endif
+                </span>
             </div>
             <div class="tareas-section-bar__actions">
                 @can('tickets.gestionar-tareas')
@@ -177,6 +184,32 @@
             </div>
         </div>
         @else
+        @if($filtroEstatus === 'hoy')
+        {{-- Navegación de día: las tarjetas ya no se quedan clavadas en hoy --}}
+        <div class="tareas-dia-nav">
+            <button type="button" wire:click="diaAnterior" class="tarea-btn" title="Día anterior">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="tareas-dia-nav__info">
+                <strong>{{ ucfirst($etiquetaDiaSeleccionado) }}</strong>
+                @if($diaTarjetas === $hoy)
+                <span class="tarea-badge tarea-badge--pendiente">Hoy</span>
+                @elseif($diaTarjetas < $hoy)
+                <span class="tarea-badge tarea-badge--warn">Día anterior</span>
+                @else
+                <span class="tarea-badge tarea-badge--ok">Día posterior</span>
+                @endif
+            </div>
+            <button type="button" wire:click="diaSiguiente" class="tarea-btn" title="Día siguiente">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            <input type="date" wire:model.live="fechaSeleccionada" class="form-control tareas-dia-nav__date">
+            @if($diaTarjetas !== $hoy)
+            <button type="button" wire:click="irHoy" class="index-page__btn-secondary">Ir a hoy</button>
+            @endif
+        </div>
+        @endif
+
         <div class="tareas-view-bar">
             <div class="tareas-view-bar__filters">
                 <select wire:model.live="filtroTipo" class="form-control tareas-select">
@@ -266,7 +299,11 @@
             @empty
             <div class="tareas-empty col-span-full">
                 <i class="fas fa-clipboard-list"></i>
+                @if($filtroEstatus === 'hoy')
+                <p>No hay tareas pendientes para el {{ $etiquetaDiaSeleccionado }}.</p>
+                @else
                 <p>No hay tareas con los filtros actuales.</p>
+                @endif
                 @can('tickets.gestionar-tareas')
                 <button type="button" wire:click="abrirModalNuevaTarea" class="index-page__btn-primary mt-3">Crear primera tarea</button>
                 @endcan
@@ -457,6 +494,18 @@
         .tareas-cal-toolbar__nav { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
         .tareas-cal-toolbar__vista, .tareas-view-bar__vista { display:flex; align-items:center; gap:.5rem; }
         .tareas-cal-toolbar__label { font-size:.78rem; opacity:.65; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+        .tareas-dia-nav { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; padding:.6rem 1.25rem; border-bottom:1px solid rgba(148,163,184,.2); }
+        /* Sin flex-grow: el texto de la fecha se queda pegado a sus flechas
+           en lugar de estirarse y empujar la de "día siguiente" al otro extremo. */
+        .tareas-dia-nav__info { display:flex; align-items:center; gap:.4rem; flex:0 1 auto; font-size:.8rem; white-space:nowrap; }
+        .tareas-dia-nav__date { width:auto; display:inline-block; min-width:0; flex:0 0 auto; margin-left:.5rem; font-size:.8rem; padding:.3rem .5rem; min-height:0; height:34px; }
+        .tareas-dia-nav .tarea-badge { font-size:.68rem; padding:.15rem .45rem; }
+
+        @media (max-width: 640px) {
+            .tareas-dia-nav { justify-content:center; }
+            .tareas-dia-nav__info { order:-1; flex:1 1 100%; justify-content:center; white-space:normal; text-align:center; }
+            .tareas-dia-nav__date { margin-left:0; flex:1 1 100%; width:100%; }
+        }
         .tareas-view-bar { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:space-between; align-items:center; padding:.75rem 1.25rem; border-bottom:1px solid rgba(148,163,184,.2); background:rgba(148,163,184,.05); }
         .dark .tareas-view-bar { background:rgba(30,41,59,.35); }
         .tareas-view-bar__filters { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; flex:1 1 auto; }
