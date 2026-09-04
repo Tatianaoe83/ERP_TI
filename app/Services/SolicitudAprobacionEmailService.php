@@ -256,6 +256,55 @@ class SolicitudAprobacionEmailService
      *
      * @param  \Illuminate\Support\Collection|null  $ganadores  Sólo para la etapa de administración.
      */
+    /**
+     * Aviso al buzón de Soporte TI de que entró una solicitud nueva.
+     *
+     * Es informativo: no lleva enlace de firma porque soporte no aprueba, solo necesita
+     * enterarse de que hay trabajo entrando. Va al buzón del área y no a personas para
+     * que no dependa de altas y bajas de usuarios.
+     */
+    public function enviarAvisoNuevaSolicitudASoporte(
+        Solicitud $solicitud,
+        ?Empleados $primerAprobador = null,
+        string $rolPrimerAprobador = ''
+    ): bool {
+        $correo = trim((string) config('email_tickets.soporte_email'));
+
+        if ($correo === '' || ! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('No hay un correo de soporte válido configurado (SOPORTE_EMAIL): no se avisa de la solicitud nueva.');
+            return false;
+        }
+
+        $folio = '#' . $solicitud->SolicitudID;
+        $solicitante = $this->nombreSolicitante($solicitud);
+
+        $enFirma = $primerAprobador
+            ? 'Va en camino a <strong>' . e($primerAprobador->NombreEmpleado) . '</strong>'
+                . ($rolPrimerAprobador !== '' ? ' (' . e($rolPrimerAprobador) . ')' : '') . '.'
+            : 'Todavía no se envía a ningún aprobador: revisa el flujo de la solicitud.';
+
+        $contenido = $this->renderMensaje([
+            'accent'       => self::ACENTO_MARCA[0],
+            'accentSoft'   => self::ACENTO_MARCA[1],
+            'eyebrow'      => 'Solicitud nueva',
+            'titulo'       => 'Entró una solicitud de compra',
+            'preheader'    => "Solicitud {$folio} de {$solicitante} registrada en el ERP.",
+            'folio'        => $folio,
+            'saludo'       => 'Equipo de Soporte TI',
+            'intro'        => '<strong>' . e($solicitante) . '</strong> registró la solicitud <strong>'
+                . e($folio) . '</strong>. ' . $enFirma,
+            'url'          => url('/solicitudes'),
+            'boton'        => 'Ver solicitudes en el ERP',
+            'nota'         => 'Aviso informativo para el área: no requiere firma de soporte.',
+            'filas'        => $this->filasSolicitud($solicitud),
+            'bloques'      => $this->bloquesSolicitud($solicitud),
+            'aprobaciones' => collect(),
+            'ganadores'    => collect(),
+        ]);
+
+        return $this->enviar($correo, 'Soporte TI', "Solicitud de compra {$folio} registrada", $contenido);
+    }
+
     public function enviarRecordatorio(
         Empleados $aprobador,
         Solicitud $solicitud,

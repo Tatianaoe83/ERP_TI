@@ -76,6 +76,19 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Buzón del área de Soporte TI
+    |--------------------------------------------------------------------------
+    |
+    | Recibe los avisos informativos del área (por ejemplo, cuando entra una
+    | solicitud de compra nueva). Va a un buzón y no a personas para que no
+    | dependa de altas y bajas de usuarios.
+    |
+    */
+
+    'soporte_email' => env('SOPORTE_EMAIL', 'soporte@proser.com.mx'),
+
     'smtp' => [
         'host' => env('MAIL_HOST', config('mail.mailers.smtp.host')),
         'port' => env('MAIL_PORT', config('mail.mailers.smtp.port')),

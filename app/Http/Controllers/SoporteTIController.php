@@ -428,6 +428,23 @@ public function crearTickets(Request $request)
                     }
                 }
 
+                // Aviso al buzón de soporte: las solicitudes nuevas se les pasaban de largo.
+                // Si el correo falla no se cae el alta, que ya quedó guardada.
+                if ($solicitudId) {
+                    try {
+                        $solicitudAviso = Solicitud::with('empleadoid')->find($solicitudId);
+                        if ($solicitudAviso) {
+                            app(SolicitudAprobacionEmailService::class)->enviarAvisoNuevaSolicitudASoporte(
+                                $solicitudAviso,
+                                $primerAprobadorReal,
+                                $rolPrimerAprobador
+                            );
+                        }
+                    } catch (\Throwable $e) {
+                        \Log::warning("No se pudo avisar a soporte de la solicitud #{$solicitudId}: " . $e->getMessage());
+                    }
+                }
+
                 return redirect()->back()->with([
                     'success' => 'Solicitud guardada correctamente',
                     'tipo' => 'Solicitud',
