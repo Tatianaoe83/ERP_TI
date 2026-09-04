@@ -11,6 +11,7 @@ class TicketTareaMetrica extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'creado_por_user_id',
         'dia_compromiso',
         'activo',
     ];
@@ -19,6 +20,11 @@ class TicketTareaMetrica extends Model
         'activo' => 'boolean',
         'dia_compromiso' => 'integer',
     ];
+
+    public function creador()
+    {
+        return $this->belongsTo(User::class, 'creado_por_user_id');
+    }
 
     public function tareas()
     {

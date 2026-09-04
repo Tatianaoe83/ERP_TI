@@ -38,6 +38,9 @@ class TablaTareas extends Component
     /** La tarea abierta en el modal es de métrica: solo se le cambia el responsable. */
     public bool $editandoMetrica = false;
 
+    /** Quién creó la tarea abierta en el modal. Solo se muestra con tickets.ver-creador-tarea. */
+    public ?string $creadorTarea = null;
+
     public string $titulo = '';
     public string $razon = '';
     public $asignado_id = '';
@@ -133,8 +136,9 @@ class TablaTareas extends Component
     public function abrirModalEditarTarea(int $id): void
     {
         $this->authorizeGestion();
-        $tarea = TicketTarea::findOrFail($id);
+        $tarea = TicketTarea::with('creador')->findOrFail($id);
         $this->tareaEditId = $tarea->id;
+        $this->creadorTarea = $this->nombreCreador($tarea);
         $this->titulo = $tarea->titulo;
         $this->razon = (string) ($tarea->razon ?? '');
         $this->asignado_id = $tarea->asignado_id ? (string) $tarea->asignado_id : '';
@@ -434,6 +438,19 @@ class TablaTareas extends Component
         $this->asignado_id = '';
         $this->fecha_compromiso = '';
         $this->editandoMetrica = false;
+        $this->creadorTarea = null;
+    }
+
+    /** Las tareas de métrica las genera el comando programado, no un usuario. */
+    private function nombreCreador(TicketTarea $tarea): string
+    {
+        if ($tarea->creador) {
+            return $tarea->creador->name ?: $tarea->creador->username;
+        }
+
+        return $tarea->tipo === TicketTarea::TIPO_METRICA
+            ? 'Sistema (métrica mensual)'
+            : 'Sin registro';
     }
 
     private function authorizeTab(): void

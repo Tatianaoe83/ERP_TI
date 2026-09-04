@@ -306,6 +306,15 @@
                 </p>
                 @endif
 
+                @if($tareaEditId && $creadorTarea)
+                @can('tickets.ver-creador-tarea')
+                <p class="tareas-nota">
+                    <i class="fas fa-user-edit"></i>
+                    Creada por <strong>{{ $creadorTarea }}</strong>
+                </p>
+                @endcan
+                @endif
+
                 <div class="form-group mb-3">
                     <label>Título</label>
                     <input type="text" wire:model.defer="titulo" class="form-control" required

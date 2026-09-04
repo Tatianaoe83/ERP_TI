@@ -17,6 +17,9 @@ class ProductividadTareas extends Component
     public int $metrica_dia_compromiso = 1;
     public bool $metrica_activo = true;
 
+    /** Quién creó la métrica abierta en el modal. Solo se muestra con tickets.ver-creador-tarea. */
+    public ?string $metricaCreador = null;
+
     public function mount(): void
     {
         abort_unless(auth()->user()?->can('tickets.ver-productividad'), 403);
@@ -27,16 +30,20 @@ class ProductividadTareas extends Component
         $this->authorizeGestion();
         $this->metricaEditId = $id;
         if ($id) {
-            $m = TicketTareaMetrica::findOrFail($id);
+            $m = TicketTareaMetrica::with('creador')->findOrFail($id);
             $this->metrica_nombre = $m->nombre;
             $this->metrica_descripcion = (string) ($m->descripcion ?? '');
             $this->metrica_dia_compromiso = (int) $m->dia_compromiso;
             $this->metrica_activo = (bool) $m->activo;
+            $this->metricaCreador = $m->creador
+                ? ($m->creador->name ?: $m->creador->username)
+                : 'Sin registro';
         } else {
             $this->metrica_nombre = '';
             $this->metrica_descripcion = '';
             $this->metrica_dia_compromiso = min(28, (int) now()->day);
             $this->metrica_activo = true;
+            $this->metricaCreador = null;
         }
         $this->modalMetricaAbierto = true;
     }
@@ -63,7 +70,7 @@ class ProductividadTareas extends Component
         if ($this->metricaEditId) {
             TicketTareaMetrica::where('id', $this->metricaEditId)->update($payload);
         } else {
-            TicketTareaMetrica::create($payload);
+            TicketTareaMetrica::create($payload + ['creado_por_user_id' => auth()->id()]);
         }
 
         $this->modalMetricaAbierto = false;
@@ -157,7 +164,7 @@ class ProductividadTareas extends Component
             'metricas_activas' => TicketTareaMetrica::where('activo', true)->count(),
         ];
 
-        $metricas = TicketTareaMetrica::query()->orderBy('nombre')->get();
+        $metricas = TicketTareaMetrica::query()->with('creador')->orderBy('nombre')->get();
 
         return view('livewire.productividad-tareas', compact('rendimiento', 'kpis', 'metricas'));
     }

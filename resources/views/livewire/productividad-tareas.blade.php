@@ -91,6 +91,9 @@
                         <th class="px-4 py-2">Nombre</th>
                         <th class="px-4 py-2">Día de creación</th>
                         <th class="px-4 py-2">Estado</th>
+                        @can('tickets.ver-creador-tarea')
+                        <th class="px-4 py-2">Creada por</th>
+                        @endcan
                         @can('tickets.gestionar-tareas')
                         <th class="px-4 py-2">Acciones</th>
                         @endcan
@@ -113,6 +116,9 @@
                             <span class="tarea-badge tarea-badge--muted">Inactiva</span>
                             @endif
                         </td>
+                        @can('tickets.ver-creador-tarea')
+                        <td class="px-4 py-2">{{ optional($metrica->creador)->name ?: (optional($metrica->creador)->username ?: 'Sin registro') }}</td>
+                        @endcan
                         @can('tickets.gestionar-tareas')
                         <td class="px-4 py-2">
                             <button type="button" wire:click="abrirModalMetrica({{ $metrica->id }})" class="tarea-btn" title="Editar">
@@ -123,7 +129,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-8 text-center text-gray-500">Sin métricas configuradas.</td>
+                        <td colspan="{{ 3 + (auth()->user()->can('tickets.ver-creador-tarea') ? 1 : 0) + (auth()->user()->can('tickets.gestionar-tareas') ? 1 : 0) }}" class="px-4 py-8 text-center text-gray-500">Sin métricas configuradas.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -146,6 +152,15 @@
                 <p class="text-sm text-slate-600 dark:text-slate-300 mb-3">
                     Esta tarea se generará automáticamente <strong>una vez al mes</strong> en el día que indiques. No requiere responsable.
                 </p>
+                @if($metricaEditId && $metricaCreador)
+                @can('tickets.ver-creador-tarea')
+                <p class="prod-tareas__creador">
+                    <i class="fas fa-user-edit"></i>
+                    Creada por <strong>{{ $metricaCreador }}</strong>
+                </p>
+                @endcan
+                @endif
+
                 <div class="form-group mb-3">
                     <label>Nombre de la métrica / tarea mensual</label>
                     <input type="text" wire:model.defer="metrica_nombre" class="form-control" required placeholder="Ej. Envío de reporte mensual">
@@ -196,6 +211,8 @@
         .prod-tareas .tareas-modal-backdrop { position:fixed; inset:0; background:rgba(15,23,42,.55); backdrop-filter:blur(2px); z-index:1050; display:flex; align-items:center; justify-content:center; padding:1rem; animation:prodBackdropIn .18s ease-out; }
         .prod-tareas .tareas-modal { width:100%; max-width:520px; background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.25); animation:prodModalIn .2s cubic-bezier(.2,.8,.3,1); }
         .dark .prod-tareas .tareas-modal { background:#101010; color:#f8fafc; box-shadow:0 20px 50px rgba(0,0,0,.6); }
+        .prod-tareas__creador { display:flex; align-items:center; gap:.4rem; font-size:.82rem; margin-bottom:.75rem; padding:.5rem .7rem; border-radius:10px; background:rgba(99,102,241,.1); color:#4338ca; }
+        .dark .prod-tareas__creador { background:rgba(99,102,241,.18); color:#c7d2fe; }
         .prod-tareas .tareas-modal__body .form-control { min-height:44px; font-size:.9rem; }
         .prod-tareas .tareas-modal__body textarea.form-control { min-height:auto; }
         /* Salida más corta que la entrada (140 vs 200ms) */
