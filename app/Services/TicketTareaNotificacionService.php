@@ -3,9 +3,7 @@
 namespace App\Services;
 
 use App\Mail\TareasProgramadasAviso;
-use App\Models\Empleados;
 use App\Models\TicketTarea;
-use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -19,112 +17,15 @@ use Illuminate\Support\Facades\Mail;
  */
 class TicketTareaNotificacionService
 {
-    /**
-     * Cruza los usuarios configurados contra empleados para sacar su correo.
-     *
-     * users.email está vacío en toda la tabla, así que el correo real vive en
-     * empleados.Correo. El único enlace entre ambas tablas es el nombre, y no siempre
-     * viene idéntico (dobles espacios, acentos, mayúsculas), por eso se normaliza
-     * antes de comparar. Devuelve una fila por usuario configurado, resuelto o no,
-     * para poder reportar quién se quedó sin correo.
-     *
-     * @return Collection<int, array{username:string, nombre:string, correo:?string, origen:string}>
-     */
-    public function resolverDestinatarios(): Collection
-    {
-        $usernames = (array) config('tareas.notificados', []);
-
-        if ($usernames === []) {
-            return collect();
-        }
-
-        $usuarios = User::whereIn('username', $usernames)->get(['id', 'username', 'name', 'email']);
-
-        // Se indexan los empleados por nombre normalizado. Si hubiera homónimos gana
-        // el activo, que es el que sigue trabajando aquí.
-        $empleados = Empleados::query()
-            ->whereNotNull('Correo')
-            ->where('Correo', '!=', '')
-            ->orderByRaw('Estado = 1 DESC')
-            ->get(['NombreEmpleado', 'Correo', 'Estado'])
-            ->groupBy(fn ($e) => $this->normalizarNombre($e->NombreEmpleado))
-            ->map(fn ($grupo) => $grupo->first());
-
-        return $usuarios->map(function ($usuario) use ($empleados) {
-            $propio = trim((string) $usuario->email);
-
-            if ($propio !== '' && filter_var($propio, FILTER_VALIDATE_EMAIL)) {
-                return [
-                    'username' => $usuario->username,
-                    'nombre' => $usuario->name,
-                    'correo' => $propio,
-                    'origen' => 'users.email',
-                ];
-            }
-
-            $empleado = $empleados->get($this->normalizarNombre((string) $usuario->name));
-            $correo = trim((string) optional($empleado)->Correo);
-
-            return [
-                'username' => $usuario->username,
-                'nombre' => $usuario->name,
-                'correo' => $correo !== '' && filter_var($correo, FILTER_VALIDATE_EMAIL) ? $correo : null,
-                'origen' => $empleado ? 'empleados.Correo' : 'sin empleado',
-            ];
-        })->values();
-    }
-
-    /** Correos únicos a los que se manda el aviso, más los extra de configuración. */
+    /** Buzón(es) a los que se manda el aviso. */
     public function destinatarios(): array
     {
-        return $this->resolverDestinatarios()
-            ->pluck('correo')
-            ->merge(config('tareas.correos_extra', []))
+        return collect(config('tareas.destinatarios', []))
             ->map(fn ($correo) => trim((string) $correo))
             ->filter(fn ($correo) => $correo !== '' && filter_var($correo, FILTER_VALIDATE_EMAIL))
             ->unique()
             ->values()
             ->all();
-    }
-
-    /** Usuarios configurados que no tienen un correo utilizable. */
-    public function destinatariosSinCorreo(): Collection
-    {
-        $encontrados = $this->resolverDestinatarios();
-
-        $faltantes = $encontrados->whereNull('correo')->values();
-
-        // Un username mal escrito en la config ni siquiera aparece como usuario.
-        $inexistentes = collect(config('tareas.notificados', []))
-            ->diff($encontrados->pluck('username'))
-            ->map(fn ($username) => [
-                'username' => $username,
-                'nombre' => '—',
-                'correo' => null,
-                'origen' => 'usuario inexistente',
-            ]);
-
-        return $faltantes->merge($inexistentes)->values();
-    }
-
-    /**
-     * Deja los nombres comparables entre users.name y empleados.NombreEmpleado:
-     * sin acentos, sin dobles espacios y en mayúsculas.
-     */
-    private function normalizarNombre(?string $nombre): string
-    {
-        $limpio = trim((string) $nombre);
-
-        if ($limpio === '') {
-            return '';
-        }
-
-        $sinAcentos = strtr($limpio, [
-            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n',
-            'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ü' => 'U', 'Ñ' => 'N',
-        ]);
-
-        return mb_strtoupper(preg_replace('/\s+/u', ' ', $sinAcentos));
     }
 
     /**

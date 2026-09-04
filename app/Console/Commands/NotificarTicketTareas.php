@@ -35,28 +35,10 @@ class NotificarTicketTareas extends Command
             return $this->marcarExistentes($notificaciones, $dryRun);
         }
 
-        // El cruce users → empleados se imprime completo: si alguien deja de recibir
-        // el aviso, aquí se ve si fue por nombre que no cuadró o por correo vacío.
-        $this->table(
-            ['Usuario', 'Nombre', 'Correo', 'Origen'],
-            $notificaciones->resolverDestinatarios()
-                ->map(fn ($fila) => [
-                    $fila['username'],
-                    $fila['nombre'],
-                    $fila['correo'] ?: '— sin correo —',
-                    $fila['origen'],
-                ])
-                ->all()
-        );
-
-        foreach ($notificaciones->destinatariosSinCorreo() as $fila) {
-            $this->warn("  ! {$fila['username']} sin correo ({$fila['origen']}): no recibirá el aviso.");
-        }
-
         $destinatarios = $notificaciones->destinatarios();
 
         if ($destinatarios === []) {
-            $this->error('No hay destinatarios con correo válido en config/tareas.php.');
+            $this->error('No hay un correo válido en config/tareas.php (TAREAS_CORREO_SOPORTE).');
 
             return self::FAILURE;
         }

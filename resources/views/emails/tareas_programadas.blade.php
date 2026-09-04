@@ -283,7 +283,7 @@
 
                 <p style="margin:16px 0 0; font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
                     font-size:11px; color:#94A3B8;">
-                    Recibes este aviso porque formas parte del equipo de soporte TI.
+                    Aviso enviado al buzón del área de Soporte TI.
                 </p>
 
             </td>
