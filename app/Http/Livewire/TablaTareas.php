@@ -27,6 +27,13 @@ class TablaTareas extends Component
     public string $modoLista = 'tarjetas';
     public string $fechaSeleccionada = '';
 
+    /**
+     * Acota críticas y completadas al día elegido. Apagado por defecto: esos dos KPI
+     * deben verse en general, si no el usuario nunca se entera de lo que arrastra de
+     * otros días.
+     */
+    public bool $soloDia = false;
+
     public bool $modalTareaAbierto = false;
     public bool $modalReagendarAbierto = false;
     public bool $modalHistorialAbierto = false;
@@ -85,15 +92,18 @@ class TablaTareas extends Component
     public function filtrarKpi(string $estatus): void
     {
         $this->filtroEstatus = in_array($estatus, ['hoy', 'criticas', 'completadas'], true) ? $estatus : 'hoy';
+        $this->soloDia = false;
         $this->resetPage();
 
+        // En tarjetas los tres KPI ya se leen sobre el día elegido, así que no se
+        // pisa la fecha ni la vista en la que está trabajando el usuario.
+        if ($this->modoLista === 'tarjetas') {
+            return;
+        }
+
         if ($this->filtroEstatus === 'hoy') {
-            // Desde tarjetas basta con volver al día de hoy: mandarlo al calendario
-            // le quitaría la vista en la que está trabajando.
             $this->irHoy();
-            if ($this->modoLista !== 'tarjetas') {
-                $this->modoLista = 'calendario';
-            }
+            $this->modoLista = 'calendario';
         } else {
             $this->modoLista = 'tarjetas';
         }
@@ -118,6 +128,12 @@ class TablaTareas extends Component
         $this->calMes = (int) now()->month;
         $this->calAnio = (int) now()->year;
         $this->fechaSeleccionada = now()->format('Y-m-d');
+        $this->resetPage();
+    }
+
+    public function alternarSoloDia(): void
+    {
+        $this->soloDia = ! $this->soloDia;
         $this->resetPage();
     }
 
@@ -327,22 +343,22 @@ class TablaTareas extends Component
             ->get(['EmpleadoID', 'NombreEmpleado']);
 
         $hoy = now()->format('Y-m-d');
+        $diaTarjetas = $this->fechaSeleccionada ?: $hoy;
 
+        // Los tres KPI y la lista miran siempre el mismo día: si el conteo fuera global
+        // no cuadraría con las tarjetas al moverse a otra fecha.
         $kpis = [
             'hoy' => TicketTarea::pendientes()
-                ->where(function ($q) use ($hoy) {
-                    $q->whereDate('fecha_compromiso', $hoy)
-                        ->orWhereNull('fecha_compromiso');
-                })
+                ->where(fn ($q) => $this->acotarAlDia($q, $diaTarjetas, $hoy))
                 ->count(),
-            'criticas' => TicketTarea::pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count(),
+            'criticas' => TicketTarea::pendientes()
+                ->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)
+                ->count(),
             'completadas_mes' => TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
                 ->whereMonth('completada_at', now()->month)
                 ->whereYear('completada_at', now()->year)
                 ->count(),
         ];
-
-        $diaTarjetas = $this->fechaSeleccionada ?: $hoy;
 
         $inicioMes = Carbon::create($this->calAnio, $this->calMes, 1)->startOfDay();
         $finMes = $inicioMes->copy()->endOfMonth();
@@ -360,22 +376,21 @@ class TablaTareas extends Component
 
         $tareas = TicketTarea::query()
             ->with(['asignado', 'metrica'])
-            ->when($this->filtroEstatus === 'hoy', function ($q) use ($diaTarjetas, $hoy) {
-                $q->pendientes()->where(function ($inner) use ($diaTarjetas, $hoy) {
-                    $inner->whereDate('fecha_compromiso', $diaTarjetas);
-
-                    // Las tareas sin fecha solo se arrastran al día de hoy: en otro día
-                    // ensuciarían la lista sin pertenecer a esa fecha.
-                    if ($diaTarjetas === $hoy) {
-                        $inner->orWhereNull('fecha_compromiso');
-                    }
-                });
-            })
+            ->when($this->filtroEstatus === 'hoy', fn ($q) => $q->pendientes()
+                ->where(fn ($inner) => $this->acotarAlDia($inner, $diaTarjetas, $hoy)))
             ->when($this->filtroEstatus === 'pendientes', fn ($q) => $q->where('estatus', TicketTarea::ESTATUS_PENDIENTE))
-            ->when($this->filtroEstatus === 'completadas', fn ($q) => $q->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereMonth('completada_at', now()->month)
-                ->whereYear('completada_at', now()->year))
-            ->when($this->filtroEstatus === 'criticas', fn ($q) => $q->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA))
+            // Completadas siempre se leen por el día en que se finalizaron, sin importar
+            // para cuándo estaban agendadas.
+            ->when($this->filtroEstatus === 'completadas', fn ($q) => $q
+                ->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
+                ->whereDate('completada_at', $diaTarjetas))
+            ->when($this->filtroEstatus === 'criticas', function ($q) use ($diaTarjetas, $hoy) {
+                $q->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA);
+
+                if ($this->soloDia) {
+                    $q->where(fn ($inner) => $this->acotarAlDia($inner, $diaTarjetas, $hoy));
+                }
+            })
             ->when($this->filtroTipo !== '', fn ($q) => $q->where('tipo', $this->filtroTipo))
             ->when(trim($this->search) !== '', function ($q) {
                 $term = '%' . trim($this->search) . '%';
@@ -385,9 +400,11 @@ class TablaTareas extends Component
                         ->orWhereHas('asignado', fn ($a) => $a->where('NombreEmpleado', 'like', $term));
                 });
             })
-            ->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
-            ->orderByRaw('fecha_compromiso IS NULL DESC')
-            ->orderBy('fecha_compromiso')
+            ->when($this->filtroEstatus === 'completadas', fn ($q) => $q->orderByDesc('completada_at'))
+            ->when($this->filtroEstatus !== 'completadas', fn ($q) => $q
+                ->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
+                ->orderByRaw('fecha_compromiso IS NULL DESC')
+                ->orderBy('fecha_compromiso'))
             ->paginate($this->perPage);
 
         $historialTarea = $this->tareaHistorialId
@@ -430,6 +447,21 @@ class TablaTareas extends Component
             'etiquetaDiaSeleccionado',
             'diaTarjetas'
         ));
+    }
+
+    /**
+     * Acota una consulta al día que se está viendo. Las tareas sin fecha de compromiso
+     * solo se arrastran al día de hoy: en otra fecha no pertenecen a esa lista.
+     */
+    private function acotarAlDia($query, string $dia, string $hoy)
+    {
+        $query->whereDate('fecha_compromiso', $dia);
+
+        if ($dia === $hoy) {
+            $query->orWhereNull('fecha_compromiso');
+        }
+
+        return $query;
     }
 
     private function construirCalendario(Carbon $inicioMes, Collection $tareasPorDia, string $fechaSeleccionada = ''): array

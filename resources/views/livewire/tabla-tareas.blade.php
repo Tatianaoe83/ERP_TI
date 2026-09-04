@@ -4,7 +4,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <button type="button" wire:click="filtrarKpi('hoy')" class="tareas-kpi {{ $filtroEstatus === 'hoy' ? 'is-active' : '' }}">
-            <span class="tareas-kpi__label">Pendientes de hoy</span>
+            <span class="tareas-kpi__label">{{ $diaTarjetas === $hoy ? 'Pendientes de hoy' : 'Pendientes del día' }}</span>
             <span class="tareas-kpi__value">{{ $kpis['hoy'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('criticas')" class="tareas-kpi tareas-kpi--danger {{ $filtroEstatus === 'criticas' ? 'is-active' : '' }}">
@@ -12,7 +12,7 @@
             <span class="tareas-kpi__value">{{ $kpis['criticas'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('completadas')" class="tareas-kpi tareas-kpi--ok {{ $filtroEstatus === 'completadas' ? 'is-active' : '' }}">
-            <span class="tareas-kpi__label">Completadas</span>
+            <span class="tareas-kpi__label">Completadas (mes)</span>
             <span class="tareas-kpi__value">{{ $kpis['completadas_mes'] }}</span>
         </button>
     </div>
@@ -23,7 +23,7 @@
             <div class="tareas-section-bar__tabs">
                 <span class="tareas-section-title">
                     <i class="fas fa-tasks"></i>
-                    @if($modoLista === 'tarjetas' && $filtroEstatus === 'hoy' && $diaTarjetas !== $hoy)
+                    @if($modoLista === 'tarjetas' && $diaTarjetas !== $hoy && ($filtroEstatus !== 'criticas' || $soloDia))
                         Tareas del {{ $etiquetaDiaSeleccionado }}
                     @else
                         Mis tareas de hoy
@@ -184,7 +184,6 @@
             </div>
         </div>
         @else
-        @if($filtroEstatus === 'hoy')
         {{-- Navegación de día: las tarjetas ya no se quedan clavadas en hoy --}}
         <div class="tareas-dia-nav">
             <button type="button" wire:click="diaAnterior" class="tarea-btn" title="Día anterior">
@@ -203,8 +202,15 @@
             @if($diaTarjetas !== $hoy)
             <button type="button" wire:click="irHoy" class="index-page__btn-secondary">Ir a hoy</button>
             @endif
+
+            @if($filtroEstatus === 'criticas')
+            <button type="button" wire:click="alternarSoloDia"
+                    class="{{ $soloDia ? 'index-page__btn-primary' : 'index-page__btn-secondary' }} tareas-dia-nav__toggle">
+                <i class="fas {{ $soloDia ? 'fa-calendar-day' : 'fa-layer-group' }}"></i>
+                {{ $soloDia ? 'Solo este día' : 'Ver todas' }}
+            </button>
+            @endif
         </div>
-        @endif
 
         <div class="tareas-view-bar">
             <div class="tareas-view-bar__filters">
@@ -295,8 +301,12 @@
             @empty
             <div class="tareas-empty col-span-full">
                 <i class="fas fa-clipboard-list"></i>
-                @if($filtroEstatus === 'hoy')
-                <p>No hay tareas pendientes para el {{ $etiquetaDiaSeleccionado }}.</p>
+                @if($filtroEstatus === 'completadas')
+                <p>No hay tareas completadas el {{ $etiquetaDiaSeleccionado }}.</p>
+                @elseif($filtroEstatus === 'criticas')
+                <p>No hay tareas críticas {{ $soloDia ? 'el ' . $etiquetaDiaSeleccionado : 'pendientes' }}.</p>
+                @elseif($filtroEstatus === 'hoy')
+                <p>No hay tareas pendientes el {{ $etiquetaDiaSeleccionado }}.</p>
                 @else
                 <p>No hay tareas con los filtros actuales.</p>
                 @endif
@@ -487,6 +497,7 @@
         .tareas-dia-nav__info { display:flex; align-items:center; gap:.4rem; flex:0 1 auto; font-size:.8rem; white-space:nowrap; }
         .tareas-dia-nav__date { width:auto; display:inline-block; min-width:0; flex:0 0 auto; margin-left:.5rem; font-size:.8rem; padding:.3rem .5rem; min-height:0; height:34px; }
         .tareas-dia-nav .tarea-badge { font-size:.68rem; padding:.15rem .45rem; }
+        .tareas-dia-nav__toggle { font-size:.78rem; padding:.35rem .7rem; }
 
         @media (max-width: 640px) {
             .tareas-dia-nav { justify-content:center; }
