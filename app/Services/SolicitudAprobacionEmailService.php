@@ -278,6 +278,8 @@ class SolicitudAprobacionEmailService
             ? url('/elegir-ganador/' . $token)
             : url('/revision-solicitud/' . $token);
 
+        $avance = $solicitud->avanceGanadores();
+
         $config = [
             'supervisor' => [
                 'asunto' => "Recordatorio: Solicitud de compra {$folio} pendiente de tu autorización",
@@ -286,10 +288,22 @@ class SolicitudAprobacionEmailService
                 'boton'  => 'Revisar y firmar',
             ],
             'gerencia' => [
-                'asunto' => "Recordatorio: Cotizaciones de la Solicitud {$folio} pendiente de elección",
-                'titulo' => 'Las cotizaciones siguen esperando tu elección',
-                'intro'  => 'La solicitud <strong>' . e($folio) . '</strong> ya tiene sus cotizaciones cargadas y sigue esperando que <strong>elijas el ganador</strong>.',
-                'boton'  => 'Ver cotizaciones y elegir ganador',
+                'asunto' => $avance['elegidos'] > 0
+                    ? "Recordatorio: te faltan {$avance['faltantes']} producto(s) por elegir en la Solicitud {$folio}"
+                    : "Recordatorio: Cotizaciones de la Solicitud {$folio} pendiente de elección",
+                'titulo' => $avance['elegidos'] > 0
+                    ? 'Te faltan productos por elegir'
+                    : 'Las cotizaciones siguen esperando tu elección',
+                // La elección es producto por producto: si ya eligió algunos, un mensaje
+                // genérico lo confunde ("yo ya la contesté") y la solicitud se atora.
+                'intro'  => $avance['elegidos'] > 0
+                    ? 'En la solicitud <strong>' . e($folio) . '</strong> ya elegiste <strong>'
+                        . $avance['elegidos'] . ' de ' . $avance['total'] . '</strong> productos. '
+                        . 'Faltan <strong>' . $avance['faltantes'] . '</strong> por elegir para que la solicitud avance a Administración.'
+                    : 'La solicitud <strong>' . e($folio) . '</strong> ya tiene sus cotizaciones cargadas y sigue esperando que <strong>elijas el ganador</strong>.',
+                'boton'  => $avance['elegidos'] > 0
+                    ? 'Elegir los productos que faltan'
+                    : 'Ver cotizaciones y elegir ganador',
             ],
             'administracion' => [
                 'asunto' => "Recordatorio: Solicitud de compra {$folio} pendiente de aprobación",

@@ -27,6 +27,18 @@ class SolicitudTokens extends Model
     /** Días que dura el enlace de cada etapa, contados desde que se envía su correo. */
     const VIGENCIA_DIAS = 7;
 
+    /**
+     * Recordatorios diarios como máximo. Al llegar al tope se deja de insistir y el
+     * enlace se agota solo; más allá de esto el correo ya es ruido que nadie abre.
+     */
+    const MAX_RECORDATORIOS = 5;
+
+    /**
+     * No se recuerda un enlace al que le quedan menos de estas horas: el aprobador
+     * abriría el correo y se toparía con el enlace ya expirado.
+     */
+    const MIN_HORAS_PARA_RECORDAR = 24;
+
 
     protected $dates = ['deleted_at'];
 

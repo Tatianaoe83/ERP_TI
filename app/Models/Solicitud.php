@@ -178,6 +178,39 @@ public $fillable = [
     }
 
     /**
+     * Avance de la elección de ganadores, agrupando por producto igual que
+     * todosProductosTienenGanador(). Sirve para decirle al gerente cuántos productos
+     * le faltan en vez de repetirle un recordatorio genérico: la elección es producto
+     * por producto y es fácil dejarla a medias sin darse cuenta.
+     *
+     * @return array{total:int, elegidos:int, faltantes:int}
+     */
+    public function avanceGanadores(): array
+    {
+        $cotizaciones = $this->cotizaciones ?? collect();
+
+        $porProducto = [];
+        foreach ($cotizaciones as $c) {
+            $clave = 'np_' . (int) ($c->NumeroPropuesta ?? 0);
+            if (! isset($porProducto[$clave])) {
+                $porProducto[$clave] = 0;
+            }
+            if ($c->Estatus === 'Seleccionada') {
+                $porProducto[$clave]++;
+            }
+        }
+
+        $total = count($porProducto);
+        $elegidos = count(array_filter($porProducto, fn ($count) => $count === 1));
+
+        return [
+            'total' => $total,
+            'elegidos' => $elegidos,
+            'faltantes' => max(0, $total - $elegidos),
+        ];
+    }
+
+    /**
      * Relación con pasos de aprobación
      */
     public function pasosAprobacion()

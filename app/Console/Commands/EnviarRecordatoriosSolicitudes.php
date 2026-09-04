@@ -125,6 +125,19 @@ class EnviarRecordatoriosSolicitudes extends Command
             return "el paso {$step->stage} ya fue resuelto ({$step->status})";
         }
 
+        // El enlace caduca a los 7 días y no se renueva. Recordar el último día servía de
+        // poco: el correo llegaba de mañana y el enlace moría esa misma tarde, dejando al
+        // aprobador con "enlace expirado" y sin salida.
+        if ($tokenRow->expires_at
+            && $tokenRow->expires_at->lt(now()->addHours(SolicitudTokens::MIN_HORAS_PARA_RECORDAR))) {
+            return 'al enlace le quedan menos de ' . SolicitudTokens::MIN_HORAS_PARA_RECORDAR . ' horas de vigencia';
+        }
+
+        $enviados = (int) ($tokenRow->reminders_sent ?? 0);
+        if ($enviados >= SolicitudTokens::MAX_RECORDATORIOS) {
+            return "ya se enviaron {$enviados} recordatorios (tope alcanzado)";
+        }
+
         $aprobador = $step->approverEmpleado;
         if (!$aprobador || empty($aprobador->Correo)) {
             return "el aprobador del paso {$step->stage} no tiene correo";
