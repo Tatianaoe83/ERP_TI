@@ -194,10 +194,6 @@
                 <strong>{{ ucfirst($etiquetaDiaSeleccionado) }}</strong>
                 @if($diaTarjetas === $hoy)
                 <span class="tarea-badge tarea-badge--pendiente">Hoy</span>
-                @elseif($diaTarjetas < $hoy)
-                <span class="tarea-badge tarea-badge--warn">Día anterior</span>
-                @else
-                <span class="tarea-badge tarea-badge--ok">Día posterior</span>
                 @endif
             </div>
             <button type="button" wire:click="diaSiguiente" class="tarea-btn" title="Día siguiente">
@@ -334,15 +330,6 @@
                 <button type="button" @click="cerrar()" class="tareas-modal__close" aria-label="Cerrar">&times;</button>
             </div>
             <form wire:submit.prevent="guardarTarea" class="tareas-modal__body">
-                @if($editandoMetrica)
-                <p class="tareas-nota">
-                    <i class="fas fa-info-circle"></i>
-                    Es una <strong>métrica mensual</strong>: su título y razón los vuelve a generar la
-                    plantilla cada mes, por eso aquí solo se cambia el responsable.
-                    Para mover la fecha usa <strong>Reagendar</strong>.
-                </p>
-                @endif
-
                 @if($tareaEditId && $creadorTarea)
                 @can('tickets.ver-creador-tarea')
                 <p class="tareas-nota">
