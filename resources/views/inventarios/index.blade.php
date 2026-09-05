@@ -54,8 +54,13 @@
         min-width: 0;
         width: 100%;
     }
+    /* OJO: el <select> original que Select2 esconde conserva la clase
+       .form-control y queda position:absolute con width:1px. Si le
+       aplicamos width:100% !important vuelve a medir 1356px desde su
+       offset original y estira el scrollWidth de <html> (~2344px):
+       la pagina entera scrollea a la derecha mostrando el fondo dark. */
     .inv-index-page .index-page__filters .select2-container,
-    .inv-index-page .index-page__filters .form-control {
+    .inv-index-page .index-page__filters .form-control:not(.select2-hidden-accessible) {
         width: 100% !important;
     }
     .inv-index-page .index-page__filters label {
@@ -66,6 +71,13 @@
     }
     body > .select2-container .select2-results__options {
         max-height: 320px;
+    }
+    /* Ningun hijo puede empujar el ancho de <main>: el scroll horizontal
+       pertenece al contenedor de la tabla, no a la pagina. */
+    .inv-index-page,
+    .inv-index-page .index-page__card {
+        min-width: 0;
+        max-width: 100%;
     }
 </style>
 

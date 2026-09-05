@@ -90,15 +90,26 @@
             border-color: #3b82f6;
             color: #bfdbfe;
         }
+        /* La tabla tiene mas columnas de las que caben en pantallas
+           chicas (~1366px). El scroll horizontal vive AQUI, no en <main>,
+           para que no se mueva la vista completa ni se vea el fondo. */
         .inv-empleados-wrap {
-            overflow: visible;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .inv-empleados-wrap #tabla-empleados {
+            min-width: 980px;
+        }
+        /* El paginador no debe desplazarse junto con la tabla */
+        .inv-empleados-wrap .index-page__dt-footer,
+        .inv-empleados-wrap .dataTables_processing {
+            position: sticky;
+            left: 0;
+            width: 100%;
         }
         @media (max-width: 767px) {
-            .inv-empleados-wrap {
-                overflow-x: auto;
-                overflow-y: visible;
-                -webkit-overflow-scrolling: touch;
-            }
             .inv-row-toggle {
                 width: 2.75rem;
                 height: 2.75rem;
@@ -149,9 +160,9 @@
                 retrieve: true,
                 serverSide: true,
                 processing: true,
-                responsive: {
-                    details: false
-                },
+                // responsive escondia columnas en pantallas chicas: los datos
+                // desaparecian. Ahora la tabla hace scroll horizontal.
+                responsive: false,
                 autoWidth: false,
                 searching: false,
                 pageLength: 10,
