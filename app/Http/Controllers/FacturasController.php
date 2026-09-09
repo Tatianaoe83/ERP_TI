@@ -1310,7 +1310,13 @@ class FacturasController extends AppBaseController
             return ['error' => true, 'motivo' => 'sin_texto_extraible', 'total' => 0, 'emisor' => '', 'conceptos' => []];
         }
 
-        $textMoney = preg_replace('/[Oo]/', '0', $text);
+        // O/o -> 0 solo dentro de rachas que ya contienen digitos (errores de OCR en importes).
+        // Aplicarlo a todo el texto rompia las etiquetas: "Total" -> "T0tal", "Subtotal" -> "Subt0tal".
+        $textMoney = preg_replace_callback(
+            '/[\d.,]*[Oo][\d.,Oo]*/u',
+            fn ($m) => preg_match('/\d/', $m[0]) ? str_replace(['O', 'o'], '0', $m[0]) : $m[0],
+            $text
+        );
 
         $lower     = strtolower($text);
         $provLower = strtolower(trim($proveedorHint));
@@ -1326,15 +1332,13 @@ class FacturasController extends AppBaseController
         }
 
         if ($emisor === 'Proveedor Extranjero' || $emisor === $proveedorHint) {
-            foreach (preg_split('/\r?\n/', substr($text, 0, 3000)) as $line) {
-                $line = trim($line);
-                if (strlen($line) < 6 || strlen($line) > 120) {
-                    continue;
-                }
-                if (preg_match('/\b(inc\.?|llc|ltd\.?|l\.l\.c\.|corp\.?|corporation|s\.a\.|s\.l\.|gmbh|b\.v\.|plc)\b/i', $line)) {
-                    $emisor = $line;
-                    break;
-                }
+            // Razon social por su sufijo legal. Antes se tomaba la linea completa (arrastraba
+            // prefijos como "Titular de la cuenta: ...") y no servia con el texto de pdf.js,
+            // que llega en una sola linea.
+            $sufijos = 'Inc|LLC|L\.L\.C|Ltd|Limited|Corp|Corporation|Co|Company|GmbH|AG|S\.A\.?S?|S\.L|S\. de R\.L|B\.V|N\.V|PLC|SARL|SRL|Pty|Oy|AB';
+            $patronEmisor = '/\b([\p{Lu}][\p{L}&\'\-\.]*(?:\s+(?:de|del|la|las|los|y|and|of|the|[\p{Lu}0-9][\p{L}&\'\-\.]*)){0,4}\s+(?:' . $sufijos . ')\.?)(?![\p{L}])/u';
+            if (preg_match($patronEmisor, substr($text, 0, 3000), $me)) {
+                $emisor = trim($me[1]);
             }
         }
 
@@ -1342,22 +1346,30 @@ class FacturasController extends AppBaseController
         $subtotalDoc  = null;
         $totalDoc = null;
 
-        if (preg_match('/(?:sub\s*total|subtotal|net\s*amount)\s*[:#]?\s*([\d]{1,3}(?:,\d{3})*\.\d{2})\b/i', $textMoney, $m)) {
-            $subtotalDoc = (float) str_replace(',', '', $m[1]);
-        }
-        if ($subtotalDoc === null && preg_match('/(?:sub\s*total|subtotal|net\s*amount)\s*[:#]?\s*([\d]{1,3}(?:\.\d{3})*,\d{2})\b/ui', $textMoney, $m)) {
-            $subtotalDoc = (float) str_replace(',', '.', str_replace('.', '', $m[1]));
-        }
-        if ($subtotalDoc === null && preg_match('/(?:sub[\s\-]*t[0o]tal|sublotal|subtota[li1])\s*[:#.\s\-]{0,20}([\d]{1,3}(?:[,.]\d{3})*[.,]\d{2})/iu', $textMoney, $m)) {
-            $raw = str_replace(',', '.', preg_replace('/\.(?=\d{3}\b)/', '', str_replace('O', '0', $m[1])));
-            $subtotalDoc = (float) $raw;
-        }
-        if (preg_match('/(?:^|\n)[^\n]{0,30}(?:total|amount\s*due|balance\s*due|invoice\s*total)\s*[:#]?\s*([\d]{1,3}(?:,\d{3})*\.\d{2})\b/im', $textMoney, $m)) {
-            $totalDoc = (float) str_replace(',', '', $m[1]);
-        }
-        if ($totalDoc === null && preg_match('/(?:^|\n)[^\n]{0,40}(?:total|amount\s*due|balance\s*due|invoice\s*total)\s*[:#]?\s*([\d]{1,3}(?:\.\d{3})*,\d{2})\b/im', $textMoney, $m)) {
-            $totalDoc = (float) str_replace(',', '.', str_replace('.', '', $m[1]));
-        }
+        // Etiquetas ES/EN. Sin anclas de linea: el texto que manda el navegador (pdf.js) llega
+        // como una sola linea, asi que (?:^|\n)[^\n]{0,30} nunca casaba fuera de la posicion 0.
+        $etqSubtotal = 'sub\s*-?\s*t[o0]tal|sublotal|subtota[li1]|net\s*amount|importe\s+neto|base\s+imponible';
+        $etqTotal    = 'importe\s+total|total\s+(?:a\s+pagar|de\s+la\s+factura|general|neto)|cantidad\s+(?:a\s+pagar|total)|monto\s+total|precio\s+(?:total|a\s+pagar)|gran\s+total|grand\s+total|invoice\s+total|amount\s+due|balance\s+due|total\s+due|(?<!\p{L})t[o0]tal';
+        // Separador etiqueta -> numero, y moneda opcional en medio: "Importe total: MXN 6,335.00"
+        $sepImp = '\s*[:#]?[\s.\-]{0,20}';
+        $curImp = '(?:MXN|MX\$|USD|US\$|EUR|\$|€)?\s*';
+        $numUs  = '\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2}'; // 1,234.56 / 1234.56
+        $numEu  = '\d{1,3}(?:\.\d{3})+,\d{2}|\d+,\d{2}';  // 1.234,56 / 1234,56
+
+        $buscarImporte = static function (string $etiquetas) use ($textMoney, $sepImp, $curImp, $numUs, $numEu): ?float {
+            $vals = [];
+            if (preg_match_all('/(?:' . $etiquetas . ')' . $sepImp . $curImp . '(' . $numUs . ')(?!\d)/iu', $textMoney, $ms)) {
+                $vals = array_map(fn ($v) => (float) str_replace(',', '', $v), $ms[1]);
+            }
+            if (empty($vals) && preg_match_all('/(?:' . $etiquetas . ')' . $sepImp . $curImp . '(' . $numEu . ')(?!\d)/iu', $textMoney, $ms)) {
+                $vals = array_map(fn ($v) => (float) str_replace(',', '.', str_replace('.', '', $v)), $ms[1]);
+            }
+
+            return $vals ? max($vals) : null;
+        };
+
+        $subtotalDoc = $buscarImporte($etqSubtotal);
+        $totalDoc    = $buscarImporte($etqTotal);
 
         $ivaRatio = false;
         if ($subtotalDoc && $totalDoc && $totalDoc > $subtotalDoc) {
@@ -1375,7 +1387,7 @@ class FacturasController extends AppBaseController
         } elseif ($totalDoc !== null) {
             $total = $tieneIva ? round($totalDoc / 1.16, 2) : $totalDoc;
         } else {
-            preg_match_all('/\$\s*([\d,]+\.\d{2})/', $textMoney, $m);
+            preg_match_all('/(?:MXN|MX\$|USD|US\$|EUR|\$|€)\s*((?:[\d]{1,3}(?:,[\d]{3})+|[\d]+)\.[\d]{2})(?!\d)/iu', $textMoney, $m);
             if (! empty($m[1])) {
                 $mayor = max(array_map(fn ($n) => (float) str_replace(',', '', $n), $m[1]));
                 $total = $tieneIva ? round($mayor / 1.16, 2) : $mayor;
@@ -1452,7 +1464,7 @@ class FacturasController extends AppBaseController
             'invoiced to',
         ];
 
-        $patron = '/^[ \t]*([A-Za-zÁÉÍÓÚáéíóúñÑ][A-Za-zÁÉÍÓÚáéíóúñÑ0-9 ,\.\-\/\(\)\#\@\_\:]{2,149}?)[ \t]*(?:\.{2,}|_{2,}|-{2,})?[ \t]*\$?\s*([\d]{1,3}(?:,[\d]{3})*\.[\d]{2})(?!\d)/m';
+        $patron = '/^[ \t]*([A-Za-zÁÉÍÓÚáéíóúñÑ][A-Za-zÁÉÍÓÚáéíóúñÑ0-9 ,\.\-\/\(\)\#\@\_\:]{2,149}?)[ \t]*(?:\.{2,}|_{2,}|-{2,})?[ \t]*(?:MXN|MX\$|USD|US\$|EUR|\$|€)?\s*((?:[\d]{1,3}(?:,[\d]{3})+|[\d]+)\.[\d]{2})(?!\d)/mu';
 
         if (preg_match_all($patron, $text, $sets, PREG_SET_ORDER)) {
             foreach ($sets as $m) {
@@ -1467,7 +1479,7 @@ class FacturasController extends AppBaseController
         if (empty($conceptos)) {
             $lineas = preg_split('/\r?\n/', $text);
             for ($i = 0, $n = count($lineas) - 1; $i < $n; $i++) {
-                if (!preg_match('/^\$?\s*([\d]{1,3}(?:,[\d]{3})*\.[\d]{2})$/', trim($lineas[$i + 1]), $pm)) continue;
+                if (!preg_match('/^(?:MXN|MX\$|USD|US\$|EUR|\$|€)?\s*((?:[\d]{1,3}(?:,[\d]{3})+|[\d]+)\.[\d]{2})$/iu', trim($lineas[$i + 1]), $pm)) continue;
                 $importe = (float)str_replace(',', '', $pm[1]);
                 $nombre  = trim(preg_replace('/\s+/', ' ', $lineas[$i]));
                 if (!$this->esConceptoValido($nombre, $importe, $excluir)) continue;

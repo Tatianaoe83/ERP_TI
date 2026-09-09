@@ -630,9 +630,11 @@
         form.append('Mes', $('fdMes').value || '');
         form.append('Anio', $('fdAnio').value || '');
 
+        // El emisor va con lo que quedo en el formulario: si el parser lo leyo mal
+        // y el usuario lo corrigio, se guarda su correccion, no lo detectado.
+        form.append('Emisor', $('fdNombre').value.trim() || (state.parsed?.emisor ?? ''));
         if (state.parsed) {
             form.append('UUID', state.parsed.uuid ?? '');
-            form.append('Emisor', state.parsed.emisor ?? '');
         }
         if (state.xmlFile) form.append('archivo_xml', state.xmlFile);
         if (state.pdfFile) form.append('archivo_pdf', state.pdfFile);
