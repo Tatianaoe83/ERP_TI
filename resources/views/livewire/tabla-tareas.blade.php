@@ -12,7 +12,7 @@
             <span class="tareas-kpi__value">{{ $kpis['criticas'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('completadas')" class="tareas-kpi tareas-kpi--ok {{ $filtroEstatus === 'completadas' ? 'is-active' : '' }}">
-            <span class="tareas-kpi__label">Completadas (mes)</span>
+            <span class="tareas-kpi__label">Completadas ({{ ucfirst($etiquetaMesCompletadas) }})</span>
             <span class="tareas-kpi__value">{{ $kpis['completadas_mes'] }}</span>
         </button>
     </div>
@@ -23,7 +23,9 @@
             <div class="tareas-section-bar__tabs">
                 <span class="tareas-section-title">
                     <i class="fas fa-tasks"></i>
-                    @if($modoLista === 'tarjetas' && $diaTarjetas !== $hoy && ($filtroEstatus !== 'criticas' || $soloDia))
+                    @if($modoLista === 'tarjetas' && $filtroEstatus === 'completadas')
+                        Completadas de {{ $etiquetaMesCompletadas }}
+                    @elseif($modoLista === 'tarjetas' && $diaTarjetas !== $hoy && ($filtroEstatus !== 'criticas' || $soloDia))
                         Tareas del {{ $etiquetaDiaSeleccionado }}
                     @else
                         Mis tareas de hoy
@@ -184,6 +186,26 @@
             </div>
         </div>
         @else
+        @if($filtroEstatus === 'completadas')
+        {{-- Completadas se navegan por mes: el usuario ve todo lo cerrado del mes de un jalón --}}
+        <div class="tareas-dia-nav">
+            <button type="button" wire:click="mesCompletadasAnterior" class="tarea-btn" title="Mes anterior">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="tareas-dia-nav__info">
+                <strong>{{ ucfirst($etiquetaMesCompletadas) }}</strong>
+                @if($esMesActualCompletadas)
+                <span class="tarea-badge tarea-badge--pendiente">Mes actual</span>
+                @endif
+            </div>
+            <button type="button" wire:click="mesCompletadasSiguiente" class="tarea-btn" title="Mes siguiente">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            @unless($esMesActualCompletadas)
+            <button type="button" wire:click="irMesActualCompletadas" class="index-page__btn-secondary">Ir al mes actual</button>
+            @endunless
+        </div>
+        @else
         {{-- Navegación de día: las tarjetas ya no se quedan clavadas en hoy --}}
         <div class="tareas-dia-nav">
             <button type="button" wire:click="diaAnterior" class="tarea-btn" title="Día anterior">
@@ -211,6 +233,7 @@
             </button>
             @endif
         </div>
+        @endif
 
         <div class="tareas-view-bar">
             <div class="tareas-view-bar__filters">
@@ -302,7 +325,7 @@
             <div class="tareas-empty col-span-full">
                 <i class="fas fa-clipboard-list"></i>
                 @if($filtroEstatus === 'completadas')
-                <p>No hay tareas completadas el {{ $etiquetaDiaSeleccionado }}.</p>
+                <p>No hay tareas completadas en {{ $etiquetaMesCompletadas }}.</p>
                 @elseif($filtroEstatus === 'criticas')
                 <p>No hay tareas críticas {{ $soloDia ? 'el ' . $etiquetaDiaSeleccionado : 'pendientes' }}.</p>
                 @elseif($filtroEstatus === 'hoy')

@@ -27,6 +27,10 @@ class TablaTareas extends Component
     public string $modoLista = 'tarjetas';
     public string $fechaSeleccionada = '';
 
+    /** Mes/año que se ve en el filtro de completadas: ahí se navega por mes, no por día. */
+    public int $mesCompletadas = 1;
+    public int $anioCompletadas = 2026;
+
     /**
      * Acota críticas y completadas al día elegido. Apagado por defecto: esos dos KPI
      * deben verse en general, si no el usuario nunca se entera de lo que arrastra de
@@ -71,6 +75,8 @@ class TablaTareas extends Component
         $this->calMes = max(1, min(12, (int) (request('calMes') ?: now()->month)));
         $this->calAnio = max(2000, (int) (request('calAnio') ?: now()->year));
         $this->fechaSeleccionada = now()->format('Y-m-d');
+        $this->mesCompletadas = (int) now()->month;
+        $this->anioCompletadas = (int) now()->year;
         app(TicketTareaService::class)->actualizarPrioridades();
     }
 
@@ -128,6 +134,31 @@ class TablaTareas extends Component
         $this->calMes = (int) now()->month;
         $this->calAnio = (int) now()->year;
         $this->fechaSeleccionada = now()->format('Y-m-d');
+        $this->resetPage();
+    }
+
+    public function mesCompletadasAnterior(): void
+    {
+        $this->moverMesCompletadas(-1);
+    }
+
+    public function mesCompletadasSiguiente(): void
+    {
+        $this->moverMesCompletadas(1);
+    }
+
+    public function irMesActualCompletadas(): void
+    {
+        $this->mesCompletadas = (int) now()->month;
+        $this->anioCompletadas = (int) now()->year;
+        $this->resetPage();
+    }
+
+    private function moverMesCompletadas(int $meses): void
+    {
+        $fecha = Carbon::create($this->anioCompletadas, $this->mesCompletadas, 1)->addMonths($meses);
+        $this->mesCompletadas = (int) $fecha->month;
+        $this->anioCompletadas = (int) $fecha->year;
         $this->resetPage();
     }
 
@@ -355,8 +386,8 @@ class TablaTareas extends Component
                 ->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)
                 ->count(),
             'completadas_mes' => TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereMonth('completada_at', now()->month)
-                ->whereYear('completada_at', now()->year)
+                ->whereMonth('completada_at', $this->mesCompletadas)
+                ->whereYear('completada_at', $this->anioCompletadas)
                 ->count(),
         ];
 
@@ -379,11 +410,12 @@ class TablaTareas extends Component
             ->when($this->filtroEstatus === 'hoy', fn ($q) => $q->pendientes()
                 ->where(fn ($inner) => $this->acotarAlDia($inner, $diaTarjetas, $hoy)))
             ->when($this->filtroEstatus === 'pendientes', fn ($q) => $q->where('estatus', TicketTarea::ESTATUS_PENDIENTE))
-            // Completadas siempre se leen por el día en que se finalizaron, sin importar
-            // para cuándo estaban agendadas.
+            // Completadas se leen por el mes en que se finalizaron, sin importar para
+            // cuándo estaban agendadas: el usuario navega ese filtro por mes, no por día.
             ->when($this->filtroEstatus === 'completadas', fn ($q) => $q
                 ->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereDate('completada_at', $diaTarjetas))
+                ->whereMonth('completada_at', $this->mesCompletadas)
+                ->whereYear('completada_at', $this->anioCompletadas))
             ->when($this->filtroEstatus === 'criticas', function ($q) use ($diaTarjetas, $hoy) {
                 $q->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA);
 
@@ -432,6 +464,11 @@ class TablaTareas extends Component
 
         $etiquetaDiaSeleccionado = $fechaCarbonSel->translatedFormat('l d \\d\\e F Y');
 
+        $mesCompletadasCarbon = Carbon::create($this->anioCompletadas, $this->mesCompletadas, 1);
+        $etiquetaMesCompletadas = $mesCompletadasCarbon->translatedFormat('F Y');
+        $esMesActualCompletadas = $this->mesCompletadas === (int) now()->month
+            && $this->anioCompletadas === (int) now()->year;
+
         return view('livewire.tabla-tareas', compact(
             'tareas',
             'responsables',
@@ -445,7 +482,9 @@ class TablaTareas extends Component
             'tareasDiaSeleccionado',
             'tareasSinFecha',
             'etiquetaDiaSeleccionado',
-            'diaTarjetas'
+            'diaTarjetas',
+            'etiquetaMesCompletadas',
+            'esMesActualCompletadas'
         ));
     }
 
