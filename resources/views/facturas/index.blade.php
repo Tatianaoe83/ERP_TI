@@ -707,7 +707,7 @@
         if ($('btnCerrarFacturaDirecta')) $('btnCerrarFacturaDirecta').addEventListener('click', cerrarModal);
         if ($('btnCancelarFacturaDirecta')) $('btnCancelarFacturaDirecta').addEventListener('click', cerrarModal);
         if ($('btnGuardarFacturaDirecta')) $('btnGuardarFacturaDirecta').addEventListener('click', guardar);
-        if ($('modalFacturaDirecta')) $('modalFacturaDirecta').addEventListener('click', e => { if (e.target === $('modalFacturaDirecta')) cerrarModal(); });
+        // Sin cierre por click en el fondo: se perdian los datos capturados. Se cierra con la X, Cancelar o Escape.
         document.addEventListener('keydown', e => {
             const modal = $('modalFacturaDirecta');
             if (!modal) return;
