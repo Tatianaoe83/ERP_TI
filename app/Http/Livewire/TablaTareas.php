@@ -4,6 +4,7 @@ namespace App\Http\Livewire;
 
 use App\Models\Empleados;
 use App\Models\TicketTarea;
+// use App\Services\TicketTareaNotificacionService; // Aviso de asignación al responsable, desactivado por ahora
 use App\Services\TicketTareaService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -217,6 +218,9 @@ class TablaTareas extends Component
         $this->modalTareaAbierto = true;
     }
 
+    // Para activar el aviso de asignación al responsable, agregar el parámetro
+    // TicketTareaNotificacionService $notificaciones y descomentar las llamadas a
+    // notificarAsignacion() de este método.
     public function guardarTarea(TicketTareaService $service): void
     {
         $this->authorizeGestion();
@@ -261,6 +265,7 @@ class TablaTareas extends Component
                         'asignado_nuevo_id' => $nuevo,
                         'notas' => $anterior ? 'Cambio de responsable.' : 'Se asignó responsable.',
                     ]);
+                    // $notificaciones->notificarAsignacion($tarea);
                 }
 
                 $this->modalTareaAbierto = false;
@@ -294,13 +299,21 @@ class TablaTareas extends Component
                     'notas' => 'Cambio de responsable.',
                 ]);
             }
+
+            // Fuera del elseif: si en la misma edición cambian fecha y responsable, el
+            // nuevo responsable también debe enterarse.
+            // if ((int) $anteriorAsignado !== (int) $this->asignado_id) {
+            //     $notificaciones->notificarAsignacion($tarea);
+            // }
         } else {
-            $service->crearEvento([
+            $tarea = $service->crearEvento([
                 'titulo' => $this->titulo,
                 'razon' => $this->razon,
                 'asignado_id' => (int) $this->asignado_id,
                 'fecha_compromiso' => $fecha,
             ]);
+
+            // $notificaciones->notificarAsignacion($tarea);
         }
 
         $this->modalTareaAbierto = false;

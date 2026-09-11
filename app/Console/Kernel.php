@@ -47,7 +47,7 @@ class Kernel extends ConsoleKernel
 
         // Métricas mensuales de tareas TI y prioridad crítica (+2 días vencida)
         $schedule->command('tickets:procesar-tareas')
-            ->dailyAt('06:30')
+            ->dailyAt('09:30')
             ->withoutOverlapping()
             ->runInBackground();
 

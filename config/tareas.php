@@ -4,13 +4,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Avisos de tareas programadas (métricas mensuales)
+    | Avisos de tareas críticas (métricas y eventos)
     |--------------------------------------------------------------------------
     |
-    | Buzón del área que recibe los correos: uno el día que se genera la tarea
-    | programada y otro cuando esa tarea se vuelve crítica. Se manda al buzón de
-    | soporte, no a personas, para que el aviso no dependa de altas y bajas de
-    | usuarios. Acepta varios correos separados por comas en TAREAS_CORREO_SOPORTE.
+    | Buzón del área que recibe los avisos de críticas: uno por tarea el día que
+    | se vuelve crítica y un recordatorio diario con el concentrado de las que
+    | siguen sin cerrar. El aviso de asignación no usa esto: va al correo del
+    | responsable. Acepta varios correos separados por comas en TAREAS_CORREO_SOPORTE.
     |
     */
 
@@ -18,11 +18,5 @@ return [
         'trim',
         explode(',', (string) env('TAREAS_CORREO_SOPORTE', 'soporte@proser.com.mx'))
     ))),
-
-    /*
-    | Días hacia atrás que se consideran para el aviso de creación. Cubre las métricas
-    | generadas fuera del horario del cron sin revivir tareas viejas.
-    */
-    'ventana_aviso_creacion_dias' => 3,
 
 ];

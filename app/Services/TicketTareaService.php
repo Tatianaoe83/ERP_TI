@@ -56,9 +56,12 @@ class TicketTareaService
         return DB::transaction(function () use ($tarea, $nuevaFecha, $motivo) {
             $fechaAnterior = $tarea->fecha_compromiso;
 
+            // Se limpia la marca del recordatorio: si la tarea vuelve a caer en crítica
+            // con la fecha nueva, el ciclo de avisos arranca desde cero.
             $tarea->update([
                 'fecha_compromiso' => $nuevaFecha,
                 'prioridad' => TicketTarea::PRIORIDAD_NORMAL,
+                'notificado_critica_at' => null,
             ]);
 
             $this->registrarHistorial($tarea, 'reagendada', $motivo, [
