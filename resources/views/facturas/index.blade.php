@@ -702,18 +702,28 @@
         await parsearPdf(file);
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
+    // AppNav (navegacion SPA del layout) reinyecta este script sin recargar la pagina, y en
+    // ese caso DOMContentLoaded ya paso y nunca se dispara: los botones quedaban sin eventos
+    // hasta recargar. Por eso se inicializa segun readyState, igual que tabla_historial.
+    function initFacturasIndex() {
         if ($('btnAbrirFacturaDirecta')) $('btnAbrirFacturaDirecta').addEventListener('click', abrirModal);
         if ($('btnCerrarFacturaDirecta')) $('btnCerrarFacturaDirecta').addEventListener('click', cerrarModal);
         if ($('btnCancelarFacturaDirecta')) $('btnCancelarFacturaDirecta').addEventListener('click', cerrarModal);
         if ($('btnGuardarFacturaDirecta')) $('btnGuardarFacturaDirecta').addEventListener('click', guardar);
         // Sin cierre por click en el fondo: se perdian los datos capturados. Se cierra con la X, Cancelar o Escape.
-        document.addEventListener('keydown', e => {
-            const modal = $('modalFacturaDirecta');
-            if (!modal) return;
-            if (e.key === 'Escape' && !modal.classList.contains('hidden')) cerrarModal();
-        });
-        
+        // El listener vive en document y sobrevive a la navegacion: se registra una sola vez.
+        if (!window.__facturasEscapeListener) {
+            window.__facturasEscapeListener = true;
+            document.addEventListener('keydown', e => {
+                const modal = document.getElementById('modalFacturaDirecta');
+                if (!modal) return;
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+        }
+
         // Cargar insumos cuando cambia la gerencia
         $('fdGerencia').addEventListener('change', async function () {
             await cargarInsumosPorGerencia(this.value);
@@ -725,10 +735,17 @@
         setupDragDrop('zonaPdf', async file => { await handlePdfFile(file); });
 
         // Precarga la comparativa al entrar para evitar espera al cambiar de pestaña.
-        if (typeof window.initComparativa === 'function' && document.getElementById('content-historial')) {
-            setTimeout(() => window.initComparativa(), 0);
-        }
-    });
+        // La verificacion va dentro del timeout: con AppNav el script de la comparativa se
+        // ejecuta despues de este, y antes se tomaria el initComparativa de la visita anterior.
+        setTimeout(() => {
+            if (typeof window.initComparativa === 'function' && document.getElementById('content-historial')) {
+                window.initComparativa();
+            }
+        }, 0);
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initFacturasIndex);
+    else initFacturasIndex();
 
 })();
 </script>
