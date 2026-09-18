@@ -13,6 +13,45 @@
             </div>
         </div>
 
+        <div class="px-4 py-3 bg-gray-50 dark:bg-[#1C1F26] border-b border-gray-200 dark:border-[#2A2F3A] grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <input type="text"
+                wire:model.debounce.500ms="search"
+                placeholder="Buscar solicitud..."
+                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A] focus:ring focus:ring-blue-200">
+
+            <select wire:model="filtroPrioridad"
+                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+                <option value="">Todas las prioridades</option>
+                <option value="sin">Sin prioridad</option>
+                @foreach(\App\Models\TicketMantenimiento::PRIORIDADES as $prioridad)
+                <option value="{{ $prioridad }}">{{ $prioridad }}</option>
+                @endforeach
+            </select>
+
+            <select wire:model="filtroEstado"
+                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+                <option value="">Todos los estados</option>
+                @foreach(\App\Models\TicketMantenimiento::ESTATUS as $estatus)
+                <option value="{{ $estatus }}">{{ $estatus }}</option>
+                @endforeach
+            </select>
+
+            <select wire:model="filtroCategoria"
+                class="px-3 py-2 rounded-lg border text-sm dark:bg-[#242933] border-gray-200 dark:border-[#2A2F3A]">
+                <option value="">Todas las categorías</option>
+                <option value="sin">Sin categoría</option>
+                @foreach(\App\Models\TicketMantenimiento::CATEGORIAS as $categoria)
+                <option value="{{ $categoria }}">{{ $categoria }}</option>
+                @endforeach
+            </select>
+
+            <button wire:click="limpiarFiltros"
+                type="button"
+                class="px-3 py-2 rounded-lg text-sm bg-red-500 text-white hover:bg-red-600 transition">
+                Limpiar filtros
+            </button>
+        </div>
+
         <div class="overflow-x-auto">
             <table class="min-w-full border-collapse">
                 <thead class="bg-gray-100 dark:bg-[#242933]">
