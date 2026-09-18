@@ -35,11 +35,16 @@ class TicketInProgressNotificationService
             return;
         }
 
+        Log::info("[ProgresoMail] Config ticket #{$ticket->TicketID} | " . SmtpDiagnostico::config());
+
+        $mailable = new TicketInProgress($ticket);
+        $diag = SmtpDiagnostico::para($mailable);
+
         try {
-            Mail::to($correo)->send(new TicketInProgress($ticket));
-            Log::info("[ProgresoMail] Enviado ticket #{$ticket->TicketID} a {$correo}");
+            Mail::to($correo)->send($mailable);
+            Log::info("[ProgresoMail] Enviado ticket #{$ticket->TicketID} a {$correo} | " . $diag->resumen());
         } catch (\Throwable $e) {
-            Log::error("[ProgresoMail] Error ticket #{$ticket->TicketID}: " . $e->getMessage());
+            Log::error("[ProgresoMail] Error ticket #{$ticket->TicketID}: " . $e->getMessage() . " | " . $diag->resumen());
         }
     }
 }

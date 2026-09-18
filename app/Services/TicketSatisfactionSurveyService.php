@@ -56,11 +56,14 @@ class TicketSatisfactionSurveyService
             return null;
         }
 
+        Log::info(self::LOG . " ticket #{$id} config | " . SmtpDiagnostico::config());
+
+        $mailable = new TicketSatisfactionSurveyMail($ticket, $survey, $resolution);
+        $diag = SmtpDiagnostico::para($mailable);
+
         // No reenviar si ya estaba enviada (sent_at existente y no es recién creada)
         try {
-            Mail::to($correo)->send(
-                new TicketSatisfactionSurveyMail($ticket, $survey, $resolution)
-            );
+            Mail::to($correo)->send($mailable);
 
             DB::transaction(function () use ($survey) {
                 $survey->sent_at = now();
@@ -70,9 +73,10 @@ class TicketSatisfactionSurveyService
             // Sin uuid de la encuesta: es el token del enlace y el log no es lugar para credenciales.
             Log::info(self::LOG . " ticket #{$id} aceptado por SMTP | para={$correo}"
                 . " | encuesta {$survey->survey_id}"
-                . " | reenvio=" . ($survey->wasRecentlyCreated ? 'no' : 'si'));
+                . " | reenvio=" . ($survey->wasRecentlyCreated ? 'no' : 'si')
+                . " | " . $diag->resumen());
         } catch (\Throwable $e) {
-            Log::error(self::LOG . " ticket #{$id} FALLO al enviar a {$correo}: " . $e->getMessage());
+            Log::error(self::LOG . " ticket #{$id} FALLO al enviar a {$correo}: " . $e->getMessage() . " | " . $diag->resumen());
         }
 
         return $survey;
