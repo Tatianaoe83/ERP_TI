@@ -277,18 +277,9 @@
         background-color: #1C1F26 !important;
     }
 </style>
-<div
-    x-data="ticketsModal()"
-    x-init="
-        const vistaGuardada = localStorage.getItem('ticketsVista') || 'kanban';
-        vista = vistaGuardada;
-        if (vistaGuardada !== 'kanban' && window.Livewire) window.Livewire.emit('soporte-vista-activa', vistaGuardada);
-        init();
-    "
-    data-vista-root
-    data-vista-storage="ticketsVista"
-    data-vista-event="soporte-vista-activa"
-    class="tickets-container space-y-2 w-full max-w-full overflow-x-hidden pb-2 pt-1">
+{{-- El x-data / data-vista-root está en tickets/index.blade.php: el botón de métricas y el
+     switch de vistas se pintan junto a las pestañas y tienen que compartir esa raíz. --}}
+<div class="space-y-2 w-full max-w-full overflow-x-hidden pb-2 pt-1">
 
     <!-- Alert de Tickets Excedidos -->
     <div
@@ -348,42 +339,6 @@
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Selector de Vista -->
-    <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 mb-2 w-full">
-        @can('tickets.ajustar-metricas')
-        <button
-            @click="mostrarModalMetricas = true; cargarMetricas()"
-            class="index-page__btn-primary">
-            <i class="fas fa-cog text-sm"></i>
-            <span class="hidden sm:inline">Ajustar Métricas</span>
-            <span class="sm:hidden">Métricas</span>
-        </button>
-        @endcan
-        <div class="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
-            <span class="text-xs sm:text-sm text-[#9CA3AF] font-medium hidden sm:inline">Vista:</span>
-            <div class="flex items-center gap-1 bg-gray-100 dark:bg-[#1C1F26] border border-gray-200 dark:border-[#2A2F3A] rounded-lg p-1 w-full sm:w-auto justify-center">
-                <button type="button"
-                    data-vista-btn="kanban"
-                    class="vista-switch__btn is-vista-active px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
-                    <i class="fas fa-columns text-xs"></i>
-                    <span class="hidden sm:inline">Kanban</span>
-                </button>
-                <button type="button"
-                    data-vista-btn="lista"
-                    class="vista-switch__btn px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
-                    <i class="fas fa-list text-xs"></i>
-                    <span class="hidden sm:inline">Lista</span>
-                </button>
-                <button type="button"
-                    data-vista-btn="tabla"
-                    class="vista-switch__btn px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 flex-1 sm:flex-initial justify-center text-[#9CA3AF] hover:text-[#E5E7EB]">
-                    <i class="fas fa-table text-xs"></i>
-                    <span class="hidden sm:inline">Tabla</span>
-                </button>
             </div>
         </div>
     </div>
