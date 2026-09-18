@@ -794,6 +794,7 @@ class TicketsController extends Controller
 
             // Enviar encuesta de satisfacción cuando el ticket pasa a Cerrado por primera vez
             if ($estatusAnterior !== 'Cerrado' && $ticket->Estatus === 'Cerrado') {
+                Log::info("[EncuestaMail] cierre detectado en update() ticket #{$ticket->TicketID} | estatusAnterior='{$estatusAnterior}'");
                 app(TicketSatisfactionSurveyService::class)->sendSurveyForClosedTicket($ticket->fresh());
             }
             

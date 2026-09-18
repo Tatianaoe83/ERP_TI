@@ -154,7 +154,8 @@ class SolicitudAprobacionEmailService
         // Si hay token, usar la URL personalizada con token, sino usar la ruta general
         if ($token) {
             $urlElegir = url('/elegir-ganador/' . $token);
-            Log::info("URL generada con token para solicitud #{$solicitud->SolicitudID}: {$urlElegir}");
+            // El token va en la URL: no se registra, solo que se generó.
+            Log::info("URL con token generada para solicitud #{$solicitud->SolicitudID}");
         } else {
             $urlElegir = route('tickets.index');
             Log::warning("No se proporcionó token para solicitud #{$solicitud->SolicitudID}, usando ruta general: {$urlElegir}");
@@ -186,7 +187,7 @@ class SolicitudAprobacionEmailService
         ]);
 
         if ($this->enviar($gerente->Correo, $gerente->NombreEmpleado, $asunto, $contenido)) {
-            Log::info("Email cotizaciones listas enviado exitosamente para solicitud #{$solicitud->SolicitudID} a {$gerente->Correo} - URL: {$urlElegir}");
+            Log::info("Email cotizaciones listas enviado exitosamente para solicitud #{$solicitud->SolicitudID} a {$gerente->Correo}");
 
             if ($token) {
                 $this->marcarTokenNotificado($token);
@@ -590,7 +591,7 @@ class SolicitudAprobacionEmailService
                     'expires_at' => now()->addDays(SolicitudTokens::VIGENCIA_DIAS),
                 ]);
         } catch (\Throwable $e) {
-            Log::warning("No se pudo marcar notified_at del token {$token}: " . $e->getMessage());
+            Log::warning('No se pudo marcar notified_at del token: ' . $e->getMessage());
         }
     }
 

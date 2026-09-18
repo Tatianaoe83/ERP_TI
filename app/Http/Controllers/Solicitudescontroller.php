@@ -1181,7 +1181,7 @@ class SolicitudesController extends Controller
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
         } catch (\Exception $e) {
-            Log::error("Error mostrando elegir ganador con token {$token}: " . $e->getMessage());
+            Log::error('Error mostrando elegir ganador: ' . $e->getMessage());
             abort(500, 'Error al cargar la página de elección de ganador');
         }
     }

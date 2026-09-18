@@ -11,37 +11,48 @@ use Illuminate\Support\Facades\Mail;
 
 class TicketSatisfactionSurveyService
 {
+    /** Prefijo de los logs de este flujo, para poder filtrarlos en laravel.log. */
+    private const LOG = '[EncuestaMail]';
+
     /**
      * Envía la encuesta de satisfacción para un ticket cerrado.
      * Solo se ejecuta si el ticket está cerrado y tiene resolución válida.
      */
     public function sendSurveyForClosedTicket(Tickets $ticket): ?Calificacion
     {
+        $id = $ticket->TicketID;
+
         if ($ticket->Estatus !== 'Cerrado') {
+            Log::warning(self::LOG . " ticket #{$id} omitido: estatus '{$ticket->Estatus}', no 'Cerrado'");
             return null;
         }
 
         $resolution = $this->getTicketResolution($ticket);
 
         if ($resolution === null) {
+            Log::warning(self::LOG . " ticket #{$id} omitido: se cerró sin Resolucion");
             return null;
         }
 
         $ticket->loadMissing('empleado');
 
         if (!$ticket->empleado) {
+            Log::warning(self::LOG . " ticket #{$id} omitido: sin empleado (EmpleadoID={$ticket->EmpleadoID})");
             return null;
         }
 
         $correo = $ticket->empleado->Correo ?? null;
 
         if (blank($correo)) {
+            Log::warning(self::LOG . " ticket #{$id} omitido: el empleado {$ticket->empleado->EmpleadoID} no tiene Correo");
             return null;
         }
 
         $survey = $this->createOrGetSurveyForTicket($ticket);
 
         if ($survey === null) {
+            $estadoPrevio = optional($ticket->calificacion)->status ?? 'desconocido';
+            Log::warning(self::LOG . " ticket #{$id} omitido: ya tenía encuesta en estado '{$estadoPrevio}'");
             return null;
         }
 
@@ -55,8 +66,13 @@ class TicketSatisfactionSurveyService
                 $survey->sent_at = now();
                 $survey->save();
             });
+
+            // Sin uuid de la encuesta: es el token del enlace y el log no es lugar para credenciales.
+            Log::info(self::LOG . " ticket #{$id} aceptado por SMTP | para={$correo}"
+                . " | encuesta {$survey->survey_id}"
+                . " | reenvio=" . ($survey->wasRecentlyCreated ? 'no' : 'si'));
         } catch (\Throwable $e) {
-            Log::error('Error enviando encuesta de satisfacción para ticket #' . $ticket->TicketID . ': ' . $e->getMessage());
+            Log::error(self::LOG . " ticket #{$id} FALLO al enviar a {$correo}: " . $e->getMessage());
         }
 
         return $survey;
