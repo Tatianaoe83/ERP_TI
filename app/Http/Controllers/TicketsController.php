@@ -794,12 +794,10 @@ class TicketsController extends Controller
 
             // Enviar encuesta de satisfacción cuando el ticket pasa a Cerrado por primera vez
             if ($estatusAnterior !== 'Cerrado' && $ticket->Estatus === 'Cerrado') {
-                Log::info("[EncuestaMail] cierre detectado en update() ticket #{$ticket->TicketID} | estatusAnterior='{$estatusAnterior}'");
                 app(TicketSatisfactionSurveyService::class)->sendSurveyForClosedTicket($ticket->fresh());
             }
-            
+
             // Correo de aviso al empleado cuando el ticket pasa a En progreso por primera vez
-            Log::info("[ProgresoMail] update() ticket #{$ticket->TicketID} | estatusAnterior='{$estatusAnterior}' nuevoEstatus='{$nuevoEstatus}'");
             if ($estatusAnterior === 'Pendiente' && $nuevoEstatus === 'En progreso') {
                 app(TicketInProgressNotificationService::class)->sendNotificationForInProgressTicket($ticket->fresh());
             }
