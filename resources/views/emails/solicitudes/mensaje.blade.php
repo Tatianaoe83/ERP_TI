@@ -14,6 +14,10 @@
         'aprobaciones' => $aprobaciones ?? [],
     ])
 
+    @include('emails.solicitudes.partials.pendientes', [
+        'pendientes' => $pendientes ?? [],
+    ])
+
     @include('emails.solicitudes.partials.ganadores', [
         'ganadores' => $ganadores ?? collect(),
     ])

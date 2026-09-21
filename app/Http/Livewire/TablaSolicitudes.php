@@ -8,8 +8,6 @@ use Livewire\WithPagination;
 use App\Models\Solicitud;
 use App\Models\Cotizacion;
 use App\Models\Empleados;
-use App\Models\SolicitudPasos;
-use App\Models\SolicitudTokens;
 use App\Models\DepartamentoRequerimientos;
 use App\Models\SolicitudActivo;
 use App\Models\SolicitudActivoCheckList;
@@ -89,7 +87,6 @@ class TablaSolicitudes extends Component
         ];
     }
 
-    private const VALID_STAGES = ['supervisor', 'gerencia', 'administracion'];
 
     private const STAGE_PERMISSIONS = [
         'gerencia'       => 'aprobar-solicitudes-gerencia',
@@ -486,197 +483,6 @@ class TablaSolicitudes extends Component
     }
 
     // =========================================================================
-    // APROBAR / RECHAZAR
-    // =========================================================================
-
-    public function aprobar($id, $nivel, $comentario)
-    {
-        try {
-            $this->decidirPaso((int)$id, (string)$nivel, (string)($comentario ?? ''), 'approved');
-            $this->dispatchBrowserEvent('swal:success', ['message' => 'Solicitud aprobada correctamente']);
-        } catch (\Throwable $e) {
-            $this->dispatchBrowserEvent('swal:error', ['message' => $e->getMessage()]);
-        }
-    }
-
-    public function rechazar($id, $nivel, $comentario)
-    {
-        try {
-            $this->decidirPaso((int)$id, (string)$nivel, (string)($comentario ?? ''), 'rejected');
-            $this->dispatchBrowserEvent('swal:success', ['message' => 'Solicitud rechazada correctamente']);
-        } catch (\Throwable $e) {
-            $this->dispatchBrowserEvent('swal:error', ['message' => $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Decide un paso de aprobación y, si corresponde, envía correo al siguiente aprobador.
-     * Replica la misma lógica de SolicitudAprobacionController::decide() para que los correos
-     * se disparen tanto desde la vista pública (token) como desde el panel interno (Livewire).
-     */
-    private function decidirPaso(int $solicitudId, string $nivel, string $comentario, string $decision): void
-    {
-        $nivel = trim(strtolower($nivel));
-        if (!in_array($nivel, self::VALID_STAGES, true)) throw new \Exception('Etapa inválida.');
-
-        // Se rellena dentro de la transacción y se usa fuera para disparar el correo
-        $emailRevisionData = null;
-
-        DB::transaction(function () use ($solicitudId, $nivel, $comentario, $decision, &$emailRevisionData) {
-            $solicitud = Solicitud::findOrFail($solicitudId);
-            $usuario   = auth()->user() ?? throw new \Exception('Sesión inválida.');
-            $empleado  = Empleados::query()->where('Correo', $usuario->email)->firstOrFail();
-
-            $step = SolicitudPasos::query()
-                ->where('solicitud_id', $solicitud->SolicitudID)
-                ->where('stage', $nivel)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            if ($step->status !== 'pending') throw new \Exception('Etapa ya resuelta.');
-
-            $this->authorizeDecision($usuario, $empleado, $solicitud, $step, $nivel);
-
-            // 1. Actualizar el paso actual
-            $step->update([
-                'status'                 => $decision,
-                'comment'                => $comentario,
-                'decided_at'             => now(),
-                'decided_by_empleado_id' => (int)$empleado->EmpleadoID,
-            ]);
-
-            // Revocar cualquier token activo de este paso para evitar correos fantasma
-            SolicitudTokens::where('approval_step_id', $step->id)
-                ->whereNull('revoked_at')
-                ->whereNull('used_at')
-                ->update(['revoked_at' => now()]);
-
-            // 2. Si se rechaza, cerrar todo y salir
-            if ($decision === 'rejected') {
-                $solicitud->update(['Estatus' => 'Rechazada']);
-                return;
-            }
-
-            // 3. Auto-aprobación en cascada (misma persona en pasos siguientes)
-            $this->procesarAutoAprobacionEnCascada($solicitud->SolicitudID, (int)$empleado->EmpleadoID);
-
-            // 4. Recalcular pasos pendientes tras la cascada
-            $pasosPendientes = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                ->where('status', 'pending')
-                ->orderBy('step_order')
-                ->get();
-
-            $solicitud->update([
-                'Estatus' => $pasosPendientes->isNotEmpty() ? 'En revisión' : 'Aprobada',
-            ]);
-
-            // 5. Preparar correo para el siguiente aprobador REAL
-            if ($pasosPendientes->isNotEmpty()) {
-                $nextStep = $pasosPendientes->first();
-                $nextStep->load('approverEmpleado');
-
-                // No enviar correo si el siguiente paso es gerencia o administración
-                // Gerencia: se enviará cuando TI cargue y envíe las cotizaciones
-                // Administración: se enviará cuando gerencia confirme ganadores
-                if ($nextStep->stage === 'gerencia' || $nextStep->stage === 'administracion') {
-                    // Solo crear token para cuando sea el momento de notificar
-                    $existeToken = SolicitudTokens::where('approval_step_id', $nextStep->id)
-                        ->whereNull('used_at')->whereNull('revoked_at')
-                        ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-                        ->exists();
-
-                    if (!$existeToken) {
-                        SolicitudTokens::create([
-                            'approval_step_id' => $nextStep->id,
-                            'token'            => Str::uuid(),
-                            'expires_at'       => now()->addDays(7),
-                        ]);
-                    }
-                } else {
-                    // Para supervisor y otros pasos: crear/reutilizar token y enviar correo
-                    $nextTokenRow = SolicitudTokens::where('approval_step_id', $nextStep->id)
-                        ->whereNull('used_at')->whereNull('revoked_at')
-                        ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-                        ->first();
-
-                    if (!$nextTokenRow) {
-                        $nextTokenRow = SolicitudTokens::create([
-                            'approval_step_id' => $nextStep->id,
-                            'token'            => Str::uuid(),
-                            'expires_at'       => now()->addDays(7),
-                        ]);
-                    }
-
-                    if ($nextTokenRow && $nextStep->approverEmpleado) {
-                        $emailRevisionData = [
-                            'aprobador'  => $nextStep->approverEmpleado,
-                            'solicitud'  => $solicitud->load('empleadoid'),
-                            'token'      => $nextTokenRow->token,
-                            'stageLabel' => self::STAGE_LABELS[$nextStep->stage] ?? $nextStep->stage,
-                        ];
-                    }
-                }
-            }
-        });
-
-        // 6. Enviar correo FUERA de la transacción para no bloquearla en caso de fallo SMTP
-        if ($emailRevisionData) {
-            app(SolicitudAprobacionEmailService::class)->enviarRevisionPendiente(
-                $emailRevisionData['aprobador'],
-                $emailRevisionData['solicitud'],
-                $emailRevisionData['token'],
-                $emailRevisionData['stageLabel']
-            );
-        }
-    }
-
-    private function authorizeDecision($user, Empleados $empleado, Solicitud $solicitud, SolicitudPasos $step, string $nivel): void
-    {
-        $approverId = (int)($step->approver_empleado_id ?? 0);
-        if ($approverId > 0 && $approverId !== (int)$empleado->getAttribute('EmpleadoID'))
-            throw new \Exception('No tienes permiso para resolver esta etapa.');
-        if ($approverId > 0) return;
-        if ($nivel === 'supervisor') throw new \Exception('No tienes permiso para resolver esta etapa.');
-        $perm = self::STAGE_PERMISSIONS[$nivel] ?? null;
-        if ($perm && !$user->can($perm)) throw new \Exception('No tienes permiso para resolver esta etapa.');
-        if ($nivel === 'gerencia' && empty($solicitud->GerenciaID)) throw new \Exception('Solicitud sin gerencia asignada.');
-    }
-
-    /**
-     * Lógica de efecto dominó (Cascada): idéntica a la del controlador.
-     * Si el mismo empleado aparece en pasos consecutivos, se auto-aprueba.
-     * Gerencia NUNCA se auto-aprueba porque el gerente debe elegir ganador.
-     */
-    private function procesarAutoAprobacionEnCascada(int $solicitudId, int $empleadoIdQueAprobo): void
-    {
-        $pasosPendientes = SolicitudPasos::where('solicitud_id', $solicitudId)
-            ->where('status', 'pending')
-            ->orderBy('step_order', 'asc')
-            ->get();
-
-        foreach ($pasosPendientes as $siguientePaso) {
-            if ($siguientePaso->stage === 'gerencia') break;
-
-            if ($siguientePaso->approver_empleado_id == $empleadoIdQueAprobo) {
-                $siguientePaso->update([
-                    'status'                 => 'approved',
-                    'comment'                => 'Aprobación automática: Validado previamente por el mismo usuario en el nivel anterior.',
-                    'decided_at'             => now(),
-                    'decided_by_empleado_id' => $empleadoIdQueAprobo,
-                ]);
-
-                // Revocar tokens de este paso para no mandar correos innecesarios
-                SolicitudTokens::where('approval_step_id', $siguientePaso->id)
-                    ->whereNull('revoked_at')
-                    ->whereNull('used_at')
-                    ->update(['revoked_at' => now()]);
-            } else {
-                break;
-            }
-        }
-    }
-
-    // =========================================================================
     // CANCELACIÓN
     // =========================================================================
 
@@ -725,6 +531,19 @@ class TablaSolicitudes extends Component
                     'cancelado_por'      => $usuario->id,
                 ]);
             });
+
+            // Fuera de la transacción: si el SMTP falla, la cancelación ya quedó.
+            try {
+                app(SolicitudAprobacionEmailService::class)->enviarAvisoSolicitudDetenida(
+                    Solicitud::with('empleadoid')->findOrFail($this->solicitudCancelarId),
+                    'cancelada',
+                    $this->motivoCancelacion,
+                    'TI',
+                    Empleados::where('Correo', $usuario->email)->value('EmpleadoID')
+                );
+            } catch (\Throwable $e) {
+                \Log::warning("No se pudo avisar la cancelación de la solicitud #{$this->solicitudCancelarId}: " . $e->getMessage());
+            }
 
             $this->dispatchBrowserEvent('swal:success', ['message' => "Solicitud #{$this->solicitudCancelarId} cancelada correctamente."]);
             $this->resetCancelacionState();

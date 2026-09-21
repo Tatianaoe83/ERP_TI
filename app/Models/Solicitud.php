@@ -59,6 +59,7 @@ public $fillable = [
         'Proyecto',
         // --- NUEVOS CAMPOS ---
         'cancelado_por',
+        'cancelado_por_empleado_id',
         'motivo_cancelacion',
         'fecha_cancelacion',
     ];
@@ -77,6 +78,7 @@ public $fillable = [
         'Proyecto' => 'string',
         // --- NUEVOS CASTS ---
         'cancelado_por' => 'integer',
+        'cancelado_por_empleado_id' => 'integer',
         'fecha_cancelacion' => 'datetime',
     ];
 
@@ -250,5 +252,73 @@ public $fillable = [
         // Nota: Si tus usuarios que inician sesión están en otro modelo (ej. Empleados::class), 
         // cámbialo aquí. Asumiré que usan el User predeterminado de Laravel.
         return $this->belongsTo(\App\Models\User::class, 'cancelado_por');
+    }
+
+    /** Gerente que canceló desde su enlace de elegir ganador. */
+    public function empleadoCancelador()
+    {
+        return $this->belongsTo(\App\Models\Empleados::class, 'cancelado_por_empleado_id', 'EmpleadoID');
+    }
+
+    /** Paso que rechazó la solicitud, si la detuvo un aprobador. */
+    public function pasoRechazado()
+    {
+        return $this->hasOne(\App\Models\SolicitudPasos::class, 'solicitud_id', 'SolicitudID')
+            ->where('status', 'rejected');
+    }
+
+    /**
+     * Quién detuvo la solicitud, como se muestra en los enlaces públicos, el panel
+     * y los correos: "Nombre (Supervisor|Gerencia|Administración)" si la rechazó el
+     * aprobador de esa etapa desde su vista, o "TI" si la detuvo el equipo de TI
+     * (cancelación desde el index, o rechazo por nivel desde el panel interno).
+     */
+    public function detenidoPorEtiqueta(): ?string
+    {
+        $paso = $this->pasoRechazado()->with(['approverEmpleado', 'decidedByEmpleado'])->first();
+
+        if ($paso) {
+            // TI rechaza por nivel desde el panel: quien decidió no es el aprobador asignado.
+            $esTI = $paso->decided_by_empleado_id
+                && (int) $paso->decided_by_empleado_id !== (int) $paso->approver_empleado_id;
+
+            if ($esTI) {
+                return 'TI';
+            }
+
+            return \App\Services\SolicitudAprobacionEmailService::etiquetaAprobador(
+                $paso->decidedByEmpleado ?: $paso->approverEmpleado,
+                $paso->stage
+            );
+        }
+
+        // Rechazos de gerencia previos al cambio de flujo, guardados como cancelación.
+        if ($this->cancelado_por_empleado_id) {
+            return \App\Services\SolicitudAprobacionEmailService::etiquetaAprobador($this->empleadoCancelador, 'gerencia');
+        }
+
+        return $this->cancelado_por ? 'TI' : null;
+    }
+
+    /** Alias histórico de detenidoPorEtiqueta(). */
+    public function canceladoPorEtiqueta(): ?string
+    {
+        return $this->detenidoPorEtiqueta();
+    }
+
+    /** Motivo por el que se detuvo: el comentario del rechazo, o el de la cancelación de TI. */
+    public function motivoDetencion(): ?string
+    {
+        $comentario = $this->pasoRechazado()->value('comment');
+
+        return $comentario !== null && trim($comentario) !== ''
+            ? trim($comentario)
+            : $this->motivo_cancelacion;
+    }
+
+    /** Fecha en que se detuvo, venga de un rechazo o de una cancelación. */
+    public function fechaDetencion()
+    {
+        return $this->pasoRechazado()->value('decided_at') ?? $this->fecha_cancelacion;
     }
 }

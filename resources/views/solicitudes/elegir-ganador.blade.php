@@ -301,9 +301,9 @@
             <!-- Botones de acción -->
             <div class="flex flex-wrap items-center justify-center sm:justify-between gap-3 md:gap-4 mb-4">
                 <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" onclick="cancelar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm md:text-base font-semibold rounded-lg transition-all">
-                        <i class="fas fa-times mr-2"></i>
-                        Cancelar
+                    <button type="button" onclick="abrirModalCancelar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-rose-600 hover:bg-rose-700 dark:bg-rose-700 dark:hover:bg-rose-600 text-white text-sm md:text-base font-semibold rounded-lg transition-all">
+                        <i class="fas fa-ban mr-2"></i>
+                        Rechazar solicitud
                     </button>
                     @if($totalPropuestas > 0)
                     <button type="button" onclick="abrirModalRecotizar()" class="px-5 md:px-6 py-2.5 md:py-3 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-500 text-white text-sm md:text-base font-semibold rounded-lg transition-all">
@@ -351,6 +351,30 @@
                     </div>
                 </div>
             </div>
+            <!-- Modal Rechazar solicitud -->
+            <div id="modal-cancelar" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-cancelar-title" role="dialog">
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="cerrarModalCancelar()"></div>
+                    <div class="relative bg-slate-50 dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-600">
+                        <h3 id="modal-cancelar-title" class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2">
+                            <i class="fas fa-ban text-rose-600"></i>
+                            Rechazar solicitud #{{ $solicitud->SolicitudID }}
+                        </h3>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">La solicitud se detiene por completo y ya no se podrá elegir ganador. Se avisará por correo a quienes ya la aprobaron.</p>
+                        <div class="mb-5">
+                            <label for="cancelar-motivo" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Motivo de rechazo (obligatorio)</label>
+                            <textarea id="cancelar-motivo" rows="4" maxlength="1000" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm" placeholder="Describe por qué se rechaza esta solicitud..."></textarea>
+                            <p id="cancelar-motivo-error" class="text-red-500 text-xs mt-1 hidden"></p>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" onclick="cerrarModalCancelar()" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-500">Cerrar</button>
+                            <button type="button" id="btn-confirmar-cancelacion" onclick="enviarCancelacion()" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold">
+                                <i class="fas fa-ban mr-1"></i> Confirmar rechazo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             @if($totalPropuestas > 0)
             <div id="warning-box" class="flex items-start gap-3 p-4 md:p-5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700">
                 <i class="fas fa-exclamation-triangle text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"></i>
@@ -371,9 +395,66 @@
         // numeroPropuesta -> cotizacionId (precargado cuando la elección ya fue hecha)
         const selecciones = Object.assign({}, @json((object)$seleccionadas));
 
-        function cancelar() {
-            if (window.history.length > 1) window.history.back();
-            else window.close();
+        function abrirModalCancelar() {
+            document.getElementById('modal-cancelar').classList.remove('hidden');
+            document.getElementById('cancelar-motivo').value = '';
+            document.getElementById('cancelar-motivo-error').classList.add('hidden');
+        }
+
+        function cerrarModalCancelar() {
+            document.getElementById('modal-cancelar').classList.add('hidden');
+        }
+
+        function enviarCancelacion() {
+            var motivo = (document.getElementById('cancelar-motivo').value || '').trim();
+            var errEl = document.getElementById('cancelar-motivo-error');
+            if (motivo.length < 10) {
+                errEl.textContent = 'El motivo debe tener al menos 10 caracteres.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            errEl.classList.add('hidden');
+
+            var btn = document.getElementById('btn-confirmar-cancelacion');
+            btn.disabled = true;
+
+            fetch('/solicitudes/' + window.ELECTOR_SOLICITUD_ID + '/rechazar-gerente', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.ELECTOR_CSRF,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ motivo: motivo, token: window.ELECTOR_TOKEN })
+            })
+            .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+            .then(function(result) {
+                btn.disabled = false;
+                if (!result.ok) {
+                    var msg = (result.data && result.data.errors && result.data.errors.motivo && result.data.errors.motivo[0])
+                        || (result.data && result.data.message)
+                        || 'No se pudo rechazar la solicitud.';
+                    errEl.textContent = msg;
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                cerrarModalCancelar();
+                Swal.fire({
+                    title: 'Solicitud rechazada',
+                    text: result.data.message,
+                    icon: 'success',
+                    confirmButtonColor: '#0F766E'
+                }).then(function() {
+                    if (result.data.redirect) window.location.href = result.data.redirect;
+                    else window.location.reload();
+                });
+            })
+            .catch(function(e) {
+                console.error(e);
+                btn.disabled = false;
+                errEl.textContent = 'Error al rechazar la solicitud.';
+                errEl.classList.remove('hidden');
+            });
         }
 
         function abrirModalRecotizar() {

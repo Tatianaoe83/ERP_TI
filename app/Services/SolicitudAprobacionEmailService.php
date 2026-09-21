@@ -39,6 +39,7 @@ class SolicitudAprobacionEmailService
     private const ACENTO_MARCA     = ['#0F766E', '#F0FDFA'];
     private const ACENTO_EXITO     = ['#047857', '#ECFDF5'];
     private const ACENTO_RECUERDO  = ['#B45309', '#FFFBEB'];
+    private const ACENTO_ALERTA    = ['#B91C1C', '#FEF2F2'];
 
     protected $smtpHost;
     protected $smtpPort;
@@ -304,6 +305,116 @@ class SolicitudAprobacionEmailService
         ]);
 
         return $this->enviar($correo, 'Soporte TI', "Solicitud de compra {$folio} registrada", $contenido);
+    }
+
+    /**
+     * Aviso de que la solicitud se canceló o se rechazó, con quién firmó y quién se quedó sin firmar.
+     * Le llega a quienes ya firmaron y al aprobador que ya tenía su enlace en la bandeja
+     * sin haber firmado, para que no se entere hasta abrir un enlace muerto.
+     *
+     * @param  string       $accion         'cancelada' o 'rechazada'
+     * @param  string       $quien          quién la detuvo, tal cual se muestra: "TI" o "Nombre (Supervisor)"
+     * @param  int|null     $empleadoExcluirId  quien la detuvo: no se le avisa de lo que él mismo hizo.
+     *                                          Va por EmpleadoID y no por correo: hay empleados que comparten buzón.
+     * @return int  correos enviados
+     */
+    public function enviarAvisoSolicitudDetenida(
+        Solicitud $solicitud,
+        string $accion,
+        string $motivo,
+        string $quien,
+        ?int $empleadoExcluirId = null
+    ): int {
+        $pasos = SolicitudPasos::with(['approverEmpleado', 'decidedByEmpleado'])
+            ->where('solicitud_id', $solicitud->SolicitudID)
+            ->orderBy('step_order')
+            ->get();
+
+        $noExcluido = fn($e) => $e && ! empty($e->Correo) && (int) $e->EmpleadoID !== (int) $empleadoExcluirId;
+
+        $firmaron = $pasos->where('status', 'approved')
+            ->map(fn($p) => $p->decidedByEmpleado ?: $p->approverEmpleado)
+            ->filter($noExcluido)
+            ->unique('EmpleadoID');
+
+        // Pendientes a los que ya se les mandó su enlace (y no lo usaron ni se transfirió).
+        $pasosPendientes = $pasos->where('status', 'pending');
+        $pasosNotificados = SolicitudTokens::whereIn('approval_step_id', $pasosPendientes->pluck('id'))
+            ->whereNotNull('notified_at')
+            ->whereNull('used_at')
+            ->whereNull('revoked_at')
+            ->pluck('approval_step_id');
+
+        $conEnlace = $pasosPendientes->whereIn('id', $pasosNotificados)
+            ->map(fn($p) => $p->approverEmpleado)
+            ->filter($noExcluido)
+            ->unique('EmpleadoID')
+            ->reject(fn($e) => $firmaron->contains('EmpleadoID', $e->EmpleadoID));
+
+        if ($firmaron->isEmpty() && $conEnlace->isEmpty()) {
+            return 0;
+        }
+
+        // Sin el paso de quien la detuvo: el gerente que cancela no "faltó por firmar".
+        $pendientes = $pasos->where('status', 'pending')
+            ->reject(fn($p) => (int) $p->approver_empleado_id === (int) $empleadoExcluirId)
+            ->map(fn($p) => [
+                'etapa'  => self::ETAPAS[$p->stage] ?? ucfirst($p->stage),
+                'nombre' => $p->approverEmpleado->NombreEmpleado ?? 'Sin asignar',
+            ])
+            ->values()
+            ->all();
+
+        $folio = '#' . $solicitud->SolicitudID;
+        $solicitante = $this->nombreSolicitante($solicitud);
+        $motivo = trim($motivo);
+
+        $asunto = "Solicitud de compra {$folio} – " . ($accion === 'rechazada' ? 'Rechazada' : 'Cancelada');
+        $aprobaciones = $this->historialAprobaciones($solicitud);
+        $enviados = 0;
+
+        $destinatarios = $firmaron->map(fn($e) => [$e, true])
+            ->concat($conEnlace->map(fn($e) => [$e, false]));
+
+        foreach ($destinatarios as [$empleado, $firmo]) {
+            $contenido = $this->renderMensaje([
+                'accent'       => self::ACENTO_ALERTA[0],
+                'accentSoft'   => self::ACENTO_ALERTA[1],
+                'eyebrow'      => 'Solicitud ' . $accion,
+                'titulo'       => $firmo
+                    ? 'Una solicitud que firmaste ya no sigue'
+                    : 'La solicitud que tenías pendiente ya no sigue',
+                'preheader'    => "La solicitud {$folio} de {$solicitante} fue {$accion} por {$quien}.",
+                'folio'        => $folio,
+                'saludo'       => $empleado->NombreEmpleado,
+                'intro'        => 'La solicitud <strong>' . e($folio) . '</strong> de <strong>' . e($solicitante)
+                    . '</strong> fue ' . $accion . ' por <strong>' . e($quien) . '</strong>. '
+                    . ($firmo
+                        ? 'Ya no requiere ninguna acción de tu parte.'
+                        : 'Ya no necesitas firmarla: el enlace que te llegó dejó de estar activo.'),
+                'aviso'        => $motivo !== '' ? '<strong>Motivo:</strong> ' . nl2br(e($motivo)) : null,
+                'filas'        => $this->filasSolicitud($solicitud),
+                'aprobaciones' => $aprobaciones,
+                'pendientes'   => $pendientes,
+                'ganadores'    => collect(),
+            ]);
+
+            if ($this->enviar($empleado->Correo, $empleado->NombreEmpleado, $asunto, $contenido)) {
+                $enviados++;
+            }
+        }
+
+        return $enviados;
+    }
+
+    /**
+     * Cómo se nombra en el correo a quien rechazó desde su enlace: "Nombre (Supervisor)".
+     */
+    public static function etiquetaAprobador(?Empleados $empleado, string $stage): string
+    {
+        $etapa = self::ETAPAS[$stage] ?? ucfirst($stage);
+
+        return $empleado ? "{$empleado->NombreEmpleado} ({$etapa})" : $etapa;
     }
 
     public function enviarRecordatorio(

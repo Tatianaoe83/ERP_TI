@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Traits\SolicitudDetenidaTrait;
 use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Models\Solicitud;
@@ -19,6 +20,8 @@ use Illuminate\View\View;
 
 class SolicitudAprobacionController extends Controller
 {
+    use SolicitudDetenidaTrait;
+
     /**
      * Vista pública por token (sin login)
      */
@@ -36,6 +39,12 @@ class SolicitudAprobacionController extends Controller
         // Si no existe el token
         if (!$tokenRow) {
             abort(404, 'Token no encontrado');
+        }
+
+        // Cancelada o rechazada pesa más que el estado del enlace: si no, el aprobador
+        // en turno vería el botón de firmar de una solicitud que ya no existe.
+        if ($vistaDetenida = $this->vistaSolicitudDetenida($tokenRow->approvalStep?->solicitud)) {
+            return $vistaDetenida;
         }
 
         // Verificar si el token está usado
@@ -131,9 +140,10 @@ class SolicitudAprobacionController extends Controller
         ]);
 
         $emailRevisionData = null;
+        $rechazo = null;
 
         try {
-            DB::transaction(function () use ($data, $token, &$emailRevisionData) {
+            DB::transaction(function () use ($data, $token, &$emailRevisionData, &$rechazo) {
                 // Buscar el token
                 $tokenRow = SolicitudTokens::query()
                     ->where('token', $token)
@@ -148,6 +158,10 @@ class SolicitudAprobacionController extends Controller
 
                 $step = $tokenRow->approvalStep;
                 $solicitud = $step->solicitud;
+
+                if (in_array($solicitud->Estatus, $this->estatusDetenidos(), true)) {
+                    throw new \RuntimeException("Esta solicitud ya está {$solicitud->Estatus}: ya no se puede firmar.");
+                }
 
                 if ($step->status !== 'pending') {
                     throw new \RuntimeException('Esta etapa ya fue resuelta.');
@@ -177,6 +191,12 @@ class SolicitudAprobacionController extends Controller
                 // Si se rechaza, se cancela todo el flujo
                 if ($data['decision'] === 'rejected') {
                     $solicitud->update(['Estatus' => 'Rechazada']);
+                    $rechazo = [
+                        'solicitud_id' => $solicitud->SolicitudID,
+                        'quien'        => SolicitudAprobacionEmailService::etiquetaAprobador($step->approverEmpleado, $step->stage),
+                        'empleado_id'  => $step->approver_empleado_id,
+                        'motivo'       => $data['comment'] ?? '',
+                    ];
                     return;
                 }
 
@@ -260,6 +280,15 @@ class SolicitudAprobacionController extends Controller
                 );
             }
 
+            if ($rechazo) {
+                $this->avisarRechazo(
+                    $rechazo['solicitud_id'],
+                    $rechazo['motivo'],
+                    $rechazo['quien'],
+                    $rechazo['empleado_id']
+                );
+            }
+
             // Si es una petición AJAX, retornar JSON
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
@@ -334,128 +363,21 @@ class SolicitudAprobacionController extends Controller
     }
 
     /**
-     * Aprobar solicitud por nivel (desde el panel interno)
+     * Avisa a quienes ya firmaron que la solicitud se rechazó.
+     * Va fuera de la transacción: si el SMTP falla, el rechazo ya quedó guardado.
      */
-    public function aprobarPorNivel(Request $request, $id, $nivel): JsonResponse
+    private function avisarRechazo(int $solicitudId, string $motivo, string $quien, ?int $empleadoQuienId): void
     {
-        $data = $request->validate([
-            'comentario' => 'nullable|string|max:5000',
-        ]);
-
         try {
-            DB::transaction(function () use ($data, $id, $nivel) {
-                $solicitud = Solicitud::findOrFail($id);
-                $usuarioActual = auth()->user();
-                $usuarioEmpleado = Empleados::where('Correo', $usuarioActual->email)->firstOrFail();
-
-                $step = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('stage', $nivel)
-                    ->firstOrFail();
-
-                if ($step->status !== 'pending') {
-                    throw new \RuntimeException('Esta etapa ya fue resuelta.');
-                }
-
-                // Verificar permisos
-                if ($nivel === 'supervisor' && $step->approver_empleado_id != $usuarioEmpleado->EmpleadoID) {
-                    throw new \RuntimeException('No tienes permiso para aprobar en este nivel.');
-                }
-
-                $prevNotApproved = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('step_order', '<', $step->step_order)
-                    ->where('status', '!=', 'approved')
-                    ->exists();
-
-                if ($prevNotApproved) {
-                    throw new \RuntimeException('Aún faltan aprobaciones previas.');
-                }
-
-                // 1. Aprobar paso actual
-                $step->update([
-                    'status' => 'approved',
-                    'comment' => $data['comentario'] ?? null,
-                    'decided_at' => now(),
-                    'decided_by_empleado_id' => $usuarioEmpleado->EmpleadoID,
-                ]);
-
-                // Invalidad token de este paso si existiera (limpieza)
-                SolicitudTokens::where('approval_step_id', $step->id)->update(['revoked_at' => now()]);
-
-                // =====================================================================
-                // NUEVA LÓGICA: AUTO-APROBACIÓN EN CASCADA
-                // Verifica si el mismo empleado es el aprobador del siguiente paso
-                // =====================================================================
-                $this->procesarAutoAprobacionEnCascada($solicitud->SolicitudID, $usuarioEmpleado->EmpleadoID);
-
-                // 2. Actualizar estado global
-                $pending = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('status', 'pending')
-                    ->exists();
-
-                if (!$pending) {
-                    $solicitud->update(['Estatus' => 'Aprobada']);
-                }
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud aprobada correctamente.',
-            ]);
+            app(SolicitudAprobacionEmailService::class)->enviarAvisoSolicitudDetenida(
+                Solicitud::with('empleadoid')->findOrFail($solicitudId),
+                'rechazada',
+                $motivo,
+                $quien,
+                $empleadoQuienId
+            );
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage() ?: 'Ocurrió un error al aprobar la solicitud.',
-            ], 400);
-        }
-    }
-
-    /**
-     * Rechazar solicitud por nivel (desde el panel interno)
-     */
-    public function rechazarPorNivel(Request $request, $id, $nivel): JsonResponse
-    {
-        $data = $request->validate([
-            'comentario' => 'required|string|max:5000',
-        ]);
-
-        try {
-            DB::transaction(function () use ($data, $id, $nivel) {
-                $solicitud = Solicitud::findOrFail($id);
-                $usuarioActual = auth()->user();
-                $usuarioEmpleado = Empleados::where('Correo', $usuarioActual->email)->firstOrFail();
-
-                $step = SolicitudPasos::where('solicitud_id', $solicitud->SolicitudID)
-                    ->where('stage', $nivel)
-                    ->firstOrFail();
-
-                if ($step->status !== 'pending') {
-                    throw new \RuntimeException('Esta etapa ya fue resuelta.');
-                }
-
-                // Verificar permisos
-                if ($nivel === 'supervisor' && $step->approver_empleado_id != $usuarioEmpleado->EmpleadoID) {
-                    throw new \RuntimeException('No tienes permiso para rechazar en este nivel.');
-                }
-
-                $step->update([
-                    'status' => 'rejected',
-                    'comment' => $data['comentario'],
-                    'decided_at' => now(),
-                    'decided_by_empleado_id' => $usuarioEmpleado->EmpleadoID,
-                ]);
-
-                $solicitud->update(['Estatus' => 'Rechazada']);
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Solicitud rechazada correctamente.',
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage() ?: 'Ocurrió un error al rechazar la solicitud.',
-            ], 400);
+            \Log::warning("No se pudo avisar el rechazo de la solicitud #{$solicitudId}: " . $e->getMessage());
         }
     }
 
@@ -502,6 +424,10 @@ class SolicitudAprobacionController extends Controller
 
                 $step = $tokenRow->approvalStep;
                 $solicitud = $step->solicitud;
+
+                if (in_array($solicitud->Estatus, $this->estatusDetenidos(), true)) {
+                    throw new \RuntimeException("Esta solicitud ya está {$solicitud->Estatus}: ya no se puede transferir.");
+                }
 
                 if ($step->status !== 'pending') {
                     throw new \RuntimeException('Esta etapa ya fue resuelta.');

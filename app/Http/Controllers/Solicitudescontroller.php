@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Traits\CotizacionTrait;
+use App\Http\Controllers\Traits\SolicitudDetenidaTrait;
 use App\Models\Solicitud;
 use App\Models\Cotizacion;
 use App\Models\Empleados;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class SolicitudesController extends Controller
 {
     use CotizacionTrait;
+    use SolicitudDetenidaTrait;
 
     // Retorna datos completos de una solicitud para el panel lateral
     public function obtenerDatosSolicitud($id)
@@ -221,8 +223,9 @@ class SolicitudesController extends Controller
                 $recotizarMotivo = $parts[2] ?? '';
             }
 
-            $canceladoPorNombre = null;
-            if ($solicitud->cancelado_por) {
+            // Quién la detuvo: el aprobador que la rechazó (con su etapa) o TI.
+            $canceladoPorNombre = $solicitud->detenidoPorEtiqueta();
+            if ($canceladoPorNombre === 'TI' && $solicitud->cancelado_por) {
                 $userCancelo        = \App\Models\User::find($solicitud->cancelado_por);
                 $canceladoPorNombre = $userCancelo?->name ?? "Usuario #{$solicitud->cancelado_por}";
             }
@@ -234,10 +237,10 @@ class SolicitudesController extends Controller
                 'Requerimientos'        => $solicitud->Requerimientos,
                 'Estatus'               => $solicitud->Estatus,
                 'estatusDisplay'        => $estatusDisplay,
-                'motivo_cancelacion'    => $solicitud->motivo_cancelacion,
+                'motivo_cancelacion'    => $solicitud->motivoDetencion(),
                 'canceladoPorNombre'    => $canceladoPorNombre,
-                'fecha_cancelacion'     => $solicitud->fecha_cancelacion
-                    ? \Carbon\Carbon::parse($solicitud->fecha_cancelacion)->format('d/m/Y H:i')
+                'fecha_cancelacion'     => $solicitud->fechaDetencion()
+                    ? \Carbon\Carbon::parse($solicitud->fechaDetencion())->format('d/m/Y H:i')
                     : null,
                 'recotizarPropuestas'   => $recotizarPropuestas,
                 'recotizarMotivo'       => $recotizarMotivo,
@@ -746,6 +749,86 @@ class SolicitudesController extends Controller
         }
     }
 
+    // El gerente cancela la solicitud desde su enlace de elegir ganador (sin sesión, por token)
+    public function rechazarPorGerente(Request $request, $id)
+    {
+        $data = $request->validate([
+            'motivo' => 'required|string|min:10|max:1000',
+            'token'  => 'required|string',
+        ], [
+            'motivo.required' => 'El motivo de rechazo es obligatorio.',
+            'motivo.min'      => 'El motivo debe tener al menos 10 caracteres.',
+            'motivo.max'      => 'El motivo no puede exceder 1000 caracteres.',
+        ]);
+
+        try {
+            $gerente = \DB::transaction(function () use ($data, $id) {
+                $solicitud    = Solicitud::with(['pasoGerencia.approverEmpleado'])->lockForUpdate()->findOrFail($id);
+                $pasoGerencia = $solicitud->pasoGerencia;
+
+                if (in_array($solicitud->Estatus, ['Cancelada', 'Cerrada', 'Rechazada'], true)) {
+                    throw new \RuntimeException("Esta solicitud ya está {$solicitud->Estatus}.");
+                }
+
+                if (!$pasoGerencia || $pasoGerencia->status !== 'pending') {
+                    throw new \RuntimeException('El paso de gerencia ya no está pendiente: no se puede rechazar desde este enlace.');
+                }
+
+                $tokenRow = \App\Models\SolicitudTokens::where('token', $data['token'])
+                    ->where('approval_step_id', $pasoGerencia->id)
+                    ->whereNull('used_at')->whereNull('revoked_at')
+                    ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$tokenRow) {
+                    throw new \RuntimeException('El enlace no es válido o ya expiró.');
+                }
+
+                // Detenerla desde una vista de aprobador es un rechazo: el motivo vive
+                // en el paso, no en motivo_cancelacion (eso es solo para TI desde el index).
+                $pasoGerencia->update([
+                    'status'                 => 'rejected',
+                    'comment'                => trim($data['motivo']),
+                    'decided_at'             => now(),
+                    'decided_by_empleado_id' => $pasoGerencia->approver_empleado_id,
+                ]);
+
+                $solicitud->update(['Estatus' => 'Rechazada']);
+
+                $tokenRow->update(['used_at' => now()]);
+
+                return $pasoGerencia->approverEmpleado;
+            });
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Solicitud no encontrada.'], 404);
+        } catch (\Exception $e) {
+            Log::error('Error rechazando solicitud #' . $id . ' desde gerencia: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al rechazar la solicitud.'], 500);
+        }
+
+        // Fuera de la transacción: si el SMTP falla, el rechazo ya quedó.
+        try {
+            app(\App\Services\SolicitudAprobacionEmailService::class)->enviarAvisoSolicitudDetenida(
+                Solicitud::with('empleadoid')->findOrFail($id),
+                'rechazada',
+                $data['motivo'],
+                \App\Services\SolicitudAprobacionEmailService::etiquetaAprobador($gerente, 'gerencia'),
+                $gerente ? (int) $gerente->EmpleadoID : null
+            );
+        } catch (\Throwable $e) {
+            Log::warning("No se pudo avisar el rechazo de la solicitud #{$id}: " . $e->getMessage());
+        }
+
+        return response()->json([
+            'success'  => true,
+            'message'  => "Solicitud #{$id} rechazada correctamente.",
+            'redirect' => '/elegir-ganador/' . $data['token'],
+        ]);
+    }
+
     // Muestra la vista de cotización para una solicitud
     public function mostrarPaginaCotizacion($id)
     {
@@ -1131,19 +1214,8 @@ class SolicitudesController extends Controller
                 'cotizaciones' => fn($q) => $q->orderBy('NumeroPropuesta')->orderBy('Proveedor'),
             ]);
 
-            if (in_array($solicitud->Estatus, ['Cancelada', 'Cerrada'], true)) {
-                $canceladoPor = null;
-                if ($solicitud->cancelado_por) {
-                    $canceladoPor = \App\Models\User::find($solicitud->cancelado_por)?->name
-                        ?? "Usuario #{$solicitud->cancelado_por}";
-                }
-                return view('solicitudes.cancelada', [
-                    'motivo'           => $solicitud->motivo_cancelacion,
-                    'canceladoPor'     => $canceladoPor,
-                    'fechaCancelacion' => $solicitud->fecha_cancelacion
-                        ? \Carbon\Carbon::parse($solicitud->fecha_cancelacion)->format('d/m/Y H:i')
-                        : null,
-                ]);
+            if ($vistaDetenida = $this->vistaSolicitudDetenida($solicitud)) {
+                return $vistaDetenida;
             }
 
             $productos       = $this->agruparCotizacionesPorProducto($solicitud->cotizaciones ?? collect());

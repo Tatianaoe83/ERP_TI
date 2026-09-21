@@ -83,7 +83,7 @@ trait MetricasSolicitudesTrait
                             ->orWhereBetween('fecha_fin_configuracion', [$fechaInicioMes, $fechaFinMes]);
                     })
                     ->orWhere(function ($q) use ($fechaInicioMes, $fechaFinMes) {
-                        $q->whereIn('Estatus', ['Cancelada', 'Cerrada'])
+                        $q->whereIn('Estatus', ['Cancelada', 'Cerrada', 'Rechazada'])
                             ->whereNull('fecha_cancelacion')
                             ->whereBetween('updated_at', [$fechaInicioMes, $fechaFinMes]);
                     });
@@ -170,7 +170,7 @@ trait MetricasSolicitudesTrait
                 : ($tieneConfiguracion ? 'Pendiente' : 'Sin configuración');
 
             $fechaCierre = null;
-            if (in_array((string)$sol->Estatus, ['Cancelada', 'Cerrada'], true)) {
+            if (in_array((string)$sol->Estatus, ['Cancelada', 'Cerrada', 'Rechazada'], true)) {
                 $fechaCierre = $sol->fecha_cancelacion
                     ? Carbon::parse($sol->fecha_cancelacion)
                     : ($sol->updated_at ? Carbon::parse($sol->updated_at) : null);

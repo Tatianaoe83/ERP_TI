@@ -510,8 +510,7 @@ Route::post('/solicitudes/{id}/enviar-cotizaciones-gerente', [SolicitudesControl
 Route::post('/solicitudes/{id}/seleccionar-cotizacion', [SolicitudesController::class, 'seleccionarCotizacion'])->name('solicitudes.seleccionar-cotizacion');
 Route::post('/solicitudes/{id}/confirmar-ganadores', [SolicitudesController::class, 'confirmarGanadores'])->name('solicitudes.confirmar-ganadores');
 Route::post('/solicitudes/{id}/solicitar-recotizacion', [SolicitudesController::class, 'solicitarRecotizacion'])->name('solicitudes.solicitar-recotizacion');
-Route::post('/solicitudes/{id}/aprobar-{nivel}', [SolicitudAprobacionController::class, 'aprobarPorNivel'])->name('solicitudes.aprobar-nivel');
-Route::post('/solicitudes/{id}/rechazar-{nivel}', [SolicitudAprobacionController::class, 'rechazarPorNivel'])->name('solicitudes.rechazar-nivel');
+Route::post('/solicitudes/{id}/rechazar-gerente', [SolicitudesController::class, 'rechazarPorGerente'])->name('solicitudes.rechazar-gerente');
 Route::get('/elegir-ganador/{token}', [SolicitudesController::class, 'elegirGanadorConToken'])->name('solicitudes.elegir-ganador-token');
 
 

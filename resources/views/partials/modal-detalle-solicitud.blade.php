@@ -104,7 +104,7 @@
                     </div>
                     <template x-if="solicitudSeleccionada?.motivo_cancelacion">
                         <div class="rounded-lg border border-rose-200 dark:border-rose-700/60 bg-rose-50 dark:bg-rose-900/20 p-4">
-                            <p class="text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wide mb-1">Solicitud Cancelada</p>
+                            <p class="text-xs font-bold text-rose-700 dark:text-rose-300 uppercase tracking-wide mb-1" x-text="solicitudSeleccionada?.estatusDisplay === 'Rechazada' ? 'Solicitud Rechazada' : 'Solicitud Cancelada'"></p>
                             <p class="text-sm text-rose-700 dark:text-rose-300" x-text="solicitudSeleccionada?.motivo_cancelacion"></p>
                             <div class="mt-2 flex flex-wrap gap-4 text-xs text-rose-500 dark:text-rose-400">
                                 <span x-text="'Por: ' + (solicitudSeleccionada?.canceladoPorNombre || 'N/A')"></span>

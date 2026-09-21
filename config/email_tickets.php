@@ -87,7 +87,8 @@ return [
     |
     */
 
-    'soporte_email' => env('SOPORTE_EMAIL', 'soporte@proser.com.mx'),
+    //'soporte_email' => env('SOPORTE_EMAIL', 'soporte@proser.com.mx'),
+    'soporte_email' => env('SOPORTE_EMAIL', 'econg@proser.com.mx'),
 
     'smtp' => [
         'host' => env('MAIL_HOST', config('mail.mailers.smtp.host')),
