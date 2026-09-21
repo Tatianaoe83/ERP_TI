@@ -369,13 +369,13 @@ class SolicitudAprobacionController extends Controller
     private function avisarRechazo(int $solicitudId, string $motivo, string $quien, ?int $empleadoQuienId): void
     {
         try {
-            app(SolicitudAprobacionEmailService::class)->enviarAvisoSolicitudDetenida(
-                Solicitud::with('empleadoid')->findOrFail($solicitudId),
-                'rechazada',
-                $motivo,
-                $quien,
-                $empleadoQuienId
-            );
+            $solicitud = Solicitud::with('empleadoid')->findOrFail($solicitudId);
+            $servicio  = app(SolicitudAprobacionEmailService::class);
+
+            $servicio->enviarAvisoSolicitudDetenida($solicitud, 'rechazada', $motivo, $quien, $empleadoQuienId);
+
+            // TI no firma, así que sin este aviso no se enteraría del rechazo.
+            $servicio->enviarAvisoRechazoASoporte($solicitud, $quien, $motivo);
         } catch (\Throwable $e) {
             \Log::warning("No se pudo avisar el rechazo de la solicitud #{$solicitudId}: " . $e->getMessage());
         }

@@ -811,13 +811,20 @@ class SolicitudesController extends Controller
 
         // Fuera de la transacción: si el SMTP falla, el rechazo ya quedó.
         try {
-            app(\App\Services\SolicitudAprobacionEmailService::class)->enviarAvisoSolicitudDetenida(
-                Solicitud::with('empleadoid')->findOrFail($id),
+            $solicitud = Solicitud::with('empleadoid')->findOrFail($id);
+            $servicio  = app(\App\Services\SolicitudAprobacionEmailService::class);
+            $quien     = \App\Services\SolicitudAprobacionEmailService::etiquetaAprobador($gerente, 'gerencia');
+
+            $servicio->enviarAvisoSolicitudDetenida(
+                $solicitud,
                 'rechazada',
                 $data['motivo'],
-                \App\Services\SolicitudAprobacionEmailService::etiquetaAprobador($gerente, 'gerencia'),
+                $quien,
                 $gerente ? (int) $gerente->EmpleadoID : null
             );
+
+            // TI no firma, así que sin este aviso no se enteraría del rechazo.
+            $servicio->enviarAvisoRechazoASoporte($solicitud, $quien, $data['motivo']);
         } catch (\Throwable $e) {
             Log::warning("No se pudo avisar el rechazo de la solicitud #{$id}: " . $e->getMessage());
         }

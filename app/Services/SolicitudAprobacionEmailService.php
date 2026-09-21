@@ -308,6 +308,52 @@ class SolicitudAprobacionEmailService
     }
 
     /**
+     * Aviso al buzón de Soporte TI de que un aprobador detuvo la solicitud desde su vista
+     * (supervisor, elección de ganadores o administración).
+     *
+     * TI no aparece en el flujo de firmas, así que sin este correo se enteraría hasta
+     * abrir el ERP. Va al buzón del área, no a personas.
+     *
+     * @param  string  $quien   quién la rechazó, tal cual se muestra: "Nombre (Gerencia)"
+     * @param  string  $motivo  comentario del rechazo; puede venir vacío
+     */
+    public function enviarAvisoRechazoASoporte(Solicitud $solicitud, string $quien, string $motivo = ''): bool
+    {
+        $correo = trim((string) config('email_tickets.soporte_email'));
+
+        if ($correo === '' || ! filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('No hay un correo de soporte válido configurado (SOPORTE_EMAIL): no se avisa del rechazo.');
+            return false;
+        }
+
+        $folio = '#' . $solicitud->SolicitudID;
+        $solicitante = $this->nombreSolicitante($solicitud);
+        $motivo = trim($motivo);
+
+        $contenido = $this->renderMensaje([
+            'accent'       => self::ACENTO_ALERTA[0],
+            'accentSoft'   => self::ACENTO_ALERTA[1],
+            'eyebrow'      => 'Solicitud rechazada',
+            'titulo'       => 'Un aprobador detuvo una solicitud',
+            'preheader'    => "La solicitud {$folio} de {$solicitante} fue rechazada por {$quien}.",
+            'folio'        => $folio,
+            'saludo'       => 'Equipo de Soporte TI',
+            'intro'        => 'La solicitud <strong>' . e($folio) . '</strong> de <strong>' . e($solicitante)
+                . '</strong> fue rechazada por <strong>' . e($quien) . '</strong>, así que el flujo se detuvo '
+                . 'y ya no avanza a las etapas siguientes.',
+            'aviso'        => $motivo !== '' ? '<strong>Motivo:</strong> ' . nl2br(e($motivo)) : null,
+            'url'          => url('/solicitudes'),
+            'boton'        => 'Ver solicitudes en el ERP',
+            'nota'         => 'Aviso informativo para el área: no requiere firma de soporte.',
+            'filas'        => $this->filasSolicitud($solicitud),
+            'aprobaciones' => $this->historialAprobaciones($solicitud),
+            'ganadores'    => collect(),
+        ]);
+
+        return $this->enviar($correo, 'Soporte TI', "Solicitud de compra {$folio} – Rechazada", $contenido);
+    }
+
+    /**
      * Aviso de que la solicitud se canceló o se rechazó, con quién firmó y quién se quedó sin firmar.
      * Le llega a quienes ya firmaron y al aprobador que ya tenía su enlace en la bandeja
      * sin haber firmado, para que no se entere hasta abrir un enlace muerto.
