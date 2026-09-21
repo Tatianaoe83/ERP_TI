@@ -1594,9 +1594,9 @@
         $('#editFechaDeCompra').val(attrFila(row, 'fecha-compra'));
         $('#editNumSerie').val(attrFila(row, 'num-serie'));
         $('#editFolio').val(attrFila(row, 'folio'));
-        $('#editGerenciaEquipo').val(attrFila(row, 'gerencia-id') || row.find("td:eq(10)").data('id')).trigger('change');
+        $('#editGerenciaEquipo').val(attrFila(row, 'gerencia-id') || celda.nodo(10).data('id')).trigger('change');
         $('#editComentarios').val(attrFila(row, 'comentarios'));
-        setPresupuestado('#editPresupuestadoEquipo', row.attr('data-presupuestado') || row.find("td:eq(12)").text());
+        setPresupuestado('#editPresupuestadoEquipo', row.attr('data-presupuestado') || celda.texto(12));
         setPagoMeses('editMesDePagoEquipo', row.attr('data-meses') || '');
 
         $('#editModal').modal('show');
@@ -2047,22 +2047,30 @@
 
     // Actualizar una fila en la tabla después de editar
     function updateTableRow(equipo) {
-        let row = $(`tr[data-id=${equipo.InventarioID}]`);
+        // Los InventarioID de equipo, insumo y linea se repiten entre tablas: la
+        // busqueda tiene que quedarse dentro de la tabla que se esta editando.
+        let row = $('#equiposAsignadosTable').find(`tr[data-id="${equipo.InventarioID}"]`);
+        if (!row.length) {
+            return;
+        }
         const extra = esExtraAsignacion(equipo.tipoEquipo);
-        row.find('td:eq(1)').text(equipo.CategoriaEquipo);
-        row.find('td:eq(2)').text(equipo.Marca);
-        row.find('td:eq(3)').text(equipo.Caracteristicas);
-        row.find('td:eq(4)').text(equipo.Modelo);
-        row.find('td:eq(5)').html(celdaPendiente(equipo.Precio, extra));
-        row.find('td:eq(6)').html(celdaFechaPendiente(equipo.FechaAsignacion, extra));
-        row.find('td:eq(7)').html(celdaFechaPendiente(equipo.FechaDeCompra, extra));
-        row.find('td:eq(8)').html(celdaPendiente(equipo.NumSerie, extra));
-        row.find('td:eq(9)').html(celdaPendiente(equipo.Folio, extra));
-        row.find('td:eq(10)').attr('data-id', equipo.GerenciaEquipoID || '').html(celdaPendiente(equipo.GerenciaEquipo, extra));
-        row.find('td:eq(11)').html(celdaPendiente(equipo.Comentarios, extra));
+        // Columnas 3, 6 y 7 estan ocultas y DataTables saca esos <td> del DOM:
+        // "td:eq(N)" escribiria en la celda equivocada. Se usa la API.
+        const celda = celdasEquipo(row);
+        celda.nodo(1).text(equipo.CategoriaEquipo);
+        celda.nodo(2).text(equipo.Marca);
+        celda.nodo(3).text(equipo.Caracteristicas);
+        celda.nodo(4).text(equipo.Modelo);
+        celda.nodo(5).html(celdaPendiente(equipo.Precio, extra));
+        celda.nodo(6).html(celdaFechaPendiente(equipo.FechaAsignacion, extra));
+        celda.nodo(7).html(celdaFechaPendiente(equipo.FechaDeCompra, extra));
+        celda.nodo(8).html(celdaPendiente(equipo.NumSerie, extra));
+        celda.nodo(9).html(celdaPendiente(equipo.Folio, extra));
+        celda.nodo(10).attr('data-id', equipo.GerenciaEquipoID || '').html(celdaPendiente(equipo.GerenciaEquipo, extra));
+        celda.nodo(11).html(celdaPendiente(equipo.Comentarios, extra));
         if (permitePresupuestado) {
-            row.find('td:eq(12)').html(htmlChipPresupuestado(equipo.tipoEquipo));
-            row.find('td:eq(13)').html(htmlPillsMeses(equipo.MesDePago ?? ''));
+            celda.nodo(12).html(htmlChipPresupuestado(equipo.tipoEquipo));
+            celda.nodo(13).html(htmlPillsMeses(equipo.MesDePago ?? ''));
         }
         row.attr('data-meses', equipo.MesDePago ?? '');
         row.find('.edit-btn').data('id', equipo.InventarioID);
@@ -2081,7 +2089,21 @@
         syncCheckFila(row, 'equipo', equipo.InventarioID, equipo.tipoEquipo);
 
         // Refrescar la caché de DataTables para que el filtro y los conteos vean el cambio.
-        $('#equiposAsignadosTable').DataTable().row(row).invalidate().draw(false);
+        $('#equiposAsignadosTable').DataTable().row(row).invalidate('dom').draw(false);
+    }
+
+    // DataTables solo saca del DOM los <td> de las columnas ocultas cuando el
+    // mismo construye la fila. Una fila agregada con row.add(<tr>) conserva
+    // TODAS sus celdas, asi que queda corrida respecto al encabezado (en equipos
+    // se cuelan Caracteristicas y las dos fechas ocultas). Las quitamos a mano;
+    // siguen referenciadas en anCells, asi que column().visible(true) las regresa.
+    function quitarCeldasOcultas(dt, $tr) {
+        var cols = dt.settings()[0].aoColumns;
+        for (var i = cols.length - 1; i >= 0; i--) {
+            if (!cols[i].bVisible) {
+                $tr.children('td').eq(i).detach();
+            }
+        }
     }
 
     // Agregar una nueva fila en la tabla (para equipo creado)
@@ -2122,7 +2144,11 @@
             ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.tipoEquipo)}</td><td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
         </tr>
     `;
-        $('#equiposAsignadosTable').DataTable().row.add($(newRow)).draw(false);
+        const dtEquipos = $('#equiposAsignadosTable').DataTable();
+        const $filaEquipo = $(newRow);
+        dtEquipos.row.add($filaEquipo);
+        quitarCeldasOcultas(dtEquipos, $filaEquipo);
+        dtEquipos.draw(false);
     }
 
     // Eliminar equipo con AJAX
@@ -2399,7 +2425,8 @@
 
 
     function updateisnumoTableRow(insumo) {
-        let row = $(`tr[data-id=${insumo.InventarioID}]`);
+        // Ver nota en updateTableRow: el data-id solo es unico dentro de su tabla.
+        let row = $('#insumosAsignadosTable').find(`tr[data-id="${insumo.InventarioID}"]`);
         const extra = esExtraAsignacion(insumo.Presupuestado);
         row.find('td:eq(1)').text(insumo.CateogoriaInsumo);
         row.find('td:eq(2)').text(insumo.NombreInsumo);
@@ -2424,7 +2451,7 @@
         }
         syncCheckFila(row, 'insumo', insumo.InventarioID, insumo.Presupuestado);
 
-        $('#insumosAsignadosTable').DataTable().row(row).invalidate().draw(false);
+        $('#insumosAsignadosTable').DataTable().row(row).invalidate('dom').draw(false);
     }
 
 
@@ -2458,7 +2485,11 @@
             <td>${htmlPillsMeses(insumo.MesDePago)}</td>
         </tr>
     `;
-        $('#insumosAsignadosTable').DataTable().row.add($(newRow)).draw(false);
+        const dtInsumos = $('#insumosAsignadosTable').DataTable();
+        const $filaInsumo = $(newRow);
+        dtInsumos.row.add($filaInsumo);
+        quitarCeldasOcultas(dtInsumos, $filaInsumo);
+        dtInsumos.draw(false);
     }
 
     $(document).on('click.invAssign', '.delete-btn-insumo', function(event) {
@@ -2833,7 +2864,8 @@
     }
 
     function updatetelefTableRow(telefono) {
-        let row = $(`tr[data-id=${telefono.InventarioID}]`);
+        // Ver nota en updateTableRow: el data-id solo es unico dentro de su tabla.
+        let row = $('#lineasAsignadosTable').find(`tr[data-id="${telefono.InventarioID}"]`);
         const proy = esProyeccionTel(telefono);
         row.find('td:eq(1)').html(celdaLineaPendiente(telefono.NumTelefonico, proy));
         row.find('td:eq(2)').text(telefono.Compania || '');
@@ -2858,7 +2890,7 @@
         aplicarAttrsFilaLinea(row, telefono);
         syncCheckFila(row, 'linea', telefono.InventarioID, telefono.Presupuestado);
 
-        $('#lineasAsignadosTable').DataTable().row(row).invalidate().draw(false);
+        $('#lineasAsignadosTable').DataTable().row(row).invalidate('dom').draw(false);
     }
 
 
