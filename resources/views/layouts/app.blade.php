@@ -1821,8 +1821,34 @@
             box.parentNode.removeChild(box);
         })();
 
+        // swapPage solo reemplaza main/sidebar/extras. Lo que otras librerías cuelgan
+        // directo del <body> (backdrop de Bootstrap, dropdowns de Select2, SweetAlert,
+        // overlays) sobrevive a la navegación y tapa la vista nueva: ya no se puede dar clic.
+        function limpiarRestosDePagina() {
+            try {
+                if (window.jQuery) {
+                    window.jQuery('.modal.show').modal('hide');
+                    window.jQuery('.select2-hidden-accessible').select2('close');
+                }
+            } catch (e) {}
+            if (window.Swal && typeof Swal.close === 'function') {
+                try { Swal.close(); } catch (e) {}
+            }
+            document.querySelectorAll('.modal-backdrop, body > .select2-container, body > .swal2-container').forEach(function (el) {
+                el.remove();
+            });
+            document.body.classList.remove('modal-open', 'swal2-shown', 'swal2-height-auto', 'overflow-hidden');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+            document.documentElement.style.removeProperty('overflow');
+            var mobileOverlay = document.getElementById('mobile-overlay');
+            if (mobileOverlay && window.innerWidth >= 1024) mobileOverlay.classList.add('hidden');
+            if (window.AppDownload) window.AppDownload.hide();
+        }
+
         function swapPage(html, href, push) {
             var doc = new DOMParser().parseFromString(html, 'text/html');
+            limpiarRestosDePagina();
             var main = document.getElementById('app-main');
             var nextMain = doc.getElementById('app-main') || doc.querySelector('main');
             if (!main || !nextMain) {
