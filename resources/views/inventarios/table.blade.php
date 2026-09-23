@@ -124,7 +124,7 @@
                 <tr>
                     <th aria-label="Inventario"></th>
                     <th>Nombre</th>
-                    <th>Tipo</th>
+                    <th>Gerencia</th>
                     <th>Puesto</th>
                     <th>Obra</th>
                     <th>Teléfono</th>
@@ -188,10 +188,10 @@
 
                     data: function(d) {
 
-                        d.nombre = $('#filtro-nombre').val();
+                        d.buscador = $('#filtro-buscador').val();
+                        d.gerencia = $('#filtro-gerencia').val();
                         d.obra = $('#filtro-obra').val();
                         d.puesto = $('#filtro-puesto').val();
-                        d.filtro_inventario = $('#filtro-inventario').val();
                         d.tipo_persona = $('#filtro-persona').val();
                         d.estatus = $('#filtro-estatus').val();
 
@@ -213,7 +213,7 @@
                     },
 
                     {
-                        data: 'tipo_persona',
+                        data: 'nombre_gerencia',
                         orderable: false,
                         class: 'dark:bg-[#101010] dark:text-white'
                     },
@@ -270,7 +270,7 @@
             // FILTROS
             // =========================
             var recargarFiltrosTexto = null;
-            $('#filtro-nombre, #filtro-inventario')
+            $('#filtro-buscador')
                 .on('keyup', function() {
                     clearTimeout(recargarFiltrosTexto);
                     recargarFiltrosTexto = setTimeout(function() {
@@ -278,14 +278,14 @@
                     }, 300);
                 });
 
-            $('#filtro-obra, #filtro-puesto, #filtro-persona, #filtro-estatus')
+            $('#filtro-gerencia, #filtro-obra, #filtro-puesto, #filtro-persona, #filtro-estatus')
                 .on('change', function() {
                     table.ajax.reload();
                 });
 
             $('#limpiar-filtros-inv').on('click', function() {
-                $('#filtro-nombre').val('');
-                $('#filtro-inventario').val('');
+                $('#filtro-buscador').val('');
+                $('#filtro-gerencia').val('').trigger('change');
                 $('#filtro-estatus').val('1');
                 $('#filtro-persona').val('').trigger('change');
                 $('#filtro-obra').val('').trigger('change');

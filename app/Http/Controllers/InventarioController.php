@@ -69,16 +69,27 @@ class InventarioController extends AppBaseController
             ->orderBy('puestos.NombrePuesto')
             ->pluck('puestos.NombrePuesto');
 
-        return view('inventarios.index', compact('obrasFiltro', 'puestosFiltro'));
+        $gerenciasFiltro = DB::table('gerencia')
+            ->join('departamentos', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
+            ->join('puestos', 'departamentos.DepartamentoID', '=', 'puestos.DepartamentoID')
+            ->join('empleados', 'puestos.PuestoID', '=', 'empleados.PuestoID')
+            ->whereNull('gerencia.deleted_at')
+            ->distinct()
+            ->orderBy('gerencia.NombreGerencia')
+            ->pluck('gerencia.NombreGerencia');
+
+        return view('inventarios.index', compact('obrasFiltro', 'puestosFiltro', 'gerenciasFiltro'));
     }
 
     public function indexVista(Request $request)
     {
-        $buscando = $request->filled('nombre') || $request->filled('filtro_inventario');
+        $buscando = $request->filled('buscador');
         $estatusTodos = $request->has('estatus') && $request->estatus === '';
 
         $unidades = Empleados::join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
             ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->leftJoin('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
             ->when($request->filled('tipo_persona'), function ($q) use ($request) {
                 $q->where('empleados.tipo_persona', $request->tipo_persona);
             }, function ($q) use ($buscando, $estatusTodos) {
@@ -92,6 +103,7 @@ class InventarioController extends AppBaseController
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
                 'empleados.tipo_persona',
+                'gerencia.NombreGerencia as nombre_gerencia',
                 'puestos.NombrePuesto as nombre_puesto',
                 'obras.NombreObra as nombre_obra',
                 'empleados.NumTelefono',
@@ -99,20 +111,42 @@ class InventarioController extends AppBaseController
                 'empleados.Estado'
             ])
             ->orderBy('empleados.EmpleadoID', 'desc')
-            ->when($request->filled('nombre'), function ($q) use ($request) {
-                $tokens = preg_split('/\s+/', trim((string) $request->nombre), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            ->when($request->filled('buscador'), function ($q) use ($request) {
+                // Un solo buscador: empleado (nombre, telefono, correo) o su inventario
+                $texto = trim((string) $request->buscador);
+                $escapar = fn($v) => '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $v) . '%';
+                $tokens = preg_split('/\s+/', $texto, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                $likeTexto = $escapar($texto);
 
-                $q->where(function ($sub) use ($tokens) {
-                    foreach ($tokens as $token) {
-                        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $token) . '%';
-                        $sub->where(function ($tokenQuery) use ($like) {
-                            $tokenQuery->where('empleados.NombreEmpleado', 'like', $like)
-                                ->orWhere('empleados.NumTelefono', 'like', $like)
-                                ->orWhere('empleados.Correo', 'like', $like);
+                $q->where(function ($sub) use ($tokens, $escapar, $likeTexto) {
+                    // Todas las palabras en el nombre (cualquier orden)
+                    $sub->where(function ($nombre) use ($tokens, $escapar) {
+                        foreach ($tokens as $token) {
+                            $nombre->where('empleados.NombreEmpleado', 'like', $escapar($token));
+                        }
+                    })
+                        ->orWhere('empleados.NumTelefono', 'like', $likeTexto)
+                        ->orWhere('empleados.Correo', 'like', $likeTexto)
+                        ->orWhereHas('inventarioequipo', function ($inv) use ($likeTexto) {
+                            $inv->where('CategoriaEquipo', 'like', $likeTexto)
+                                ->orWhere('Marca', 'like', $likeTexto)
+                                ->orWhere('Modelo', 'like', $likeTexto)
+                                ->orWhere('NumSerie', 'like', $likeTexto)
+                                ->orWhere('Folio', 'like', $likeTexto);
+                        })
+                        ->orWhereHas('inventarioinsumo', function ($inv) use ($likeTexto) {
+                            $inv->where('CateogoriaInsumo', 'like', $likeTexto)
+                                ->orWhere('NombreInsumo', 'like', $likeTexto)
+                                ->orWhere('NumSerie', 'like', $likeTexto);
+                        })
+                        ->orWhereHas('inventariolineas', function ($inv) use ($likeTexto) {
+                            $inv->where('Compania', 'like', $likeTexto)
+                                ->orWhere('NumTelefonico', 'like', $likeTexto)
+                                ->orWhere('PlanTel', 'like', $likeTexto);
                         });
-                    }
                 });
             })
+            ->when($request->gerencia, fn($q) => $q->where('gerencia.NombreGerencia', $request->gerencia))
             ->when($request->obra, fn($q) => $q->where('obras.NombreObra', $request->obra))
             ->when($request->puesto, fn($q) => $q->where('puestos.NombrePuesto', $request->puesto))
             ->when($request->has('estatus'), function ($q) use ($request) {
@@ -123,30 +157,6 @@ class InventarioController extends AppBaseController
             }, function ($q) {
                 $q->where('empleados.Estado', 1);
             });
-
-
-        if ($request->filled('filtro_inventario')) {
-            $unidades->where(function ($q) use ($request) {
-                $q->whereHas('inventarioequipo', function ($sub) use ($request) {
-                    $sub->where('CategoriaEquipo', 'like', "%{$request->filtro_inventario}%")
-                        ->orWhere('Marca', 'like', "%{$request->filtro_inventario}%")
-                        ->orWhere('Modelo', 'like', "%{$request->filtro_inventario}%")
-                        ->orWhere('NumSerie', 'like', "%{$request->filtro_inventario}%")
-                        ->orWhere('Folio', 'like', "%{$request->filtro_inventario}%");
-                })
-                    ->orWhereHas('inventarioinsumo', function ($sub) use ($request) {
-                        $sub->where('CateogoriaInsumo', 'like', "%{$request->filtro_inventario}%")
-                            ->orWhere('NombreInsumo', 'like', "%{$request->filtro_inventario}%")
-                            ->orWhere('NumSerie', 'like', "%{$request->filtro_inventario}%");
-                    })
-                    ->orWhereHas('inventariolineas', function ($sub) use ($request) {
-                        $sub->where('Compania', 'like', "%{$request->filtro_inventario}%")
-                            ->orWhere('NumTelefonico', 'like', "%{$request->filtro_inventario}%")
-                            ->orWhere('Compania', 'like', "%{$request->filtro_inventario}%")
-                            ->orWhere('PlanTel', 'like', "%{$request->filtro_inventario}%");
-                    });
-            });
-        }
 
 
         return DataTables::of($unidades)
@@ -168,7 +178,7 @@ class InventarioController extends AppBaseController
                 }
 
             })
-            ->editColumn('tipo_persona', function ($row) {
+            ->editColumn('NombreEmpleado', function ($row) {
                 $tipo = strtoupper((string) ($row->tipo_persona ?? 'FISICA'));
 
                 $map = [
@@ -179,12 +189,13 @@ class InventarioController extends AppBaseController
 
                 $meta = $map[$tipo] ?? $map['FISICA'];
 
-                return '<span class="inv-tipo-badge ' . $meta['class'] . '" title="' . e($meta['hint']) . '">'
+                return e($row->NombreEmpleado)
+                    . ' <span class="inv-tipo-badge ' . $meta['class'] . '" title="' . e($meta['hint']) . '" style="padding:0.1rem 0.45rem;">'
                     . e($meta['label'])
-                    . '</span>'
-                    . '<div style="font-size:10px;color:#64748b;margin-top:3px;">' . e($meta['hint']) . '</div>';
+                    . '</span>';
             })
-            ->rawColumns(['action', 'Estado', 'tipo_persona'])
+            ->editColumn('nombre_gerencia', fn($row) => e($row->nombre_gerencia ?? 'Sin gerencia'))
+            ->rawColumns(['action', 'Estado', 'NombreEmpleado'])
             ->make(true);
     }
 

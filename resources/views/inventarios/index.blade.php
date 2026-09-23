@@ -108,11 +108,20 @@
             </div>
         </div>
         <div class="form-group">
-            <label for="filtro-nombre">Nombre empleado</label>
+            <label for="filtro-buscador">Buscador</label>
             <div class="index-search">
                 <i class="fas fa-search index-search__icon" aria-hidden="true"></i>
-                <input type="text" class="form-control" id="filtro-nombre" placeholder="Buscar empleado..." autocomplete="off">
+                <input type="text" class="form-control" id="filtro-buscador" placeholder="Empleado o inventario..." autocomplete="off">
             </div>
+        </div>
+        <div class="form-group">
+            <label for="filtro-gerencia">Gerencia</label>
+            <select id="filtro-gerencia" class="jz-inv form-control">
+                <option value="">Todas las gerencias</option>
+                @foreach($gerenciasFiltro as $gerencia)
+                    <option value="{{ $gerencia }}">{{ $gerencia }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="form-group">
             <label for="filtro-obra">Obra</label>
@@ -131,13 +140,6 @@
                     <option value="{{ $puesto }}">{{ $puesto }}</option>
                 @endforeach
             </select>
-        </div>
-        <div class="form-group">
-            <label for="filtro-inventario">Inventario</label>
-            <div class="index-search">
-                <i class="fas fa-search index-search__icon" aria-hidden="true"></i>
-                <input type="text" class="form-control" id="filtro-inventario" placeholder="Buscar inventario..." autocomplete="off">
-            </div>
         </div>
         <div class="form-group">
             <label for="filtro-persona">Tipo de persona</label>
