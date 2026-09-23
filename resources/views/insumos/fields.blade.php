@@ -74,7 +74,7 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {  
+(function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function() {  
     const costoMensual = document.getElementById('CostoMensual_fields');
     const costoAnual = document.getElementById('CostoAnual_fields');
     const importe = document.getElementById('Importe_fields');

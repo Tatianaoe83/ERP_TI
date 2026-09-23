@@ -28,7 +28,11 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+(function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function() {
+    // El listener vive en document: con AppNav se registraría otra vez en cada visita
+    if (window.__insumosLicenciaPaginacion) return;
+    window.__insumosLicenciaPaginacion = true;
+
     // Interceptar clicks en los enlaces de paginación
     document.addEventListener('click', function(e) {
         if (e.target.closest('#insumos-pagination a')) {

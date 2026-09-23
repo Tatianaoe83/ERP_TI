@@ -170,7 +170,7 @@
 </script>
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    (function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(() => {
         const input = document.getElementById('inputImage');
         const token = document.querySelector('meta[name="csrf-token"]').content;
 

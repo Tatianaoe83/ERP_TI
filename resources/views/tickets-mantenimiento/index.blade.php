@@ -93,7 +93,7 @@
 @push('third_party_scripts')
 <script>
     @if($tabActiva === 'productividad')
-    document.addEventListener('DOMContentLoaded', function () {
+    (function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function () {
         setTimeout(function () {
             if (typeof inicializarGraficasMantenimiento === 'function') inicializarGraficasMantenimiento();
         }, 300);

@@ -87,7 +87,8 @@
 </x-crud-page>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    // Con AppNav la vista llega por fetch y DOMContentLoaded ya no se dispara
+    (function initReqCards() {
 
         function pop(card, isOn) {
             card.animate(
@@ -186,6 +187,6 @@
             const cb = card.querySelector('.req-checkbox');
             cb.addEventListener('change', () => applyState(card, cb.checked));
         });
-    });
+    })();
 </script>
 @endsection

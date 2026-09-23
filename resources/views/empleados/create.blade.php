@@ -34,7 +34,7 @@
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+(function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function () {
 
     // Ejecutar al cargar la página
     EvitarCamposTelefonoCorreo();

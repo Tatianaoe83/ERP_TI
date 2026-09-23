@@ -29,7 +29,7 @@
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  (function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function() {
     var form = document.getElementById('RFC').closest('form');
     form.addEventListener('submit', function(e) {
       e.preventDefault();

@@ -14,7 +14,7 @@
 </x-crud-page>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function () {
     // ubicamos el valor original del tipo de persona
     const tipoOriginal = "{{ $empleados->tipo_persona }}".trim().toUpperCase();
 
@@ -63,7 +63,7 @@ function EvitarCamposTelefonoCorreo() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+(function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function () {
 
     // Ejecutar al cargar la página
     EvitarCamposTelefonoCorreo();

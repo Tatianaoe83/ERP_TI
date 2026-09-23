@@ -146,7 +146,7 @@
             window.location.href = @json(route('tickets.index', ['tab' => 'solicitudes']));
         }
     });
-    document.addEventListener('DOMContentLoaded', function () {
+    (function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function () {
         var urlParams = new URLSearchParams(window.location.search);
         var solicitudId = urlParams.get('solicitud_id');
         var accionSolicitud = urlParams.get('accion') || 'ver';

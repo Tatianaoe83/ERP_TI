@@ -577,7 +577,7 @@
     actualizarSelectsFiltros();
 </script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    (function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); })(function() {
         document.querySelectorAll('.autocomplete').forEach(inicializarAutocompletado);
     });
 
