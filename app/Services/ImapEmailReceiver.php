@@ -58,12 +58,12 @@ class ImapEmailReceiver
     }
 
     /**
-     * Procesar correos entrantes y crear tickets automáticamente
+     * Procesar correos entrantes y mapear respuestas a tickets existentes.
+     * No crea tickets: el alta se hace desde solicitudes.
      */
     public function procesarCorreosEntrantes()
     {
         try {
-            Log::info('Iniciando procesamiento de correos entrantes');
             
             $connection = $this->conectarIMAP();
             if (!$connection) {
@@ -77,7 +77,6 @@ class ImapEmailReceiver
             }
 
             imap_close($connection);
-            Log::info('Procesamiento de correos completado');
             
             return true;
 
@@ -106,8 +105,6 @@ class ImapEmailReceiver
                 $server = "{{$this->imapHost}:{$this->imapPort}/imap/ssl/novalidate-cert}INBOX";
             }
             
-            Log::info("Intentando conectar a IMAP: {$server}");
-            Log::info("Usuario: {$this->imapUsername}");
             
             $connection = imap_open($server, $this->imapUsername, $this->imapPassword, $options);
             
@@ -119,7 +116,6 @@ class ImapEmailReceiver
                 return false;
             }
 
-            Log::info('Conexión IMAP establecida correctamente');
             return $connection;
 
         } catch (\Exception $e) {
@@ -138,11 +134,9 @@ class ImapEmailReceiver
             $emails = imap_search($connection, 'UNSEEN');
             
             if (!$emails) {
-                Log::info('No hay correos nuevos');
                 return [];
             }
 
-            Log::info('Encontrados ' . count($emails) . ' correos nuevos');
             return $emails;
 
         } catch (\Exception $e) {
@@ -177,13 +171,11 @@ class ImapEmailReceiver
             $messageId = $this->extraerMessageId($connection, $emailId);
             $threadId = $this->extraerThreadId($connection, $emailId);
             
-            Log::info("Procesando correo de: {$fromEmail} - Asunto: {$subject} - Message-ID: {$messageId}");
 
             // Buscar si el correo viene de un empleado registrado
             $empleado = Empleados::where('Correo', $fromEmail)->first();
             
             if (!$empleado) {
-                Log::info("Correo de empleado no registrado: {$fromEmail}");
                 $this->marcarComoLeido($connection, $emailId);
                 return false;
             }
@@ -202,23 +194,14 @@ class ImapEmailReceiver
                 
                 // Si el ticket no existe, no crear uno nuevo
                 if (!$resultado) {
-                    Log::info("Ticket #{$ticketId} no existe, ignorando correo de respuesta");
                     $this->marcarComoLeido($connection, $emailId);
                     return false;
                 }
             } else {
-                // Verificar si es una respuesta (tiene thread_id o In-Reply-To) pero no se encontró el ticket
-                // En ese caso, NO crear un nuevo ticket
-                if ($threadId) {
-                    Log::info("Correo es respuesta (thread_id: {$threadId}) pero ticket no encontrado, ignorando correo");
-                    $this->marcarComoLeido($connection, $emailId);
-                    return false;
-                }
-                
-                // Es un nuevo ticket (no es respuesta)
-                $this->crearTicketDesdeCorreo($empleado, $subject, $body, $messageId, $threadId, $adjuntos);
-
-                event(new \App\Events\TicketUpdatedEvent());
+                // Sin ticket en asunto ni hilo: no se crea uno nuevo.
+                // Los tickets se dan de alta desde solicitudes.
+                $this->marcarComoLeido($connection, $emailId);
+                return false;
             }
 
             // Marcar como leído
@@ -367,7 +350,6 @@ class ImapEmailReceiver
                 // Verificar que el ticket aún existe
                 $ticket = Tickets::find($ticketChat->ticket_id);
                 if ($ticket) {
-                    Log::info("Ticket #{$ticket->TicketID} encontrado por thread_id: {$threadIdNormalizado}");
                     return $ticket->TicketID;
                 }
             }
@@ -421,7 +403,6 @@ class ImapEmailReceiver
                 \Log::debug('No se pudo incrementar ticket_chats.notificaciones_pendientes (increment): ' . $e->getMessage());
             }
 
-            Log::info("Respuesta por correo agregada al ticket #{$ticketId} desde {$empleado->Correo}");
             event(new TicketUpdatedEvent());
             return true;
 
@@ -432,62 +413,11 @@ class ImapEmailReceiver
     }
 
     /**
-     * Crear nuevo ticket desde correo
+     * Desactivado: los tickets se crean desde solicitudes, no desde el buzón.
      */
     private function crearTicketDesdeCorreo($empleado, $subject, $body, $messageId = null, $threadId = null, $adjuntos = [])
     {
-        try {
-            // Limpiar asunto: remover prefijos y formato "Ticket #ID" si existe
-            $subjectLimpio = $this->limpiarAsunto($subject);
-            
-            // Crear nuevo ticket
-            $ticket = Tickets::create([
-                'EmpleadoID' => $empleado->EmpleadoID,
-                'Descripcion' => $subjectLimpio,
-                'Estatus' => 'Pendiente',
-                'Prioridad' => 'Media',
-                'created_at' => now()
-            ]);
-
-            // Actualizar la descripción con el formato "Ticket #ID - [asunto original]"
-            $descripcionConFormato = "Ticket #{$ticket->TicketID} - {$subjectLimpio}";
-            
-            // Verificar que no exceda la longitud máxima
-            if (strlen($descripcionConFormato) > 500) {
-                $maxLength = 500 - strlen("Ticket #{$ticket->TicketID} - ");
-                $descripcionConFormato = "Ticket #{$ticket->TicketID} - " . substr($subjectLimpio, 0, $maxLength) . '...';
-            }
-            
-            $ticket->Descripcion = $descripcionConFormato;
-            $ticket->save();
-
-            // Crear primera entrada en el chat
-            $chat = TicketChat::create([
-                'ticket_id' => $ticket->TicketID,
-                'mensaje' => "Ticket creado automáticamente desde correo:\n\n" . $body,
-                'remitente' => 'usuario',
-                'nombre_remitente' => $empleado->NombreEmpleado,
-                'correo_remitente' => $empleado->Correo,
-                'adjuntos' => !empty($adjuntos) ? $this->validarAdjuntos($adjuntos) : [],
-                'message_id' => $messageId,
-                'thread_id' => $threadId,
-                'es_correo' => true,
-                'leido' => false,
-                'notificaciones_pendientes' => 1
-            ]);
-
-            Log::info("Nuevo ticket #{$ticket->TicketID} creado desde correo de {$empleado->Correo} | Asunto: {$descripcionConFormato}");
-            event(new TicketUpdatedEvent());
-            
-            // Enviar notificación de confirmación (opcional) - DESACTIVADO
-            // $this->enviarConfirmacionTicket($ticket, $empleado);
-            
-            return $ticket;
-
-        } catch (\Exception $e) {
-            Log::error("Error creando ticket desde correo: " . $e->getMessage());
-            return false;
-        }
+        return false;
     }
     
     /**

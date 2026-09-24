@@ -21,7 +21,6 @@ class WebklexApiController extends Controller
     public function testConnection(Request $request)
     {
         try {
-            Log::info('Probando conexión Webklex IMAP desde API');
             
             $resultado = $this->imapService->probarConexion();
             
@@ -57,7 +56,6 @@ class WebklexApiController extends Controller
         try {
             $ticketId = $request->input('ticket_id');
             
-            Log::info("Procesando respuestas Webklex para ticket: {$ticketId}");
             
             // Procesar correos y obtener resultado detallado
             $resultado = $this->imapService->procesarCorreosSimples();

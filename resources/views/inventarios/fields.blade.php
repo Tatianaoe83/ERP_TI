@@ -186,7 +186,10 @@
                     <table id="equiposAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
-                            <th>Action</th>
+                            <th>Acciones</th>
+                            @if($permitePresupuestado)
+                            <th>Tipo</th>
+                            @endif
                             <th>Categoria</th>
                             <th>Marca</th>
                             <th>Caracteristicas</th>
@@ -199,7 +202,6 @@
                             <th>Gerencia Equipo</th>
                             <th>Comentarios</th>
                             @if($permitePresupuestado)
-                            <th>Tipo Equipo</th>
                             <th>Mes de pago</th>
                             @endif
                         </tr>
@@ -250,6 +252,9 @@
                                 @endif
 
                             </td>
+                            @if($permitePresupuestado)
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->tipoEquipo) !!}</td>
+                            @endif
                             <td>{{ $equiposAsignado->CategoriaEquipo }}</td>
                             <td>{{ $equiposAsignado->Marca }}</td>
                             <td>{{ $equiposAsignado->Caracteristicas }}</td>
@@ -262,7 +267,6 @@
                             <td data-id="{{ $equiposAsignado->GerenciaEquipoID }}">{!! $celdaPendiente($equiposAsignado->GerenciaEquipo, $esExtraEquipo) !!}</td>
                             <td>{!! $celdaPendiente($equiposAsignado->Comentarios, $esExtraEquipo) !!}</td>
                             @if($permitePresupuestado)
-                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($equiposAsignado->tipoEquipo) !!}</td>
                             <td>@if($equiposAsignado->MesDePago)@include('inventarios.partials.meses-pills', ['mesesValor' => $equiposAsignado->MesDePago])@endif</td>
                             @endif
                         </tr>
@@ -389,7 +393,10 @@
                 <table id="insumosAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
-                            <th>Action</th>
+                            <th>Acciones</th>
+                            @if($permitePresupuestado)
+                            <th>Tipo</th>
+                            @endif
                             <th>Categoria Insumo</th>
                             <th>Nombre Insumo</th>
                             <th>Costo Mensual</th>
@@ -399,9 +406,6 @@
                             <th>Fecha de Asignacion</th>
                             <th>Num. Serie</th>
                             <th>Comentarios</th>
-                            @if($permitePresupuestado)
-                            <th>Tipo Equipo</th>
-                            @endif
                             <th>Mes de pago</th>
 
                         </tr>
@@ -440,8 +444,9 @@
 
 
                             </td>
-
-
+                            @if($permitePresupuestado)
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
+                            @endif
                             <td>{{ $insumosAsignado->CateogoriaInsumo }}</td>
                             <td>{{ $insumosAsignado->NombreInsumo }}</td>
                             <td>{{ $insumosAsignado->CostoMensual }}</td>
@@ -451,9 +456,6 @@
                             <td>{!! $fechaPendiente($insumosAsignado->FechaAsignacion, $esExtraInsumo) !!}</td>
                             <td>{!! $celdaPendiente($insumosAsignado->NumSerie, $esExtraInsumo) !!}</td>
                             <td>{!! $celdaPendiente($insumosAsignado->Comentarios, $esExtraInsumo) !!}</td>
-                            @if($permitePresupuestado)
-                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($insumosAsignado->Presupuestado) !!}</td>
-                            @endif
                             <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $insumosAsignado->MesDePago, 'mesesFrecuencia' => $insumosAsignado->FrecuenciaDePago])</td>
                         </tr>
                         @endforeach
@@ -598,7 +600,10 @@
                 <table id="lineasAsignadosTable" class="table index-table w-full">
                     <thead>
                         <tr>
-                            <th>Action</th>
+                            <th>Acciones</th>
+                            @if($permitePresupuestado)
+                            <th>Tipo</th>
+                            @endif
                             <th>Num. Tel.</th>
                             <th>Compania</th>
                             <th>Plan</th>
@@ -613,9 +618,6 @@
                             <th>Comentario</th>
                             <th>Monto Renovación Fianza</th>
                             <th>Fecha Renovación</th>
-                            @if($permitePresupuestado)
-                            <th>Tipo Equipo</th>
-                            @endif
                             <th>Mes de pago</th>
 
 
@@ -679,8 +681,9 @@
 
 
                             </td>
-
-
+                            @if($permitePresupuestado)
+                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($LineasAsignado->Presupuestado) !!}</td>
+                            @endif
                             <td>{!! $esProyLinea && empty($LineasAsignado->NumTelefonico) ? $pendiente : e($LineasAsignado->NumTelefonico) !!}</td>
                             <td>{{ $LineasAsignado->Compania}}</td>
                             <td>{{ $LineasAsignado->PlanTel}}</td>
@@ -695,9 +698,6 @@
                             <td>{{ $LineasAsignado->Comentarios}}</td>
                             <td>{{ $LineasAsignado->MontoRenovacionFianza}}</td>
                             <td>{{ (empty($LineasAsignado->FechaRenovacion) || in_array($LineasAsignado->FechaRenovacion, ['Sin asignar', 'Sin asigna', '0000-00-00'])) ? 'Sin asignar' : \Carbon\Carbon::parse($LineasAsignado->FechaRenovacion)->format('d/m/Y') }}</td>
-                            @if($permitePresupuestado)
-                            <td>{!! \App\Helpers\PresupuestoAsignacion::chipHtml($LineasAsignado->Presupuestado) !!}</td>
-                            @endif
                             <td>@include('inventarios.partials.meses-pills', ['mesesValor' => $LineasAsignado->MesDePago])</td>
 
                         </tr>
@@ -852,6 +852,11 @@
     var permitePresupuestado = @json($permitePresupuestado);
     var presupuestadoForzado = @json($presupuestadoForzado);
 
+    // Tipo va junto a Acciones: desplaza +1 el resto de columnas.
+    function colInv(n) {
+        return (permitePresupuestado ? 1 : 0) + n;
+    }
+
     $(document).off('.invAssign');
 
     // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
@@ -904,15 +909,93 @@
         $row.attr('data-presupuestado', modo);
     }
 
-    function checksBulk($bar) {
-        var tablaId = $bar.data('bulk-table');
-        return $bar.closest('.inv-panel-body').find('#' + tablaId + ' tbody tr:visible .inv-bulk-check');
+    function tablaIdBulk($bar) {
+        return $bar.attr('data-bulk-table') || $bar.data('bulk-table');
+    }
+
+    function dtAsignados(tablaId) {
+        if (!tablaId || !$('#' + tablaId).length) {
+            return null;
+        }
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable('#' + tablaId)) {
+            return $('#' + tablaId).DataTable();
+        }
+        return null;
+    }
+
+    // DataTables saca del DOM las filas de otras páginas. Guardamos los IDs
+    // para que "Seleccionar" y "Pasar a Stock" cubran el paginado completo.
+    var bulkIdsPorTabla = {};
+
+    function mapaBulkIds(tablaId) {
+        if (!tablaId) {
+            return {};
+        }
+        if (!bulkIdsPorTabla[tablaId]) {
+            bulkIdsPorTabla[tablaId] = {};
+        }
+        return bulkIdsPorTabla[tablaId];
+    }
+
+    function idDeCheckBulk(el) {
+        return String($(el).attr('data-id') || $(el).data('id') || '');
+    }
+
+    function checksBulk($bar, todasLasFilas) {
+        if (!$bar || !$bar.length) {
+            return $();
+        }
+        var tablaId = tablaIdBulk($bar);
+        var dt = dtAsignados(tablaId);
+        if (dt) {
+            var opts = todasLasFilas ? { search: 'none' } : { search: 'applied' };
+            return $(dt.rows(opts).nodes()).find('.inv-bulk-check');
+        }
+        return $('#' + tablaId).find('tbody .inv-bulk-check');
+    }
+
+    function pintarChecksBulk($bar) {
+        var tablaId = tablaIdBulk($bar);
+        var sel = mapaBulkIds(tablaId);
+        checksBulk($bar, true).each(function() {
+            var id = idDeCheckBulk(this);
+            this.checked = !!(id && sel[id]);
+        });
     }
 
     function actualizarConteoBulk($bar) {
-        var n = checksBulk($bar).filter(':checked').length;
-        $bar.find('.inv-bulk-count').text(n + (n === 1 ? ' seleccionado' : ' seleccionados'));
+        if (!$bar || !$bar.length) {
+            return;
+        }
+        pintarChecksBulk($bar);
+        var $checks = checksBulk($bar);
+        var n = $checks.filter(':checked').length;
+        var total = $checks.length;
+        var etiquetaCount = n + ' de ' + total + (n === 1 ? ' seleccionado' : ' seleccionados');
+        $bar.find('.inv-bulk-count').text(etiquetaCount).toggleClass('is-on', n > 0);
         $bar.find('.inv-bulk-btn').prop('disabled', n === 0);
+        var $all = $bar.find('.inv-bulk-all');
+        $all.prop('indeterminate', n > 0 && n < total);
+        $all.prop('checked', total > 0 && n === total);
+        $bar.find('.inv-bulk-all-text').text(n > 0 && n === total ? 'Deseleccionar todos' : 'Seleccionar todos');
+    }
+
+    function syncBulkPorTabla(tablaId) {
+        actualizarConteoBulk($('.inv-bulk[data-bulk-table="' + tablaId + '"]'));
+    }
+
+    function idsBulkSeleccionados($bar) {
+        var ids = [];
+        var vistos = {};
+        var sel = mapaBulkIds(tablaIdBulk($bar));
+        checksBulk($bar).each(function() {
+            var id = idDeCheckBulk(this);
+            if (id && sel[id] && !vistos[id]) {
+                vistos[id] = true;
+                ids.push(id);
+            }
+        });
+        return ids;
     }
 
     function syncModoCards(selector, valor) {
@@ -1225,6 +1308,9 @@
             ordering: true,
             info: true,
             autoWidth: false,
+            columnDefs: [
+                { orderable: false, targets: 0 }
+            ],
             dom: invDtDom,
             language: invDtLang
         };
@@ -1246,11 +1332,22 @@
         initInvDt('#equiposAsignadosTable', {
             responsive: false,
             columnDefs: [
-                { visible: false, targets: [3, 6, 7] }
+                { orderable: false, targets: permitePresupuestado ? [0, 1] : [0] },
+                { visible: false, targets: [colInv(3), colInv(6), colInv(7)] }
             ]
         });
-        initInvDt('#insumosAsignadosTable', { responsive: false });
-        initInvDt('#lineasAsignadosTable', { responsive: false });
+        initInvDt('#insumosAsignadosTable', {
+            responsive: false,
+            columnDefs: [
+                { orderable: false, targets: permitePresupuestado ? [0, 1] : [0] }
+            ]
+        });
+        initInvDt('#lineasAsignadosTable', {
+            responsive: false,
+            columnDefs: [
+                { orderable: false, targets: permitePresupuestado ? [0, 1] : [0] }
+            ]
+        });
 
         inicializarFiltrosPresupuestado();
     });
@@ -1260,9 +1357,9 @@
     // Índice de la columna "Presupuestado" en cada tabla de asignados.
     // La columna sólo se pinta para FISICA/EXTRAORDINARIO.
     var columnaPresupuestado = {
-        equiposAsignadosTable: 12,
-        insumosAsignadosTable: 10,
-        lineasAsignadosTable: 15,
+        equiposAsignadosTable: 1,
+        insumosAsignadosTable: 1,
+        lineasAsignadosTable: 1,
     };
 
     // Filtro activo por tabla: todos | presupuestados | no_presupuestados
@@ -1374,7 +1471,7 @@
             return parseFloat($row.attr('data-precio')) || 0;
         }
         if (tablaId === 'insumosAsignadosTable') {
-            return parseFloat($row.attr('data-costo-mensual')) || parseFloat($row.find('td:eq(3)').text()) || 0;
+            return parseFloat($row.attr('data-costo-mensual')) || parseFloat($row.find('td:eq(' + colInv(3) + ')').text()) || 0;
         }
         if (tablaId === 'lineasAsignadosTable') {
             return parseFloat($row.attr('data-renta')) || 0;
@@ -1457,6 +1554,7 @@
             // Recontar cada vez que se agrega, edita o elimina una fila.
             $('#' + tablaId).DataTable().on('draw', function() {
                 actualizarConteos(tablaId);
+                syncBulkPorTabla(tablaId);
             });
         });
     }
@@ -1465,19 +1563,9 @@
     // pestañas el valor ya está implícito en el filtro, igual que en el Excel.
     // En equipo el chip se oculta al filtrar (el tipo ya va implícito).
     // En insumo y línea Status y Mes de pago se quedan siempre visibles.
+    // Tipo queda siempre visible, junto a las acciones.
     function aplicarVisibilidadPresupuestado(tablaId) {
-        if (!permitePresupuestado) {
-            return;
-        }
-        if (tablaId === 'insumosAsignadosTable' || tablaId === 'lineasAsignadosTable') {
-            return;
-        }
-
-        const mostrar = (filtroPresupuestado[tablaId] || 'todos') === 'todos';
-
-        $('#' + tablaId).DataTable()
-            .column(columnaPresupuestado[tablaId])
-            .visible(mostrar, false);
+        return;
     }
 
     $(document).on('click.invAssign', '.pill-filtro', function() {
@@ -1557,10 +1645,9 @@
     });
 
     // Seccion equipo 
-    // La tabla de equipos oculta las columnas 3, 6 y 7 (características, fecha de
-    // asignación y de compra), y DataTables saca esos <td> del DOM: "td:eq(N)" deja de
-    // coincidir con el número de columna. La API sí conserva las celdas ocultas, así
-    // que el acceso por índice original pasa siempre por ella.
+    // La tabla de equipos oculta características y las dos fechas, y DataTables
+    // saca esos <td> del DOM: "td:eq(N)" deja de coincidir. La API sí conserva
+    // las celdas ocultas, así que el acceso por índice original pasa siempre por ella.
     function celdasEquipo($row) {
         const dt = $('#equiposAsignadosTable').DataTable();
         const indice = dt.row($row).index();
@@ -1594,9 +1681,9 @@
         $('#editFechaDeCompra').val(attrFila(row, 'fecha-compra'));
         $('#editNumSerie').val(attrFila(row, 'num-serie'));
         $('#editFolio').val(attrFila(row, 'folio'));
-        $('#editGerenciaEquipo').val(attrFila(row, 'gerencia-id') || celda.nodo(10).data('id')).trigger('change');
+        $('#editGerenciaEquipo').val(attrFila(row, 'gerencia-id') || celda.nodo(colInv(10)).data('id')).trigger('change');
         $('#editComentarios').val(attrFila(row, 'comentarios'));
-        setPresupuestado('#editPresupuestadoEquipo', row.attr('data-presupuestado') || celda.texto(12));
+        setPresupuestado('#editPresupuestadoEquipo', row.attr('data-presupuestado') || (permitePresupuestado ? celda.texto(1) : ''));
         setPagoMeses('editMesDePagoEquipo', row.attr('data-meses') || '');
 
         $('#editModal').modal('show');
@@ -2054,23 +2141,21 @@
             return;
         }
         const extra = esExtraAsignacion(equipo.tipoEquipo);
-        // Columnas 3, 6 y 7 estan ocultas y DataTables saca esos <td> del DOM:
-        // "td:eq(N)" escribiria en la celda equivocada. Se usa la API.
         const celda = celdasEquipo(row);
-        celda.nodo(1).text(equipo.CategoriaEquipo);
-        celda.nodo(2).text(equipo.Marca);
-        celda.nodo(3).text(equipo.Caracteristicas);
-        celda.nodo(4).text(equipo.Modelo);
-        celda.nodo(5).html(celdaPendiente(equipo.Precio, extra));
-        celda.nodo(6).html(celdaFechaPendiente(equipo.FechaAsignacion, extra));
-        celda.nodo(7).html(celdaFechaPendiente(equipo.FechaDeCompra, extra));
-        celda.nodo(8).html(celdaPendiente(equipo.NumSerie, extra));
-        celda.nodo(9).html(celdaPendiente(equipo.Folio, extra));
-        celda.nodo(10).attr('data-id', equipo.GerenciaEquipoID || '').html(celdaPendiente(equipo.GerenciaEquipo, extra));
-        celda.nodo(11).html(celdaPendiente(equipo.Comentarios, extra));
+        celda.nodo(colInv(1)).text(equipo.CategoriaEquipo);
+        celda.nodo(colInv(2)).text(equipo.Marca);
+        celda.nodo(colInv(3)).text(equipo.Caracteristicas);
+        celda.nodo(colInv(4)).text(equipo.Modelo);
+        celda.nodo(colInv(5)).html(celdaPendiente(equipo.Precio, extra));
+        celda.nodo(colInv(6)).html(celdaFechaPendiente(equipo.FechaAsignacion, extra));
+        celda.nodo(colInv(7)).html(celdaFechaPendiente(equipo.FechaDeCompra, extra));
+        celda.nodo(colInv(8)).html(celdaPendiente(equipo.NumSerie, extra));
+        celda.nodo(colInv(9)).html(celdaPendiente(equipo.Folio, extra));
+        celda.nodo(colInv(10)).attr('data-id', equipo.GerenciaEquipoID || '').html(celdaPendiente(equipo.GerenciaEquipo, extra));
+        celda.nodo(colInv(11)).html(celdaPendiente(equipo.Comentarios, extra));
         if (permitePresupuestado) {
-            celda.nodo(12).html(htmlChipPresupuestado(equipo.tipoEquipo));
-            celda.nodo(13).html(htmlPillsMeses(equipo.MesDePago ?? ''));
+            celda.nodo(1).html(htmlChipPresupuestado(equipo.tipoEquipo));
+            celda.nodo(colInv(12)).html(htmlPillsMeses(equipo.MesDePago ?? ''));
         }
         row.attr('data-meses', equipo.MesDePago ?? '');
         row.find('.edit-btn').data('id', equipo.InventarioID);
@@ -2130,6 +2215,7 @@
                     </form>
                 </div>
             </td>
+            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.tipoEquipo)}</td>` : ''}
             <td>${equipo.CategoriaEquipo}</td>
             <td>${equipo.Marca}</td>
             <td>${equipo.Caracteristicas}</td>
@@ -2141,7 +2227,7 @@
             <td>${celdaPendiente(equipo.Folio, extra)}</td>
             <td data-id="${equipo.GerenciaEquipoID || ''}">${celdaPendiente(equipo.GerenciaEquipo, extra)}</td>
             <td>${celdaPendiente(equipo.Comentarios, extra)}</td>
-            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(equipo.tipoEquipo)}</td><td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
+            ${permitePresupuestado ? `<td>${htmlPillsMeses(equipo.MesDePago ?? '')}</td>` : ''}
         </tr>
     `;
         const dtEquipos = $('#equiposAsignadosTable').DataTable();
@@ -2248,17 +2334,17 @@
 
         $('#editId_insumo').val(id);
         $('#editEmp_insumo').val('');
-        $('#editCategoriaInsumo').val(attrFila(row, 'categoria') || row.find("td:eq(1)").text());
-        $('#editNombreInsumo').val(attrFila(row, 'nombre') || row.find("td:eq(2)").text());
-        $('#editCostoMensual').val(attrFila(row, 'costo-mensual') || row.find("td:eq(3)").text());
-        $('#editCostoAnual').val(attrFila(row, 'costo-anual') || row.find("td:eq(4)").text());
-        $('#editFechaDeRenovacion').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(5)"))));
-        $('#editobserv').val(row.find("td:eq(6)").text());
-        $('#editFechaDeAsigna').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(7)"))));
-        $('#editNumSerieInsu').val(textoDeCelda(row.find("td:eq(8)")));
-        $('#editComentariosInsumo').val(textoDeCelda(row.find("td:eq(9)")));
+        $('#editCategoriaInsumo').val(attrFila(row, 'categoria') || row.find("td:eq(" + colInv(1) + ")").text());
+        $('#editNombreInsumo').val(attrFila(row, 'nombre') || row.find("td:eq(" + colInv(2) + ")").text());
+        $('#editCostoMensual').val(attrFila(row, 'costo-mensual') || row.find("td:eq(" + colInv(3) + ")").text());
+        $('#editCostoAnual').val(attrFila(row, 'costo-anual') || row.find("td:eq(" + colInv(4) + ")").text());
+        $('#editFechaDeRenovacion').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(" + colInv(5) + ")"))));
+        $('#editobserv').val(row.find("td:eq(" + colInv(6) + ")").text());
+        $('#editFechaDeAsigna').val(fechaDisplayToInput(textoDeCelda(row.find("td:eq(" + colInv(7) + ")"))));
+        $('#editNumSerieInsu').val(textoDeCelda(row.find("td:eq(" + colInv(8) + ")")));
+        $('#editComentariosInsumo').val(textoDeCelda(row.find("td:eq(" + colInv(9) + ")")));
         setPagoMeses('editMesDePago', row.attr('data-meses') || '');
-        setPresupuestado('#editPresupuestadoInsumo', row.attr('data-presupuestado') || row.find("td:eq(10)").text());
+        setPresupuestado('#editPresupuestadoInsumo', row.attr('data-presupuestado') || (permitePresupuestado ? row.find("td:eq(1)").text() : ''));
 
         $('#editModalInsumo').modal('show');
     });
@@ -2428,15 +2514,15 @@
         // Ver nota en updateTableRow: el data-id solo es unico dentro de su tabla.
         let row = $('#insumosAsignadosTable').find(`tr[data-id="${insumo.InventarioID}"]`);
         const extra = esExtraAsignacion(insumo.Presupuestado);
-        row.find('td:eq(1)').text(insumo.CateogoriaInsumo);
-        row.find('td:eq(2)').text(insumo.NombreInsumo);
-        row.find('td:eq(3)').text(insumo.CostoMensual);
-        row.find('td:eq(4)').text(insumo.CostoAnual);
-        row.find('td:eq(5)').text(formatFechaRenovacion(insumo.FechaRenovacion));
-        row.find('td:eq(6)').text(insumo.Observaciones);
-        row.find('td:eq(7)').html(celdaFechaPendiente(insumo.FechaAsignacion, extra));
-        row.find('td:eq(8)').html(celdaPendiente(insumo.NumSerie, extra));
-        row.find('td:eq(9)').html(celdaPendiente(insumo.Comentarios, extra));
+        row.find('td:eq(' + colInv(1) + ')').text(insumo.CateogoriaInsumo);
+        row.find('td:eq(' + colInv(2) + ')').text(insumo.NombreInsumo);
+        row.find('td:eq(' + colInv(3) + ')').text(insumo.CostoMensual);
+        row.find('td:eq(' + colInv(4) + ')').text(insumo.CostoAnual);
+        row.find('td:eq(' + colInv(5) + ')').text(formatFechaRenovacion(insumo.FechaRenovacion));
+        row.find('td:eq(' + colInv(6) + ')').text(insumo.Observaciones);
+        row.find('td:eq(' + colInv(7) + ')').html(celdaFechaPendiente(insumo.FechaAsignacion, extra));
+        row.find('td:eq(' + colInv(8) + ')').html(celdaPendiente(insumo.NumSerie, extra));
+        row.find('td:eq(' + colInv(9) + ')').html(celdaPendiente(insumo.Comentarios, extra));
         row.attr('data-meses', insumo.MesDePago ?? '');
         row.attr('data-presupuestado', insumo.Presupuestado ?? 0);
         setAttrFila(row, 'categoria', insumo.CateogoriaInsumo);
@@ -2444,10 +2530,10 @@
         setAttrFila(row, 'costo-mensual', insumo.CostoMensual);
         setAttrFila(row, 'costo-anual', insumo.CostoAnual);
         if (permitePresupuestado) {
-            row.find('td:eq(10)').html(htmlChipPresupuestado(insumo.Presupuestado));
-            row.find('td:eq(11)').html(htmlPillsMeses(insumo.MesDePago));
+            row.find('td:eq(1)').html(htmlChipPresupuestado(insumo.Presupuestado));
+            row.find('td:eq(' + colInv(10) + ')').html(htmlPillsMeses(insumo.MesDePago));
         } else {
-            row.find('td:eq(10)').html(htmlPillsMeses(insumo.MesDePago));
+            row.find('td:eq(' + colInv(10) + ')').html(htmlPillsMeses(insumo.MesDePago));
         }
         syncCheckFila(row, 'insumo', insumo.InventarioID, insumo.Presupuestado);
 
@@ -2472,6 +2558,7 @@
                     </form>
                 </div>
             </td>
+            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(insumo.Presupuestado)}</td>` : ''}
             <td>${insumo.CateogoriaInsumo}</td>
             <td>${insumo.NombreInsumo}</td>
             <td>${insumo.CostoMensual}</td>
@@ -2481,7 +2568,6 @@
             <td>${celdaFechaPendiente(insumo.FechaAsignacion, extra)}</td>
             <td>${celdaPendiente(insumo.NumSerie, extra)}</td>
             <td>${celdaPendiente(insumo.Comentarios, extra)}</td>
-            ${permitePresupuestado ? `<td>${htmlChipPresupuestado(insumo.Presupuestado)}</td>` : ''}
             <td>${htmlPillsMeses(insumo.MesDePago)}</td>
         </tr>
     `;
@@ -2613,7 +2699,7 @@
         $('#editcomenl').val(row.attr('data-comentarios') || '');
         $('#editMontoRenovacionFianza').val(row.attr('data-monto-renov') || '');
         $('#editFechaRenovacion').val(row.attr('data-fecha-renov') || '');
-        setPresupuestado('#editPresupuestadoLinea', row.attr('data-presupuestado') || row.find('td:eq(15)').text());
+        setPresupuestado('#editPresupuestadoLinea', row.attr('data-presupuestado') || (permitePresupuestado ? row.find('td:eq(1)').text() : ''));
         setPagoMeses('editMesDePagoLinea', row.attr('data-meses') || '');
         syncLineaModalModo();
 
@@ -2867,26 +2953,24 @@
         // Ver nota en updateTableRow: el data-id solo es unico dentro de su tabla.
         let row = $('#lineasAsignadosTable').find(`tr[data-id="${telefono.InventarioID}"]`);
         const proy = esProyeccionTel(telefono);
-        row.find('td:eq(1)').html(celdaLineaPendiente(telefono.NumTelefonico, proy));
-        row.find('td:eq(2)').text(telefono.Compania || '');
-        row.find('td:eq(3)').text(telefono.PlanTel || '');
-        row.find('td:eq(4)').text(telefono.CostoRentaMensual || '');
-        row.find('td:eq(5)').html(celdaLineaPendiente(telefono.CuentaPadre, proy));
-        row.find('td:eq(6)').html(celdaLineaPendiente(telefono.CuentaHija, proy));
-        row.find('td:eq(7)').text(telefono.TipoLinea || '');
-        row.find('td:eq(8)').text(obraLineaTexto(telefono));
-        row.find('td:eq(9)').html(celdaLineaPendiente(formatFechaRenovacion(telefono.FechaFianza), proy));
-        row.find('td:eq(10)').text(telefono.CostoFianza || '');
-        row.find('td:eq(11)').html(celdaLineaPendiente(formatFechaRenovacion(telefono.FechaAsignacion), proy));
-        row.find('td:eq(12)').text(telefono.Comentarios || '');
-        row.find('td:eq(13)').text(telefono.MontoRenovacionFianza || '');
-        row.find('td:eq(14)').text(formatFechaRenovacion(telefono.FechaRenovacion));
+        row.find('td:eq(' + colInv(1) + ')').html(celdaLineaPendiente(telefono.NumTelefonico, proy));
+        row.find('td:eq(' + colInv(2) + ')').text(telefono.Compania || '');
+        row.find('td:eq(' + colInv(3) + ')').text(telefono.PlanTel || '');
+        row.find('td:eq(' + colInv(4) + ')').text(telefono.CostoRentaMensual || '');
+        row.find('td:eq(' + colInv(5) + ')').html(celdaLineaPendiente(telefono.CuentaPadre, proy));
+        row.find('td:eq(' + colInv(6) + ')').html(celdaLineaPendiente(telefono.CuentaHija, proy));
+        row.find('td:eq(' + colInv(7) + ')').text(telefono.TipoLinea || '');
+        row.find('td:eq(' + colInv(8) + ')').text(obraLineaTexto(telefono));
+        row.find('td:eq(' + colInv(9) + ')').html(celdaLineaPendiente(formatFechaRenovacion(telefono.FechaFianza), proy));
+        row.find('td:eq(' + colInv(10) + ')').text(telefono.CostoFianza || '');
+        row.find('td:eq(' + colInv(11) + ')').html(celdaLineaPendiente(formatFechaRenovacion(telefono.FechaAsignacion), proy));
+        row.find('td:eq(' + colInv(12) + ')').text(telefono.Comentarios || '');
+        row.find('td:eq(' + colInv(13) + ')').text(telefono.MontoRenovacionFianza || '');
+        row.find('td:eq(' + colInv(14) + ')').text(formatFechaRenovacion(telefono.FechaRenovacion));
         if (permitePresupuestado) {
-            row.find('td:eq(15)').html(htmlChipPresupuestado(telefono.Presupuestado));
-            row.find('td:eq(16)').html(htmlPillsMeses(telefono.MesDePago));
-        } else {
-            row.find('td:eq(15)').html(htmlPillsMeses(telefono.MesDePago));
+            row.find('td:eq(1)').html(htmlChipPresupuestado(telefono.Presupuestado));
         }
+        row.find('td:eq(' + colInv(15) + ')').html(htmlPillsMeses(telefono.MesDePago));
         aplicarAttrsFilaLinea(row, telefono);
         syncCheckFila(row, 'linea', telefono.InventarioID, telefono.Presupuestado);
 
@@ -2909,7 +2993,12 @@
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </form>
-            </div>`,
+            </div>`
+        ];
+        if (permitePresupuestado) {
+            newRow.push(htmlChipPresupuestado(telefono.Presupuestado));
+        }
+        newRow.push(
             celdaLineaPendiente(telefono.NumTelefonico, proy),
             telefono.Compania,
             telefono.PlanTel,
@@ -2923,15 +3012,9 @@
             celdaLineaPendiente(formatFechaRenovacion(telefono.FechaAsignacion), proy),
             telefono.Comentarios,
             telefono.MontoRenovacionFianza,
-            formatFechaRenovacion(telefono.FechaRenovacion)
-        ];
-
-        // La columna sólo existe para FISICA/EXTRAORDINARIO; DataTables exige que el
-        // array tenga exactamente tantos elementos como columnas tenga la tabla.
-        if (permitePresupuestado) {
-            newRow.push(htmlChipPresupuestado(telefono.Presupuestado));
-        }
-        newRow.push(htmlPillsMeses(telefono.MesDePago));
+            formatFechaRenovacion(telefono.FechaRenovacion),
+            htmlPillsMeses(telefono.MesDePago)
+        );
 
         var dtRow = $('#lineasAsignadosTable').DataTable().row.add(newRow);
         aplicarAttrsFilaLinea($(dtRow.node()), telefono);
@@ -3025,9 +3108,34 @@
     });
 
     $(document).on('change.invAssign', '.inv-bulk-check, .inv-bulk-all', function() {
-        var $bar = $(this).closest('.inv-panel-body').find('.inv-bulk');
+        var $bar = $(this).closest('.inv-bulk');
+        if (!$bar.length) {
+            $bar = $(this).closest('.inv-panel-body').find('.inv-bulk');
+        }
+        var tablaId = tablaIdBulk($bar);
+        var sel = mapaBulkIds(tablaId);
         if ($(this).hasClass('inv-bulk-all')) {
-            checksBulk($bar).prop('checked', this.checked);
+            var marcar = this.checked;
+            checksBulk($bar).each(function() {
+                var id = idDeCheckBulk(this);
+                this.checked = marcar;
+                if (id) {
+                    if (marcar) {
+                        sel[id] = true;
+                    } else {
+                        delete sel[id];
+                    }
+                }
+            });
+        } else {
+            var id = idDeCheckBulk(this);
+            if (id) {
+                if (this.checked) {
+                    sel[id] = true;
+                } else {
+                    delete sel[id];
+                }
+            }
         }
         actualizarConteoBulk($bar);
     });
@@ -3039,13 +3147,10 @@
 
         var $btn = $(this);
         var $bar = $btn.closest('.inv-bulk');
-        var tipo = $bar.data('bulk-tipo');
-        var tablaId = $bar.data('bulk-table');
+        var tipo = $bar.attr('data-bulk-tipo') || $bar.data('bulk-tipo');
+        var tablaId = tablaIdBulk($bar);
         var modo = parseInt($btn.data('modo'), 10);
-        var ids = [];
-        checksBulk($bar).filter(':checked').each(function() {
-            ids.push($(this).data('id'));
-        });
+        var ids = idsBulkSeleccionados($bar);
 
         if (!ids.length) {
             return;
@@ -3104,6 +3209,9 @@
                                 dt.cell(idx, col).data(htmlChipPresupuestado(modo));
                             }
                         });
+                        (response.actualizados || []).forEach(function(id) {
+                            delete mapaBulkIds(tablaId)[String(id)];
+                        });
                         dt.draw(false);
                     } else {
                         (response.actualizados || []).forEach(function(id) {
@@ -3112,11 +3220,11 @@
                                 $row.find('td').eq(col).html(htmlChipPresupuestado(modo));
                             }
                             syncCheckFila($row, tipo, id, modo);
+                            delete mapaBulkIds(tablaId)[String(id)];
                         });
                     }
 
                     actualizarConteos(tablaId);
-                    $bar.find('.inv-bulk-all').prop('checked', false);
                     actualizarConteoBulk($bar);
 
                     var extra = '';

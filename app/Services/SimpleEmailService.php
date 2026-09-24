@@ -108,7 +108,6 @@ class SimpleEmailService
             // Guardar información del correo enviado en la base de datos
             $this->guardarCorreoEnviado($ticketId, $mensaje, $messageId, $threadId, $adjuntos);
 
-            Log::info("Correo enviado exitosamente para ticket #{$ticketId} con Message-ID: {$messageId}");
 
             return true;
 
@@ -231,7 +230,6 @@ class SimpleEmailService
             
             $mail->send();
             
-            Log::info("Notificación de nuevo ticket #{$ticketId} enviada a {$empleado->Correo}");
             return true;
             
         } catch (Exception $e) {
@@ -268,7 +266,6 @@ class SimpleEmailService
             
             $mail->send();
             
-            Log::info("Actualización de estado del ticket #{$ticketId} enviada");
             return true;
             
         } catch (Exception $e) {

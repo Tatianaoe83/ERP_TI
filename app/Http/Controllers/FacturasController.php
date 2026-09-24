@@ -1524,7 +1524,6 @@ class FacturasController extends AppBaseController
                 return;
             }
 
-            \Log::info("FacturasController::registrarCambioEmpleado - Usuario name: {$user->name}, email: {$user->email}, FacturaID: {$id}");
 
             // Buscar empleado por email o nombre completo
             $empleado = DB::table('empleados')
@@ -1546,7 +1545,6 @@ class FacturasController extends AppBaseController
                 return;
             }
 
-            \Log::info("FacturasController::registrarCambioEmpleado - Empleado encontrado: {$empleado->EmpleadoID}, Nombre: {$empleado->NombreEmpleado}");
 
             // Actualizar la factura con el EmpleadoID del empleado que hizo el cambio
             $updated = DB::table('facturas')
@@ -1557,7 +1555,6 @@ class FacturasController extends AppBaseController
                     'updated_at' => now()
                 ]);
 
-            \Log::info("FacturasController::registrarCambioEmpleado - Filas actualizadas: {$updated}");
         } catch (\Throwable $e) {
             \Log::error("FacturasController::registrarCambioEmpleado - Error: " . $e->getMessage());
         }

@@ -928,7 +928,6 @@ class TicketsController extends Controller
                     $rutaRelativa  = 'tickets/adjuntos/' . $nombreArchivo;
                     $rutaAbsoluta  = Storage::disk('public')->path($rutaRelativa);
 
-                    Log::info("Buscando imagen en disco: {$rutaAbsoluta}");
 
                     if (!Storage::disk('public')->exists($rutaRelativa)) {
                         Log::warning("Imagen no encontrada: {$rutaRelativa}");
@@ -955,7 +954,6 @@ class TicketsController extends Controller
                     $dataUri           = 'data:' . $mimeType . ';base64,' . base64_encode($contenidoArchivo);
                     $mensajeParaCorreo = str_replace($urlImagen, $dataUri, $mensajeParaCorreo);
 
-                    Log::info("Imagen convertida a base64 para correo: {$nombreArchivo}");
                 }
             }
 
@@ -1422,7 +1420,6 @@ class TicketsController extends Controller
             if ($tiempoAnterior != $nuevoTiempo) {
                 $notificationService = new TicketNotificationService();
                 $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo($tipo->TipoID, $nuevoTiempo);
-                Log::info("Tipo {$tipo->TipoID}: Intervalo actualizado de {$tiempoAnterior} a {$nuevoTiempo} minutos. {$ticketsActualizados} tickets actualizados.");
             }
 
             return response()->json([
@@ -1472,7 +1469,6 @@ class TicketsController extends Controller
                     if ($tiempoAnterior != $tiempoEstimado) {
                         $notificationService = new TicketNotificationService();
                         $ticketsActualizados = $notificationService->recalcularFechasNotificacionPorTipo($tipoId, $tiempoEstimado);
-                        Log::info("Tipo {$tipoId}: Intervalo actualizado de {$tiempoAnterior} a {$tiempoEstimado} minutos. {$ticketsActualizados} tickets actualizados.");
                     }
 
                     $actualizados++;

@@ -734,7 +734,6 @@ class SolicitudesController extends Controller
                 $tokenRow->update(['revoked_at' => now()]);
             }
 
-            Log::info("Solicitud #{$id}: gerente solicitó re-cotizar propuestas " . implode(', ', $propuestas));
 
             return response()->json([
                 'success'  => true,

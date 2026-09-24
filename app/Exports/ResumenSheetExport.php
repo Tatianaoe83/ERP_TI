@@ -69,15 +69,11 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
     public function array(): array
     {
-        \Log::info('ResumenSheetExport array() - tickets count: ' . count($this->tickets));
         $this->prepareReportData();
 
-        \Log::info('ResumenSheetExport after prepareReportData - reportData keys: ' . implode(', ', array_keys($this->reportData)));
-        \Log::info('ResumenSheetExport - usuariosUnicos count: ' . ($this->reportData['usuarios'] ? count($this->reportData['usuarios']) : 0));
 
         $rows = $this->buildRows();
 
-        \Log::info('ResumenSheetExport - rows count: ' . count($rows));
 
         return $this->normalizeRows($rows);
     }
@@ -101,7 +97,6 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $tickets = $this->tickets;
 
-        \Log::info('ResumenSheetExport prepareReportData start - tickets count: ' . count($tickets));
 
         $usuariosUnicos = [];
         $mesActualCorto = $fechaTarget->locale('es')->translatedFormat('F');

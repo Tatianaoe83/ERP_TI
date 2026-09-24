@@ -1352,10 +1352,6 @@ class TablaSolicitudes extends Component
 
                     // ⚠️ NUNCA borrar si tiene EmpleadoID (usuario final ya asignado)
                     if (!empty($activo->EmpleadoID)) {
-                        \Log::info('[Asignacion] Manteniendo SolicitudActivo con empleado asignado', [
-                            'activoId'   => $activoId,
-                            'empleadoId' => $activo->EmpleadoID,
-                        ]);
                         continue;
                     }
 

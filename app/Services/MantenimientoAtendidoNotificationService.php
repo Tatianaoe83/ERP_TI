@@ -14,7 +14,6 @@ class MantenimientoAtendidoNotificationService
      */
     public function sendNotificationForAttendedTicket(TicketMantenimiento $ticket): void
     {
-        Log::info("[MantenimientoAtendidoMail] Inicio para mantenimiento #{$ticket->MantenimientoID} | Estatus={$ticket->Estatus}");
 
         if ($ticket->Estatus !== 'Atendido') {
             Log::warning("[MantenimientoAtendidoMail] Saltado mantenimiento #{$ticket->MantenimientoID}: estatus no es 'Atendido' (es '{$ticket->Estatus}')");
@@ -37,7 +36,6 @@ class MantenimientoAtendidoNotificationService
 
         try {
             Mail::to($correo)->send(new MantenimientoAtendido($ticket));
-            Log::info("[MantenimientoAtendidoMail] Enviado mantenimiento #{$ticket->MantenimientoID} a {$correo}");
         } catch (\Throwable $e) {
             Log::error("[MantenimientoAtendidoMail] Error mantenimiento #{$ticket->MantenimientoID}: " . $e->getMessage());
         }

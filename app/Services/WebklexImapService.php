@@ -40,11 +40,9 @@ class WebklexImapService
     public function conectar()
     {
         try {
-            Log::info('Conectando a IMAP con Webklex...');
             
             $this->client->connect();
             
-            Log::info('Conexión IMAP exitosa con Webklex');
             return true;
             
         } catch (\Exception $e) {
@@ -63,7 +61,6 @@ class WebklexImapService
                 return false;
             }
             
-            Log::info('Procesando correos nuevos con Webklex...');
             
             // Obtener buzón de entrada
             $folder = $this->client->getFolder('INBOX');
@@ -71,7 +68,6 @@ class WebklexImapService
             // Intentar diferentes métodos de búsqueda
             $messages = $this->obtenerMensajesNoLeidos($folder);
             
-            Log::info("Encontrados {$messages->count()} mensajes no leídos");
             
             $procesados = 0;
             
@@ -81,7 +77,6 @@ class WebklexImapService
                 }
             }
             
-            Log::info("Procesados {$procesados} mensajes exitosamente");
             
             return $procesados > 0;
             
@@ -100,7 +95,6 @@ class WebklexImapService
             // Método 1: Buscar por flag UNSEEN
             $messages = $folder->messages()->unseen()->limit(50)->get();
             if ($messages->count() > 0) {
-                Log::info("Método 1 exitoso: encontrados {$messages->count()} mensajes");
                 return $messages;
             }
         } catch (\Exception $e) {
@@ -113,7 +107,6 @@ class WebklexImapService
             $unseenMessages = $messages->filter(function($message) {
                 return !$message->hasFlag('Seen');
             });
-            Log::info("Método 2 exitoso: encontrados {$unseenMessages->count()} mensajes");
             return $unseenMessages;
         } catch (\Exception $e) {
             Log::warning("Método 2 falló: " . $e->getMessage());
@@ -122,7 +115,6 @@ class WebklexImapService
         try {
             // Método 3: Buscar mensajes recientes (últimos 7 días)
             $messages = $folder->messages()->since(now()->subDays(7))->limit(50)->get();
-            Log::info("Método 3 exitoso: encontrados {$messages->count()} mensajes recientes");
             return $messages;
         } catch (\Exception $e) {
             Log::warning("Método 3 falló: " . $e->getMessage());
@@ -131,7 +123,6 @@ class WebklexImapService
         // Método 4: Fallback - obtener últimos 20 mensajes
         try {
             $messages = $folder->messages()->limit(20)->get();
-            Log::info("Método 4 (fallback): encontrados {$messages->count()} mensajes");
             return $messages;
         } catch (\Exception $e) {
             Log::error("Todos los métodos fallaron: " . $e->getMessage());
@@ -152,14 +143,11 @@ class WebklexImapService
             $messageId = $message->getMessageId();
             $threadId = $this->extraerThreadId($message);
             
-            Log::info("Procesando mensaje: {$subject}");
-            Log::info("De: " . ($from ? $from->first()->mail : 'Desconocido'));
             
             // Buscar ticket por asunto o Message-ID
             $ticket = $this->buscarTicketPorMensaje($subject, $messageId, $threadId);
             
             if (!$ticket) {
-                Log::info("No se encontró ticket para el mensaje: {$subject}");
                 return false;
             }
             
@@ -169,7 +157,6 @@ class WebklexImapService
             // Marcar mensaje como leído
             $message->setFlag('Seen');
             
-            Log::info("Respuesta procesada para ticket #{$ticket->TicketID}");
             
             return true;
             
@@ -305,14 +292,12 @@ class WebklexImapService
     public function probarConexion()
     {
         try {
-            Log::info('Probando conexión IMAP con Webklex...');
             
             $this->client->connect();
             
             $folder = $this->client->getFolder('INBOX');
             $messageCount = $folder->messages()->limit(100)->count();
             
-            Log::info("Conexión exitosa. Mensajes en INBOX: {$messageCount}");
             
             return [
                 'success' => true,

@@ -81,11 +81,6 @@ class OutlookEmailService
                 }
             });
 
-            Log::info("Correo enviado exitosamente para ticket #{$ticketId}", [
-                'ticket_id' => $ticketId,
-                'destinatario' => $empleado->Correo,
-                'chat_message_id' => $chatMessage->id
-            ]);
 
             return [
                 'success' => true,
@@ -141,7 +136,6 @@ class OutlookEmailService
 
             // Verificar si el correo ya fue procesado
             if (TicketChat::where('message_id', $messageId)->exists()) {
-                Log::info("Correo ya procesado: {$messageId}");
                 return true;
             }
 
@@ -201,11 +195,6 @@ class OutlookEmailService
                 Log::error("Error procesando actualización de notificaciones para ticket #{$ticketId}: " . $e->getMessage());
             }
 
-            Log::info("Correo entrante procesado exitosamente", [
-                'ticket_id' => $ticketId,
-                'message_id' => $messageId,
-                'chat_message_id' => $chatMessage->id
-            ]);
 
             return true;
 
@@ -461,12 +450,6 @@ class OutlookEmailService
                 }
             }
 
-            Log::info("Sincronización completada para ticket #{$ticketId}", [
-                'ticket_id' => $ticketId,
-                'correos_sincronizados' => $sincronizados,
-                'enviados' => count($correosEnviados),
-                'recibidos' => count($correosRecibidos)
-            ]);
 
             return [
                 'success' => true,
@@ -611,7 +594,6 @@ class OutlookEmailService
                 'token_type' => 'Bearer'
             ]);
 
-            Log::info('Token de Outlook guardado exitosamente');
             return true;
 
         } catch (\Exception $e) {

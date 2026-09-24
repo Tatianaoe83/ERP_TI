@@ -68,7 +68,6 @@ class SmtpEmailReceiver
                 \Log::debug('No se pudo incrementar ticket_chats.notificaciones_pendientes (increment): ' . $e->getMessage());
             }
 
-            Log::info("Respuesta manual agregada al ticket #{$ticketId}");
             return true;
 
         } catch (\Exception $e) {
@@ -130,7 +129,6 @@ class SmtpEmailReceiver
                 'leido' => false
             ]);
 
-            Log::info("Instrucciones de respuesta enviadas para ticket #{$ticketId}");
             return true;
             
         } catch (Exception $e) {

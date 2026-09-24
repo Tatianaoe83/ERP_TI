@@ -6,7 +6,6 @@ use App\Models\SolicitudPasos;
 use App\Models\SolicitudTokens;
 use App\Services\SolicitudAprobacionEmailService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Recordatorio diario (10:00 am) para los enlaces de aprobación que siguen activos.
@@ -105,7 +104,6 @@ class EnviarRecordatoriosSolicitudes extends Command
 
         $resumen = "Recordatorios de solicitudes: {$enviados} enviado(s), {$omitidos} omitido(s), {$fallidos} fallido(s).";
         $this->info($resumen);
-        Log::info($resumen . ($dryRun ? ' [dry-run]' : ''));
 
         return self::SUCCESS;
     }

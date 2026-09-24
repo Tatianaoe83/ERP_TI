@@ -14,7 +14,6 @@ class MantenimientoInProgressNotificationService
      */
     public function sendNotificationForInProgressTicket(TicketMantenimiento $ticket): void
     {
-        Log::info("[MantenimientoProgresoMail] Inicio para mantenimiento #{$ticket->MantenimientoID} | Estatus={$ticket->Estatus}");
 
         if ($ticket->Estatus !== 'En proceso') {
             Log::warning("[MantenimientoProgresoMail] Saltado mantenimiento #{$ticket->MantenimientoID}: estatus no es 'En proceso' (es '{$ticket->Estatus}')");
@@ -37,7 +36,6 @@ class MantenimientoInProgressNotificationService
 
         try {
             Mail::to($correo)->send(new MantenimientoInProgress($ticket));
-            Log::info("[MantenimientoProgresoMail] Enviado mantenimiento #{$ticket->MantenimientoID} a {$correo}");
         } catch (\Throwable $e) {
             Log::error("[MantenimientoProgresoMail] Error mantenimiento #{$ticket->MantenimientoID}: " . $e->getMessage());
         }

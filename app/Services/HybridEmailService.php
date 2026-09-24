@@ -105,7 +105,6 @@ class HybridEmailService
 
                 try {
                     $mail->addAttachment($rutaAbsoluta, $adjunto['name'] ?? basename($rutaAbsoluta));
-                    Log::info("Adjunto agregado al correo: " . ($adjunto['name'] ?? basename($rutaAbsoluta)));
                 } catch (\Exception $e) {
                     Log::error("Error adjuntando archivo al correo '{$adjunto['name']}': " . $e->getMessage());
                 }
@@ -116,7 +115,6 @@ class HybridEmailService
             // Guardar en BD usando el mensaje ORIGINAL (con URLs de storage, no base64)
             $this->guardarCorreoEnviado($ticketId, $mensaje, $messageId, $threadId, $adjuntos);
 
-            Log::info("Respuesta con instrucciones enviada para ticket #{$ticketId}");
             return true;
 
         } catch (Exception $e) {
@@ -198,7 +196,6 @@ class HybridEmailService
                 'leido' => false
             ]);
 
-            Log::info("Respuesta manual procesada para ticket #{$ticketId}");
             return true;
 
         } catch (\Exception $e) {
@@ -304,7 +301,6 @@ class HybridEmailService
                 'leido'            => false,
             ]);
 
-            Log::info("Correo guardado | Ticket #{$ticketId} | Adjuntos: " . count($adjuntosProcesados));
 
         } catch (\Exception $e) {
             Log::error("Error guardando correo enviado: " . $e->getMessage());

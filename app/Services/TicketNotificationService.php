@@ -147,7 +147,6 @@ class TicketNotificationService
             
             $mail->send();
 
-            Log::info("Notificación de exceso de tiempo enviada para ticket #{$ticket->TicketID}");
             return true;
             
         } catch (Exception $e) {
@@ -303,7 +302,6 @@ class TicketNotificationService
                     ->whereNotNull('fecha_ultima_notificacion_exceso')
                     ->update(['fecha_ultima_notificacion_exceso' => null]);
                 
-                Log::info("Se resetearon {$ticketsActualizados} fechas de notificación para tipo {$tipoId} (intervalo eliminado)");
                 return $ticketsActualizados;
             }
 
@@ -355,7 +353,6 @@ class TicketNotificationService
                 }
             }
 
-            Log::info("Se recalcularon {$ticketsActualizados} fechas de notificación para tipo {$tipoId} con nuevo intervalo de {$nuevoIntervaloMinutos} minutos");
             return $ticketsActualizados;
 
         } catch (\Exception $e) {

@@ -100,7 +100,6 @@ class MantenimientoEmailService
             $mail->send();
             $this->guardarCorreoEnviado($mantenimientoId, $mensaje, $messageId, $threadId, $adjuntos);
 
-            Log::info("Respuesta de mantenimiento enviada para solicitud #{$mantenimientoId}");
             return true;
         } catch (Exception $e) {
             Log::error("Error enviando respuesta de mantenimiento: " . $e->getMessage());

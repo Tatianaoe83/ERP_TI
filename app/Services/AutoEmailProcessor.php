@@ -23,13 +23,11 @@ class AutoEmailProcessor
     public function procesarRespuestasAutomaticas()
     {
         try {
-            Log::info('Iniciando procesamiento automático de respuestas');
             
             // Intentar conectar con IMAP
             $connection = $this->imapReceiver->conectarIMAP();
             
             if ($connection) {
-                Log::info('Conexión IMAP exitosa, procesando correos');
                 return $this->procesarConIMAP();
             } else {
                 Log::warning('Conexión IMAP fallida, usando procesamiento alternativo');
@@ -51,14 +49,12 @@ class AutoEmailProcessor
             $resultado = $this->imapReceiver->procesarCorreosNuevos();
             
             if ($resultado) {
-                Log::info('Correos procesados exitosamente con IMAP');
                 return [
                     'success' => true,
                     'method' => 'imap',
                     'message' => 'Correos procesados automáticamente con IMAP'
                 ];
             } else {
-                Log::info('No se encontraron correos nuevos con IMAP');
                 return [
                     'success' => true,
                     'method' => 'imap',
@@ -101,14 +97,12 @@ class AutoEmailProcessor
                 
                 if (!$respuestaUsuario) {
                     // No hay respuesta del usuario aún
-                    Log::info("Ticket #{$ticket->TicketID} esperando respuesta del usuario");
                     continue;
                 }
                 
                 $procesados++;
             }
             
-            Log::info("Procesamiento alternativo completado. Tickets verificados: {$ticketsConCorreos->count()}");
             
             return [
                 'success' => true,
@@ -153,7 +147,6 @@ class AutoEmailProcessor
                 'leido' => false
             ]);
             
-            Log::info("Respuesta simulada creada para ticket #{$ticketId}");
             
             return [
                 'success' => true,

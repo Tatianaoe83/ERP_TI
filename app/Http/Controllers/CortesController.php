@@ -156,10 +156,6 @@ class CortesController extends AppBaseController
                         ->values();
 
                     if ($montosPorMes->isEmpty()) {
-                        \Log::info("⚠️ Insumo SIN meses válidos - ELIMINADO del resultado", [
-                            'insumo' => $nombre,
-                            'totalFilas' => $items->count()
-                        ]);
                         return null;
                     }
 

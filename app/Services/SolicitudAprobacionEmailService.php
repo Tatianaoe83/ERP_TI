@@ -126,10 +126,6 @@ class SolicitudAprobacionEmailService
         $enviado = $this->enviar($aprobador->Correo, $aprobador->NombreEmpleado, $asunto, $contenido);
 
         if ($enviado) {
-            Log::info(
-                "Email de revisión enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
-                    "(etapa: {$stage}, token: {$token})"
-            );
             $this->marcarTokenNotificado($token);
             return true;
         }
@@ -156,7 +152,6 @@ class SolicitudAprobacionEmailService
         if ($token) {
             $urlElegir = url('/elegir-ganador/' . $token);
             // El token va en la URL: no se registra, solo que se generó.
-            Log::info("URL con token generada para solicitud #{$solicitud->SolicitudID}");
         } else {
             $urlElegir = route('tickets.index');
             Log::warning("No se proporcionó token para solicitud #{$solicitud->SolicitudID}, usando ruta general: {$urlElegir}");
@@ -188,7 +183,6 @@ class SolicitudAprobacionEmailService
         ]);
 
         if ($this->enviar($gerente->Correo, $gerente->NombreEmpleado, $asunto, $contenido)) {
-            Log::info("Email cotizaciones listas enviado exitosamente para solicitud #{$solicitud->SolicitudID} a {$gerente->Correo}");
 
             if ($token) {
                 $this->marcarTokenNotificado($token);
@@ -241,7 +235,6 @@ class SolicitudAprobacionEmailService
         ]);
 
         if ($this->enviar($correoDestinatario, null, $asunto, $contenido)) {
-            Log::info("Email ganador(es) seleccionado(s) enviado para solicitud #{$solicitud->SolicitudID} a {$correoDestinatario}");
             return true;
         }
 
@@ -546,10 +539,6 @@ class SolicitudAprobacionEmailService
         ]);
 
         if ($this->enviar($aprobador->Correo, $aprobador->NombreEmpleado, $c['asunto'], $contenido)) {
-            Log::info(
-                "Recordatorio enviado para solicitud #{$solicitud->SolicitudID} a {$aprobador->Correo} " .
-                    "(etapa: {$stage}, token: {$token})"
-            );
             return true;
         }
 

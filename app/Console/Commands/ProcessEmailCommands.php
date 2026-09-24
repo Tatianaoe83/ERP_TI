@@ -43,7 +43,6 @@ class ProcessEmailCommands extends Command
             
             if ($result) {
                 $this->info('✅ Correos procesados exitosamente');
-                Log::info('Comando de procesamiento de correos ejecutado exitosamente');
                 return 0;
             } else {
                 $this->error('❌ Error procesando correos');

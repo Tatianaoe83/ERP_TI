@@ -50,14 +50,12 @@ class ProcesarRespuestasAutomaticas extends Command
                     $mensaje .= " Se descartaron {$descartados} correo(s).";
                 }
                 $this->info($mensaje);
-                Log::info("Procesamiento automático completado: {$mensaje}");
             } else {
                 $mensaje = 'No se encontraron correos nuevos para procesar';
                 if ($descartados > 0) {
                     $mensaje .= " (se descartaron {$descartados} correo(s))";
                 }
                 $this->info($mensaje);
-                Log::info("Procesamiento automático: {$mensaje}");
             }
             
             return Command::SUCCESS;

@@ -23,7 +23,6 @@ class EmailWebhookController extends Controller
     public function handleEmailResponse(Request $request)
     {
         try {
-            Log::info('Webhook de correo recibido', $request->all());
             
             // Validar datos del webhook
             $validatedData = $request->validate([
@@ -58,7 +57,6 @@ class EmailWebhookController extends Controller
                 'leido' => false
             ]);
             
-            Log::info("Respuesta de correo procesada automáticamente para ticket #{$validatedData['ticket_id']}");
             
             return response()->json([
                 'success' => true,

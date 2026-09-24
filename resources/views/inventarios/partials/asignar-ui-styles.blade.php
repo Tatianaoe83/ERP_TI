@@ -750,7 +750,25 @@
         font-size: 0.78rem;
         font-weight: 700;
         color: var(--index-muted, #6b7280);
-        min-width: 7rem;
+        min-width: 9.5rem;
+        padding: 0.15rem 0.55rem;
+        border-radius: 999px;
+        background: #e5e7eb;
+    }
+
+    .inv-bulk-count.is-on {
+        color: #1d4ed8;
+        background: #dbeafe;
+    }
+
+    .dark .inv-bulk-count {
+        background: #1f2937;
+        color: #9ca3af;
+    }
+
+    .dark .inv-bulk-count.is-on {
+        color: #93c5fd;
+        background: #1e3a5f;
     }
 
     .inv-bulk-btn {
@@ -769,5 +787,130 @@
     .inv-bulk-help {
         font-size: 0.72rem;
         color: var(--index-muted, #6b7280);
+    }
+
+    .inv-assign-page .index-actions {
+        gap: 0.4rem;
+        flex-wrap: nowrap;
+    }
+
+    .inv-assign-page .index-action {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.6rem;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        color: #4b5563;
+        box-shadow: 0 1px 2px rgba(16, 29, 73, 0.06);
+    }
+
+    .inv-assign-page .index-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(16, 29, 73, 0.12);
+    }
+
+    .inv-assign-page .index-action--edit {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border-color: #bfdbfe;
+    }
+
+    .inv-assign-page .index-action--edit:hover {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .inv-assign-page .index-action--delete {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .inv-assign-page .index-action--delete:hover {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .inv-assign-page .index-action--success {
+        width: 2.35rem;
+        height: 2.35rem;
+        background: #ecfdf5;
+        color: #047857;
+        border-color: #a7f3d0;
+        border-radius: 0.7rem;
+        font-size: 0.95rem;
+    }
+
+    .inv-assign-page .index-action--success:hover {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .inv-assign-page .inv-check {
+        width: 2.25rem;
+        height: 2.25rem;
+        justify-content: center;
+        border-radius: 0.6rem;
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+    }
+
+    .inv-assign-page .inv-check--off {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.6rem;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+    }
+
+    .inv-assign-page .inv-bulk-check {
+        width: 1.05rem;
+        height: 1.05rem;
+    }
+
+    .inv-assign-page td:first-child,
+    .inv-assign-page th:first-child {
+        white-space: nowrap;
+        width: 1%;
+    }
+
+    .inv-assign-page .inv-tipo-col,
+    .inv-assign-page td .inv-chip {
+        vertical-align: middle;
+    }
+
+    .dark .inv-assign-page .index-action {
+        background: #111827;
+        border-color: #374151;
+        color: #d1d5db;
+        box-shadow: none;
+    }
+
+    .dark .inv-assign-page .index-action--edit {
+        background: rgba(59, 130, 246, 0.16);
+        color: #93c5fd;
+        border-color: rgba(59, 130, 246, 0.35);
+    }
+
+    .dark .inv-assign-page .index-action--delete {
+        background: rgba(239, 68, 68, 0.16);
+        color: #fca5a5;
+        border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .dark .inv-assign-page .index-action--success {
+        background: rgba(16, 185, 129, 0.16);
+        color: #6ee7b7;
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .dark .inv-assign-page .inv-check {
+        background: rgba(59, 130, 246, 0.16);
+        border-color: rgba(59, 130, 246, 0.35);
+    }
+
+    .dark .inv-assign-page .inv-check--off {
+        background: #1f2937;
+        border-color: #374151;
     }
 </style>

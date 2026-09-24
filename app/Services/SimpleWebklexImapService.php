@@ -270,23 +270,8 @@ class SimpleWebklexImapService
             $messageId = $message->getMessageId();
             $dominio = $this->extraerDominio($fromEmail);
 
-            // Log inicial para diagnóstico temporal
-            try {
-                Log::info('IMAP: procesando mensaje', [
-                    'from' => $fromEmail,
-                    'from_name' => $fromName,
-                    'subject' => $subject,
-                    'message_id' => $messageId,
-                    'thread_id' => $threadId,
-                    'domain' => $dominio,
-                ]);
-            } catch (\Exception $e) {
-                // Ignorar errores de logging
-            }
-            
             // Filtrar solo correos de dominios permitidos (proser y konkret)
             if (!$this->esDominioPermitido($dominio)) {
-                try { Log::info('IMAP: descartado por dominio no permitido', ['from' => $fromEmail, 'domain' => $dominio]); } catch (\Exception $e) {}
                 return false;
             }
 
@@ -311,7 +296,6 @@ class SimpleWebklexImapService
                 // Verificar que el ticket esté en "En progreso"
                 // Solo procesar respuestas de tickets en estado "En progreso"
                 if ($ticket->Estatus !== 'En progreso') {
-                    try { Log::info('IMAP: descartado por estatus del ticket', ['ticket' => $ticket->TicketID, 'estatus' => $ticket->Estatus]); } catch (\Exception $e) {}
                     return false;
                 }
                 
@@ -324,29 +308,21 @@ class SimpleWebklexImapService
                 }
                 
                 if ($yaProcesado) {
-                    try { Log::info('IMAP: correo ya procesado (dup)', ['ticket' => $ticket->TicketID, 'message_id' => $messageId, 'thread_id' => $threadId]); } catch (\Exception $e) {}
                     return false;
                 }
                 
                 $resultado = $this->crearRespuestaUsuario($ticket, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $from, $messageId, $threadId);
                 
                 if ($resultado) {
-                    try { Log::info('IMAP: respuesta de usuario guardada', ['ticket' => $ticket->TicketID, 'chat_id' => $resultado->id ?? null]); } catch (\Exception $e) {}
                     return true;
                 } else {
-                    try { Log::info('IMAP: fallo al guardar respuesta de usuario', ['ticket' => $ticket->TicketID]); } catch (\Exception $e) {}
                     return false;
                 }
             } else {
-                // Intentar crear nuevo ticket
-                $nuevoTicket = $this->intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
-                if ($nuevoTicket && is_object($nuevoTicket) && isset($nuevoTicket->TicketID)) {
-                    try { Log::info('IMAP: nuevo ticket creado desde correo', ['ticket' => $nuevoTicket->TicketID, 'from' => $fromEmail]); } catch (\Exception $e) {}
-                    return true;
-                } else {
-                    try { Log::info('IMAP: no se creó ticket nuevo', ['from' => $fromEmail, 'subject' => $subject]); } catch (\Exception $e) {}
-                    return false;
-                }
+                // Sin ticket mapeable: no se crea uno nuevo. Los tickets salen
+                // de solicitudes; el correo solo se liga si el asunto/hilo apunta
+                // a un ticket existente.
+                return false;
             }
             
         } catch (\Exception $e) {
@@ -355,27 +331,12 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Intentar crear nuevo ticket desde correo
+     * Ya no se crean tickets desde correo. Si el asunto no mapea a un ticket
+     * existente, el mensaje se omite; el seguimiento nace en solicitudes.
      */
     private function intentarCrearNuevoTicket($fromEmail, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName)
     {
-        // Buscar empleado por correo (sin importar mayúsculas/minúsculas)
-        $empleado = Empleados::whereRaw('LOWER(Correo) = ?', [strtolower($fromEmail)])->first();
-        
-        if (!$empleado) {
-            return false;
-        }
-        
-        if ($this->esCorreoComunicado($subject, $fromEmail)) {
-            return false;
-        }
-        
-        $nuevoTicket = $this->crearTicketDesdeCorreo($empleado, $subject, $bodyTexto, $bodyHtml, $adjuntos, $fechaCorreo, $messageId, $threadId, $fromName);
-        
-        if ($nuevoTicket) {
-            return true;
-        }
-        
+
         return false;
     }
     
@@ -695,116 +656,13 @@ class SimpleWebklexImapService
     }
     
     /**
-     * Crear nuevo ticket desde correo - Mapeo mejorado para BD con formato "Ticket #ID"
+     * Desactivado: los tickets se crean desde solicitudes, no desde el buzón.
+     * El procesador de correos solo mapea respuestas a tickets existentes.
      */
     protected function crearTicketDesdeCorreo($empleado, $subject, $bodyTexto, $bodyHtml = null, $adjuntos = [], $fechaCorreo = null, $messageId = null, $threadId = null, $fromName = null)
     {
-        try {
-            // Limpiar y normalizar datos
-            $subjectLimpio = $this->limpiarAsunto($subject);
-            $fromNameLimpio = $this->limpiarNombre($fromName ?: $empleado->NombreEmpleado);
-            $fromEmailLimpio = $this->limpiarEmail($empleado->Correo);
-            
-            // Usar fecha del correo si está disponible, sino usar ahora
-            $fechaCreacion = $fechaCorreo ? 
-                \Carbon\Carbon::parse($fechaCorreo)->setTimezone(config('app.timezone')) : 
-                now();
-            
-            // Crear ticket - El asunto se guardará sin el formato "Ticket #ID" inicialmente
-            $ticket = Tickets::create([
-                'EmpleadoID' => (int) $empleado->EmpleadoID,
-                'Descripcion' => $subjectLimpio,
-                'Estatus' => 'Pendiente',
-                'Prioridad' => 'Media',
-                'created_at' => $fechaCreacion
-            ]);
-            
-            // Actualizar la descripción con el formato "Ticket #ID - [asunto original]"
-            $descripcionConFormato = "Ticket #{$ticket->TicketID} - {$subjectLimpio}";
-            
-            // Verificar que no exceda la longitud máxima
-            if (strlen($descripcionConFormato) > 500) {
-                $maxLength = 500 - strlen("Ticket #{$ticket->TicketID} - ");
-                $descripcionConFormato = "Ticket #{$ticket->TicketID} - " . substr($subjectLimpio, 0, $maxLength) . '...';
-            }
-            
-            $ticket->Descripcion = $descripcionConFormato;
-            $ticket->save();
 
-            // Limpiar y procesar el contenido del mensaje
-            $mensajeLimpio = $this->limpiarContenidoMensaje($bodyTexto, $bodyHtml);
-            $contenidoHtmlLimpio = $this->limpiarContenidoHtml($bodyHtml);
-            
-            // Preparar mensaje inicial
-            $mensajeCompleto = "Ticket creado automáticamente desde correo:\n\n" . $mensajeLimpio;
-            
-            // Obtener Thread-ID y Message-ID
-            $finalThreadId = $threadId ?: $this->generarThreadId($ticket->TicketID);
-            $finalMessageId = $messageId ?: $this->generarMessageId();
-            
-            // Preparar datos mapeados para el chat
-            $datosChat = [
-                'ticket_id' => (int) $ticket->TicketID,
-                'mensaje' => $mensajeCompleto,
-                'remitente' => 'usuario',
-                'nombre_remitente' => $fromNameLimpio,
-                'correo_remitente' => $fromEmailLimpio,
-                'message_id' => $this->normalizarMessageId($finalMessageId),
-                'thread_id' => $this->normalizarThreadId($finalThreadId),
-                'es_correo' => true,
-                'leido' => false,
-                'notificaciones_pendientes' => 1
-            ];
-            
-            // Agregar contenido HTML si existe
-            if (!empty($contenidoHtmlLimpio)) {
-                $datosChat['contenido_correo'] = $contenidoHtmlLimpio;
-            }
-            
-            // Agregar adjuntos si existen (validar estructura)
-            if (!empty($adjuntos) && is_array($adjuntos)) {
-                $adjuntosValidados = $this->validarAdjuntos($adjuntos);
-                if (!empty($adjuntosValidados)) {
-                    $datosChat['adjuntos'] = $adjuntosValidados;
-                }
-            } else {
-                // Asegurar que adjuntos sea null o array vacío si no hay adjuntos
-                $datosChat['adjuntos'] = [];
-            }
-            
-            // Usar fecha del correo si está disponible
-            if ($fechaCorreo) {
-                try {
-                    $fechaCarbon = \Carbon\Carbon::parse($fechaCorreo)->setTimezone(config('app.timezone'));
-                    $datosChat['created_at'] = $fechaCarbon;
-                    $datosChat['updated_at'] = $fechaCarbon;
-                } catch (\Exception $e) {
-                    // Ignorar error de fecha
-                }
-            }
-            
-            // Validar datos antes de guardar
-            try {
-                $datosChat = $this->validarDatosChat($datosChat);
-            } catch (\Exception $e) {
-                throw $e;
-            }
-            
-            // Guardar en la base de datos
-            try {
-                $ticketChat = TicketChat::create($datosChat);
-
-                // Notificaciones marcadas en el registro `ticket_chats` al crear el chat
-            } catch (\Exception $e) {
-                throw $e;
-            }
-
-            event(new TicketUpdatedEvent());
-            return $ticket;
-
-        } catch (\Exception $e) {
-            return null;
-        }
+        return null;
     }
     
     /**
@@ -1473,17 +1331,14 @@ class SimpleWebklexImapService
         $mantenimiento = $this->buscarMantenimientoPorMensaje($subject, $messageId, $threadId, $fromEmail);
 
         if (!$mantenimiento) {
-            try { Log::info('IMAP: mantenimiento no encontrado', ['subject' => $subject, 'from' => $fromEmail]); } catch (\Exception $e) {}
             return false;
         }
 
         if ($mantenimiento->Estatus !== 'En proceso') {
-            try { Log::info('IMAP: descartado por estatus de mantenimiento', ['id' => $mantenimiento->MantenimientoID, 'estatus' => $mantenimiento->Estatus]); } catch (\Exception $e) {}
             return false;
         }
 
         if ($this->correoYaProcesadoMantenimiento($mantenimiento->MantenimientoID, $fromEmail, $messageId, $threadId)) {
-            try { Log::info('IMAP: correo de mantenimiento ya procesado', ['id' => $mantenimiento->MantenimientoID, 'message_id' => $messageId, 'thread_id' => $threadId]); } catch (\Exception $e) {}
             return false;
         }
 

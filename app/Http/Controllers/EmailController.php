@@ -120,7 +120,6 @@ class EmailController extends Controller
 
             $mail->send();
 
-            Log::info("Correo de prueba enviado a: {$email}");
 
             return response()->json([
                 'success' => true,
