@@ -2,10 +2,14 @@
     @include('partials.tareas-alerta', ['mensaje' => session('tareas_mensaje')])
     @include('partials.tareas-alerta', ['mensaje' => session('tareas_error'), 'tipo' => 'error'])
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
         <button type="button" wire:click="filtrarKpi('hoy')" class="tareas-kpi {{ $filtroEstatus === 'hoy' ? 'is-active' : '' }}">
             <span class="tareas-kpi__label">{{ $diaTarjetas === $hoy ? 'Pendientes de hoy' : 'Pendientes del día' }}</span>
             <span class="tareas-kpi__value">{{ $kpis['hoy'] }}</span>
+        </button>
+        <button type="button" wire:click="filtrarKpi('atrasadas')" class="tareas-kpi tareas-kpi--warn {{ $filtroEstatus === 'atrasadas' ? 'is-active' : '' }}">
+            <span class="tareas-kpi__label">No realizadas</span>
+            <span class="tareas-kpi__value">{{ $kpis['atrasadas'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('criticas')" class="tareas-kpi tareas-kpi--danger {{ $filtroEstatus === 'criticas' ? 'is-active' : '' }}">
             <span class="tareas-kpi__label">Críticas (+2 días)</span>
@@ -25,6 +29,8 @@
                     <i class="fas fa-tasks"></i>
                     @if($modoLista === 'tarjetas' && $filtroEstatus === 'completadas')
                         Completadas de {{ $etiquetaMesCompletadas }}
+                    @elseif($modoLista === 'tarjetas' && $filtroEstatus === 'atrasadas')
+                        No realizadas
                     @elseif($modoLista === 'tarjetas' && $diaTarjetas !== $hoy && ($filtroEstatus !== 'criticas' || $soloDia))
                         Tareas del {{ $etiquetaDiaSeleccionado }}
                     @else
@@ -77,6 +83,8 @@
                 <span><i class="tareas-dot tareas-dot--evento"></i> Evento</span>
                 <span><i class="tareas-dot tareas-dot--metrica"></i> Métrica</span>
                 <span><i class="tareas-dot tareas-dot--critica"></i> Crítica</span>
+                <span><i class="tareas-dot tareas-dot--vencida"></i> No realizada</span>
+                <span><i class="tareas-dot tareas-dot--hecha"></i> Completada</span>
             </div>
 
             <div class="tareas-cal-grid">
@@ -94,8 +102,16 @@
                         <div class="tareas-cal-cell__items">
                             @foreach($celda['tareas'] as $tarea)
                             @php
-                                $cls = $tarea->prioridad === 'critica' ? 'is-critica' : ($tarea->tipo === 'metrica' ? 'is-metrica' : 'is-evento');
-                                if ($tarea->estatus === 'completada') $cls .= ' is-done';
+                                $cls = 'is-evento';
+                                if ($tarea->estatus === 'completada') {
+                                    $cls = ($tarea->tipo === 'metrica' ? 'is-metrica' : 'is-evento') . ' is-done';
+                                } elseif ($tarea->prioridad === 'critica') {
+                                    $cls = 'is-critica';
+                                } elseif ($tarea->estaVencida()) {
+                                    $cls = 'is-vencida';
+                                } elseif ($tarea->tipo === 'metrica') {
+                                    $cls = 'is-metrica';
+                                }
                             @endphp
                             <span role="button" tabindex="0"
                                 wire:click.stop="abrirHistorial({{ $tarea->id }})"
@@ -156,13 +172,15 @@
                 @else
                 <div class="tareas-dia-list">
                     @foreach($tareasDiaSeleccionado as $tarea)
-                    <div class="tareas-dia-item {{ $tarea->prioridad === 'critica' ? 'is-critica' : '' }} {{ $tarea->estatus === 'completada' ? 'is-done' : '' }}">
+                    <div class="tareas-dia-item {{ $tarea->prioridad === 'critica' ? 'is-critica' : '' }} {{ $tarea->estatus === 'completada' ? 'is-done' : '' }} {{ $tarea->estaVencida() ? 'is-vencida' : '' }}">
                         <div>
                             <strong>{{ $tarea->titulo }}</strong>
                             <div class="text-xs opacity-75">
                                 {{ $tarea->tipo === 'metrica' ? 'Métrica mensual' : 'Evento' }}
                                 · {{ $tarea->etiquetaResponsables($nombresResponsables ?? null) }}
-                                @if($tarea->estatus === 'completada') · Completada @endif
+                                @if($tarea->estatus === 'completada') · Completada
+                                @elseif($tarea->estaVencida()) · No realizada
+                                @endif
                             </div>
                         </div>
                         <div class="flex gap-1">
@@ -204,6 +222,14 @@
             @unless($esMesActualCompletadas)
             <button type="button" wire:click="irMesActualCompletadas" class="index-page__btn-secondary">Ir al mes actual</button>
             @endunless
+        </div>
+        @elseif($filtroEstatus === 'atrasadas')
+        <div class="tareas-dia-nav">
+            <div class="tareas-dia-nav__info">
+                <strong>Pendientes de días anteriores</strong>
+                <span class="tarea-badge tarea-badge--warn">No realizadas</span>
+            </div>
+            <button type="button" wire:click="filtrarKpi('hoy')" class="index-page__btn-secondary">Ver hoy</button>
         </div>
         @else
         {{-- Navegación de día: las tarjetas ya no se quedan clavadas en hoy --}}
@@ -277,7 +303,7 @@
                     @elseif($esCritica)
                     <span class="tarea-badge tarea-badge--critica"><i class="fas fa-exclamation-triangle"></i> Crítica</span>
                     @elseif($esVencida)
-                    <span class="tarea-badge tarea-badge--warn"><i class="fas fa-clock"></i> Vencida</span>
+                    <span class="tarea-badge tarea-badge--warn"><i class="fas fa-clock"></i> No realizada</span>
                     @else
                     <span class="tarea-badge tarea-badge--pendiente">Pendiente</span>
                     @endif
@@ -328,6 +354,8 @@
                 <p>No hay tareas completadas en {{ $etiquetaMesCompletadas }}.</p>
                 @elseif($filtroEstatus === 'criticas')
                 <p>No hay tareas críticas {{ $soloDia ? 'el ' . $etiquetaDiaSeleccionado : 'pendientes' }}.</p>
+                @elseif($filtroEstatus === 'atrasadas')
+                <p>No hay tareas no realizadas. Las de días anteriores ya se completaron o reagendaron.</p>
                 @elseif($filtroEstatus === 'hoy')
                 <p>No hay tareas pendientes el {{ $etiquetaDiaSeleccionado }}.</p>
                 @else
@@ -510,7 +538,8 @@
         .dark .tareas-kpi { background:#101010; border-color:#334155; }
         .tareas-kpi.is-active { border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.25); }
         .tareas-kpi--danger .tareas-kpi__value { color:#ef4444; }
-        .tareas-kpi--ok .tareas-kpi__value { color:#10b981; }
+        .tareas-kpi--warn .tareas-kpi__value { color:#f59e0b; }
+        .tareas-kpi--warn.is-active { border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.25); }
         .tareas-kpi--info .tareas-kpi__value { color:#6366f1; }
         .tareas-kpi__label { display:block; font-size:.75rem; opacity:.75; }
         .tareas-kpi__value { display:block; font-size:1.5rem; font-weight:700; line-height:1.1; }
@@ -792,6 +821,8 @@
         .tareas-dot--metrica { background:#0ea5e9; }
         .tareas-dot--programada { background:#94a3b8; border:1px dashed #64748b; }
         .tareas-dot--critica { background:#ef4444; }
+        .tareas-dot--vencida { background:#f59e0b; }
+        .tareas-dot--hecha { background:#10b981; }
         .tareas-cal-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:rgba(148,163,184,.35); border:1px solid rgba(148,163,184,.35); border-radius:12px; overflow:hidden; }
         .tareas-cal-head { background:#f8fafc; padding:.45rem; text-align:center; font-size:.72rem; font-weight:700; text-transform:uppercase; color:#64748b; }
         .dark .tareas-cal-head { background:#1e293b; color:#94a3b8; }
@@ -811,13 +842,15 @@
         .tareas-cal-item.is-metrica { background:#e0f2fe; color:#0369a1; }
         .tareas-cal-item.is-programada { background:#f1f5f9; color:#64748b; border:1px dashed #cbd5e1; cursor:default; }
         .tareas-cal-item.is-critica { background:#fee2e2; color:#b91c1c; font-weight:700; }
-        .tareas-cal-item.is-done { opacity:.55; text-decoration:line-through; }
+        .tareas-cal-item.is-vencida { background:#fef3c7; color:#b45309; font-weight:700; }
+        .tareas-cal-item.is-done { opacity:.45; text-decoration:line-through; filter:grayscale(.3); }
         .tareas-dia-panel { border:1px solid rgba(245,158,11,.35); border-radius:14px; padding:1rem; background:rgba(245,158,11,.06); }
         .tareas-dia-panel__title { margin:0 0 .75rem; font-size:1rem; font-weight:700; }
         .tareas-dia-list { display:grid; gap:.5rem; }
         .tareas-dia-item { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.65rem .75rem; border-radius:10px; background:#fff; border:1px solid rgba(148,163,184,.25); }
         .dark .tareas-dia-item { background:#101010; }
         .tareas-dia-item.is-critica { border-color:#ef4444; background:rgba(239,68,68,.08); }
+        .tareas-dia-item.is-vencida { border-color:#f59e0b; background:rgba(245,158,11,.1); }
         .tareas-dia-item.is-programada { border-style:dashed; opacity:.85; }
         .tareas-dia-item.is-done { opacity:.6; }
     </style>

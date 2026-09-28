@@ -200,11 +200,20 @@
             <span class="dash-kpi__icon dash-kpi__icon--rose"><i class="fas fa-headset"></i></span>
         </div>
     </a>
-    <a href="{{ route('tickets.index', ['tab' => 'tareas']) }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
+    <a href="{{ route('tickets.index', ['tab' => 'tareas', 'filtroEstatus' => ((int) ($op['tareas_atrasadas'] ?? 0) > 0 ? 'atrasadas' : 'hoy')]) }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
         <div class="dash-kpi__top">
             <div>
+                @php
+                    $tHoy = (int) ($op['tareas_hoy'] ?? 0);
+                    $tAtr = (int) ($op['tareas_atrasadas'] ?? 0);
+                    $tProx = (int) ($op['tareas_proximas'] ?? 0);
+                    $tareasHint = $tHoy . ' de hoy + ' . $tAtr . ' no realizadas';
+                    if ($tProx > 0) {
+                        $tareasHint .= ' + ' . $tProx . ' próximas';
+                    }
+                @endphp
                 <p class="dash-kpi__label">Tareas pendientes</p>
-                <p class="dash-kpi__hint">{{ $op['tareas_criticas'] ?? 0 }} de prioridad crítica</p>
+                <p class="dash-kpi__hint">{{ $tareasHint }}</p>
                 <p class="dash-kpi__value">{{ $op['tareas_pendientes'] ?? 0 }}</p>
             </div>
             <span class="dash-kpi__icon dash-kpi__icon--amber"><i class="fas fa-tasks"></i></span>

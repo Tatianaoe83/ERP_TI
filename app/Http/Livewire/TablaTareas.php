@@ -99,12 +99,10 @@ class TablaTareas extends Component
 
     public function filtrarKpi(string $estatus): void
     {
-        $this->filtroEstatus = in_array($estatus, ['hoy', 'criticas', 'completadas'], true) ? $estatus : 'hoy';
+        $this->filtroEstatus = in_array($estatus, ['hoy', 'atrasadas', 'criticas', 'completadas'], true) ? $estatus : 'hoy';
         $this->soloDia = false;
         $this->resetPage();
 
-        // En tarjetas los tres KPI ya se leen sobre el día elegido, así que no se
-        // pisa la fecha ni la vista en la que está trabajando el usuario.
         if ($this->modoLista === 'tarjetas') {
             return;
         }
@@ -412,6 +410,7 @@ class TablaTareas extends Component
             'hoy' => TicketTarea::pendientes()
                 ->where(fn ($q) => $this->acotarAlDia($q, $diaTarjetas, $hoy))
                 ->count(),
+            'atrasadas' => TicketTarea::atrasadas()->count(),
             'criticas' => TicketTarea::pendientes()
                 ->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)
                 ->count(),
@@ -439,6 +438,7 @@ class TablaTareas extends Component
             ->with(['asignado', 'metrica'])
             ->when($this->filtroEstatus === 'hoy', fn ($q) => $q->pendientes()
                 ->where(fn ($inner) => $this->acotarAlDia($inner, $diaTarjetas, $hoy)))
+            ->when($this->filtroEstatus === 'atrasadas', fn ($q) => $q->atrasadas())
             ->when($this->filtroEstatus === 'pendientes', fn ($q) => $q->where('estatus', TicketTarea::ESTATUS_PENDIENTE))
             // Completadas se leen por el mes en que se finalizaron, sin importar para
             // cuándo estaban agendadas: el usuario navega ese filtro por mes, no por día.
@@ -467,7 +467,10 @@ class TablaTareas extends Component
                 });
             })
             ->when($this->filtroEstatus === 'completadas', fn ($q) => $q->orderByDesc('completada_at'))
-            ->when($this->filtroEstatus !== 'completadas', fn ($q) => $q
+            ->when($this->filtroEstatus === 'atrasadas', fn ($q) => $q
+                ->orderBy('fecha_compromiso')
+                ->orderByRaw("FIELD(prioridad, 'critica', 'normal')"))
+            ->when(! in_array($this->filtroEstatus, ['completadas', 'atrasadas'], true), fn ($q) => $q
                 ->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
                 ->orderByRaw('fecha_compromiso IS NULL DESC')
                 ->orderBy('fecha_compromiso'))

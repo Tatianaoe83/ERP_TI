@@ -158,6 +158,28 @@ class TicketTarea extends Model
         return $query->where('estatus', self::ESTATUS_PENDIENTE);
     }
 
+    public function scopeAtrasadas($query)
+    {
+        return $query->pendientes()
+            ->whereNotNull('fecha_compromiso')
+            ->whereDate('fecha_compromiso', '<', Carbon::today());
+    }
+
+    public function scopeProximas($query)
+    {
+        return $query->pendientes()
+            ->whereNotNull('fecha_compromiso')
+            ->whereDate('fecha_compromiso', '>', Carbon::today());
+    }
+
+    public function scopeDeHoy($query)
+    {
+        return $query->pendientes()->where(function ($q) {
+            $q->whereDate('fecha_compromiso', Carbon::today()->toDateString())
+                ->orWhereNull('fecha_compromiso');
+        });
+    }
+
     public function estaVencida(): bool
     {
         if ($this->estatus !== self::ESTATUS_PENDIENTE || ! $this->fecha_compromiso) {
