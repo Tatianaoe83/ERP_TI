@@ -7,17 +7,17 @@
         'FISICA' => [
             'label' => 'Física',
             'class' => 'inv-tipo-fisica',
-            'rules' => 'En inventario se cuenta stock y compartido. Extra es proyección de presupuesto y no entra aquí.',
+            'rules' => 'Persona física: stock y compartido (asignación actual). Extra para presupuesto futuro.',
         ],
         'REFERENCIADO' => [
             'label' => 'Referenciado',
             'class' => 'inv-tipo-referenciado',
-            'rules' => 'Gerencia: también stock y compartido. Extra no entra a este inventario.',
+            'rules' => 'Gerencia / referenciado: igual que física. Stock y compartido actuales, y extra para presupuesto futuro.',
         ],
         'EXTRAORDINARIO' => [
             'label' => 'Extraordinario',
             'class' => 'inv-tipo-extraordinario',
-            'rules' => 'Plaza temporal: todo es extra (proyección de presupuesto). No cuenta como inventario operativo.',
+            'rules' => 'Plaza extraordinaria: todo es extra (presupuesto futuro).',
         ],
     ];
     $meta = $tipoMeta[$tipoPersona] ?? $tipoMeta['FISICA'];

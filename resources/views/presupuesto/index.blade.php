@@ -68,15 +68,15 @@
                 <div class="inv-leyenda">
                     <div class="inv-leyenda-item">
                         <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                        <div><strong>Empleado</strong>En presupuesto se cuenta extra y compartido.</div>
+                        <div><strong>Persona física</strong>Extra y compartido (presupuesto). El stock no entra en este reporte.</div>
                     </div>
                     <div class="inv-leyenda-item">
                         <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
-                        <div><strong>Gerencia</strong>También extra y compartido.</div>
+                        <div><strong>Gerencia / referenciado</strong>Igual que física: extra y compartido.</div>
                     </div>
                     <div class="inv-leyenda-item">
                         <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
-                        <div><strong>Plaza temporal</strong>Todo es extra (proyección de presupuesto).</div>
+                        <div><strong>Plaza extraordinaria</strong>Todo es extra (presupuesto futuro).</div>
                     </div>
                 </div>
             </div>
@@ -131,11 +131,11 @@
                 <div class="inv-leyenda">
                     <div class="inv-leyenda-item">
                         <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                        <div><strong>Empleado</strong>En inventario se cuenta stock y compartido.</div>
+                        <div><strong>Persona física</strong>Stock y compartido (asignación actual). Extra no entra en este reporte.</div>
                     </div>
                     <div class="inv-leyenda-item">
                         <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
-                        <div><strong>Gerencia</strong>También stock y compartido; extra no entra aquí.</div>
+                        <div><strong>Gerencia / referenciado</strong>Igual que física: stock y compartido.</div>
                     </div>
                 </div>
             </div>
