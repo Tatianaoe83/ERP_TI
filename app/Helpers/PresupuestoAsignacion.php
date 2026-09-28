@@ -69,25 +69,50 @@ class PresupuestoAsignacion
         return [self::STOCK, self::COMPARTIDO, self::PROPIO];
     }
 
-    /** Modalidades que se pueden llegar a transferir. PROPIO nunca se transfiere. */
+    /** Modalidades que alimentan inventario operativo y dashboard (no extra ni propio). */
+    public static function valoresOperativos(): array
+    {
+        return [self::STOCK, self::COMPARTIDO];
+    }
+
+    /** Física y referenciado activos: los que se ven en inventario, transferencias y KPIs. */
+    public static function tiposPersonaInventario(): array
+    {
+        return ['FISICA', 'REFERENCIADO'];
+    }
+
+    /** Quienes pueden tener Extra y Compartido (el extraordinario fuerza Extra). */
+    public static function tiposPersonaPresupuesto(): array
+    {
+        return ['FISICA', 'REFERENCIADO', 'EXTRAORDINARIO'];
+    }
+
+    public static function permitePresupuestado(?string $tipo): bool
+    {
+        return \in_array(strtoupper((string) $tipo), self::tiposPersonaPresupuesto(), true);
+    }
+
+    public static function presupuestadoForzado(?string $tipo): bool
+    {
+        return strtoupper((string) $tipo) === 'EXTRAORDINARIO';
+    }
+
+    /** Modalidades que se pueden transferir. Extra y propio no se mueven. */
     public static function valoresTransferibles(): array
     {
-        return [self::STOCK, self::EXTRA, self::COMPARTIDO];
+        return [self::STOCK, self::COMPARTIDO];
     }
 
     /**
      * Modalidades que se pueden transferir a un destino según su tipo_persona.
-     *  - FISICA        → stock y compartido
-     *  - REFERENCIADO  → sólo stock
-     *  - EXTRAORDINARIO → sólo extra
-     * PROPIO nunca entra a ninguna lista.
+     *  - FISICA y REFERENCIADO (activos) → stock y compartido
+     *  - EXTRAORDINARIO no transfiere ni recibe
+     * PROPIO y EXTRA nunca entran.
      */
     public static function transferiblesA(?string $tipoDestino): array
     {
         return match (strtoupper((string) $tipoDestino)) {
-            'FISICA' => [self::STOCK, self::COMPARTIDO],
-            'REFERENCIADO' => [self::STOCK],
-            'EXTRAORDINARIO' => [self::EXTRA],
+            'FISICA', 'REFERENCIADO' => [self::STOCK, self::COMPARTIDO],
             default => [],
         };
     }
@@ -109,9 +134,9 @@ class PresupuestoAsignacion
             return $query->whereIn($columna, self::comoTexto(self::valoresPresupuesto()));
         }
 
-        if ($modo === 'transferible') {
+        if ($modo === 'transferible' || $modo === 'operativo') {
             return $query->where(function ($q) use ($columna) {
-                $q->whereIn($columna, self::comoTexto(self::valoresTransferibles()))
+                $q->whereIn($columna, self::comoTexto(self::valoresOperativos()))
                     ->orWhereNull($columna);
             });
         }
@@ -124,14 +149,36 @@ class PresupuestoAsignacion
 
     public static function sqlWhere(string $columna, string $modo): string
     {
-        $valores = $modo === 'presupuesto'
-            ? self::valoresPresupuesto()
-            : self::valoresInventario();
+        $valores = match ($modo) {
+            'presupuesto' => self::valoresPresupuesto(),
+            'transferible', 'operativo' => self::valoresOperativos(),
+            default => self::valoresInventario(),
+        };
 
         $lista = "'" . implode("', '", self::comoTexto($valores)) . "'";
 
         return $modo === 'presupuesto'
             ? " AND {$columna} IN ({$lista}) "
             : " AND ({$columna} IN ({$lista}) OR {$columna} IS NULL) ";
+    }
+
+    /**
+     * Asignaciones de inventario operativo: física/referenciado activos,
+     * solo stock y compartido. Extra, propio y extraordinario quedan fuera.
+     */
+    public static function restringirOperativo($query, string $tabla, string $columna, string $empleadoCol = 'EmpleadoID')
+    {
+        return $query
+            ->where(function ($q) use ($tabla, $columna) {
+                $q->whereIn($tabla . '.' . $columna, self::comoTexto(self::valoresOperativos()))
+                    ->orWhereNull($tabla . '.' . $columna);
+            })
+            ->whereExists(function ($q) use ($tabla, $empleadoCol) {
+                $q->selectRaw('1')
+                    ->from('empleados as e_op')
+                    ->whereColumn('e_op.EmpleadoID', $tabla . '.' . $empleadoCol)
+                    ->where('e_op.Estado', 1)
+                    ->whereIn('e_op.tipo_persona', self::tiposPersonaInventario());
+            });
     }
 }

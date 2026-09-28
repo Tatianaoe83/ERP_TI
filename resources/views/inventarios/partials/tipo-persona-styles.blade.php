@@ -274,4 +274,38 @@
         width: 100%;
         margin-top: 0.35rem;
     }
+
+    .index-action--extra {
+        color: #ea580c;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-transform: lowercase;
+        gap: 0.28rem;
+        padding: 0.28rem 0.55rem;
+        min-width: auto;
+        width: auto !important;
+        height: auto;
+        white-space: nowrap;
+        border-radius: 999px;
+        border: 1px solid #fdba74;
+        background: #fff7ed;
+    }
+
+    .index-action--extra:hover {
+        background: #ffedd5;
+        color: #c2410c;
+        border-color: #fb923c;
+    }
+
+    .dark .index-action--extra {
+        background: rgba(194, 65, 12, 0.18);
+        color: #fdba74;
+        border-color: rgba(251, 146, 60, 0.45);
+    }
+
+    .dark .index-action--extra:hover {
+        background: rgba(194, 65, 12, 0.32);
+        color: #fed7aa;
+    }
 </style>

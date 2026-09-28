@@ -17,10 +17,14 @@
 .dark .presupuesto-note p {
     color: #cbd5e1;
 }
-.presupuesto-note .inv-tipo-badge,
-.presupuesto-note .inv-chip {
-    vertical-align: middle;
-    margin: 0 0.05rem;
+.presupuesto-note .inv-leyenda {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 0;
+}
+.presupuesto-note .inv-leyenda-item {
+    max-width: 280px;
 }
 </style>
 
@@ -61,16 +65,20 @@
             </span>
             <div>
                 <h4>Qué incluye este reporte</h4>
-                <p>
-                    Empleados tipo
-                    <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                    y
-                    <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>.
-                    Solo asignaciones
-                    <span class="inv-chip inv-chip-extra">Extra</span>
-                    y
-                    <span class="inv-chip inv-chip-share">Compartido</span>.
-                </p>
+                <div class="inv-leyenda">
+                    <div class="inv-leyenda-item">
+                        <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+                        <div><strong>Persona física</strong>Solo extra y compartido.</div>
+                    </div>
+                    <div class="inv-leyenda-item">
+                        <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
+                        <div><strong>Persona referenciada</strong>Solo extra y compartido.</div>
+                    </div>
+                    <div class="inv-leyenda-item">
+                        <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
+                        <div><strong>Persona extraordinaria</strong>Todo es Extra: proyección de presupuesto.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -120,16 +128,16 @@
             </span>
             <div>
                 <h4>Qué incluye este reporte</h4>
-                <p>
-                    Empleados tipo
-                    <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                    y
-                    <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>.
-                    Solo asignaciones
-                    <span class="inv-chip inv-chip-stock">Stock</span>
-                    y
-                    <span class="inv-chip inv-chip-share">Compartido</span>.
-                </p>
+                <div class="inv-leyenda">
+                    <div class="inv-leyenda-item">
+                        <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+                        <div><strong>Persona física</strong>Stock y compartido.</div>
+                    </div>
+                    <div class="inv-leyenda-item">
+                        <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
+                        <div><strong>Gerencia / referenciado</strong>Igual que física: stock y compartido.</div>
+                    </div>
+                </div>
             </div>
         </div>
 

@@ -55,12 +55,12 @@ class PresupuestoHelper
         return self::soloPresupuestados($query, $modo, PresupuestoAsignacion::COLUMNA_EQUIPOS);
     }
 
-    // Presupuesto: FÍSICA y EXTRAORDINARIO. Inventario: FÍSICA y REFERENCIADO.
+    // Presupuesto: FÍSICA, REFERENCIADO y EXTRAORDINARIO. Inventario operativo: FÍSICA y REFERENCIADO.
     public static function tiposPersona(string $modo): array
     {
         return $modo === 'presupuesto'
-            ? ['FISICA', 'EXTRAORDINARIO']
-            : ['FISICA', 'REFERENCIADO'];
+            ? PresupuestoAsignacion::tiposPersonaPresupuesto()
+            : PresupuestoAsignacion::tiposPersonaInventario();
     }
 
     public static function etiquetaSeccion(string $modo): string
@@ -71,8 +71,8 @@ class PresupuestoHelper
     public static function leyendaInclusion(string $modo): string
     {
         return $modo === 'presupuesto'
-            ? 'Incluye asignaciones Extra y Compartido de empleados tipo FÍSICA y EXTRAORDINARIO.'
-            : 'Incluye asignaciones Stock y Compartido de empleados tipo FÍSICA y REFERENCIADO.';
+            ? 'Física y referenciado: extra y compartido. Extraordinario: todo extra (proyección de presupuesto).'
+            : 'Física y referenciado activos: stock y compartido.';
     }
 
     // Costo de un grupo de insumos según los meses elegidos en la asignación.
@@ -522,7 +522,7 @@ class PresupuestoHelper
 
         // 2. Cargar empleados de la gerencia con sus insumos y líneas
         $empleados = Empleados::query()
-            ->whereIn('tipo_persona', ['FISICA', 'EXTRAORDINARIO'])
+            ->whereIn('tipo_persona', PresupuestoAsignacion::tiposPersonaPresupuesto())
             ->whereHas('puestos.departamentos.gerencia', function ($q) use ($gerenciaId) {
                 $q->where('gerencia.GerenciaID', $gerenciaId);
             })

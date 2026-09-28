@@ -7,13 +7,12 @@ use App\Models\Empleados;
 use App\Models\Equipos;
 use App\Models\Insumos;
 use App\Models\LineasTelefonicas;
-use App\Models\InventarioEquipo;
-use App\Models\InventarioInsumo;
 use App\Models\Obras;
 use App\Models\Gerencia;
 use App\Models\UnidadesDeNegocio;
 use App\Models\TicketMantenimiento;
 use App\Models\PresupuestoConfiguracion;
+use App\Helpers\PresupuestoAsignacion;
 use DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -91,38 +90,25 @@ class HomeController extends Controller
 
     private function buildInformaticaStats(Request $request): array
     {
-        $totalEmpleados = Empleados::count();
-        $empleadosActivos = Empleados::where('Estado', true)->where('tipo_persona', 'FISICA')->count();
+        $tiposOperativos = PresupuestoAsignacion::tiposPersonaInventario();
+
+        $totalEmpleados = Empleados::whereIn('tipo_persona', $tiposOperativos)->count();
+        $empleadosActivos = Empleados::where('Estado', true)
+            ->whereIn('tipo_persona', $tiposOperativos)
+            ->count();
 
         $totalEquipos = Equipos::count();
-        $equiposAsignados = InventarioEquipo::count();
+        $equiposAsignados = $this->queryAsignadosOperativos('inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS)->count();
 
         $totalInsumos = Insumos::count();
-        $insumosAsignados = InventarioInsumo::count();
+        $insumosAsignados = $this->queryAsignadosOperativos('inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT)->count();
 
         $totalLineas = LineasTelefonicas::where('Activo', true)->count();
         $lineasLibres = LineasTelefonicas::where('Activo', true)->where('Disponible', 1)->count();
-        $lineasReferenciados = LineasTelefonicas::where('lineastelefonicas.Activo', true)
-            ->where('lineastelefonicas.Disponible', 0)
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('inventariolineas as il')
-                    ->join('empleados as e', 'e.EmpleadoID', '=', 'il.EmpleadoID')
-                    ->whereColumn('il.LineaID', 'lineastelefonicas.LineaID')
-                    ->where('e.tipo_persona', 'REFERENCIADO');
-            })
-            ->count();
-        $lineasAsignadasPersonaFisica = LineasTelefonicas::where('lineastelefonicas.Activo', true)
-            ->where('lineastelefonicas.Disponible', 0)
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from('inventariolineas as il')
-                    ->join('empleados as e', 'e.EmpleadoID', '=', 'il.EmpleadoID')
-                    ->whereColumn('il.LineaID', 'lineastelefonicas.LineaID')
-                    ->where('e.tipo_persona', 'FISICA');
-            })
-            ->count();
-        $lineasDisponibles = $lineasLibres + $lineasReferenciados;
+        $lineasReferenciados = $this->lineasAsignadasOperativas('REFERENCIADO')->count();
+        $lineasAsignadasPersonaFisica = $this->lineasAsignadasOperativas('FISICA')->count();
+        $lineasAsignadas = $lineasAsignadasPersonaFisica + $lineasReferenciados;
+        $lineasDisponibles = $lineasLibres;
 
         $totalObras = Obras::where('Estado', true)->count();
         $totalGerencias = Gerencia::where('Estado', true)->count();
@@ -135,7 +121,13 @@ class HomeController extends Controller
             $mantenimientosBase = DB::table('mantenimientos as m')
                 ->leftJoin('inventarioequipo as ie', 'ie.InventarioID', '=', 'm.InventarioID')
                 ->leftJoin('empleados as e', 'e.EmpleadoID', '=', 'ie.EmpleadoID')
-                ->where('m.AnioProgramacion', $anioActual);
+                ->where('m.AnioProgramacion', $anioActual)
+                ->where('e.Estado', true)
+                ->whereIn('e.tipo_persona', $tiposOperativos)
+                ->where(function ($q) {
+                    $q->whereIn('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS, array_map('strval', PresupuestoAsignacion::valoresOperativos()))
+                        ->orWhereNull('ie.' . PresupuestoAsignacion::COLUMNA_EQUIPOS);
+                });
 
             $mantenimientosAnio['realizados'] = (clone $mantenimientosBase)
                 ->where('m.Estatus', 'Realizado')
@@ -143,8 +135,6 @@ class HomeController extends Controller
 
             $mantenimientosAnio['pendientes'] = (clone $mantenimientosBase)
                 ->where('m.Estatus', 'Pendiente')
-                ->where('e.Estado', true)
-                ->whereRaw("UPPER(COALESCE(e.tipo_persona, '')) = 'FISICA'")
                 ->count();
         }
 
@@ -157,7 +147,7 @@ class HomeController extends Controller
             ->selectRaw('COUNT(CASE WHEN empleados.Estado = 1 THEN 1 END) as empleados_activos')
             ->where('gerencia.Estado', true)
             ->where('empleados.Estado', true)
-            ->where('empleados.tipo_persona', 'FISICA')
+            ->whereIn('empleados.tipo_persona', $tiposOperativos)
             ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia')
             ->having('total_empleados', '>', 0)
             ->orderBy('total_empleados', 'desc')
@@ -180,10 +170,11 @@ class HomeController extends Controller
                 ],
                 'lineas' => [
                     'total' => $totalLineas,
-                    'asignadas' => $lineasAsignadasPersonaFisica,
+                    'asignadas' => $lineasAsignadas,
                     'disponibles' => $lineasDisponibles,
                     'libres' => $lineasLibres,
                     'referenciados' => $lineasReferenciados,
+                    'fisicas' => $lineasAsignadasPersonaFisica,
                 ],
             ],
             'organizacion' => [
@@ -250,7 +241,7 @@ class HomeController extends Controller
             'inventario' => [
                 'equipos' => ['total' => 0, 'asignados' => 0],
                 'insumos' => ['total' => 0, 'asignados' => 0],
-                'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0],
+                'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0, 'fisicas' => 0],
             ],
             'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
             'mantenimientos' => ['pendientes' => 0, 'realizados' => 0, 'anio' => now()->year],
@@ -286,6 +277,7 @@ class HomeController extends Controller
             ->select('NombreInsumo')
             ->selectRaw('COUNT(InventarioID) as total_inventario');
 
+        PresupuestoAsignacion::restringirOperativo($query, 'inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT);
         PresupuestoConfiguracion::aplicarWhereIn($query, 'CateogoriaInsumo', 'licencias');
 
         return $query
@@ -300,11 +292,39 @@ class HomeController extends Controller
             ->select('CategoriaEquipo')
             ->selectRaw('COUNT(InventarioID) as total_inventario');
 
+        PresupuestoAsignacion::restringirOperativo($query, 'inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS);
         PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
 
         return $query
             ->groupBy('CategoriaEquipo')
             ->orderBy('total_inventario', 'desc')
             ->get();
+    }
+
+    private function queryAsignadosOperativos(string $tabla, string $columna, string $empleadoCol = 'EmpleadoID')
+    {
+        return PresupuestoAsignacion::restringirOperativo(DB::table($tabla), $tabla, $columna, $empleadoCol);
+    }
+
+    private function lineasAsignadasOperativas(?string $tipoPersona = null)
+    {
+        $tipos = $tipoPersona
+            ? [$tipoPersona]
+            : PresupuestoAsignacion::tiposPersonaInventario();
+
+        return LineasTelefonicas::where('lineastelefonicas.Activo', true)
+            ->where('lineastelefonicas.Disponible', 0)
+            ->whereExists(function ($q) use ($tipos) {
+                $q->select(DB::raw(1))
+                    ->from('inventariolineas as il')
+                    ->join('empleados as e', 'e.EmpleadoID', '=', 'il.EmpleadoID')
+                    ->whereColumn('il.LineaID', 'lineastelefonicas.LineaID')
+                    ->where('e.Estado', true)
+                    ->whereIn('e.tipo_persona', $tipos)
+                    ->where(function ($w) {
+                        $w->whereIn('il.Presupuestado', array_map('strval', PresupuestoAsignacion::valoresOperativos()))
+                            ->orWhereNull('il.Presupuestado');
+                    });
+            });
     }
 }

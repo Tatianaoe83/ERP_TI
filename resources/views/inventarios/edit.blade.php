@@ -7,17 +7,17 @@
         'FISICA' => [
             'label' => 'Física',
             'class' => 'inv-tipo-fisica',
-            'rules' => 'Puede tener Stock (asignado actual) y Extra (presupuesto futuro).',
+            'rules' => 'Stock y compartido. Extra es proyección de presupuesto y no entra a este inventario operativo.',
         ],
         'REFERENCIADO' => [
             'label' => 'Referenciado',
             'class' => 'inv-tipo-referenciado',
-            'rules' => 'Gerencia / control de almacén: solo Stock (inventario actual). Sin extras de presupuesto.',
+            'rules' => 'Igual que persona física: stock y compartido.',
         ],
         'EXTRAORDINARIO' => [
             'label' => 'Extraordinario',
             'class' => 'inv-tipo-extraordinario',
-            'rules' => 'Todo lo asignado es Extra (presupuesto futuro). No aplica stock operativo.',
+            'rules' => 'Todo lo asignado es Extra, igual que en persona física: proyección de presupuesto. Puede agregar extras desde el catálogo o como proyección sin reservar existencias.',
         ],
     ];
     $meta = $tipoMeta[$tipoPersona] ?? $tipoMeta['FISICA'];
@@ -95,14 +95,14 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label for="editCategoria">Categoría del Equipo</label>
-                  <input type="text" class="form-control inv-locked" id="editCategoria" name="editCategoria" required readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editCategoria" name="editCategoria" required readonly tabindex="-1" data-catalog-lock="1">
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Marca</label>
-                  <input type="text" class="form-control inv-locked" id="editMarca" name="Marca" required readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editMarca" name="Marca" required readonly tabindex="-1" data-catalog-lock="1">
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -112,13 +112,13 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Características</label>
-                  <textarea class="form-control inv-locked" rows="3" id="editCaracteristicas" required readonly tabindex="-1"></textarea>
+                  <textarea class="form-control inv-locked" rows="3" id="editCaracteristicas" required readonly tabindex="-1" data-catalog-lock="1"></textarea>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Modelo</label>
-                  <input type="text" class="form-control inv-locked" id="editModelo" name="Modelo" required readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editModelo" name="Modelo" required readonly tabindex="-1" data-catalog-lock="1">
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -128,7 +128,7 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Precio <span class="inv-opt-tag">Opcional en extra</span></label>
-                  <input type="number" class="form-control inv-locked" id="editPrecio" min="1" step="1" pattern="\d*" readonly tabindex="-1" data-req-stock="1">
+                  <input type="number" class="form-control inv-locked" id="editPrecio" min="1" step="1" pattern="\d*" readonly tabindex="-1" data-req-stock="1" data-catalog-lock="1">
                 </div>
               </div>
               <div class="col-md-6">
@@ -240,14 +240,14 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label for="editCategoriaInsumo">Categoría del Insumo</label>
-                  <input type="text" class="form-control inv-locked" id="editCategoriaInsumo" name="editCategoriaInsumo" required readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editCategoriaInsumo" name="editCategoriaInsumo" required readonly tabindex="-1" data-catalog-lock="1">
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Nombre Insumo</label>
-                  <input type="text" class="form-control inv-locked" id="editNombreInsumo" name="editNombreInsumo" required readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editNombreInsumo" name="editNombreInsumo" required readonly tabindex="-1" data-catalog-lock="1">
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -257,13 +257,13 @@
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Costo Mensual</label>
-                  <input type="text" class="form-control inv-locked" id="editCostoMensual" name="editCostoMensual" required readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editCostoMensual" name="editCostoMensual" required readonly tabindex="-1" data-catalog-lock="1">
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="dark:text-white">
                   <label>Costo Anual</label>
-                  <input type="text" class="form-control inv-locked" id="editCostoAnual" name="editCostoAnual" required readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editCostoAnual" name="editCostoAnual" required readonly tabindex="-1" data-catalog-lock="1">
                   <div class="invalid-feedback">Este campo es requerido</div>
                 </div>
               </div>
@@ -273,7 +273,7 @@
               <div class="col-md-12">
                 <div class="dark:text-white">
                   <label>Observaciones</label>
-                  <input type="text" class="form-control inv-locked" id="editobserv" name="editobserv" readonly tabindex="-1">
+                  <input type="text" class="form-control inv-locked" id="editobserv" name="editobserv" readonly tabindex="-1" data-catalog-lock="1">
                 </div>
               </div>
             </div>

@@ -182,8 +182,8 @@ class InventarioController extends AppBaseController
                 $tipo = strtoupper((string) ($row->tipo_persona ?? 'FISICA'));
 
                 $map = [
-                    'FISICA' => ['label' => 'Física', 'class' => 'inv-tipo-fisica', 'hint' => 'Stock + Extra'],
-                    'REFERENCIADO' => ['label' => 'Referenciado', 'class' => 'inv-tipo-referenciado', 'hint' => 'Solo stock'],
+                    'FISICA' => ['label' => 'Física', 'class' => 'inv-tipo-fisica', 'hint' => 'Stock y compartido'],
+                    'REFERENCIADO' => ['label' => 'Referenciado', 'class' => 'inv-tipo-referenciado', 'hint' => 'Stock y compartido'],
                     'EXTRAORDINARIO' => ['label' => 'Extraordinario', 'class' => 'inv-tipo-extraordinario', 'hint' => 'Todo extra'],
                 ];
 
@@ -357,10 +357,10 @@ class InventarioController extends AppBaseController
             'empleadoActivo' => (bool) $inventario->Estado,
             // La columna/filtro "Presupuestado" aplica a los tipos de persona que
             // alimentan los reportes de presupuesto.
-            'permitePresupuestado' => in_array($inventario->tipo_persona, ['FISICA', 'EXTRAORDINARIO']),
-            // En EXTRAORDINARIO todo lo asignado es presupuestado por definición: no
-            // se muestra el switch y el valor se fuerza en el servidor.
-            'presupuestadoForzado' => $inventario->tipo_persona === 'EXTRAORDINARIO',
+            'permitePresupuestado' => PresupuestoAsignacion::permitePresupuestado($inventario->tipo_persona),
+            // En EXTRAORDINARIO todo lo asignado es Extra: no se muestra el switch
+            // y el valor se fuerza en el servidor.
+            'presupuestadoForzado' => PresupuestoAsignacion::presupuestadoForzado($inventario->tipo_persona),
             'equiposAsignados' => $EquiposAsignados,
             'equipos' => $Equipos,
             'insumosAsignados' => $InsumosAsignados,
@@ -623,9 +623,11 @@ class InventarioController extends AppBaseController
         }
 
         $data = $request->all();
-        $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
-        $data['InsumoID'] = $idinsumo[0]->ID;
-        $data['CateogoriaInsumo'] = $this->categoriaDesdeCatalogoInsumo((int) $data['InsumoID'], $data['CateogoriaInsumo'] ?? null);
+        $resolucion = $this->resolverDatosInsumo($data, $request, (int) $inventarioinsumo->EmpleadoID);
+        if ($resolucion instanceof \Illuminate\Http\JsonResponse) {
+            return $resolucion;
+        }
+        $data = $resolucion;
 
         // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
         $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
@@ -653,9 +655,11 @@ class InventarioController extends AppBaseController
 
         $data = $request->all();
         $data['EmpleadoID'] = $id;
-        $idinsumo = Insumos::select("ID")->where('NombreInsumo', $request->NombreInsumo)->get();
-        $data['InsumoID'] = $idinsumo[0]->ID;
-        $data['CateogoriaInsumo'] = $this->categoriaDesdeCatalogoInsumo((int) $data['InsumoID'], $data['CateogoriaInsumo'] ?? null);
+        $resolucion = $this->resolverDatosInsumo($data, $request, (int) $id);
+        if ($resolucion instanceof \Illuminate\Http\JsonResponse) {
+            return $resolucion;
+        }
+        $data = $resolucion;
         
         // Limpiar FechaRenovacion: si es un string no-fecha, convertir a null
         $invalidValues = ['Sin asignar', 'Sin asigna', '0000-00-00', ''];
@@ -664,7 +668,7 @@ class InventarioController extends AppBaseController
         }
 
         // Si no viene fecha en el request, intentar obtenerla del catálogo
-        if (!$request->filled('FechaRenovacion') || $data['FechaRenovacion'] === null) {
+        if ((! $request->filled('FechaRenovacion') || $data['FechaRenovacion'] === null) && ! empty($data['InsumoID'])) {
             $insumoMaster = Insumos::find($data['InsumoID']);
             if ($insumoMaster && !empty($insumoMaster->FechaRenovacion) && !in_array($insumoMaster->FechaRenovacion, $invalidValues)) {
                 $data['FechaRenovacion'] = $insumoMaster->FechaRenovacion;
@@ -975,9 +979,6 @@ class InventarioController extends AppBaseController
         if ($tipoPersona === 'EXTRAORDINARIO') {
             return response()->json(['success' => false, 'message' => 'En extraordinario todo es extra; no aplica stock ni compartido.'], 422);
         }
-        if ($tipoPersona === 'REFERENCIADO') {
-            return response()->json(['success' => false, 'message' => 'El referenciado solo maneja stock.'], 422);
-        }
 
         // Los equipos guardan la modalidad en "tipoEquipo", no en "Presupuestado"
         // (esa columna ni existe en su tabla): usar el nombre fijo aquí habría
@@ -1077,11 +1078,11 @@ class InventarioController extends AppBaseController
             return redirect(route('inventarios.index'));
         }
 
-        if ($redir = $this->bloquearSiExtraordinario((int) $id, 'transferir')) {
+        if ($redir = $this->bloquearSiNoTransferible((int) $id)) {
             return $redir;
         }
 
-        // Sólo se listan modalidades transferibles (stock/compartido/extra). PROPIO nunca.
+        // Sólo stock y compartido. Extra, propio y extraordinario no se listan.
         $EquiposAsignados = InventarioEquipo::query()
             ->where('EmpleadoID', $id);
         PresupuestoAsignacion::aplicarWhere($EquiposAsignados, 'transferible', PresupuestoAsignacion::COLUMNA_EQUIPOS);
@@ -1099,7 +1100,7 @@ class InventarioController extends AppBaseController
 
         $Empleados = Empleados::query()
             ->where('Estado', 1)
-            ->whereIn('tipo_persona', ['FISICA', 'REFERENCIADO', 'EXTRAORDINARIO'])
+            ->whereIn('tipo_persona', PresupuestoAsignacion::tiposPersonaInventario())
             ->where('EmpleadoID', '!=', $id)
             ->orderBy('NombreEmpleado')
             ->get();
@@ -1117,7 +1118,7 @@ class InventarioController extends AppBaseController
     {
         $origenId = (int) $inventario;
 
-        if ($redir = $this->bloquearSiExtraordinario($origenId, 'transferir')) {
+        if ($redir = $this->bloquearSiNoTransferible($origenId)) {
             return $redir;
         }
 
@@ -1134,14 +1135,13 @@ class InventarioController extends AppBaseController
         $destino = Empleados::where('EmpleadoID', $empleadoSeleccionado)->first();
         $tipoDestino = strtoupper((string) ($destino->tipo_persona ?? ''));
 
-        if (! $destino || ! $destino->Estado || ! in_array($tipoDestino, ['FISICA', 'REFERENCIADO', 'EXTRAORDINARIO'], true)) {
-            Flash::error('El destino debe ser una persona física, referenciada o extraordinaria activa.');
+        if (! $destino || ! $destino->Estado || ! in_array($tipoDestino, PresupuestoAsignacion::tiposPersonaInventario(), true)) {
+            Flash::error('El destino debe ser una persona física o referenciada activa.');
             return back();
         }
 
-        // Modalidades que acepta el destino:
-        //  FISICA → stock/compartido · REFERENCIADO → stock · EXTRAORDINARIO → extra.
-        //  PROPIO nunca. El tipo NO se convierte: se mueve tal cual.
+        // Modalidades que acepta el destino: física y referenciado activos reciben
+        // stock y compartido. Extra, propio y extraordinario no se mueven.
         $permitidos = PresupuestoAsignacion::transferiblesA($tipoDestino);
 
         $hoy = Carbon::now()->toDateString();
@@ -1217,8 +1217,7 @@ class InventarioController extends AppBaseController
         if ($movidos === 0) {
             $reglas = [
                 'FISICA' => 'stock y compartido',
-                'REFERENCIADO' => 'sólo stock',
-                'EXTRAORDINARIO' => 'sólo extra',
+                'REFERENCIADO' => 'stock y compartido',
             ];
             Flash::error(
                 'No se transfirió nada. A una persona ' . ucfirst(strtolower($tipoDestino))
@@ -1706,6 +1705,25 @@ class InventarioController extends AppBaseController
         return redirect(route('inventarios.index'));
     }
 
+    private function bloquearSiNoTransferible(int $empleadoId)
+    {
+        $empleado = Empleados::where('EmpleadoID', $empleadoId)->first(['tipo_persona', 'Estado']);
+        if (! $empleado || ! $empleado->Estado) {
+            Flash::warning('Solo se transfiere inventario de personas activas.');
+
+            return redirect(route('inventarios.index'));
+        }
+
+        $tipo = strtoupper((string) ($empleado->tipo_persona ?? ''));
+        if (! in_array($tipo, PresupuestoAsignacion::tiposPersonaInventario(), true)) {
+            Flash::warning('Solo se transfiere inventario de personas físicas o referenciadas activas (stock y compartido).');
+
+            return redirect(route('inventarios.index'));
+        }
+
+        return null;
+    }
+
     private function forzarPresupuestado(array $data, int $empleadoId, string $columna = PresupuestoAsignacion::COLUMNA_DEFAULT): array
     {
         $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
@@ -1772,6 +1790,46 @@ class InventarioController extends AppBaseController
         }
 
         return $data;
+    }
+
+    /**
+     * Stock/compartido exige un insumo del catálogo. Extra puede proyectarse
+     * sin InsumoID (igual que las líneas extra sin LineaID).
+     */
+    private function resolverDatosInsumo(array $data, Request $request, int $empleadoId)
+    {
+        $tipoPersona = Empleados::where('EmpleadoID', $empleadoId)->value('tipo_persona');
+        $modo = $tipoPersona === 'EXTRAORDINARIO'
+            ? PresupuestoAsignacion::EXTRA
+            : PresupuestoAsignacion::normalizar($request->input('Presupuestado', $data['Presupuestado'] ?? 0));
+        $esExtra = $modo === PresupuestoAsignacion::EXTRA;
+
+        $nombre = trim((string) ($request->NombreInsumo ?? $data['NombreInsumo'] ?? ''));
+        $master = $nombre !== '' ? Insumos::select('ID')->where('NombreInsumo', $nombre)->first() : null;
+
+        if ($master) {
+            $data['InsumoID'] = $master->ID;
+            $data['CateogoriaInsumo'] = $this->categoriaDesdeCatalogoInsumo((int) $master->ID, $data['CateogoriaInsumo'] ?? null);
+
+            return $data;
+        }
+
+        if ($esExtra) {
+            if ($nombre === '' || trim((string) ($data['CateogoriaInsumo'] ?? '')) === '') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La proyección extra de insumo requiere categoría y nombre.',
+                ], 422);
+            }
+            $data['InsumoID'] = null;
+
+            return $data;
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'El insumo debe existir en el catálogo para asignarlo en stock o compartido.',
+        ], 422);
     }
 
     private function categoriaDesdeCatalogoInsumo(int $insumoId, $fallback = null): ?string

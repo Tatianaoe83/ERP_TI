@@ -52,6 +52,18 @@
                         <h3 class="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-800">Iniciar sesión</h3>
                     </div>
 
+                    @php
+                        $loginError = $errors->first('username')
+                            ?: $errors->first('password')
+                            ?: $errors->first('email')
+                            ?: session('error');
+                    @endphp
+                    @if($loginError)
+                    <div class="mb-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-700" role="alert">
+                        {{ $loginError }}
+                    </div>
+                    @endif
+
                     <form method="POST" action="{{ route('login') }}" class="space-y-4 sm:space-y-6 text-black">
                         @csrf
 
@@ -59,7 +71,7 @@
                             <input type="username" id="username" name="username"
                                 value="{{ Cookie::get('username') ?? old('username') }}"
                                 required
-                                class="peer w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border borderinput bg-white text-black focus:outline-none focus:border-black text-sm sm:text-base">
+                                class="peer w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border {{ $errors->has('username') ? 'border-red-500' : 'borderinput' }} bg-white text-black focus:outline-none focus:border-black text-sm sm:text-base">
                             <label for="username"
                                 class="absolute text-xs sm:text-sm text-gray-500 duration-300 transform -translate-y-3 scale-75 top-2 left-3 sm:left-4 z-10 origin-[0] bg-white px-1 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-2.5 peer-focus:scale-75 peer-focus:-translate-y-3">
                                 Nombre de Usuario
@@ -69,7 +81,7 @@
                         <div class="relative">
                             <input type="password" name="password" id="password"
                                 value="{{ Cookie::get('password') ?? '' }}" required
-                                class="peer w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border borderinput bg-white text-black focus:outline-none focus:border-black text-sm sm:text-base">
+                                class="peer w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border {{ $errors->has('username') || $errors->has('password') ? 'border-red-500' : 'borderinput' }} bg-white text-black focus:outline-none focus:border-black text-sm sm:text-base">
                             <label for="password"
                                 class="absolute text-xs sm:text-sm text-gray-500 duration-300 transform -translate-y-3 scale-75 top-2 left-3 sm:left-4 z-10 origin-[0] bg-white px-1 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-2.5 peer-focus:scale-75 peer-focus:-translate-y-3">
                                 Contraseña

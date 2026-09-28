@@ -95,15 +95,15 @@
             <div class="inv-leyenda inv-leyenda--inline">
                 <div class="inv-leyenda-item">
                     <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                    <div><strong>Persona física</strong>Stock (asignado actual) + Extra (presupuesto futuro).</div>
+                    <div><strong>Persona física</strong>Stock y compartido.</div>
                 </div>
                 <div class="inv-leyenda-item">
                     <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
-                    <div><strong>Gerencia / referenciado</strong>Solo stock. Tiene asignaciones actuales, sin extras.</div>
+                    <div><strong>Gerencia / referenciado</strong>Igual que física: stock y compartido.</div>
                 </div>
                 <div class="inv-leyenda-item">
                     <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
-                    <div><strong>Plaza extraordinaria</strong>Todo es Extra (presupuesto futuro).</div>
+                    <div><strong>Plaza extraordinaria</strong>Todo es Extra: proyección de presupuesto.</div>
                 </div>
             </div>
         </div>
@@ -145,8 +145,8 @@
             <label for="filtro-persona">Tipo de persona</label>
             <select class="form-control jz-inv" id="filtro-persona">
                 <option value="">Físicas y referenciados</option>
-                <option value="FISICA">Física — stock + extra</option>
-                <option value="REFERENCIADO">Referenciado — solo stock</option>
+                <option value="FISICA">Física — stock y compartido</option>
+                <option value="REFERENCIADO">Referenciado — stock y compartido</option>
                 <option value="EXTRAORDINARIO">Extraordinario — todo extra</option>
             </select>
         </div>

@@ -23,9 +23,9 @@
     </x-slot>
 
     <p class="xfer-lede">
-        El destino puede ser persona <strong>física</strong>, <strong>referenciada</strong> o <strong>extraordinaria</strong>.
-        A física se le transfiere <strong>stock</strong> y <strong>compartido</strong>; a referenciada <strong>sólo stock</strong>;
-        a extraordinaria <strong>sólo extra</strong>. Lo <strong>propio</strong> nunca se transfiere.
+        El destino debe ser persona <strong>física</strong> o <strong>referenciada activa</strong>.
+        Solo se transfiere <strong>stock</strong> y <strong>compartido</strong>.
+        Extra, propio y extraordinario no se mueven.
         El mantenimiento preventivo se genera desde esta misma pantalla.
     </p>
 
@@ -778,7 +778,6 @@
                     $tipoPersonaLabels = [
                         'FISICA' => 'Física',
                         'REFERENCIADO' => 'Referenciado',
-                        'EXTRAORDINARIO' => 'Extraordinario',
                     ];
                 @endphp
                 @foreach($Empleados as $empleado)
@@ -788,18 +787,15 @@
                 // Reglas por tipo de destino (0=stock, 1=extra, 2=compartido, 3=propio).
                 var REGLAS_TRANSFER = {
                     FISICA: [0, 2],
-                    REFERENCIADO: [0],
-                    EXTRAORDINARIO: [1]
+                    REFERENCIADO: [0, 2]
                 };
                 var TXT_REGLA = {
                     FISICA: 'sólo recibe stock y compartido',
-                    REFERENCIADO: 'sólo recibe stock',
-                    EXTRAORDINARIO: 'sólo recibe extra'
+                    REFERENCIADO: 'sólo recibe stock y compartido'
                 };
                 var LABEL_TP = {
                     FISICA: 'Física',
-                    REFERENCIADO: 'Referenciado',
-                    EXTRAORDINARIO: 'Extraordinario'
+                    REFERENCIADO: 'Referenciado'
                 };
 
                 swal.fire({

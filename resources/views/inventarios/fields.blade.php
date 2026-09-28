@@ -125,20 +125,20 @@
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
-                <div class="inv-kpi-label">Stock</div>
+                <div class="inv-kpi-label">Inventario</div>
                 <div class="inv-kpi-value" data-kpi="stock-money">{{ $fmtMoney($equiposStock->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub" data-kpi="stock-sub">{{ $equiposStock->count() }} equipo(s) · sale en inventario</div>
+                <div class="inv-kpi-sub" data-kpi="stock-sub">{{ $equiposStock->count() }} equipo(s) · stock y compartido</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
-                <div class="inv-kpi-label">Extra / Presupuesto</div>
+                <div class="inv-kpi-label">Presupuesto</div>
                 <div class="inv-kpi-value" data-kpi="extra-money">{{ $fmtMoney($equiposExtra->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub" data-kpi="extra-sub">{{ $equiposExtra->count() }} equipo(s) · sale en presupuesto</div>
+                <div class="inv-kpi-sub" data-kpi="extra-sub">{{ $equiposExtra->count() }} equipo(s) · extra y compartido</div>
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
-                <div class="inv-kpi-label">Solo stock</div>
+                <div class="inv-kpi-label">Inventario</div>
                 <div class="inv-kpi-value" data-kpi="solo-stock-money">{{ $fmtMoney(collect($equiposAsignados)->sum('Precio')) }}</div>
-                <div class="inv-kpi-sub">Referenciado: sin extras de presupuesto</div>
+                <div class="inv-kpi-sub">Stock y compartido</div>
             </div>
             <div class="inv-kpi">
                 <div class="inv-kpi-label">Disponibles</div>
@@ -335,20 +335,20 @@
             </div>
             @if($permitePresupuestado)
             <div class="inv-kpi inv-kpi-stock">
-                <div class="inv-kpi-label">Stock</div>
+                <div class="inv-kpi-label">Inventario</div>
                 <div class="inv-kpi-value" data-kpi="stock-count">{{ $insumosStock->count() }}</div>
-                <div class="inv-kpi-sub">Sale en inventario</div>
+                <div class="inv-kpi-sub">Stock y compartido</div>
             </div>
             <div class="inv-kpi inv-kpi-extra">
-                <div class="inv-kpi-label">Extra / Presupuesto</div>
+                <div class="inv-kpi-label">Presupuesto</div>
                 <div class="inv-kpi-value" data-kpi="extra-count">{{ $insumosExtra->count() }}</div>
-                <div class="inv-kpi-sub">Sale en presupuesto</div>
+                <div class="inv-kpi-sub">Extra y compartido</div>
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
-                <div class="inv-kpi-label">Solo stock</div>
+                <div class="inv-kpi-label">Inventario</div>
                 <div class="inv-kpi-value">{{ collect($insumosAsignados)->count() }}</div>
-                <div class="inv-kpi-sub">Referenciado</div>
+                <div class="inv-kpi-sub">Stock y compartido</div>
             </div>
             <div class="inv-kpi">
                 <div class="inv-kpi-label">Disponibles</div>
@@ -548,9 +548,9 @@
             </div>
             @else
             <div class="inv-kpi inv-kpi-stock">
-                <div class="inv-kpi-label">Solo stock</div>
+                <div class="inv-kpi-label">Inventario</div>
                 <div class="inv-kpi-value">{{ collect($LineasAsignados)->count() }}</div>
-                <div class="inv-kpi-sub">Referenciado</div>
+                <div class="inv-kpi-sub">Stock y compartido</div>
             </div>
             <div class="inv-kpi">
                 <div class="inv-kpi-label">Disponibles</div>
@@ -843,6 +843,7 @@
 </style>
 @endpush
 
+@once
 @push('third_party_scripts')
 @include('layouts.datatables_js')
 @include('layouts.partials.index-page-js')
@@ -859,16 +860,16 @@
 
     $(document).off('.invAssign');
 
-    // El switch sólo existe en el DOM para FISICA; en EXTRAORDINARIO todo lo
-    // asignado es presupuestado y para el resto el campo viaja siempre en 0.
+    // El switch existe en FÍSICA y REFERENCIADO. En EXTRAORDINARIO el extra se
+    // fuerza y para quien no permita presupuesto el campo viaja siempre en 0.
     // (El servidor vuelve a aplicar la regla, esto es sólo para la UI.)
     // Modalidades: 0 stock, 1 extra, 2 compartido, 3 propio (esta última sólo equipos).
-    const MODO_STOCK = 0;
-    const MODO_EXTRA = 1;
-    const MODO_COMPARTIDO = 2;
-    const MODO_PROPIO = 3;
+    var MODO_STOCK = 0;
+    var MODO_EXTRA = 1;
+    var MODO_COMPARTIDO = 2;
+    var MODO_PROPIO = 3;
 
-    const MODOS = {
+    var MODOS = {
         0: { hint: 'stock',  etiqueta: 'Stock',      chip: 'inv-chip-stock'  },
         1: { hint: 'extra',  etiqueta: 'Extra',      chip: 'inv-chip-extra'  },
         2: { hint: 'share',  etiqueta: 'Compartido', chip: 'inv-chip-share'  },
@@ -1021,7 +1022,7 @@
     // Un equipo propio es del empleado: la empresa no le pone precio, folio, fecha de
     // compra, fecha de asignación ni mes de pago. Esos campos (.equipo-solo-empresa)
     // se ocultan por completo y se envían vacíos; sólo queda Núm. de serie y Gerencia.
-    const camposOpcionalesEquipoPropio = ['#editPrecio', '#editFolio', '#editFechaDeCompra', '#editFechaAsignacion', '#editMesDePagoEquipo'];
+    var camposOpcionalesEquipoPropio = ['#editPrecio', '#editFolio', '#editFechaDeCompra', '#editFechaAsignacion', '#editMesDePagoEquipo'];
 
     function aplicarRequeridosEquipo(esPropio) {
         // El ocultar/mostrar de .equipo-solo-empresa y el reflow a ancho completo
@@ -1211,6 +1212,7 @@
         const propio = modo === MODO_PROPIO;
         $form.toggleClass('is-modo-extra', extra);
         $form.toggleClass('is-modo-propio', propio);
+        syncCatalogoLock($form);
         // Extra: nada de catálogo es obligatorio. Propio: sólo la gerencia (no
         // entra al presupuesto). Stock / compartido: todo obligatorio.
         $form.find('[data-req-stock]').each(function() {
@@ -1232,6 +1234,33 @@
         if ($form.is('#editFormLinea')) {
             syncLineaModalModo();
         }
+    }
+
+    function marcarOrigenFormulario($form, desdeCatalogo) {
+        $form.data('desde-catalogo', desdeCatalogo ? 1 : 0);
+        $form.data('proyeccion-extra', desdeCatalogo ? 0 : 1);
+        syncCatalogoLock($form);
+    }
+
+    function syncCatalogoLock($form) {
+        const bloquear = $form.data('desde-catalogo') === 1;
+        $form.find('[data-catalog-lock]').each(function() {
+            const $el = $(this);
+            $el.prop('readonly', bloquear).toggleClass('inv-locked', bloquear);
+            $el.attr('tabindex', bloquear ? -1 : 0);
+        });
+    }
+
+    function activarTabInv(target) {
+        $('#myTab [data-inv-tab]').removeClass('is-active active');
+        $('.tab-content > .tab-pane').removeClass('show active');
+        $('#myTab [data-inv-tab="' + target + '"]').addClass('is-active active');
+        $(target).addClass('show active');
+        $(target).find('table').each(function() {
+            if ($.fn.DataTable.isDataTable(this)) {
+                $(this).DataTable().columns.adjust();
+            }
+        });
     }
 
     function validarCamposRequeridos($form) {
@@ -1542,8 +1571,8 @@
         $pane.find('[data-kpi="extra-money"]').text(fmtMoneyInv(montoPre));
         $pane.find('[data-kpi="solo-stock-money"]').text(fmtMoneyInv(montoTotal));
         if (tablaId === 'equiposAsignadosTable') {
-            $pane.find('[data-kpi="stock-sub"]').text(inventario + ' equipo(s) · sale en inventario');
-            $pane.find('[data-kpi="extra-sub"]').text(presupuesto + ' equipo(s) · sale en presupuesto');
+            $pane.find('[data-kpi="stock-sub"]').text(inventario + ' equipo(s) · stock y compartido');
+            $pane.find('[data-kpi="extra-sub"]').text(presupuesto + ' equipo(s) · extra y compartido');
         }
     }
 
@@ -1642,6 +1671,17 @@
                 }
             });
         });
+
+        try {
+            var params = new URLSearchParams(window.location.search);
+            if (!window.__invAssignExtraUrl && params.get('extra') === '1' && permitePresupuestado && empleadoInventarioActivo) {
+                window.__invAssignExtraUrl = true;
+                activarTabInv('#linea');
+                setTimeout(function() {
+                    $('.crear-btn-linea-extra').first().trigger('click');
+                }, 200);
+            }
+        } catch (e) {}
     });
 
     // Seccion equipo 
@@ -1685,6 +1725,7 @@
         $('#editComentarios').val(attrFila(row, 'comentarios'));
         setPresupuestado('#editPresupuestadoEquipo', row.attr('data-presupuestado') || (permitePresupuestado ? celda.texto(1) : ''));
         setPagoMeses('editMesDePagoEquipo', row.attr('data-meses') || '');
+        marcarOrigenFormulario($('#editForm'), true);
 
         $('#editModal').modal('show');
     });
@@ -1717,6 +1758,7 @@
         $('#editEmp').val(id_E);
         setPresupuestado('#editPresupuestadoEquipo', 'No');
         setPagoMeses('editMesDePagoEquipo', '');
+        marcarOrigenFormulario($('#editForm'), true);
 
         $('#editModal').modal('show');
     });
@@ -1995,7 +2037,7 @@
     });
 
     // Mapa de campo del backend -> input del modal (no todos comparten nombre).
-    const inputPorCampoEquipo = {
+    var inputPorCampoEquipo = {
         CategoriaEquipo: '#editCategoria',
         GerenciaEquipoID: '#editGerenciaEquipo',
         MesDePago: '#editMesDePagoEquipo',
@@ -2345,6 +2387,7 @@
         $('#editComentariosInsumo').val(textoDeCelda(row.find("td:eq(" + colInv(9) + ")")));
         setPagoMeses('editMesDePago', row.attr('data-meses') || '');
         setPresupuestado('#editPresupuestadoInsumo', row.attr('data-presupuestado') || (permitePresupuestado ? row.find("td:eq(1)").text() : ''));
+        marcarOrigenFormulario($('#editFormInsumo'), true);
 
         $('#editModalInsumo').modal('show');
     });
@@ -2385,10 +2428,10 @@
         $('#editEmp_insumo').val(id_E);
         setPresupuestado('#editPresupuestadoInsumo', 'No');
         setPagoMeses('editMesDePago', mesesPagoTodosStr);
+        marcarOrigenFormulario($('#editFormInsumo'), true);
 
         $('#editModalInsumo').modal('show');
     });
-
 
     $(document).on('click.invAssign', '.submit_insumo', function(event) {
         event.preventDefault();
@@ -2701,6 +2744,7 @@
         $('#editFechaRenovacion').val(row.attr('data-fecha-renov') || '');
         setPresupuestado('#editPresupuestadoLinea', row.attr('data-presupuestado') || (permitePresupuestado ? row.find('td:eq(1)').text() : ''));
         setPagoMeses('editMesDePagoLinea', row.attr('data-meses') || '');
+        marcarOrigenFormulario($('#editFormLinea'), !esExtraAsignacion(row.attr('data-presupuestado')));
         syncLineaModalModo();
 
         $('#editModalLinea').modal('show');
@@ -2744,6 +2788,7 @@
         $('#editFechaRenovacion').val(attrFila(row, 'fecha-renov') || '');
         setPresupuestado('#editPresupuestadoLinea', 'No');
         setPagoMeses('editMesDePagoLinea', mesesPagoTodosStr);
+        marcarOrigenFormulario($('#editFormLinea'), true);
         syncLineaModalModo();
 
         $('#editModalLinea').modal('show');
@@ -2763,6 +2808,7 @@
         $('#editEsProyeccion').val('1');
         setPresupuestado('#editPresupuestadoLinea', '1');
         setPagoMeses('editMesDePagoLinea', mesesPagoTodosStr);
+        marcarOrigenFormulario($('#editFormLinea'), false);
         syncLineaModalModo();
 
         $('#editModalLinea').modal('show');
@@ -3258,7 +3304,5 @@
 
     // Fin Seccion telefono
 </script>
-
-
-
 @endpush
+@endonce

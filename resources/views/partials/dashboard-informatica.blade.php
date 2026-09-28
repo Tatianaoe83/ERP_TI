@@ -42,13 +42,15 @@
     }
 </style>
 
+<p class="dash-kpi__hint mb-4">Los KPIs de informática cuentan personas <strong>físicas y referenciadas activas</strong>, solo asignaciones en <strong>stock</strong> y <strong>compartido</strong>. Extra, propio y extraordinario no entran.</p>
+
 <div class="dash-top-grid">
     <div class="dash-top-col">
         <div class="dash-kpi">
             <div class="dash-kpi__top">
                 <div>
                     <p class="dash-kpi__label">Líneas que puedes asignar</p>
-                    <p class="dash-kpi__hint">Libres + referenciadas</p>
+                    <p class="dash-kpi__hint">Libres en catálogo (activas)</p>
                     <p class="dash-kpi__value">{{ $stats['inventario']['lineas']['disponibles'] }}</p>
                 </div>
                 <span class="dash-kpi__icon dash-kpi__icon--amber" aria-hidden="true">
@@ -56,7 +58,7 @@
                 </span>
             </div>
             <div class="dash-stat mt-4 flex items-center justify-between">
-                <span class="dash-stat__label">Asignadas a persona física</span>
+                <span class="dash-stat__label">Asignadas (física y referenciado)</span>
                 <span class="dash-stat__value" style="font-size:1.05rem;">{{ $stats['inventario']['lineas']['asignadas'] }}</span>
             </div>
         </div>
@@ -72,9 +74,7 @@
                     <p class="dash-stat__value">{{ $stats['inventario']['lineas']['referenciados'] }}</p>
                 </div>
             </div>
-            @if($stats['inventario']['lineas']['referenciados'] > 0)
-                <p class="dash-kpi__hint mt-3">Referenciadas = asignadas pero no a persona física</p>
-            @endif
+            <p class="dash-kpi__hint mt-3">Stock y compartido de personas activas. Extra y extraordinario no entran.</p>
         </div>
     </div>
 
@@ -82,7 +82,8 @@
         <div class="dash-kpi">
             <div class="dash-kpi__top">
                 <div>
-                    <p class="dash-kpi__label">Total de empleados activos</p>
+                    <p class="dash-kpi__label">Empleados activos</p>
+                    <p class="dash-kpi__hint">Física y referenciado activos</p>
                     <p class="dash-kpi__value">{{ $stats['empleados']['activos'] }}</p>
                 </div>
                 <span class="dash-kpi__icon dash-kpi__icon--blue" aria-hidden="true">
@@ -92,7 +93,7 @@
         </div>
 
         <div class="dash-kpi dash-kpi--fill">
-            <p class="dash-kpi__label mb-3">Equipos asignados en inventario</p>
+            <p class="dash-kpi__label mb-3">Equipos asignados (stock y compartido, activos)</p>
             <div class="dash-equipos-grid">
                 @forelse($stats['equipos_por_categoria']->take(3) as $equipo)
                 <div class="dash-stat">
@@ -139,7 +140,7 @@
     <div class="dash-panel">
         <h3 class="dash-panel__title mb-3">
             <i class="fas fa-certificate"></i>
-            Licencias asignadas
+            Licencias asignadas (stock y compartido)
         </h3>
         @include('partials.insumos-licencia', ['stats' => $stats])
     </div>
@@ -147,7 +148,7 @@
     <div class="dash-panel">
         <h3 class="dash-panel__title mb-3">
             <i class="fas fa-building"></i>
-            Gerencias con mayor número de empleados activos
+            Gerencias con más empleados activos (física y referenciado)
         </h3>
         <div class="space-y-2">
             @forelse($stats['estadisticas_gerencia'] as $gerencia)
