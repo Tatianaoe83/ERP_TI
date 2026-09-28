@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Collection;
 
 class TicketTarea extends Model
 {
@@ -23,6 +26,7 @@ class TicketTarea extends Model
         'titulo',
         'razon',
         'asignado_id',
+        'asignados_ids',
         'creado_por_user_id',
         'fecha_compromiso',
         'estatus',
@@ -45,9 +49,93 @@ class TicketTarea extends Model
         'periodo_anio' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::ensureColumnaAsignados();
+    }
+
+    /**
+     * Columna extra, nullable. No altera filas existentes: esas siguen con asignado_id.
+     */
+    public static function ensureColumnaAsignados(): void
+    {
+        static $listo = false;
+        if ($listo) {
+            return;
+        }
+        $listo = true;
+
+        if (! Schema::hasTable('ticket_tareas') || Schema::hasColumn('ticket_tareas', 'asignados_ids')) {
+            return;
+        }
+
+        Schema::table('ticket_tareas', function (Blueprint $table) {
+            $table->string('asignados_ids', 255)->nullable()->after('asignado_id');
+        });
+    }
+
     public function asignado()
     {
         return $this->belongsTo(Empleados::class, 'asignado_id', 'EmpleadoID');
+    }
+
+    /** IDs de todos los responsables de esta misma tarea (incluye el principal). */
+    public function idsAsignados(): array
+    {
+        $ids = [];
+        if ($this->asignado_id) {
+            $ids[] = (int) $this->asignado_id;
+        }
+
+        $raw = $this->attributes['asignados_ids'] ?? '';
+        if (is_string($raw) && $raw !== '') {
+            foreach (explode(',', $raw) as $id) {
+                $id = (int) trim($id);
+                if ($id > 0) {
+                    $ids[] = $id;
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    public static function serializarAsignados(array $ids): ?string
+    {
+        $csv = collect($ids)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->implode(',');
+
+        return $csv !== '' ? $csv : null;
+    }
+
+    public function etiquetaResponsables($nombresPorId = null): string
+    {
+        $ids = $this->idsAsignados();
+        if ($ids === []) {
+            return 'Por asignar';
+        }
+
+        $mapa = $nombresPorId instanceof Collection
+            ? $nombresPorId
+            : collect($nombresPorId ?? []);
+
+        $nombres = collect($ids)->map(function ($id) use ($mapa) {
+            return $mapa->get($id)
+                ?? $mapa->get((string) $id)
+                ?? (((int) $this->asignado_id === (int) $id && $this->asignado)
+                    ? $this->asignado->NombreEmpleado
+                    : null);
+        })->filter()->unique()->values();
+
+        return $nombres->isEmpty() ? 'Por asignar' : $nombres->implode(', ');
+    }
+
+    public function tieneResponsable(): bool
+    {
+        return $this->idsAsignados() !== [];
     }
 
     public function creador()

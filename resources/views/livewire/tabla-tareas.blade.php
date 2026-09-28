@@ -123,7 +123,7 @@
                             <strong>{{ $tarea->titulo }}</strong>
                             <div class="text-xs opacity-75">
                                 {{ $tarea->tipo === 'metrica' ? 'Métrica mensual' : 'Evento' }}
-                                · {{ optional($tarea->asignado)->NombreEmpleado ?: 'Por asignar' }}
+                                · {{ $tarea->etiquetaResponsables($nombresResponsables ?? null) }}
                             </div>
                         </div>
                         <div class="flex gap-1">
@@ -161,7 +161,7 @@
                             <strong>{{ $tarea->titulo }}</strong>
                             <div class="text-xs opacity-75">
                                 {{ $tarea->tipo === 'metrica' ? 'Métrica mensual' : 'Evento' }}
-                                · {{ optional($tarea->asignado)->NombreEmpleado ?: 'Por asignar' }}
+                                · {{ $tarea->etiquetaResponsables($nombresResponsables ?? null) }}
                                 @if($tarea->estatus === 'completada') · Completada @endif
                             </div>
                         </div>
@@ -288,9 +288,9 @@
                 @endif
 
                 <div class="tarea-card__meta">
-                    @php $asignadoNombre = optional($tarea->asignado)->NombreEmpleado; @endphp
-                    <div class="{{ $asignadoNombre ? '' : 'tarea-card__sin-asignar' }}">
-                        <i class="fas fa-user"></i> {{ $asignadoNombre ?: 'Por asignar' }}
+                    @php $asignadoNombre = $tarea->etiquetaResponsables($nombresResponsables ?? null); @endphp
+                    <div class="{{ $tarea->tieneResponsable() ? '' : 'tarea-card__sin-asignar' }}">
+                        <i class="fas fa-user{{ count($tarea->idsAsignados()) > 1 ? 's' : '' }}"></i> {{ $asignadoNombre }}
                     </div>
                     <div><i class="fas fa-calendar-day"></i> {{ optional($tarea->fecha_compromiso)->format('d/m/Y') ?? 'Sin fecha' }}</div>
                 </div>
@@ -306,7 +306,7 @@
                     </button>
                     {{-- En métricas el modal solo deja cambiar el responsable --}}
                     <button type="button" wire:click="abrirModalEditarTarea({{ $tarea->id }})"
-                            class="tarea-btn {{ $asignadoNombre ? '' : 'tarea-btn--alerta' }}"
+                            class="tarea-btn {{ $tarea->tieneResponsable() ? '' : 'tarea-btn--alerta' }}"
                             title="{{ $tarea->tipo === 'metrica' ? 'Cambiar responsable' : 'Editar' }}">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -385,23 +385,33 @@
                               @if($editandoMetrica) readonly @endif></textarea>
                     @error('razon') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <div class="form-group">
-                        <label>Asignar a (personal TI activo)</label>
-                        <select wire:model.defer="asignado_id" class="form-control" required autofocus>
-                            <option value="">Seleccione responsable de TI</option>
-                            @foreach($responsables as $emp)
-                            <option value="{{ $emp->EmpleadoID }}">{{ $emp->NombreEmpleado }}</option>
-                            @endforeach
-                        </select>
-                        @error('asignado_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                <div class="form-group mb-3">
+                    <label>Asignar a (personal TI activo)</label>
+                    <p class="tareas-asignados__hint">
+                        @if($editandoMetrica)
+                            Las métricas solo admiten un responsable.
+                        @else
+                            Puede marcar a más de una persona. Quedan en la misma tarea.
+                        @endif
+                    </p>
+                    <div class="tareas-asignados" role="group" aria-label="Responsables de TI">
+                        @foreach($responsables as $emp)
+                        <label class="tareas-asignados__item">
+                            <input type="checkbox"
+                                   wire:model.defer="asignados_ids"
+                                   value="{{ $emp->EmpleadoID }}">
+                            <span>{{ $emp->NombreEmpleado }}</span>
+                        </label>
+                        @endforeach
                     </div>
-                    <div class="form-group">
-                        <label>Fecha compromiso <span class="text-xs opacity-60 font-normal">(opcional)</span></label>
-                        <input type="date" wire:model.defer="fecha_compromiso" class="form-control"
-                               @if($editandoMetrica) readonly @endif>
-                        @error('fecha_compromiso') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                    </div>
+                    @error('asignados_ids') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    @error('asignados_ids.*') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group mb-3">
+                    <label>Fecha compromiso <span class="text-xs opacity-60 font-normal">(opcional)</span></label>
+                    <input type="date" wire:model.defer="fecha_compromiso" class="form-control"
+                           @if($editandoMetrica) readonly @endif>
+                    @error('fecha_compromiso') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div class="tareas-modal__foot">
                     <button type="button" @click="cerrar()" class="index-page__btn-secondary">Cancelar</button>
@@ -714,6 +724,31 @@
         /* 44px de alto: entra cómodo al tacto y evita el auto-zoom de iOS */
         .tareas-modal__body .form-control { min-height:44px; font-size:.9rem; }
         .tareas-modal__body textarea.form-control { min-height:auto; }
+
+        .tareas-asignados__hint {
+            margin:0 0 .5rem; font-size:.75rem; font-weight:400; line-height:1.4; color:#64748b;
+        }
+        .dark .tareas-asignados__hint { color:#94a3b8; }
+        .tareas-asignados {
+            display:flex; flex-direction:column; gap:.15rem;
+            max-height:11.5rem; overflow:auto;
+            padding:.35rem;
+            border:1px solid rgba(148,163,184,.35); border-radius:10px;
+            background:rgba(148,163,184,.06);
+        }
+        .dark .tareas-asignados { border-color:#334155; background:rgba(15,23,42,.45); }
+        .tareas-asignados__item {
+            display:flex !important; align-items:center; gap:.65rem;
+            margin:0 !important; padding:.45rem .65rem; border-radius:8px;
+            font-size:.82rem !important; font-weight:500 !important;
+            cursor:pointer; color:#1e293b !important;
+        }
+        .dark .tareas-asignados__item { color:#e2e8f0 !important; }
+        .tareas-asignados__item:hover { background:rgba(99,102,241,.1); }
+        .tareas-asignados__item input {
+            width:1rem; height:1rem; margin:0; accent-color:#1d4ed8; flex:0 0 auto;
+        }
+        .tarea-card__meta { word-break:break-word; }
 
         .tareas-modal__foot {
             display:flex; justify-content:flex-end; gap:.5rem;

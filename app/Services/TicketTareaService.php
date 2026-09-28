@@ -28,10 +28,17 @@ class TicketTareaService
     public function crearEvento(array $data): TicketTarea
     {
         return DB::transaction(function () use ($data) {
+            $ids = collect($data['asignados_ids'] ?? [$data['asignado_id'] ?? null])
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values();
+
             $tarea = TicketTarea::create([
                 'titulo' => $data['titulo'],
                 'razon' => $data['razon'] ?? null,
-                'asignado_id' => $data['asignado_id'],
+                'asignado_id' => $ids->first(),
+                'asignados_ids' => TicketTarea::serializarAsignados($ids->all()),
                 'creado_por_user_id' => Auth::id(),
                 'fecha_compromiso' => $data['fecha_compromiso'] ?? null,
                 'estatus' => TicketTarea::ESTATUS_PENDIENTE,
@@ -42,7 +49,9 @@ class TicketTareaService
             $this->registrarHistorial($tarea, 'creada', null, [
                 'fecha_compromiso_nueva' => $tarea->fecha_compromiso,
                 'asignado_nuevo_id' => $tarea->asignado_id,
-                'notas' => 'Tarea creada manualmente.',
+                'notas' => $ids->count() > 1
+                    ? 'Tarea creada con ' . $ids->count() . ' responsables.'
+                    : 'Tarea creada manualmente.',
             ]);
 
             $this->actualizarPrioridades();

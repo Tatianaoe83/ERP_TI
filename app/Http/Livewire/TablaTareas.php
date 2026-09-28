@@ -55,7 +55,8 @@ class TablaTareas extends Component
 
     public string $titulo = '';
     public string $razon = '';
-    public $asignado_id = '';
+    /** IDs de personal TI. En alta se puede elegir más de uno; cada quien recibe su propia fila. */
+    public array $asignados_ids = [];
     public string $fecha_compromiso = '';
 
     public string $reagendar_fecha = '';
@@ -211,7 +212,7 @@ class TablaTareas extends Component
         $this->creadorTarea = $this->nombreCreador($tarea);
         $this->titulo = $tarea->titulo;
         $this->razon = (string) ($tarea->razon ?? '');
-        $this->asignado_id = $tarea->asignado_id ? (string) $tarea->asignado_id : '';
+        $this->asignados_ids = collect($tarea->idsAsignados())->map(fn ($id) => (string) $id)->all();
         $this->fecha_compromiso = optional($tarea->fecha_compromiso)->format('Y-m-d') ?? '';
         $this->editandoMetrica = $tarea->tipo === TicketTarea::TIPO_METRICA;
         $this->resetErrorBag();
@@ -228,26 +229,38 @@ class TablaTareas extends Component
         $idsPermitidos = Empleados::tiActivos()->pluck('EmpleadoID')->map(fn ($id) => (int) $id)->all();
         if ($this->tareaEditId) {
             $actual = TicketTarea::find($this->tareaEditId);
-            if ($actual?->asignado_id) {
-                $idsPermitidos[] = (int) $actual->asignado_id;
+            foreach ($actual?->idsAsignados() ?? [] as $idActual) {
+                $idsPermitidos[] = (int) $idActual;
             }
         }
+        $idsPermitidos = array_values(array_unique($idsPermitidos));
 
         $this->validate([
             'titulo' => 'required|string|max:200',
             'razon' => 'nullable|string|max:2000',
-            'asignado_id' => ['required', 'integer', Rule::in($idsPermitidos)],
+            'asignados_ids' => 'required|array|min:1',
+            'asignados_ids.*' => ['integer', Rule::in($idsPermitidos)],
             'fecha_compromiso' => 'nullable|date',
         ], [
-            'asignado_id.in' => 'Solo se puede asignar a personal de TI activo.',
+            'asignados_ids.required' => 'Seleccione al menos un responsable de TI.',
+            'asignados_ids.min' => 'Seleccione al menos un responsable de TI.',
+            'asignados_ids.*.in' => 'Solo se puede asignar a personal de TI activo.',
         ], [
             'titulo' => 'título',
             'razon' => 'razón',
-            'asignado_id' => 'asignado',
+            'asignados_ids' => 'asignados',
             'fecha_compromiso' => 'fecha compromiso',
         ]);
 
+        $ids = collect($this->asignados_ids)
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
         $fecha = trim((string) $this->fecha_compromiso) !== '' ? $this->fecha_compromiso : null;
+        $csv = TicketTarea::serializarAsignados($ids->all());
+        $principal = (int) $ids->first();
 
         if ($this->tareaEditId) {
             $tarea = TicketTarea::findOrFail($this->tareaEditId);
@@ -255,11 +268,20 @@ class TablaTareas extends Component
             // En una métrica el título y la razón los regenera la plantilla cada mes,
             // así que editarlos no tendría efecto duradero: solo se cambia el responsable.
             if ($tarea->tipo === TicketTarea::TIPO_METRICA) {
+                if ($ids->count() > 1) {
+                    $this->addError('asignados_ids', 'Las métricas solo admiten un responsable.');
+
+                    return;
+                }
+
                 $anterior = $tarea->asignado_id;
-                $nuevo = (int) $this->asignado_id;
+                $nuevo = $principal;
 
                 if ((int) $anterior !== $nuevo) {
-                    $tarea->update(['asignado_id' => $nuevo]);
+                    $tarea->update([
+                        'asignado_id' => $nuevo,
+                        'asignados_ids' => $csv,
+                    ]);
                     $service->registrarHistorial($tarea, 'asignada', null, [
                         'asignado_anterior_id' => $anterior,
                         'asignado_nuevo_id' => $nuevo,
@@ -275,13 +297,14 @@ class TablaTareas extends Component
                 return;
             }
 
-            $anteriorAsignado = $tarea->asignado_id;
+            $anteriores = $tarea->idsAsignados();
             $anteriorFecha = optional($tarea->fecha_compromiso)->format('Y-m-d');
 
             $tarea->update([
                 'titulo' => $this->titulo,
                 'razon' => $this->razon,
-                'asignado_id' => (int) $this->asignado_id,
+                'asignado_id' => $principal,
+                'asignados_ids' => $csv,
                 'fecha_compromiso' => $fecha,
             ]);
 
@@ -292,28 +315,22 @@ class TablaTareas extends Component
                     'fecha_compromiso_anterior' => $anteriorFecha,
                     'fecha_compromiso_nueva' => $fecha,
                 ]);
-            } elseif ((int) $anteriorAsignado !== (int) $this->asignado_id) {
+            } elseif (collect($anteriores)->sort()->values()->all() !== $ids->sort()->values()->all()) {
                 $service->registrarHistorial($tarea, 'asignada', null, [
-                    'asignado_anterior_id' => $anteriorAsignado,
-                    'asignado_nuevo_id' => (int) $this->asignado_id,
-                    'notas' => 'Cambio de responsable.',
+                    'asignado_anterior_id' => $anteriores[0] ?? null,
+                    'asignado_nuevo_id' => $principal,
+                    'notas' => $ids->count() > 1
+                        ? 'Responsables actualizados (' . $ids->count() . ' personas).'
+                        : 'Cambio de responsable.',
                 ]);
             }
-
-            // Fuera del elseif: si en la misma edición cambian fecha y responsable, el
-            // nuevo responsable también debe enterarse.
-            // if ((int) $anteriorAsignado !== (int) $this->asignado_id) {
-            //     $notificaciones->notificarAsignacion($tarea);
-            // }
         } else {
-            $tarea = $service->crearEvento([
+            $service->crearEvento([
                 'titulo' => $this->titulo,
                 'razon' => $this->razon,
-                'asignado_id' => (int) $this->asignado_id,
+                'asignados_ids' => $ids->all(),
                 'fecha_compromiso' => $fecha,
             ]);
-
-            // $notificaciones->notificarAsignacion($tarea);
         }
 
         $this->modalTareaAbierto = false;
@@ -355,7 +372,7 @@ class TablaTareas extends Component
         $tarea = TicketTarea::findOrFail($id);
 
         // Sin responsable no se completa: si no, no queda registro de quién la hizo.
-        if (! $tarea->asignado_id) {
+        if (! $tarea->tieneResponsable()) {
             session()->flash('tareas_error', 'Asigna un responsable antes de completar la tarea.');
 
             return;
@@ -439,10 +456,14 @@ class TablaTareas extends Component
             ->when($this->filtroTipo !== '', fn ($q) => $q->where('tipo', $this->filtroTipo))
             ->when(trim($this->search) !== '', function ($q) {
                 $term = '%' . trim($this->search) . '%';
-                $q->where(function ($inner) use ($term) {
+                $idsNombre = Empleados::where('NombreEmpleado', 'like', $term)->pluck('EmpleadoID');
+                $q->where(function ($inner) use ($term, $idsNombre) {
                     $inner->where('titulo', 'like', $term)
                         ->orWhere('razon', 'like', $term)
                         ->orWhereHas('asignado', fn ($a) => $a->where('NombreEmpleado', 'like', $term));
+                    foreach ($idsNombre as $eid) {
+                        $inner->orWhereRaw('FIND_IN_SET(?, COALESCE(asignados_ids, ""))', [(int) $eid]);
+                    }
                 });
             })
             ->when($this->filtroEstatus === 'completadas', fn ($q) => $q->orderByDesc('completada_at'))
@@ -482,9 +503,18 @@ class TablaTareas extends Component
         $esMesActualCompletadas = $this->mesCompletadas === (int) now()->month
             && $this->anioCompletadas === (int) now()->year;
 
+        $nombresResponsables = $this->mapaNombresAsignados(
+            $tareas->getCollection(),
+            $tareasMes,
+            $tareasDiaSeleccionado,
+            $tareasSinFecha,
+            $historialTarea ? collect([$historialTarea]) : collect()
+        );
+
         return view('livewire.tabla-tareas', compact(
             'tareas',
             'responsables',
+            'nombresResponsables',
             'kpis',
             'historialTarea',
             'calendario',
@@ -499,6 +529,22 @@ class TablaTareas extends Component
             'etiquetaMesCompletadas',
             'esMesActualCompletadas'
         ));
+    }
+
+    private function mapaNombresAsignados(...$grupos)
+    {
+        $ids = collect($grupos)
+            ->flatten()
+            ->filter(fn ($t) => $t instanceof TicketTarea)
+            ->flatMap(fn (TicketTarea $t) => $t->idsAsignados())
+            ->unique()
+            ->filter();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return Empleados::whereIn('EmpleadoID', $ids)->pluck('NombreEmpleado', 'EmpleadoID');
     }
 
     /**
@@ -549,7 +595,7 @@ class TablaTareas extends Component
     {
         $this->titulo = '';
         $this->razon = '';
-        $this->asignado_id = '';
+        $this->asignados_ids = [];
         $this->fecha_compromiso = '';
         $this->editandoMetrica = false;
         $this->creadorTarea = null;

@@ -92,10 +92,12 @@ class ProductividadTareas extends Component
 
         $tareas = TicketTarea::query()
             ->with('asignado')
-            ->get(['id', 'asignado_id', 'estatus', 'prioridad', 'fecha_compromiso', 'completada_at', 'tipo']);
+            ->get(['id', 'asignado_id', 'asignados_ids', 'estatus', 'prioridad', 'fecha_compromiso', 'completada_at', 'tipo']);
 
         $rendimiento = $empleados->map(function ($empleado) use ($tareas) {
-            $delEmpleado = $tareas->where('asignado_id', $empleado->EmpleadoID);
+            $delEmpleado = $tareas->filter(
+                fn ($t) => in_array((int) $empleado->EmpleadoID, $t->idsAsignados(), true)
+            );
             $pendientes = $delEmpleado->where('estatus', TicketTarea::ESTATUS_PENDIENTE);
             $completadasMes = $delEmpleado
                 ->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
