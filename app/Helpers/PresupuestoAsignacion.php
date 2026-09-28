@@ -181,4 +181,25 @@ class PresupuestoAsignacion
                     ->whereIn('e_op.tipo_persona', self::tiposPersonaInventario());
             });
     }
+
+    /**
+     * Extra y compartido de física, referenciado y extraordinario (vacantes / presupuesto).
+     */
+    public static function restringirPresupuesto($query, string $tabla, string $columna, string $empleadoCol = 'EmpleadoID')
+    {
+        return $query
+            ->whereIn($tabla . '.' . $columna, self::comoTexto(self::valoresPresupuesto()))
+            ->whereExists(function ($q) use ($tabla, $empleadoCol) {
+                $q->selectRaw('1')
+                    ->from('empleados as e_pr')
+                    ->whereColumn('e_pr.EmpleadoID', $tabla . '.' . $empleadoCol)
+                    ->whereIn('e_pr.tipo_persona', self::tiposPersonaPresupuesto());
+            });
+    }
+
+    /** Equipos del empleado (no de la empresa). */
+    public static function restringirPropios($query, string $tabla = 'inventarioequipo', string $columna = self::COLUMNA_EQUIPOS)
+    {
+        return $query->where($tabla . '.' . $columna, (string) self::PROPIO);
+    }
 }

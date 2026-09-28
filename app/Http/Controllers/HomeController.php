@@ -11,6 +11,11 @@ use App\Models\Obras;
 use App\Models\Gerencia;
 use App\Models\UnidadesDeNegocio;
 use App\Models\TicketMantenimiento;
+use App\Models\Tickets;
+use App\Models\TicketTarea;
+use App\Models\Solicitud;
+use App\Models\Auditoria;
+use App\Models\Facturas;
 use App\Models\PresupuestoConfiguracion;
 use App\Helpers\PresupuestoAsignacion;
 use DB;
@@ -154,15 +159,40 @@ class HomeController extends Controller
             ->limit(7)
             ->get();
 
+        $vacantes = Empleados::where('tipo_persona', 'EXTRAORDINARIO')->where('Estado', true)->count();
+        $equiposPropios = $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPropios(DB::table('inventarioequipo'))->count());
+        $presupuestados = [
+            'equipos' => $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPresupuesto(DB::table('inventarioequipo'), 'inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS)->count()),
+            'insumos' => $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPresupuesto(DB::table('inventarioinsumo'), 'inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT)->count()),
+            'lineas' => $this->contarSeguro(fn () => PresupuestoAsignacion::restringirPresupuesto(DB::table('inventariolineas'), 'inventariolineas', PresupuestoAsignacion::COLUMNA_DEFAULT)->count()),
+        ];
+        $presupuestados['total'] = $presupuestados['equipos'] + $presupuestados['insumos'] + $presupuestados['lineas'];
+
+        $anio = now()->year;
+        $mes = now()->month;
+        $operacion = [
+            'tickets_abiertos' => $this->contarSeguro(fn () => Tickets::whereIn('Estatus', ['Pendiente', 'En progreso'])->count()),
+            'tickets_pendientes' => $this->contarSeguro(fn () => Tickets::where('Estatus', 'Pendiente')->count()),
+            'tickets_progreso' => $this->contarSeguro(fn () => Tickets::where('Estatus', 'En progreso')->count()),
+            'tareas_pendientes' => $this->contarSeguro(fn () => TicketTarea::pendientes()->count()),
+            'tareas_criticas' => $this->contarSeguro(fn () => TicketTarea::pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)->count()),
+            'solicitudes_activas' => $this->contarSeguro(fn () => Solicitud::whereNotIn('Estatus', ['Cancelada', 'Cancelado', 'Rechazada', 'Rechazado', 'Aprobada', 'Aprobado'])->count()),
+            'auditorias_anio' => $this->contarSeguro(fn () => Auditoria::whereYear('created_at', $anio)->count()),
+            'facturas_mes' => $this->contarSeguro(fn () => Facturas::where('Anio', $anio)->where('Mes', $mes)->count()),
+            'facturas_importe' => $this->contarSeguro(fn () => (float) Facturas::where('Anio', $anio)->where('Mes', $mes)->sum('Costo'), 0.0),
+        ];
+
         return [
             'empleados' => [
                 'total' => $totalEmpleados,
                 'activos' => $empleadosActivos,
+                'vacantes' => $vacantes,
             ],
             'inventario' => [
                 'equipos' => [
                     'total' => $totalEquipos,
                     'asignados' => $equiposAsignados,
+                    'propios' => $equiposPropios,
                 ],
                 'insumos' => [
                     'total' => $totalInsumos,
@@ -177,6 +207,8 @@ class HomeController extends Controller
                     'fisicas' => $lineasAsignadasPersonaFisica,
                 ],
             ],
+            'presupuestados' => $presupuestados,
+            'operacion' => $operacion,
             'organizacion' => [
                 'obras' => $totalObras,
                 'gerencias' => $totalGerencias,
@@ -237,11 +269,23 @@ class HomeController extends Controller
     private function statsInformaticaVacios(): array
     {
         return [
-            'empleados' => ['total' => 0, 'activos' => 0],
+            'empleados' => ['total' => 0, 'activos' => 0, 'vacantes' => 0],
             'inventario' => [
-                'equipos' => ['total' => 0, 'asignados' => 0],
+                'equipos' => ['total' => 0, 'asignados' => 0, 'propios' => 0],
                 'insumos' => ['total' => 0, 'asignados' => 0],
                 'lineas' => ['total' => 0, 'asignadas' => 0, 'disponibles' => 0, 'libres' => 0, 'referenciados' => 0, 'fisicas' => 0],
+            ],
+            'presupuestados' => ['equipos' => 0, 'insumos' => 0, 'lineas' => 0, 'total' => 0],
+            'operacion' => [
+                'tickets_abiertos' => 0,
+                'tickets_pendientes' => 0,
+                'tickets_progreso' => 0,
+                'tareas_pendientes' => 0,
+                'tareas_criticas' => 0,
+                'solicitudes_activas' => 0,
+                'auditorias_anio' => 0,
+                'facturas_mes' => 0,
+                'facturas_importe' => 0,
             ],
             'organizacion' => ['obras' => 0, 'gerencias' => 0, 'unidades_negocio' => 0],
             'mantenimientos' => ['pendientes' => 0, 'realizados' => 0, 'anio' => now()->year],
@@ -304,6 +348,15 @@ class HomeController extends Controller
     private function queryAsignadosOperativos(string $tabla, string $columna, string $empleadoCol = 'EmpleadoID')
     {
         return PresupuestoAsignacion::restringirOperativo(DB::table($tabla), $tabla, $columna, $empleadoCol);
+    }
+
+    private function contarSeguro(callable $consulta, $fallback = 0)
+    {
+        try {
+            return $consulta();
+        } catch (\Throwable $e) {
+            return $fallback;
+        }
     }
 
     private function lineasAsignadasOperativas(?string $tipoPersona = null)

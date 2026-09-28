@@ -14,7 +14,7 @@
         background: transparent;
         border: 0;
     }
-    .inv-leyenda--inline .inv-leyenda-item { max-width: 320px; }
+    .inv-leyenda--inline .inv-leyenda-item { max-width: 360px; }
 
     .index-search {
         position: relative;
@@ -95,15 +95,15 @@
             <div class="inv-leyenda inv-leyenda--inline">
                 <div class="inv-leyenda-item">
                     <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                    <div><strong>Persona física</strong>Stock y compartido.</div>
+                    <div><strong>Empleado</strong>En inventario se cuenta stock y compartido.</div>
                 </div>
                 <div class="inv-leyenda-item">
                     <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
-                    <div><strong>Gerencia / referenciado</strong>Igual que física: stock y compartido.</div>
+                    <div><strong>Gerencia</strong>También stock y compartido; extra no entra aquí.</div>
                 </div>
                 <div class="inv-leyenda-item">
                     <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
-                    <div><strong>Plaza extraordinaria</strong>Todo es Extra: proyección de presupuesto.</div>
+                    <div><strong>Plaza temporal</strong>Todo es extra (proyección de presupuesto).</div>
                 </div>
             </div>
         </div>
