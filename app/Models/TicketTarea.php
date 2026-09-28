@@ -165,6 +165,17 @@ class TicketTarea extends Model
             ->whereDate('fecha_compromiso', '<', Carbon::today());
     }
 
+    /** Vencidas o críticas pendientes: un solo listado, las críticas se distinguen por color. */
+    public function scopeNoRealizadas($query)
+    {
+        return $query->pendientes()->where(function ($q) {
+            $q->where(function ($atrasada) {
+                $atrasada->whereNotNull('fecha_compromiso')
+                    ->whereDate('fecha_compromiso', '<', Carbon::today());
+            })->orWhere('prioridad', self::PRIORIDAD_CRITICA);
+        });
+    }
+
     public function scopeProximas($query)
     {
         return $query->pendientes()
@@ -200,14 +211,44 @@ class TicketTarea extends Model
 
     public function etiquetaPrioridad(): string
     {
-        if ($this->prioridad === self::PRIORIDAD_CRITICA) {
+        if ($this->estatus === self::ESTATUS_COMPLETADA) {
+            return 'Completada';
+        }
+
+        if ($this->prioridad === self::PRIORIDAD_CRITICA || $this->esCriticaPorTiempo()) {
             return 'Crítica';
         }
 
         if ($this->estaVencida()) {
-            return 'Vencida';
+            return 'No realizada';
         }
 
-        return 'Normal';
+        return 'Pendiente';
+    }
+
+    /**
+     * Semáforo del calendario: el estado manda sobre el tipo.
+     * Completada > crítica > no realizada > métrica/pendiente.
+     * Crítica también se calcula por fecha, por si la columna aún no se actualizó.
+     */
+    public function claseSemaforo(): string
+    {
+        if ($this->estatus === self::ESTATUS_COMPLETADA) {
+            return 'is-done';
+        }
+
+        if ($this->prioridad === self::PRIORIDAD_CRITICA || $this->esCriticaPorTiempo()) {
+            return 'is-critica';
+        }
+
+        if ($this->estaVencida()) {
+            return 'is-vencida';
+        }
+
+        if ($this->tipo === self::TIPO_METRICA) {
+            return 'is-metrica';
+        }
+
+        return 'is-pendiente';
     }
 }

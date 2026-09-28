@@ -16,26 +16,18 @@ class TablaTareas extends Component
 {
     use WithPagination;
 
-    protected $paginationTheme = 'tailwind';
-
     public string $vista = 'tareas';
     public string $filtroEstatus = 'hoy';
     public string $filtroTipo = '';
     public string $search = '';
-    public int $perPage = 12;
     public int $calMes = 1;
     public int $calAnio = 2026;
-    public string $modoLista = 'tarjetas';
     public string $fechaSeleccionada = '';
-
-    /** Mes/año que se ve en el filtro de completadas: ahí se navega por mes, no por día. */
-    public int $mesCompletadas = 1;
-    public int $anioCompletadas = 2026;
+    public int $perPageLista = 8;
 
     /**
-     * Acota críticas y completadas al día elegido. Apagado por defecto: esos dos KPI
-     * deben verse en general, si no el usuario nunca se entera de lo que arrastra de
-     * otros días.
+     * En no realizadas / críticas / completadas el listado es global.
+     * Al pulsar un día del calendario se acota a esa fecha.
      */
     public bool $soloDia = false;
 
@@ -62,8 +54,6 @@ class TablaTareas extends Component
     public string $reagendar_fecha = '';
     public string $reagendar_motivo = '';
 
-    // modoLista NO va en el queryString: al entrar a la vista siempre debe arrancar
-    // en 'tarjetas'. Si se guarda en la URL, la última elección pisa el valor por defecto.
     protected $queryString = [
         'vista' => ['except' => 'tareas'],
         'filtroEstatus' => ['except' => 'hoy'],
@@ -77,41 +67,23 @@ class TablaTareas extends Component
         $this->calMes = max(1, min(12, (int) (request('calMes') ?: now()->month)));
         $this->calAnio = max(2000, (int) (request('calAnio') ?: now()->year));
         $this->fechaSeleccionada = now()->format('Y-m-d');
-        $this->mesCompletadas = (int) now()->month;
-        $this->anioCompletadas = (int) now()->year;
+        if ($this->filtroEstatus === 'criticas') {
+            $this->filtroEstatus = 'atrasadas';
+        }
         app(TicketTareaService::class)->actualizarPrioridades();
-    }
-
-    public function updatingSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingFiltroEstatus(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingFiltroTipo(): void
-    {
-        $this->resetPage();
     }
 
     public function filtrarKpi(string $estatus): void
     {
-        $this->filtroEstatus = in_array($estatus, ['hoy', 'atrasadas', 'criticas', 'completadas'], true) ? $estatus : 'hoy';
+        if ($estatus === 'criticas') {
+            $estatus = 'atrasadas';
+        }
+        $this->filtroEstatus = in_array($estatus, ['hoy', 'atrasadas', 'completadas'], true) ? $estatus : 'hoy';
         $this->soloDia = false;
         $this->resetPage();
 
-        if ($this->modoLista === 'tarjetas') {
-            return;
-        }
-
         if ($this->filtroEstatus === 'hoy') {
             $this->irHoy();
-            $this->modoLista = 'calendario';
-        } else {
-            $this->modoLista = 'tarjetas';
         }
     }
 
@@ -120,6 +92,7 @@ class TablaTareas extends Component
         $fecha = Carbon::create($this->calAnio, $this->calMes, 1)->subMonth();
         $this->calMes = (int) $fecha->month;
         $this->calAnio = (int) $fecha->year;
+        $this->resetPage();
     }
 
     public function mesSiguiente(): void
@@ -127,6 +100,7 @@ class TablaTareas extends Component
         $fecha = Carbon::create($this->calAnio, $this->calMes, 1)->addMonth();
         $this->calMes = (int) $fecha->month;
         $this->calAnio = (int) $fecha->year;
+        $this->resetPage();
     }
 
     public function irHoy(): void
@@ -134,54 +108,8 @@ class TablaTareas extends Component
         $this->calMes = (int) now()->month;
         $this->calAnio = (int) now()->year;
         $this->fechaSeleccionada = now()->format('Y-m-d');
+        $this->soloDia = false;
         $this->resetPage();
-    }
-
-    public function mesCompletadasAnterior(): void
-    {
-        $this->moverMesCompletadas(-1);
-    }
-
-    public function mesCompletadasSiguiente(): void
-    {
-        $this->moverMesCompletadas(1);
-    }
-
-    public function irMesActualCompletadas(): void
-    {
-        $this->mesCompletadas = (int) now()->month;
-        $this->anioCompletadas = (int) now()->year;
-        $this->resetPage();
-    }
-
-    private function moverMesCompletadas(int $meses): void
-    {
-        $fecha = Carbon::create($this->anioCompletadas, $this->mesCompletadas, 1)->addMonths($meses);
-        $this->mesCompletadas = (int) $fecha->month;
-        $this->anioCompletadas = (int) $fecha->year;
-        $this->resetPage();
-    }
-
-    public function alternarSoloDia(): void
-    {
-        $this->soloDia = ! $this->soloDia;
-        $this->resetPage();
-    }
-
-    public function diaAnterior(): void
-    {
-        $this->seleccionarDia(Carbon::parse($this->fechaSeleccionada ?: now())->subDay()->format('Y-m-d'));
-    }
-
-    public function diaSiguiente(): void
-    {
-        $this->seleccionarDia(Carbon::parse($this->fechaSeleccionada ?: now())->addDay()->format('Y-m-d'));
-    }
-
-    /** El día que se ve en tarjetas es el mismo del calendario, así que al cambiarlo se reinicia la paginación. */
-    public function updatedFechaSeleccionada($valor): void
-    {
-        $this->seleccionarDia(trim((string) $valor) !== '' ? $valor : now()->format('Y-m-d'));
     }
 
     public function seleccionarDia(string $fecha): void
@@ -190,6 +118,23 @@ class TablaTareas extends Component
         $this->fechaSeleccionada = $carbon->format('Y-m-d');
         $this->calMes = (int) $carbon->month;
         $this->calAnio = (int) $carbon->year;
+        $this->soloDia = $this->filtroEstatus !== 'hoy';
+        $this->resetPage();
+    }
+
+    public function verTodas(): void
+    {
+        $this->soloDia = false;
+        $this->resetPage();
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFiltroTipo(): void
+    {
         $this->resetPage();
     }
 
@@ -402,21 +347,14 @@ class TablaTareas extends Component
             ->get(['EmpleadoID', 'NombreEmpleado']);
 
         $hoy = now()->format('Y-m-d');
-        $diaTarjetas = $this->fechaSeleccionada ?: $hoy;
+        $fechaSel = $this->fechaSeleccionada ?: $hoy;
 
-        // Los tres KPI y la lista miran siempre el mismo día: si el conteo fuera global
-        // no cuadraría con las tarjetas al moverse a otra fecha.
         $kpis = [
-            'hoy' => TicketTarea::pendientes()
-                ->where(fn ($q) => $this->acotarAlDia($q, $diaTarjetas, $hoy))
-                ->count(),
-            'atrasadas' => TicketTarea::atrasadas()->count(),
-            'criticas' => TicketTarea::pendientes()
-                ->where('prioridad', TicketTarea::PRIORIDAD_CRITICA)
-                ->count(),
+            'hoy' => TicketTarea::deHoy()->count(),
+            'atrasadas' => TicketTarea::noRealizadas()->count(),
             'completadas_mes' => TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereMonth('completada_at', $this->mesCompletadas)
-                ->whereYear('completada_at', $this->anioCompletadas)
+                ->whereMonth('completada_at', $this->calMes)
+                ->whereYear('completada_at', $this->calAnio)
                 ->count(),
         ];
 
@@ -426,112 +364,129 @@ class TablaTareas extends Component
         $tareasMes = TicketTarea::query()
             ->with(['asignado', 'metrica'])
             ->whereNotNull('fecha_compromiso')
-            ->whereBetween('fecha_compromiso', [$inicioMes->toDateString(), $finMes->toDateString()])
-            ->orderBy('fecha_compromiso')
-            ->get();
+            ->whereBetween('fecha_compromiso', [$inicioMes->toDateString(), $finMes->toDateString()]);
+        $this->aplicarFiltrosComunes($tareasMes);
+        $tareasMes = $tareasMes->orderBy('fecha_compromiso')->get();
+
+        $tareasSinFecha = TicketTarea::query()
+            ->with(['asignado', 'metrica'])
+            ->pendientes()
+            ->whereNull('fecha_compromiso');
+        $this->aplicarFiltrosComunes($tareasSinFecha);
+        $tareasSinFecha = $tareasSinFecha->orderBy('titulo')->get();
 
         $tareasPorDia = $tareasMes->groupBy(fn ($t) => $t->fecha_compromiso->format('Y-m-d'));
+        $calendario = $this->construirCalendario($inicioMes, $tareasPorDia, $this->fechaSeleccionada, $tareasSinFecha);
 
-        $calendario = $this->construirCalendario($inicioMes, $tareasPorDia, $this->fechaSeleccionada);
-
-        $tareas = TicketTarea::query()
-            ->with(['asignado', 'metrica'])
-            ->when($this->filtroEstatus === 'hoy', fn ($q) => $q->pendientes()
-                ->where(fn ($inner) => $this->acotarAlDia($inner, $diaTarjetas, $hoy)))
-            ->when($this->filtroEstatus === 'atrasadas', fn ($q) => $q->atrasadas())
-            ->when($this->filtroEstatus === 'pendientes', fn ($q) => $q->where('estatus', TicketTarea::ESTATUS_PENDIENTE))
-            // Completadas se leen por el mes en que se finalizaron, sin importar para
-            // cuándo estaban agendadas: el usuario navega ese filtro por mes, no por día.
-            ->when($this->filtroEstatus === 'completadas', fn ($q) => $q
-                ->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereMonth('completada_at', $this->mesCompletadas)
-                ->whereYear('completada_at', $this->anioCompletadas))
-            ->when($this->filtroEstatus === 'criticas', function ($q) use ($diaTarjetas, $hoy) {
-                $q->pendientes()->where('prioridad', TicketTarea::PRIORIDAD_CRITICA);
-
-                if ($this->soloDia) {
-                    $q->where(fn ($inner) => $this->acotarAlDia($inner, $diaTarjetas, $hoy));
-                }
-            })
-            ->when($this->filtroTipo !== '', fn ($q) => $q->where('tipo', $this->filtroTipo))
-            ->when(trim($this->search) !== '', function ($q) {
-                $term = '%' . trim($this->search) . '%';
-                $idsNombre = Empleados::where('NombreEmpleado', 'like', $term)->pluck('EmpleadoID');
-                $q->where(function ($inner) use ($term, $idsNombre) {
-                    $inner->where('titulo', 'like', $term)
-                        ->orWhere('razon', 'like', $term)
-                        ->orWhereHas('asignado', fn ($a) => $a->where('NombreEmpleado', 'like', $term));
-                    foreach ($idsNombre as $eid) {
-                        $inner->orWhereRaw('FIND_IN_SET(?, COALESCE(asignados_ids, ""))', [(int) $eid]);
-                    }
-                });
-            })
-            ->when($this->filtroEstatus === 'completadas', fn ($q) => $q->orderByDesc('completada_at'))
-            ->when($this->filtroEstatus === 'atrasadas', fn ($q) => $q
-                ->orderBy('fecha_compromiso')
-                ->orderByRaw("FIELD(prioridad, 'critica', 'normal')"))
-            ->when(! in_array($this->filtroEstatus, ['completadas', 'atrasadas'], true), fn ($q) => $q
-                ->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
-                ->orderByRaw('fecha_compromiso IS NULL DESC')
-                ->orderBy('fecha_compromiso'))
-            ->paginate($this->perPage);
+        $listaTareas = $this->consultarListado($hoy, $fechaSel);
+        if ($listaTareas->currentPage() > 1 && $listaTareas->isEmpty()) {
+            $this->resetPage();
+            $listaTareas = $this->consultarListado($hoy, $fechaSel);
+        }
 
         $historialTarea = $this->tareaHistorialId
             ? TicketTarea::with(['historial.usuario', 'historial.asignadoAnterior', 'historial.asignadoNuevo', 'asignado'])->find($this->tareaHistorialId)
             : null;
 
         $tituloMes = $inicioMes->translatedFormat('F Y');
-        $fechaSel = $this->fechaSeleccionada ?: $hoy;
         $fechaCarbonSel = Carbon::parse($fechaSel);
-
-        $tareasDiaSeleccionado = TicketTarea::query()
-            ->with(['asignado', 'metrica'])
-            ->whereDate('fecha_compromiso', $fechaSel)
-            ->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
-            ->orderBy('titulo')
-            ->get();
-
-        $tareasSinFecha = TicketTarea::query()
-            ->with(['asignado', 'metrica'])
-            ->pendientes()
-            ->whereNull('fecha_compromiso')
-            ->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
-            ->orderBy('titulo')
-            ->get();
-
         $etiquetaDiaSeleccionado = $fechaCarbonSel->translatedFormat('l d \\d\\e F Y');
-
-        $mesCompletadasCarbon = Carbon::create($this->anioCompletadas, $this->mesCompletadas, 1);
-        $etiquetaMesCompletadas = $mesCompletadasCarbon->translatedFormat('F Y');
-        $esMesActualCompletadas = $this->mesCompletadas === (int) now()->month
-            && $this->anioCompletadas === (int) now()->year;
+        $etiquetaMesCompletadas = $inicioMes->translatedFormat('F Y');
 
         $nombresResponsables = $this->mapaNombresAsignados(
-            $tareas->getCollection(),
+            $listaTareas->getCollection(),
             $tareasMes,
-            $tareasDiaSeleccionado,
             $tareasSinFecha,
             $historialTarea ? collect([$historialTarea]) : collect()
         );
 
+        $tituloLista = match ($this->filtroEstatus) {
+            'atrasadas' => $this->soloDia ? 'No realizadas del ' . $etiquetaDiaSeleccionado : 'No realizadas',
+            'completadas' => $this->soloDia ? 'Completadas del ' . $etiquetaDiaSeleccionado : 'Completadas de ' . $etiquetaMesCompletadas,
+            default => ucfirst($etiquetaDiaSeleccionado),
+        };
+
         return view('livewire.tabla-tareas', compact(
-            'tareas',
             'responsables',
             'nombresResponsables',
             'kpis',
             'historialTarea',
             'calendario',
-            'tareasPorDia',
             'hoy',
             'tituloMes',
             'fechaSel',
-            'tareasDiaSeleccionado',
+            'listaTareas',
             'tareasSinFecha',
             'etiquetaDiaSeleccionado',
-            'diaTarjetas',
             'etiquetaMesCompletadas',
-            'esMesActualCompletadas'
+            'tituloLista'
         ));
+    }
+
+    private function consultarListado(string $hoy, string $fechaSel)
+    {
+        $q = TicketTarea::query()->with(['asignado', 'metrica']);
+        $this->aplicarFiltrosComunes($q);
+
+        if ($this->filtroEstatus === 'atrasadas') {
+            $q->noRealizadas();
+            if ($this->soloDia) {
+                $q->where(fn ($inner) => $this->acotarAlDia($inner, $fechaSel, $hoy));
+            }
+
+            return $this->paginarListado(
+                $q->orderByRaw("CASE WHEN prioridad = 'critica' THEN 0 ELSE 1 END")
+                    ->orderBy('fecha_compromiso')
+                    ->orderBy('titulo')
+            );
+        }
+
+        if ($this->filtroEstatus === 'completadas') {
+            $q->where('estatus', TicketTarea::ESTATUS_COMPLETADA);
+            if ($this->soloDia) {
+                $q->whereDate('completada_at', $fechaSel);
+            } else {
+                $q->whereMonth('completada_at', $this->calMes)
+                    ->whereYear('completada_at', $this->calAnio);
+            }
+
+            return $this->paginarListado($q->orderByDesc('completada_at')->orderBy('titulo'));
+        }
+
+        $q->pendientes()
+            ->where(fn ($inner) => $this->acotarAlDia($inner, $fechaSel, $hoy))
+            ->where(function ($inner) use ($hoy) {
+                $inner->whereNull('fecha_compromiso')
+                    ->orWhereDate('fecha_compromiso', '>=', $hoy);
+            });
+
+        return $this->paginarListado(
+            $q->orderByRaw("FIELD(prioridad, 'critica', 'normal')")
+                ->orderByRaw('fecha_compromiso IS NULL DESC')
+                ->orderBy('titulo')
+        );
+    }
+
+    private function paginarListado($query)
+    {
+        return $query->paginate(max(5, min(50, (int) $this->perPageLista)));
+    }
+
+    private function aplicarFiltrosComunes($q)
+    {
+        $q->when($this->filtroTipo !== '', fn ($inner) => $inner->where('tipo', $this->filtroTipo));
+        $q->when(trim($this->search) !== '', function ($inner) {
+            $term = '%' . trim($this->search) . '%';
+            $idsNombre = Empleados::where('NombreEmpleado', 'like', $term)->pluck('EmpleadoID');
+            $inner->where(function ($sub) use ($term, $idsNombre) {
+                $sub->where('titulo', 'like', $term)
+                    ->orWhere('razon', 'like', $term)
+                    ->orWhereHas('asignado', fn ($a) => $a->where('NombreEmpleado', 'like', $term));
+                foreach ($idsNombre as $eid) {
+                    $sub->orWhereRaw('FIND_IN_SET(?, COALESCE(asignados_ids, ""))', [(int) $eid]);
+                }
+            });
+        });
     }
 
     private function mapaNombresAsignados(...$grupos)
@@ -565,18 +520,64 @@ class TablaTareas extends Component
         return $query;
     }
 
-    private function construirCalendario(Carbon $inicioMes, Collection $tareasPorDia, string $fechaSeleccionada = ''): array
+    private function tareaEntraEnFiltro(TicketTarea $tarea): bool
+    {
+        $clase = $tarea->claseSemaforo();
+
+        return match ($this->filtroEstatus) {
+            'hoy' => $tarea->estatus === TicketTarea::ESTATUS_PENDIENTE && ! $tarea->estaVencida(),
+            'atrasadas' => $tarea->estaVencida() || $clase === 'is-critica',
+            'completadas' => $clase === 'is-done',
+            default => true,
+        };
+    }
+
+    private function construirCalendario(Carbon $inicioMes, Collection $tareasPorDia, string $fechaSeleccionada = '', $sinFecha = null): array
     {
         $inicioGrid = $inicioMes->copy()->startOfWeek(Carbon::MONDAY);
         $finGrid = $inicioMes->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
         $semanas = [];
         $cursor = $inicioGrid->copy();
         $sel = $fechaSeleccionada ?: now()->format('Y-m-d');
+        $sinFecha = collect($sinFecha ?? []);
 
         while ($cursor->lte($finGrid)) {
             $semana = [];
             for ($i = 0; $i < 7; $i++) {
                 $fechaStr = $cursor->format('Y-m-d');
+                $delDia = $tareasPorDia->get($fechaStr, collect())
+                    ->filter(fn (TicketTarea $t) => $this->tareaEntraEnFiltro($t))
+                    ->values();
+
+                if ($cursor->isToday() && $this->filtroEstatus === 'hoy') {
+                    $extra = $sinFecha->filter(fn (TicketTarea $t) => $this->tareaEntraEnFiltro($t));
+                    $delDia = $delDia->concat($extra)->unique('id')->values();
+                }
+
+                $conteo = [
+                    'is-critica' => 0,
+                    'is-vencida' => 0,
+                    'is-pendiente' => 0,
+                    'is-metrica' => 0,
+                    'is-done' => 0,
+                ];
+                foreach ($delDia as $tarea) {
+                    $clave = $tarea->claseSemaforo();
+                    if (isset($conteo[$clave])) {
+                        $conteo[$clave]++;
+                    }
+                }
+                $alerta = 'ninguna';
+                if ($conteo['is-critica'] > 0) {
+                    $alerta = 'critica';
+                } elseif ($conteo['is-vencida'] > 0) {
+                    $alerta = 'vencida';
+                } elseif (($conteo['is-pendiente'] + $conteo['is-metrica']) > 0) {
+                    $alerta = 'pendiente';
+                } elseif ($conteo['is-done'] > 0) {
+                    $alerta = 'done';
+                }
+
                 $semana[] = [
                     'fecha' => $cursor->copy(),
                     'fecha_str' => $fechaStr,
@@ -584,7 +585,10 @@ class TablaTareas extends Component
                     'mes_actual' => (int) $cursor->month === (int) $inicioMes->month,
                     'es_hoy' => $cursor->isToday(),
                     'es_seleccionado' => $fechaStr === $sel,
-                    'tareas' => $tareasPorDia->get($fechaStr, collect()),
+                    'tareas' => $delDia,
+                    'conteo' => $conteo,
+                    'alerta' => $alerta,
+                    'total' => $delDia->count(),
                 ];
                 $cursor->addDay();
             }

@@ -2,18 +2,14 @@
     @include('partials.tareas-alerta', ['mensaje' => session('tareas_mensaje')])
     @include('partials.tareas-alerta', ['mensaje' => session('tareas_error'), 'tipo' => 'error'])
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
-        <button type="button" wire:click="filtrarKpi('hoy')" class="tareas-kpi {{ $filtroEstatus === 'hoy' ? 'is-active' : '' }}">
-            <span class="tareas-kpi__label">{{ $diaTarjetas === $hoy ? 'Pendientes de hoy' : 'Pendientes del día' }}</span>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <button type="button" wire:click="filtrarKpi('hoy')" class="tareas-kpi tareas-kpi--hoy {{ $filtroEstatus === 'hoy' ? 'is-active' : '' }}">
+            <span class="tareas-kpi__label">Pendientes de hoy</span>
             <span class="tareas-kpi__value">{{ $kpis['hoy'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('atrasadas')" class="tareas-kpi tareas-kpi--warn {{ $filtroEstatus === 'atrasadas' ? 'is-active' : '' }}">
             <span class="tareas-kpi__label">No realizadas</span>
             <span class="tareas-kpi__value">{{ $kpis['atrasadas'] }}</span>
-        </button>
-        <button type="button" wire:click="filtrarKpi('criticas')" class="tareas-kpi tareas-kpi--danger {{ $filtroEstatus === 'criticas' ? 'is-active' : '' }}">
-            <span class="tareas-kpi__label">Críticas (+2 días)</span>
-            <span class="tareas-kpi__value">{{ $kpis['criticas'] }}</span>
         </button>
         <button type="button" wire:click="filtrarKpi('completadas')" class="tareas-kpi tareas-kpi--ok {{ $filtroEstatus === 'completadas' ? 'is-active' : '' }}">
             <span class="tareas-kpi__label">Completadas ({{ ucfirst($etiquetaMesCompletadas) }})</span>
@@ -21,20 +17,15 @@
         </button>
     </div>
 
-    <div class="index-page__card overflow-hidden">
+    <div class="index-page__card overflow-hidden tareas-board">
         {{-- Nivel 1: sección principal (Tareas vs Métricas) --}}
         <div class="tareas-section-bar">
             <div class="tareas-section-bar__tabs">
                 <span class="tareas-section-title">
                     <i class="fas fa-tasks"></i>
-                    @if($modoLista === 'tarjetas' && $filtroEstatus === 'completadas')
-                        Completadas de {{ $etiquetaMesCompletadas }}
-                    @elseif($modoLista === 'tarjetas' && $filtroEstatus === 'atrasadas')
-                        No realizadas
-                    @elseif($modoLista === 'tarjetas' && $diaTarjetas !== $hoy && ($filtroEstatus !== 'criticas' || $soloDia))
-                        Tareas del {{ $etiquetaDiaSeleccionado }}
-                    @else
-                        Mis tareas de hoy
+                    @if($filtroEstatus === 'completadas') Completadas
+                    @elseif($filtroEstatus === 'atrasadas') No realizadas
+                    @else Pendientes
                     @endif
                 </span>
             </div>
@@ -47,9 +38,7 @@
             </div>
         </div>
 
-        @if($modoLista === 'calendario')
-        <div class="tareas-cal-wrap p-4">
-            {{-- Nivel 2: controles del calendario (mes + vista) --}}
+        <div class="tareas-cal-wrap">
             <div class="tareas-cal-toolbar">
                 <div class="tareas-cal-toolbar__nav">
                     <button type="button" wire:click="mesAnterior" class="tarea-btn" title="Mes anterior"><i class="fas fa-chevron-left"></i></button>
@@ -64,314 +53,128 @@
                         <button type="button" wire:click="mesSiguiente" class="tarea-btn" title="Mes siguiente"><i class="fas fa-chevron-right"></i></button>
                     </div>
                 </div>
-                <div class="tareas-cal-toolbar__vista">
-                    <span class="tareas-cal-toolbar__label">Vista:</span>
-                    <div class="tareas-vista-toggle">
-                        <button type="button" wire:click="$set('modoLista', 'calendario')" class="tareas-vista-btn {{ $modoLista === 'calendario' ? 'is-active' : '' }}">
-                            <i class="fas fa-calendar-alt"></i> Calendario
-                        </button>
-                        <button type="button" wire:click="$set('modoLista', 'tarjetas')" class="tareas-vista-btn {{ $modoLista === 'tarjetas' ? 'is-active' : '' }}">
-                            <i class="fas fa-th-large"></i> Tarjetas
-                        </button>
-                    </div>
+                <div class="tareas-view-bar__filters">
+                    <select wire:model.live="filtroTipo" class="form-control tareas-select">
+                        <option value="">Todos los tipos</option>
+                        <option value="evento">Eventos</option>
+                        <option value="metrica">Métricas</option>
+                    </select>
+                    <input type="search" wire:model.live.debounce.300ms="search" class="form-control tareas-search" placeholder="Buscar...">
                 </div>
             </div>
 
             <div class="tareas-cal-legend mb-3">
                 <span><i class="tareas-dot tareas-dot--hoy"></i> Hoy</span>
-                <span><i class="tareas-dot tareas-dot--seleccionado"></i> Día seleccionado</span>
-                <span><i class="tareas-dot tareas-dot--evento"></i> Evento</span>
-                <span><i class="tareas-dot tareas-dot--metrica"></i> Métrica</span>
-                <span><i class="tareas-dot tareas-dot--critica"></i> Crítica</span>
+                <span><i class="tareas-dot tareas-dot--seleccionado"></i> Seleccionado</span>
+                <span><i class="tareas-dot tareas-dot--pendiente"></i> Pendiente</span>
                 <span><i class="tareas-dot tareas-dot--vencida"></i> No realizada</span>
+                <span><i class="tareas-dot tareas-dot--critica"></i> Crítica</span>
                 <span><i class="tareas-dot tareas-dot--hecha"></i> Completada</span>
             </div>
 
-            <div class="tareas-cal-grid">
-                @foreach(['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'] as $dh)
-                <div class="tareas-cal-head">{{ $dh }}</div>
-                @endforeach
-
-                @foreach($calendario as $semana)
-                    @foreach($semana as $celda)
-                    <button type="button"
-                        wire:click="seleccionarDia('{{ $celda['fecha_str'] }}')"
-                        class="tareas-cal-cell {{ !$celda['mes_actual'] ? 'is-outside' : '' }} {{ $celda['es_hoy'] ? 'is-hoy' : '' }} {{ $celda['es_seleccionado'] ? 'is-selected' : '' }}"
-                        title="Ver tareas del {{ $celda['fecha']->format('d/m/Y') }}">
-                        <div class="tareas-cal-cell__day">{{ $celda['dia'] }}</div>
-                        <div class="tareas-cal-cell__items">
-                            @foreach($celda['tareas'] as $tarea)
-                            @php
-                                $cls = 'is-evento';
-                                if ($tarea->estatus === 'completada') {
-                                    $cls = ($tarea->tipo === 'metrica' ? 'is-metrica' : 'is-evento') . ' is-done';
-                                } elseif ($tarea->prioridad === 'critica') {
-                                    $cls = 'is-critica';
-                                } elseif ($tarea->estaVencida()) {
-                                    $cls = 'is-vencida';
-                                } elseif ($tarea->tipo === 'metrica') {
-                                    $cls = 'is-metrica';
-                                }
-                            @endphp
-                            <span role="button" tabindex="0"
-                                wire:click.stop="abrirHistorial({{ $tarea->id }})"
-                                class="tareas-cal-item {{ $cls }}"
-                                title="{{ $tarea->titulo }}">
-                                {{ Str::limit($tarea->titulo, 22) }}
-                            </span>
-                            @endforeach
-                        </div>
-                    </button>
+            <div class="tareas-cal-layout">
+                <div class="tareas-cal-grid" role="grid" aria-label="Calendario de tareas">
+                    @foreach(['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'] as $dh)
+                    <div class="tareas-cal-head">{{ $dh }}</div>
                     @endforeach
-                @endforeach
-            </div>
 
-            @if($tareasSinFecha->isNotEmpty())
-            <div class="tareas-dia-panel mt-4">
-                <h4 class="tareas-dia-panel__title">
-                    <i class="fas fa-hourglass-half"></i>
-                    Sin fecha de compromiso
-                </h4>
-                <div class="tareas-dia-list">
-                    @foreach($tareasSinFecha as $tarea)
-                    <div class="tareas-dia-item {{ $tarea->prioridad === 'critica' ? 'is-critica' : '' }}">
-                        <div>
-                            <strong>{{ $tarea->titulo }}</strong>
-                            <div class="text-xs opacity-75">
-                                {{ $tarea->tipo === 'metrica' ? 'Métrica mensual' : 'Evento' }}
-                                · {{ $tarea->etiquetaResponsables($nombresResponsables ?? null) }}
-                            </div>
-                        </div>
-                        <div class="flex gap-1">
-                            @can('tickets.gestionar-tareas')
-                            @if($tarea->estatus === 'pendiente')
-                            <button type="button" wire:click.stop="completarTarea({{ $tarea->id }})"
-                                    wire:target="completarTarea({{ $tarea->id }})"
-                                    wire:loading.attr="disabled"
-                                    class="tarea-btn tarea-btn--ok" title="Completar">
-                                <i class="fas fa-check" wire:loading.remove wire:target="completarTarea({{ $tarea->id }})"></i>
-                                <i class="fas fa-spinner fa-spin" wire:loading wire:target="completarTarea({{ $tarea->id }})"></i>
-                            </button>
-                            @endif
-                            @endcan
-                            <button type="button" wire:click.stop="abrirHistorial({{ $tarea->id }})" class="tarea-btn" title="Historial"><i class="fas fa-history"></i></button>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-
-            <div class="tareas-dia-panel mt-4">
-                <h4 class="tareas-dia-panel__title">
-                    <i class="fas fa-calendar-day"></i>
-                    Tareas del {{ ucfirst($etiquetaDiaSeleccionado) }}
-                </h4>
-                @if($tareasDiaSeleccionado->isEmpty())
-                <p class="text-sm text-slate-500 mb-0">No hay tareas programadas para esta fecha.</p>
-                @else
-                <div class="tareas-dia-list">
-                    @foreach($tareasDiaSeleccionado as $tarea)
-                    <div class="tareas-dia-item {{ $tarea->prioridad === 'critica' ? 'is-critica' : '' }} {{ $tarea->estatus === 'completada' ? 'is-done' : '' }} {{ $tarea->estaVencida() ? 'is-vencida' : '' }}">
-                        <div>
-                            <strong>{{ $tarea->titulo }}</strong>
-                            <div class="text-xs opacity-75">
-                                {{ $tarea->tipo === 'metrica' ? 'Métrica mensual' : 'Evento' }}
-                                · {{ $tarea->etiquetaResponsables($nombresResponsables ?? null) }}
-                                @if($tarea->estatus === 'completada') · Completada
-                                @elseif($tarea->estaVencida()) · No realizada
+                    @foreach($calendario as $semana)
+                        @foreach($semana as $celda)
+                        <button type="button"
+                            wire:click="seleccionarDia('{{ $celda['fecha_str'] }}')"
+                            class="tareas-cal-cell {{ !$celda['mes_actual'] ? 'is-outside' : '' }} {{ $celda['es_hoy'] ? 'is-hoy' : '' }} {{ $celda['es_seleccionado'] ? 'is-selected' : '' }} has-{{ $celda['alerta'] }}"
+                            title="{{ $celda['fecha']->format('d/m/Y') }} · {{ $celda['total'] }} tarea(s)">
+                            <div class="tareas-cal-cell__day">{{ $celda['dia'] }}</div>
+                            @if($celda['total'] > 0)
+                            <div class="tareas-cal-marks">
+                                @if($celda['conteo']['is-critica'] > 0)
+                                <i class="tareas-dot tareas-dot--critica" title="{{ $celda['conteo']['is-critica'] }} crítica(s)"></i>
                                 @endif
+                                @if($celda['conteo']['is-vencida'] > 0)
+                                <i class="tareas-dot tareas-dot--vencida" title="{{ $celda['conteo']['is-vencida'] }} no realizada(s)"></i>
+                                @endif
+                                @if(($celda['conteo']['is-pendiente'] + $celda['conteo']['is-metrica']) > 0)
+                                <i class="tareas-dot tareas-dot--pendiente" title="{{ $celda['conteo']['is-pendiente'] + $celda['conteo']['is-metrica'] }} pendiente(s)"></i>
+                                @endif
+                                @if($celda['conteo']['is-done'] > 0)
+                                <i class="tareas-dot tareas-dot--hecha" title="{{ $celda['conteo']['is-done'] }} completada(s)"></i>
+                                @endif
+                                <span class="tareas-cal-count">{{ $celda['total'] }}</span>
                             </div>
-                        </div>
-                        <div class="flex gap-1">
-                            @can('tickets.gestionar-tareas')
-                            @if($tarea->estatus === 'pendiente')
-                            <button type="button" wire:click.stop="completarTarea({{ $tarea->id }})"
-                                    wire:target="completarTarea({{ $tarea->id }})"
-                                    wire:loading.attr="disabled"
-                                    class="tarea-btn tarea-btn--ok" title="Completar">
-                                <i class="fas fa-check" wire:loading.remove wire:target="completarTarea({{ $tarea->id }})"></i>
-                                <i class="fas fa-spinner fa-spin" wire:loading wire:target="completarTarea({{ $tarea->id }})"></i>
-                            </button>
                             @endif
-                            @endcan
-                            <button type="button" wire:click.stop="abrirHistorial({{ $tarea->id }})" class="tarea-btn" title="Historial"><i class="fas fa-history"></i></button>
-                        </div>
-                    </div>
+                        </button>
+                        @endforeach
                     @endforeach
                 </div>
-                @endif
-            </div>
-        </div>
-        @else
-        @if($filtroEstatus === 'completadas')
-        {{-- Completadas se navegan por mes: el usuario ve todo lo cerrado del mes de un jalón --}}
-        <div class="tareas-dia-nav">
-            <button type="button" wire:click="mesCompletadasAnterior" class="tarea-btn" title="Mes anterior">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <div class="tareas-dia-nav__info">
-                <strong>{{ ucfirst($etiquetaMesCompletadas) }}</strong>
-                @if($esMesActualCompletadas)
-                <span class="tarea-badge tarea-badge--pendiente">Mes actual</span>
-                @endif
-            </div>
-            <button type="button" wire:click="mesCompletadasSiguiente" class="tarea-btn" title="Mes siguiente">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-            @unless($esMesActualCompletadas)
-            <button type="button" wire:click="irMesActualCompletadas" class="index-page__btn-secondary">Ir al mes actual</button>
-            @endunless
-        </div>
-        @elseif($filtroEstatus === 'atrasadas')
-        <div class="tareas-dia-nav">
-            <div class="tareas-dia-nav__info">
-                <strong>Pendientes de días anteriores</strong>
-                <span class="tarea-badge tarea-badge--warn">No realizadas</span>
-            </div>
-            <button type="button" wire:click="filtrarKpi('hoy')" class="index-page__btn-secondary">Ver hoy</button>
-        </div>
-        @else
-        {{-- Navegación de día: las tarjetas ya no se quedan clavadas en hoy --}}
-        <div class="tareas-dia-nav">
-            <button type="button" wire:click="diaAnterior" class="tarea-btn" title="Día anterior">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <div class="tareas-dia-nav__info">
-                <strong>{{ ucfirst($etiquetaDiaSeleccionado) }}</strong>
-                @if($diaTarjetas === $hoy)
-                <span class="tarea-badge tarea-badge--pendiente">Hoy</span>
-                @endif
-            </div>
-            <button type="button" wire:click="diaSiguiente" class="tarea-btn" title="Día siguiente">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-            <input type="date" wire:model.live="fechaSeleccionada" class="form-control tareas-dia-nav__date">
-            @if($diaTarjetas !== $hoy)
-            <button type="button" wire:click="irHoy" class="index-page__btn-secondary">Ir a hoy</button>
-            @endif
 
-            @if($filtroEstatus === 'criticas')
-            <button type="button" wire:click="alternarSoloDia"
-                    class="{{ $soloDia ? 'index-page__btn-primary' : 'index-page__btn-secondary' }} tareas-dia-nav__toggle">
-                <i class="fas {{ $soloDia ? 'fa-calendar-day' : 'fa-layer-group' }}"></i>
-                {{ $soloDia ? 'Solo este día' : 'Ver todas' }}
-            </button>
-            @endif
-        </div>
-        @endif
-
-        <div class="tareas-view-bar">
-            <div class="tareas-view-bar__filters">
-                <select wire:model.live="filtroTipo" class="form-control tareas-select">
-                    <option value="">Todos los tipos</option>
-                    <option value="evento">Eventos</option>
-                    <option value="metrica">Métricas</option>
-                </select>
-                <input type="search" wire:model.live.debounce.300ms="search" class="form-control tareas-search" placeholder="Buscar título, razón o responsable...">
-            </div>
-            <div class="tareas-view-bar__vista">
-                <span class="tareas-cal-toolbar__label">Vista:</span>
-                <div class="tareas-vista-toggle">
-                    <button type="button" wire:click="$set('modoLista', 'calendario')" class="tareas-vista-btn {{ $modoLista === 'calendario' ? 'is-active' : '' }}">
-                        <i class="fas fa-calendar-alt"></i> Calendario
-                    </button>
-                    <button type="button" wire:click="$set('modoLista', 'tarjetas')" class="tareas-vista-btn {{ $modoLista === 'tarjetas' ? 'is-active' : '' }}">
-                        <i class="fas fa-th-large"></i> Tarjetas
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="tareas-grid p-4">
-            @forelse($tareas as $tarea)
-            @php
-                $esCritica = $tarea->prioridad === 'critica';
-                $esVencida = $tarea->estaVencida();
-                $esCompletada = $tarea->estatus === 'completada';
-                $cardClass = $esCompletada
-                    ? 'tarea-card--completada'
-                    : ($esCritica ? 'tarea-card--critica' : ($esVencida ? 'tarea-card--vencida' : 'tarea-card--normal'));
-            @endphp
-            <article wire:key="tarea-{{ $tarea->id }}" class="tarea-card {{ $cardClass }}">
-                <div class="tarea-card__head">
-                    <div>
-                        <span class="tarea-card__tipo">{{ $tarea->tipo === 'metrica' ? 'Métrica' : 'Evento' }}</span>
-                        <h3 class="tarea-card__title">{{ $tarea->titulo }}</h3>
+                <aside class="tareas-dia-panel tareas-dia-panel--side">
+                    <div class="tareas-dia-panel__head">
+                        <h4 class="tareas-dia-panel__title">
+                            <i class="fas fa-list"></i>
+                            {{ $tituloLista }}
+                        </h4>
+                        @if($soloDia && $filtroEstatus !== 'hoy')
+                        <button type="button" wire:click="verTodas" class="index-page__btn-secondary">Ver todas</button>
+                        @endif
                     </div>
-                    @if($tarea->estatus === 'completada')
-                    <span class="tarea-badge tarea-badge--ok"><i class="fas fa-check"></i> Completada</span>
-                    @elseif($esCritica)
-                    <span class="tarea-badge tarea-badge--critica"><i class="fas fa-exclamation-triangle"></i> Crítica</span>
-                    @elseif($esVencida)
-                    <span class="tarea-badge tarea-badge--warn"><i class="fas fa-clock"></i> No realizada</span>
+                    @if($listaTareas->isEmpty())
+                    <p class="text-sm text-slate-500 mb-0">No hay tareas en este filtro. Elija otra etiqueta o un día del calendario.</p>
                     @else
-                    <span class="tarea-badge tarea-badge--pendiente">Pendiente</span>
-                    @endif
-                </div>
-
-                @if($tarea->razon)
-                <p class="tarea-card__razon">{{ Str::limit($tarea->razon, 140) }}</p>
-                @endif
-
-                <div class="tarea-card__meta">
-                    @php $asignadoNombre = $tarea->etiquetaResponsables($nombresResponsables ?? null); @endphp
-                    <div class="{{ $tarea->tieneResponsable() ? '' : 'tarea-card__sin-asignar' }}">
-                        <i class="fas fa-user{{ count($tarea->idsAsignados()) > 1 ? 's' : '' }}"></i> {{ $asignadoNombre }}
+                    <div class="tareas-dia-list">
+                        @foreach($listaTareas as $tarea)
+                        <div class="tareas-dia-item {{ $tarea->claseSemaforo() }}" wire:key="lista-tarea-{{ $tarea->id }}">
+                            <div>
+                                <strong>{{ $tarea->titulo }}</strong>
+                                <span class="tarea-badge
+                                    @if($tarea->claseSemaforo() === 'is-critica') tarea-badge--critica
+                                    @elseif($tarea->claseSemaforo() === 'is-vencida') tarea-badge--warn
+                                    @elseif($tarea->claseSemaforo() === 'is-done') tarea-badge--ok
+                                    @else tarea-badge--pendiente
+                                    @endif">{{ $tarea->etiquetaPrioridad() }}</span>
+                                <div class="text-xs opacity-75">
+                                    {{ $tarea->tipo === 'metrica' ? 'Métrica' : 'Evento' }}
+                                    · {{ $tarea->etiquetaResponsables($nombresResponsables ?? null) }}
+                                    @if($tarea->fecha_compromiso)
+                                        · {{ $tarea->fecha_compromiso->format('d/m/Y') }}
+                                    @else
+                                        · Sin fecha
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                @can('tickets.gestionar-tareas')
+                                @if($tarea->estatus === 'pendiente')
+                                <button type="button" wire:click.stop="abrirReagendar({{ $tarea->id }})" class="tarea-btn" title="Reagendar">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </button>
+                                <button type="button" wire:click.stop="completarTarea({{ $tarea->id }})"
+                                        wire:target="completarTarea({{ $tarea->id }})"
+                                        wire:loading.attr="disabled"
+                                        class="tarea-btn tarea-btn--ok" title="Completar">
+                                    <i class="fas fa-check" wire:loading.remove wire:target="completarTarea({{ $tarea->id }})"></i>
+                                    <i class="fas fa-spinner fa-spin" wire:loading wire:target="completarTarea({{ $tarea->id }})"></i>
+                                </button>
+                                @endif
+                                @endcan
+                                <button type="button" wire:click.stop="abrirHistorial({{ $tarea->id }})" class="tarea-btn" title="Historial"><i class="fas fa-history"></i></button>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
-                    <div><i class="fas fa-calendar-day"></i> {{ optional($tarea->fecha_compromiso)->format('d/m/Y') ?? 'Sin fecha' }}</div>
-                </div>
-
-                <div class="tarea-card__actions">
-                    <button type="button" wire:click="abrirHistorial({{ $tarea->id }})" class="tarea-btn" title="Historial">
-                        <i class="fas fa-history"></i>
-                    </button>
-                    @can('tickets.gestionar-tareas')
-                    @if($tarea->estatus === 'pendiente')
-                    <button type="button" wire:click="abrirReagendar({{ $tarea->id }})" class="tarea-btn" title="Reagendar">
-                        <i class="fas fa-calendar-alt"></i>
-                    </button>
-                    {{-- En métricas el modal solo deja cambiar el responsable --}}
-                    <button type="button" wire:click="abrirModalEditarTarea({{ $tarea->id }})"
-                            class="tarea-btn {{ $tarea->tieneResponsable() ? '' : 'tarea-btn--alerta' }}"
-                            title="{{ $tarea->tipo === 'metrica' ? 'Cambiar responsable' : 'Editar' }}">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button type="button" wire:click="completarTarea({{ $tarea->id }})"
-                            wire:target="completarTarea({{ $tarea->id }})"
-                            wire:loading.attr="disabled"
-                            class="tarea-btn tarea-btn--ok" title="Completar">
-                        <i class="fas fa-check" wire:loading.remove wire:target="completarTarea({{ $tarea->id }})"></i>
-                        <i class="fas fa-spinner fa-spin" wire:loading wire:target="completarTarea({{ $tarea->id }})"></i>
-                    </button>
+                    @if($listaTareas->total() > $listaTareas->perPage())
+                    <div class="tareas-pager">
+                        <span class="tareas-pager__info">{{ $listaTareas->firstItem() }}–{{ $listaTareas->lastItem() }} de {{ $listaTareas->total() }}</span>
+                        <div class="tareas-pager__nav">
+                            <button type="button" class="tarea-btn" wire:click="previousPage" @if($listaTareas->onFirstPage()) disabled @endif title="Anterior">‹</button>
+                            <span class="tareas-pager__page">{{ $listaTareas->currentPage() }}/{{ $listaTareas->lastPage() }}</span>
+                            <button type="button" class="tarea-btn" wire:click="nextPage" @if(! $listaTareas->hasMorePages()) disabled @endif title="Siguiente">›</button>
+                        </div>
+                    </div>
                     @endif
-                    @endcan
-                </div>
-            </article>
-            @empty
-            <div class="tareas-empty col-span-full">
-                <i class="fas fa-clipboard-list"></i>
-                @if($filtroEstatus === 'completadas')
-                <p>No hay tareas completadas en {{ $etiquetaMesCompletadas }}.</p>
-                @elseif($filtroEstatus === 'criticas')
-                <p>No hay tareas críticas {{ $soloDia ? 'el ' . $etiquetaDiaSeleccionado : 'pendientes' }}.</p>
-                @elseif($filtroEstatus === 'atrasadas')
-                <p>No hay tareas no realizadas. Las de días anteriores ya se completaron o reagendaron.</p>
-                @elseif($filtroEstatus === 'hoy')
-                <p>No hay tareas pendientes el {{ $etiquetaDiaSeleccionado }}.</p>
-                @else
-                <p>No hay tareas con los filtros actuales.</p>
-                @endif
-                @can('tickets.gestionar-tareas')
-                <button type="button" wire:click="abrirModalNuevaTarea" class="index-page__btn-primary mt-3">Crear primera tarea</button>
-                @endcan
+                    @endif
+                </aside>
             </div>
-            @endforelse
         </div>
-
-        @if($tareas->hasPages())
-        <div class="px-4 pb-4">{{ $tareas->links() }}</div>
-        @endif
-        @endif
     </div>
 
     {{-- Modal tarea --}}
@@ -534,21 +337,28 @@
     @endif
 
     <style>
-        .tareas-kpi { text-align:left; border:1px solid rgba(148,163,184,.35); border-radius:14px; padding:.85rem 1rem; background:#fff; transition:.15s; }
-        .dark .tareas-kpi { background:#101010; border-color:#334155; }
-        .tareas-kpi.is-active { border-color:#3b82f6; box-shadow:0 0 0 2px rgba(59,130,246,.25); }
-        .tareas-kpi--danger .tareas-kpi__value { color:#ef4444; }
+        .tareas-kpi { text-align:left; border:1px solid rgba(148,163,184,.35); border-bottom-width:3px; border-radius:14px; padding:.85rem 1rem; background:#fff; transition:.15s; }
+        .dark .tareas-kpi { background:#101010; border-top-color:#334155; border-left-color:#334155; border-right-color:#334155; }
+        .tareas-kpi--hoy { border-bottom-color:#60a5fa; }
+        .tareas-kpi--hoy .tareas-kpi__value { color:#2563eb; }
+        .tareas-kpi--hoy.is-active { border-color:#60a5fa; box-shadow:0 0 0 2px rgba(96,165,250,.28); }
+        .tareas-kpi--warn { border-bottom-color:#f59e0b; }
         .tareas-kpi--warn .tareas-kpi__value { color:#f59e0b; }
-        .tareas-kpi--warn.is-active { border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.25); }
-        .tareas-kpi--info .tareas-kpi__value { color:#6366f1; }
+        .tareas-kpi--warn.is-active { border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.28); }
+        .tareas-kpi--danger { border-bottom-color:#ef4444; }
+        .tareas-kpi--danger .tareas-kpi__value { color:#ef4444; }
+        .tareas-kpi--danger.is-active { border-color:#ef4444; box-shadow:0 0 0 2px rgba(239,68,68,.28); }
+        .tareas-kpi--ok { border-bottom-color:#22c55e; }
+        .tareas-kpi--ok .tareas-kpi__value { color:#16a34a; }
+        .tareas-kpi--ok.is-active { border-color:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.28); }
         .tareas-kpi__label { display:block; font-size:.75rem; opacity:.75; }
         .tareas-kpi__value { display:block; font-size:1.5rem; font-weight:700; line-height:1.1; }
-        .tareas-section-bar { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:space-between; align-items:center; padding:1rem 1.25rem; border-bottom:2px solid rgba(148,163,184,.2); background:rgba(248,250,252,.6); }
+        .tareas-section-bar { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:space-between; align-items:center; padding:1rem 1.25rem; border-bottom:2px solid rgba(148,163,184,.2); background:rgba(248,250,252,.6); flex:0 0 auto; }
         .dark .tareas-section-bar { background:rgba(15,23,42,.5); border-bottom-color:#334155; }
         .tareas-section-bar__tabs { display:flex; gap:.35rem; align-items:center; }
         .tareas-section-title { font-size:.95rem; font-weight:700; }
         .tareas-section-bar__actions { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
-        .tareas-cal-toolbar { display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:.75rem 1rem; border-radius:12px; background:rgba(148,163,184,.08); border:1px solid rgba(148,163,184,.2); }
+        .tareas-cal-toolbar { display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:.75rem 1rem; border-radius:12px; background:rgba(148,163,184,.08); border:1px solid rgba(148,163,184,.2); flex:0 0 auto; }
         .dark .tareas-cal-toolbar { background:rgba(30,41,59,.5); border-color:#334155; }
         .tareas-cal-toolbar__nav { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
         .tareas-cal-toolbar__vista, .tareas-view-bar__vista { display:flex; align-items:center; gap:.5rem; }
@@ -573,7 +383,7 @@
            flex eso hacía que cada filtro ocupara su propia fila (se veían apilados). */
         .tareas-view-bar__filters .form-control { width:auto; display:inline-block; }
         .tareas-select { flex:0 0 auto; width:auto; min-width:170px; }
-        .tareas-search { flex:1 1 240px; width:auto; min-width:200px; max-width:380px; }
+        .tareas-search { flex:1 1 240px; width:auto; min-width:200px; max-width:none; }
 
         @media (max-width: 640px) {
             .tareas-view-bar { flex-direction:column; align-items:stretch; }
@@ -811,48 +621,151 @@
         .tareas-vista-btn { border:none; background:transparent; border-radius:8px; padding:.4rem .75rem; font-size:.8rem; opacity:.75; transition:.15s; }
         .tareas-vista-btn.is-active { background:#fff; opacity:1; box-shadow:0 1px 3px rgba(0,0,0,.12); font-weight:600; }
         .dark .tareas-vista-btn.is-active { background:#1e293b; color:#f8fafc; }
-        .tareas-cal-wrap { }
+        .tareas-module {
+            width:100%;
+            display:flex;
+            flex-direction:column;
+            min-height:calc(100dvh - 210px);
+        }
+        .tareas-board {
+            flex:1 1 auto;
+            display:flex;
+            flex-direction:column;
+            min-height:0;
+        }
+        .tareas-cal-wrap {
+            flex:1 1 auto;
+            display:flex;
+            flex-direction:column;
+            min-height:0;
+            padding:1.15rem 1.25rem 1.25rem;
+        }
         .tareas-cal-nav__title { font-size:1.1rem; display:flex; align-items:center; flex-wrap:wrap; gap:.35rem; }
-        .tareas-cal-legend { display:flex; flex-wrap:wrap; gap:1rem; font-size:.78rem; opacity:.85; }
-        .tareas-dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:.25rem; vertical-align:middle; }
-        .tareas-dot--hoy { background:#2563eb; box-shadow:0 0 0 2px rgba(37,99,235,.35); }
-        .tareas-dot--seleccionado { background:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.35); }
-        .tareas-dot--evento { background:#6366f1; }
-        .tareas-dot--metrica { background:#0ea5e9; }
-        .tareas-dot--programada { background:#94a3b8; border:1px dashed #64748b; }
-        .tareas-dot--critica { background:#ef4444; }
-        .tareas-dot--vencida { background:#f59e0b; }
-        .tareas-dot--hecha { background:#10b981; }
-        .tareas-cal-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:rgba(148,163,184,.35); border:1px solid rgba(148,163,184,.35); border-radius:12px; overflow:hidden; }
-        .tareas-cal-head { background:#f8fafc; padding:.45rem; text-align:center; font-size:.72rem; font-weight:700; text-transform:uppercase; color:#64748b; }
+        .tareas-cal-legend { display:flex; flex-wrap:wrap; gap:1rem; font-size:.78rem; opacity:.85; flex:0 0 auto; }
+        .tareas-dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:.25rem; vertical-align:middle; }
+        .tareas-dot--hoy { background:#38bdf8; box-shadow:0 0 0 2px rgba(56,189,248,.35); }
+        .tareas-dot--seleccionado { background:#c084fc; box-shadow:0 0 0 2px rgba(192,132,252,.35); }
+        .tareas-dot--pendiente { background:#60a5fa; box-shadow:0 0 0 2px rgba(96,165,250,.45); }
+        .tareas-dot--metrica { background:#2dd4bf; }
+        .tareas-dot--vencida { background:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.4); }
+        .tareas-dot--critica { background:#ef4444; box-shadow:0 0 0 2px rgba(239,68,68,.4); }
+        .tareas-dot--hecha { background:#22c55e; box-shadow:0 0 0 2px rgba(34,197,94,.35); }
+        .tareas-cal-layout {
+            flex:1 1 auto;
+            display:grid;
+            grid-template-columns:minmax(0,1.7fr) minmax(340px, 1fr);
+            gap:1.25rem;
+            align-items:stretch;
+            min-height:28rem;
+        }
+        .tareas-cal-grid {
+            display:grid;
+            grid-template-columns:repeat(7,minmax(0,1fr));
+            grid-template-rows:auto;
+            grid-auto-rows:minmax(4.75rem, 1fr);
+            gap:1px;
+            background:rgba(148,163,184,.35);
+            border:1px solid rgba(148,163,184,.35);
+            border-radius:12px;
+            overflow:hidden;
+            height:100%;
+            min-height:28rem;
+        }
+        .tareas-cal-head { background:#f8fafc; padding:.55rem .45rem; text-align:center; font-size:.72rem; font-weight:700; text-transform:uppercase; color:#64748b; }
         .dark .tareas-cal-head { background:#1e293b; color:#94a3b8; }
-        .tareas-cal-cell { background:#fff; min-height:96px; padding:.35rem; display:flex; flex-direction:column; gap:.25rem; border:none; text-align:left; width:100%; cursor:pointer; transition:background .12s; }
+        .tareas-cal-cell {
+            background:#fff; min-height:4.75rem; height:100%; padding:.5rem .45rem .4rem;
+            display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between;
+            gap:.35rem; border:none; text-align:left; width:100%; cursor:pointer;
+            transition:background .12s, box-shadow .12s;
+        }
         .dark .tareas-cal-cell { background:#0f172a; }
-        .tareas-cal-cell:hover { background:rgba(37,99,235,.06); }
-        .tareas-cal-cell.is-outside { opacity:.45; }
-        .tareas-cal-cell.is-hoy { background:linear-gradient(180deg,rgba(37,99,235,.12),transparent); }
-        .tareas-cal-cell.is-selected { box-shadow:inset 0 0 0 2px #f59e0b; background:linear-gradient(180deg,rgba(245,158,11,.1),transparent); }
-        .tareas-cal-cell.is-hoy.is-selected { box-shadow:inset 0 0 0 2px #2563eb, inset 0 0 0 4px rgba(245,158,11,.5); }
-        .tareas-cal-cell__day { font-size:.78rem; font-weight:700; opacity:.8; }
-        .tareas-cal-cell.is-hoy .tareas-cal-cell__day { color:#2563eb; }
-        .tareas-cal-cell.is-selected .tareas-cal-cell__day { color:#d97706; }
-        .tareas-cal-cell__items { display:flex; flex-direction:column; gap:2px; }
-        .tareas-cal-item { border:none; border-radius:6px; padding:2px 5px; font-size:.68rem; text-align:left; line-height:1.25; cursor:pointer; }
-        .tareas-cal-item.is-evento { background:#e0e7ff; color:#3730a3; }
-        .tareas-cal-item.is-metrica { background:#e0f2fe; color:#0369a1; }
-        .tareas-cal-item.is-programada { background:#f1f5f9; color:#64748b; border:1px dashed #cbd5e1; cursor:default; }
-        .tareas-cal-item.is-critica { background:#fee2e2; color:#b91c1c; font-weight:700; }
-        .tareas-cal-item.is-vencida { background:#fef3c7; color:#b45309; font-weight:700; }
-        .tareas-cal-item.is-done { opacity:.45; text-decoration:line-through; filter:grayscale(.3); }
-        .tareas-dia-panel { border:1px solid rgba(245,158,11,.35); border-radius:14px; padding:1rem; background:rgba(245,158,11,.06); }
-        .tareas-dia-panel__title { margin:0 0 .75rem; font-size:1rem; font-weight:700; }
-        .tareas-dia-list { display:grid; gap:.5rem; }
-        .tareas-dia-item { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.65rem .75rem; border-radius:10px; background:#fff; border:1px solid rgba(148,163,184,.25); }
-        .dark .tareas-dia-item { background:#101010; }
-        .tareas-dia-item.is-critica { border-color:#ef4444; background:rgba(239,68,68,.08); }
-        .tareas-dia-item.is-vencida { border-color:#f59e0b; background:rgba(245,158,11,.1); }
-        .tareas-dia-item.is-programada { border-style:dashed; opacity:.85; }
-        .tareas-dia-item.is-done { opacity:.6; }
+        .tareas-cal-cell.has-pendiente { background:#eff6ff; }
+        .tareas-cal-cell.has-vencida { background:#fffbeb; }
+        .tareas-cal-cell.has-critica { background:#fef2f2; }
+        .tareas-cal-cell.has-done { background:#f0fdf4; }
+        .dark .tareas-cal-cell.has-pendiente { background:rgba(96,165,250,.16); }
+        .dark .tareas-cal-cell.has-vencida { background:rgba(245,158,11,.14); }
+        .dark .tareas-cal-cell.has-critica { background:rgba(239,68,68,.16); }
+        .dark .tareas-cal-cell.has-done { background:rgba(34,197,94,.14); }
+        .tareas-cal-cell:hover { filter:brightness(.97); }
+        .tareas-cal-cell.is-outside { opacity:.4; }
+        .tareas-cal-cell.is-hoy { background:#f0f9ff; }
+        .dark .tareas-cal-cell.is-hoy { background:rgba(56,189,248,.14); }
+        .tareas-cal-cell.is-selected { box-shadow:inset 0 0 0 2px #8b5cf6; background:#faf5ff; }
+        .dark .tareas-cal-cell.is-selected { background:rgba(192,132,252,.14); }
+        .tareas-cal-cell.is-hoy.is-selected { box-shadow:inset 0 0 0 2px #0ea5e9; background:#e0f2fe; }
+        .tareas-cal-cell__day { font-size:.85rem; font-weight:700; color:#334155; }
+        .dark .tareas-cal-cell__day { color:#e2e8f0; }
+        .tareas-cal-cell.is-hoy .tareas-cal-cell__day { color:#0369a1; }
+        .tareas-cal-cell.is-selected .tareas-cal-cell__day { color:#6d28d9; }
+        .dark .tareas-cal-cell.is-hoy .tareas-cal-cell__day { color:#38bdf8; }
+        .dark .tareas-cal-cell.is-selected .tareas-cal-cell__day { color:#d8b4fe; }
+        .tareas-cal-marks { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+        .tareas-cal-count {
+            margin-left:auto; font-size:.65rem; font-weight:700; color:#64748b;
+            min-width:1.1rem; text-align:right;
+        }
+        .dark .tareas-cal-count { color:#94a3b8; }
+        .tareas-dia-panel { border:1px solid #e2e8f0; border-radius:14px; padding:1rem; background:#fff; }
+        .dark .tareas-dia-panel { background:#0f172a; border-color:#334155; }
+        .tareas-dia-panel--side { min-height:100%; max-height:none; height:100%; overflow:hidden; display:flex; flex-direction:column; }
+        .tareas-dia-panel__head { display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; margin-bottom:.5rem; flex:0 0 auto; }
+        .tareas-dia-panel__title { margin:0; font-size:.95rem; font-weight:700; display:flex; align-items:center; gap:.45rem; }
+        .tareas-dia-panel__hint { margin:0 0 .75rem; font-size:.75rem; opacity:.7; }
+        .tareas-dia-list { display:grid; gap:.5rem; flex:1 1 auto; overflow:auto; min-height:0; }
+        .tareas-dia-item { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.65rem .75rem; border-radius:10px; background:#fff; border:1px solid #e2e8f0; border-left-width:4px; }
+        .tareas-dia-item strong { margin-right:.4rem; }
+        .dark .tareas-dia-item { background:#101010; border-color:#334155; }
+        .tareas-dia-item.is-pendiente { border-color:#bfdbfe; border-left-color:#3b82f6; background:#eff6ff; }
+        .dark .tareas-dia-item.is-pendiente { border-color:#93c5fd; background:rgba(96,165,250,.16); }
+        .tareas-dia-item.is-metrica { border-color:#99f6e4; border-left-color:#14b8a6; background:#f0fdfa; }
+        .tareas-dia-item.is-critica { border-color:#fecaca; border-left-color:#ef4444; background:#fef2f2; }
+        .tareas-dia-item.is-vencida { border-color:#fde68a; border-left-color:#f59e0b; background:#fffbeb; }
+        .tareas-dia-item.is-done { border-color:#bbf7d0; border-left-color:#22c55e; background:#f0fdf4; opacity:1; }
+        .dark .tareas-dia-item.is-metrica { background:rgba(20,184,166,.12); }
+        .dark .tareas-dia-item.is-critica { background:rgba(239,68,68,.12); }
+        .dark .tareas-dia-item.is-vencida { background:rgba(245,158,11,.12); }
+        .dark .tareas-dia-item.is-done { background:rgba(34,197,94,.12); }
+        .tareas-pager {
+            display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+            margin-top:.75rem; padding-top:.75rem; border-top:1px solid #e2e8f0; flex:0 0 auto;
+        }
+        .dark .tareas-pager { border-top-color:#334155; }
+        .tareas-pager__info { font-size:.75rem; color:#64748b; }
+        .tareas-pager__nav { display:flex; align-items:center; gap:.35rem; }
+        .tareas-pager__page { font-size:.78rem; font-weight:600; min-width:2.6rem; text-align:center; }
+        .tareas-pager .tarea-btn { min-width:2rem; padding:.25rem .5rem; }
+        .tareas-pager .tarea-btn:disabled { opacity:.35; cursor:not-allowed; }
+
+        @media (max-width: 1200px) {
+            .tareas-cal-layout { grid-template-columns:minmax(0,1.35fr) minmax(280px, 1fr); }
+        }
+        @media (max-width: 1024px) {
+            .tareas-module { min-height:0; }
+            .tareas-cal-layout {
+                grid-template-columns:1fr;
+                min-height:0;
+            }
+            .tareas-cal-grid {
+                min-height:22rem;
+                height:auto;
+                grid-auto-rows:minmax(3.5rem, 4.4rem);
+            }
+            .tareas-dia-panel--side {
+                height:auto;
+                max-height:min(48vh, 26rem);
+            }
+        }
+        @media (max-width: 640px) {
+            .tareas-cal-wrap { padding:.85rem; }
+            .tareas-cal-grid { min-height:18rem; grid-auto-rows:minmax(3rem, 3.6rem); }
+            .tareas-cal-cell { min-height:3rem; padding:.3rem .25rem; }
+            .tareas-cal-cell__day { font-size:.75rem; }
+            .tareas-kpi { padding:.7rem .8rem; }
+            .tareas-kpi__value { font-size:1.25rem; }
+            .tareas-cal-toolbar { padding:.6rem .7rem; }
+        }
     </style>
 
     @include('partials.tareas-modal-js')
