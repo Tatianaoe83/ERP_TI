@@ -133,6 +133,7 @@ class PresupuestoController extends Controller
         $numeroEmpleados = Empleados::whereHas('puestos.departamentos', function ($query) use ($numerogerencia) {
             $query->where('GerenciaID', $numerogerencia);
         })
+            ->where('Estado', 1)
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
             ->count();
 
