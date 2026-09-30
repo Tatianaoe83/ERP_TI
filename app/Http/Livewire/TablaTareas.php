@@ -422,17 +422,17 @@ class TablaTareas extends Component
         $hoy = now()->format('Y-m-d');
         $fechaSel = $this->fechaSeleccionada ?: $hoy;
 
+        $inicioMes = Carbon::create($this->calAnio, $this->calMes, 1)->startOfDay();
+        $finMes = $inicioMes->copy()->endOfMonth();
+
         $kpis = [
             'hoy' => TicketTarea::deHoy()->count(),
             'atrasadas' => TicketTarea::noRealizadas()->count(),
             'completadas_mes' => TicketTarea::where('estatus', TicketTarea::ESTATUS_COMPLETADA)
-                ->whereMonth('completada_at', $this->calMes)
-                ->whereYear('completada_at', $this->calAnio)
+                ->whereNotNull('fecha_compromiso')
+                ->whereBetween('fecha_compromiso', [$inicioMes->toDateString(), $finMes->toDateString()])
                 ->count(),
         ];
-
-        $inicioMes = Carbon::create($this->calAnio, $this->calMes, 1)->startOfDay();
-        $finMes = $inicioMes->copy()->endOfMonth();
 
         $tareasMes = TicketTarea::query()
             ->with(['asignado', 'metrica'])
@@ -517,12 +517,14 @@ class TablaTareas extends Component
         }
 
         if ($this->filtroEstatus === 'completadas') {
-            $q->where('estatus', TicketTarea::ESTATUS_COMPLETADA);
+            $q->where('estatus', TicketTarea::ESTATUS_COMPLETADA)
+                ->whereNotNull('fecha_compromiso');
             if ($this->soloDia) {
-                $q->whereDate('completada_at', $fechaSel);
+                $q->whereDate('fecha_compromiso', $fechaSel);
             } else {
-                $q->whereMonth('completada_at', $this->calMes)
-                    ->whereYear('completada_at', $this->calAnio);
+                $inicio = Carbon::create($this->calAnio, $this->calMes, 1)->toDateString();
+                $fin = Carbon::create($this->calAnio, $this->calMes, 1)->endOfMonth()->toDateString();
+                $q->whereBetween('fecha_compromiso', [$inicio, $fin]);
             }
 
             return $this->paginarListado($q->orderByDesc('completada_at')->orderBy('titulo'));

@@ -657,7 +657,7 @@ class TicketsController extends Controller
     public function show($id)
     {
         try {
-            $ticket = Tickets::with('empleado')->find($id);
+            $ticket = Tickets::with(['empleado.obras', 'empleado.puestos.departamentos.gerencia'])->find($id);
 
             if (!$ticket) {
                 return response()->json(['success' => false, 'message' => 'Ticket no encontrado'], 404);
@@ -686,6 +686,7 @@ class TicketsController extends Controller
                     'puesto'         => $ticket->empleado->puestos ? $ticket->empleado->puestos->NombrePuesto   : 'sin puesto',
                     'gerencia'       => $ticket->empleado->puestos ? $ticket->empleado->puestos->departamentos->gerencia->NombreGerencia : 'sin gerencia',
                     'departamento'   => $ticket->empleado->puestos ? $ticket->empleado->puestos->departamentos->NombreDepartamento : 'sin departamento',
+                    'obra'           => ($ticket->empleado && $ticket->empleado->obras) ? $ticket->empleado->obras->NombreObra : 'Sin obra',
                 ],
             ]);
         } catch (\Exception $e) {

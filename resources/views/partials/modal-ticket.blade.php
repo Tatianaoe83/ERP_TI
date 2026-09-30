@@ -158,6 +158,15 @@
                 <span x-text="selected.gerencia" class="font-mono"></span>
             </div>
         </div>
+        <div class="flex items-center gap-3" x-show="selected.obra">
+            <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Obra:</span>
+                <span x-text="selected.obra" class="font-mono"></span>
+            </div>
+        </div>
          
 
         <div class="flex items-center gap-3" x-show="selected.anydesk">

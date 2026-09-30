@@ -524,6 +524,15 @@
                 <span x-text="selected.gerencia" class="font-mono"></span>
             </div>
         </div>
+        <div class="flex items-center gap-3" x-show="selected.obra">
+            <div class="text-gray-400 dark:text-gray-500 flex-shrink-0 w-4 text-center">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-bold text-xs text-gray-500 dark:text-gray-500 uppercase mr-1">Obra:</span>
+                <span x-text="selected.obra" class="font-mono"></span>
+            </div>
+        </div>
          
 
         <div class="flex items-center gap-3" x-show="selected.anydesk">
@@ -1979,6 +1988,9 @@
                     if (ticket.departamento) {
                         elemento.setAttribute('data-ticket-departamento', ticket.departamento);
                     }
+                    if (ticket.obra) {
+                        elemento.setAttribute('data-ticket-obra', ticket.obra);
+                    }
                     if (ticket.responsable && ticket.responsable.nombre) {
                         elemento.setAttribute('data-ticket-responsable', ticket.responsable.nombre);
                     } else if (ticket.responsable === null || !ticket.responsable) {
@@ -2756,6 +2768,7 @@
                         const ticketPuesto = el.getAttribute('data-ticket-puesto') || el.dataset.ticketPuesto;
                         const ticketGerencia = el.getAttribute('data-ticket-gerencia') || el.dataset.ticketGerencia;
                         const ticketDepartamento = el.getAttribute('data-ticket-departamento') || el.dataset.ticketDepartamento;
+                        const ticketObra = el.getAttribute('data-ticket-obra') || el.dataset.ticketObra;
                         const ticketResponsable = el.getAttribute('data-ticket-responsable') || '';
                         const ticketTiempoTranscurrido = el.getAttribute('data-ticket-tiempo-transcurrido') || '';
                         const ticketTiempoEstimado = el.getAttribute('data-ticket-tiempo-estimado') || '';
@@ -2774,6 +2787,7 @@
                                 puesto: ticketPuesto || '',
                                 gerencia: ticketGerencia || '',
                                 departamento: ticketDepartamento || '',
+                                obra: ticketObra || '',
                                 fecha: ticketFecha || '',
                                 estatus: categoria === 'nuevos' ? 'Pendiente' : (categoria === 'proceso' ? 'En progreso' : 'Cerrado'),
                                 responsable: ticketResponsable ? ticketResponsable.trim() : '',
@@ -3011,6 +3025,7 @@
                                 this.selected.puesto = data.ticket.puesto || '';
                                 this.selected.gerencia = data.ticket.gerencia || '';
                                 this.selected.departamento = data.ticket.departamento || '';
+                                this.selected.obra = data.ticket.obra || '';
                             }
                             
                             this.$nextTick(() => { this.actualizarEstadoEditor(); });
@@ -3346,6 +3361,7 @@
                     puesto: elementoConDatos.getAttribute('data-ticket-puesto') || elementoConDatos.dataset.ticketPuesto || '',
                     gerencia: elementoConDatos.getAttribute('data-ticket-gerencia') || elementoConDatos.dataset.ticketGerencia || '',
                     departamento: elementoConDatos.getAttribute('data-ticket-departamento') || elementoConDatos.dataset.ticketDepartamento || '',
+                    obra: elementoConDatos.getAttribute('data-ticket-obra') || elementoConDatos.dataset.ticketObra || '',
                     fecha: elementoConDatos.getAttribute('data-ticket-fecha') || elementoConDatos.dataset.ticketFecha || new Date().toLocaleString('es-ES'),
                     imagen: elementoConDatos.getAttribute('data-ticket-imagen') || elementoConDatos.dataset.ticketImagen || ''
                 };
