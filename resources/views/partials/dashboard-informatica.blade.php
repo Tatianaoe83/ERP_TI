@@ -60,6 +60,19 @@
     @media (min-width: 768px) {
         .dash-kpi-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
+    .dash-kpi-grid.dash-kpi-grid--ops {
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    @media (min-width: 640px) {
+        .dash-kpi-grid.dash-kpi-grid--ops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1100px) {
+        .dash-kpi-grid.dash-kpi-grid--ops { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    }
+    .dash-kpi-grid--ops .dash-kpi__label {
+        line-height: 1.25;
+    }
 </style>
 
 <p class="dash-kpi__hint mb-4">
@@ -189,7 +202,7 @@
 </div>
 
 <p class="dash-section-title">Gestión operativa</p>
-<div class="dash-kpi-grid">
+<div class="dash-kpi-grid dash-kpi-grid--ops">
     <a href="{{ route('tickets.index') }}" class="dash-kpi" style="text-decoration:none;color:inherit;">
         <div class="dash-kpi__top">
             <div>

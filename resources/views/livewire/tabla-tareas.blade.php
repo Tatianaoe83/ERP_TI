@@ -124,7 +124,7 @@
                         @foreach($listaTareas as $tarea)
                         <div class="tareas-dia-item {{ $tarea->claseSemaforo() }}" wire:key="lista-tarea-{{ $tarea->id }}">
                             <div>
-                                <strong>{{ $tarea->titulo }}</strong>
+                                <button type="button" class="tareas-dia-item__titulo" wire:click="abrirDetalle({{ $tarea->id }})" title="Ver detalle e historial">{{ $tarea->titulo }}</button>
                                 <span class="tarea-badge
                                     @if($tarea->claseSemaforo() === 'is-critica') tarea-badge--critica
                                     @elseif($tarea->claseSemaforo() === 'is-vencida') tarea-badge--warn
@@ -141,9 +141,15 @@
                                     @endif
                                 </div>
                             </div>
-                            <div class="flex gap-1">
+                            <div class="flex flex-wrap gap-1 shrink-0">
+                                <button type="button" wire:click.stop="abrirDetalle({{ $tarea->id }})" class="tarea-btn" title="Ver detalle e historial">
+                                    <i class="fas fa-eye"></i>
+                                </button>
                                 @can('tickets.gestionar-tareas')
                                 @if($tarea->estatus === 'pendiente')
+                                <button type="button" wire:click.stop="abrirEditarTexto({{ $tarea->id }})" class="tarea-btn" title="Editar título y descripción">
+                                    <i class="fas fa-pen"></i>
+                                </button>
                                 <button type="button" wire:click.stop="abrirReagendar({{ $tarea->id }})" class="tarea-btn" title="Reagendar">
                                     <i class="fas fa-calendar-alt"></i>
                                 </button>
@@ -156,7 +162,6 @@
                                 </button>
                                 @endif
                                 @endcan
-                                <button type="button" wire:click.stop="abrirHistorial({{ $tarea->id }})" class="tarea-btn" title="Historial"><i class="fas fa-history"></i></button>
                             </div>
                         </div>
                         @endforeach
@@ -286,21 +291,64 @@
     </div>
     @endif
 
-    {{-- Modal historial --}}
-    @if($modalHistorialAbierto && $historialTarea)
+    {{-- Detalle de la tarea --}}
+    @if($modalDetalleAbierto && $tareaDetalle)
     <div class="tareas-modal-backdrop"
-         x-data="tareasModalCerrable('modalHistorialAbierto')"
+         x-data="tareasModalCerrable('modalDetalleAbierto')"
          :class="{ 'is-closing': !abierto }"
          @click.self="cerrar()"
          @keydown.escape.window="cerrar()">
         <div class="tareas-modal tareas-modal--wide">
             <div class="tareas-modal__head">
-                <h3>Historial — {{ $historialTarea->titulo }}</h3>
-                <button type="button" @click="cerrar()" class="tareas-modal__close">&times;</button>
+                <h3>Detalle de la tarea</h3>
+                <button type="button" @click="cerrar()" class="tareas-modal__close" aria-label="Cerrar">&times;</button>
             </div>
             <div class="tareas-modal__body">
+                <dl class="tareas-detalle">
+                    <div class="tareas-detalle__row">
+                        <dt>Título</dt>
+                        <dd>{{ $tareaDetalle->titulo }}</dd>
+                    </div>
+                    <div class="tareas-detalle__row">
+                        <dt>Descripción</dt>
+                        <dd>{{ $tareaDetalle->razon ?: 'Sin descripción' }}</dd>
+                    </div>
+                    <div class="tareas-detalle__row tareas-detalle__row--inline">
+                        <div>
+                            <dt>Tipo</dt>
+                            <dd>{{ $tareaDetalle->tipo === 'metrica' ? 'Métrica' : 'Evento' }}</dd>
+                        </div>
+                        <div>
+                            <dt>Estado</dt>
+                            <dd>{{ $tareaDetalle->etiquetaPrioridad() }}</dd>
+                        </div>
+                    </div>
+                    <div class="tareas-detalle__row">
+                        <dt>Responsables</dt>
+                        <dd>{{ $tareaDetalle->etiquetaResponsables($nombresResponsables ?? null) }}</dd>
+                    </div>
+                    <div class="tareas-detalle__row tareas-detalle__row--inline">
+                        <div>
+                            <dt>Fecha compromiso</dt>
+                            <dd>{{ $tareaDetalle->fecha_compromiso ? $tareaDetalle->fecha_compromiso->format('d/m/Y') : 'Sin fecha' }}</dd>
+                        </div>
+                        @if($tareaDetalle->completada_at)
+                        <div>
+                            <dt>Completada</dt>
+                            <dd>{{ $tareaDetalle->completada_at->format('d/m/Y H:i') }}</dd>
+                        </div>
+                        @endif
+                    </div>
+                    @can('tickets.ver-creador-tarea')
+                    <div class="tareas-detalle__row">
+                        <dt>Creada por</dt>
+                        <dd>{{ $creadorDetalle }}</dd>
+                    </div>
+                    @endcan
+                </dl>
+                <h4 class="tareas-detalle__historial">Historial</h4>
                 <div class="tareas-timeline">
-                    @forelse($historialTarea->historial as $item)
+                    @forelse($tareaDetalle->historial as $item)
                     <div class="tareas-timeline__item">
                         <div class="tareas-timeline__dot"></div>
                         <div class="tareas-timeline__content">
@@ -331,7 +379,49 @@
                     <p class="text-slate-500">Sin movimientos registrados.</p>
                     @endforelse
                 </div>
+                <div class="tareas-modal__foot">
+                    <button type="button" @click="cerrar()" class="index-page__btn-secondary">Cerrar</button>
+                    @can('tickets.gestionar-tareas')
+                    @if($tareaDetalle->estatus === 'pendiente')
+                    <button type="button" wire:click="abrirEditarTexto({{ $tareaDetalle->id }})" class="index-page__btn-primary">
+                        Editar título y descripción
+                    </button>
+                    @endif
+                    @endcan
+                </div>
             </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Editar título y descripción --}}
+    @if($modalTextoAbierto)
+    <div class="tareas-modal-backdrop"
+         x-data="tareasModalCerrable('modalTextoAbierto')"
+         :class="{ 'is-closing': !abierto }"
+         @click.self="cerrar()"
+         @keydown.escape.window="cerrar()">
+        <div class="tareas-modal">
+            <div class="tareas-modal__head">
+                <h3>Editar título y descripción</h3>
+                <button type="button" @click="cerrar()" class="tareas-modal__close" aria-label="Cerrar">&times;</button>
+            </div>
+            <form wire:submit.prevent="guardarTextoTarea" class="tareas-modal__body">
+                <div class="form-group mb-3">
+                    <label>Título</label>
+                    <input type="text" wire:model.defer="titulo" class="form-control" required maxlength="200">
+                    @error('titulo') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group mb-3">
+                    <label>Descripción</label>
+                    <textarea wire:model.defer="razon" class="form-control" rows="4" maxlength="2000" placeholder="¿Para qué es esta tarea?"></textarea>
+                    @error('razon') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                <div class="tareas-modal__foot">
+                    <button type="button" @click="cerrar()" class="index-page__btn-secondary">Cancelar</button>
+                    <button type="submit" class="index-page__btn-primary">Guardar</button>
+                </div>
+            </form>
         </div>
     </div>
     @endif
@@ -715,7 +805,21 @@
         .tareas-dia-panel__hint { margin:0 0 .75rem; font-size:.75rem; opacity:.7; }
         .tareas-dia-list { display:grid; gap:.5rem; flex:1 1 auto; overflow:auto; min-height:0; }
         .tareas-dia-item { display:flex; justify-content:space-between; align-items:center; gap:.75rem; padding:.65rem .75rem; border-radius:10px; background:#fff; border:1px solid #e2e8f0; border-left-width:4px; }
-        .tareas-dia-item strong { margin-right:.4rem; }
+        .tareas-dia-item > div:first-child { min-width:0; flex:1; }
+        .tareas-dia-item__titulo {
+            display:inline; margin:0 .4rem 0 0; padding:0; border:0; background:transparent;
+            font:inherit; font-weight:700; color:inherit; text-align:left; cursor:pointer;
+        }
+        .tareas-dia-item__titulo:hover { text-decoration:underline; }
+        .tareas-detalle { margin:0; display:grid; gap:.9rem; }
+        .tareas-detalle__row dt {
+            margin:0 0 .2rem; font-size:.72rem; font-weight:700; letter-spacing:.04em;
+            text-transform:uppercase; color:#64748b;
+        }
+        .tareas-detalle__row dd { margin:0; font-size:.92rem; line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .tareas-detalle__row--inline { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+        .tareas-detalle__historial { margin:1.15rem 0 .75rem; font-size:.95rem; font-weight:700; }
+        .dark .tareas-detalle__row dt { color:#94a3b8; }
         .dark .tareas-dia-item { background:#101010; border-color:#334155; }
         .tareas-dia-item.is-pendiente { border-color:#bfdbfe; border-left-color:#3b82f6; background:#eff6ff; }
         .dark .tareas-dia-item.is-pendiente { border-color:#93c5fd; background:rgba(96,165,250,.16); }

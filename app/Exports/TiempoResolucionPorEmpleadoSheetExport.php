@@ -47,10 +47,10 @@ class TiempoResolucionPorEmpleadoSheetExport implements FromView, WithEvents, Wi
                     'A' => 30,  // Responsable
                     'B' => 30,  // Empleado
                     'C' => 15,  // Total Tickets
-                    'D' => 18,  // Tiempo Promedio (h)
-                    'E' => 18,  // Tiempo Mínimo (h)
-                    'F' => 18,  // Tiempo Máximo (h)
-                    'G' => 18,  // Tiempo Total (h)
+                    'D' => 32,
+                    'E' => 32,
+                    'F' => 32,
+                    'G' => 32,
                 ];
                 
                 foreach (range('A', 'G') as $col) {

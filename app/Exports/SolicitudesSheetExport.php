@@ -42,14 +42,14 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
         $rows[] = ["Reporte de Solicitudes - {$mesCapitalizado} {$this->anio}"];
         
         // Fila 2: Estadísticas generales
-        $promedioCot = round($this->metricasSolicitudes['promedio_cotizacion_horas'] ?? 0, 1);
-        $promedioConfig = round($this->metricasSolicitudes['promedio_configuracion_dias'] ?? 0, 1);
+        $promedioCot = \App\Models\Tickets::formatearDuracion($this->metricasSolicitudes['promedio_cotizacion_horas'] ?? 0);
+        $promedioConfig = \App\Models\Tickets::formatearDuracion($this->metricasSolicitudes['promedio_configuracion_dias'] ?? 0);
         $totalSolicitudes = count($this->metricasSolicitudes['desglose'] ?? []);
         
         $rows[] = [
             "Período: {$mesCapitalizado} {$this->anio} | Total Solicitudes: {$totalSolicitudes} | " .
-            "Promedio Cotización: {$promedioCot}h | " .
-            "Promedio Configuración: {$promedioConfig}h"
+            "Promedio Cotización: {$promedioCot} | " .
+            "Promedio Configuración: {$promedioConfig}"
         ];
         
         // Fila 3: Encabezados
@@ -62,9 +62,9 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
             'Motivo',
             'Descripción',
             'Estatus',
-            'Tiempo Cotización (h)',
-            'Tiempo Config. (h)',
-            'Tiempo Total (h)',
+            'Tiempo Cotización',
+            'Tiempo Configuración',
+            'Tiempo Total',
             'Usuario Final',
             'Departamento Usuario Final',
         ];
@@ -81,9 +81,9 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sol['motivo'] ?? '',
                 $sol['descripcion_motivo'] ?? '',
                 $sol['estatus'] ?? '',
-                $sol['tiempo_cotizacion_horas'] !== null ? round($sol['tiempo_cotizacion_horas'], 1) : '-',
-                $sol['tiempo_configuracion_dias'] !== null ? round($sol['tiempo_configuracion_dias'], 1) : '-',
-                $sol['tiempo_total_dias'] !== null ? round($sol['tiempo_total_dias'], 1) : '-',
+                $sol['tiempo_cotizacion_horas'] !== null ? \App\Models\Tickets::formatearDuracion($sol['tiempo_cotizacion_horas']) : '-',
+                $sol['tiempo_configuracion_dias'] !== null ? \App\Models\Tickets::formatearDuracion($sol['tiempo_configuracion_dias']) : '-',
+                $sol['tiempo_total_dias'] !== null ? \App\Models\Tickets::formatearDuracion($sol['tiempo_total_dias']) : '-',
                 $sol['usuario_final'] ?? '-',
                 $sol['gerencia_usuario_final'] ?? '-',
             ];
@@ -107,9 +107,9 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
                 $sheet->getColumnDimension('F')->setWidth(25);  // Motivo
                 $sheet->getColumnDimension('G')->setWidth(45);  // Descripción
                 $sheet->getColumnDimension('H')->setWidth(20);  // Estatus
-                $sheet->getColumnDimension('I')->setWidth(18);  // Tiempo Cotización
-                $sheet->getColumnDimension('J')->setWidth(18);  // Tiempo Config
-                $sheet->getColumnDimension('K')->setWidth(18);  // Tiempo Total
+                $sheet->getColumnDimension('I')->setWidth(32);
+                $sheet->getColumnDimension('J')->setWidth(32);
+                $sheet->getColumnDimension('K')->setWidth(32);
                 $sheet->getColumnDimension('L')->setWidth(30);  // Usuario Final
                 $sheet->getColumnDimension('M')->setWidth(30);  // Departamento Usuario Final
                 

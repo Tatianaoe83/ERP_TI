@@ -33,11 +33,13 @@ class TablaTareas extends Component
 
     public bool $modalTareaAbierto = false;
     public bool $modalReagendarAbierto = false;
-    public bool $modalHistorialAbierto = false;
+    public bool $modalDetalleAbierto = false;
+    public bool $modalTextoAbierto = false;
 
     public ?int $tareaEditId = null;
     public ?int $tareaReagendarId = null;
-    public ?int $tareaHistorialId = null;
+    public ?int $tareaDetalleId = null;
+    public ?int $tareaTextoId = null;
 
     /** La tarea abierta en el modal es de métrica: solo se le cambia el responsable. */
     public bool $editandoMetrica = false;
@@ -332,10 +334,81 @@ class TablaTareas extends Component
         session()->flash('tareas_mensaje', 'Tarea completada.');
     }
 
-    public function abrirHistorial(int $id): void
+    public function abrirDetalle(int $id): void
     {
-        $this->tareaHistorialId = $id;
-        $this->modalHistorialAbierto = true;
+        $this->authorizeTab();
+        TicketTarea::findOrFail($id);
+        $this->tareaDetalleId = $id;
+        $this->modalDetalleAbierto = true;
+    }
+
+    public function abrirEditarTexto(int $id): void
+    {
+        $this->authorizeGestion();
+        $tarea = TicketTarea::findOrFail($id);
+        if ($tarea->estatus !== TicketTarea::ESTATUS_PENDIENTE) {
+            session()->flash('tareas_error', 'Las tareas completadas no se pueden editar.');
+
+            return;
+        }
+        $this->tareaTextoId = $tarea->id;
+        $this->titulo = $tarea->titulo;
+        $this->razon = (string) ($tarea->razon ?? '');
+        $this->modalDetalleAbierto = false;
+        $this->modalTareaAbierto = false;
+        $this->resetErrorBag();
+        $this->modalTextoAbierto = true;
+    }
+
+    public function guardarTextoTarea(TicketTareaService $service): void
+    {
+        $this->authorizeGestion();
+
+        $this->titulo = trim($this->titulo);
+        $this->razon = trim($this->razon);
+
+        $this->validate([
+            'titulo' => 'required|string|max:200',
+            'razon' => 'nullable|string|max:2000',
+        ], [], [
+            'titulo' => 'título',
+            'razon' => 'descripción',
+        ]);
+
+        $tarea = TicketTarea::findOrFail($this->tareaTextoId);
+        if ($tarea->estatus !== TicketTarea::ESTATUS_PENDIENTE) {
+            $this->modalTextoAbierto = false;
+            session()->flash('tareas_error', 'Las tareas completadas no se pueden editar.');
+
+            return;
+        }
+        $razonNueva = $this->razon !== '' ? $this->razon : null;
+        $cambioTitulo = $tarea->titulo !== $this->titulo;
+        $cambioRazon = (string) ($tarea->razon ?? '') !== (string) ($razonNueva ?? '');
+
+        if ($cambioTitulo || $cambioRazon) {
+            $notas = [];
+            if ($cambioTitulo) {
+                $notas[] = 'Título: «'.$tarea->titulo.'» → «'.$this->titulo.'».';
+            }
+            if ($cambioRazon) {
+                $notas[] = 'Descripción actualizada.';
+            }
+
+            $tarea->update([
+                'titulo' => $this->titulo,
+                'razon' => $razonNueva,
+            ]);
+            $service->registrarHistorial($tarea, 'editada', null, [
+                'notas' => implode(' ', $notas),
+            ]);
+            session()->flash('tareas_mensaje', 'Título y descripción actualizados.');
+        }
+
+        $this->modalTextoAbierto = false;
+        $this->tareaTextoId = null;
+        $this->titulo = '';
+        $this->razon = '';
     }
 
     public function render()
@@ -384,9 +457,10 @@ class TablaTareas extends Component
             $listaTareas = $this->consultarListado($hoy, $fechaSel);
         }
 
-        $historialTarea = $this->tareaHistorialId
-            ? TicketTarea::with(['historial.usuario', 'historial.asignadoAnterior', 'historial.asignadoNuevo', 'asignado'])->find($this->tareaHistorialId)
+        $tareaDetalle = ($this->modalDetalleAbierto && $this->tareaDetalleId)
+            ? TicketTarea::with(['creador', 'asignado', 'metrica', 'historial.usuario', 'historial.asignadoAnterior', 'historial.asignadoNuevo'])->find($this->tareaDetalleId)
             : null;
+        $creadorDetalle = $tareaDetalle ? $this->nombreCreador($tareaDetalle) : null;
 
         $tituloMes = $inicioMes->translatedFormat('F Y');
         $fechaCarbonSel = Carbon::parse($fechaSel);
@@ -397,7 +471,7 @@ class TablaTareas extends Component
             $listaTareas->getCollection(),
             $tareasMes,
             $tareasSinFecha,
-            $historialTarea ? collect([$historialTarea]) : collect()
+            $tareaDetalle ? collect([$tareaDetalle]) : collect()
         );
 
         $tituloLista = match ($this->filtroEstatus) {
@@ -410,7 +484,8 @@ class TablaTareas extends Component
             'responsables',
             'nombresResponsables',
             'kpis',
-            'historialTarea',
+            'tareaDetalle',
+            'creadorDetalle',
             'calendario',
             'hoy',
             'tituloMes',

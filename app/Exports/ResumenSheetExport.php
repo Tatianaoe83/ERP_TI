@@ -664,8 +664,8 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $rows[] = [
             $d['totalTickets'] ?? 0,
             ($d['ticketsCerrados'] ?? 0) . "\n" . (($d['porcentajeCerrados'] ?? 0) . '% del total'),
-            ($d['promResolucionHoras'] ?? '0') . "\n" . 'horas laborales',
-            ($d['promRespuestaHoras'] ?? '0') . "\n" . 'horas laborales',
+            $d['promResolucionTotal'] ?? '0 minutos',
+            $d['promPrimerRespuesta'] ?? '0 minutos',
             $d['cumplimiento'] ?? '0%',
         ];
         $this->layout['summary_values'] = $row++;
@@ -937,7 +937,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $rows[] = ['Solicitudes: Tiempos promedio por Gerencia — ' . ($d['mesNombreTarget'] ?? '')];
             $row++;
 
-            $rows[] = ['Gerencia', 'Cantidad', 'Prom. Cotización (h)', 'Prom. Configuración (h)', 'Prom. Total (h)'];
+            $rows[] = ['Gerencia', 'Cantidad', 'Prom. Cotización', 'Prom. Configuración', 'Prom. Total'];
             $row++;
 
             // Agrupar por gerencia
@@ -981,9 +981,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                 $rows[] = [
                     $gerencia,
                     $data['cantidad'],
-                    $promCot,
-                    $promConf,
-                    $promTot,
+                    \App\Models\Tickets::formatearDuracion($promCot),
+                    \App\Models\Tickets::formatearDuracion($promConf),
+                    \App\Models\Tickets::formatearDuracion($promTot),
                 ];
                 $row++;
             }
@@ -991,9 +991,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $rows[] = [
                 'Total General',
                 count($desglose),
-                round($promedioCotizacion, 1),
-                round($promedioConfiguracion, 1),
-                round($promedioTotal, 1),
+                \App\Models\Tickets::formatearDuracion($promedioCotizacion),
+                \App\Models\Tickets::formatearDuracion($promedioConfiguracion),
+                \App\Models\Tickets::formatearDuracion($promedioTotal),
             ];
             $this->layout['solicitudes_gerencia']['totalRow'] = $row;
             $this->layout['solicitudes_gerencia']['end'] = $row;
@@ -1012,7 +1012,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $rows[] = ['Solicitudes: Tiempos promedio por Motivo — ' . ($d['mesNombreTarget'] ?? '')];
             $row++;
 
-            $rows[] = ['Motivo', 'Cantidad', 'Prom. Cotización (h)', 'Prom. Configuración (h)', 'Prom. Total (h)'];
+            $rows[] = ['Motivo', 'Cantidad', 'Prom. Cotización', 'Prom. Configuración', 'Prom. Total'];
             $row++;
 
             // Agrupar por motivo
@@ -1057,9 +1057,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                 $rows[] = [
                     $motivo,
                     $data['cantidad'],
-                    $promCot,
-                    $promConf,
-                    $promTot,
+                    \App\Models\Tickets::formatearDuracion($promCot),
+                    \App\Models\Tickets::formatearDuracion($promConf),
+                    \App\Models\Tickets::formatearDuracion($promTot),
                 ];
                 $row++;
             }
@@ -1067,9 +1067,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $rows[] = [
                 'Total General',
                 count($desglose),
-                round($promedioCotizacion, 1),
-                round($promedioConfiguracion, 1),
-                round($promedioTotal, 1),
+                \App\Models\Tickets::formatearDuracion($promedioCotizacion),
+                \App\Models\Tickets::formatearDuracion($promedioConfiguracion),
+                \App\Models\Tickets::formatearDuracion($promedioTotal),
             ];
             $this->layout['solicitudes_motivo']['totalRow'] = $row;
             $this->layout['solicitudes_motivo']['end'] = $row;
@@ -1088,7 +1088,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $rows[] = ['Solicitudes: Comparación de Tiempos Cotización vs Configuración — ' . ($d['mesNombreTarget'] ?? '')];
             $row++;
 
-            $rows[] = ['Métrica', 'Promedio (h)', 'Mínimo (h)', 'Máximo (h)', '% del Total'];
+            $rows[] = ['Métrica', 'Promedio', 'Mínimo', 'Máximo', '% del Total'];
             $row++;
 
             // Calcular estadísticas de cotización
@@ -1118,9 +1118,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             // Fila Cotización
             $rows[] = [
                 'Tiempo de Cotización',
-                $promCot,
-                $minCot,
-                $maxCot,
+                \App\Models\Tickets::formatearDuracion($promCot),
+                \App\Models\Tickets::formatearDuracion($minCot),
+                \App\Models\Tickets::formatearDuracion($maxCot),
                 $porcentajeCot > 0 ? $porcentajeCot . '%' : '0%',
             ];
             $row++;
@@ -1128,9 +1128,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             // Fila Configuración
             $rows[] = [
                 'Tiempo de Configuración',
-                $promConf,
-                $minConf,
-                $maxConf,
+                \App\Models\Tickets::formatearDuracion($promConf),
+                \App\Models\Tickets::formatearDuracion($minConf),
+                \App\Models\Tickets::formatearDuracion($maxConf),
                 $porcentajeConf > 0 ? $porcentajeConf . '%' : '0%',
             ];
             $row++;
@@ -1138,9 +1138,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             // Fila Total
             $rows[] = [
                 'Tiempo Total',
-                round($totalPromedio, 1),
-                round($minCot + $minConf, 1),
-                round($maxCot + $maxConf, 1),
+                \App\Models\Tickets::formatearDuracion($totalPromedio),
+                \App\Models\Tickets::formatearDuracion($minCot + $minConf),
+                \App\Models\Tickets::formatearDuracion($maxCot + $maxConf),
                 '100%',
             ];
             $this->layout['solicitudes_comparacion']['totalRow'] = $row;
@@ -1229,16 +1229,28 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
     private function formatSecondsToDays($seconds): string
     {
-        if (!$seconds || $seconds <= 0) {
-            return '0.00:00:00';
+        $totalMinutos = (int) round(max(0, (float) $seconds) / 60);
+        if ($totalMinutos === 0) {
+            return '0 minutos';
         }
 
-        $days = floor($seconds / 86400);
-        $hours = floor(($seconds % 86400) / 3600);
-        $minutes = floor(($seconds % 3600) / 60);
-        $secs = $seconds % 60;
+        $dias = intdiv($totalMinutos, 24 * 60);
+        $resto = $totalMinutos % (24 * 60);
+        $horas = intdiv($resto, 60);
+        $minutos = $resto % 60;
 
-        return sprintf('%d.%02d:%02d:%02d', $days, $hours, $minutes, $secs);
+        $partes = [];
+        if ($dias > 0) {
+            $partes[] = $dias . ' día' . ($dias > 1 ? 's' : '');
+        }
+        if ($horas > 0) {
+            $partes[] = $horas . ' hora' . ($horas > 1 ? 's' : '');
+        }
+        if ($minutos > 0) {
+            $partes[] = $minutos . ' minuto' . ($minutos > 1 ? 's' : '');
+        }
+
+        return implode(', ', $partes);
     }
 
     private function formatSecondsToHours($seconds): float

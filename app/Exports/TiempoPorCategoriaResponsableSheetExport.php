@@ -49,10 +49,10 @@ class TiempoPorCategoriaResponsableSheetExport implements FromView, WithEvents, 
                     'C' => 25,  // Tertipo
                     'D' => 30,  // Responsable
                     'E' => 15,  // Total Tickets
-                    'F' => 18,  // Tiempo Promedio (h)
-                    'G' => 18,  // Tiempo Mínimo (h)
-                    'H' => 18,  // Tiempo Máximo (h)
-                    'I' => 18,  // Tiempo Total (h)
+                    'F' => 32,
+                    'G' => 32,
+                    'H' => 32,
+                    'I' => 32,
                 ];
                 
                 foreach (range('A', 'I') as $col) {

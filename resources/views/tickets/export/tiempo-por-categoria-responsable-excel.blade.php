@@ -16,10 +16,10 @@
         <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tertipo</th>
         <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Responsable</th>
         <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Total Tickets</th>
-        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Promedio (h)</th>
-        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Mínimo (h)</th>
-        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Máximo (h)</th>
-        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Total (h)</th>
+        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Promedio</th>
+        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Mínimo</th>
+        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Máximo</th>
+        <th style="background-color: #4472C4; color: #FFFFFF; font-weight: bold; padding: 12px; border: 1px solid #1E40AF; text-align: center;">Tiempo Total</th>
     </tr>
     @forelse($datos as $index => $dato)
     <tr style="{{ $index % 2 == 0 ? 'background-color: #FFFFFF;' : 'background-color: #F9FAFB;' }}">
@@ -28,10 +28,10 @@
         <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: left; color: #7C3AED;">{{ $dato['tertipo_nombre'] }}</td>
         <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: left; font-weight: bold; color: #2563EB;">{{ $dato['responsable'] }}</td>
         <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; font-weight: bold; color: #059669;">{{ $dato['total_tickets'] }}</td>
-        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; font-weight: bold; color: #2563EB;">{{ number_format($dato['tiempo_promedio'], 2) }}</td>
-        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; color: #059669;">{{ number_format($dato['tiempo_minimo'], 2) }}</td>
-        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; color: #DC2626;">{{ number_format($dato['tiempo_maximo'], 2) }}</td>
-        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; font-weight: bold; color: #1E40AF;">{{ number_format($dato['tiempo_total'], 2) }}</td>
+        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; font-weight: bold; color: #2563EB;">{{ \App\Models\Tickets::formatearDuracion($dato['tiempo_promedio']) }}</td>
+        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; color: #059669;">{{ \App\Models\Tickets::formatearDuracion($dato['tiempo_minimo']) }}</td>
+        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; color: #DC2626;">{{ \App\Models\Tickets::formatearDuracion($dato['tiempo_maximo']) }}</td>
+        <td style="padding: 10px; border: 1px solid #E5E7EB; text-align: center; font-weight: bold; color: #1E40AF;">{{ \App\Models\Tickets::formatearDuracion($dato['tiempo_total']) }}</td>
     </tr>
     @empty
     <tr>

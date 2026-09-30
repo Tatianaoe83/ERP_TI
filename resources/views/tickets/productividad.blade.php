@@ -416,12 +416,10 @@
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio resolución</p>
-                            <p class="text-2xl font-bold mt-1 dark:text-white leading-none">
-                                {{ $metricasProductividad['tiempo_promedio_resolucion'] > 0
-    ? number_format($metricasProductividad['tiempo_promedio_resolucion'], 1)
-    : '0' }}
+                            <p class="text-lg font-bold mt-1 dark:text-white leading-snug">
+                                {{ \App\Models\Tickets::formatearDuracion($metricasProductividad['tiempo_promedio_resolucion'] ?? 0) }}
                             </p>
-                            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
+                            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">días, horas y minutos</p>
                         </div>
                         <div class="prod-kpi-icon rounded-full bg-purple-500/15">
                             <i class="fas fa-clock text-purple-500"></i>
@@ -433,12 +431,10 @@
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-[#9CA3AF]">Promedio respuesta</p>
-                            <p class="text-2xl font-bold mt-1 dark:text-white leading-none">
-                                {{ $metricasProductividad['tiempo_promedio_respuesta'] > 0
-    ? number_format($metricasProductividad['tiempo_promedio_respuesta'], 1)
-    : '0' }}
+                            <p class="text-lg font-bold mt-1 dark:text-white leading-snug">
+                                {{ \App\Models\Tickets::formatearDuracion($metricasProductividad['tiempo_promedio_respuesta'] ?? 0) }}
                             </p>
-                            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">horas laborales</p>
+                            <p class="text-xs text-gray-400 dark:text-[#6B7280] mt-1">días, horas y minutos</p>
                         </div>
                         <div class="prod-kpi-icon rounded-full bg-orange-500/15">
                             <i class="fas fa-hourglass-half text-orange-500"></i>
@@ -993,10 +989,8 @@
 
                                                 <div class="text-center rounded-lg px-2 sm:px-4 py-1 sm:py-2">
                                                     <p class="text-xs mb-0.5 sm:mb-1 text-gray-500 dark:text-gray-400">T. Prom.</p>
-                                                    <p class="text-xl sm:text-2xl font-bold text-[#3B82F6]">
-                                                        {{ isset($empleado['tiempo_promedio_resolucion']) && $empleado['tiempo_promedio_resolucion'] > 0
-                        ? number_format($empleado['tiempo_promedio_resolucion'], 1)
-                        : '0' }}h
+                                                    <p class="text-sm sm:text-base font-bold text-[#3B82F6] leading-snug max-w-[11rem]">
+                                                        {{ \App\Models\Tickets::formatearDuracion($empleado['tiempo_promedio_resolucion'] ?? 0) }}
                                                     </p>
                                                 </div>
                                             </div>
@@ -1256,9 +1250,8 @@
                                 class="fas fa-file-invoice-dollar"></i></div>
                         <div>
                             <p class="text-sm font-medium text-blue-900/70 dark:text-gray-400">Promedio Cotización</p>
-                            <h4 class="text-2xl font-bold text-blue-900 dark:text-white">
-                                {{ number_format($metricasSolicitudes['promedio_cotizacion_horas'] ?? 0, 1) }} <span
-                                    class="text-sm font-normal text-blue-900/70 dark:text-gray-400">hrs</span>
+                            <h4 class="text-lg font-bold text-blue-900 dark:text-white leading-snug">
+                                {{ \App\Models\Tickets::formatearDuracion($metricasSolicitudes['promedio_cotizacion_horas'] ?? 0) }}
                             </h4>
                         </div>
                     </div>
@@ -1272,9 +1265,8 @@
                         <div>
                             <p class="text-sm font-medium text-emerald-900/70 dark:text-gray-400">Promedio Configuración
                             </p>
-                            <h4 class="text-2xl font-bold text-emerald-900 dark:text-white">
-                                {{ number_format($metricasSolicitudes['promedio_configuracion_dias'] ?? 0, 1) }} <span
-                                    class="text-sm font-normal text-emerald-900/70 dark:text-gray-400">hrs</span>
+                            <h4 class="text-lg font-bold text-emerald-900 dark:text-white leading-snug">
+                                {{ \App\Models\Tickets::formatearDuracion($metricasSolicitudes['promedio_configuracion_dias'] ?? 0) }}
                             </h4>
                         </div>
                     </div>
@@ -1332,7 +1324,7 @@
                                         @if($sol['tiempo_cotizacion_horas'] !== null)
                                             <span
                                                 class="inline-flex px-2 py-1 rounded-md bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 font-medium text-xs">
-                                                {{ $sol['tiempo_cotizacion_horas'] }} h
+                                                {{ \App\Models\Tickets::formatearDuracion($sol['tiempo_cotizacion_horas']) }}
                                             </span>
                                         @else
                                             <span class="text-gray-400 dark:text-gray-600">-</span>
@@ -1343,7 +1335,7 @@
                                         @if($sol['tiempo_configuracion_dias'] !== null)
                                             <span
                                                 class="inline-flex px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 font-medium text-xs">
-                                                {{ $sol['tiempo_configuracion_dias'] }} h
+                                                {{ \App\Models\Tickets::formatearDuracion($sol['tiempo_configuracion_dias']) }}
                                             </span>
                                         @elseif(($sol['estado_configuracion'] ?? '') === 'Sin configuración')
                                             <span class="inline-flex px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 font-medium text-xs">
@@ -1355,7 +1347,7 @@
                                     </td>
 
                                     <td class="px-6 py-4 text-right font-bold text-gray-700 dark:text-gray-300">
-                                        {{ $sol['tiempo_total_dias'] !== null ? $sol['tiempo_total_dias'] . ' h' : '-' }}
+                                        {{ $sol['tiempo_total_dias'] !== null ? \App\Models\Tickets::formatearDuracion($sol['tiempo_total_dias']) : '-' }}
                                     </td>
 
                                     <td class="px-6 py-4 text-center">
@@ -2080,6 +2072,23 @@
         };
     }
 
+    function formatearDuracionHoras(horas) {
+        const totalMinutos = Math.round(Math.max(0, Number(horas) || 0) * 60);
+        if (totalMinutos === 0) {
+            return '0 minutos';
+        }
+        const porDia = 8 * 60;
+        const dias = Math.floor(totalMinutos / porDia);
+        const resto = totalMinutos % porDia;
+        const h = Math.floor(resto / 60);
+        const m = resto % 60;
+        const partes = [];
+        if (dias > 0) partes.push(dias + (dias === 1 ? ' día' : ' días'));
+        if (h > 0) partes.push(h + (h === 1 ? ' hora' : ' horas'));
+        if (m > 0) partes.push(m + (m === 1 ? ' minuto' : ' minutos'));
+        return partes.join(', ');
+    }
+
     function obtenerDatosFrescos() {
         const rawData = document.getElementById('productividad-json-data');
         if (!rawData) return null;
@@ -2715,7 +2724,7 @@
                                     size: 11
                                 },
                                 callback: function (value) {
-                                    return value.toFixed(1) + ' hrs';
+                                    return formatearDuracionHoras(value);
                                 }
                             },
                             grid: {
@@ -2775,7 +2784,7 @@
                                 label: function (context) {
                                     const y = context.parsed && typeof context.parsed.y === 'number' ? context.parsed.y : Number(context.raw);
                                     const n = isNaN(y) ? 0 : y;
-                                    return ' ' + context.dataset.label + ': ' + n.toFixed(2) + ' hrs';
+                                    return ' ' + context.dataset.label + ': ' + formatearDuracionHoras(n);
                                 }
                             }
                         }),
@@ -2799,7 +2808,7 @@
                                 if (isNaN(n) || n <= 0) {
                                     return '';
                                 }
-                                return n.toFixed(1) + ' h';
+                                return formatearDuracionHoras(n);
                             },
                             anchor: 'end',
                             align: 'top',

@@ -419,44 +419,37 @@ class Tickets extends Model
      */
     protected function formatearHoras($horas)
     {
-        if ($horas == 0) {
-            return '0 horas';
+        return self::formatearDuracion($horas);
+    }
+
+    /**
+     * Horas laborales a días (8 h = 1 día), horas y minutos.
+     */
+    public static function formatearDuracion($horas): string
+    {
+        $totalMinutos = (int) round(max(0, (float) $horas) * 60);
+        if ($totalMinutos === 0) {
+            return '0 minutos';
         }
 
-        $horasEnteras = floor($horas);
-        $minutos = round(($horas - $horasEnteras) * 60);
-        
-        // Si los minutos son 60, ajustar
-        if ($minutos >= 60) {
-            $horasEnteras += 1;
-            $minutos = 0;
-        }
+        $minutosPorDia = 8 * 60;
+        $dias = intdiv($totalMinutos, $minutosPorDia);
+        $resto = $totalMinutos % $minutosPorDia;
+        $horasEnteras = intdiv($resto, 60);
+        $minutos = $resto % 60;
 
         $partes = [];
-        
-        // Mostrar días si son más de 8 horas (aproximadamente un día laboral)
-        if ($horasEnteras >= 8) {
-            $dias = floor($horasEnteras / 8);
-            $horasRestantes = $horasEnteras % 8;
-            
-            if ($dias > 0) {
-                $partes[] = $dias . ' día' . ($dias > 1 ? 's' : '');
-            }
-            
-            if ($horasRestantes > 0) {
-                $partes[] = $horasRestantes . ' hora' . ($horasRestantes > 1 ? 's' : '');
-            }
-        } else {
-            if ($horasEnteras > 0) {
-                $partes[] = $horasEnteras . ' hora' . ($horasEnteras > 1 ? 's' : '');
-            }
+        if ($dias > 0) {
+            $partes[] = $dias . ' día' . ($dias > 1 ? 's' : '');
         }
-        
-        if ($minutos > 0 && count($partes) < 2) {
+        if ($horasEnteras > 0) {
+            $partes[] = $horasEnteras . ' hora' . ($horasEnteras > 1 ? 's' : '');
+        }
+        if ($minutos > 0) {
             $partes[] = $minutos . ' minuto' . ($minutos > 1 ? 's' : '');
         }
 
-        return implode(', ', $partes) ?: '0 horas';
+        return implode(', ', $partes);
     }
 
     public const COLUMNAS_VISTA = [

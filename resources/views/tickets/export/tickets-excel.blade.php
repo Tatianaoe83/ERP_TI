@@ -9,8 +9,8 @@
             <strong>Período:</strong> {{ \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} | 
             <strong>Total de Tickets:</strong> <span style="color: #1E40AF; font-weight: bold;">{{ $tickets->count() }}</span> | 
             <strong>Cerrados:</strong> <span style="color: #059669; font-weight: bold;">{{ $resumen['tickets_cerrados'] ?? 0 }}</span> | 
-            <strong>Promedio Respuesta:</strong> <span style="color: #D97706; font-weight: bold;">{{ number_format($resumen['promedio_tiempo_respuesta'] ?? 0, 2) }}h</span> | 
-            <strong>Promedio Resolución:</strong> <span style="color: #2563EB; font-weight: bold;">{{ number_format($resumen['promedio_tiempo_resolucion'] ?? 0, 2) }}h</span>
+            <strong>Promedio Respuesta:</strong> <span style="color: #D97706; font-weight: bold;">{{ \App\Models\Tickets::formatearDuracion($resumen['promedio_tiempo_respuesta'] ?? 0) }}</span> | 
+            <strong>Promedio Resolución:</strong> <span style="color: #2563EB; font-weight: bold;">{{ \App\Models\Tickets::formatearDuracion($resumen['promedio_tiempo_resolucion'] ?? 0) }}</span>
         </td>
     </tr>
     <tr>
@@ -19,8 +19,8 @@
         <th>Fecha Creación</th>
         <th>Fecha Inicio Progreso</th>
         <th>Fecha Fin Progreso</th>
-        <th>Tiempo Respuesta (h)</th>
-        <th>Tiempo Resolución (h)</th>
+        <th>Tiempo Respuesta</th>
+        <th>Tiempo Resolución</th>
         <th>Prioridad</th>
         <th>Estado</th>
         <th>Gerencia</th>
@@ -46,8 +46,8 @@
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->created_at ? $ticket->created_at->format('d/m/Y H:i:s') : '-' }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->FechaInicioProgreso ? $ticket->FechaInicioProgreso->format('d/m/Y H:i:s') : '-' }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->FechaFinProgreso ? $ticket->FechaFinProgreso->format('d/m/Y H:i:s') : '-' }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->tiempo_respuesta ? number_format($ticket->tiempo_respuesta, 2) : '-' }}</td>
-        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->tiempo_resolucion ? number_format($ticket->tiempo_resolucion, 2) : '-' }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->tiempo_respuesta !== null ? \App\Models\Tickets::formatearDuracion($ticket->tiempo_respuesta) : '-' }}</td>
+        <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB;">{{ $ticket->tiempo_resolucion !== null ? \App\Models\Tickets::formatearDuracion($ticket->tiempo_resolucion) : '-' }}</td>
         <td style="text-align: center; padding: 8px; border: 1px solid #E5E7EB; font-weight: bold; 
             @if($ticket->Prioridad == 'Alta') color: #DC2626; 
             @elseif($ticket->Prioridad == 'Media') color: #D97706; 
