@@ -118,44 +118,37 @@
                     this.unidadesAbierto = false;
                     this.cargarProductividad();
                 },
-                validarRango() {
-                    this.mesInicio = parseInt(this.mesInicio);
-                    this.anioInicio = parseInt(this.anioInicio);
-                    this.mesFin = parseInt(this.mesFin);
-                    this.anioFin = parseInt(this.anioFin);
+                validarRango(origen) {
+                    let mesInicio = parseInt(this.mesInicio, 10);
+                    let anioInicio = parseInt(this.anioInicio, 10);
+                    let mesFin = parseInt(this.mesFin, 10);
+                    let anioFin = parseInt(this.anioFin, 10);
 
-                    const mesActual = {{ $mesActual }};
-                    const anioActual = {{ $anioActual }};
-
-                    if (
-                        this.anioInicio > anioActual ||
-                        (this.anioInicio === anioActual && this.mesInicio > mesActual)
-                    ) {
-                        this.anioInicio = anioActual;
-                        this.mesInicio = mesActual;
+                    if ((anioFin * 12 + mesFin) < (anioInicio * 12 + mesInicio)) {
+                        if (origen === 'fin') {
+                            mesInicio = mesFin;
+                            anioInicio = anioFin;
+                        } else {
+                            mesFin = mesInicio;
+                            anioFin = anioInicio;
+                        }
                     }
 
-                    if (
-                        this.anioFin > anioActual ||
-                        (this.anioFin === anioActual && this.mesFin > mesActual)
-                    ) {
-                        this.anioFin = anioActual;
-                        this.mesFin = mesActual;
-                    }
-
-                    if (this.anioFin < this.anioInicio) {
-                        this.anioFin = this.anioInicio;
-                        this.mesFin = this.mesInicio;
-                    } else if (
-                        this.anioFin === this.anioInicio &&
-                        this.mesFin < this.mesInicio
-                    ) {
-                        this.mesFin = this.mesInicio;
-                    }
+                    this.mesInicio = mesInicio;
+                    this.anioInicio = anioInicio;
+                    this.mesFin = mesFin;
+                    this.anioFin = anioFin;
                 },
-                cargarProductividad() {
-                    this.validarRango();
+                cargarProductividad(origen) {
+                    this.validarRango(origen);
                     this.cargando = true;
+                    const filtroElegido = {
+                        mesInicio: this.mesInicio,
+                        anioInicio: this.anioInicio,
+                        mesFin: this.mesFin,
+                        anioFin: this.anioFin,
+                        unidades: [...this.unidades],
+                    };
                     const params = new URLSearchParams();
                     params.append('mes_inicio',  this.mesInicio);
                     params.append('anio_inicio', this.anioInicio);
@@ -195,7 +188,19 @@
                                             Alpine.$data(filtro).cargando = false;
                                         } catch (e) {}
                                     }
-                                    if (sessionStorage.getItem('prodTab') === 'general' || !sessionStorage.getItem('prodTab')) {
+                                    const url = new URL(window.location.href);
+                                    url.searchParams.set('tab', 'productividad');
+                                    url.searchParams.set('mes_inicio', filtroElegido.mesInicio);
+                                    url.searchParams.set('anio_inicio', filtroElegido.anioInicio);
+                                    url.searchParams.set('mes_fin', filtroElegido.mesFin);
+                                    url.searchParams.set('anio_fin', filtroElegido.anioFin);
+                                    url.searchParams.delete('unidades[]');
+                                    filtroElegido.unidades.forEach(function (u) {
+                                        url.searchParams.append('unidades[]', u);
+                                    });
+                                    window.history.replaceState({}, '', url);
+
+                                if (sessionStorage.getItem('prodTab') === 'general' || !sessionStorage.getItem('prodTab')) {
                                         if (typeof inicializarGraficas === 'function') {
                                             inicializarGraficas();
                                         }
@@ -214,7 +219,7 @@
                         });
                 },
                 getExportUrl() {
-                    this.validarRango();
+                    this.validarRango('inicio');
                     const base = '{{ route('tickets.exportar-reporte-mensual-excel') }}';
                     return `${base}?mes_inicio=${this.mesInicio}&anio_inicio=${this.anioInicio}&mes_fin=${this.mesFin}&anio_fin=${this.anioFin}`;
                 }
@@ -224,42 +229,33 @@
             <div
                 class="flex items-center gap-1 bg-gray-50 dark:bg-[#1F2937] p-1.5 rounded-xl border border-gray-200 dark:border-[#2A2F3A] shadow-sm flex-wrap">
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Desde</span>
-                <select x-model="mesInicio" @change="cargarProductividad()" :disabled="cargando"
+                <select x-model.number="mesInicio" @change="cargarProductividad('inicio')" :disabled="cargando"
                     class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
-                    @php
-                        $mesesOrdenados = [];
-                        for ($i = $mesActual; $i <= 12; $i++) {
-                            $mesesOrdenados[] = $i;
-                        }
-                        for ($i = 1; $i < $mesActual; $i++) {
-                            $mesesOrdenados[] = $i;
-                        }
-                    @endphp
-                    @foreach($mesesOrdenados as $i)
+                    @for($i = 1; $i <= 12; $i++)
                         <option value="{{ $i }}">
                             {{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}
                         </option>
-                    @endforeach
+                    @endfor
                 </select>
-                <select x-model="anioInicio" @change="cargarProductividad()" :disabled="cargando"
+                <select x-model.number="anioInicio" @change="cargarProductividad('inicio')" :disabled="cargando"
                     class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
-                    @for($i = $anioActual; $i >= $anioActual - 5; $i--)
+                    @for($i = $anioActual + 1; $i >= $anioActual - 5; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
                 </select>
                 <div class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1"></div>
                 <span class="text-xs text-gray-500 dark:text-gray-400 px-1 font-medium">Hasta</span>
-                <select x-model="mesFin" @change="cargarProductividad()" :disabled="cargando"
+                <select x-model.number="mesFin" @change="cargarProductividad('fin')" :disabled="cargando"
                     class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
-                    @foreach($mesesOrdenados as $i)
+                    @for($i = 1; $i <= 12; $i++)
                         <option value="{{ $i }}">
                             {{ \Carbon\Carbon::create($anioActual, $i, 1)->locale('es')->isoFormat('MMM') }}
                         </option>
-                    @endforeach
+                    @endfor
                 </select>
-                <select x-model="anioFin" @change="cargarProductividad()" :disabled="cargando"
+                <select x-model.number="anioFin" @change="cargarProductividad('fin')" :disabled="cargando"
                     class="border-0 bg-transparent py-1.5 pl-2 pr-6 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-0 cursor-pointer">
-                    @for($i = $anioActual; $i >= $anioActual - 5; $i--)
+                    @for($i = $anioActual + 1; $i >= $anioActual - 5; $i--)
                         <option value="{{ $i }}">{{ $i }}</option>
                     @endfor
                 </select>

@@ -108,6 +108,8 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $segundosNormales = [];
         $segundosTotales = [];
         $segundosPrimerRespGenerales = [];
+        $horasResolucion = [];
+        $horasRespuesta = [];
         $totalTicketsMesActual = 0;
         $ticketsCerradosActualCalculado = 0;
 
@@ -342,20 +344,32 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
                 if (!empty($ticket->FechaInicioProgreso)) {
                     try {
-                        $diffPrimer = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaInicioProgreso));
+                        $diffPrimer = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaInicioProgreso);
                         $tablaCategoria[$categoria]['segundos_primer_respuesta'][] = $diffPrimer;
                         $segundosPrimerRespGenerales[] = $diffPrimer;
                     } catch (\Exception $e) {
                     }
                 }
 
+                if (
+                    $ticket->FechaInicioProgreso
+                    && $ticket->tiempo_respuesta !== null
+                    && in_array($ticket->Estatus, ['En progreso', 'Cerrado'], true)
+                ) {
+                    $horasRespuesta[] = (float) $ticket->tiempo_respuesta;
+                }
+
+                if ($ticket->Estatus === 'Cerrado' && $ticket->FechaInicioProgreso && $ticket->FechaFinProgreso) {
+                    $horasResolucion[] = (float) ($ticket->tiempo_resolucion ?? 0);
+                }
+
                 if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                     try {
-                        $diffRes = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaFinProgreso));
+                        $diffRes = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
                         $tablaCategoria[$categoria]['segundos_resolucion'][] = $diffRes;
                         $segundosTotales[] = $diffRes;
 
-                        if ($diffRes <= 28800) {
+                        if ($diffRes <= 8) {
                             $segundosNormales[] = $diffRes;
                         }
                     } catch (\Exception $e) {
@@ -371,7 +385,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
                 if (!empty($ticket->FechaInicioProgreso)) {
                     try {
-                        $diffPrimer = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaInicioProgreso));
+                        $diffPrimer = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaInicioProgreso);
                         $segundosPrimerRespGeneralesAnt[] = $diffPrimer;
                     } catch (\Exception $e) {
                     }
@@ -379,10 +393,10 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
                 if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                     try {
-                        $diffRes = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaFinProgreso));
+                        $diffRes = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
                         $segundosTotalesAnt[] = $diffRes;
 
-                        if ($diffRes <= 28800) {
+                        if ($diffRes <= 8) {
                             $segundosNormalesAnt[] = $diffRes;
                         }
                     } catch (\Exception $e) {
@@ -441,7 +455,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
             if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                 try {
-                    $tablaResponsableDetalle[$clave]['segundos'][] = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaFinProgreso));
+                    $tablaResponsableDetalle[$clave]['segundos'][] = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
                 } catch (\Exception $e) {
                 }
             }
@@ -491,7 +505,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
             if (!empty($ticket->FechaFinProgreso) && $ticket->Estatus === 'Cerrado') {
                 try {
-                    $tablaCategoriaDetallada[$clave]['segundos'][] = $ticketDate->diffInSeconds(Carbon::parse($ticket->FechaFinProgreso));
+                    $tablaCategoriaDetallada[$clave]['segundos'][] = \App\Models\Tickets::horasLaboralesEntre($ticket->created_at, $ticket->FechaFinProgreso);
                 } catch (\Exception $e) {
                 }
             }
@@ -520,6 +534,13 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
             $tablaCategoria[$key]['promedio_resolucion'] = $this->formatSecondsToDays($promRes);
         }
+
+        $promedioResolucionLaboral = count($horasResolucion) > 0
+            ? round(array_sum($horasResolucion) / count($horasResolucion), 1)
+            : 0;
+        $promedioRespuestaLaboral = count($horasRespuesta) > 0
+            ? round(array_sum($horasRespuesta) / count($horasRespuesta), 1)
+            : 0;
 
         $promedioNormales = count($segundosNormales) > 0 ? array_sum($segundosNormales) / count($segundosNormales) : 0;
         $promedioTotales = count($segundosTotales) > 0 ? array_sum($segundosTotales) / count($segundosTotales) : 0;
@@ -632,8 +653,10 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             'promPrimerRespuestaAnt' => $this->formatSecondsToDays($promedioPrimerRespuestaGeneralAnt),
             'cumplimientoAnt' => $cumplimientoAnt . '%',
             'textoAnormales' => 'Generalmente los tickets de duración anormal son aquellos que exceden el día laboral de duración (>8 hrs) y tiene que ver con falta de respuesta del que crea el ticket, incorrecta ejecución del proceso de atención (TI; principalmente en los primeros meses de la implementación del sistema), problema de múltiples respuestas o escalado.',
-            'promResolucionHoras' => number_format($promedioTotales / 3600, 1),
-            'promRespuestaHoras' => number_format($promedioPrimerRespuestaGeneral / 3600, 1),
+            'promResolucionHoras' => number_format($promedioTotales, 1),
+            'promRespuestaHoras' => number_format($promedioPrimerRespuestaGeneral, 1),
+            'promResolucionDashboard' => \App\Models\Tickets::formatearDuracion($promedioResolucionLaboral),
+            'promRespuestaDashboard' => \App\Models\Tickets::formatearDuracion($promedioRespuestaLaboral),
             'califGeneral'        => $califGeneral,
             'califPorResponsable' => $califResumen,
         ];
@@ -664,8 +687,8 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $rows[] = [
             $d['totalTickets'] ?? 0,
             ($d['ticketsCerrados'] ?? 0) . "\n" . (($d['porcentajeCerrados'] ?? 0) . '% del total'),
-            $d['promResolucionTotal'] ?? '0 minutos',
-            $d['promPrimerRespuesta'] ?? '0 minutos',
+            $d['promResolucionDashboard'] ?? '0 minutos',
+            $d['promRespuestaDashboard'] ?? '0 minutos',
             $d['cumplimiento'] ?? '0%',
         ];
         $this->layout['summary_values'] = $row++;
@@ -1227,39 +1250,14 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         return $rows;
     }
 
-    private function formatSecondsToDays($seconds): string
+    private function formatSecondsToDays($horas): string
     {
-        $totalMinutos = (int) round(max(0, (float) $seconds) / 60);
-        if ($totalMinutos === 0) {
-            return '0 minutos';
-        }
-
-        $dias = intdiv($totalMinutos, 24 * 60);
-        $resto = $totalMinutos % (24 * 60);
-        $horas = intdiv($resto, 60);
-        $minutos = $resto % 60;
-
-        $partes = [];
-        if ($dias > 0) {
-            $partes[] = $dias . ' día' . ($dias > 1 ? 's' : '');
-        }
-        if ($horas > 0) {
-            $partes[] = $horas . ' hora' . ($horas > 1 ? 's' : '');
-        }
-        if ($minutos > 0) {
-            $partes[] = $minutos . ' minuto' . ($minutos > 1 ? 's' : '');
-        }
-
-        return implode(', ', $partes);
+        return \App\Models\Tickets::formatearDuracion($horas);
     }
 
-    private function formatSecondsToHours($seconds): float
+    private function formatSecondsToHours($horas): float
     {
-        if (!$seconds || $seconds <= 0) {
-            return 0;
-        }
-
-        return round($seconds / 3600, 2);
+        return round(max(0, (float) $horas), 2);
     }
 
     private function truncateWords(string $text, int $count): string

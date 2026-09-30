@@ -229,6 +229,14 @@ class Tickets extends Model
      * @param \Carbon\Carbon $fechaFin
      * @return float Horas laborales en decimal
      */
+    public static function horasLaboralesEntre($fechaInicio, $fechaFin): float
+    {
+        $inicio = $fechaInicio ? \Carbon\Carbon::parse($fechaInicio) : null;
+        $fin = $fechaFin ? \Carbon\Carbon::parse($fechaFin) : null;
+
+        return (new static)->calcularHorasLaborales($inicio, $fin);
+    }
+
     protected function calcularHorasLaborales($fechaInicio, $fechaFin)
     {
         if (!$fechaInicio || !$fechaFin) {

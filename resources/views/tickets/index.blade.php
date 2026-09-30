@@ -124,7 +124,17 @@
     </div>
     @elseif($tabActiva === 'productividad')
     <div data-app-panel="productividad" id="productividad-tab" class="w-full">
-        @include('tickets.productividad', ['metricasProductividad' => $metricasProductividad, 'mes' => $mes ?? now()->month, 'anio' => $anio ?? now()->year])
+        @include('tickets.productividad', [
+            'metricasProductividad' => $metricasProductividad,
+            'mes' => $mes ?? now()->month,
+            'anio' => $anio ?? now()->year,
+            'mesInicio' => $mesInicio ?? null,
+            'anioInicio' => $anioInicio ?? null,
+            'mesFin' => $mesFin ?? null,
+            'anioFin' => $anioFin ?? null,
+            'unidadesNegocio' => $unidadesNegocio ?? collect(),
+            'unidadesSeleccionadas' => $unidadesSeleccionadas ?? [],
+        ])
     </div>
     @elseif($tabActiva === 'solicitudes')
     <div data-app-panel="solicitudes" class="w-full max-w-full">

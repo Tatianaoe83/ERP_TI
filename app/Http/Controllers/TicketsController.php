@@ -1672,11 +1672,19 @@ class TicketsController extends Controller
             }
         }
 
-        $ticketsConRespuesta  = $tickets->filter(fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null);
-        $ticketsConResolucion = $tickets->filter(fn($t) => $t->FechaInicioProgreso && $t->FechaFinProgreso && $t->tiempo_resolucion !== null);
+        $ticketsConRespuesta  = $tickets->filter(
+            fn($t) => $t->FechaInicioProgreso && $t->tiempo_respuesta !== null && ($t->Estatus === 'En progreso' || $t->Estatus === 'Cerrado')
+        );
+        $ticketsConResolucion = $tickets->filter(
+            fn($t) => $t->Estatus === 'Cerrado' && $t->FechaInicioProgreso && $t->FechaFinProgreso
+        );
 
-        $promedioRespuesta  = $ticketsConRespuesta->count() > 0 ? $ticketsConRespuesta->avg(fn($t) => $t->tiempo_respuesta ?? 0) : 0;
-        $promedioResolucion = $ticketsConResolucion->count() > 0 ? $ticketsConResolucion->avg(fn($t) => $t->tiempo_resolucion ?? 0) : 0;
+        $promedioRespuesta  = $ticketsConRespuesta->count() > 0
+            ? round($ticketsConRespuesta->sum(fn($t) => $t->tiempo_respuesta ?? 0) / $ticketsConRespuesta->count(), 1)
+            : 0;
+        $promedioResolucion = $ticketsConResolucion->count() > 0
+            ? round($ticketsConResolucion->sum(fn($t) => $t->tiempo_resolucion ?? 0) / $ticketsConResolucion->count(), 1)
+            : 0;
 
         $ticketsCerrados      = $tickets->where('Estatus', 'Cerrado')->count();
         $porcentajeCumplimiento = $tickets->count() > 0 ? round(($ticketsCerrados / $tickets->count()) * 100, 2) : 0;
