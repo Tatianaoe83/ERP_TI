@@ -17,13 +17,17 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
     protected $metricasSolicitudes;
     protected $mes;
     protected $anio;
+    protected $periodoEtiqueta;
+    protected $unidadesEtiqueta;
 
-    public function __construct($solicitudes, $metricasSolicitudes, $mes, $anio)
+    public function __construct($solicitudes, $metricasSolicitudes, $mes, $anio, $periodoEtiqueta = null, $unidadesEtiqueta = null)
     {
         $this->solicitudes = $solicitudes;
         $this->metricasSolicitudes = $metricasSolicitudes;
         $this->mes = $mes;
         $this->anio = $anio;
+        $this->periodoEtiqueta = $periodoEtiqueta;
+        $this->unidadesEtiqueta = $unidadesEtiqueta;
     }
 
     public function title(): string
@@ -34,12 +38,13 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
     public function array(): array
     {
         $mesNombre = Carbon::create($this->anio, $this->mes, 1)->locale('es')->translatedFormat('F');
-        $mesCapitalizado = ucfirst($mesNombre);
+        $tituloPeriodo = $this->periodoEtiqueta ?: (ucfirst($mesNombre) . ' ' . $this->anio);
+        $unidadesTxt = $this->unidadesEtiqueta ?: 'Todas las unidades';
         
         $rows = [];
         
         // Fila 1: Título principal
-        $rows[] = ["Reporte de Solicitudes - {$mesCapitalizado} {$this->anio}"];
+        $rows[] = ["Reporte de Solicitudes - {$tituloPeriodo}"];
         
         // Fila 2: Estadísticas generales
         $promedioCot = \App\Models\Tickets::formatearDuracion($this->metricasSolicitudes['promedio_cotizacion_horas'] ?? 0);
@@ -47,7 +52,7 @@ class SolicitudesSheetExport implements FromArray, WithEvents, WithTitle
         $totalSolicitudes = count($this->metricasSolicitudes['desglose'] ?? []);
         
         $rows[] = [
-            "Período: {$mesCapitalizado} {$this->anio} | Total Solicitudes: {$totalSolicitudes} | " .
+            "Período: {$tituloPeriodo} | Unidades: {$unidadesTxt} | Total Solicitudes: {$totalSolicitudes} | " .
             "Promedio Cotización: {$promedioCot} | " .
             "Promedio Configuración: {$promedioConfig}"
         ];

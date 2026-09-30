@@ -23,9 +23,12 @@ class ResumeGraphicsSheetExport implements FromArray, WithCharts, WithEvents, Wi
     protected $catalogo;
     protected $solicitudes;
     protected $metricasSolicitudes;
+    protected $periodoDesde;
+    protected $periodoHasta;
+    protected $unidadesEtiqueta;
     protected $resumenSheet;
 
-    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [])
+    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [], $periodoDesde = null, $periodoHasta = null, $unidadesEtiqueta = null)
     {
         $this->tickets = $tickets instanceof Collection ? $tickets : collect($tickets);
         $this->resumen = is_array($resumen) ? $resumen : [];
@@ -36,6 +39,9 @@ class ResumeGraphicsSheetExport implements FromArray, WithCharts, WithEvents, Wi
         $this->catalogo = $catalogo;
         $this->solicitudes = $solicitudes;
         $this->metricasSolicitudes = $metricasSolicitudes;
+        $this->periodoDesde = $periodoDesde;
+        $this->periodoHasta = $periodoHasta;
+        $this->unidadesEtiqueta = $unidadesEtiqueta;
 
         // Crear instancia de ResumenSheetExport para acceder a datos y gráficas
         $this->resumenSheet = new ResumenSheetExport(
@@ -47,7 +53,10 @@ class ResumeGraphicsSheetExport implements FromArray, WithCharts, WithEvents, Wi
             $this->anio,
             $this->catalogo,
             $this->solicitudes,
-            $this->metricasSolicitudes
+            $this->metricasSolicitudes,
+            $this->periodoDesde,
+            $this->periodoHasta,
+            $this->unidadesEtiqueta
         );
     }
 

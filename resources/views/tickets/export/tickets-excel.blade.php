@@ -6,7 +6,8 @@
     </tr>
     <tr>
         <td colspan="24" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
-            <strong>Período:</strong> {{ \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} | 
+            <strong>Período:</strong> {{ $periodoEtiqueta ?? \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} |
+            <strong>Unidades:</strong> {{ $unidadesEtiqueta ?? 'Todas las unidades' }} | 
             <strong>Total de Tickets:</strong> <span style="color: #1E40AF; font-weight: bold;">{{ $tickets->count() }}</span> | 
             <strong>Cerrados:</strong> <span style="color: #059669; font-weight: bold;">{{ $resumen['tickets_cerrados'] ?? 0 }}</span> | 
             <strong>Promedio Respuesta:</strong> <span style="color: #D97706; font-weight: bold;">{{ \App\Models\Tickets::formatearDuracion($resumen['promedio_tiempo_respuesta'] ?? 0) }}</span> | 

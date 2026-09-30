@@ -16,8 +16,12 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
     protected $catalogo;
     protected $solicitudes;
     protected $metricasSolicitudes;
+    protected $periodoDesde;
+    protected $periodoHasta;
+    protected $unidadesEtiqueta;
+    protected $periodoEtiqueta;
 
-    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $ticketsMesActual = null, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [])
+    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $ticketsMesActual = null, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [], $periodoDesde = null, $periodoHasta = null, $unidadesEtiqueta = null, $periodoEtiqueta = null)
     {
         $this->tickets = $tickets;
         $this->ticketsMesActual = $ticketsMesActual ?? $tickets;
@@ -29,6 +33,10 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
         $this->catalogo = $catalogo;
         $this->solicitudes = $solicitudes;
         $this->metricasSolicitudes = $metricasSolicitudes;
+        $this->periodoDesde = $periodoDesde;
+        $this->periodoHasta = $periodoHasta;
+        $this->unidadesEtiqueta = $unidadesEtiqueta;
+        $this->periodoEtiqueta = $periodoEtiqueta;
     }
 
     public function sheets(): array
@@ -43,7 +51,10 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
                 $this->anio,
                 $this->catalogo,
                 $this->solicitudes,
-                $this->metricasSolicitudes
+                $this->metricasSolicitudes,
+                $this->periodoDesde,
+                $this->periodoHasta,
+                $this->unidadesEtiqueta
             ),
             new ResumenSheetExport(
                 $this->tickets,
@@ -54,12 +65,15 @@ class ReporteMensualTicketsExport implements WithMultipleSheets
                 $this->anio,
                 $this->catalogo,
                 $this->solicitudes,
-                $this->metricasSolicitudes
+                $this->metricasSolicitudes,
+                $this->periodoDesde,
+                $this->periodoHasta,
+                $this->unidadesEtiqueta
             ),
-            new TicketsSheetExport($this->ticketsMesActual, $this->resumen, $this->mes, $this->anio),
-            new SolicitudesSheetExport($this->solicitudes, $this->metricasSolicitudes, $this->mes, $this->anio),
-            new TiempoResolucionPorEmpleadoSheetExport($this->tiempoPorEmpleado, $this->mes, $this->anio),
-            new TiempoPorCategoriaResponsableSheetExport($this->tiempoPorCategoria, $this->mes, $this->anio),
+            new TicketsSheetExport($this->ticketsMesActual, $this->resumen, $this->mes, $this->anio, $this->periodoEtiqueta, $this->unidadesEtiqueta),
+            new SolicitudesSheetExport($this->solicitudes, $this->metricasSolicitudes, $this->mes, $this->anio, $this->periodoEtiqueta, $this->unidadesEtiqueta),
+            new TiempoResolucionPorEmpleadoSheetExport($this->tiempoPorEmpleado, $this->mes, $this->anio, $this->periodoEtiqueta, $this->unidadesEtiqueta),
+            new TiempoPorCategoriaResponsableSheetExport($this->tiempoPorCategoria, $this->mes, $this->anio, $this->periodoEtiqueta, $this->unidadesEtiqueta),
         ];
     }
 }

@@ -6,7 +6,8 @@
     </tr>
     <tr>
         <td colspan="7" style="background-color: #EFF6FF; padding: 15px; border: 1px solid #BFDBFE; text-align: center; font-size: 12px;">
-            <strong>Período:</strong> {{ \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} | 
+            <strong>Período:</strong> {{ $periodoEtiqueta ?? \Carbon\Carbon::create($anio, $mes, 1)->locale('es')->isoFormat('MMMM YYYY') }} |
+            <strong>Unidades:</strong> {{ $unidadesEtiqueta ?? 'Todas las unidades' }} | 
             <strong>Total de Registros:</strong> <span style="color: #1E40AF; font-weight: bold;">{{ count($datos) }}</span>
         </td>
     </tr>

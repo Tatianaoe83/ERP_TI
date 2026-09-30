@@ -15,13 +15,17 @@ class TicketsSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
     protected $resumen;
     protected $mes;
     protected $anio;
+    protected $periodoEtiqueta;
+    protected $unidadesEtiqueta;
 
-    public function __construct($tickets, $resumen, $mes, $anio)
+    public function __construct($tickets, $resumen, $mes, $anio, $periodoEtiqueta = null, $unidadesEtiqueta = null)
     {
         $this->tickets = $tickets;
         $this->resumen = $resumen;
         $this->mes = $mes;
         $this->anio = $anio;
+        $this->periodoEtiqueta = $periodoEtiqueta;
+        $this->unidadesEtiqueta = $unidadesEtiqueta;
     }
 
     public function view(): View
@@ -30,7 +34,9 @@ class TicketsSheetExport implements FromView, WithEvents, WithTitle, ShouldAutoS
             'tickets' => $this->tickets,
             'resumen' => $this->resumen,
             'mes' => $this->mes,
-            'anio' => $this->anio
+            'anio' => $this->anio,
+            'periodoEtiqueta' => $this->periodoEtiqueta,
+            'unidadesEtiqueta' => $this->unidadesEtiqueta,
         ]);
     }
 

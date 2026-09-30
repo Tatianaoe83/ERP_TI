@@ -14,12 +14,16 @@ class TiempoPorCategoriaResponsableSheetExport implements FromView, WithEvents, 
     protected $datos;
     protected $mes;
     protected $anio;
+    protected $periodoEtiqueta;
+    protected $unidadesEtiqueta;
 
-    public function __construct($datos, $mes, $anio)
+    public function __construct($datos, $mes, $anio, $periodoEtiqueta = null, $unidadesEtiqueta = null)
     {
         $this->datos = $datos;
         $this->mes = $mes;
         $this->anio = $anio;
+        $this->periodoEtiqueta = $periodoEtiqueta;
+        $this->unidadesEtiqueta = $unidadesEtiqueta;
     }
 
     public function view(): View
@@ -27,7 +31,9 @@ class TiempoPorCategoriaResponsableSheetExport implements FromView, WithEvents, 
         return view('tickets.export.tiempo-por-categoria-responsable-excel', [
             'datos' => $this->datos,
             'mes' => $this->mes,
-            'anio' => $this->anio
+            'anio' => $this->anio,
+            'periodoEtiqueta' => $this->periodoEtiqueta,
+            'unidadesEtiqueta' => $this->unidadesEtiqueta,
         ]);
     }
 

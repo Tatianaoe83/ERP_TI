@@ -33,6 +33,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
     protected $catalogo;
     protected $solicitudes;
     protected $metricasSolicitudes;
+    protected $periodoDesde;
+    protected $periodoHasta;
+    protected $unidadesEtiqueta;
     protected $tertipoAPadres = [];
 
     protected array $reportData = [];
@@ -49,7 +52,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         '0891B2',
     ];
 
-    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [])
+    public function __construct($tickets, $resumen, $tiempoPorEmpleado, $tiempoPorCategoria, $mes, $anio, $catalogo = [], $solicitudes = [], $metricasSolicitudes = [], $periodoDesde = null, $periodoHasta = null, $unidadesEtiqueta = null)
     {
         $this->tickets = $tickets instanceof Collection ? $tickets : collect($tickets);
         $this->resumen = is_array($resumen) ? $resumen : [];
@@ -60,6 +63,9 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $this->catalogo = $catalogo;
         $this->solicitudes = $solicitudes;
         $this->metricasSolicitudes = $metricasSolicitudes;
+        $this->periodoDesde = $periodoDesde;
+        $this->periodoHasta = $periodoHasta;
+        $this->unidadesEtiqueta = $unidadesEtiqueta;
     }
 
     public function title(): string
@@ -88,19 +94,59 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         $mesTarget = (is_numeric($this->mes) && $this->mes >= 1 && $this->mes <= 12) ? (int) $this->mes : now()->month;
         $anioTarget = (is_numeric($this->anio) && $this->anio >= 2000 && $this->anio <= 2100) ? (int) $this->anio : now()->year;
 
-        $fechaTarget = Carbon::create($anioTarget, $mesTarget, 1);
-        $mesNombreTarget = $fechaTarget->locale('es')->translatedFormat('F Y');
+        if ($this->periodoDesde && $this->periodoHasta) {
+            $fechaInicioActual = Carbon::parse($this->periodoDesde)->startOfMonth();
+            $fechaFinActual = Carbon::parse($this->periodoHasta)->endOfMonth();
+            if ($fechaFinActual->lt($fechaInicioActual)) {
+                [$fechaInicioActual, $fechaFinActual] = [
+                    $fechaFinActual->copy()->startOfMonth(),
+                    $fechaInicioActual->copy()->endOfMonth(),
+                ];
+            }
+        } else {
+            $fechaInicioActual = Carbon::create($anioTarget, $mesTarget, 1)->startOfMonth();
+            $fechaFinActual = Carbon::create($anioTarget, $mesTarget, 1)->endOfMonth();
+        }
 
-        $mesAnterior = $fechaTarget->copy()->subMonth()->month;
-        $anioAnterior = $fechaTarget->copy()->subMonth()->year;
-        $mesNombreAnterior = $fechaTarget->copy()->subMonth()->locale('es')->translatedFormat('F Y');
+        $mesesPeriodo = (($fechaFinActual->year - $fechaInicioActual->year) * 12)
+            + ($fechaFinActual->month - $fechaInicioActual->month) + 1;
+        $fechaInicioAnterior = $fechaInicioActual->copy()->subMonths($mesesPeriodo)->startOfMonth();
+        $fechaFinAnterior = $fechaInicioActual->copy()->subMonth()->endOfMonth();
+
+        $etiquetaPeriodo = function (Carbon $desde, Carbon $hasta, bool $corto = false): string {
+            $desde = $desde->copy()->locale('es');
+            $hasta = $hasta->copy()->locale('es');
+            if ($desde->format('Y-m') === $hasta->format('Y-m')) {
+                return $corto ? $desde->translatedFormat('F') : $desde->translatedFormat('F Y');
+            }
+            if ($corto) {
+                $fin = $hasta->year === $desde->year
+                    ? $hasta->translatedFormat('M')
+                    : $hasta->translatedFormat('M Y');
+                return $desde->translatedFormat('M') . ' – ' . $fin;
+            }
+            if ($desde->year === $hasta->year) {
+                return $desde->translatedFormat('F') . ' – ' . $hasta->translatedFormat('F Y');
+            }
+            return $desde->translatedFormat('F Y') . ' – ' . $hasta->translatedFormat('F Y');
+        };
+
+        $enActual = function (Carbon $fecha) use ($fechaInicioActual, $fechaFinActual): bool {
+            return $fecha->between($fechaInicioActual, $fechaFinActual);
+        };
+        $enAnterior = function (Carbon $fecha) use ($fechaInicioAnterior, $fechaFinAnterior): bool {
+            return $fecha->between($fechaInicioAnterior, $fechaFinAnterior);
+        };
+
+        $mesNombreTarget = $etiquetaPeriodo($fechaInicioActual, $fechaFinActual);
+        $mesNombreAnterior = $etiquetaPeriodo($fechaInicioAnterior, $fechaFinAnterior);
 
         $tickets = $this->tickets;
 
 
         $usuariosUnicos = [];
-        $mesActualCorto = $fechaTarget->locale('es')->translatedFormat('F');
-        $mesAnteriorCorto = $fechaTarget->copy()->subMonth()->locale('es')->translatedFormat('F');
+        $mesActualCorto = $etiquetaPeriodo($fechaInicioActual, $fechaFinActual, true);
+        $mesAnteriorCorto = $etiquetaPeriodo($fechaInicioAnterior, $fechaFinAnterior, true);
         $usuariosAmbosMeses = [];
         $tablaMesesUsuarios = [];
         $tablaCategoria = [];
@@ -123,14 +169,11 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $ticketDate = Carbon::parse($ticket->created_at);
             $usuario = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
 
-            if ($ticketDate->month === $mesTarget && $ticketDate->year === $anioTarget) {
+            if ($enActual($ticketDate)) {
                 $usuariosUnicos[$usuario] = $usuario;
             }
 
-            if (
-                ($ticketDate->month === $mesTarget && $ticketDate->year === $anioTarget)
-                || ($ticketDate->month === $mesAnterior && $ticketDate->year === $anioAnterior)
-            ) {
+            if ($enActual($ticketDate) || $enAnterior($ticketDate)) {
                 $usuariosAmbosMeses[$usuario] = $usuario;
             }
         }
@@ -186,8 +229,8 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             $this->tertipoAPadres = [];
         }
 
-        $fechaInicioReporte = Carbon::create($anioTarget, $mesTarget, 1)->subMonth()->startOfMonth();
-        $fechaFinReporte = Carbon::create($anioTarget, $mesTarget, 1)->endOfMonth();
+        $fechaInicioReporte = $fechaInicioAnterior->copy();
+        $fechaFinReporte = $fechaFinActual->copy();
 
         if (empty($this->catalogo)) {
             try {
@@ -236,7 +279,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             if (empty($tipo)) {
                 $tipo = 'Sin tipo';
                 $ticketDate = Carbon::parse($ticket->created_at);
-                if ($ticketDate->month === $mesTarget && $ticketDate->year === $anioTarget) {
+                if ($enActual($ticketDate)) {
                     $ticketsSinClasificar++;
                 }
             }
@@ -296,8 +339,6 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         foreach ($tickets as $ticket) {
             $ticketDate = Carbon::parse($ticket->created_at);
-            $ticketMes = $ticketDate->month;
-            $ticketAnio = $ticketDate->year;
             $usuario = (string) (optional($ticket->responsableTI)->NombreEmpleado ?? 'Sin Responsable');
 
             $tipo = (string) (optional($ticket->tipoticket)->NombreTipo ?: 'Sin tipo');
@@ -312,7 +353,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                 ? $tertipo
                 : ($subtipo !== 'Sin subtipo' ? $subtipo : $tipo);
 
-            if ($ticketMes === $mesTarget && $ticketAnio === $anioTarget) {
+            if ($enActual($ticketDate)) {
                 $totalTicketsMesActual++;
                 $tablaMesesUsuarios[$usuario][$mesActualCorto]++;
 
@@ -375,7 +416,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
                     } catch (\Exception $e) {
                     }
                 }
-            } elseif ($ticketMes === $mesAnterior && $ticketAnio === $anioAnterior) {
+            } elseif ($enAnterior($ticketDate)) {
                 $totalTicketsMesAnterior++;
                 $tablaMesesUsuarios[$usuario][$mesAnteriorCorto]++;
 
@@ -430,7 +471,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         foreach ($tickets as $ticket) {
             $ticketDate = Carbon::parse($ticket->created_at);
 
-            if ($ticketDate->month !== $mesTarget || $ticketDate->year !== $anioTarget) {
+            if (!$enActual($ticketDate)) {
                 continue;
             }
 
@@ -482,7 +523,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
         foreach ($tickets as $ticket) {
             $ticketDate = Carbon::parse($ticket->created_at);
 
-            if ($ticketDate->month !== $mesTarget || $ticketDate->year !== $anioTarget) {
+            if (!$enActual($ticketDate)) {
                 continue;
             }
 
@@ -586,7 +627,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         foreach ($tickets as $ticket) {
             $ticketDate = Carbon::parse($ticket->created_at);
-            if ($ticketDate->month !== $mesTarget || $ticketDate->year !== $anioTarget) {
+            if (!$enActual($ticketDate)) {
                 continue;
             }
             $cal = $ticket->calificacion;
@@ -644,6 +685,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
             'mesAnteriorCorto' => $mesAnteriorCorto,
             'mesNombreTarget' => $mesNombreTarget,
             'mesNombreAnterior' => $mesNombreAnterior,
+            'unidadesEtiqueta' => $this->unidadesEtiqueta ?: 'Todas las unidades',
             'promResolucionNormal' => $this->formatSecondsToDays($promedioNormales),
             'promResolucionTotal' => $this->formatSecondsToDays($promedioTotales),
             'promPrimerRespuesta' => $this->formatSecondsToDays($promedioPrimerRespuestaGeneral),
@@ -672,7 +714,7 @@ class ResumenSheetExport implements FromArray, WithEvents, WithTitle
 
         $rows[] = ['Tickets: Reporte de Productividad'];
         $this->layout['summary_title'] = $row++;
-        $rows[] = ['Período: ' . ($d['mesNombreTarget'] ?? '')];
+        $rows[] = ['Período: ' . ($d['mesNombreTarget'] ?? '') . ' | Unidades: ' . ($d['unidadesEtiqueta'] ?? 'Todas las unidades')];
         $this->layout['summary_period'] = $row++;
 
         $rows[] = [

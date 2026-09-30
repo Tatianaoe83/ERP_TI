@@ -221,7 +221,13 @@
                 getExportUrl() {
                     this.validarRango('inicio');
                     const base = '{{ route('tickets.exportar-reporte-mensual-excel') }}';
-                    return `${base}?mes_inicio=${this.mesInicio}&anio_inicio=${this.anioInicio}&mes_fin=${this.mesFin}&anio_fin=${this.anioFin}`;
+                    const params = new URLSearchParams();
+                    params.append('mes_inicio', this.mesInicio);
+                    params.append('anio_inicio', this.anioInicio);
+                    params.append('mes_fin', this.mesFin);
+                    params.append('anio_fin', this.anioFin);
+                    this.unidades.forEach(u => params.append('unidades[]', u));
+                    return `${base}?${params.toString()}`;
                 }
             }">
 

@@ -1564,15 +1564,24 @@ class TicketsController extends Controller
         ]);
     }
 
-    // Genera y descarga el reporte mensual en Excel con datos de dos meses
+    // Genera y descarga el reporte en Excel del periodo y las unidades filtradas.
+    // El periodo anterior (misma cantidad de meses) se conserva para la comparación del resumen.
     public function exportarReporteMensualExcel(Request $request)
     {
-        $mes  = $request->input('mes', now()->month);
-        $anio = $request->input('anio', now()->year);
-
-        $fechaInicioActual  = \Carbon\Carbon::create($anio, $mes, 1)->startOfMonth();
-        $fechaFinActual     = \Carbon\Carbon::create($anio, $mes, 1)->endOfMonth();
-        $fechaInicioAnterior = \Carbon\Carbon::create($anio, $mes, 1)->subMonth()->startOfMonth();
+        [$fechaInicioActual, $fechaFinActual, $fechaInicioAnterior] = $this->resolverPeriodoExport($request);
+        $mes  = $fechaFinActual->month;
+        $anio = $fechaFinActual->year;
+        $unidades = array_values(array_filter(array_map('intval', (array) $request->input('unidades', []))));
+        $periodoEtiqueta = $this->etiquetaPeriodoExport($fechaInicioActual, $fechaFinActual);
+        $unidadesEtiqueta = 'Todas las unidades';
+        if (!empty($unidades)) {
+            $nombres = UnidadesDeNegocio::whereIn('UnidadNegocioID', $unidades)
+                ->orderBy('NombreEmpresa')
+                ->pluck('NombreEmpresa');
+            if ($nombres->isNotEmpty()) {
+                $unidadesEtiqueta = $nombres->implode(', ');
+            }
+        }
 
         $ticketsDosMeses = Tickets::with([
             'empleado.puestos.departamentos.gerencia',
@@ -1584,8 +1593,15 @@ class TicketsController extends Controller
             'calificacion',
         ])->whereBetween('created_at', [$fechaInicioAnterior, $fechaFinActual])->get();
 
+        if (!empty($unidades)) {
+            $ticketsDosMeses = $ticketsDosMeses->filter(function ($t) use ($unidades) {
+                $uni = $this->resolverUnidadNegocioTicket($t);
+                return $uni !== null && in_array($uni, $unidades, true);
+            })->values();
+        }
+
         $ticketsMesActual = $ticketsDosMeses->filter(
-            fn($t) => $t->created_at->between($fechaInicioActual, $fechaFinActual)
+            fn($t) => \Carbon\Carbon::parse($t->created_at)->between($fechaInicioActual, $fechaFinActual)
         );
 
         $todosTipos    = Tipoticket::all();
@@ -1610,8 +1626,13 @@ class TicketsController extends Controller
         $tiempoPorEmpleado   = $this->calcularTiempoResolucionPorEmpleado($ticketsMesActual);
         $tiempoPorCategoria  = $this->calcularTiempoPorCategoriaResponsable($ticketsMesActual);
 
-        // Calcular métricas de solicitudes del mes actual
-        $metricasSolicitudes = $this->calcularMetricasSolicitudes($mes, $anio);
+        $metricasSolicitudes = $this->calcularMetricasSolicitudes(
+            $fechaInicioActual->month,
+            $fechaInicioActual->year,
+            $fechaFinActual->month,
+            $fechaFinActual->year,
+            $unidades
+        );
         $solicitudesMesActual = $metricasSolicitudes['desglose'] ?? [];
 
         $nombreArchivo       = 'reporte_tickets_' . date('d-m-Y-H-i') . '.xlsx';
@@ -1627,10 +1648,55 @@ class TicketsController extends Controller
                 $ticketsMesActual,
                 $catalogo,
                 $solicitudesMesActual,
-                $metricasSolicitudes
+                $metricasSolicitudes,
+                $fechaInicioActual,
+                $fechaFinActual,
+                $unidadesEtiqueta,
+                $periodoEtiqueta
             ),
             $nombreArchivo
         );
+    }
+
+    // Periodo del Excel: respeta mes_inicio/mes_fin y, si no vienen, el mes suelto del reporte mensual.
+    private function resolverPeriodoExport(Request $request): array
+    {
+        $mesInicio  = (int) $request->input('mes_inicio', $request->input('mes', now()->month));
+        $anioInicio = (int) $request->input('anio_inicio', $request->input('anio', now()->year));
+        $mesFin     = (int) $request->input('mes_fin', $mesInicio);
+        $anioFin    = (int) $request->input('anio_fin', $anioInicio);
+
+        $mesInicio  = max(1, min(12, $mesInicio));
+        $mesFin     = max(1, min(12, $mesFin));
+        $anioInicio = max(2000, min(2100, $anioInicio));
+        $anioFin    = max(2000, min(2100, $anioFin));
+
+        $inicio = \Carbon\Carbon::create($anioInicio, $mesInicio, 1)->startOfMonth();
+        $fin    = \Carbon\Carbon::create($anioFin, $mesFin, 1)->startOfMonth();
+        if ($fin->lt($inicio)) {
+            [$inicio, $fin] = [$fin->copy(), $inicio->copy()];
+        }
+
+        $fin = $fin->copy()->endOfMonth();
+        $meses = (($fin->year - $inicio->year) * 12) + ($fin->month - $inicio->month) + 1;
+        $anteriorInicio = $inicio->copy()->subMonths($meses)->startOfMonth();
+
+        return [$inicio, $fin, $anteriorInicio];
+    }
+
+    private function etiquetaPeriodoExport($desde, $hasta): string
+    {
+        $desde = \Carbon\Carbon::parse($desde)->locale('es');
+        $hasta = \Carbon\Carbon::parse($hasta)->locale('es');
+
+        if ($desde->format('Y-m') === $hasta->format('Y-m')) {
+            return $desde->translatedFormat('F Y');
+        }
+        if ($desde->year === $hasta->year) {
+            return $desde->translatedFormat('F') . ' – ' . $hasta->translatedFormat('F Y');
+        }
+
+        return $desde->translatedFormat('F Y') . ' – ' . $hasta->translatedFormat('F Y');
     }
 
     // Calcula resumen de incidencias, tiempos promedio y totales por empleado del mes
