@@ -294,6 +294,12 @@ class ReportesEspecificosController extends AppBaseController
         $query = DB::table('inventariolineas')
             ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
             ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
+            ->leftJoin('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->leftJoin('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('lineastelefonicas', 'inventariolineas.LineaID', '=', 'lineastelefonicas.LineaID')
+            ->leftJoin('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
+            ->leftJoin('companiaslineastelefonicas', 'planes.CompaniaID', '=', 'companiaslineastelefonicas.ID')
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
@@ -301,6 +307,9 @@ class ReportesEspecificosController extends AppBaseController
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
                 'obras.NombreObra as obra_nombre',
+                'gerencia.NombreGerencia as gerencia_nombre',
+                'companiaslineastelefonicas.Compania as compania_nombre',
+                'planes.NombrePlan as plan_nombre',
                 'inventariolineas.FechaAsignacion as fecha_asignacion',
                 'inventariolineas.CostoRentaMensual as costo_renta_mensual',
                 'inventariolineas.CuentaPadre as cuenta_padre',
@@ -327,6 +336,12 @@ class ReportesEspecificosController extends AppBaseController
         $query = DB::table('inventariolineas')
             ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
             ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
+            ->leftJoin('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->leftJoin('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('lineastelefonicas', 'inventariolineas.LineaID', '=', 'lineastelefonicas.LineaID')
+            ->leftJoin('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
+            ->leftJoin('companiaslineastelefonicas', 'planes.CompaniaID', '=', 'companiaslineastelefonicas.ID')
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
@@ -334,6 +349,9 @@ class ReportesEspecificosController extends AppBaseController
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
                 'obras.NombreObra as obra_nombre',
+                'gerencia.NombreGerencia as gerencia_nombre',
+                'companiaslineastelefonicas.Compania as compania_nombre',
+                'planes.NombrePlan as plan_nombre',
                 'inventariolineas.FechaAsignacion as fecha_asignacion',
                 'inventariolineas.CostoRentaMensual as costo_renta_mensual',
                 'inventariolineas.CuentaPadre as cuenta_padre',

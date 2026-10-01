@@ -59,6 +59,12 @@ class LineasAsignadasDataTable extends DataTable
         $query = DB::table('inventariolineas')
             ->leftJoin('empleados', 'inventariolineas.EmpleadoID', '=', 'empleados.EmpleadoID')
             ->leftJoin('obras', 'inventariolineas.ObraID', '=', 'obras.ObraID')
+            ->leftJoin('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->leftJoin('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('lineastelefonicas', 'inventariolineas.LineaID', '=', 'lineastelefonicas.LineaID')
+            ->leftJoin('planes', 'lineastelefonicas.PlanID', '=', 'planes.ID')
+            ->leftJoin('companiaslineastelefonicas', 'planes.CompaniaID', '=', 'companiaslineastelefonicas.ID')
             ->select([
                 'inventariolineas.InventarioID',
                 'empleados.NombreEmpleado as empleado_nombre',
@@ -66,6 +72,9 @@ class LineasAsignadasDataTable extends DataTable
                 'inventariolineas.NumTelefonico as linea_numero',
                 'inventariolineas.TipoLinea as linea_tipo',
                 'obras.NombreObra as obra_nombre',
+                'gerencia.NombreGerencia as gerencia_nombre',
+                'companiaslineastelefonicas.Compania as compania_nombre',
+                'planes.NombrePlan as plan_nombre',
                 'inventariolineas.FechaAsignacion as fecha_asignacion',
                 'inventariolineas.CostoRentaMensual as costo_renta_mensual',
                 'inventariolineas.CuentaPadre as cuenta_padre',
@@ -110,7 +119,7 @@ class LineasAsignadasDataTable extends DataTable
     public function html()
     {
         return $this->indexPageHtml('lineas-asignadas-table', [
-            'orderColumn' => 7,
+            'orderColumn' => 10,
             'orderDir' => 'desc',
         ]);
     }
@@ -151,6 +160,24 @@ class LineasAsignadasDataTable extends DataTable
                 'title' => 'Obra',
                 'data' => 'obra_nombre',
                 'name' => 'obras.NombreObra',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'gerencia_nombre' => [
+                'title' => 'Gerencia',
+                'data' => 'gerencia_nombre',
+                'name' => 'gerencia.NombreGerencia',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'compania_nombre' => [
+                'title' => 'Compañía',
+                'data' => 'compania_nombre',
+                'name' => 'companiaslineastelefonicas.Compania',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
+            'plan_nombre' => [
+                'title' => 'Plan',
+                'data' => 'plan_nombre',
+                'name' => 'planes.NombrePlan',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'fecha_asignacion' => [

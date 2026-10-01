@@ -6,6 +6,9 @@
             <th>Número de Línea</th>
             <th>Tipo</th>
             <th>Obra</th>
+            <th>Gerencia</th>
+            <th>Compañía</th>
+            <th>Plan</th>
             <th>Fecha Asignación</th>
             <th>Costo Renta Mensual</th>
             <th>Cuenta Padre</th>
@@ -21,6 +24,9 @@
                 <td>{{ $item->linea_numero }}</td>
                 <td>{{ $item->linea_tipo }}</td>
                 <td>{{ $item->obra_nombre }}</td>
+                <td>{{ $item->gerencia_nombre ?? 'N/A' }}</td>
+                <td>{{ $item->compania_nombre ?? 'N/A' }}</td>
+                <td>{{ $item->plan_nombre ?? 'N/A' }}</td>
                 <td>{{ $item->fecha_asignacion ? \Carbon\Carbon::parse($item->fecha_asignacion)->format('d/m/Y') : 'N/A' }}</td>
                 <td>{{ $item->costo_renta_mensual ? '$' . number_format($item->costo_renta_mensual, 2) : 'N/A' }}</td>
                 <td>{{ $item->cuenta_padre ?? 'N/A' }}</td>
