@@ -54,8 +54,8 @@ class Departamentos extends Model
      * @var array
      */
     public static $rules = [
-        'NombreDepartamento' => 'nullable|string|max:50',
-        'GerenciaID' => 'nullable|integer'
+        'NombreDepartamento' => 'required|string|max:50',
+        'GerenciaID' => 'required|integer|exists:gerencia,GerenciaID'
     ];
 
 
@@ -66,5 +66,10 @@ class Departamentos extends Model
     public function gerencia()
     {
         return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
+    }
+
+    public function puestos()
+    {
+        return $this->hasMany(Puestos::class, 'DepartamentoID', 'DepartamentoID');
     }
 }

@@ -6,6 +6,6 @@
 
 <!-- Departamentoid Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
-    {!! Form::label('DepartamentoID', 'Departamento:') !!}
+    {!! Form::label('DepartamentoID', 'Área:') !!}
     <p>{{ $puestos->departamentos->NombreDepartamento }}</p>
 </div>

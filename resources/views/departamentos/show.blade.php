@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<x-crud-page title="Detalle de departamento" icon="fa-tags" subtitle="Solo lectura" :back-url="route('departamentos.index')">
+<x-crud-page title="Detalle de área" icon="fa-tags" subtitle="Solo lectura" :back-url="route('departamentos.index')">
     <div class="row crud-show">
         @include('departamentos.show_fields')
     </div>

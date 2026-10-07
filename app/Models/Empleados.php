@@ -44,7 +44,9 @@ class Empleados extends Model implements Auditable
     public $fillable = [
         'NombreEmpleado',
         'PuestoID',
+        'JefeDirectoID',
         'ObraID',
+        'CentroCostoID',
         'NumTelefono',
         'Correo',
         'Estado',
@@ -60,7 +62,9 @@ class Empleados extends Model implements Auditable
         'EmpleadoID' => 'integer',
         'NombreEmpleado' => 'string',
         'PuestoID' => 'integer',
+        'JefeDirectoID' => 'integer',
         'ObraID' => 'integer',
+        'CentroCostoID' => 'integer',
         'NumTelefono' => 'string',
         'Correo' => 'string',
         'Estado' => 'boolean',
@@ -86,15 +90,28 @@ class Empleados extends Model implements Auditable
     // Reglas de validación dinámicas para creación y actualización
     public static function rulesFor($tipoPersona = null, $empleadoId = null, $estado = null)
     {
+        $soloNombre = in_array($tipoPersona, ['EXTRAORDINARIO', 'REFERENCIADO'], true);
+
         $rules = [
             'NombreEmpleado' => 'required|string|max:100',
-            'PuestoID' => 'required|integer|exists:puestos,PuestoID',
-            'ObraID' => 'required|integer|exists:obras,ObraID',
+            'PuestoID' => $soloNombre ? 'nullable' : 'required|integer|exists:puestos,PuestoID',
+            'JefeDirectoID' => $soloNombre ? 'nullable' : array_filter([
+                'nullable',
+                'integer',
+                'exists:empleados,EmpleadoID',
+                $empleadoId ? Rule::notIn([(int) $empleadoId]) : null,
+            ]),
+            'ObraID' => $soloNombre ? 'nullable' : 'required|integer|exists:obras,ObraID',
+            'CentroCostoID' => 'nullable|integer|exists:centrosdecostos,CentroCostoID',
             'NumTelefono' => 'nullable|string|max:50',
             'Correo' => 'nullable|string|max:150|email',
             'Estado' => 'required|boolean',
             'tipo_persona' => 'required|in:FISICA,REFERENCIADO,EXTRAORDINARIO',
         ];
+
+        if ($soloNombre) {
+            return $rules;
+        }
 
         // Validación de correo único solo para empleados activos
         if ($estado == 1 || $estado === true) {
@@ -150,12 +167,22 @@ class Empleados extends Model implements Auditable
         return $this->belongsTo(\App\Models\Obras::class, 'ObraID');
     }
 
+    public function centroCosto()
+    {
+        return $this->belongsTo(CentroCosto::class, 'CentroCostoID', 'CentroCostoID');
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      **/
     public function puestos()
     {
         return $this->belongsTo(Puestos::class, 'PuestoID');
+    }
+
+    public function jefeDirecto()
+    {
+        return $this->belongsTo(self::class, 'JefeDirectoID', 'EmpleadoID');
     }
 
     public function inventarioequipo()

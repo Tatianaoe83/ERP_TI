@@ -27,14 +27,7 @@ class GerenciaDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 return view('gerencias.datatables_actions', ['id' => $row->GerenciaID])->render();
             })
-            ->addColumn('estado_formatted', function ($row) {
-                if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
-                    return '<span class="badge badge-success">Si</span>';
-                } else {
-                    return '<span class="badge badge-danger">No</span>';
-                }
-            })
-            ->rawColumns(['action', 'estado_formatted'])
+            ->rawColumns(['action'])
             ->setRowId('GerenciaID');
     }
 
@@ -47,12 +40,13 @@ class GerenciaDataTable extends DataTable
     public function query(Gerencia $model)
     {
         return $model->newQuery()
-            ->join('unidadesdenegocio', 'gerencia.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
+            ->join('direcciones', 'gerencia.DireccionID', '=', 'direcciones.DireccionID')
+            ->join('unidadesdenegocio', 'direcciones.UnidadNegocioID', '=', 'unidadesdenegocio.UnidadNegocioID')
             ->select([
                 'gerencia.GerenciaID',
                 'gerencia.NombreGerencia',
                 'gerencia.NombreGerente',
-                'gerencia.estado',
+                'direcciones.NombreDireccion as nombre_direccion',
                 'unidadesdenegocio.NombreEmpresa as nombre_empresa'
             ]);
     }
@@ -88,6 +82,12 @@ class GerenciaDataTable extends DataTable
                 'name' => 'NombreGerencia',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
+            'DireccionID' => [
+                'title' => 'Dirección',
+                'data' => 'nombre_direccion',
+                'name' => 'direcciones.NombreDireccion',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'UnidadNegocioID' => [
                 'title' => 'Unidad Negocio',
                 'data' => 'nombre_empresa',
@@ -99,14 +99,6 @@ class GerenciaDataTable extends DataTable
                 'data' => 'NombreGerente',
                 'name' => 'NombreGerente',
                 'class' => 'dark:bg-[#101010] dark:text-white'
-            ],
-            'estado' => [
-                'title' => 'Es gerencia',
-                'data' => 'estado_formatted',
-                'name' => 'estado',
-                'class' => 'dark:bg-[#101010] dark:text-white',
-                'orderable' => true,
-                'searchable' => false
             ],
             Column::computed('action')
                 ->exportable(false)

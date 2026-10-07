@@ -29,14 +29,7 @@ class UnidadesDeNegocioDataTable extends DataTable
             ->addColumn('action', function ($row) {
                 return view('unidades_de_negocios.datatables_actions', ['id' => $row->UnidadNegocioID])->render();
             })
-            ->addColumn('estado_formatted', function ($row) {
-                if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
-                    return '<span class="badge badge-success">Si</span>';
-                } else {
-                    return '<span class="badge badge-danger">No</span>';
-                }
-            })
-            ->rawColumns(['action', 'estado_formatted'])
+            ->rawColumns(['action'])
             ->setRowId('UnidadNegocioID');
     }
 
@@ -48,14 +41,16 @@ class UnidadesDeNegocioDataTable extends DataTable
      */
     public function query(UnidadesDeNegocio $model)
     {
-        return $model->newQuery()->select([
-            'UnidadNegocioID',
-            'NombreEmpresa',
-            'RFC',
-            'Direccion',
-            'NumTelefono',
-            'estado'
-        ]);
+        return $model->newQuery()
+            ->join('divisiones', 'unidadesdenegocio.DivisionID', '=', 'divisiones.DivisionID')
+            ->select([
+                'unidadesdenegocio.UnidadNegocioID',
+                'unidadesdenegocio.NombreEmpresa',
+                'unidadesdenegocio.RFC',
+                'unidadesdenegocio.Direccion',
+                'unidadesdenegocio.NumTelefono',
+                'divisiones.NombreDivision as nombre_division',
+            ]);
     }
 
     /**
@@ -88,46 +83,44 @@ class UnidadesDeNegocioDataTable extends DataTable
             'UnidadNegocioID' => [
                 'title' => 'ID',
                 'data' => 'UnidadNegocioID',
-                'name' => 'UnidadNegocioID',
+                'name' => 'unidadesdenegocio.UnidadNegocioID',
                 'class' => 'dark:bg-[#101010] dark:text-white',
                 'responsivePriority' => 1
+            ],
+            'DivisionID' => [
+                'title' => 'División',
+                'data' => 'nombre_division',
+                'name' => 'divisiones.NombreDivision',
+                'class' => 'dark:bg-[#101010] dark:text-white',
+                'responsivePriority' => 2
             ],
             'NombreEmpresa' => [
                 'title' => 'Nombre Empresa',
                 'data' => 'NombreEmpresa',
-                'name' => 'NombreEmpresa',
+                'name' => 'unidadesdenegocio.NombreEmpresa',
                 'class' => 'dark:bg-[#101010] dark:text-white',
                 'responsivePriority' => 1
             ],
             'RFC' => [
                 'title' => 'RFC',
                 'data' => 'RFC',
-                'name' => 'RFC',
+                'name' => 'unidadesdenegocio.RFC',
                 'class' => 'dark:bg-[#101010] dark:text-white',
                 'responsivePriority' => 2
             ],
             'Direccion' => [
                 'title' => 'Dirección',
                 'data' => 'Direccion',
-                'name' => 'Direccion',
+                'name' => 'unidadesdenegocio.Direccion',
                 'class' => 'dark:bg-[#101010] dark:text-white',
                 'responsivePriority' => 3
             ],
             'NumTelefono' => [
                 'title' => 'Teléfono',
                 'data' => 'NumTelefono',
-                'name' => 'NumTelefono',
+                'name' => 'unidadesdenegocio.NumTelefono',
                 'class' => 'dark:bg-[#101010] dark:text-white',
                 'responsivePriority' => 3
-            ],
-            'estado' => [
-                'title' => 'Es unidad de negocio',
-                'data' => 'estado_formatted',
-                'name' => 'estado',
-                'class' => 'dark:bg-[#101010] dark:text-white',
-                'orderable' => true,
-                'searchable' => false,
-                'responsivePriority' => 4
             ],
             Column::computed('action')
                 ->exportable(false)

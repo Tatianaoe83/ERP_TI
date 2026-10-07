@@ -31,6 +31,7 @@ class UpdateUnidadesDeNegocioRequest extends FormRequest
             'RFC'           => 'required|string|max:13|unique:unidadesdenegocio,RFC,' . $id . ',UnidadNegocioID',
             'Direccion'     => 'required|string|max:150',
             'NumTelefono'   => 'required|string|max:10|unique:unidadesdenegocio,NumTelefono,' . $id . ',UnidadNegocioID',
+            'DivisionID'    => 'required|integer|exists:divisiones,DivisionID',
             'estado'        => 'boolean',
         ];
     }

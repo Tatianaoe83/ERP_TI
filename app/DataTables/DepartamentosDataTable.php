@@ -74,7 +74,7 @@ class DepartamentosDataTable extends DataTable
             ],
 
             'NombreDepartamento' => [
-                'title' => 'Nombre Departamento',
+                'title' => 'Nombre área',
                 'data' => 'NombreDepartamento',
                 'name' => 'NombreDepartamento',
                 'class' => 'dark:bg-[#101010] dark:text-white'

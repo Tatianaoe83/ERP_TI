@@ -37,6 +37,7 @@ class Gerencia extends Model
     public $fillable = [
         'NombreGerencia',
         'UnidadNegocioID',
+        'DireccionID',
         'NombreGerente',
         'estado'
     ];
@@ -50,6 +51,7 @@ class Gerencia extends Model
         'GerenciaID' => 'integer',
         'NombreGerencia' => 'string',
         'UnidadNegocioID' => 'integer',
+        'DireccionID' => 'integer',
         'NombreGerente' => 'string',
         'estado' => 'boolean'
     ];
@@ -61,6 +63,7 @@ class Gerencia extends Model
      */
     public static $rules = [
         'NombreGerencia' => 'required|string|max:100',
+        'DireccionID' => 'required|integer|exists:direcciones,DireccionID',
         'UnidadNegocioID' => 'nullable|integer',
         'NombreGerente' => 'nullable|string|max:100',
         'estado' => 'boolean'
@@ -72,5 +75,15 @@ class Gerencia extends Model
     public function unidadesdenegocio()
     {
         return $this->belongsTo(\App\Models\UnidadesDeNegocio::class, 'UnidadNegocioID');
+    }
+
+    public function direccion()
+    {
+        return $this->belongsTo(Direccion::class, 'DireccionID');
+    }
+
+    public function departamentos()
+    {
+        return $this->hasMany(Departamentos::class, 'GerenciaID', 'GerenciaID');
     }
 }

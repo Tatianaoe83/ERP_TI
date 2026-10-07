@@ -40,26 +40,25 @@ class DepartamentosController extends AppBaseController
      *
      * @return Response
      */
-    public function index(DepartamentosDataTable $departamentosDataTable)
+    public function index()
     {
-        if (request()->ajax()) {
-            $unidades = Departamentos::join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
-                ->select([
-                    'departamentos.DepartamentoID',
-                    'departamentos.NombreDepartamento',
-                    'gerencia.NombreGerencia as nombre_gerencia'
-                ]);
+        $areas = Departamentos::with(['gerencia.direccion'])
+            ->withCount('puestos')
+            ->when(request('gerencia_id'), function ($query, $gerenciaId) {
+                $query->where('GerenciaID', $gerenciaId);
+            })
+            ->when(request('direccion_id'), function ($query, $direccionId) {
+                $query->whereHas('gerencia', function ($gerencia) use ($direccionId) {
+                    $gerencia->where('DireccionID', $direccionId);
+                });
+            })
+            ->orderBy('NombreDepartamento')
+            ->get();
 
+        $direcciones = \App\Models\Direccion::orderBy('NombreDireccion')->get(['DireccionID', 'NombreDireccion']);
+        $gerencias = \App\Models\Gerencia::orderBy('NombreGerencia')->get(['GerenciaID', 'NombreGerencia']);
 
-            return DataTables::of($unidades)
-                ->addColumn('action', function ($row) {
-                    return view('departamentos.datatables_actions', ['id' => $row->DepartamentoID])->render();
-                })
-                ->rawColumns(['action'])
-                ->make(true);
-        }
-
-        return $departamentosDataTable->render('departamentos.index');
+        return view('departamentos.index', compact('areas', 'direcciones', 'gerencias'));
     }
 
     /**

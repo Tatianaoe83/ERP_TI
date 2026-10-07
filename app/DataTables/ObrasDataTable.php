@@ -23,21 +23,10 @@ class ObrasDataTable extends DataTable
 
 
         return $dataTable
-            ->addColumn('estado_formatted', function ($row) {
-                // Debug temporal - mostrar el valor real
-                $estadoValue = $row->estado;
-                $tipo = gettype($estadoValue);
-                
-                if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
-                    return '<span class="badge badge-success">Si</span> <small>(' . $estadoValue . ':' . $tipo . ')</small>';
-                } else {
-                    return '<span class="badge badge-danger">No</span> <small>(' . $estadoValue . ':' . $tipo . ')</small>';
-                }
-            })
             ->addColumn('action', function ($row) {
                 return view('obras.datatables_actions', ['id' => $row->ObraID])->render();
             })
-            ->rawColumns(['estado_formatted', 'action'])
+            ->rawColumns(['action'])
             ->setRowId('ObraID');
     }
 
@@ -58,7 +47,6 @@ class ObrasDataTable extends DataTable
                 'obras.NombreObra',
                 'obras.Direccion',
                 'obras.EncargadoDeObra',
-                'obras.estado',
                 'unidadesdenegocio.NombreEmpresa as nombre_empresa'
             ]);
     }
@@ -89,7 +77,7 @@ class ObrasDataTable extends DataTable
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombreObra' => [
-                'title' => 'Nombre Obra',
+                'title' => 'Nombre',
                 'data' => 'NombreObra',
                 'name' => 'NombreObra',
                 'class' => 'dark:bg-[#101010] dark:text-white'
@@ -102,7 +90,7 @@ class ObrasDataTable extends DataTable
 
             ],
             'EncargadoDeObra' => [
-                'title' => 'Encargado Obra',
+                'title' => 'Encargado',
                 'data' => 'EncargadoDeObra',
                 'name' => 'EncargadoDeObra',
                 'class' => 'dark:bg-[#101010] dark:text-white'
@@ -113,15 +101,6 @@ class ObrasDataTable extends DataTable
                 'name' => 'unidadesdenegocio.NombreEmpresa',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
-            'estado' => [
-                'title' => 'Es obra',
-                'data' => 'estado_formatted',
-                'name' => 'estado',
-                'class' => 'dark:bg-[#101010] dark:text-white',
-                'orderable' => true,
-                'searchable' => false
-            ],
-
             Column::computed('action')
                 ->exportable(false)
                 ->printable(false)

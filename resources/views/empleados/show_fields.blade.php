@@ -7,13 +7,23 @@
 <!-- Puestoid Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
     {!! Form::label('PuestoID', 'Puesto:') !!}
-    <p>{{ $empleados->puestos->NombrePuesto }}</p>
+    <p>{{ optional($empleados->puestos)->NombrePuesto ?: '—' }}</p>
+</div>
+
+<div class="col-sm-12 text-[#101D49] dark:text-white">
+    {!! Form::label('JefeDirectoID', 'Jefe inmediato:') !!}
+    <p>{{ $empleados->jefeDirecto->NombreEmpleado ?? '—' }}</p>
 </div>
 
 <!-- Obraid Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
-    {!! Form::label('ObraID', 'Obra:') !!}
-    <p>{{ $empleados->obras->NombreObra }}</p>
+    {!! Form::label('ObraID', 'Ubicación:') !!}
+    <p>{{ optional($empleados->obras)->NombreObra ?: '—' }}</p>
+</div>
+
+<div class="col-sm-12 text-[#101D49] dark:text-white">
+    {!! Form::label('CentroCostoID', 'Centro de costos:') !!}
+    <p>{{ optional($empleados->centroCosto)->NombreCentro ?: '—' }}</p>
 </div>
 
 <!-- Numtelefono Field -->

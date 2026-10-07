@@ -1,3 +1,8 @@
+<div class="col-sm-6 text-[#101D49] dark:text-white">
+    {!! Form::label('DivisionID', 'División:') !!}
+    {!! Form::select('DivisionID', App\Models\Division::orderBy('NombreDivision')->pluck('NombreDivision', 'DivisionID'), null, ['placeholder' => 'Seleccionar', 'class' => 'jz form-control', 'required' => true]) !!}
+</div>
+
 <!-- Nombreempresa Field -->
 <div class="col-sm-6 text-[#101D49] dark:text-white">
     {!! Form::label('NombreEmpresa', 'Nombre empresa:') !!}
@@ -20,12 +25,6 @@
 <div class="col-sm-6 text-[#101D49] dark:text-white" >
     {!! Form::label('NumTelefono', 'Num. telefono:') !!}
     {!! Form::text('NumTelefono', null, ['class' => 'form-control','maxlength' => 10,'maxlength' => 10,'required' => 'required']) !!}
-</div>
-
-<!-- Estado Field -->
-<div class="col-sm-6 text-[#101D49] dark:text-white">
-    {!! Form::label('estado', 'Es unidad de negocio:') !!}
-    {!! Form::select('estado', [1 => 'Si', 0 => 'No'], null, ['class' => 'form-control']) !!}
 </div>
 
 <script>

@@ -10,6 +10,7 @@ use App\Repositories\UnidadesDeNegocioRepository;
 use Flash;
 use App\Http\Controllers\AppBaseController;
 use Response;
+use App\Models\Division;
 use App\Models\UnidadesDeNegocio;
 use Yajra\DataTables\DataTables;
 
@@ -36,34 +37,19 @@ class UnidadesDeNegocioController extends AppBaseController
      *
      * @return Response
      */
-    public function index(UnidadesDeNegocioDataTable $dataTable)
+    public function index()
     {
-        if (request()->ajax()) {
-            $unidades = UnidadesDeNegocio::select([
-                'UnidadNegocioID',
-                'NombreEmpresa',
-                'RFC',
-                'Direccion',
-                'NumTelefono',
-                'estado'
-            ]);
-            
-            return DataTables::of($unidades)
-                ->addColumn('action', function($row){
-                    return view('unidades_de_negocios.datatables_actions', ['id' => $row->UnidadNegocioID])->render();
-                })
-                ->addColumn('estado_formatted', function ($row) {
-                    if ($row->estado == 1 || $row->estado === true || $row->estado === '1') {
-                        return '<span class="badge badge-success">Si</span>';
-                    } else {
-                        return '<span class="badge badge-danger">No</span>';
-                    }
-                })
-                ->rawColumns(['action', 'estado_formatted'])
-                ->make(true);
-        }
+        $unidades = UnidadesDeNegocio::with('division')
+            ->withCount('direcciones')
+            ->when(request('division_id'), function ($query, $divisionId) {
+                $query->where('DivisionID', $divisionId);
+            })
+            ->orderBy('NombreEmpresa')
+            ->get();
 
-        return $dataTable->render('unidades_de_negocios.index');
+        $divisiones = Division::orderBy('NombreDivision')->get(['DivisionID', 'NombreDivision']);
+
+        return view('unidades_de_negocios.index', compact('unidades', 'divisiones'));
     }
 
     /**

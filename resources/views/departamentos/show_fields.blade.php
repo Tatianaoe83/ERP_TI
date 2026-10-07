@@ -1,6 +1,6 @@
 <!-- Nombredepartamento Field -->
 <div class="col-sm-12 text-[#101D49] dark:text-white">
-    {!! Form::label('NombreDepartamento', 'Nombre departamento:') !!}
+    {!! Form::label('NombreDepartamento', 'Nombre área:') !!}
     <p>{{ $departamentos->NombreDepartamento }}</p>
 </div>
 

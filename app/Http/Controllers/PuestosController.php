@@ -35,30 +35,18 @@ class PuestosController extends AppBaseController
      *
      * @return Response
      */
-    public function index(PuestosDataTable $puestosDataTable)
+    public function index()
     {
-        if (request()->ajax()) {
-            $unidades = Puestos::join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
-            ->join('gerencia', 'gerencia.GerenciaID', '=', 'departamentos.GerenciaID')
-            ->select([
-                'puestos.PuestoID',
-                'puestos.NombrePuesto',
-                DB::raw('CONCAT(departamentos.NombreDepartamento," - ", gerencia.NombreGerencia) AS nombre_departamento')
-            ]);
-            
-        return DataTables::of($unidades)
-                ->addColumn('action', function($row){
-                    return view('puestos.datatables_actions', ['id' => $row->PuestoID])->render();
-                })
-                ->filterColumn('nombre_departamento', function($query, $keyword) {
-                    $query->whereRaw("CONCAT(departamentos.NombreDepartamento, ' - ', gerencia.NombreGerencia) like ?", ["%{$keyword}%"]);
-                })
-                ->rawColumns(['action'])
-                ->setRowId('PuestoID')
-                ->make(true);
-        }
+        $puestos = Puestos::with(['departamentos.gerencia.direccion'])
+            ->when(request('area_id'), function ($query, $areaId) {
+                $query->where('DepartamentoID', $areaId);
+            })
+            ->orderBy('NombrePuesto')
+            ->get();
 
-        return $puestosDataTable->render('puestos.index');
+        $areas = \App\Models\Departamentos::with('gerencia')->orderBy('NombreDepartamento')->get();
+
+        return view('puestos.index', compact('puestos', 'areas'));
     }
 
     /**

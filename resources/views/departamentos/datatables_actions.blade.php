@@ -5,6 +5,6 @@
     edit-permission="editar-departamentos"
     :destroy-route="['departamentos.destroy', $id]"
     destroy-permission="borrar-departamentos"
-    confirm-title="¿Está seguro de que desea borrar este departamento?"
-    success-title="Departamento borrado"
+    confirm-title="¿Está seguro de que desea borrar esta área?"
+    success-title="Área borrada"
 />

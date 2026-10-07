@@ -35,7 +35,7 @@ function cargarOpcionesFiltros() {
             }
 
             var selectDepartamento = $('#filtro_departamento');
-            selectDepartamento.empty().append('<option value="">Todos los departamentos</option>');
+            selectDepartamento.empty().append('<option value="">Todas las áreas</option>');
             if (data.departamentos) {
                 data.departamentos.forEach(function(departamento) {
                     selectDepartamento.append('<option value="' + departamento + '">' + departamento + '</option>');
@@ -43,7 +43,7 @@ function cargarOpcionesFiltros() {
             }
 
             var selectObra = $('#filtro_obra');
-            selectObra.empty().append('<option value="">Todas las obras</option>');
+            selectObra.empty().append('<option value="">Todas las ubicaciones</option>');
             if (data.obras) {
                 data.obras.forEach(function(obra) {
                     selectObra.append('<option value="' + obra + '">' + obra + '</option>');
@@ -82,9 +82,9 @@ function cargarOpcionesFiltrosFallback() {
             }
         });
 
-        var departamentos = table.column(4).data().unique().sort();
+        var departamentos = table.column(5).data().unique().sort();
         var selectDepartamento = $('#filtro_departamento');
-        selectDepartamento.empty().append('<option value="">Todos los departamentos</option>');
+        selectDepartamento.empty().append('<option value="">Todas las áreas</option>');
         departamentos.each(function(d) {
             if (d && d.trim() !== '') {
                 selectDepartamento.append('<option value="' + d + '">' + d + '</option>');
@@ -93,14 +93,14 @@ function cargarOpcionesFiltrosFallback() {
 
         var obras = table.column(3).data().unique().sort();
         var selectObra = $('#filtro_obra');
-        selectObra.empty().append('<option value="">Todas las obras</option>');
+        selectObra.empty().append('<option value="">Todas las ubicaciones</option>');
         obras.each(function(d) {
             if (d && d.trim() !== '') {
                 selectObra.append('<option value="' + d + '">' + d + '</option>');
             }
         });
 
-        var gerencias = table.column(5).data().unique().sort();
+        var gerencias = table.column(6).data().unique().sort();
         var selectGerencia = $('#filtro_gerencia');
         selectGerencia.empty().append('<option value="">Todas las gerencias</option>');
         gerencias.each(function(d) {
@@ -162,27 +162,27 @@ function configurarFiltros() {
         }
 
         if (filtroDepartamento) {
-            table.column(4).search('^' + filtroDepartamento + '$', true, false);
-        } else {
-            table.column(4).search('');
-        }
-
-        if (filtroGerencia) {
-            table.column(5).search('^' + filtroGerencia + '$', true, false);
+            table.column(5).search('^' + filtroDepartamento + '$', true, false);
         } else {
             table.column(5).search('');
         }
 
-        if (filtroTipoPersona) {
-            table.column(8).search('^' + filtroTipoPersona + '$', true, false);
+        if (filtroGerencia) {
+            table.column(6).search('^' + filtroGerencia + '$', true, false);
         } else {
-            table.column(8).search('');
+            table.column(6).search('');
+        }
+
+        if (filtroTipoPersona) {
+            table.column(10).search('^' + filtroTipoPersona + '$', true, false);
+        } else {
+            table.column(10).search('');
         }
 
         if (filtroEstado) {
-            table.column(9).search('^' + filtroEstado + '$', true, false);
+            table.column(11).search('^' + filtroEstado + '$', true, false);
         } else {
-            table.column(9).search('');
+            table.column(11).search('');
         }
 
         table.draw();

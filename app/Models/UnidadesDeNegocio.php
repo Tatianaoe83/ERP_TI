@@ -39,6 +39,7 @@ class UnidadesDeNegocio extends Model
         'RFC',
         'Direccion',
         'NumTelefono',
+        'DivisionID',
         'estado'
     ];
 
@@ -53,6 +54,7 @@ class UnidadesDeNegocio extends Model
         'RFC' => 'string',
         'Direccion' => 'string',
         'NumTelefono' => 'string',
+        'DivisionID' => 'integer',
         'estado' => 'boolean'
     ];
 
@@ -66,6 +68,7 @@ class UnidadesDeNegocio extends Model
         'RFC' => 'required|string|max:13|unique:unidadesdenegocio,RFC',
         'Direccion' => 'required|string|max:150',
         'NumTelefono' => 'required|string|max:10|unique:unidadesdenegocio,NumTelefono',
+        'DivisionID' => 'required|integer|exists:divisiones,DivisionID',
         'estado' => 'boolean'
        
     ];
@@ -79,5 +82,15 @@ class UnidadesDeNegocio extends Model
     public function gerencia()
     {
         return $this->belongsTo(\App\Models\Gerencia::class, 'GerenciaID');
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class, 'DivisionID');
+    }
+
+    public function direcciones()
+    {
+        return $this->hasMany(Direccion::class, 'UnidadNegocioID', 'UnidadNegocioID');
     }
 }

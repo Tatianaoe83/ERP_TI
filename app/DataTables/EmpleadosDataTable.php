@@ -49,17 +49,21 @@ class EmpleadosDataTable extends DataTable
     public function query(Empleados $model)
     {
         return $model->newQuery()
-            ->join('obras', 'empleados.ObraID', '=', 'obras.ObraID')
-            ->join('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
-            ->join('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
-            ->join('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('obras', 'empleados.ObraID', '=', 'obras.ObraID')
+            ->leftJoin('puestos', 'empleados.PuestoID', '=', 'puestos.PuestoID')
+            ->leftJoin('departamentos', 'puestos.DepartamentoID', '=', 'departamentos.DepartamentoID')
+            ->leftJoin('gerencia', 'departamentos.GerenciaID', '=', 'gerencia.GerenciaID')
+            ->leftJoin('centrosdecostos', 'empleados.CentroCostoID', '=', 'centrosdecostos.CentroCostoID')
+            ->leftJoin('empleados as jefe', 'empleados.JefeDirectoID', '=', 'jefe.EmpleadoID')
             ->select([
                 'empleados.EmpleadoID',
                 'empleados.NombreEmpleado',
                 'puestos.NombrePuesto as nombre_puesto',
                 'obras.NombreObra as nombre_obra',
+                'centrosdecostos.NombreCentro as nombre_centro',
                 'departamentos.NombreDepartamento as nombre_departamento',
                 'gerencia.NombreGerencia as nombre_gerencia',
+                'jefe.NombreEmpleado as nombre_jefe',
                 'empleados.NumTelefono',
                 'empleados.Correo',
                 'empleados.Estado',
@@ -102,13 +106,13 @@ class EmpleadosDataTable extends DataTable
             'EmpleadoID' => [
                 'title' => 'ID',
                 'data' => 'EmpleadoID',
-                'name' => 'EmpleadoID',
+                'name' => 'empleados.EmpleadoID',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'NombreEmpleado' => [
                 'title' => 'Nombre Empleado',
                 'data' => 'NombreEmpleado',
-                'name' => 'NombreEmpleado',
+                'name' => 'empleados.NombreEmpleado',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'PuestoID' => [
@@ -118,13 +122,19 @@ class EmpleadosDataTable extends DataTable
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'ObraID' => [
-                'title' => 'Obra',
+                'title' => 'Ubicación',
                 'data' => 'nombre_obra',
                 'name' => 'obras.NombreObra',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
+            'CentroCostoID' => [
+                'title' => 'Centro de costos',
+                'data' => 'nombre_centro',
+                'name' => 'centrosdecostos.NombreCentro',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'DepartamentoID' => [
-                'title' => 'Departamento',
+                'title' => 'Área',
                 'data' => 'nombre_departamento',
                 'name' => 'departamentos.NombreDepartamento',
                 'class' => 'dark:bg-[#101010] dark:text-white'
@@ -135,22 +145,28 @@ class EmpleadosDataTable extends DataTable
                 'name' => 'gerencia.NombreGerencia',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
+            'JefeDirectoID' => [
+                'title' => 'Jefe inmediato',
+                'data' => 'nombre_jefe',
+                'name' => 'jefe.NombreEmpleado',
+                'class' => 'dark:bg-[#101010] dark:text-white'
+            ],
             'NumTelefono' => [
                 'title' => 'Num Telefono',
                 'data' => 'NumTelefono',
-                'name' => 'NumTelefono',
+                'name' => 'empleados.NumTelefono',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Correo' => [
                 'title' => 'Correo',
                 'data' => 'Correo',
-                'name' => 'Correo',
+                'name' => 'empleados.Correo',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'tipo_persona' => [
                 'title' => 'Tipo Persona',
                 'data' => 'tipo_persona',
-                'name' => 'tipo_persona',
+                'name' => 'empleados.tipo_persona',
                 'class' => 'dark:bg-[#101010] dark:text-white'
             ],
             'Estado' => [
