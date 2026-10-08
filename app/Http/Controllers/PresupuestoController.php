@@ -130,15 +130,23 @@ class PresupuestoController extends Controller
 
         $gerencia = Gerencia::find($numerogerencia);
 
-        $numeroEmpleados = Empleados::whereHas('puestos.departamentos', function ($query) use ($numerogerencia) {
+        $empleadosPorTipo = Empleados::whereHas('puestos.departamentos', function ($query) use ($numerogerencia) {
             $query->where('GerenciaID', $numerogerencia);
         })
             ->where('Estado', 1)
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
-            ->count();
+            ->selectRaw('UPPER(tipo_persona) AS tipo, COUNT(*) AS total')
+            ->groupByRaw('UPPER(tipo_persona)')
+            ->pluck('total', 'tipo');
+
+        $numeroEmpleados = (int) $empleadosPorTipo->sum();
 
         if ($gerencia) {
             $gerencia->CantidadEmpleados = $numeroEmpleados;
+            // Desglose para el encabezado del PDF, en el orden de los tipos del reporte
+            $gerencia->EmpleadosPorTipo = collect($tiposPersona)
+                ->mapWithKeys(fn ($tipo) => [$tipo => (int) ($empleadosPorTipo[$tipo] ?? 0)])
+                ->all();
         }
 
         if ($request->submitbutton == 'pdf') {

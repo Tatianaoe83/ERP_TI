@@ -65,14 +65,13 @@
             font-weight: bold;
             color: #101d49;
         }
-        .note {
-            background: #eef2ff;
-            border-left: 4px solid #6366f1;
-            color: #3730a3;
-            padding: 6px 8px;
-            margin-bottom: 8px;
-            font-size: 7.5px;
+        .meta .desglose {
+            display: block;
+            margin-top: 2px;
+            font-size: 7px;
+            color: #475569;
         }
+        .meta .desglose b { color: #101d49; }
         .kpis { width: 100%; margin-bottom: 10px; }
         .kpis td {
             width: 25%;
@@ -162,13 +161,16 @@
         <td>
             <span class="lbl">Empleados</span>
             <span class="val">{{ $GerenciaTb->CantidadEmpleados ?? '' }}</span>
+            @if(!empty($GerenciaTb->EmpleadosPorTipo))
+                <span class="desglose">
+                    @foreach($GerenciaTb->EmpleadosPorTipo as $tipo => $total)
+                        {{ ['FISICA' => 'Física', 'REFERENCIADO' => 'Referenciado', 'EXTRAORDINARIO' => 'Extraordinario'][$tipo] ?? ucfirst(strtolower($tipo)) }}: <b>{{ $total }}</b>@if(!$loop->last) &nbsp;·&nbsp; @endif
+                    @endforeach
+                </span>
+            @endif
         </td>
     </tr>
 </table>
-
-@if(!empty($leyendaInclusion))
-    <div class="note">{{ $leyendaInclusion }}</div>
-@endif
 
 @if($kpis->isNotEmpty())
 <table class="kpis">
