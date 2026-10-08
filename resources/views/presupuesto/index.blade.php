@@ -5,27 +5,100 @@
 <style>
 [x-cloak] { display: none !important; }
 
-.presupuesto-note {
-    margin-bottom: 1.25rem;
+.rep-scope {
+    margin-bottom: 1rem;
+    padding: 0.8rem 1rem 0.9rem;
+    border-radius: 0.75rem;
+    border: 1px solid #dbeafe;
+    background: #f8fafc;
 }
-.presupuesto-note p {
+.dark .rep-scope {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: #334155;
+}
+.rep-scope__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+    margin-bottom: 0.65rem;
+}
+.rep-scope__head h4 {
     margin: 0;
-    font-size: 0.8125rem;
-    color: #475569;
-    line-height: 1.7;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #101D49;
 }
-.dark .presupuesto-note p {
-    color: #cbd5e1;
+.rep-scope__head h4 i {
+    margin-right: 0.35rem;
+    color: #3b82f6;
 }
-.presupuesto-note .inv-leyenda {
-    padding: 0;
-    margin: 0;
+.rep-scope__head span {
+    font-size: 12px;
+    color: #64748b;
+}
+.dark .rep-scope__head h4 { color: #f1f5f9; }
+.dark .rep-scope__head span { color: #94a3b8; }
+.rep-scope__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 0.6rem;
+}
+.rep-scope__card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.6rem;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid var(--rep-accent, #94a3b8);
+    background: #fff;
+}
+.dark .rep-scope__card {
+    background: #0f172a;
+    border-color: #334155;
+    border-left-color: var(--rep-accent, #94a3b8);
+}
+.rep-scope__card--fisica { --rep-accent: #3b82f6; }
+.rep-scope__card--referenciado { --rep-accent: #8b5cf6; }
+.rep-scope__card--extraordinario { --rep-accent: #f97316; }
+.rep-scope__card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+}
+.rep-scope__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+}
+.rep-scope__row-label {
+    min-width: 3.9rem;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #047857;
+}
+.rep-scope__row-label--off { color: #94a3b8; }
+.dark .rep-scope__row-label { color: #6ee7b7; }
+.dark .rep-scope__row-label--off { color: #64748b; }
+.rep-scope .inv-chip {
+    padding: 0.16rem 0.5rem;
+    font-size: 10.5px;
+}
+.rep-scope .inv-chip-off {
     background: transparent;
-    border: 0;
+    color: #94a3b8;
+    border: 1px dashed #cbd5e1;
+    text-decoration: line-through;
 }
-.presupuesto-note .inv-leyenda-item {
-    max-width: 280px;
-}
+.dark .rep-scope .inv-chip-off { color: #64748b; border-color: #475569; }
+.dark .rep-scope .inv-chip-stock { background: rgba(4, 120, 87, 0.18); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.4); }
+.dark .rep-scope .inv-chip-extra { background: rgba(194, 65, 12, 0.18); color: #fdba74; border-color: rgba(251, 146, 60, 0.45); }
+.dark .rep-scope .inv-chip-share { background: rgba(29, 78, 216, 0.2); color: #93c5fd; border-color: rgba(96, 165, 250, 0.45); }
 </style>
 
 <div data-app-tabset>
@@ -59,28 +132,49 @@
     </x-slot>
 
     <div data-app-panel="1">
-        <div class="index-page__note presupuesto-note">
-            <span class="index-page__note-icon" aria-hidden="true">
-                <i class="fas fa-info-circle"></i>
-            </span>
-            <div>
-                <h4>Qué incluye este reporte</h4>
-                <div class="inv-leyenda">
-                    <div class="inv-leyenda-item">
-                        <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                        <div><strong>Persona física</strong>Extra y compartido (presupuesto). El stock no entra en este reporte.</div>
-                    </div>
-                    <div class="inv-leyenda-item">
-                        <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
-                        <div><strong>Gerencia / referenciado</strong>Igual que física: extra y compartido.</div>
-                    </div>
-                    <div class="inv-leyenda-item">
-                        <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
-                        <div><strong>Plaza extraordinaria</strong>Todo es extra (presupuesto futuro).</div>
-                    </div>
-                </div>
+        <section class="rep-scope" aria-labelledby="rep-scope-presupuesto">
+            <div class="rep-scope__head">
+                <h4 id="rep-scope-presupuesto"><i class="fas fa-info-circle" aria-hidden="true"></i>Qué incluye este reporte</h4>
+                <span>Solo empleados activos · equipos, insumos y líneas</span>
             </div>
-        </div>
+            <div class="rep-scope__grid">
+                <article class="rep-scope__card rep-scope__card--fisica">
+                    <div class="rep-scope__card-head">
+                        <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label">Entra</span>
+                        <span class="inv-chip inv-chip-share">Compartido</span><span class="inv-chip inv-chip-extra">Extra</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label rep-scope__row-label--off">No entra</span>
+                        <span class="inv-chip inv-chip-off">Stock</span>
+                    </div>
+                </article>
+                <article class="rep-scope__card rep-scope__card--referenciado">
+                    <div class="rep-scope__card-head">
+                        <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label">Entra</span>
+                        <span class="inv-chip inv-chip-extra">Extra</span><span class="inv-chip inv-chip-share">Compartido</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label rep-scope__row-label--off">No entra</span>
+                        <span class="inv-chip inv-chip-off">Stock</span>
+                    </div>
+                </article>
+                <article class="rep-scope__card rep-scope__card--extraordinario">
+                    <div class="rep-scope__card-head">
+                        <span class="inv-tipo-badge inv-tipo-extraordinario">Extraordinario</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label">Entra</span>
+                        <span class="inv-chip inv-chip-extra">Extra</span>
+                    </div>
+                </article>
+            </div>
+        </section>
 
         <div class="index-page__card crud-page__card">
             <h4 class="index-page__title" style="font-size:1.1rem;margin-bottom:1rem;">Generar reportes de presupuestos</h4>
@@ -122,24 +216,40 @@
 
     @can('tickets.ver-productividad')
     <div data-app-panel="2" hidden>
-        <div class="index-page__note presupuesto-note">
-            <span class="index-page__note-icon" aria-hidden="true">
-                <i class="fas fa-info-circle"></i>
-            </span>
-            <div>
-                <h4>Qué incluye este reporte</h4>
-                <div class="inv-leyenda">
-                    <div class="inv-leyenda-item">
-                        <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
-                        <div><strong>Persona física</strong>Stock y compartido (asignación actual). Extra no entra en este reporte.</div>
-                    </div>
-                    <div class="inv-leyenda-item">
-                        <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
-                        <div><strong>Gerencia / referenciado</strong>Igual que física: stock y compartido.</div>
-                    </div>
-                </div>
+        <section class="rep-scope" aria-labelledby="rep-scope-inventario">
+            <div class="rep-scope__head">
+                <h4 id="rep-scope-inventario"><i class="fas fa-info-circle" aria-hidden="true"></i>Qué incluye este reporte</h4>
+                <span>Solo empleados activos · equipos, insumos y líneas</span>
             </div>
-        </div>
+            <div class="rep-scope__grid">
+                <article class="rep-scope__card rep-scope__card--fisica">
+                    <div class="rep-scope__card-head">
+                        <span class="inv-tipo-badge inv-tipo-fisica">Física</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label">Entra</span>
+                        <span class="inv-chip inv-chip-stock">Stock</span><span class="inv-chip inv-chip-share">Compartido</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label rep-scope__row-label--off">No entra</span>
+                        <span class="inv-chip inv-chip-off">Extra</span>
+                    </div>
+                </article>
+                <article class="rep-scope__card rep-scope__card--referenciado">
+                    <div class="rep-scope__card-head">
+                        <span class="inv-tipo-badge inv-tipo-referenciado">Referenciado</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label">Entra</span>
+                        <span class="inv-chip inv-chip-stock">Stock</span><span class="inv-chip inv-chip-share">Compartido</span>
+                    </div>
+                    <div class="rep-scope__row">
+                        <span class="rep-scope__row-label rep-scope__row-label--off">No entra</span>
+                        <span class="inv-chip inv-chip-off">Extra</span>
+                    </div>
+                </article>
+            </div>
+        </section>
 
         <div class="index-page__card crud-page__card">
             <h4 class="index-page__title" style="font-size:1.1rem;margin-bottom:1rem;">Generar reportes de inventarios</h4>
