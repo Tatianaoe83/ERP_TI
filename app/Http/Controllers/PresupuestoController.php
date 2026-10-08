@@ -135,6 +135,14 @@ class PresupuestoController extends Controller
         })
             ->where('Estado', 1)
             ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
+            // Solo quien tiene algo que entra al reporte en cualquiera de las 3 tablas:
+            // presupuesto = extra/compartido, inventario = stock/compartido.
+            ->where(function ($q) use ($esPresupuesto) {
+                $modoAsignacion = $esPresupuesto ? 'presupuesto' : 'operativo';
+                $q->whereHas('inventarioequipo', fn ($qq) => \App\Helpers\PresupuestoAsignacion::aplicarWhere($qq, $modoAsignacion, \App\Helpers\PresupuestoAsignacion::COLUMNA_EQUIPOS))
+                    ->orWhereHas('inventarioinsumo', fn ($qq) => \App\Helpers\PresupuestoAsignacion::aplicarWhere($qq, $modoAsignacion))
+                    ->orWhereHas('inventariolineas', fn ($qq) => \App\Helpers\PresupuestoAsignacion::aplicarWhere($qq, $modoAsignacion));
+            })
             ->selectRaw('UPPER(tipo_persona) AS tipo, COUNT(*) AS total')
             ->groupByRaw('UPPER(tipo_persona)')
             ->pluck('total', 'tipo');
