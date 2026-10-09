@@ -12,3 +12,17 @@
     @include('insumos.table')
 </x-index-page>
 @endsection
+
+@section('scripts')
+@if(session('swal'))
+<script>
+    Swal.fire({
+        icon: @json(session('swal.icon')),
+        title: @json(session('swal.title')),
+        text: @json(session('swal.text')),
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#101D49'
+    });
+</script>
+@endif
+@endsection
