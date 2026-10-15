@@ -88,14 +88,21 @@
                 @csrf
                 <input type="hidden" name="modo" value="presupuesto">
                 <div class="row crud-form">
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <label>Tipo</label>
                         <select name="tipo" id="semestre" class="form-control" required>
                             <option value="mens">Mensual</option>
                             <option value="anual">Anual</option>
                         </select>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
+                        <label>Agrupar por</label>
+                        <select name="agrupar" id="agrupar" class="form-control">
+                            <option value="gerencia">Gerencia</option>
+                            <option value="centro">Centro de costos</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4" id="bloque-gerencia">
                         <label>Gerencia</label>
                         {!! Form::select(
                             'GerenciaID',
@@ -105,7 +112,20 @@
                                 'placeholder' => 'Seleccionar',
                                 'class'=>'jz form-control',
                                 'id' => 'GerenciaID',
-                                'required',
+                                'style' => 'width:100%'
+                            ]
+                        ) !!}
+                    </div>
+                    <div class="col-sm-4" id="bloque-centro" hidden>
+                        <label>Centro de costos</label>
+                        {!! Form::select(
+                            'CentroCostoID',
+                            $centros->pluck('NombreCentro','CentroCostoID'),
+                            null,
+                            [
+                                'placeholder' => 'Seleccionar',
+                                'class'=>'jz form-control',
+                                'id' => 'CentroCostoID',
                                 'style' => 'width:100%'
                             ]
                         ) !!}
@@ -147,14 +167,21 @@
                 @csrf
                 <input type="hidden" name="modo" value="inventario">
                 <div class="row crud-form">
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
                         <label>Tipo</label>
                         <select name="tipo" id="semestre_inventario" class="form-control" required>
                             <option value="mens">Mensual</option>
                             <option value="anual">Anual</option>
                         </select>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
+                        <label>Agrupar por</label>
+                        <select name="agrupar" id="agrupar_inventario" class="form-control">
+                            <option value="gerencia">Gerencia</option>
+                            <option value="centro">Centro de costos</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4" id="bloque-gerencia-inv">
                         <label>Gerencia</label>
                         {!! Form::select(
                             'GerenciaID',
@@ -164,7 +191,20 @@
                                 'placeholder' => 'Seleccionar',
                                 'class'=>'jz form-control',
                                 'id' => 'GerenciaID_inventario',
-                                'required',
+                                'style' => 'width:100%'
+                            ]
+                        ) !!}
+                    </div>
+                    <div class="col-sm-4" id="bloque-centro-inv" hidden>
+                        <label>Centro de costos</label>
+                        {!! Form::select(
+                            'CentroCostoID',
+                            $centros->pluck('NombreCentro','CentroCostoID'),
+                            null,
+                            [
+                                'placeholder' => 'Seleccionar',
+                                'class'=>'jz form-control',
+                                'id' => 'CentroCostoID_inventario',
                                 'style' => 'width:100%'
                             ]
                         ) !!}
@@ -206,11 +246,14 @@
         var btnPdf = document.getElementById('btn-validar-pdf');
         var btnExcel = document.getElementById('btn-validar-excel');
         var submitButtonInput = document.getElementById('submitbutton');
+        var agrupar = (document.getElementById('agrupar') || {}).value || 'gerencia';
         var gerenciaId = valorGerencia('GerenciaID');
+        var centroId = valorGerencia('CentroCostoID');
+        var alcanceId = agrupar === 'centro' ? centroId : gerenciaId;
 
         if (!form || !submitButtonInput) return;
-        if (!gerenciaId) {
-            alert('Por favor selecciona una Gerencia');
+        if (!alcanceId) {
+            alert(agrupar === 'centro' ? 'Selecciona un centro de costos' : 'Selecciona una gerencia');
             return;
         }
 
@@ -225,7 +268,7 @@
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ GerenciaID: gerenciaId })
+            body: JSON.stringify({ GerenciaID: gerenciaId, CentroCostoID: centroId, agrupar: agrupar })
         })
         .then(function (response) { return response.json(); })
         .then(function (data) {
@@ -278,11 +321,13 @@
     function enviarInventario(tipoBoton) {
         var inventarioForm = document.getElementById('inventarioForm');
         var submitInv = document.getElementById('submitbutton_inventario');
+        var agruparInv = (document.getElementById('agrupar_inventario') || {}).value || 'gerencia';
         var gerencia = valorGerencia('GerenciaID_inventario');
+        var centro = valorGerencia('CentroCostoID_inventario');
 
         if (!inventarioForm || !submitInv) return;
-        if (!gerencia) {
-            alert('Por favor selecciona una Gerencia');
+        if (agruparInv === 'centro' ? !centro : !gerencia) {
+            alert(agruparInv === 'centro' ? 'Selecciona un centro de costos' : 'Selecciona una gerencia');
             return;
         }
         submitInv.value = tipoBoton;
@@ -299,7 +344,23 @@
         el.addEventListener(event, handler);
     }
 
+    function alternarAlcance(selectId, bloqueGerencia, bloqueCentro) {
+        var select = document.getElementById(selectId);
+        if (!select) return;
+        var pintar = function () {
+            var esCentro = select.value === 'centro';
+            var g = document.getElementById(bloqueGerencia);
+            var c = document.getElementById(bloqueCentro);
+            if (g) g.hidden = esCentro;
+            if (c) c.hidden = !esCentro;
+        };
+        select.addEventListener('change', pintar);
+        pintar();
+    }
+
     function initPresupuestoPage() {
+        alternarAlcance('agrupar', 'bloque-gerencia', 'bloque-centro');
+        alternarAlcance('agrupar_inventario', 'bloque-gerencia-inv', 'bloque-centro-inv');
         bindOnce(document.getElementById('btn-validar-pdf'), 'click', function () { validarYEnviar('pdf'); });
         bindOnce(document.getElementById('btn-validar-excel'), 'click', function () { validarYEnviar('excel'); });
         bindOnce(document.getElementById('btn-pdf-inventario'), 'click', function () { enviarInventario('pdf'); });

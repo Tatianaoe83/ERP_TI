@@ -75,9 +75,180 @@
     }
 </style>
 
+@php
+    $filtrosDash = $filtrosDash ?? ['gerencia_id' => 0, 'centro_id' => 0, 'anio' => (int) now()->year];
+    $catalogoDash = $catalogoDash ?? ['gerencias' => collect(), 'centros' => collect()];
+    $chartGerencias = collect($stats['estadisticas_gerencia'] ?? [])->map(fn ($g) => [
+        'nombre' => $g->NombreGerencia,
+        'total' => (int) $g->total_empleados,
+    ])->values();
+    $chartCategorias = collect($stats['equipos_por_categoria'] ?? [])->take(8)->map(fn ($e) => [
+        'nombre' => $e->CategoriaEquipo ?: 'Sin categoría',
+        'total' => (int) $e->total_inventario,
+    ])->values();
+@endphp
+
+<form method="GET" action="{{ route('home') }}" class="dash-filtros">
+    <label>
+        Gerencia
+        <select name="gerencia_id" class="form-control">
+            <option value="">Todas</option>
+            @foreach($catalogoDash['gerencias'] as $id => $nombre)
+                <option value="{{ $id }}" @if((int) $filtrosDash['gerencia_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
+            @endforeach
+        </select>
+    </label>
+    <label>
+        Centro de costos
+        <select name="centro_id" class="form-control">
+            <option value="">Todos</option>
+            @foreach($catalogoDash['centros'] as $id => $nombre)
+                <option value="{{ $id }}" @if((int) $filtrosDash['centro_id'] === (int) $id) selected @endif>{{ $nombre }}</option>
+            @endforeach
+        </select>
+    </label>
+    <button type="submit" class="index-page__btn-primary">Filtrar</button>
+    @if($filtrosDash['gerencia_id'] || $filtrosDash['centro_id'])
+        <a href="{{ route('home') }}" class="index-page__btn-secondary">Limpiar</a>
+    @endif
+</form>
+
+<div class="dash-charts">
+    <div class="dash-chart">
+        <h3>Inventario asignado</h3>
+        <canvas id="chartInventarioDash"></canvas>
+    </div>
+    <div class="dash-chart">
+        <h3>Personal por gerencia</h3>
+        <canvas id="chartGerenciasDash"></canvas>
+    </div>
+    <div class="dash-chart dash-chart--wide">
+        <h3>Equipos por categoría</h3>
+        <canvas id="chartCategoriasDash"></canvas>
+    </div>
+</div>
+
 <p class="dash-kpi__hint mb-4">
     Indicadores de personal activo (física y referenciado), plazas extraordinarias y asignaciones presupuestadas.
 </p>
+
+@push('third_party_scripts')
+<script src="{{ asset('assets/js/chart.min.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}"></script>
+<script>
+(function () {
+    function bootDashInformatica() {
+        if (!window.Chart || !window.UxCharts || document.getElementById('chartInventarioDash')?.dataset.listo === '1') return;
+        UxCharts.aplicar(Chart);
+        var inventario = document.getElementById('chartInventarioDash');
+        var gerencias = document.getElementById('chartGerenciasDash');
+        var categorias = document.getElementById('chartCategoriasDash');
+        if (inventario) {
+            inventario.dataset.listo = '1';
+            new Chart(inventario, {
+                type: 'doughnut',
+                plugins: [UxCharts.centro],
+                data: {
+                    labels: ['Equipos', 'Insumos', 'Líneas'],
+                    datasets: [{
+                        data: [
+                            {{ (int) ($stats['inventario']['equipos']['asignados'] ?? 0) }},
+                            {{ (int) ($stats['inventario']['insumos']['asignados'] ?? 0) }},
+                            {{ (int) ($stats['inventario']['lineas']['asignadas'] ?? 0) }}
+                        ],
+                        backgroundColor: ['#22C55E', '#38BDF8', '#94A3B8'],
+                        hoverBackgroundColor: ['#4ADE80', '#7DD3FC', '#CBD5E1']
+                    }]
+                },
+                options: UxCharts.anillo()
+            });
+        }
+        if (gerencias) {
+            var filasG = @json($chartGerencias);
+            new Chart(gerencias, {
+                type: 'bar',
+                data: {
+                    labels: filasG.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        label: 'Personas',
+                        data: filasG.map(function (f) { return f.total; }),
+                        backgroundColor: UxCharts.degradado(gerencias),
+                        hoverBackgroundColor: '#4ADE80'
+                    }]
+                },
+                options: UxCharts.barras(false)
+            });
+        }
+        if (categorias) {
+            var filasC = @json($chartCategorias);
+            new Chart(categorias, {
+                type: 'bar',
+                data: {
+                    labels: filasC.map(function (f) { return f.nombre; }),
+                    datasets: [{
+                        label: 'Equipos',
+                        data: filasC.map(function (f) { return f.total; }),
+                        backgroundColor: UxCharts.tonos(filasC.length),
+                        borderRadius: 8
+                    }]
+                },
+                options: UxCharts.barras(true)
+            });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootDashInformatica);
+    } else {
+        bootDashInformatica();
+    }
+})();
+</script>
+@endpush
+
+<style>
+    .dash-filtros {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: flex-end;
+        margin-bottom: 1rem;
+    }
+    .dash-filtros label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        min-width: 180px;
+    }
+    .dash-charts {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    @media (min-width: 900px) {
+        .dash-charts { grid-template-columns: 1fr 1fr; }
+        .dash-chart--wide { grid-column: 1 / -1; }
+    }
+    .dash-chart {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.85rem;
+        padding: 1rem 1rem 0.75rem;
+    }
+    .dash-chart h3 {
+        margin: 0 0 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+    html.dark .dash-chart h3, .dark .dash-chart h3 {
+        color: #94a3b8;
+    }
+</style>
 
 <p class="dash-section-title">Plantilla</p>
 <div class="dash-kpi-grid dash-kpi-grid--3">

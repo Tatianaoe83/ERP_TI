@@ -45,7 +45,7 @@ $puedeVerCatalogos = $puedeVerEmpresa || $puedeVerActivos;
 $puedeVerGestion = $puedeVerMovimientos || $puedeVerReportes;
 
 $openDefault = 'null';
-if (request()->is('divisiones*') || request()->is('unidadesDeNegocios*') || request()->is('direcciones*') || request()->is('gerencias*') || request()->is('obras*') || request()->is('departamentos*') || request()->is('puestos*') || request()->is('empleados*')) {
+if (request()->is('divisiones*') || request()->is('unidadesDeNegocios*') || request()->is('direcciones*') || request()->is('gerencias*') || request()->is('obras*') || request()->is('departamentos*') || request()->is('puestos*') || request()->is('empleados*') || request()->is('actualizaciones*')) {
     $openDefault = 1;
 } elseif (request()->is('lineasTelefonicas*') || request()->is('equipos*') || request()->is('insumos*') || request()->is('categorias*') || request()->is('planes*')) {
     $openDefault = 2;
@@ -185,6 +185,13 @@ if (request()->is('divisiones*') || request()->is('unidadesDeNegocios*') || requ
                     href="/empleados" title="Empleados">
                     <i class="fas fa-user sidebar-ico sidebar-ico-sm"></i>
                     <span class="sidebar-text">Empleados</span>
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-link flex items-center gap-2 no-underline  px-2.5 py-1.5 rounded-md {{ request()->is('actualizaciones*') ? 'is-active' : '' }}"
+                    href="/actualizaciones" title="Actualizaciones">
+                    <i class="fas fa-sync-alt sidebar-ico sidebar-ico-sm"></i>
+                    <span class="sidebar-text">Actualizaciones</span>
                 </a>
             </li>
             @endif

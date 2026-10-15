@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 
+use App\Models\CentroCosto;
 use App\Models\Gerencia;
 use App\Models\Empleados;
 use App\Helpers\PresupuestoHelper;
@@ -28,6 +29,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
     private $gerencia;
     private $tipo;
     private $modo;
+    private $agrupar;
 
     //  Contadores
     public $tablapresup_licsCount;
@@ -41,11 +43,13 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
 
 
 
-    public function __construct(int $gerencia, string $tipo, string $modo = 'presupuesto')
+    public function __construct(int $gerencia, string $tipo, string $modo = 'presupuesto', string $agrupar = 'gerencia')
     {
         $this->gerencia  = $gerencia;
         $this->tipo = $tipo;
         $this->modo = $modo === 'inventario' ? 'inventario' : 'presupuesto';
+        $this->agrupar = $agrupar === 'centro' ? 'centro' : 'gerencia';
+        PresupuestoHelper::$agrupar = $this->agrupar;
     }
 
 
@@ -56,22 +60,26 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
     public function view(): View
     {
 
+        PresupuestoHelper::$agrupar = $this->agrupar;
         $numerogerencia = (int) $this->gerencia;
         $esPresupuesto = $this->modo === 'presupuesto';
         $tiposPersona = PresupuestoHelper::tiposPersona($this->modo);
 
-        // Obtener gerencia para la vista (solo 1 query simple)
-        $gerencia = Gerencia::find($numerogerencia);
-
-        // Contar empleados de la gerencia según tipo de persona usando Eloquent
-        $cantidadEmpleados = Empleados::whereHas('puestos.departamentos', function($query) use ($numerogerencia) {
-            $query->where('GerenciaID', $numerogerencia);
+        $cantidadEmpleados = Empleados::where(function ($query) use ($numerogerencia) {
+            PresupuestoHelper::aplicarAlcance($query, $numerogerencia);
         })
         ->where('Estado', 1)
         ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
         ->count();
 
-        // Agregar la cantidad de empleados al objeto gerencia
+        if ($this->agrupar === 'centro') {
+            $centro = CentroCosto::find($numerogerencia);
+            $gerencia = new Gerencia();
+            $gerencia->NombreGerencia = $centro->NombreCentro ?? 'Centro de costos';
+        } else {
+            $gerencia = Gerencia::find($numerogerencia);
+        }
+
         if ($gerencia) {
             $gerencia->CantidadEmpleados = $cantidadEmpleados;
         }
@@ -114,7 +122,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
         INNER JOIN puestos p ON e.PuestoID = p.PuestoID
         INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
         INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-        WHERE g.GerenciaID = ?
+        WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
             " . $tipoPersonaFilter . $presupInsumoII . "
             AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
             ", [$numerogerencia]);
@@ -128,7 +136,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
     INNER JOIN puestos p ON e.PuestoID = p.PuestoID
     INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
     INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-    WHERE g.GerenciaID = ?
+    WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
         " . $tipoPersonaFilter . $presupInsumoII . "
         AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
         ", [$numerogerencia]);
@@ -148,7 +156,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
                INNER JOIN puestos p ON e.PuestoID = p.PuestoID
                INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
                INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-               WHERE g.GerenciaID = ?
+               WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
                    " . $tipoPersonaFilter . $presupInsumoII . "
                    AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
                GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, (CASE WHEN ii.FrecuenciaDePago = 'Pago único' THEN ii.CostoMensual ELSE ii.CostoAnual END)
@@ -164,7 +172,7 @@ class ReportExport implements FromView, ShouldAutoSize, WithColumnWidths, WithSt
            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-           WHERE g.GerenciaID = ?
+           WHERE " . PresupuestoHelper::sqlWhereAlcance() . "
                " . $tipoPersonaFilter . $presupInsumoII . "
                AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
    ", [$numerogerencia]);

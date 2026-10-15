@@ -1,7 +1,97 @@
 @php
     $meses = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     $nombreMes = $meses[$statsCompras['mes']] ?? '';
+    $filtrosDash = $filtrosDash ?? ['gerencia_id' => 0, 'centro_id' => 0, 'anio' => (int) now()->year];
+    $estatusChart = collect($statsCompras['por_estatus'] ?? []);
+    $categoriaChart = collect($statsCompras['por_categoria'] ?? []);
 @endphp
+
+<style>
+    .dash-filtros { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 1rem; }
+    .dash-filtros label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; min-width: 140px; }
+    .dash-charts { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    @media (min-width: 900px) { .dash-charts { grid-template-columns: 1fr 1fr; } }
+    .dash-chart { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.85rem; padding: 1rem 1rem 0.75rem; }
+    .dash-chart h3 { margin: 0 0 0.35rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
+    html.dark .dash-chart h3, .dark .dash-chart h3 { color: #94a3b8; }
+</style>
+<form method="GET" action="{{ route('home') }}" class="dash-filtros">
+    <input type="hidden" name="tab" value="compras">
+    <label>
+        Año
+        <select name="anio" class="form-control">
+            @for($y = (int) now()->year; $y >= (int) now()->year - 4; $y--)
+                <option value="{{ $y }}" @if((int) $filtrosDash['anio'] === $y) selected @endif>{{ $y }}</option>
+            @endfor
+        </select>
+    </label>
+    <button type="submit" class="index-page__btn-primary">Filtrar</button>
+</form>
+
+<div class="dash-charts">
+    <div class="dash-chart">
+        <h3>Solicitudes por estado</h3>
+        <canvas id="chartComprasEstatus"></canvas>
+    </div>
+    <div class="dash-chart">
+        <h3>Activas por categoría</h3>
+        <canvas id="chartComprasCategoria"></canvas>
+    </div>
+</div>
+
+@push('third_party_scripts')
+<script src="{{ asset('assets/js/chart.min.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}"></script>
+<script>
+(function () {
+    function bootDashCompras() {
+        if (!window.Chart || !window.UxCharts || document.getElementById('chartComprasEstatus')?.dataset.listo === '1') return;
+        UxCharts.aplicar(Chart);
+        var estatus = document.getElementById('chartComprasEstatus');
+        var categorias = document.getElementById('chartComprasCategoria');
+        if (estatus) {
+            estatus.dataset.listo = '1';
+            var filas = @json($estatusChart);
+            var labels = Object.keys(filas);
+            new Chart(estatus, {
+                type: 'doughnut',
+                plugins: [UxCharts.centro],
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: labels.map(function (k) { return filas[k]; }),
+                        backgroundColor: UxCharts.tonos(labels.length),
+                        hoverOffset: 8
+                    }]
+                },
+                options: UxCharts.anillo()
+            });
+        }
+        if (categorias) {
+            var cats = @json($categoriaChart->values());
+            new Chart(categorias, {
+                type: 'bar',
+                data: {
+                    labels: cats.map(function (f) { return f.Categoria || 'Sin categoría'; }),
+                    datasets: [{
+                        label: 'Activas',
+                        data: cats.map(function (f) { return f.total; }),
+                        backgroundColor: UxCharts.degradado(categorias),
+                        hoverBackgroundColor: '#4ADE80'
+                    }]
+                },
+                options: UxCharts.barras(false)
+            });
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootDashCompras);
+    } else {
+        bootDashCompras();
+    }
+})();
+</script>
+@endpush
 
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
     <div class="dash-kpi">

@@ -1741,6 +1741,7 @@
 
 
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}"></script>
 <script src="{{ asset('assets/js/chartjs-plugin-datalabels.min.js') }}"></script>
 
 <script>
@@ -1883,61 +1884,35 @@
 
     /** Colores y bordes por tema (solo presentación; los datos no cambian). */
     function crearPaletaProductividad(esOscuro) {
-        if (esOscuro) {
-            return {
-                donaBorde: 'rgba(15,23,42,0.94)',
-                estado: ['#FB7185', '#FACC15', '#4ADE80'],
-                clasificacion: ['#FB7185', '#93C5FD'],
-                clasBorde: ['#FB7185', '#93C5FD'],
-                prioridad: ['#FB7185', '#FACC15', '#4ADE80'],
-                prioridadHover: ['#FDA4AF', '#FDE047', '#86EFAC'],
-                prioridadBorde: 'rgba(255,255,255,0.12)',
-                tipoBar: 'rgba(167,139,250,0.92)',
-                tipoHover: '#DDD6FE',
-                tipoBorde: '#A78BFA',
-                lineCreadosStroke: '#93C5FD',
-                lineCreadosFill: 'rgba(96,165,250,0.22)',
-                lineResStroke: '#6EE7B7',
-                lineResFill: 'rgba(52,211,153,0.22)',
-                puntoCreados: { fill: '#0f172a', stroke: '#93C5FD', hFill: '#F8FAFC', hStroke: '#60A5FA' },
-                puntoRes: { fill: '#0f172a', stroke: '#6EE7B7', hFill: '#F8FAFC', hStroke: '#34D399' },
-                comp: [
-                    { bg: 'rgba(59,130,246,0.9)', h: '#BFDBFE', b: '#60A5FA' },
-                    { bg: 'rgba(16,185,129,0.88)', h: '#A7F3D0', b: '#34D399' },
-                    { bg: 'rgba(245,158,11,0.85)', h: '#FDE68A', b: '#FBBF24' }
-                ],
-                matriz: ['#60A5FA', '#34D399', '#FBBF24', '#FB7185', '#C4B5FD', '#F472B6', '#22D3EE', '#BEF264', '#FB923C', '#A5B4FC'],
-                matrizH: ['#93C5FD', '#6EE7B7', '#FDE68A', '#FDA4AF', '#E9D5FF', '#FBCFE8', '#67E8F9', '#D9F99D', '#FDBA74', '#C7D2FE'],
-                empTot: { bg: 'rgba(59,130,246,0.88)', h: '#93C5FD', b: '#60A5FA' },
-                empCer: { bg: 'rgba(52,211,153,0.88)', h: '#6EE7B7', b: '#4ADE80' }
-            };
-        }
+        var serie = ['#22C55E', '#38BDF8', '#94A3B8', '#0EA5E9', '#4ADE80', '#64748B', '#166534', '#7DD3FC', '#CBD5E1', '#0284C7'];
+        var serieHover = ['#4ADE80', '#7DD3FC', '#CBD5E1', '#38BDF8', '#86EFAC', '#94A3B8', '#22C55E', '#BAE6FD', '#E2E8F0', '#0EA5E9'];
+        var borde = esOscuro ? '#0F172A' : '#ffffff';
         return {
-            donaBorde: '#ffffff',
-            estado: ['#DC2626', '#CA8A04', '#15803D'],
-            clasificacion: ['#EF4444', '#2563EB'],
-            clasBorde: ['#DC2626', '#1D4ED8'],
-            prioridad: ['#EF4444', '#D97706', '#16A34A'],
-            prioridadHover: ['#FB7185', '#F59E0B', '#4ADE80'],
-            prioridadBorde: '#ffffff',
-            tipoBar: '#7C3AED',
-            tipoHover: '#A78BFA',
-            tipoBorde: '#5B21B6',
-            lineCreadosStroke: '#2563EB',
-            lineCreadosFill: 'rgba(37,99,235,0.14)',
-            lineResStroke: '#059669',
-            lineResFill: 'rgba(5,150,105,0.14)',
-            puntoCreados: { fill: '#ffffff', stroke: '#2563EB', hFill: '#2563EB', hStroke: '#ffffff' },
-            puntoRes: { fill: '#ffffff', stroke: '#059669', hFill: '#059669', hStroke: '#ffffff' },
+            donaBorde: borde,
+            estado: ['#F87171', '#38BDF8', '#22C55E'],
+            clasificacion: ['#F87171', '#38BDF8'],
+            clasBorde: [borde, borde],
+            prioridad: ['#F87171', '#FBBF24', '#22C55E'],
+            prioridadHover: ['#FCA5A5', '#FDE68A', '#4ADE80'],
+            prioridadBorde: borde,
+            tipoBar: '#22C55E',
+            tipoHover: '#4ADE80',
+            tipoBorde: borde,
+            lineCreadosStroke: '#38BDF8',
+            lineCreadosFill: 'rgba(56,189,248,0.16)',
+            lineResStroke: '#22C55E',
+            lineResFill: 'rgba(34,197,94,0.16)',
+            puntoCreados: { fill: borde, stroke: '#38BDF8', hFill: '#F8FAFC', hStroke: '#0EA5E9' },
+            puntoRes: { fill: borde, stroke: '#22C55E', hFill: '#F8FAFC', hStroke: '#16A34A' },
             comp: [
-                { bg: '#3B82F6', h: '#60A5FA', b: '#1D4ED8' },
-                { bg: '#10B981', h: '#34D399', b: '#047857' },
-                { bg: '#F59E0B', h: '#FBBF24', b: '#B45309' }
+                { bg: '#38BDF8', h: '#7DD3FC', b: borde },
+                { bg: '#22C55E', h: '#4ADE80', b: borde },
+                { bg: '#94A3B8', h: '#CBD5E1', b: borde }
             ],
-            matriz: ['#2563EB', '#047857', '#B45309', '#B91C1C', '#6D28D9', '#BE185D', '#0E7490', '#4D7C0F', '#C2410C', '#4338CA'],
-            matrizH: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'],
-            empTot: { bg: 'rgba(59,130,246,0.82)', h: '#3B82F6', b: '#1D4ED8' },
-            empCer: { bg: 'rgba(22,163,74,0.82)', h: '#22C55E', b: '#15803D' }
+            matriz: serie,
+            matrizH: serieHover,
+            empTot: { bg: '#38BDF8', h: '#7DD3FC', b: borde },
+            empCer: { bg: '#22C55E', h: '#4ADE80', b: borde }
         };
     }
 
@@ -1973,9 +1948,9 @@
             caretSize: 6,
             bodySpacing: 5,
             padding: 14,
-            backgroundColor: colores.tooltipBg,
-            titleColor: colores.tooltipTexto,
-            bodyColor: colores.tooltipTexto,
+            backgroundColor: 'rgba(15, 23, 42, 0.94)',
+            titleColor: '#22C55E',
+            bodyColor: '#F8FAFC',
             borderColor: colores.tooltipBorder,
             borderWidth: 1
         }, extra || {});
@@ -2186,6 +2161,9 @@
         if (!metricasData) return; // Si no hay datos, no intentamos dibujar
 
         const dark = isDarkMode();
+        if (window.UxCharts) {
+            UxCharts.aplicar(Chart);
+        }
 
         const colores = {
             texto: dark ? '#F3F4F6' : '#111827',
@@ -2252,6 +2230,7 @@
 
         C.estado = new Chart(ctxEstado, {
             type: 'doughnut',
+            plugins: window.UxCharts ? [UxCharts.centro] : [],
             data: {
                 labels: sumaEstados > 0 ? Object.keys(distribucionEstado) : ['Sin tickets este mes'],
                 datasets: [{
@@ -2266,7 +2245,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: animacionGraficas,
-                cutout: '62%',
+                cutout: '68%',
                 onHover: cursorSobreGrafica,
                 onClick: function (event, elements, chart) {
                     handleChartClick(event, elements, chart, 'estado');
@@ -2528,6 +2507,7 @@
 
             C.clasificacion = new Chart(ctxClasificacion.getContext('2d'), {
                 type: 'doughnut',
+                plugins: window.UxCharts ? [UxCharts.centro] : [],
                 data: {
                     labels: sumaClasificacion > 0 ? Object.keys(ticketsPorClasificacion) : ['Sin tickets este mes'],
                     datasets: [{
@@ -2542,7 +2522,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: animacionGraficas,
-                    cutout: '62%',
+                    cutout: '68%',
                     onHover: cursorSobreGrafica,
                     onClick: function (event, elements, chart) {
                         handleChartClick(event, elements, chart, 'clasificacion');

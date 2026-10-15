@@ -8,6 +8,7 @@ use App\Models\Equipos;
 use App\Models\Insumos;
 use App\Models\LineasTelefonicas;
 use App\Models\Obras;
+use App\Models\CentroCosto;
 use App\Models\Gerencia;
 use App\Models\UnidadesDeNegocio;
 use App\Models\TicketMantenimiento;
@@ -43,14 +44,24 @@ class HomeController extends Controller
             }
 
             if (in_array($tipoDashboard, ['compras', 'completo'], true)) {
-                $statsCompras = $this->buildComprasStats();
+                $statsCompras = $this->buildComprasStats((int) ($request->input('anio') ?: now()->year));
             }
 
             if ($request->ajax()) {
                 return view('partials.insumos-licencia', compact('stats'))->render();
             }
 
-            return view('home', compact('stats', 'statsCompras', 'tipoDashboard'));
+            $filtrosDash = [
+                'gerencia_id' => (int) $request->input('gerencia_id'),
+                'centro_id' => (int) $request->input('centro_id'),
+                'anio' => (int) ($request->input('anio') ?: now()->year),
+            ];
+            $catalogoDash = [
+                'gerencias' => Gerencia::query()->orderBy('NombreGerencia')->pluck('NombreGerencia', 'GerenciaID'),
+                'centros' => CentroCosto::query()->orderBy('NombreCentro')->pluck('NombreCentro', 'CentroCostoID'),
+            ];
+
+            return view('home', compact('stats', 'statsCompras', 'tipoDashboard', 'filtrosDash', 'catalogoDash'));
         } catch (\Exception $e) {
             $stats = $this->statsInformaticaVacios();
             $statsCompras = $this->statsComprasVacios();
@@ -59,6 +70,15 @@ class HomeController extends Controller
                 'stats' => $stats,
                 'statsCompras' => $statsCompras,
                 'tipoDashboard' => $tipoDashboard,
+                'filtrosDash' => [
+                    'gerencia_id' => (int) $request->input('gerencia_id'),
+                    'centro_id' => (int) $request->input('centro_id'),
+                    'anio' => (int) ($request->input('anio') ?: now()->year),
+                ],
+                'catalogoDash' => [
+                    'gerencias' => Gerencia::query()->orderBy('NombreGerencia')->pluck('NombreGerencia', 'GerenciaID'),
+                    'centros' => CentroCosto::query()->orderBy('NombreCentro')->pluck('NombreCentro', 'CentroCostoID'),
+                ],
             ]);
         }
     }
@@ -96,22 +116,31 @@ class HomeController extends Controller
     private function buildInformaticaStats(Request $request): array
     {
         $tiposOperativos = PresupuestoAsignacion::tiposPersonaInventario();
+        $idsFiltro = $this->idsEmpleadosFiltrados($request);
 
-        $totalEmpleados = Empleados::whereIn('tipo_persona', $tiposOperativos)->count();
-        $empleadosActivos = Empleados::where('Estado', true)
-            ->whereIn('tipo_persona', $tiposOperativos)
-            ->count();
+        $baseEmpleados = Empleados::query()->whereIn('tipo_persona', $tiposOperativos);
+        if ($idsFiltro !== null) {
+            $baseEmpleados->whereIn('EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
+        }
+        $totalEmpleados = (clone $baseEmpleados)->count();
+        $empleadosActivos = (clone $baseEmpleados)->where('Estado', true)->count();
 
         $totalEquipos = Equipos::count();
-        $equiposAsignados = $this->queryAsignadosOperativos('inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS)->count();
+        $equiposAsignados = $this->limitarPorEmpleados(
+            $this->queryAsignadosOperativos('inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS),
+            $idsFiltro
+        )->count();
 
         $totalInsumos = Insumos::count();
-        $insumosAsignados = $this->queryAsignadosOperativos('inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT)->count();
+        $insumosAsignados = $this->limitarPorEmpleados(
+            $this->queryAsignadosOperativos('inventarioinsumo', PresupuestoAsignacion::COLUMNA_DEFAULT),
+            $idsFiltro
+        )->count();
 
         $totalLineas = LineasTelefonicas::where('Activo', true)->count();
         $lineasLibres = LineasTelefonicas::where('Activo', true)->where('Disponible', 1)->count();
-        $lineasReferenciados = $this->lineasAsignadasOperativas('REFERENCIADO')->count();
-        $lineasAsignadasPersonaFisica = $this->lineasAsignadasOperativas('FISICA')->count();
+        $lineasReferenciados = $this->lineasAsignadasOperativas('REFERENCIADO', $idsFiltro)->count();
+        $lineasAsignadasPersonaFisica = $this->lineasAsignadasOperativas('FISICA', $idsFiltro)->count();
         $lineasAsignadas = $lineasAsignadasPersonaFisica + $lineasReferenciados;
         $lineasDisponibles = $lineasLibres;
 
@@ -153,6 +182,9 @@ class HomeController extends Controller
             ->where('gerencia.Estado', true)
             ->where('empleados.Estado', true)
             ->whereIn('empleados.tipo_persona', $tiposOperativos)
+            ->when($idsFiltro !== null, function ($query) use ($idsFiltro) {
+                $query->whereIn('empleados.EmpleadoID', $idsFiltro === [] ? [0] : $idsFiltro);
+            })
             ->groupBy('gerencia.GerenciaID', 'gerencia.NombreGerencia')
             ->having('total_empleados', '>', 0)
             ->orderBy('total_empleados', 'desc')
@@ -219,14 +251,14 @@ class HomeController extends Controller
             ],
             'mantenimientos' => $mantenimientosAnio,
             'insumos_por_licencia' => $this->getInsumosPorLicencia($request),
-            'equipos_por_categoria' => $this->getEquiposPorCategoria(),
+            'equipos_por_categoria' => $this->getEquiposPorCategoria($idsFiltro),
             'estadisticas_gerencia' => $estadisticasPorGerencia,
         ];
     }
 
-    private function buildComprasStats(): array
+    private function buildComprasStats(int $anio = 0): array
     {
-        $anio = now()->year;
+        $anio = $anio > 0 ? $anio : (int) now()->year;
         $mes = now()->month;
 
         $porEstatus = [];
@@ -336,11 +368,14 @@ class HomeController extends Controller
             ->paginate(7);
     }
 
-    private function getEquiposPorCategoria()
+    private function getEquiposPorCategoria(?array $ids = null)
     {
         $query = DB::table('inventarioequipo')
             ->select('CategoriaEquipo')
             ->selectRaw('COUNT(InventarioID) as total_inventario');
+        if ($ids !== null) {
+            $query->whereIn('EmpleadoID', $ids === [] ? [0] : $ids);
+        }
 
         PresupuestoAsignacion::restringirOperativo($query, 'inventarioequipo', PresupuestoAsignacion::COLUMNA_EQUIPOS);
         PresupuestoConfiguracion::aplicarWhereIn($query, 'CategoriaEquipo', 'hardware');
@@ -349,6 +384,36 @@ class HomeController extends Controller
             ->groupBy('CategoriaEquipo')
             ->orderBy('total_inventario', 'desc')
             ->get();
+    }
+
+    private function idsEmpleadosFiltrados(Request $request): ?array
+    {
+        $gerencia = (int) $request->input('gerencia_id');
+        $centro = (int) $request->input('centro_id');
+        if (!$gerencia && !$centro) {
+            return null;
+        }
+
+        $query = Empleados::query();
+        if ($centro) {
+            $query->where('CentroCostoID', $centro);
+        }
+        if ($gerencia) {
+            $query->whereHas('puestos.departamentos', function ($departamentos) use ($gerencia) {
+                $departamentos->where('GerenciaID', $gerencia);
+            });
+        }
+
+        return $query->pluck('EmpleadoID')->all();
+    }
+
+    private function limitarPorEmpleados($query, ?array $ids)
+    {
+        if ($ids === null) {
+            return $query;
+        }
+
+        return $query->whereIn('EmpleadoID', $ids === [] ? [0] : $ids);
     }
 
     private function queryAsignadosOperativos(string $tabla, string $columna, string $empleadoCol = 'EmpleadoID')
@@ -365,7 +430,7 @@ class HomeController extends Controller
         }
     }
 
-    private function lineasAsignadasOperativas(?string $tipoPersona = null)
+    private function lineasAsignadasOperativas(?string $tipoPersona = null, ?array $ids = null)
     {
         $tipos = $tipoPersona
             ? [$tipoPersona]
@@ -373,13 +438,16 @@ class HomeController extends Controller
 
         return LineasTelefonicas::where('lineastelefonicas.Activo', true)
             ->where('lineastelefonicas.Disponible', 0)
-            ->whereExists(function ($q) use ($tipos) {
+            ->whereExists(function ($q) use ($tipos, $ids) {
                 $q->select(DB::raw(1))
                     ->from('inventariolineas as il')
                     ->join('empleados as e', 'e.EmpleadoID', '=', 'il.EmpleadoID')
                     ->whereColumn('il.LineaID', 'lineastelefonicas.LineaID')
                     ->where('e.Estado', true)
                     ->whereIn('e.tipo_persona', $tipos)
+                    ->when($ids !== null, function ($query) use ($ids) {
+                        $query->whereIn('e.EmpleadoID', $ids === [] ? [0] : $ids);
+                    })
                     ->where(function ($w) {
                         $w->whereIn('il.Presupuestado', array_map('strval', PresupuestoAsignacion::valoresOperativos()))
                             ->orWhereNull('il.Presupuestado');

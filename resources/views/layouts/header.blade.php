@@ -33,6 +33,15 @@
     @endphp
     <div class="relative inline-block text-left">
         <div class="flex items-center gap-1.5 md:gap-2">
+            <div class="header-theme-switch" role="group" aria-label="Modo de color">
+                <button type="button" id="theme-btn-light" class="header-theme-btn" onclick="setTheme('light')" title="Modo claro" aria-label="Modo claro">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button type="button" id="theme-btn-dark" class="header-theme-btn" onclick="setTheme('dark')" title="Modo oscuro" aria-label="Modo oscuro">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+
             @can('tickets.notificaciones')
             <button type="button" id="btnNotif"
                 class="relative inline-flex items-center justify-center w-9 h-9 rounded-lg
@@ -81,14 +90,6 @@
             @if(session('sistema_activo'))
             <p class="header-user-menu__hint px-3 pt-2.5 pb-1 text-[11px] truncate">{{ ucfirst(session('sistema_activo')) }}</p>
             @endif
-            <div class="header-theme-switch">
-                <button type="button" id="theme-btn-light" class="header-theme-btn" onclick="setTheme('light')" title="Modo claro" aria-label="Modo claro">
-                    <i class="fas fa-sun"></i>
-                </button>
-                <button type="button" id="theme-btn-dark" class="header-theme-btn" onclick="setTheme('dark')" title="Modo oscuro" aria-label="Modo oscuro">
-                    <i class="fas fa-moon"></i>
-                </button>
-            </div>
 
             <a href="{{ route('logout') }}"
                 data-full-load="1"
@@ -125,17 +126,19 @@
     .header-theme-switch {
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 0.85rem;
-        padding: 0.7rem 1rem 0.8rem;
-        border-bottom: 1px solid #e2e8f0;
+        gap: 0.1rem;
+        height: 2.25rem;
+        padding: 0.15rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.65rem;
+        background: #f8fafc;
     }
 
     .header-theme-btn {
         appearance: none;
         -webkit-appearance: none;
-        width: 2.4rem;
-        height: 2.4rem;
+        width: 1.9rem;
+        height: 1.9rem;
         margin: 0;
         padding: 0;
         border: 1px solid transparent;
@@ -159,9 +162,9 @@
     }
 
     .header-theme-btn.is-active {
-        background: #eef2ff;
-        border-color: #c7d2fe;
-        color: #101D49;
+        background: #ffffff;
+        border-color: #e2e8f0;
+        color: #15803d;
     }
 
     .header-user-menu__logout {
@@ -193,7 +196,8 @@
     }
 
     .dark .header-theme-switch {
-        border-bottom-color: #2A2F3A;
+        background: rgba(255, 255, 255, 0.06);
+        border-color: #2A2F3A;
     }
 
     .dark .header-theme-btn {
@@ -206,9 +210,9 @@
     }
 
     .dark .header-theme-btn.is-active {
-        background: rgba(255, 255, 255, 0.12);
-        border-color: #3d4654;
-        color: #ffffff;
+        background: rgba(34, 197, 94, 0.16);
+        border-color: rgba(34, 197, 94, 0.35);
+        color: #22c55e;
     }
 
     .dark .header-user-menu__logout {

@@ -324,6 +324,7 @@
 </div>
 
 <script src="{{ asset('assets/js/chart.min.js') }}"></script>
+<script src="{{ asset('js/ux-charts.js') }}"></script>
 <script>
 let chartMantEstado, chartMantPrioridad, chartMantCategoria, chartMantTendencia, chartMantSlaCumplimiento, chartMantSlaAbiertos;
 
@@ -357,23 +358,47 @@ function inicializarGraficasMantenimiento(intento) {
 
     destruirGraficasMantenimiento();
     const dark = isDarkMant();
-    const texto = dark ? '#F3F4F6' : '#111827';
-    const grid = dark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.07)';
+    const texto = dark ? '#CBD5E1' : '#334155';
+    if (window.UxCharts) {
+        UxCharts.aplicar(Chart);
+    }
+
+    function colorPorNombre(nombre, indice) {
+        const n = String(nombre || '').toLowerCase();
+        if (n.includes('cancel')) return '#94A3B8';
+        if (n.includes('atend') || n.includes('cerr') || n.includes('resuel')) return '#22C55E';
+        if (n.includes('paus')) return '#FBBF24';
+        if (n.includes('proces') || n.includes('progreso')) return '#38BDF8';
+        if (n.includes('pend')) return '#F87171';
+        if (n.includes('alta')) return '#F87171';
+        if (n.includes('media')) return '#FBBF24';
+        if (n.includes('baja')) return '#22C55E';
+        const paleta = (window.UxCharts && UxCharts.paleta) || ['#22C55E', '#38BDF8', '#94A3B8'];
+        return paleta[indice % paleta.length];
+    }
 
     // Chart.js escribe type/axis/position dentro del objeto de opciones que recibe,
     // así que cada gráfica necesita el suyo: compartirlo contamina las escalas.
     // Todas las series son conteos de solicitudes: el eje de valores no debe fraccionarse.
-    const ticksEnteros = { stepSize: 1, precision: 0 };
-
-    const opts = () => ({
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: texto } } },
-        scales: {
-            x: { ticks: { color: texto, maxRotation: 45, ...ticksEnteros }, grid: { color: grid }, beginAtZero: true },
-            y: { ticks: { color: texto, ...ticksEnteros }, grid: { color: grid }, beginAtZero: true }
-        }
-    });
+    const opts = (horizontal) => {
+        const scales = window.UxCharts ? UxCharts.escala(!!horizontal) : {
+            x: { beginAtZero: true },
+            y: { beginAtZero: true }
+        };
+        ['x', 'y'].forEach((eje) => {
+            if (scales[eje] && scales[eje].ticks) {
+                scales[eje].ticks.stepSize = 1;
+                scales[eje].ticks.precision = 0;
+            }
+        });
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: horizontal ? 'y' : 'x',
+            plugins: { legend: { labels: { color: texto, usePointStyle: true, boxWidth: 8 } } },
+            scales: scales
+        };
+    };
 
     const optsApiladas = () => {
         const base = opts();
@@ -384,33 +409,58 @@ function inicializarGraficasMantenimiento(intento) {
     };
 
     const estado = data.distribucion_estado || {};
-    chartMantEstado = new Chart(document.getElementById('chartMantEstado'), {
+    const etiquetasEstado = Object.keys(estado);
+    const canvasEstado = document.getElementById('chartMantEstado');
+    chartMantEstado = new Chart(canvasEstado, {
         type: 'doughnut',
+        plugins: window.UxCharts ? [UxCharts.centro] : [],
         data: {
-            labels: Object.keys(estado),
-            datasets: [{ data: Object.values(estado), backgroundColor: ['#EAB308', '#3B82F6', '#8B5CF6', '#22C55E', '#EF4444'] }]
+            labels: etiquetasEstado,
+            datasets: [{
+                data: Object.values(estado),
+                backgroundColor: etiquetasEstado.map(colorPorNombre),
+                hoverOffset: 8
+            }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: texto } } } }
+        options: window.UxCharts ? UxCharts.anillo() : { responsive: true, maintainAspectRatio: false }
     });
 
     const prioridad = data.tickets_por_prioridad || {};
-    chartMantPrioridad = new Chart(document.getElementById('chartMantPrioridad'), {
+    const etiquetasPrioridad = Object.keys(prioridad);
+    const canvasPrioridad = document.getElementById('chartMantPrioridad');
+    chartMantPrioridad = new Chart(canvasPrioridad, {
         type: 'bar',
         data: {
-            labels: Object.keys(prioridad),
-            datasets: [{ label: 'Solicitudes', data: Object.values(prioridad), backgroundColor: '#3B82F6' }]
+            labels: etiquetasPrioridad,
+            datasets: [{
+                label: 'Solicitudes',
+                data: Object.values(prioridad),
+                backgroundColor: etiquetasPrioridad.map(colorPorNombre),
+                borderRadius: 8,
+                borderSkipped: false,
+                maxBarThickness: 22
+            }]
         },
-        options: opts()
+        options: opts(false)
     });
 
     const categoria = data.tickets_por_categoria || {};
-    chartMantCategoria = new Chart(document.getElementById('chartMantCategoria'), {
+    const etiquetasCategoria = Object.keys(categoria);
+    const canvasCategoria = document.getElementById('chartMantCategoria');
+    chartMantCategoria = new Chart(canvasCategoria, {
         type: 'bar',
         data: {
-            labels: Object.keys(categoria),
-            datasets: [{ label: 'Solicitudes', data: Object.values(categoria), backgroundColor: '#8B5CF6' }]
+            labels: etiquetasCategoria,
+            datasets: [{
+                label: 'Solicitudes',
+                data: Object.values(categoria),
+                backgroundColor: window.UxCharts ? UxCharts.tonos(etiquetasCategoria.length) : '#22C55E',
+                borderRadius: 8,
+                borderSkipped: false,
+                maxBarThickness: 22
+            }]
         },
-        options: { ...opts(), indexAxis: 'y' }
+        options: opts(true)
     });
 
     const creados = data.creados_por_dia || {};
@@ -421,8 +471,8 @@ function inicializarGraficasMantenimiento(intento) {
         data: {
             labels: labels.map(d => d.slice(5)),
             datasets: [
-                { label: 'Creadas', data: labels.map(k => creados[k] || 0), borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.3 },
-                { label: 'Atendidas', data: labels.map(k => resueltos[k] || 0), borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,0.1)', fill: true, tension: 0.3 }
+                { label: 'Creadas', data: labels.map(k => creados[k] || 0), borderColor: '#38BDF8', backgroundColor: 'rgba(56,189,248,0.16)', pointBackgroundColor: '#38BDF8', fill: true, tension: 0.35 },
+                { label: 'Atendidas', data: labels.map(k => resueltos[k] || 0), borderColor: '#22C55E', backgroundColor: 'rgba(34,197,94,0.16)', pointBackgroundColor: '#22C55E', fill: true, tension: 0.35 }
             ]
         },
         options: opts()
@@ -445,7 +495,7 @@ function inicializarGraficasMantenimiento(intento) {
                     {
                         label: 'Incumplidos',
                         data: slaPrioridades.map(r => r.incumplidos),
-                        backgroundColor: '#EF4444',
+                        backgroundColor: '#F87171',
                     },
                 ],
             },
@@ -459,9 +509,9 @@ function inicializarGraficasMantenimiento(intento) {
             data: {
                 labels: slaPrioridades.map(r => r.prioridad),
                 datasets: [
-                    { label: 'En tiempo', data: slaPrioridades.map(r => r.en_tiempo), backgroundColor: '#3B82F6' },
-                    { label: 'En riesgo', data: slaPrioridades.map(r => r.en_riesgo), backgroundColor: '#EAB308' },
-                    { label: 'Vencidos', data: slaPrioridades.map(r => r.vencidos), backgroundColor: '#EF4444' },
+                    { label: 'En tiempo', data: slaPrioridades.map(r => r.en_tiempo), backgroundColor: '#38BDF8' },
+                    { label: 'En riesgo', data: slaPrioridades.map(r => r.en_riesgo), backgroundColor: '#FBBF24' },
+                    { label: 'Vencidos', data: slaPrioridades.map(r => r.vencidos), backgroundColor: '#F87171' },
                 ],
             },
             options: optsApiladas(),

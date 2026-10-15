@@ -18,6 +18,7 @@
     <title>ERP TI Proser</title>
     <link rel="icon" href="{!! asset('img/mantenimiento.ico') !!}" />
     <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap">
     <link href="{{ mix('css/app.css') }}" rel="stylesheet">
     <!-- Bootstrap 4.1.1 -->
     <link href="{{ mix('assets/css/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
@@ -129,8 +130,8 @@
         html.dark .select2-container--default .select2-results__option--highlighted[aria-selected],
         html.dark .select2-container--default .select2-results__option--highlighted,
         html.dark .select2-results__option--highlighted {
-            background-color: #2563eb !important;
-            color: #fff !important;
+            background-color: #15803d !important;
+            color: #f8fafc !important;
         }
         html.dark .select2-results__message {
             color: #9ca3af !important;
@@ -997,6 +998,100 @@
     <!-- Template CSS -->
     <link rel="stylesheet" href="{{ asset('web/css/style.css') }}">
     <link rel="stylesheet" href="{{ asset('web/css/components.css')}}">
+    <style>
+        body .alert:not(.alert-exceso):not(.insight-bar) {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.7rem;
+            margin-bottom: 1rem;
+            padding: 0.85rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid transparent;
+            font-size: 0.92rem;
+            font-weight: 500;
+            line-height: 1.45;
+            box-shadow: 0 1px 2px rgba(16, 29, 73, 0.05);
+        }
+        body .alert:not(.alert-exceso):not(.insight-bar) > i {
+            margin-top: 0.12rem;
+            font-size: 1.05rem;
+            flex: 0 0 auto;
+        }
+        body .alert .app-alert__body,
+        body .alert p {
+            flex: 1;
+            min-width: 0;
+        }
+        body .alert p { margin: 0; }
+        body .alert .close,
+        body .alert .btn-close {
+            position: static;
+            float: none;
+            margin: 0 0 0 auto;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            color: inherit;
+            font-size: 1.25rem;
+            line-height: 1;
+            opacity: 0.65;
+            cursor: pointer;
+            text-shadow: none;
+        }
+        body .alert .close:hover,
+        body .alert .btn-close:hover { opacity: 1; }
+        body .alert:not(.alert-light) a { color: inherit; text-decoration: underline; }
+
+        body .alert.alert-success { background: #ecfdf3; border-color: #86efac; color: #14532d; }
+        body .alert.alert-success > i { color: #15803d; }
+        body .alert.alert-danger { background: #fef2f2; border-color: #fecaca; color: #7f1d1d; }
+        body .alert.alert-danger > i { color: #dc2626; }
+        body .alert.alert-warning { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+        body .alert.alert-warning > i { color: #d97706; }
+        body .alert.alert-info { background: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
+        body .alert.alert-info > i { color: #2563eb; }
+        body .alert.alert-primary { background: #eef2ff; border-color: #c7d2fe; color: #1e1b4b; }
+        body .alert.alert-primary > i { color: #3730a3; }
+        body .alert.alert-secondary,
+        body .alert.alert-dark,
+        body .alert.alert-light { background: #f8fafc; border-color: #e5e7eb; color: #1f2937; }
+
+        html.dark body .alert.alert-success { background: rgba(22, 101, 52, 0.35); border-color: #166534; color: #d1fae5; }
+        html.dark body .alert.alert-success > i { color: #4ade80; }
+        html.dark body .alert.alert-danger { background: rgba(127, 29, 29, 0.4); border-color: #991b1b; color: #fee2e2; }
+        html.dark body .alert.alert-danger > i { color: #f87171; }
+        html.dark body .alert.alert-warning { background: rgba(120, 53, 15, 0.4); border-color: #92400e; color: #fef3c7; }
+        html.dark body .alert.alert-warning > i { color: #fbbf24; }
+        html.dark body .alert.alert-info { background: rgba(30, 58, 138, 0.4); border-color: #1e40af; color: #dbeafe; }
+        html.dark body .alert.alert-info > i { color: #60a5fa; }
+        html.dark body .alert.alert-primary { background: rgba(49, 46, 129, 0.4); border-color: #3730a3; color: #e0e7ff; }
+        html.dark body .alert.alert-primary > i { color: #a5b4fc; }
+        html.dark body .alert.alert-secondary,
+        html.dark body .alert.alert-dark,
+        html.dark body .alert.alert-light { background: #1f2937; border-color: #374151; color: #e5e7eb; }
+
+        .iziToast-wrapper-topRight {
+            top: 68px !important;
+            right: 14px !important;
+        }
+        .iziToast {
+            border-radius: 0.75rem !important;
+            font-family: inherit !important;
+        }
+        html.dark .iziToast {
+            background: #1f2937 !important;
+            border: 1px solid #374151 !important;
+            color: #e5e7eb !important;
+        }
+        html.dark .iziToast > .iziToast-body .iziToast-title,
+        html.dark .iziToast > .iziToast-body .iziToast-message {
+            color: #e5e7eb !important;
+        }
+        html.dark .iziToast > .iziToast-close {
+            background: transparent !important;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261015f">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     @livewireStyles
@@ -1010,6 +1105,7 @@
         @yield('css')
         @stack('third_party_stylesheets')
     </div>
+    <link rel="stylesheet" href="{{ asset('css/ux-pro-max.css') }}?v=20261015f">
     <div id="app-topbar" aria-hidden="true"><span></span></div>
     <div id="app-download-overlay" hidden>
         <div class="app-download-card" role="status" aria-live="polite">
@@ -1072,6 +1168,53 @@
 <script src="{{ mix('assets/js/bootstrap.min.js') }}"></script>
 <script src="{{ mix('assets/js/sweetalert.min.js') }}"></script>
 <script src="{{ mix('assets/js/iziToast.min.js') }}"></script>
+<script>
+    window.AppAlert = (function () {
+        ['success', 'error', 'warning', 'info'].forEach(function (method) {
+            if (!window.iziToast || typeof iziToast[method] !== 'function' || iziToast[method].__appAlert) return;
+            var original = iziToast[method].bind(iziToast);
+            var wrapped = function (opts) {
+                opts = opts || {};
+                opts.position = 'topRight';
+                if (opts.timeout == null) opts.timeout = 4200;
+                opts.transitionIn = opts.transitionIn || 'fadeInDown';
+                opts.transitionOut = opts.transitionOut || 'fadeOutUp';
+                opts.pauseOnHover = true;
+                opts.progressBar = opts.progressBar !== false;
+                opts.close = true;
+                return original(opts);
+            };
+            wrapped.__appAlert = true;
+            iziToast[method] = wrapped;
+        });
+
+        function mostrar(root) {
+            if (!window.iziToast) return;
+            var scope = root && root.querySelectorAll ? root : document;
+            Array.prototype.forEach.call(scope.querySelectorAll('.app-flash'), function (node) {
+                if (node.getAttribute('data-shown') === '1') return;
+                node.setAttribute('data-shown', '1');
+                var level = node.getAttribute('data-level') || 'success';
+                var method = (level === 'danger' || level === 'error') ? 'error' : level;
+                if (typeof iziToast[method] !== 'function') method = 'info';
+                var titulo = method === 'error' ? 'No se pudo' : (method === 'warning' ? 'Atención' : (method === 'info' ? 'Aviso' : 'Listo'));
+                iziToast[method]({
+                    title: titulo,
+                    message: node.innerHTML
+                });
+                node.remove();
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { mostrar(document); });
+        } else {
+            mostrar(document);
+        }
+
+        return { mostrar: mostrar };
+    })();
+</script>
 <script src="{{ mix('assets/js/select2.min.js') }}"></script>
 <script src="{{ asset('web/js/stisla.js') }}"></script>
 <script src="{{ asset('web/js/scripts.js') }}"></script>
@@ -1120,23 +1263,56 @@
             }
         });
 
-        // Asegurar que Select2 tambi?n se inicialice correctamente
-        $(document).ready(function() {
-            $('.jz').each(function () {
-                var $el = $(this);
-                if ($el.hasClass('select2-hidden-accessible')) return;
-                $el.select2();
-            });
-            $('.jz1').each(function () {
-                var $el = $(this);
-                if ($el.hasClass('select2-hidden-accessible')) return;
-                var opts = { width: '100%' };
-                if ($('#editModal').length) {
-                    opts.dropdownParent = $('#editModal');
+        window.iniciarSelects = function (root) {
+            if (!window.jQuery || !jQuery.fn || typeof jQuery.fn.select2 !== 'function') return;
+            var $scope = root ? jQuery(root) : jQuery(document);
+            $scope.find('select').addBack('select').each(function () {
+                var $el = jQuery(this);
+                if ($el.hasClass('select2-hidden-accessible') || $el.is('[data-no-select2]')) return;
+                if ($el.closest('template').length) return;
+                var size = parseInt($el.attr('size') || '0', 10);
+                if (size > 1) return;
+                var full = $el.hasClass('form-control') || $el.hasClass('jz1') || $el.hasClass('w-full');
+                var compact = !full && ($el.hasClass('border-0') || $el.hasClass('bg-transparent'));
+                var opts = {
+                    width: full ? '100%' : (compact ? (Math.max($el.outerWidth() || 0, 88) + 'px') : 'resolve'),
+                    minimumResultsForSearch: $el.find('option').length > 15 ? 0 : Infinity,
+                    dropdownAutoWidth: compact
+                };
+                if (compact) opts.containerCssClass = 'select2-compact';
+                if ($el.hasClass('jz1') && jQuery('#editModal').length) {
+                    opts.dropdownParent = jQuery('#editModal');
+                } else {
+                    var $modal = $el.closest('.modal');
+                    if ($modal.length) opts.dropdownParent = $modal;
                 }
                 $el.select2(opts);
+                $el.off('select2:select.erp select2:clear.erp').on('select2:select.erp select2:clear.erp', function () {
+                    this.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                });
             });
+        };
+
+        $(document).ready(function () {
+            window.iniciarSelects(document);
         });
+
+        var selectsTimer = null;
+        var selectsObs = new MutationObserver(function (cambios) {
+            var haySelect = false;
+            cambios.forEach(function (cambio) {
+                Array.prototype.forEach.call(cambio.addedNodes || [], function (nodo) {
+                    if (!haySelect && nodo.nodeType === 1 && nodo.tagName !== 'SPAN' && (nodo.tagName === 'SELECT' || (nodo.querySelector && nodo.querySelector('select:not(.select2-hidden-accessible)')))) {
+                        haySelect = true;
+                    }
+                });
+            });
+            if (!haySelect) return;
+            clearTimeout(selectsTimer);
+            selectsTimer = setTimeout(function () { window.iniciarSelects(document); }, 80);
+        });
+        selectsObs.observe(document.body, { childList: true, subtree: true });
 
         $('#myTab a').on('click', function(e) {
             e.preventDefault();
@@ -1707,26 +1883,11 @@
                     });
                 });
             }
-            if (window.jQuery && jQuery.fn && typeof jQuery.fn.select2 === 'function') {
-                try {
-                    window.jQuery('.jz').each(function () {
-                        var $el = window.jQuery(this);
-                        if (!$el.hasClass('select2-hidden-accessible')) {
-                            $el.select2();
-                        }
-                    });
-                    window.jQuery('.jz1').each(function () {
-                        var $el = window.jQuery(this);
-                        if ($el.hasClass('select2-hidden-accessible')) return;
-                        var opts = { width: '100%' };
-                        if (window.jQuery('#editModal').length) {
-                            opts.dropdownParent = window.jQuery('#editModal');
-                        }
-                        $el.select2(opts);
-                    });
-                } catch (e) {}
+            if (typeof window.iniciarSelects === 'function') {
+                try { window.iniciarSelects(document); } catch (e) {}
             }
             restoreSidebarCollapsed();
+            if (window.AppAlert) window.AppAlert.mostrar(document.getElementById('app-main'));
             setTimeout(function () {
                 if (typeof inicializarGraficas === 'function') inicializarGraficas();
                 if (typeof inicializarGraficasEmpleados === 'function') inicializarGraficasEmpleados();
