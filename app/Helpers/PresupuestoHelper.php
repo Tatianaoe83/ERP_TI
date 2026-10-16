@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\Empleados;
+use App\Models\Gerencia;
 use App\Models\PresupuestoConfiguracion;
 use App\Helpers\PagoMeses;
 
@@ -936,5 +937,510 @@ class PresupuestoHelper
         usort($filas, fn ($a, $b) => $a->Orden <=> $b->Orden);
 
         return $filas;
+    }
+
+    // Datos del reporte de presupuesto/inventario. El PDF y el Excel salen de aquí para que cuadren.
+    public static function datosReporte(int $gerenciaId, string $tipo, ?string $modo): array
+    {
+        $numerogerencia = $gerenciaId;
+        $metadatosDocumento = self::metadatosDocumento($modo);
+        $esPresupuesto = $metadatosDocumento['modo'] === 'presupuesto';
+        $tiposPersona = self::tiposPersona($metadatosDocumento['modo']);
+
+        $gerencia = Gerencia::find($numerogerencia);
+
+        $empleadosPorTipo = Empleados::whereHas('puestos.departamentos', function ($query) use ($numerogerencia) {
+            $query->where('GerenciaID', $numerogerencia);
+        })
+            ->where('Estado', 1)
+            ->when($tiposPersona, fn ($q) => $q->whereIn('tipo_persona', $tiposPersona))
+            // Solo quien tiene algo que entra al reporte en cualquiera de las 3 tablas:
+            // presupuesto = extra/compartido, inventario = stock/compartido.
+            ->where(function ($q) use ($esPresupuesto) {
+                $modoAsignacion = $esPresupuesto ? 'presupuesto' : 'operativo';
+                $q->whereHas('inventarioequipo', fn ($qq) => \App\Helpers\PresupuestoAsignacion::aplicarWhere($qq, $modoAsignacion, \App\Helpers\PresupuestoAsignacion::COLUMNA_EQUIPOS))
+                    ->orWhereHas('inventarioinsumo', fn ($qq) => \App\Helpers\PresupuestoAsignacion::aplicarWhere($qq, $modoAsignacion))
+                    ->orWhereHas('inventariolineas', fn ($qq) => \App\Helpers\PresupuestoAsignacion::aplicarWhere($qq, $modoAsignacion));
+            })
+            ->selectRaw('UPPER(tipo_persona) AS tipo, COUNT(*) AS total')
+            ->groupByRaw('UPPER(tipo_persona)')
+            ->pluck('total', 'tipo');
+
+        $numeroEmpleados = (int) $empleadosPorTipo->sum();
+
+        if ($gerencia) {
+            $gerencia->CantidadEmpleados = $numeroEmpleados;
+            // Desglose para el encabezado del PDF, en el orden de los tipos del reporte
+            $gerencia->EmpleadosPorTipo = collect($tiposPersona)
+                ->mapWithKeys(fn ($tipoPersona) => [$tipoPersona => (int) ($empleadosPorTipo[$tipoPersona] ?? 0)])
+                ->all();
+        }
+
+        $presup_hardware = self::reporteHardwarePorGerencia($numerogerencia, $tipo, $metadatosDocumento['modo'])->toArray();
+        $presup_otrosinsums = self::reporteAccesoriosYMantenimientos($numerogerencia, $tipo, $metadatosDocumento['modo'])->toArray();
+        $presup_lics = self::reporteLicenciasPorGerencia($numerogerencia, $tipo, $metadatosDocumento['modo'])->toArray();
+        $presup_acces = self::reporteLineasVozPorGerencia($numerogerencia, $tipo, $metadatosDocumento['modo'])->toArray();
+        $presup_datos = self::reporteLineasDatosPorGerencia($numerogerencia, $tipo, $metadatosDocumento['modo'])->toArray();
+        $presup_gps = self::reporteLineasGPSPorGerencia($numerogerencia, $tipo, $metadatosDocumento['modo'])->toArray();
+
+        // Construir filtro SQL dinámico para queries de impresoras/internet.
+        // PENDIENTE: aquí tampoco se filtra por e.Estado; ver nota en PresupuestoHelper.
+        $tipoPersonaFilter = $tiposPersona
+            ? " AND e.tipo_persona IN ('" . implode("', '", $tiposPersona) . "') "
+            : "";
+
+        $presupInsumoII = \App\Helpers\PresupuestoAsignacion::sqlWhere(
+            'ii.Presupuestado',
+            $esPresupuesto ? 'presupuesto' : 'inventario'
+        );
+
+        $query_params = [$numerogerencia];
+
+        //Sumar costos de Renta de Impresora
+        if ($tipo == 'mens') {
+            // Consulta para costo mensual
+            $presup_impresoras = DB::select("
+                    SELECT 
+            'Costo Renta de Impresora' AS Categoria,
+             ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
+            FROM inventarioinsumo ii
+            INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+            WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+                AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
+                ", $query_params);
+
+            $presup_internet_fijo = DB::select("
+                SELECT 
+        'Costo Internet Fijo' AS Categoria,
+         ROUND(SUM(DISTINCT IFNULL(ii.CostoMensual, 0)), 0) AS CostoTotal
+        FROM inventarioinsumo ii
+        INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+        INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+        INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+        INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+        WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+            AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
+            ", $query_params);
+
+
+        } else {
+            // Consulta para costo anual
+            $presup_impresoras = DB::select("
+                         SELECT 
+                        'Costo Renta de Impresora' AS Categoria,
+                        ROUND(SUM(CostoAnual * CantidadMeses), 0) AS CostoTotal
+                        FROM (
+                            SELECT ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual AS CostoAnual,
+                                   COUNT(*) as CantidadMeses
+                            FROM inventarioinsumo ii
+                            INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+                            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+                            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+                            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+                            WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+                                AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
+                            GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual
+                        ) as impresoras_unicas
+                ", $query_params);
+
+            $presup_internet_fijo = DB::select("
+                SELECT 
+               'Costo Internet Fijo' AS Categoria,
+               ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
+               FROM inventarioinsumo ii
+               INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+               INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+               INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+               INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+               WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+                   AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
+        ", $query_params);
+        }
+
+
+
+        // Calcular totales reales desde las tablas individuales
+        $totalHardware = 0;
+        foreach ($presup_hardware as $row) {
+            $totalHardware += (int) $row->CostoTotal;
+        }
+
+        $totalOtrosInsumos = 0;
+        foreach ($presup_otrosinsums as $row) {
+            $totalOtrosInsumos += (int) $row->CostoTotal;
+        }
+
+        $totalLicencias = 0;
+        foreach ($presup_lics as $row) {
+            $totalLicencias += (int) $row->CostoTotal;
+        }
+
+        $totalTelefonia = 0;
+        foreach ($presup_acces as $row) {
+            // Calcular el total para cada empleado en telefonía
+            if ($tipo == 'mens') {
+                $row->Total = (int) $row->Voz_Costo_Renta_Mensual + (int) $row->Voz_Costo_Fianza + (int) $row->Voz_Monto_Renovacion;
+                $totalTelefonia += $row->Total;
+            } else {
+                $row->Total = (int) $row->Voz_Costo_Renta_Anual + (int) $row->Voz_Costo_Fianza_Anual + (int) $row->Voz_Monto_Renovacion_Anual;
+                $totalTelefonia += $row->Total;
+            }
+        }
+
+        $totalDatos = 0;
+        foreach ($presup_datos as $row) {
+            // Calcular el total para cada empleado en datos
+            if ($tipo == 'mens') {
+                $row->Total = (int) $row->Datos_Costo_Renta_Mensual + (int) $row->Datos_Costo_Fianza + (int) $row->Datos_Monto_Renovacion;
+                $totalDatos += $row->Total;
+            } else {
+                $row->Total = (int) $row->Datos_Costo_Renta_Anual + (int) $row->Datos_Costo_Fianza_Anual + (int) $row->Datos_Monto_Renovacion_Anual;
+                $totalDatos += $row->Total;
+            }
+        }
+
+        $totalGPS = 0;
+        foreach ($presup_gps as $row) {
+            // Calcular el total para cada empleado en GPS
+            if ($tipo == 'mens') {
+                $row->Total = (int) $row->GPS_Costo_Renta_Mensual + (int) $row->GPS_Costo_Fianza + (int) $row->GPS_Monto_Renovacion;
+                $totalGPS += $row->Total;
+            } else {
+                $row->Total = (int) $row->GPS_Costo_Renta_Anual + (int) $row->GPS_Costo_Fianza_Anual + (int) $row->GPS_Monto_Renovacion_Anual;
+                $totalGPS += $row->Total;
+            }
+        }
+
+        $totalImpresoras = 0;
+        foreach ($presup_impresoras as $row) {
+
+            // Calcular el total para impresoras
+            $totalImpresoras += (int) $row->CostoTotal ?? 0;
+        }
+
+
+        $totalInternetFijo = 0;
+        foreach ($presup_internet_fijo as $row) {
+            // Calcular el total para internet fijo
+            $totalInternetFijo += (int) $row->CostoTotal ?? 0;
+        }
+
+
+
+        $totalCalculadoReal = $totalHardware + $totalOtrosInsumos + $totalLicencias + $totalTelefonia + $totalDatos + $totalGPS + $totalImpresoras + $totalInternetFijo;
+
+        // Crear el array de datos del header con los totales reales calculados desde las consultas
+        $datosheader = [
+            (object) [
+                'Categoria' => 'Costo Licenciamiento',
+                'TotalCosto' => $totalLicencias
+            ],
+            (object) [
+                'Categoria' => 'Costo Inversiones',
+                'TotalCosto' => $totalHardware
+            ],
+            (object) [
+                'Categoria' => 'Costo Otros Insumos',
+                'TotalCosto' => $totalOtrosInsumos
+            ],
+            (object) [
+                'Categoria' => 'Costo Telefonía e Internet',
+                'TotalCosto' => $totalTelefonia + $totalDatos
+            ],
+            (object) [
+                'Categoria' => 'Costo GPS',
+                'TotalCosto' => $totalGPS
+            ],
+            (object) [
+                'Categoria' => 'Costo Renta de Impresoras',
+                'TotalCosto' => $totalImpresoras
+            ],
+            (object) [
+                'Categoria' => 'Costo Internet fijo',
+                'TotalCosto' => $totalInternetFijo
+            ],
+            (object) [
+                'Categoria' => 'Total Presupuestado',
+                'TotalCosto' => $totalCalculadoReal
+            ]
+        ];
+
+        $presup_cal_pagos = self::calendarioPagosPorGerencia($numerogerencia, $metadatosDocumento['modo']);
+
+        // Inicializar las variables para las sumas de cada mes
+        $sumaEnero = 0;
+        $sumaFebrero = 0;
+        $sumaMarzo = 0;
+        $sumaAbril = 0;
+        $sumaMayo = 0;
+        $sumaJunio = 0;
+        $sumaJulio = 0;
+        $sumaAgosto = 0;
+        $sumaSeptiembre = 0;
+        $sumaOctubre = 0;
+        $sumaNoviembre = 0;
+        $sumaDiciembre = 0;
+
+        // Recorrer los datos y sumar los valores por cada mes, además agregar el total por fila
+        foreach ($presup_cal_pagos as $registro) {
+            // Calcular el total para cada insumo (suma horizontal de los 12 meses)
+            $totalFila = 0;
+            $totalFila += is_numeric($registro->Enero) ? $registro->Enero : 0;
+            $totalFila += is_numeric($registro->Febrero) ? $registro->Febrero : 0;
+            $totalFila += is_numeric($registro->Marzo) ? $registro->Marzo : 0;
+            $totalFila += is_numeric($registro->Abril) ? $registro->Abril : 0;
+            $totalFila += is_numeric($registro->Mayo) ? $registro->Mayo : 0;
+            $totalFila += is_numeric($registro->Junio) ? $registro->Junio : 0;
+            $totalFila += is_numeric($registro->Julio) ? $registro->Julio : 0;
+            $totalFila += is_numeric($registro->Agosto) ? $registro->Agosto : 0;
+            $totalFila += is_numeric($registro->Septiembre) ? $registro->Septiembre : 0;
+            $totalFila += is_numeric($registro->Octubre) ? $registro->Octubre : 0;
+            $totalFila += is_numeric($registro->Noviembre) ? $registro->Noviembre : 0;
+            $totalFila += is_numeric($registro->Diciembre) ? $registro->Diciembre : 0;
+
+            // Agregar la columna Total al registro
+            $registro->Total = $totalFila;
+
+            // Sumar para los totales verticales
+            $sumaEnero += is_numeric($registro->Enero) ? $registro->Enero : 0;
+            $sumaFebrero += is_numeric($registro->Febrero) ? $registro->Febrero : 0;
+            $sumaMarzo += is_numeric($registro->Marzo) ? $registro->Marzo : 0;
+            $sumaAbril += is_numeric($registro->Abril) ? $registro->Abril : 0;
+            $sumaMayo += is_numeric($registro->Mayo) ? $registro->Mayo : 0;
+            $sumaJunio += is_numeric($registro->Junio) ? $registro->Junio : 0;
+            $sumaJulio += is_numeric($registro->Julio) ? $registro->Julio : 0;
+            $sumaAgosto += is_numeric($registro->Agosto) ? $registro->Agosto : 0;
+            $sumaSeptiembre += is_numeric($registro->Septiembre) ? $registro->Septiembre : 0;
+            $sumaOctubre += is_numeric($registro->Octubre) ? $registro->Octubre : 0;
+            $sumaNoviembre += is_numeric($registro->Noviembre) ? $registro->Noviembre : 0;
+            $sumaDiciembre += is_numeric($registro->Diciembre) ? $registro->Diciembre : 0;
+        }
+
+        // Calcular el gran total (suma de todos los meses)
+        $granTotal = $sumaEnero + $sumaFebrero + $sumaMarzo + $sumaAbril + $sumaMayo + $sumaJunio +
+            $sumaJulio + $sumaAgosto + $sumaSeptiembre + $sumaOctubre + $sumaNoviembre + $sumaDiciembre;
+
+        // Agregar la fila "Total"
+        $presup_cal_pagos[] = (object) [
+            'NombreInsumo' => 'Total',
+            'Enero' => $sumaEnero,
+            'Febrero' => $sumaFebrero,
+            'Marzo' => $sumaMarzo,
+            'Abril' => $sumaAbril,
+            'Mayo' => $sumaMayo,
+            'Junio' => $sumaJunio,
+            'Julio' => $sumaJulio,
+            'Agosto' => $sumaAgosto,
+            'Septiembre' => $sumaSeptiembre,
+            'Octubre' => $sumaOctubre,
+            'Noviembre' => $sumaNoviembre,
+            'Diciembre' => $sumaDiciembre,
+            'Total' => $granTotal,
+            'Orden' => 7
+        ];
+
+
+        $tablahardware = [];
+        $columnashardware = [];
+        $totaleshardware = [];
+        $granTotalhardware = 0;
+
+        // Agrupar por empleado e insumo para evitar duplicados
+        $datosAgrupados = [];
+        foreach ($presup_hardware as $row) {
+            $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+            if (!isset($datosAgrupados[$key])) {
+                $datosAgrupados[$key] = [
+                    'EmpleadoID' => $row->EmpleadoID,
+                    'NombreEmpleado' => $row->NombreEmpleado,
+                    'NombrePuesto' => $row->NombrePuesto,
+                    'NombreInsumo' => $row->NombreInsumo,
+                    'CostoTotal' => (int) $row->CostoTotal
+                ];
+            } else {
+                // Si ya existe, sumar el costo (por si hay duplicados en el procedimiento)
+                $datosAgrupados[$key]['CostoTotal'] += (int) $row->CostoTotal;
+            }
+        }
+
+        foreach ($datosAgrupados as $key => $row) {
+            $empleadoID = $row['EmpleadoID'];
+            $nombre = $row['NombreEmpleado'];
+            $puesto = $row['NombrePuesto'];
+            $insumo = $row['NombreInsumo'];
+            $costo = $row['CostoTotal'];
+
+            if (!isset($tablahardware[$empleadoID])) {
+                $tablahardware[$empleadoID] = [
+                    'NombreEmpleado' => $nombre,
+                    'NombrePuesto' => $puesto,
+                    'TotalPorEmpleado' => 0
+                ];
+            }
+
+            $tablahardware[$empleadoID][$insumo] = $costo;
+            $tablahardware[$empleadoID]['TotalPorEmpleado'] += $costo;
+
+            $columnashardware[$insumo] = true;
+
+            if (!isset($totaleshardware[$insumo])) {
+                $totaleshardware[$insumo] = 0;
+            }
+            $totaleshardware[$insumo] += $costo;
+
+            $granTotalhardware += $costo;
+        }
+
+
+
+        $tablapresup_otrosinsums = [];
+        $columnaspresup_otrosinsums = [];
+        $totalespresup_otrosinsums = [];
+        $granTotalpresup_otrosinsums = 0;
+
+        // Agrupar por empleado e insumo para evitar duplicados
+        $datosAgrupadosOtros = [];
+        foreach ($presup_otrosinsums as $row) {
+            $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+            if (!isset($datosAgrupadosOtros[$key])) {
+                $datosAgrupadosOtros[$key] = [
+                    'EmpleadoID' => $row->EmpleadoID,
+                    'NombreEmpleado' => $row->NombreEmpleado,
+                    'NombrePuesto' => $row->NombrePuesto,
+                    'NombreInsumo' => $row->NombreInsumo,
+                    'CostoTotal' => (int) $row->CostoTotal
+                ];
+            } else {
+                $datosAgrupadosOtros[$key]['CostoTotal'] += (int) $row->CostoTotal;
+            }
+        }
+
+        foreach ($datosAgrupadosOtros as $key => $row) {
+            $empleadoID = $row['EmpleadoID'];
+            $nombre = $row['NombreEmpleado'];
+            $puesto = $row['NombrePuesto'];
+            $insumo = $row['NombreInsumo'];
+            $costo = $row['CostoTotal'];
+
+            if (!isset($tablapresup_otrosinsums[$empleadoID])) {
+                $tablapresup_otrosinsums[$empleadoID] = [
+                    'NombreEmpleado' => $nombre,
+                    'NombrePuesto' => $puesto,
+                    'TotalPorEmpleado' => 0
+                ];
+            }
+
+            $tablapresup_otrosinsums[$empleadoID][$insumo] = $costo;
+            $tablapresup_otrosinsums[$empleadoID]['TotalPorEmpleado'] += $costo;
+
+            $columnaspresup_otrosinsums[$insumo] = true;
+
+            if (!isset($totalespresup_otrosinsums[$insumo])) {
+                $totalespresup_otrosinsums[$insumo] = 0;
+            }
+            $totalespresup_otrosinsums[$insumo] += $costo;
+
+            $granTotalpresup_otrosinsums += $costo;
+        }
+
+
+        $tablapresup_lics = [];
+        $fecha_renovacion = [];
+        $columnaspresup_lics = [];
+        $totalespresup_lics = [];
+        $granTotalpresup_lics = 0;
+
+        // Agrupar por empleado e insumo para evitar duplicados
+        $datosAgrupadosLics = [];
+        foreach ($presup_lics as $row) {
+            $key = $row->EmpleadoID . '_' . $row->NombreInsumo;
+            if (!isset($datosAgrupadosLics[$key])) {
+                $datosAgrupadosLics[$key] = [
+                    'EmpleadoID' => $row->EmpleadoID,
+                    'NombreEmpleado' => $row->NombreEmpleado,
+                    'NombrePuesto' => $row->NombrePuesto,
+                    'NombreInsumo' => $row->NombreInsumo,
+                    'CostoTotal' => (int) $row->CostoTotal
+                ];
+            } else {
+                $datosAgrupadosLics[$key]['CostoTotal'] += (int) $row->CostoTotal;
+            }
+        }
+
+        foreach ($datosAgrupadosLics as $key => $row) {
+            $empleadoID = $row['EmpleadoID'];
+            $nombre = $row['NombreEmpleado'];
+            $puesto = $row['NombrePuesto'];
+            $insumo = $row['NombreInsumo'];
+            $costo = $row['CostoTotal'];
+
+            if (!isset($tablapresup_lics[$empleadoID])) {
+                $tablapresup_lics[$empleadoID] = [
+                    'NombreEmpleado' => $nombre,
+                    'NombrePuesto' => $puesto,
+                    'TotalPorEmpleado' => 0
+                ];
+            }
+
+            $tablapresup_lics[$empleadoID][$insumo] = $costo;
+            $tablapresup_lics[$empleadoID]['TotalPorEmpleado'] += $costo;
+
+            $columnaspresup_lics[$insumo] = true;
+
+            if (!isset($totalespresup_lics[$insumo])) {
+                $totalespresup_lics[$insumo] = 0;
+            }
+            $totalespresup_lics[$insumo] += $costo;
+
+            $granTotalpresup_lics += $costo;
+        }
+
+
+        $data = [
+            "title" => $tipo == 'mens' ? 'MENSUAL' : 'ANUAL',
+            "dato" => $tipo == 'mens' ? 'Mensual' : 'Anual',
+            'tipoDocumento' => $metadatosDocumento['tipoDocumento'],
+            'anioDocumento' => $metadatosDocumento['anioDocumento'],
+            'modo' => $metadatosDocumento['modo'],
+            'etiquetaSeccion' => $metadatosDocumento['etiquetaSeccion'],
+            'leyendaInclusion' => $metadatosDocumento['leyendaInclusion'],
+            'datosheader' => $datosheader,
+            'GerenciaTb' => $gerencia ?? null,
+            'tablapresup_otrosinsums' => $tablapresup_otrosinsums,
+            'columnaspresup_otrosinsums' => $columnaspresup_otrosinsums,
+            'totalespresup_otrosinsums' => $totalespresup_otrosinsums,
+            'granTotalpresup_otrosinsums' => $granTotalpresup_otrosinsums,
+            'tablahardware' => $tablahardware,
+            'columnashardware' => $columnashardware,
+            'totaleshardware' => $totaleshardware,
+            'granTotalhardware' => $granTotalhardware,
+            'tablapresup_lics' => $tablapresup_lics,
+            'columnaspresup_lics' => $columnaspresup_lics,
+            'totalespresup_lics' => $totalespresup_lics,
+            'granTotalpresup_lics' => $granTotalpresup_lics,
+            'presup_lics' => [],
+            'presup_acces' => $presup_acces,
+            'presup_datos' => $presup_datos,
+            'presup_gps' => $presup_gps,
+            'presup_cal_pagos' => $presup_cal_pagos
+        ];
+
+        return $data;
+    }
+
+    public static function metadatosDocumento(?string $modo): array
+    {
+        $modo = $modo === 'inventario' ? 'inventario' : 'presupuesto';
+
+        return [
+            'modo' => $modo,
+            'tipoDocumento' => $modo === 'inventario' ? 'INVENTARIO' : 'PRESUPUESTO',
+            'anioDocumento' => $modo === 'presupuesto' ? now()->year + 1 : now()->year,
+            'etiquetaSeccion' => self::etiquetaSeccion($modo),
+            'leyendaInclusion' => self::leyendaInclusion($modo),
+        ];
     }
 }
