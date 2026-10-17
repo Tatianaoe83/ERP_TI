@@ -1027,37 +1027,17 @@ class PresupuestoHelper
 
 
         } else {
-            // Consulta para costo anual
-            $presup_impresoras = DB::select("
-                         SELECT 
-                        'Costo Renta de Impresora' AS Categoria,
-                        ROUND(SUM(CostoAnual * CantidadMeses), 0) AS CostoTotal
-                        FROM (
-                            SELECT ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual AS CostoAnual,
-                                   COUNT(*) as CantidadMeses
-                            FROM inventarioinsumo ii
-                            INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-                            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-                            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-                            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-                            WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
-                                AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'impresoras') . "
-                            GROUP BY ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoAnual
-                        ) as impresoras_unicas
-                ", $query_params);
+            // Anual: costo mensual × meses de pago de cada equipo. Una impresora repartida entre
+            // gerencias (6 meses aquí, 6 en otra) solo cuenta sus meses, no los 12 de CostoAnual.
+            $presup_impresoras = [(object) [
+                'Categoria' => 'Costo Renta de Impresora',
+                'CostoTotal' => self::costoAnualPorMesesDePago($numerogerencia, 'impresoras', $tipoPersonaFilter, $presupInsumoII),
+            ]];
 
-            $presup_internet_fijo = DB::select("
-                SELECT 
-               'Costo Internet Fijo' AS Categoria,
-               ROUND(SUM(DISTINCT IFNULL(ii.CostoAnual, 0)), 0) AS CostoTotal
-               FROM inventarioinsumo ii
-               INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
-               INNER JOIN puestos p ON e.PuestoID = p.PuestoID
-               INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
-               INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
-               WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
-                   AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', 'internet') . "
-        ", $query_params);
+            $presup_internet_fijo = [(object) [
+                'Categoria' => 'Costo Internet Fijo',
+                'CostoTotal' => self::costoAnualPorMesesDePago($numerogerencia, 'internet', $tipoPersonaFilter, $presupInsumoII),
+            ]];
         }
 
 
@@ -1429,6 +1409,39 @@ class PresupuestoHelper
         ];
 
         return $data;
+    }
+
+    // Suma anual de una categoría (impresoras / internet) según los meses de pago marcados.
+    // Sirve para los dos formatos de captura: un registro por mes, o un registro con varios meses.
+    // Los meses se juntan por equipo para no contar dos veces el mismo mes.
+    private static function costoAnualPorMesesDePago(int $gerenciaId, string $categoria, string $tipoPersonaFilter, string $presupInsumoII): int
+    {
+        $filas = DB::select("
+            SELECT ii.EmpleadoID, ii.NombreInsumo, ii.NumSerie, ii.CostoMensual, ii.FrecuenciaDePago, ii.MesDePago
+            FROM inventarioinsumo ii
+            INNER JOIN empleados e ON ii.EmpleadoID = e.EmpleadoID
+            INNER JOIN puestos p ON e.PuestoID = p.PuestoID
+            INNER JOIN departamentos d ON p.DepartamentoID = d.DepartamentoID
+            INNER JOIN gerencia g ON d.GerenciaID = g.GerenciaID
+            WHERE g.GerenciaID = ? " . $tipoPersonaFilter . $presupInsumoII . "
+                AND " . PresupuestoConfiguracion::sqlIn('ii.CateogoriaInsumo', $categoria) . "
+        ", [$gerenciaId]);
+
+        $equipos = [];
+        foreach ($filas as $fila) {
+            $clave = $fila->EmpleadoID . '|' . $fila->NombreInsumo . '|' . $fila->NumSerie . '|' . $fila->CostoMensual;
+            $equipos[$clave]['costo'] = (float) ($fila->CostoMensual ?? 0);
+            foreach (PagoMeses::parse($fila->MesDePago ?? '', $fila->FrecuenciaDePago ?? null) as $mes) {
+                $equipos[$clave]['meses'][$mes] = true;
+            }
+        }
+
+        $total = 0.0;
+        foreach ($equipos as $equipo) {
+            $total += $equipo['costo'] * count($equipo['meses'] ?? []);
+        }
+
+        return (int) round($total);
     }
 
     public static function metadatosDocumento(?string $modo): array
