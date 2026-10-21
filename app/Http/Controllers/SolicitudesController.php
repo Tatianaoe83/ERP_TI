@@ -1202,13 +1202,29 @@ class SolicitudesController extends Controller
                 ->with(['approvalStep.solicitud.cotizaciones'])
                 ->first();
 
-            if (!$tokenRow) abort(404, 'Token no encontrado o inválido');
+            if (!$tokenRow) {
+                $this->logAccesoElegirGanadorFallido('el token no existe en solicitud_public_review_tokens', $token);
+                abort(404, 'Token no encontrado o inválido');
+            }
 
             $paso     = $tokenRow->approvalStep;
-            if (!$paso) abort(404, 'Paso de aprobación no encontrado');
+            if (!$paso) {
+                $this->logAccesoElegirGanadorFallido('el token apunta a un paso de aprobación que ya no existe', $token, [
+                    'token_id'         => $tokenRow->id,
+                    'approval_step_id' => $tokenRow->approval_step_id,
+                ]);
+                abort(404, 'Paso de aprobación no encontrado');
+            }
 
             $solicitud = $paso->solicitud;
-            if (!$solicitud) abort(404, 'Solicitud no encontrada');
+            if (!$solicitud) {
+                $this->logAccesoElegirGanadorFallido('el paso de aprobación apunta a una solicitud que ya no existe', $token, [
+                    'token_id'         => $tokenRow->id,
+                    'approval_step_id' => $paso->id,
+                    'solicitud_id'     => $paso->solicitud_id,
+                ]);
+                abort(404, 'Solicitud no encontrada');
+            }
 
             // Token usado/revocado: el gerente ya terminó su parte. Se le muestra la misma
             // vista con su elección marcada y todo deshabilitado (nunca se redirige al
@@ -1259,9 +1275,32 @@ class SolicitudesController extends Controller
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
         } catch (\Exception $e) {
-            Log::error('Error mostrando elegir ganador: ' . $e->getMessage());
+            Log::error('Error mostrando elegir ganador: ' . $e->getMessage(), [
+                'token'      => $token,
+                'excepcion'  => get_class($e),
+                'archivo'    => $e->getFile() . ':' . $e->getLine(),
+                'ip'         => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'referer'    => request()->headers->get('referer'),
+            ]);
             abort(500, 'Error al cargar la página de elección de ganador');
         }
+    }
+
+    /**
+     * Registra por qué no se pudo abrir el enlace de elegir ganador, con los datos de
+     * quién lo abrió (IP, navegador, de dónde venía) para rastrear enlaces que no
+     * salieron de este ERP.
+     */
+    private function logAccesoElegirGanadorFallido(string $motivo, string $token, array $contexto = []): void
+    {
+        Log::warning("Enlace de elegir ganador rechazado: {$motivo}.", array_merge([
+            'token'      => $token,
+            'url'        => request()->fullUrl(),
+            'ip'         => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'referer'    => request()->headers->get('referer'),
+        ], $contexto));
     }
 
     /**

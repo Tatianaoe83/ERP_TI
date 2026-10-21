@@ -162,9 +162,11 @@ class InsumosController extends AppBaseController
 
         $insumos = $this->insumosRepository->create($input);
 
-        Flash::success('Insumos saved successfully.');
-
-        return redirect(route('insumos.index'));
+        return redirect(route('insumos.index'))->with('swal', [
+            'icon' => 'success',
+            'title' => 'Insumo creado',
+            'text' => "El insumo {$insumos->NombreInsumo} se creó correctamente.",
+        ]);
     }
 
     /**

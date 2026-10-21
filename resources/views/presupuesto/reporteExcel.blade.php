@@ -1,5 +1,50 @@
 @php
+    // Mismo diseño que presupuesto.reporte (PDF), sin logo. Estilos inline: los lee el lector HTML de PhpSpreadsheet.
     $seccion = $etiquetaSeccion ?? 'Presupuesto';
+    $kpis = collect($datosheader ?? []);
+    $kpiTotal = $kpis->last();
+    $kpiItems = $kpis->slice(0, max(0, $kpis->count() - 1))->values();
+    $n = $totalColumnas ?? 13;
+    $moneda = '$#,##0';
+
+    $sKicker = 'background-color:#101d49;color:#bfdbfe;font-size:8;vertical-align:center';
+    $sTitulo = 'background-color:#101d49;color:#ffffff;font-size:14;font-weight:bold;vertical-align:center';
+    $sMetaLbl = 'background-color:#f8fafc;color:#6b7280;font-size:8;border:1px solid #e5e7eb';
+    $sMetaVal = 'background-color:#f8fafc;color:#101d49;font-size:10;font-weight:bold;border:1px solid #e5e7eb;text-align:left';
+    $sDesglose = 'background-color:#f8fafc;color:#475569;font-size:8;border:1px solid #e5e7eb';
+    $sKpiLbl = 'color:#6b7280;font-size:8;border:1px solid #e5e7eb';
+    $sKpiVal = 'color:#101d49;font-size:12;font-weight:bold;border:1px solid #e5e7eb;text-align:left';
+    $sKpiTotalLbl = 'background-color:#101d49;color:#bfdbfe;font-size:8';
+    $sKpiTotalVal = 'background-color:#101d49;color:#ffffff;font-size:12;font-weight:bold;text-align:left';
+    $sSeccion = 'background-color:#101d49;color:#ffffff;font-size:10;font-weight:bold;vertical-align:center';
+    $sTh = 'background-color:#101d49;color:#ffffff;font-size:9;font-weight:bold;text-align:center;border:1px solid #0c1638';
+    $sTd = 'color:#1f2937;font-size:9;border:1px solid #e5e7eb;text-align:center';
+    $sTdIzq = 'color:#1f2937;font-size:9;border:1px solid #e5e7eb;text-align:left';
+    $fondoAlt = ';background-color:#f8fafc';
+    $sTotal = ';background-color:#dbeafe;color:#101d49;font-weight:bold';
+
+    $nombresTipo = ['FISICA' => 'Física', 'REFERENCIADO' => 'Referenciado', 'EXTRAORDINARIO' => 'Extraordinario'];
+    $desglose = collect($GerenciaTb->EmpleadosPorTipo ?? [])
+        ->map(fn ($total, $tipo) => ($nombresTipo[$tipo] ?? ucfirst(strtolower($tipo))) . ': ' . $total)
+        ->implode('   ·   ');
+
+    // Fila de estilo según el PDF: total (Orden 1 en líneas / 7 en calendario), alterna o normal
+    $fila = fn ($esTotal, $esPar) => $esTotal ? $sTotal : ($esPar ? $fondoAlt : '');
+
+    $tablasEmpleado = [
+        ['titulo' => 'Licenciamiento', 'columnas' => $columnaspresup_lics, 'filas' => $tablapresup_lics, 'totales' => $totalespresup_lics, 'granTotal' => $granTotalpresup_lics],
+        ['titulo' => 'Inversiones', 'columnas' => $columnashardware, 'filas' => $tablahardware, 'totales' => $totaleshardware, 'granTotal' => $granTotalhardware],
+        ['titulo' => 'Accesorios y Otros Insumos', 'columnas' => $columnaspresup_otrosinsums, 'filas' => $tablapresup_otrosinsums, 'totales' => $totalespresup_otrosinsums, 'granTotal' => $granTotalpresup_otrosinsums],
+    ];
+
+    $anual = $dato == 'Anual';
+    $tablasLineas = [
+        ['titulo' => 'Telefonía', 'filas' => $presup_acces, 'renta' => $anual ? 'Voz_Costo_Renta_Anual' : 'Voz_Costo_Renta_Mensual', 'fianza' => $anual ? 'Voz_Costo_Fianza_Anual' : 'Voz_Costo_Fianza', 'renovacion' => $anual ? 'Voz_Monto_Renovacion_Anual' : 'Voz_Monto_Renovacion'],
+        ['titulo' => 'Datos', 'filas' => $presup_datos, 'renta' => $anual ? 'Datos_Costo_Renta_Anual' : 'Datos_Costo_Renta_Mensual', 'fianza' => $anual ? 'Datos_Costo_Fianza_Anual' : 'Datos_Costo_Fianza', 'renovacion' => $anual ? 'Datos_Monto_Renovacion_Anual' : 'Datos_Monto_Renovacion'],
+        ['titulo' => 'GPS', 'filas' => $presup_gps, 'renta' => $anual ? 'GPS_Costo_Renta_Anual' : 'GPS_Costo_Renta_Mensual', 'fianza' => $anual ? 'GPS_Costo_Fianza_Anual' : 'GPS_Costo_Fianza', 'renovacion' => $anual ? 'GPS_Monto_Renovacion_Anual' : 'GPS_Monto_Renovacion'],
+    ];
+
+    $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 @endphp
 <!DOCTYPE html>
 <html>
@@ -9,251 +54,145 @@
 </head>
 <body>
 <table>
+    {{-- Encabezado --}}
     <tr>
-        <td>{{ $tipoDocumento ?? 'PRESUPUESTO' }} DE TECNOLOGÍAS {{ $title }} {{ $anioDocumento ?? (now()->year + 1) }}</td>
+        <td colspan="{{ $n }}" style="{{ $sKicker }}">{{ $tipoDocumento ?? 'PRESUPUESTO' }} · {{ $title }} · {{ $anioDocumento ?? (now()->year + 1) }}</td>
     </tr>
     <tr>
-        <td>Gerencia</td>
-        <td>{{ $GerenciaTb->NombreGerencia ?? '' }}</td>
+        <td colspan="{{ $n }}" style="{{ $sTitulo }}">{{ $tipoDocumento ?? 'PRESUPUESTO' }} DE TECNOLOGÍAS</td>
     </tr>
-    <tr>
-        <td>Gerente</td>
-        <td>{{ $GerenciaTb->NombreGerente ?? '' }}</td>
-    </tr>
-    <tr>
-        <td>Empleados</td>
-        <td>{{ $GerenciaTb->CantidadEmpleados ?? '' }}</td>
-    </tr>
-    <tr>
-        <td>Alcance</td>
-        <td>{{ $leyendaInclusion ?? '' }}</td>
-    </tr>
-    @foreach ($datosheader as $datosheade)
-    <tr>
-        <td>{{ $datosheade->Categoria }}</td>
-        <td>{{ $datosheade->TotalCosto }}</td>
-    </tr>
-    @endforeach
-</table>
+    <tr><td colspan="{{ $n }}"></td></tr>
 
-<table>
+    {{-- Gerencia / Gerente / Empleados --}}
     <tr>
-        <td>{{ $seccion }} de Licenciamiento</td>
+        <td style="{{ $sMetaLbl }}">GERENCIA</td>
+        <td style="{{ $sMetaLbl }}">GERENTE</td>
+        <td colspan="4" style="{{ $sMetaLbl }}">EMPLEADOS</td>
     </tr>
     <tr>
-        <th>Empleado</th>
-        <th>Puesto</th>
-        @foreach($columnaspresup_lics as $columna => $_)
-            <th>{{ $columna }}</th>
-        @endforeach
-        <th>Total</th>
+        <td style="{{ $sMetaVal }}">{{ $GerenciaTb->NombreGerencia ?? '' }}</td>
+        <td style="{{ $sMetaVal }}">{{ $GerenciaTb->NombreGerente ?? '' }}</td>
+        <td colspan="4" style="{{ $sMetaVal }}" data-format="0">{{ $GerenciaTb->CantidadEmpleados ?? '' }}</td>
     </tr>
-    @foreach($tablapresup_lics as $empleado)
+    @if($desglose !== '')
     <tr>
-        <td>{{ $empleado['NombreEmpleado'] }}</td>
-        <td>{{ $empleado['NombrePuesto'] }}</td>
-        @foreach($columnaspresup_lics as $columna => $_)
-            <td>{{ $empleado[$columna] ?? 0 }}</td>
-        @endforeach
-        <td>{{ $empleado['TotalPorEmpleado'] }}</td>
+        <td style="{{ $sDesglose }}"></td>
+        <td style="{{ $sDesglose }}"></td>
+        <td colspan="4" style="{{ $sDesglose }}">{{ $desglose }}</td>
     </tr>
-    @endforeach
-    <tr>
-        <td>TOTAL</td>
-        <td></td>
-        @foreach($columnaspresup_lics as $columna => $_)
-            <td>{{ $totalespresup_lics[$columna] ?? 0 }}</td>
-        @endforeach
-        <td>{{ $granTotalpresup_lics }}</td>
-    </tr>
-</table>
+    @endif
+    <tr><td colspan="{{ $n }}"></td></tr>
 
-<table>
-    <tr>
-        <td>{{ $seccion }} de Inversiones</td>
-    </tr>
-    <tr>
-        <th>Empleado</th>
-        <th>Puesto</th>
-        @foreach($columnashardware as $columna => $_)
-            <th>{{ $columna }}</th>
-        @endforeach
-        <th>Total</th>
-    </tr>
-    @foreach($tablahardware as $empleado)
-    <tr>
-        <td>{{ $empleado['NombreEmpleado'] }}</td>
-        <td>{{ $empleado['NombrePuesto'] }}</td>
-        @foreach($columnashardware as $columna => $_)
-            <td>{{ $empleado[$columna] ?? 0 }}</td>
-        @endforeach
-        <td>{{ $empleado['TotalPorEmpleado'] }}</td>
-    </tr>
+    {{-- KPIs: 4 por fila (A, B, C:D, E:F) como en el PDF --}}
+    @foreach($kpiItems->chunk(4) as $grupo)
+        @php $grupo = $grupo->values(); @endphp
+        <tr>
+            @for($i = 0; $i < 4; $i++)
+                <td @if($i >= 2) colspan="2" @endif style="{{ $sKpiLbl }}">{{ isset($grupo[$i]) ? mb_strtoupper($grupo[$i]->Categoria) : '' }}</td>
+            @endfor
+        </tr>
+        <tr>
+            @for($i = 0; $i < 4; $i++)
+                <td @if($i >= 2) colspan="2" @endif style="{{ $sKpiVal }}" data-format="{{ $moneda }}">{{ isset($grupo[$i]) ? (float) $grupo[$i]->TotalCosto : '' }}</td>
+            @endfor
+        </tr>
     @endforeach
-    <tr>
-        <td>TOTAL</td>
-        <td></td>
-        @foreach($columnashardware as $columna => $_)
-            <td>{{ $totaleshardware[$columna] ?? 0 }}</td>
+    @if($kpiTotal)
+        <tr>
+            <td colspan="6" style="{{ $sKpiTotalLbl }}">{{ mb_strtoupper($kpiTotal->Categoria) }}</td>
+        </tr>
+        <tr>
+            <td colspan="6" style="{{ $sKpiTotalVal }}" data-format="{{ $moneda }}">{{ (float) $kpiTotal->TotalCosto }}</td>
+        </tr>
+    @endif
+
+    {{-- Licenciamiento, Inversiones, Accesorios --}}
+    @foreach($tablasEmpleado as $tabla)
+        @php $ancho = count($tabla['columnas']) + 3; @endphp
+        <tr><td colspan="{{ $n }}"></td></tr>
+        <tr>
+            <td colspan="{{ $ancho }}" style="{{ $sSeccion }}">{{ $seccion }} de {{ $tabla['titulo'] }}</td>
+        </tr>
+        <tr>
+            <th style="{{ $sTh }}">Empleado</th>
+            <th style="{{ $sTh }}">Puesto</th>
+            @foreach($tabla['columnas'] as $columna => $_)
+                <th style="{{ $sTh }}">{{ $columna }}</th>
+            @endforeach
+            <th style="{{ $sTh }}">Total</th>
+        </tr>
+        @foreach($tabla['filas'] as $empleado)
+            @php $extra = $fila(false, $loop->even); @endphp
+            <tr>
+                <td style="{{ $sTdIzq . $extra }}">{{ $empleado['NombreEmpleado'] }}</td>
+                <td style="{{ $sTdIzq . $extra }}">{{ $empleado['NombrePuesto'] }}</td>
+                @foreach($tabla['columnas'] as $columna => $_)
+                    <td style="{{ $sTd . $extra }}" data-format="{{ $moneda }}">{{ (float) ($empleado[$columna] ?? 0) }}</td>
+                @endforeach
+                <td style="{{ $sTd . $extra }}" data-format="{{ $moneda }}">{{ (float) $empleado['TotalPorEmpleado'] }}</td>
+            </tr>
         @endforeach
-        <td>{{ $granTotalhardware }}</td>
-    </tr>
-</table>
+        <tr>
+            <td style="{{ $sTdIzq . $sTotal }}">TOTAL</td>
+            <td style="{{ $sTd . $sTotal }}"></td>
+            @foreach($tabla['columnas'] as $columna => $_)
+                <td style="{{ $sTd . $sTotal }}" data-format="{{ $moneda }}">{{ (float) ($tabla['totales'][$columna] ?? 0) }}</td>
+            @endforeach
+            <td style="{{ $sTd . $sTotal }}" data-format="{{ $moneda }}">{{ (float) $tabla['granTotal'] }}</td>
+        </tr>
+    @endforeach
 
-<table>
-    <tr>
-        <td>{{ $seccion }} de Accesorios y Otros Insumos</td>
-    </tr>
-    <tr>
-        <th>Empleado</th>
-        <th>Puesto</th>
-        @foreach($columnaspresup_otrosinsums as $columna => $_)
-            <th>{{ $columna }}</th>
+    {{-- Telefonía, Datos, GPS --}}
+    @foreach($tablasLineas as $tabla)
+        <tr><td colspan="{{ $n }}"></td></tr>
+        <tr>
+            <td colspan="5" style="{{ $sSeccion }}">{{ $seccion }} de {{ $tabla['titulo'] }}</td>
+        </tr>
+        <tr>
+            <th style="{{ $sTh }}">Empleado</th>
+            <th style="{{ $sTh }}">Puesto</th>
+            <th style="{{ $sTh }}">Renta {{ $dato }}</th>
+            <th style="{{ $sTh }}">Fianza {{ $anual ? $dato : '' }}</th>
+            <th style="{{ $sTh }}">Renovación {{ $anual ? $dato : '' }}</th>
+        </tr>
+        @foreach($tabla['filas'] as $linea)
+            @php $extra = $fila(($linea->Orden ?? null) == 1, $loop->even); @endphp
+            <tr>
+                <td style="{{ $sTdIzq . $extra }}">{{ $linea->NombreEmpleado }}</td>
+                <td style="{{ $sTdIzq . $extra }}">{{ $linea->NombrePuesto }}</td>
+                <td style="{{ $sTd . $extra }}" data-format="{{ $moneda }}">{{ (float) $linea->{$tabla['renta']} }}</td>
+                <td style="{{ $sTd . $extra }}" data-format="{{ $moneda }}">{{ (float) $linea->{$tabla['fianza']} }}</td>
+                <td style="{{ $sTd . $extra }}" data-format="{{ $moneda }}">{{ (float) $linea->{$tabla['renovacion']} }}</td>
+            </tr>
         @endforeach
-        <th>Total</th>
-    </tr>
-    @foreach($tablapresup_otrosinsums as $empleado)
+        <tr>
+            <td style="{{ $sTdIzq . $sTotal }}">TOTAL</td>
+            <td style="{{ $sTd . $sTotal }}"></td>
+            @foreach(['renta', 'fianza', 'renovacion'] as $campo)
+                <td style="{{ $sTd . $sTotal }}" data-format="{{ $moneda }}">{{ (float) collect($tabla['filas'])->sum($tabla[$campo]) }}</td>
+            @endforeach
+        </tr>
+    @endforeach
+
+    {{-- Calendario de pagos --}}
+    <tr><td colspan="{{ $n }}"></td></tr>
     <tr>
-        <td>{{ $empleado['NombreEmpleado'] }}</td>
-        <td>{{ $empleado['NombrePuesto'] }}</td>
-        @foreach($columnaspresup_otrosinsums as $columna => $_)
-            <td>{{ $empleado[$columna] ?? 0 }}</td>
+        <td colspan="13" style="{{ $sSeccion }}">Calendario de Pagos</td>
+    </tr>
+    <tr>
+        <th style="{{ $sTh }}">Insumo</th>
+        @foreach($meses as $mes)
+            <th style="{{ $sTh }}">{{ $mes }}</th>
         @endforeach
-        <td>{{ $empleado['TotalPorEmpleado'] }}</td>
     </tr>
-    @endforeach
-    <tr>
-        <td>TOTAL</td>
-        <td></td>
-        @foreach($columnaspresup_otrosinsums as $columna => $_)
-            <td>{{ $totalespresup_otrosinsums[$columna] ?? 0 }}</td>
-        @endforeach
-        <td>{{ $granTotalpresup_otrosinsums }}</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td>{{ $seccion }} de Telefonía</td>
-    </tr>
-    <tr>
-        <th>Empleado</th>
-        <th>Puesto</th>
-        <th>Renta {{ $dato }}</th>
-        <th>Fianza {{ $dato == 'Anual' ? $dato : '' }}</th>
-        <th>Renovación {{ $dato == 'Anual' ? $dato : '' }}</th>
-    </tr>
-    @foreach ($presup_acces as $presup_acce)
-    <tr>
-        <td>{{ $presup_acce->NombreEmpleado }}</td>
-        <td>{{ $presup_acce->NombrePuesto }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Costo_Renta_Anual : $presup_acce->Voz_Costo_Renta_Mensual }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Costo_Fianza_Anual : $presup_acce->Voz_Costo_Fianza }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_acce->Voz_Monto_Renovacion_Anual : $presup_acce->Voz_Monto_Renovacion }}</td>
-    </tr>
-    @endforeach
-    <tr>
-        <td>TOTAL</td>
-        <td></td>
-        <td>{{ collect($presup_acces)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Voz_Costo_Renta_Anual : $item->Voz_Costo_Renta_Mensual; }) }}</td>
-        <td>{{ collect($presup_acces)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Voz_Costo_Fianza_Anual : $item->Voz_Costo_Fianza; }) }}</td>
-        <td>{{ collect($presup_acces)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Voz_Monto_Renovacion_Anual : $item->Voz_Monto_Renovacion; }) }}</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td>{{ $seccion }} de Datos</td>
-    </tr>
-    <tr>
-        <th>Empleado</th>
-        <th>Puesto</th>
-        <th>Renta {{ $dato }}</th>
-        <th>Fianza {{ $dato == 'Anual' ? $dato : '' }}</th>
-        <th>Renovación {{ $dato == 'Anual' ? $dato : '' }}</th>
-    </tr>
-    @foreach ($presup_datos as $presup_dato)
-    <tr>
-        <td>{{ $presup_dato->NombreEmpleado }}</td>
-        <td>{{ $presup_dato->NombrePuesto }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Costo_Renta_Anual : $presup_dato->Datos_Costo_Renta_Mensual }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Costo_Fianza_Anual : $presup_dato->Datos_Costo_Fianza }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_dato->Datos_Monto_Renovacion_Anual : $presup_dato->Datos_Monto_Renovacion }}</td>
-    </tr>
-    @endforeach
-    <tr>
-        <td>TOTAL</td>
-        <td></td>
-        <td>{{ collect($presup_datos)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Datos_Costo_Renta_Anual : $item->Datos_Costo_Renta_Mensual; }) }}</td>
-        <td>{{ collect($presup_datos)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Datos_Costo_Fianza_Anual : $item->Datos_Costo_Fianza; }) }}</td>
-        <td>{{ collect($presup_datos)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->Datos_Monto_Renovacion_Anual : $item->Datos_Monto_Renovacion; }) }}</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td>{{ $seccion }} de GPS</td>
-    </tr>
-    <tr>
-        <th>Empleado</th>
-        <th>Puesto</th>
-        <th>Renta {{ $dato }}</th>
-        <th>Fianza {{ $dato == 'Anual' ? $dato : '' }}</th>
-        <th>Renovación {{ $dato == 'Anual' ? $dato : '' }}</th>
-    </tr>
-    @foreach ($presup_gps as $presup_gp)
-    <tr>
-        <td>{{ $presup_gp->NombreEmpleado }}</td>
-        <td>{{ $presup_gp->NombrePuesto }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Costo_Renta_Anual : $presup_gp->GPS_Costo_Renta_Mensual }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Costo_Fianza_Anual : $presup_gp->GPS_Costo_Fianza }}</td>
-        <td>{{ $dato == 'Anual' ? $presup_gp->GPS_Monto_Renovacion_Anual : $presup_gp->GPS_Monto_Renovacion }}</td>
-    </tr>
-    @endforeach
-    <tr>
-        <td>TOTAL</td>
-        <td></td>
-        <td>{{ collect($presup_gps)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->GPS_Costo_Renta_Anual : $item->GPS_Costo_Renta_Mensual; }) }}</td>
-        <td>{{ collect($presup_gps)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->GPS_Costo_Fianza_Anual : $item->GPS_Costo_Fianza; }) }}</td>
-        <td>{{ collect($presup_gps)->sum(function($item) use ($dato) { return $dato == 'Anual' ? $item->GPS_Monto_Renovacion_Anual : $item->GPS_Monto_Renovacion; }) }}</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td>Calendario de Pagos</td>
-    </tr>
-    <tr>
-        <th>Insumo</th>
-        <th>Enero</th>
-        <th>Febrero</th>
-        <th>Marzo</th>
-        <th>Abril</th>
-        <th>Mayo</th>
-        <th>Junio</th>
-        <th>Julio</th>
-        <th>Agosto</th>
-        <th>Septiembre</th>
-        <th>Octubre</th>
-        <th>Noviembre</th>
-        <th>Diciembre</th>
-    </tr>
-    @foreach ($presup_cal_pagos as $presup_cal_pago)
-    <tr>
-        <td>{{ $presup_cal_pago->NombreInsumo }}</td>
-        <td>{{ $presup_cal_pago->Enero }}</td>
-        <td>{{ $presup_cal_pago->Febrero }}</td>
-        <td>{{ $presup_cal_pago->Marzo }}</td>
-        <td>{{ $presup_cal_pago->Abril }}</td>
-        <td>{{ $presup_cal_pago->Mayo }}</td>
-        <td>{{ $presup_cal_pago->Junio }}</td>
-        <td>{{ $presup_cal_pago->Julio }}</td>
-        <td>{{ $presup_cal_pago->Agosto }}</td>
-        <td>{{ $presup_cal_pago->Septiembre }}</td>
-        <td>{{ $presup_cal_pago->Octubre }}</td>
-        <td>{{ $presup_cal_pago->Noviembre }}</td>
-        <td>{{ $presup_cal_pago->Diciembre }}</td>
-    </tr>
+    @foreach($presup_cal_pagos as $pago)
+        @php $extra = $fila(($pago->Orden ?? null) == 7, $loop->even); @endphp
+        <tr>
+            <td style="{{ $sTdIzq . $extra }}">{{ $pago->NombreInsumo }}</td>
+            @foreach($meses as $mes)
+                <td style="{{ $sTd . $extra }}" data-format="{{ $moneda }}">{{ is_numeric($pago->{$mes}) ? (float) $pago->{$mes} : $pago->{$mes} }}</td>
+            @endforeach
+        </tr>
     @endforeach
 </table>
 </body>
